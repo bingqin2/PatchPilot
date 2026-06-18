@@ -1,0 +1,36 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: patchpilot-mysql
+    environment:
+      MYSQL_DATABASE: patchpilot
+      MYSQL_USER: patchpilot
+      MYSQL_PASSWORD: patchpilot
+      MYSQL_ROOT_PASSWORD: patchpilot-root
+    ports:
+      - "3306:3306"
+    volumes:
+      - patchpilot-mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -ppatchpilot-root --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  patchpilot-backend:
+    build:
+      context: .
+      dockerfile: PatchPilot/Dockerfile
+    image: patchpilot-backend:local
+    container_name: patchpilot-backend
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SERVER_PORT: 8080
+    ports:
+      - "8080:8080"
+
+volumes:
+  patchpilot-mysql-data:
