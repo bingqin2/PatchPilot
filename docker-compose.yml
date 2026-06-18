@@ -7,8 +7,6 @@ services:
       MYSQL_USER: patchpilot
       MYSQL_PASSWORD: patchpilot
       MYSQL_ROOT_PASSWORD: patchpilot-root
-    ports:
-      - "3306:3306"
     volumes:
       - patchpilot-mysql-data:/var/lib/mysql
     healthcheck:
@@ -29,6 +27,9 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: docker
       SERVER_PORT: 8080
+      PATCHPILOT_GITHUB_WEBHOOK_SECRET: ${PATCHPILOT_GITHUB_WEBHOOK_SECRET}
+      PATCHPILOT_GITHUB_TOKEN: ${PATCHPILOT_GITHUB_TOKEN:-}
+      PATCHPILOT_WORKSPACE_ROOT_DIR: ${PATCHPILOT_WORKSPACE_ROOT_DIR:-/tmp/patchpilot/workspaces}
     ports:
       - "8080:8080"
 
