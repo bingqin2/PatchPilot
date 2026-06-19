@@ -763,3 +763,20 @@ Validation:
 - `mvn -pl PatchPilot -Dtest=WorkspaceFixTaskExecutorTests test`: first failed because commit and push cancellation still surfaced as Git failures, then passed after checking cancellation after failed audited tool calls, 8 tests run, 0 failures, 0 errors.
 - `mvn -pl PatchPilot -Dtest=GitWorkspaceRecoveryInspectorTests,GitCommandRunnerTests,GitWorkspaceServiceTests,CommitToolTests,PushToolTests,WorkspaceFixTaskExecutorTests,GitHubWebhookControllerTests test`: first failed because new constructors needed explicit Spring injection and webhook test doubles still overrode old commit/push signatures, then passed, 52 tests run, 0 failures, 0 errors.
 - `mvn -pl PatchPilot test`: passed, 209 tests run, 0 failures, 0 errors.
+
+## 2026-06-20
+
+Implemented model-call audit records from `docs/plans/030-model-call-audit-records.md`.
+
+Changes:
+
+- Added Flyway migration `V9__create_fix_task_model_call.sql` for model-call audit rows.
+- Added `FixTaskModelCallVo`, `FixTaskModelCallEntity`, converter, mapper, and service boundary.
+- Added default-profile in-memory and local/docker MyBatis-backed model-call services.
+- Added `GET /api/tasks/{id}/model-calls` to expose ordered model-call records for existing tasks.
+- Kept this phase audit-only: no real model provider calls, prompt generation, or workflow changes were added.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=FixTaskModelCallConvertTests,FixTaskModelCallMigrationTests,InMemoryFixTaskModelCallServiceTests,MyBatisFixTaskModelCallServiceTests,TaskControllerTests test`: first failed because model-call VO/entity/converter/mapper/service and controller wiring did not exist, then passed after implementation, 25 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot test`: passed, 216 tests run, 0 failures, 0 errors.
