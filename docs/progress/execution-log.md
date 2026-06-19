@@ -876,3 +876,21 @@ Validation:
 - `mvn -pl PatchPilot -Dtest=PatchPilotApplicationTests,TaskControllerTests,TaskQueueControllerTests,FixTaskWorkerTests,WorkspaceFixTaskExecutorTests,CommandExecutionGuardTests,RepositoryInspectionToolsTests,FileToolsTests,DiffToolTests,PullRequestToolTests,IssueCommentToolTests,MyBatisFixTaskServiceTests,MyBatisFixTaskQueueTests,MyBatisFixTaskQueueQueryServiceTests,MyBatisFixTaskModelCallServiceTests,MyBatisFixTaskTestRunServiceTests,MyBatisFixTaskTimelineServiceTests,MyBatisFixTaskToolCallServiceTests test`: passed, 95 tests run, 0 failures, 0 errors.
 - `mvn -pl PatchPilot -Dtest=GitCommandRunnerTests,OpenAiCompatibleModelClientTests,GitHubIssueCommentClientTests,GitHubPullRequestClientTests,GitHubWebhookServiceTests,GitHubWebhookSignatureVerifierTests,FixPlanGeneratorTests,SimplePatchWorkflowTests,PlannedPatchWorkflowTests,RepositoryInspectionToolsTests,MavenTestRunnerTests,CommandExecutionGuardTests,TaskProcessRegistryTests,FixTaskWorkerTests,FixTaskQueuePollerTests test`: passed, 70 tests run, 0 failures, 0 errors.
 - `mvn -pl PatchPilot test`: passed, 229 tests run, 0 failures, 0 errors.
+
+## 2026-06-20
+
+Started self-hosted README and environment documentation from `docs/plans/036-self-hosted-readme-and-env-docs.md`.
+
+Changes:
+
+- Rewrote `README.md` around the current self-hosted GitHub issue-to-PR workflow.
+- Added `.env.example` for Docker Compose, GitHub webhook/token, workspace, and model provider configuration.
+- Updated `.gitignore` so local `.env` files stay untracked while `.env.example` remains commit-ready.
+- Passed model provider environment variables through `docker-compose.yml`.
+- Added `docs/agent/smoke-test-checklist.md` for repeatable local demo validation.
+- Updated temporary URL and IDEA local run docs to match the MySQL-backed Docker profile and default no-database IDEA profile.
+
+Validation:
+
+- `docker compose --env-file .env.example config`: passed, Compose resolves the backend, MySQL, GitHub, workspace, and model provider environment variables.
+- `mvn -pl PatchPilot test`: passed, 229 tests run, 0 failures, 0 errors.

@@ -12,10 +12,11 @@ From the repository root:
 
 ```bash
 cd /Users/wangbingqin/Documents/agent
-PATCHPILOT_GITHUB_WEBHOOK_SECRET=test-secret-123 docker compose up --build
+cp .env.example .env
+docker compose --env-file .env up --build
 ```
 
-Keep this terminal open. Wait until Spring Boot reports that `PatchPilotApplication` has started.
+Set `PATCHPILOT_GITHUB_WEBHOOK_SECRET` in `.env` before starting. Keep this terminal open and wait until Spring Boot reports that `PatchPilotApplication` has started.
 
 Verify the local backend:
 
@@ -51,7 +52,7 @@ Use:
 
 - Payload URL: `https://your-temp-url.trycloudflare.com/api/github/webhook`
 - Content type: `application/json`
-- Secret: `test-secret-123`
+- Secret: same value as `PATCHPILOT_GITHUB_WEBHOOK_SECRET` in `.env`
 - Events: select `Issue comments`
 
 Save the webhook.
@@ -68,7 +69,7 @@ Check `Settings` -> `Webhooks` -> `Recent Deliveries`.
 
 Expected results:
 
-- `200` with `TASK_CREATED`: webhook reached PatchPilot and created an in-memory task.
+- `200` with `TASK_CREATED`: webhook reached PatchPilot and created a task.
 - `200` with `IGNORED`: webhook reached PatchPilot, but event or comment content did not match.
 - `401`: GitHub secret does not match `PATCHPILOT_GITHUB_WEBHOOK_SECRET`.
 - `502` or `503`: the backend or `cloudflared` process is not running.
@@ -78,4 +79,4 @@ Expected results:
 - The temporary URL changes when `cloudflared` restarts.
 - Update the GitHub webhook Payload URL after every tunnel restart.
 - Keep both terminals running during testing.
-- The current MVP creates tasks in memory only; restarting the backend clears them.
+- The Docker profile stores task records in MySQL; the default IDEA profile is intended for lightweight local startup without MySQL.

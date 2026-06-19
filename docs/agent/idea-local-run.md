@@ -16,6 +16,8 @@ When no Spring profile is selected, the app uses `application-default.properties
 - Datasource auto-configuration: disabled
 - Flyway: disabled
 
+This mode is useful for quick controller and health checks. Use Docker Compose for the full MySQL-backed issue-to-PR workflow.
+
 Use either the IDEA backend or the Docker backend at one time. Both use port `8080`, so they cannot run together.
 
 ## Verify IDEA Startup
