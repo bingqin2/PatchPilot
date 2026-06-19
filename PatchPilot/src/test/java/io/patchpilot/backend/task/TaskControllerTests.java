@@ -182,6 +182,28 @@ class TaskControllerTests {
                 .andExpect(jsonPath("$.message").value("Task not found"));
     }
 
+    @Test
+    void should_list_task_queue_items() throws Exception {
+        mockMvc.perform(get("/api/task-queue/items"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.length()").value(0));
+    }
+
+    @Test
+    void should_get_task_queue_summary() throws Exception {
+        mockMvc.perform(get("/api/task-queue/summary"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.totalCount").value(0))
+                .andExpect(jsonPath("$.data.pendingCount").value(0))
+                .andExpect(jsonPath("$.data.availablePendingCount").value(0))
+                .andExpect(jsonPath("$.data.delayedPendingCount").value(0))
+                .andExpect(jsonPath("$.data.runningCount").value(0))
+                .andExpect(jsonPath("$.data.completedCount").value(0))
+                .andExpect(jsonPath("$.data.failedCount").value(0));
+    }
+
     private FixTaskVo createTask(String deliveryId) {
         return fixTaskService.createFixTask(new CreateFixTaskCommand(
                 "octocat",
