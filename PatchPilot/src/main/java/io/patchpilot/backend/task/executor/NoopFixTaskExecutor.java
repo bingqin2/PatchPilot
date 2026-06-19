@@ -2,6 +2,7 @@ package io.patchpilot.backend.task.executor;
 
 import io.patchpilot.backend.agent.tool.CommitTool;
 import io.patchpilot.backend.agent.tool.DiffTool;
+import io.patchpilot.backend.agent.tool.PullRequestTool;
 import io.patchpilot.backend.agent.tool.PushTool;
 import io.patchpilot.backend.agent.workflow.PatchWorkflow;
 import io.patchpilot.backend.runner.domain.vo.TestRunResult;
@@ -21,6 +22,7 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
     private final DiffTool diffTool;
     private final CommitTool commitTool;
     private final PushTool pushTool;
+    private final PullRequestTool pullRequestTool;
 
     public NoopFixTaskExecutor(
             WorkspaceService workspaceService,
@@ -28,7 +30,8 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
             PatchWorkflow patchWorkflow,
             DiffTool diffTool,
             CommitTool commitTool,
-            PushTool pushTool
+            PushTool pushTool,
+            PullRequestTool pullRequestTool
     ) {
         this.workspaceService = workspaceService;
         this.mavenTestRunner = mavenTestRunner;
@@ -36,6 +39,7 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
         this.diffTool = diffTool;
         this.commitTool = commitTool;
         this.pushTool = pushTool;
+        this.pullRequestTool = pullRequestTool;
     }
 
     @Override
@@ -53,5 +57,6 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
         }
         commitTool.commitAll(preparedWorkspace.repositoryDir(), "PatchPilot task " + task.id());
         pushTool.pushBranch(preparedWorkspace.repositoryDir(), preparedWorkspace.branchName());
+        pullRequestTool.createPullRequest(task, preparedWorkspace.branchName());
     }
 }

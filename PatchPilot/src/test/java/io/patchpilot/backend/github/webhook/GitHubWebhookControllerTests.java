@@ -2,9 +2,13 @@ package io.patchpilot.backend.github.webhook;
 
 import io.patchpilot.backend.agent.tool.CommitTool;
 import io.patchpilot.backend.agent.tool.DiffTool;
+import io.patchpilot.backend.agent.tool.PullRequestTool;
 import io.patchpilot.backend.agent.tool.PushTool;
 import io.patchpilot.backend.agent.workflow.PatchWorkflow;
 import io.patchpilot.backend.agent.workflow.domain.PatchWorkflowResult;
+import io.patchpilot.backend.github.client.GitHubPullRequestClient;
+import io.patchpilot.backend.github.client.domain.CreatePullRequestCommand;
+import io.patchpilot.backend.github.client.domain.PullRequestResult;
 import io.patchpilot.backend.github.config.GitHubProperties;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import org.junit.jupiter.api.Test;
@@ -352,6 +356,17 @@ class GitHubWebhookControllerTests {
                     return "test push";
                 }
             };
+        }
+
+        @Bean
+        @Primary
+        PullRequestTool pullRequestTool() {
+            return new PullRequestTool(new GitHubPullRequestClient(new GitHubProperties()) {
+                @Override
+                public PullRequestResult createPullRequest(CreatePullRequestCommand command) {
+                    return new PullRequestResult("https://github.com/octocat/hello-world/pull/7");
+                }
+            });
         }
     }
 }

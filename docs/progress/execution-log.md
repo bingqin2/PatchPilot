@@ -369,3 +369,27 @@ Validation:
 - `mvn -pl PatchPilot -Dtest=GitCommandRunnerTests,PushToolTests,WorkspaceFixTaskExecutorTests,GitHubWebhookControllerTests test`: passed, 23 tests run, 0 failures, 0 errors.
 - `mvn test` from repository root: passed, 68 tests run, 0 failures, 0 errors.
 - `mvn clean package` from repository root: passed, 68 tests run, 0 failures, 0 errors, and generated `PatchPilot/target/patchpilot-backend-0.0.1-SNAPSHOT.jar`.
+
+## 2026-06-19
+
+Implemented Pull Request creation from `docs/plans/012-pull-request-creation.md`.
+
+Changes:
+
+- Added `GitHubPullRequestClient` for GitHub Pull Request API calls using Java `HttpClient`.
+- Added `CreatePullRequestCommand`, `PullRequestResult`, and `GitHubPullRequestException`.
+- Added `PullRequestTool` to build PR title, head branch, base branch, and body from task context.
+- Updated task execution order to create a PR only after patch workflow, diff inspection, Maven verification, local commit, and branch push succeed.
+- Ensured Maven test failures, commit failures, and push failures do not create PRs.
+- Ensured missing GitHub tokens fail clearly before any HTTP request and without exposing secrets.
+- Isolated webhook controller tests from real GitHub API calls with a primary test `PullRequestTool`.
+- Kept this phase limited to PR creation: no issue comments, PR URL persistence, merge behavior, or model provider calls were added.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=GitHubPullRequestClientTests test`: first failed because PR client classes did not exist, then passed after implementation, 3 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=PullRequestToolTests test`: first failed because `PullRequestTool` did not exist, then passed after implementation, 1 test run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=WorkspaceFixTaskExecutorTests test`: first failed because the executor did not accept `PullRequestTool`, then passed after wiring PR creation after push, 4 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=GitHubPullRequestClientTests,PullRequestToolTests,WorkspaceFixTaskExecutorTests,GitHubWebhookControllerTests test`: first failed because Spring could not choose a `GitHubPullRequestClient` constructor, then passed after marking the production constructor for injection, 16 tests run, 0 failures, 0 errors.
+- `mvn test` from repository root: passed, 73 tests run, 0 failures, 0 errors.
+- `mvn clean package` from repository root: passed, 73 tests run, 0 failures, 0 errors, and generated `PatchPilot/target/patchpilot-backend-0.0.1-SNAPSHOT.jar`.
