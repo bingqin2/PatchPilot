@@ -298,3 +298,27 @@ Validation:
 - `mvn -pl PatchPilot -Dtest=RepositoryInspectionToolsTests test`: first failed because `RepoTreeTool`, `RepositoryFileScanner`, and `CodeSearchTool` did not exist, then passed after implementation, 5 tests run, 0 failures, 0 errors.
 - `mvn test` from repository root: passed, 53 tests run, 0 failures, 0 errors.
 - `mvn clean package` from repository root: passed and generated `PatchPilot/target/patchpilot-backend-0.0.1-SNAPSHOT.jar`.
+
+## 2026-06-19
+
+Implemented the minimal deterministic patch workflow from `docs/plans/009-minimal-patch-workflow.md`.
+
+Changes:
+
+- Added `PatchWorkflow`, `PatchWorkflowResult`, and `SimplePatchWorkflow`.
+- Added deterministic support for trigger comments containing `touch <relative-path>`.
+- Wrote generated files through `FileWriteTool`, preserving repository-relative path validation.
+- Updated webhook trigger matching so `/agent fix` and `/agent fix <instruction>` both create tasks.
+- Wired task execution order as repository preparation -> patch workflow -> diff inspection -> Maven tests.
+- Isolated webhook controller tests from real patch/diff side effects with primary test beans.
+- Kept this phase local-only: no model provider calls, commits, pushes, or Pull Requests were added.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=SimplePatchWorkflowTests test`: first failed because workflow classes did not exist, then passed after implementation, 3 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=WorkspaceFixTaskExecutorTests test`: first failed because the executor was not wired for workflow and diff, then passed after implementation, 2 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=GitHubWebhookControllerTests#should_create_task_for_agent_fix_issue_comment_with_patch_instruction test`: first failed with `IGNORED`, then passed after accepting command-prefixed instructions.
+- `mvn -pl PatchPilot -Dtest=GitHubWebhookControllerTests test`: passed, 8 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=SimplePatchWorkflowTests,WorkspaceFixTaskExecutorTests,GitHubWebhookControllerTests test`: passed, 13 tests run, 0 failures, 0 errors.
+- `mvn test` from repository root: passed, 57 tests run, 0 failures, 0 errors.
+- `mvn clean package` from repository root: passed, 57 tests run, 0 failures, 0 errors, and generated `PatchPilot/target/patchpilot-backend-0.0.1-SNAPSHOT.jar`.

@@ -1,5 +1,7 @@
 package io.patchpilot.backend.task.executor;
 
+import io.patchpilot.backend.agent.tool.DiffTool;
+import io.patchpilot.backend.agent.workflow.PatchWorkflow;
 import io.patchpilot.backend.runner.domain.vo.TestRunResult;
 import io.patchpilot.backend.runner.service.MavenTestRunner;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
@@ -13,10 +15,19 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
 
     private final WorkspaceService workspaceService;
     private final MavenTestRunner mavenTestRunner;
+    private final PatchWorkflow patchWorkflow;
+    private final DiffTool diffTool;
 
-    public NoopFixTaskExecutor(WorkspaceService workspaceService, MavenTestRunner mavenTestRunner) {
+    public NoopFixTaskExecutor(
+            WorkspaceService workspaceService,
+            MavenTestRunner mavenTestRunner,
+            PatchWorkflow patchWorkflow,
+            DiffTool diffTool
+    ) {
         this.workspaceService = workspaceService;
         this.mavenTestRunner = mavenTestRunner;
+        this.patchWorkflow = patchWorkflow;
+        this.diffTool = diffTool;
     }
 
     @Override
@@ -26,6 +37,8 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
                 task.repositoryOwner(),
                 task.repositoryName()
         ));
+        patchWorkflow.apply(task, preparedWorkspace.repositoryDir());
+        diffTool.diff(preparedWorkspace.repositoryDir());
         TestRunResult testRunResult = mavenTestRunner.runTests(preparedWorkspace.repositoryDir());
         if (testRunResult.exitCode() != 0) {
             throw new IllegalStateException("maven tests failed: " + testRunResult.output());

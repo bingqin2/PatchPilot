@@ -1,5 +1,10 @@
 package io.patchpilot.backend.github.webhook;
 
+import io.patchpilot.backend.agent.tool.DiffTool;
+import io.patchpilot.backend.agent.workflow.PatchWorkflow;
+import io.patchpilot.backend.agent.workflow.domain.PatchWorkflowResult;
+import io.patchpilot.backend.github.config.GitHubProperties;
+import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +19,7 @@ import io.patchpilot.backend.runner.service.MavenTestRunner;
 import io.patchpilot.backend.workspace.domain.bo.CloneWorkspaceCommand;
 import io.patchpilot.backend.workspace.domain.vo.PreparedWorkspaceResult;
 import io.patchpilot.backend.workspace.domain.vo.WorkspaceCloneResult;
+import io.patchpilot.backend.workspace.runner.GitCommandRunner;
 import io.patchpilot.backend.workspace.service.WorkspaceService;
 
 import javax.crypto.Mac;
@@ -90,6 +96,22 @@ class GitHubWebhookControllerTests {
         mockMvc.perform(post("/api/github/webhook")
                         .header("X-GitHub-Event", "issue_comment")
                         .header("X-GitHub-Delivery", "delivery-create")
+                        .header("X-Hub-Signature-256", signature(payload))
+                        .contentType("application/json")
+                        .content(payload))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.status").value("TASK_CREATED"))
+                .andExpect(jsonPath("$.data.taskId").value(not(nullValue())));
+    }
+
+    @Test
+    void should_create_task_for_agent_fix_issue_comment_with_patch_instruction() throws Exception {
+        String payload = issueCommentPayload("created", "/agent fix touch docs/demo.md", "octocat", "hello-world");
+
+        mockMvc.perform(post("/api/github/webhook")
+                        .header("X-GitHub-Event", "issue_comment")
+                        .header("X-GitHub-Delivery", "delivery-create-with-patch-instruction")
                         .header("X-Hub-Signature-256", signature(payload))
                         .contentType("application/json")
                         .content(payload))
@@ -282,6 +304,28 @@ class GitHubWebhookControllerTests {
                 @Override
                 public TestRunResult runTests(Path repositoryDir) {
                     return new TestRunResult("./mvnw test", 0, "tests passed");
+                }
+            };
+        }
+
+        @Bean
+        @Primary
+        PatchWorkflow patchWorkflow() {
+            return new PatchWorkflow() {
+                @Override
+                public PatchWorkflowResult apply(FixTaskVo task, Path repositoryDir) {
+                    return new PatchWorkflowResult(false, "test patch skipped");
+                }
+            };
+        }
+
+        @Bean
+        @Primary
+        DiffTool diffTool() {
+            return new DiffTool(new GitCommandRunner(new GitHubProperties())) {
+                @Override
+                public String diff(Path repositoryDir) {
+                    return "test diff";
                 }
             };
         }

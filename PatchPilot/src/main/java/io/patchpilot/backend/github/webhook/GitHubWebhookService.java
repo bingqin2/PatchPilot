@@ -56,7 +56,7 @@ public class GitHubWebhookService {
             return WebhookHandleResult.ignored();
         }
         String commentBody = requiredText(root, "comment", "body");
-        if (!AGENT_FIX_COMMAND.equals(commentBody.trim())) {
+        if (!isAgentFixCommand(commentBody)) {
             return WebhookHandleResult.ignored();
         }
         FixTaskVo task = fixTaskService.createFixTask(new CreateFixTaskCommand(
@@ -71,6 +71,12 @@ public class GitHubWebhookService {
         ));
         fixTaskDispatcher.dispatch(task.id());
         return WebhookHandleResult.taskCreated(task.id());
+    }
+
+    private static boolean isAgentFixCommand(String commentBody) {
+        String trimmedCommentBody = commentBody.trim();
+        return AGENT_FIX_COMMAND.equals(trimmedCommentBody)
+                || trimmedCommentBody.startsWith(AGENT_FIX_COMMAND + " ");
     }
 
     private JsonNode parsePayload(String payload) {
