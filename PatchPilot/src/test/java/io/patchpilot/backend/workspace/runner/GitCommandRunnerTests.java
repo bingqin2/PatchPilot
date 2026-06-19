@@ -1,6 +1,8 @@
 package io.patchpilot.backend.workspace.runner;
 
 import io.patchpilot.backend.github.config.GitHubProperties;
+import io.patchpilot.backend.runner.service.CommandExecutionGuard;
+import io.patchpilot.backend.workspace.config.WorkspaceProperties;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -43,7 +45,7 @@ class GitCommandRunnerTests {
     void should_create_branch_in_repository() throws Exception {
         Path repositoryDir = tempDir.resolve("repo");
         createGitRepository(repositoryDir);
-        GitCommandRunner runner = new GitCommandRunner(new GitHubProperties());
+        GitCommandRunner runner = runner();
 
         GitCommandResult result = runner.createBranch(repositoryDir, "patchpilot/task-123");
 
@@ -53,7 +55,7 @@ class GitCommandRunnerTests {
 
     @Test
     void should_reject_blank_branch_name() {
-        GitCommandRunner runner = new GitCommandRunner(new GitHubProperties());
+        GitCommandRunner runner = runner();
 
         assertThatThrownBy(() -> runner.createBranch(tempDir, " "))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -65,7 +67,7 @@ class GitCommandRunnerTests {
         Path repositoryDir = tempDir.resolve("diff-repo");
         createGitRepository(repositoryDir);
         Files.writeString(repositoryDir.resolve("README.md"), "hello\nchanged\n");
-        GitCommandRunner runner = new GitCommandRunner(new GitHubProperties());
+        GitCommandRunner runner = runner();
 
         GitCommandResult result = runner.diff(repositoryDir);
 
@@ -78,7 +80,7 @@ class GitCommandRunnerTests {
         Path repositoryDir = tempDir.resolve("stage-repo");
         createGitRepository(repositoryDir);
         Files.writeString(repositoryDir.resolve("README.md"), "hello\nchanged\n");
-        GitCommandRunner runner = new GitCommandRunner(new GitHubProperties());
+        GitCommandRunner runner = runner();
 
         GitCommandResult result = runner.stageAll(repositoryDir);
 
@@ -92,7 +94,7 @@ class GitCommandRunnerTests {
         createGitRepository(repositoryDir);
         Files.writeString(repositoryDir.resolve("README.md"), "hello\nchanged\n");
         runGit(repositoryDir, "add", "--all");
-        GitCommandRunner runner = new GitCommandRunner(new GitHubProperties());
+        GitCommandRunner runner = runner();
 
         GitCommandResult result = runner.commit(repositoryDir, "PatchPilot task task-123");
 
@@ -102,7 +104,7 @@ class GitCommandRunnerTests {
 
     @Test
     void should_reject_blank_commit_message() {
-        GitCommandRunner runner = new GitCommandRunner(new GitHubProperties());
+        GitCommandRunner runner = runner();
 
         assertThatThrownBy(() -> runner.commit(tempDir, " "))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -120,7 +122,7 @@ class GitCommandRunnerTests {
         Files.writeString(repositoryDir.resolve("README.md"), "hello\nchanged\n");
         runGit(repositoryDir, "add", "--all");
         runGit(repositoryDir, "commit", "-m", "PatchPilot task task-123");
-        GitCommandRunner runner = new GitCommandRunner(new GitHubProperties());
+        GitCommandRunner runner = runner();
 
         GitCommandResult result = runner.pushBranch(repositoryDir, "patchpilot/task-123");
 
@@ -137,10 +139,26 @@ class GitCommandRunnerTests {
                 .hasMessage("Branch name must not be blank");
     }
 
+    @Test
+    void should_reject_git_command_outside_workspace_root() {
+        GitCommandRunner runner = runner();
+        Path outsideRepositoryDir = tempDir.getParent().resolve("outside-repo");
+
+        assertThatThrownBy(() -> runner.diff(outsideRepositoryDir))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Command directory escapes workspace root: " + outsideRepositoryDir.toAbsolutePath().normalize());
+    }
+
     private static String sanitize(GitCommandRunner runner, String value) throws Exception {
         Method sanitize = GitCommandRunner.class.getDeclaredMethod("sanitize", String.class);
         sanitize.setAccessible(true);
         return (String) sanitize.invoke(runner, value);
+    }
+
+    private GitCommandRunner runner() {
+        WorkspaceProperties properties = new WorkspaceProperties();
+        properties.setRootDir(tempDir);
+        return new GitCommandRunner(new GitHubProperties(), new CommandExecutionGuard(properties));
     }
 
     private static void createGitRepository(Path repositoryDir) throws Exception {

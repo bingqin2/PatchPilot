@@ -1,5 +1,7 @@
 package io.patchpilot.backend.agent.tool;
 
+import io.patchpilot.backend.workspace.config.WorkspaceProperties;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -20,11 +22,23 @@ public class RepositoryFileScanner {
             "node_modules"
     );
 
+    private final WorkspaceProperties workspaceProperties;
+
+    @Autowired
+    public RepositoryFileScanner(WorkspaceProperties workspaceProperties) {
+        this.workspaceProperties = workspaceProperties;
+    }
+
+    public RepositoryFileScanner() {
+        this.workspaceProperties = new WorkspaceProperties();
+    }
+
     public List<Path> listFiles(Path repositoryDir, int maxFiles) {
         if (maxFiles < 1) {
             throw new IllegalArgumentException("maxFiles must be positive");
         }
         Path repositoryRoot = repositoryDir.toAbsolutePath().normalize();
+        validateRepositoryRoot(repositoryRoot);
         try (Stream<Path> paths = Files.walk(repositoryRoot)) {
             return paths
                     .filter(path -> !path.equals(repositoryRoot))
@@ -36,6 +50,13 @@ public class RepositoryFileScanner {
                     .toList();
         } catch (IOException exception) {
             throw new IllegalStateException("Failed to scan repository files", exception);
+        }
+    }
+
+    private void validateRepositoryRoot(Path repositoryRoot) {
+        Path workspaceRoot = workspaceProperties.getRootDir().toAbsolutePath().normalize();
+        if (!repositoryRoot.startsWith(workspaceRoot)) {
+            throw new IllegalArgumentException("Repository directory escapes workspace root: " + repositoryRoot);
         }
     }
 

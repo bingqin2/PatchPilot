@@ -1,5 +1,6 @@
 package io.patchpilot.backend.workspace;
 
+import io.patchpilot.backend.workspace.config.WorkspaceProperties;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -15,7 +16,7 @@ class WorkspacePathResolverTests {
 
     @Test
     void should_resolve_nested_relative_path_inside_repository() {
-        WorkspacePathResolver resolver = new WorkspacePathResolver();
+        WorkspacePathResolver resolver = resolver();
 
         Path resolved = resolver.resolveRepositoryPath(repositoryDir, "src/main/App.java");
 
@@ -24,7 +25,7 @@ class WorkspacePathResolverTests {
 
     @Test
     void should_reject_blank_path() {
-        WorkspacePathResolver resolver = new WorkspacePathResolver();
+        WorkspacePathResolver resolver = resolver();
 
         assertThatThrownBy(() -> resolver.resolveRepositoryPath(repositoryDir, " "))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -33,7 +34,7 @@ class WorkspacePathResolverTests {
 
     @Test
     void should_reject_absolute_path() {
-        WorkspacePathResolver resolver = new WorkspacePathResolver();
+        WorkspacePathResolver resolver = resolver();
 
         assertThatThrownBy(() -> resolver.resolveRepositoryPath(repositoryDir, repositoryDir.resolve("README.md").toString()))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -42,10 +43,28 @@ class WorkspacePathResolverTests {
 
     @Test
     void should_reject_path_traversal() {
-        WorkspacePathResolver resolver = new WorkspacePathResolver();
+        WorkspacePathResolver resolver = resolver();
 
         assertThatThrownBy(() -> resolver.resolveRepositoryPath(repositoryDir, "../outside.txt"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Repository path escapes workspace: ../outside.txt");
+    }
+
+    @Test
+    void should_reject_repository_dir_outside_workspace_root() {
+        WorkspaceProperties properties = new WorkspaceProperties();
+        properties.setRootDir(repositoryDir);
+        WorkspacePathResolver resolver = new WorkspacePathResolver(properties);
+        Path outsideRepositoryDir = repositoryDir.getParent().resolve("outside-repo");
+
+        assertThatThrownBy(() -> resolver.resolveRepositoryPath(outsideRepositoryDir, "README.md"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Repository directory escapes workspace root: " + outsideRepositoryDir.toAbsolutePath().normalize());
+    }
+
+    private WorkspacePathResolver resolver() {
+        WorkspaceProperties properties = new WorkspaceProperties();
+        properties.setRootDir(repositoryDir);
+        return new WorkspacePathResolver(properties);
     }
 }

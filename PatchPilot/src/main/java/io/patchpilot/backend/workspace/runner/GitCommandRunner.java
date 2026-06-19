@@ -1,6 +1,9 @@
 package io.patchpilot.backend.workspace.runner;
 
 import io.patchpilot.backend.github.config.GitHubProperties;
+import io.patchpilot.backend.runner.service.CommandExecutionGuard;
+import io.patchpilot.backend.workspace.config.WorkspaceProperties;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -15,13 +18,20 @@ public class GitCommandRunner {
     private static final long CLONE_TIMEOUT_SECONDS = 120;
 
     private final GitHubProperties gitHubProperties;
+    private final CommandExecutionGuard commandExecutionGuard;
+
+    @Autowired
+    public GitCommandRunner(GitHubProperties gitHubProperties, CommandExecutionGuard commandExecutionGuard) {
+        this.gitHubProperties = gitHubProperties;
+        this.commandExecutionGuard = commandExecutionGuard;
+    }
 
     public GitCommandRunner(GitHubProperties gitHubProperties) {
-        this.gitHubProperties = gitHubProperties;
+        this(gitHubProperties, new CommandExecutionGuard(new WorkspaceProperties()));
     }
 
     protected GitCommandRunner() {
-        this.gitHubProperties = new GitHubProperties();
+        this(new GitHubProperties(), new CommandExecutionGuard(new WorkspaceProperties()));
     }
 
     public GitCommandResult cloneRepository(String repositoryUrl, Path targetDir) {
@@ -99,6 +109,7 @@ public class GitCommandRunner {
     }
 
     private GitCommandResult runGit(List<String> command) {
+        commandExecutionGuard.validate(workingDir(command), command);
         ProcessBuilder processBuilder = new ProcessBuilder(command);
         processBuilder.redirectErrorStream(true);
         try {
@@ -116,6 +127,16 @@ public class GitCommandRunner {
             Thread.currentThread().interrupt();
             return new GitCommandResult(130, "git command interrupted");
         }
+    }
+
+    private static Path workingDir(List<String> command) {
+        if (command.size() >= 6 && command.subList(0, 4).equals(List.of("git", "clone", "--depth", "1"))) {
+            return Path.of(command.get(5));
+        }
+        if (command.size() >= 3 && "-C".equals(command.get(1))) {
+            return Path.of(command.get(2));
+        }
+        return Path.of(".");
     }
 
     private String authenticatedUrl(String repositoryUrl) {

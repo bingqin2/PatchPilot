@@ -1,6 +1,7 @@
 package io.patchpilot.backend.runner.service;
 
 import io.patchpilot.backend.runner.domain.vo.TestRunResult;
+import io.patchpilot.backend.workspace.config.WorkspaceProperties;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -22,7 +23,7 @@ class MavenTestRunnerTests {
         Path repositoryDir = tempDir.resolve("wrapper-repo");
         Files.createDirectories(repositoryDir);
         createMavenWrapper(repositoryDir, "echo wrapper-ok \"$@\"\nexit 0\n");
-        MavenTestRunner runner = new MavenTestRunner();
+        MavenTestRunner runner = runner();
 
         TestRunResult result = runner.runTests(repositoryDir);
 
@@ -37,7 +38,7 @@ class MavenTestRunnerTests {
         Files.createDirectories(repositoryDir);
         Files.writeString(repositoryDir.resolve("pom.xml"), "<project />");
         createMavenWrapper(repositoryDir, "echo wrapper-ok \"$@\"\nexit 0\n");
-        MavenTestRunner runner = new MavenTestRunner();
+        MavenTestRunner runner = runner();
 
         TestRunResult result = runner.runTests(repositoryDir);
 
@@ -64,7 +65,7 @@ class MavenTestRunnerTests {
         Path repositoryDir = tempDir.resolve("failing-wrapper-repo");
         Files.createDirectories(repositoryDir);
         createMavenWrapper(repositoryDir, "echo wrapper-failed\nexit 7\n");
-        MavenTestRunner runner = new MavenTestRunner();
+        MavenTestRunner runner = runner();
 
         TestRunResult result = runner.runTests(repositoryDir);
 
@@ -78,7 +79,7 @@ class MavenTestRunnerTests {
         Path repositoryDir = tempDir.resolve("timeout-wrapper-repo");
         Files.createDirectories(repositoryDir);
         createMavenWrapper(repositoryDir, "sleep 5\n");
-        MavenTestRunner runner = new MavenTestRunner(Duration.ofMillis(100));
+        MavenTestRunner runner = runner(Duration.ofMillis(100));
 
         TestRunResult result = runner.runTests(repositoryDir);
 
@@ -96,10 +97,32 @@ class MavenTestRunnerTests {
                 .hasMessage("Unsupported repository: no mvnw or pom.xml found");
     }
 
+    @Test
+    void should_reject_maven_command_outside_workspace_root() throws Exception {
+        Path outsideRepositoryDir = tempDir.getParent().resolve("outside-maven-repo");
+        Files.createDirectories(outsideRepositoryDir);
+        Files.writeString(outsideRepositoryDir.resolve("pom.xml"), "<project />");
+        MavenTestRunner runner = runner();
+
+        assertThatThrownBy(() -> runner.runTests(outsideRepositoryDir))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Command directory escapes workspace root: " + outsideRepositoryDir.toAbsolutePath().normalize());
+    }
+
     private static void createMavenWrapper(Path repositoryDir, String body) throws Exception {
         Path wrapper = repositoryDir.resolve("mvnw");
         Files.writeString(wrapper, "#!/bin/sh\n" + body);
         assertThat(wrapper.toFile().setExecutable(true)).isTrue();
+    }
+
+    private MavenTestRunner runner() {
+        return runner(Duration.ofSeconds(300));
+    }
+
+    private MavenTestRunner runner(Duration timeout) {
+        WorkspaceProperties properties = new WorkspaceProperties();
+        properties.setRootDir(tempDir);
+        return new MavenTestRunner(timeout, new CommandExecutionGuard(properties));
     }
 
     private static final class RecordingMavenTestRunner extends MavenTestRunner {

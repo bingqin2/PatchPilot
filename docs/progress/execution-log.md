@@ -656,3 +656,26 @@ Validation:
 - `mvn -pl PatchPilot -Dtest=MyBatisFixTaskQueueTests test`: first failed because the old implementation still used `updateById` and returned a claimed item even when a conditional update would affect zero rows, then passed after implementation, 8 tests run, 0 failures, 0 errors.
 - `mvn -pl PatchPilot -Dtest=MyBatisFixTaskQueueTests,FixTaskQueuePollerTests,MyBatisFixTaskQueueQueryServiceTests,TaskQueueControllerTests test`: passed, 16 tests run, 0 failures, 0 errors.
 - `mvn -pl PatchPilot test`: passed, 158 tests run, 0 failures, 0 errors.
+
+## 2026-06-20
+
+Implemented command allowlist and task sandbox guards from `docs/plans/025-command-allowlist-and-task-sandbox.md`.
+
+Changes:
+
+- Added `CommandExecutionGuard` to validate command shapes and command working directories before process execution.
+- Guarded Git commands in `GitCommandRunner`, including clone, branch creation, diff, add, commit, and push.
+- Guarded Maven test execution in `MavenTestRunner` for `./mvnw test` and `mvn test`.
+- Updated `WorkspacePathResolver` to reject repository roots outside `patchpilot.workspace.root-dir` before resolving file read/write paths.
+- Updated `RepositoryFileScanner` to reject repository roots outside `patchpilot.workspace.root-dir` before file tree and code search scans.
+- Preserved existing path traversal rejection for relative file inputs.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=CommandExecutionGuardTests test`: first failed because `CommandExecutionGuard` did not exist, then passed after implementation, 4 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=CommandExecutionGuardTests,GitCommandRunnerTests,MavenTestRunnerTests test`: first failed because existing runner tests used temp directories outside the configured workspace root, then passed after injecting test workspace roots, 22 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=RepositoryInspectionToolsTests test`: first failed because `RepositoryFileScanner` did not accept `WorkspaceProperties`, then passed after scanner root validation, 7 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=WorkspacePathResolverTests test`: first failed because `WorkspacePathResolver` did not accept `WorkspaceProperties`, then passed after resolver root validation, 5 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=WorkspacePathResolverTests,FileToolsTests,SimplePatchWorkflowTests,RepositoryInspectionToolsTests test`: passed, 19 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=CommandExecutionGuardTests,GitCommandRunnerTests,MavenTestRunnerTests,WorkspacePathResolverTests,FileToolsTests,RepositoryInspectionToolsTests,SimplePatchWorkflowTests,GitWorkspaceServiceTests,PatchPilotApplicationTests test`: passed, 47 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot test`: passed, 167 tests run, 0 failures, 0 errors.
