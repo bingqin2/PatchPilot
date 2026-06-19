@@ -5,6 +5,7 @@ import io.patchpilot.backend.runner.domain.vo.TestRunResult;
 import io.patchpilot.backend.task.process.TaskProcessRegistry;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -94,13 +95,13 @@ public class MavenTestRunner {
     }
 
     private void registerProcess(String taskId, Process process) {
-        if (taskId != null && !taskId.isBlank()) {
+        if (StringUtils.hasText(taskId)) {
             taskProcessRegistry.register(taskId, process);
         }
     }
 
     private void unregisterProcess(String taskId, Process process) {
-        if (taskId != null && !taskId.isBlank()) {
+        if (StringUtils.hasText(taskId)) {
             taskProcessRegistry.unregister(taskId, process);
         }
     }

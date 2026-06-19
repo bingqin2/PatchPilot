@@ -8,6 +8,7 @@ import io.patchpilot.backend.task.domain.vo.FixTaskQueueItemVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskQueueSummaryVo;
 import io.patchpilot.backend.task.mapper.FixTaskQueueItemMapper;
 import io.patchpilot.backend.task.service.FixTaskQueueQueryService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
@@ -16,13 +17,10 @@ import java.util.List;
 
 @Service
 @Profile({"local", "docker"})
+@RequiredArgsConstructor
 public class MyBatisFixTaskQueueQueryService implements FixTaskQueueQueryService {
 
     private final FixTaskQueueItemMapper queueItemMapper;
-
-    public MyBatisFixTaskQueueQueryService(FixTaskQueueItemMapper queueItemMapper) {
-        this.queueItemMapper = queueItemMapper;
-    }
 
     @Override
     public List<FixTaskQueueItemVo> listItems(FixTaskQueueItemStatus status) {

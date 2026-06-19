@@ -9,6 +9,7 @@ import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import io.patchpilot.backend.task.mapper.FixTaskMapper;
 import io.patchpilot.backend.task.service.FixTaskService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
@@ -21,13 +22,10 @@ import java.util.UUID;
 
 @Service
 @Profile({"local", "docker"})
+@RequiredArgsConstructor
 public class MyBatisFixTaskService implements FixTaskService {
 
     private final FixTaskMapper fixTaskMapper;
-
-    public MyBatisFixTaskService(FixTaskMapper fixTaskMapper) {
-        this.fixTaskMapper = fixTaskMapper;
-    }
 
     @Override
     public FixTaskVo createFixTask(CreateFixTaskCommand command) {

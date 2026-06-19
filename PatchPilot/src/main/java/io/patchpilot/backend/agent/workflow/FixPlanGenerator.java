@@ -11,6 +11,7 @@ import io.patchpilot.backend.agent.workflow.domain.FixPlanGenerationException;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -84,7 +85,7 @@ public class FixPlanGenerator {
 
     private String requiredText(JsonNode root, String fieldName) {
         JsonNode node = root.get(fieldName);
-        if (node == null || !node.isTextual() || node.asText().isBlank()) {
+        if (node == null || !node.isTextual() || !StringUtils.hasText(node.asText())) {
             throw new FixPlanGenerationException("Model fix plan response missing required field: " + fieldName);
         }
         return node.asText();
@@ -98,7 +99,7 @@ public class FixPlanGenerator {
 
         List<String> values = new ArrayList<>();
         for (JsonNode item : node) {
-            if (!item.isTextual() || item.asText().isBlank()) {
+            if (!item.isTextual() || !StringUtils.hasText(item.asText())) {
                 throw new FixPlanGenerationException("Model fix plan response missing required field: " + fieldName);
             }
             values.add(item.asText());

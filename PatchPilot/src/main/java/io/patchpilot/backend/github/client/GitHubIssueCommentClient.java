@@ -10,6 +10,7 @@ import io.patchpilot.backend.github.client.domain.UpdateIssueCommentCommand;
 import io.patchpilot.backend.github.config.GitHubProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.net.URI;
@@ -44,7 +45,7 @@ public class GitHubIssueCommentClient {
 
     public IssueCommentResult createIssueComment(CreateIssueCommentCommand command) {
         String token = token();
-        if (token.isBlank()) {
+        if (!StringUtils.hasText(token)) {
             throw new GitHubIssueCommentException("GitHub token is required to create Issue comments");
         }
 
@@ -66,7 +67,7 @@ public class GitHubIssueCommentClient {
 
     public IssueCommentResult updateIssueComment(UpdateIssueCommentCommand command) {
         String token = token();
-        if (token.isBlank()) {
+        if (!StringUtils.hasText(token)) {
             throw new GitHubIssueCommentException("GitHub token is required to update Issue comments");
         }
 
@@ -140,7 +141,7 @@ public class GitHubIssueCommentClient {
             if (id == null || !id.canConvertToLong()) {
                 throw new GitHubIssueCommentException("GitHub issue comment response did not include id");
             }
-            if (htmlUrl == null || !htmlUrl.isTextual() || htmlUrl.asText().isBlank()) {
+            if (htmlUrl == null || !htmlUrl.isTextual() || !StringUtils.hasText(htmlUrl.asText())) {
                 throw new GitHubIssueCommentException("GitHub issue comment response did not include html_url");
             }
             return new IssueCommentResult(id.asLong(), htmlUrl.asText());
@@ -150,6 +151,7 @@ public class GitHubIssueCommentClient {
     }
 
     private String token() {
-        return gitHubProperties.getToken() == null ? "" : gitHubProperties.getToken().trim();
+        return StringUtils.hasText(gitHubProperties.getToken()) ? gitHubProperties.getToken().trim()
+                : "";
     }
 }

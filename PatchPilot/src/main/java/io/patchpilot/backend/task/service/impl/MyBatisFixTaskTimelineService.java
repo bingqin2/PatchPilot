@@ -7,6 +7,7 @@ import io.patchpilot.backend.task.domain.enums.FixTaskTimelineEventType;
 import io.patchpilot.backend.task.domain.vo.FixTaskTimelineEventVo;
 import io.patchpilot.backend.task.mapper.FixTaskTimelineEventMapper;
 import io.patchpilot.backend.task.service.FixTaskTimelineService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
@@ -17,13 +18,10 @@ import java.util.UUID;
 
 @Service
 @Profile({"local", "docker"})
+@RequiredArgsConstructor
 public class MyBatisFixTaskTimelineService implements FixTaskTimelineService {
 
     private final FixTaskTimelineEventMapper timelineEventMapper;
-
-    public MyBatisFixTaskTimelineService(FixTaskTimelineEventMapper timelineEventMapper) {
-        this.timelineEventMapper = timelineEventMapper;
-    }
 
     @Override
     public FixTaskTimelineEventVo recordEvent(String taskId, FixTaskTimelineEventType eventType, String message) {

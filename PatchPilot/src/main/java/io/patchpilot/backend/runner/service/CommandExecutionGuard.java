@@ -1,19 +1,18 @@
 package io.patchpilot.backend.runner.service;
 
 import io.patchpilot.backend.workspace.config.WorkspaceProperties;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.nio.file.Path;
 import java.util.List;
 
 @Component
+@RequiredArgsConstructor
 public class CommandExecutionGuard {
 
     private final WorkspaceProperties workspaceProperties;
-
-    public CommandExecutionGuard(WorkspaceProperties workspaceProperties) {
-        this.workspaceProperties = workspaceProperties;
-    }
 
     public void validate(Path workingDir, List<String> command) {
         if (command == null || command.isEmpty()) {
@@ -64,7 +63,7 @@ public class CommandExecutionGuard {
     private static boolean isCommit(List<String> gitArgs) {
         return gitArgs.size() == 3
                 && gitArgs.subList(0, 2).equals(List.of("commit", "-m"))
-                && !gitArgs.get(2).isBlank();
+                && StringUtils.hasText(gitArgs.get(2));
     }
 
     private static boolean isPush(List<String> gitArgs) {

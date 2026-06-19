@@ -10,6 +10,7 @@ import io.patchpilot.backend.agent.provider.domain.ModelProviderResponse;
 import io.patchpilot.backend.task.service.FixTaskModelCallService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.net.URI;
@@ -58,7 +59,7 @@ public class OpenAiCompatibleModelClient implements ModelProviderClient {
     @Override
     public ModelProviderResponse complete(ModelProviderRequest request) {
         String apiKey = apiKey();
-        if (apiKey.isBlank()) {
+        if (!StringUtils.hasText(apiKey)) {
             throw new ModelProviderException("Model provider API key is required");
         }
 
@@ -192,11 +193,11 @@ public class OpenAiCompatibleModelClient implements ModelProviderClient {
     }
 
     private String model() {
-        return agentProperties.getModel() == null ? "" : agentProperties.getModel().trim();
+        return trimmedOrEmpty(agentProperties.getModel());
     }
 
     private String baseUrl() {
-        String baseUrl = agentProperties.getBaseUrl() == null ? "" : agentProperties.getBaseUrl().trim();
+        String baseUrl = trimmedOrEmpty(agentProperties.getBaseUrl());
         if (baseUrl.endsWith("/")) {
             return baseUrl.substring(0, baseUrl.length() - 1);
         }
@@ -204,6 +205,10 @@ public class OpenAiCompatibleModelClient implements ModelProviderClient {
     }
 
     private String apiKey() {
-        return agentProperties.getApiKey() == null ? "" : agentProperties.getApiKey().trim();
+        return trimmedOrEmpty(agentProperties.getApiKey());
+    }
+
+    private static String trimmedOrEmpty(String value) {
+        return StringUtils.hasText(value) ? value.trim() : "";
     }
 }

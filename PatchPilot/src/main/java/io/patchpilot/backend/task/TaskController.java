@@ -12,6 +12,7 @@ import io.patchpilot.backend.task.service.FixTaskTestRunService;
 import io.patchpilot.backend.task.service.FixTaskTimelineService;
 import io.patchpilot.backend.task.service.FixTaskService;
 import io.patchpilot.backend.task.service.FixTaskToolCallService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -23,6 +24,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/tasks")
+@RequiredArgsConstructor
 public class TaskController {
 
     private final FixTaskService fixTaskService;
@@ -31,22 +33,6 @@ public class TaskController {
     private final FixTaskToolCallService fixTaskToolCallService;
     private final FixTaskModelCallService fixTaskModelCallService;
     private final FixTaskControlService fixTaskControlService;
-
-    public TaskController(
-            FixTaskService fixTaskService,
-            FixTaskTimelineService fixTaskTimelineService,
-            FixTaskTestRunService fixTaskTestRunService,
-            FixTaskToolCallService fixTaskToolCallService,
-            FixTaskModelCallService fixTaskModelCallService,
-            FixTaskControlService fixTaskControlService
-    ) {
-        this.fixTaskService = fixTaskService;
-        this.fixTaskTimelineService = fixTaskTimelineService;
-        this.fixTaskTestRunService = fixTaskTestRunService;
-        this.fixTaskToolCallService = fixTaskToolCallService;
-        this.fixTaskModelCallService = fixTaskModelCallService;
-        this.fixTaskControlService = fixTaskControlService;
-    }
 
     @GetMapping
     public ApiResponse<List<FixTaskVo>> listTasks() {
