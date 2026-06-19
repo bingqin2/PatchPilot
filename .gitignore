@@ -11,6 +11,9 @@ out/
 
 .DS_Store
 *.log
+.env
+.env.*
+!.env.example
 
 !**/src/main/**/target/
 !**/src/test/**/target/
