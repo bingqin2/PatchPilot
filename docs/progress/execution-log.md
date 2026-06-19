@@ -817,3 +817,21 @@ Validation:
 - `mvn -pl PatchPilot -Dtest=FixPlanGeneratorTests test`: first failed because `FixPlanGenerator`, `FixPlan`, and `FixPlanGenerationException` did not exist, then passed after implementation, 3 tests run, 0 failures, 0 errors.
 - `mvn -pl PatchPilot -Dtest=PatchPilotApplicationTests,FixPlanGeneratorTests,WorkspaceFixTaskExecutorTests test`: first failed because Spring could not choose the production `FixPlanGenerator` constructor, then passed after marking it with `@Autowired`, 12 tests run, 0 failures, 0 errors.
 - `mvn -pl PatchPilot test`: passed, 222 tests run, 0 failures, 0 errors.
+
+## 2026-06-20
+
+Implemented planned file edit workflow from `docs/plans/033-planned-file-edit-workflow.md`.
+
+Changes:
+
+- Added `PlannedPatchWorkflow` as an internal, non-Spring workflow class.
+- Supported only `/agent fix replace <path> <text>` planned replacement instructions.
+- Required replacement targets to appear in `FixPlan.targetFiles()`.
+- Routed writes through `FileWriteTool` so existing workspace path guards still apply.
+- Kept production execution unchanged: `SimplePatchWorkflow` remains the active `PatchWorkflow` bean.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=PlannedPatchWorkflowTests test`: first failed because `PlannedPatchWorkflow` did not exist, then passed after implementation, 4 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=PatchPilotApplicationTests,PlannedPatchWorkflowTests,SimplePatchWorkflowTests,WorkspaceFixTaskExecutorTests test`: passed, 16 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot test`: passed, 226 tests run, 0 failures, 0 errors.
