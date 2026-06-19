@@ -21,6 +21,7 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -180,6 +181,68 @@ class TaskControllerTests {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.message").value("Task not found"));
+    }
+
+    @Test
+    void should_cancel_pending_task() throws Exception {
+        FixTaskVo task = createTask("delivery-cancel-http");
+
+        mockMvc.perform(post("/api/tasks/{id}/cancel", task.id()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value(task.id()))
+                .andExpect(jsonPath("$.data.status").value("CANCELLED"))
+                .andExpect(jsonPath("$.data.failureReason").value("Task cancelled by user request"));
+    }
+
+    @Test
+    void should_return_404_when_cancelling_missing_task() throws Exception {
+        mockMvc.perform(post("/api/tasks/{id}/cancel", "missing-task"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("Task not found"));
+    }
+
+    @Test
+    void should_return_409_when_cancelling_running_task() throws Exception {
+        FixTaskVo task = createTask("delivery-cancel-running-http");
+        fixTaskService.markRunning(task.id());
+
+        mockMvc.perform(post("/api/tasks/{id}/cancel", task.id()))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("Only pending tasks can be cancelled"));
+    }
+
+    @Test
+    void should_retry_failed_task() throws Exception {
+        FixTaskVo task = createTask("delivery-retry-http");
+        fixTaskService.markFailed(task.id(), "executor failed");
+
+        mockMvc.perform(post("/api/tasks/{id}/retry", task.id()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value(task.id()))
+                .andExpect(jsonPath("$.data.status").value("PENDING"))
+                .andExpect(jsonPath("$.data.failureReason").value(nullValue()));
+    }
+
+    @Test
+    void should_return_404_when_retrying_missing_task() throws Exception {
+        mockMvc.perform(post("/api/tasks/{id}/retry", "missing-task"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("Task not found"));
+    }
+
+    @Test
+    void should_return_409_when_retrying_active_task() throws Exception {
+        FixTaskVo task = createTask("delivery-retry-active-http");
+
+        mockMvc.perform(post("/api/tasks/{id}/retry", task.id()))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("Only failed or cancelled tasks can be retried"));
     }
 
     @Test

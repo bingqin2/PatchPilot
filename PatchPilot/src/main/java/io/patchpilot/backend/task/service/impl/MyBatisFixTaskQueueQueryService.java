@@ -52,7 +52,8 @@ public class MyBatisFixTaskQueueQueryService implements FixTaskQueueQueryService
                 pendingCount - availablePendingCount,
                 countByStatus(items, FixTaskQueueItemStatus.RUNNING),
                 countByStatus(items, FixTaskQueueItemStatus.COMPLETED),
-                countByStatus(items, FixTaskQueueItemStatus.FAILED)
+                countByStatus(items, FixTaskQueueItemStatus.FAILED),
+                countByStatus(items, FixTaskQueueItemStatus.CANCELLED)
         );
     }
 

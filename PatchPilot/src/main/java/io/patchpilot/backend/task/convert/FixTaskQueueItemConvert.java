@@ -82,6 +82,19 @@ public final class FixTaskQueueItemConvert {
         return entity;
     }
 
+    public static FixTaskQueueItemEntity replaceCancelled(
+            FixTaskQueueItemEntity current,
+            String cancellationReason,
+            Instant updatedAt
+    ) {
+        FixTaskQueueItemEntity entity = copy(current);
+        entity.setStatus(FixTaskQueueItemStatus.CANCELLED.name());
+        entity.setLastError(cancellationReason);
+        entity.setLockedAt(null);
+        entity.setUpdatedAt(updatedAt);
+        return entity;
+    }
+
     public static FixTaskQueueItemVo toVo(FixTaskQueueItemEntity entity) {
         return new FixTaskQueueItemVo(
                 entity.getId(),

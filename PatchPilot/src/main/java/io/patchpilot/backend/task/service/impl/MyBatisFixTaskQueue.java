@@ -85,6 +85,21 @@ public class MyBatisFixTaskQueue implements FixTaskQueue {
         ));
     }
 
+    @Override
+    public int cancelPendingForTask(String taskId) {
+        Instant now = Instant.now();
+        LambdaQueryWrapper<FixTaskQueueItemEntity> queryWrapper = new LambdaQueryWrapper<FixTaskQueueItemEntity>()
+                .eq(FixTaskQueueItemEntity::getTaskId, taskId)
+                .eq(FixTaskQueueItemEntity::getStatus, FixTaskQueueItemStatus.PENDING.name());
+        List<FixTaskQueueItemEntity> pendingItems = queueItemMapper.selectList(queryWrapper);
+        pendingItems.forEach(item -> queueItemMapper.updateById(FixTaskQueueItemConvert.replaceCancelled(
+                item,
+                "Task cancelled before execution",
+                now
+        )));
+        return pendingItems.size();
+    }
+
     public int recoverTimedOutRunningItems() {
         Instant now = Instant.now();
         Instant timeoutThreshold = now.minusMillis(taskQueueProperties.getVisibilityTimeoutMs());

@@ -4,5 +4,6 @@ public enum FixTaskQueueItemStatus {
     PENDING,
     RUNNING,
     COMPLETED,
-    FAILED
+    FAILED,
+    CANCELLED
 }

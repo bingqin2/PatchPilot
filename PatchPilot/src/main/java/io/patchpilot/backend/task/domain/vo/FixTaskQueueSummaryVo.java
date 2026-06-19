@@ -7,10 +7,11 @@ public record FixTaskQueueSummaryVo(
         long delayedPendingCount,
         long runningCount,
         long completedCount,
-        long failedCount
+        long failedCount,
+        long cancelledCount
 ) {
 
     public static FixTaskQueueSummaryVo empty() {
-        return new FixTaskQueueSummaryVo(0, 0, 0, 0, 0, 0, 0);
+        return new FixTaskQueueSummaryVo(0, 0, 0, 0, 0, 0, 0, 0);
     }
 }

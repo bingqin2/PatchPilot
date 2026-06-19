@@ -172,6 +172,30 @@ class MyBatisFixTaskQueueTests {
     }
 
     @Test
+    void should_cancel_pending_queue_items_for_task() {
+        FixTaskQueueItemEntity pending = entity(
+                "queue-123",
+                "task-123",
+                FixTaskQueueItemStatus.PENDING,
+                0,
+                Instant.parse("2026-06-19T10:00:00Z")
+        );
+        when(queueItemMapper.selectList(any())).thenReturn(List.of(pending));
+        when(queueItemMapper.updateById(any(FixTaskQueueItemEntity.class))).thenReturn(1);
+        ArgumentCaptor<FixTaskQueueItemEntity> entityCaptor = ArgumentCaptor.forClass(FixTaskQueueItemEntity.class);
+
+        int cancelledCount = queue.cancelPendingForTask("task-123");
+
+        assertThat(cancelledCount).isEqualTo(1);
+        verify(queueItemMapper).updateById(entityCaptor.capture());
+        FixTaskQueueItemEntity updatedEntity = entityCaptor.getValue();
+        assertThat(updatedEntity.getStatus()).isEqualTo(FixTaskQueueItemStatus.CANCELLED.name());
+        assertThat(updatedEntity.getLastError()).isEqualTo("Task cancelled before execution");
+        assertThat(updatedEntity.getLockedAt()).isNull();
+        assertThat(updatedEntity.getUpdatedAt()).isAfter(pending.getUpdatedAt());
+    }
+
+    @Test
     void should_recover_timed_out_running_items() {
         FixTaskQueueItemEntity staleRunning = entity(
                 "queue-stale",

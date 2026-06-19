@@ -100,6 +100,16 @@ public class InMemoryFixTaskService implements FixTaskService {
     }
 
     @Override
+    public FixTaskVo markCancelled(String id, String failureReason) {
+        return replaceStatus(id, FixTaskStatus.CANCELLED, failureReason);
+    }
+
+    @Override
+    public FixTaskVo markPendingForRetry(String id) {
+        return replaceForRetry(id);
+    }
+
+    @Override
     public FixTaskVo attachStatusComment(String id, long statusCommentId, String statusCommentUrl) {
         FixTaskVo updatedTask = tasks.compute(id, (taskId, currentTask) -> {
             if (currentTask == null) {
@@ -178,6 +188,35 @@ public class InMemoryFixTaskService implements FixTaskService {
                     currentTask.pullRequestUrl(),
                     currentTask.completedAt(),
                     Instant.now(),
+                    currentTask.statusCommentId(),
+                    currentTask.statusCommentUrl()
+            );
+        });
+        return updatedTask;
+    }
+
+    private FixTaskVo replaceForRetry(String id) {
+        FixTaskVo updatedTask = tasks.compute(id, (taskId, currentTask) -> {
+            if (currentTask == null) {
+                throw new IllegalArgumentException("Task not found: " + taskId);
+            }
+            Instant updatedAt = Instant.now();
+            return new FixTaskVo(
+                    currentTask.id(),
+                    currentTask.repositoryOwner(),
+                    currentTask.repositoryName(),
+                    currentTask.issueNumber(),
+                    currentTask.installationId(),
+                    currentTask.triggerUser(),
+                    currentTask.triggerComment(),
+                    currentTask.deliveryId(),
+                    currentTask.commentId(),
+                    FixTaskStatus.PENDING,
+                    null,
+                    currentTask.createdAt(),
+                    null,
+                    null,
+                    updatedAt,
                     currentTask.statusCommentId(),
                     currentTask.statusCommentUrl()
             );

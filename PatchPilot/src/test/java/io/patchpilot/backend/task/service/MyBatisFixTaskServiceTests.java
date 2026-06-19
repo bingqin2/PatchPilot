@@ -98,6 +98,44 @@ class MyBatisFixTaskServiceTests {
     }
 
     @Test
+    void should_mark_task_cancelled() {
+        FixTaskEntity current = entity("task-123", "delivery-123", FixTaskStatus.PENDING,
+                null, Instant.parse("2026-06-19T01:02:03Z"));
+        when(fixTaskMapper.selectById("task-123")).thenReturn(current);
+        when(fixTaskMapper.updateById(any(FixTaskEntity.class))).thenReturn(1);
+        ArgumentCaptor<FixTaskEntity> entityCaptor = ArgumentCaptor.forClass(FixTaskEntity.class);
+
+        FixTaskVo cancelledTask = fixTaskService.markCancelled("task-123", "cancelled by user");
+
+        verify(fixTaskMapper).updateById(entityCaptor.capture());
+        FixTaskEntity updatedEntity = entityCaptor.getValue();
+        assertThat(updatedEntity.getStatus()).isEqualTo(FixTaskStatus.CANCELLED.name());
+        assertThat(updatedEntity.getFailureReason()).isEqualTo("cancelled by user");
+        assertThat(updatedEntity.getUpdatedAt()).isAfter(current.getUpdatedAt());
+        assertThat(cancelledTask.status()).isEqualTo(FixTaskStatus.CANCELLED);
+    }
+
+    @Test
+    void should_mark_terminal_task_pending_for_retry() {
+        FixTaskEntity current = entity("task-123", "delivery-123", FixTaskStatus.FAILED,
+                "executor failed", Instant.parse("2026-06-19T01:02:03Z"));
+        when(fixTaskMapper.selectById("task-123")).thenReturn(current);
+        when(fixTaskMapper.updateById(any(FixTaskEntity.class))).thenReturn(1);
+        ArgumentCaptor<FixTaskEntity> entityCaptor = ArgumentCaptor.forClass(FixTaskEntity.class);
+
+        FixTaskVo retriedTask = fixTaskService.markPendingForRetry("task-123");
+
+        verify(fixTaskMapper).updateById(entityCaptor.capture());
+        FixTaskEntity updatedEntity = entityCaptor.getValue();
+        assertThat(updatedEntity.getStatus()).isEqualTo(FixTaskStatus.PENDING.name());
+        assertThat(updatedEntity.getFailureReason()).isNull();
+        assertThat(updatedEntity.getPullRequestUrl()).isNull();
+        assertThat(updatedEntity.getCompletedAt()).isNull();
+        assertThat(updatedEntity.getUpdatedAt()).isAfter(current.getUpdatedAt());
+        assertThat(retriedTask.status()).isEqualTo(FixTaskStatus.PENDING);
+    }
+
+    @Test
     void should_mark_completed_with_pull_request_url_and_timestamps() {
         FixTaskEntity current = entity("task-123", "delivery-123", FixTaskStatus.RUNNING_TESTS,
                 null, Instant.parse("2026-06-19T01:02:03Z"));

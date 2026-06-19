@@ -5,6 +5,7 @@ import io.patchpilot.backend.task.domain.vo.FixTaskTestRunVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskTimelineEventVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskToolCallVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
+import io.patchpilot.backend.task.service.FixTaskControlService;
 import io.patchpilot.backend.task.service.FixTaskTestRunService;
 import io.patchpilot.backend.task.service.FixTaskTimelineService;
 import io.patchpilot.backend.task.service.FixTaskService;
@@ -12,6 +13,7 @@ import io.patchpilot.backend.task.service.FixTaskToolCallService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -25,17 +27,20 @@ public class TaskController {
     private final FixTaskTimelineService fixTaskTimelineService;
     private final FixTaskTestRunService fixTaskTestRunService;
     private final FixTaskToolCallService fixTaskToolCallService;
+    private final FixTaskControlService fixTaskControlService;
 
     public TaskController(
             FixTaskService fixTaskService,
             FixTaskTimelineService fixTaskTimelineService,
             FixTaskTestRunService fixTaskTestRunService,
-            FixTaskToolCallService fixTaskToolCallService
+            FixTaskToolCallService fixTaskToolCallService,
+            FixTaskControlService fixTaskControlService
     ) {
         this.fixTaskService = fixTaskService;
         this.fixTaskTimelineService = fixTaskTimelineService;
         this.fixTaskTestRunService = fixTaskTestRunService;
         this.fixTaskToolCallService = fixTaskToolCallService;
+        this.fixTaskControlService = fixTaskControlService;
     }
 
     @GetMapping
@@ -72,5 +77,27 @@ public class TaskController {
             return ResponseEntity.status(404).body(ApiResponse.fail("Task not found"));
         }
         return ResponseEntity.ok(ApiResponse.ok(fixTaskToolCallService.listToolCalls(id)));
+    }
+
+    @PostMapping("/{id}/cancel")
+    public ResponseEntity<ApiResponse<FixTaskVo>> cancelTask(@PathVariable String id) {
+        try {
+            return ResponseEntity.ok(ApiResponse.ok(fixTaskControlService.cancelTask(id)));
+        } catch (IllegalArgumentException exception) {
+            return ResponseEntity.status(404).body(ApiResponse.fail("Task not found"));
+        } catch (IllegalStateException exception) {
+            return ResponseEntity.status(409).body(ApiResponse.fail(exception.getMessage()));
+        }
+    }
+
+    @PostMapping("/{id}/retry")
+    public ResponseEntity<ApiResponse<FixTaskVo>> retryTask(@PathVariable String id) {
+        try {
+            return ResponseEntity.ok(ApiResponse.ok(fixTaskControlService.retryTask(id)));
+        } catch (IllegalArgumentException exception) {
+            return ResponseEntity.status(404).body(ApiResponse.fail("Task not found"));
+        } catch (IllegalStateException exception) {
+            return ResponseEntity.status(409).body(ApiResponse.fail(exception.getMessage()));
+        }
     }
 }
