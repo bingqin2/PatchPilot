@@ -546,3 +546,22 @@ Validation:
 - `mvn -pl PatchPilot -Dtest=InMemoryFixTaskServiceTests,MyBatisFixTaskServiceTests,FixTaskMigrationTests,IssueCommentToolTests,GitHubWebhookServiceTests,AsyncFixTaskDispatcherTests,FixTaskWorkerTests,InMemoryFixTaskQueueTests test`: first failed because the new queue, worker, active-task lookup, webhook status, timeline event, comment update, and migration did not exist, then passed after implementation, 36 tests run, 0 failures, 0 errors.
 - `mvn -pl PatchPilot -Dtest=InMemoryFixTaskServiceTests,MyBatisFixTaskServiceTests,GitHubWebhookServiceTests test`: first failed because `findTaskByDeliveryId(...)` was not part of the service contract, then passed after adding the contract and duplicate-before-active webhook check, 24 tests run, 0 failures, 0 errors.
 - `mvn -pl PatchPilot test`: passed, 124 tests run, 0 failures, 0 errors.
+
+## 2026-06-19
+
+Implemented Maven test-run records from `docs/plans/019-test-run-records.md`.
+
+Changes:
+
+- Added Flyway migration `V6__create_fix_task_test_run.sql` for the `fix_task_test_run` table.
+- Added `FixTaskTestRunVo`, `FixTaskTestRunEntity`, `FixTaskTestRunConvert`, and `FixTaskTestRunMapper`.
+- Added `FixTaskTestRunService` with default in-memory and MyBatis-backed implementations.
+- Added `GET /api/tasks/{id}/test-runs` to expose ordered Maven verification records for a task.
+- Updated `NoopFixTaskExecutor` to record Maven command, exit code, output, start time, end time, and duration immediately after `MavenTestRunner` returns.
+- Preserved existing Maven failure behavior: non-zero test exits still fail the task before commit, push, or Pull Request creation.
+- Kept this phase limited to Maven test-run observability; no external services or frontend changes were added.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=FixTaskTestRunMigrationTests,FixTaskTestRunConvertTests,InMemoryFixTaskTestRunServiceTests,MyBatisFixTaskTestRunServiceTests,TaskControllerTests,WorkspaceFixTaskExecutorTests test`: first failed because the test-run VO, entity, mapper, service, controller endpoint, and executor dependency did not exist, then passed after implementation, 16 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot test`: passed, 131 tests run, 0 failures, 0 errors.

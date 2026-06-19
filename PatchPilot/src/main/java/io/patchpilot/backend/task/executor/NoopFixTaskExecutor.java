@@ -10,10 +10,13 @@ import io.patchpilot.backend.runner.domain.vo.TestRunResult;
 import io.patchpilot.backend.runner.service.MavenTestRunner;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import io.patchpilot.backend.task.executor.domain.FixTaskExecutionResult;
+import io.patchpilot.backend.task.service.FixTaskTestRunService;
 import io.patchpilot.backend.workspace.domain.bo.CloneWorkspaceCommand;
 import io.patchpilot.backend.workspace.domain.vo.PreparedWorkspaceResult;
 import io.patchpilot.backend.workspace.service.WorkspaceService;
 import org.springframework.stereotype.Service;
+
+import java.time.Instant;
 
 @Service
 public class NoopFixTaskExecutor implements FixTaskExecutor {
@@ -25,6 +28,7 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
     private final CommitTool commitTool;
     private final PushTool pushTool;
     private final PullRequestTool pullRequestTool;
+    private final FixTaskTestRunService fixTaskTestRunService;
 
     public NoopFixTaskExecutor(
             WorkspaceService workspaceService,
@@ -33,7 +37,8 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
             DiffTool diffTool,
             CommitTool commitTool,
             PushTool pushTool,
-            PullRequestTool pullRequestTool
+            PullRequestTool pullRequestTool,
+            FixTaskTestRunService fixTaskTestRunService
     ) {
         this.workspaceService = workspaceService;
         this.mavenTestRunner = mavenTestRunner;
@@ -42,6 +47,7 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
         this.commitTool = commitTool;
         this.pushTool = pushTool;
         this.pullRequestTool = pullRequestTool;
+        this.fixTaskTestRunService = fixTaskTestRunService;
     }
 
     @Override
@@ -53,7 +59,17 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
         ));
         patchWorkflow.apply(task, preparedWorkspace.repositoryDir());
         diffTool.diff(preparedWorkspace.repositoryDir());
+        Instant testStartedAt = Instant.now();
         TestRunResult testRunResult = mavenTestRunner.runTests(preparedWorkspace.repositoryDir());
+        Instant testFinishedAt = Instant.now();
+        fixTaskTestRunService.recordTestRun(
+                task.id(),
+                testRunResult.command(),
+                testRunResult.exitCode(),
+                testRunResult.output(),
+                testStartedAt,
+                testFinishedAt
+        );
         if (testRunResult.exitCode() != 0) {
             throw new IllegalStateException("maven tests failed: " + testRunResult.output());
         }

@@ -13,8 +13,10 @@ import io.patchpilot.backend.github.config.GitHubProperties;
 import io.patchpilot.backend.runner.domain.vo.TestRunResult;
 import io.patchpilot.backend.runner.service.MavenTestRunner;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
+import io.patchpilot.backend.task.domain.vo.FixTaskTestRunVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import io.patchpilot.backend.task.executor.domain.FixTaskExecutionResult;
+import io.patchpilot.backend.task.service.FixTaskTestRunService;
 import io.patchpilot.backend.workspace.runner.GitCommandResult;
 import io.patchpilot.backend.workspace.runner.GitCommandRunner;
 import io.patchpilot.backend.workspace.domain.bo.CloneWorkspaceCommand;
@@ -25,6 +27,7 @@ import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -40,6 +43,7 @@ class WorkspaceFixTaskExecutorTests {
         RecordingPushTool pushTool = new RecordingPushTool(false);
         RecordingPullRequestTool pullRequestTool = new RecordingPullRequestTool();
         RecordingMavenTestRunner mavenTestRunner = new RecordingMavenTestRunner(0, "tests passed");
+        RecordingFixTaskTestRunService testRunService = new RecordingFixTaskTestRunService();
         FixTaskExecutor executor = new NoopFixTaskExecutor(
                 workspaceService,
                 mavenTestRunner,
@@ -47,7 +51,8 @@ class WorkspaceFixTaskExecutorTests {
                 diffTool,
                 commitTool,
                 pushTool,
-                pullRequestTool
+                pullRequestTool,
+                testRunService
         );
 
         FixTaskExecutionResult result = executor.execute(task());
@@ -70,6 +75,11 @@ class WorkspaceFixTaskExecutorTests {
         assertThat(mavenTestRunner.callOrder()).isLessThan(commitTool.callOrder());
         assertThat(commitTool.callOrder()).isLessThan(pushTool.callOrder());
         assertThat(pushTool.callOrder()).isLessThan(pullRequestTool.callOrder());
+        assertThat(testRunService.taskId()).isEqualTo("task-123");
+        assertThat(testRunService.command()).isEqualTo("./mvnw test");
+        assertThat(testRunService.exitCode()).isZero();
+        assertThat(testRunService.output()).isEqualTo("tests passed");
+        assertThat(testRunService.startedAt()).isBeforeOrEqualTo(testRunService.finishedAt());
     }
 
     @Test
@@ -81,6 +91,7 @@ class WorkspaceFixTaskExecutorTests {
         RecordingPushTool pushTool = new RecordingPushTool(false);
         RecordingPullRequestTool pullRequestTool = new RecordingPullRequestTool();
         RecordingMavenTestRunner mavenTestRunner = new RecordingMavenTestRunner(1, "test failed");
+        RecordingFixTaskTestRunService testRunService = new RecordingFixTaskTestRunService();
         FixTaskExecutor executor = new NoopFixTaskExecutor(
                 workspaceService,
                 mavenTestRunner,
@@ -88,12 +99,17 @@ class WorkspaceFixTaskExecutorTests {
                 diffTool,
                 commitTool,
                 pushTool,
-                pullRequestTool
+                pullRequestTool,
+                testRunService
         );
 
         assertThatThrownBy(() -> executor.execute(task()))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("maven tests failed: test failed");
+        assertThat(testRunService.taskId()).isEqualTo("task-123");
+        assertThat(testRunService.command()).isEqualTo("./mvnw test");
+        assertThat(testRunService.exitCode()).isEqualTo(1);
+        assertThat(testRunService.output()).isEqualTo("test failed");
         assertThat(commitTool.callOrder()).isZero();
         assertThat(pushTool.callOrder()).isZero();
         assertThat(pullRequestTool.callOrder()).isZero();
@@ -108,6 +124,7 @@ class WorkspaceFixTaskExecutorTests {
         RecordingPushTool pushTool = new RecordingPushTool(false);
         RecordingPullRequestTool pullRequestTool = new RecordingPullRequestTool();
         RecordingMavenTestRunner mavenTestRunner = new RecordingMavenTestRunner(0, "tests passed");
+        RecordingFixTaskTestRunService testRunService = new RecordingFixTaskTestRunService();
         FixTaskExecutor executor = new NoopFixTaskExecutor(
                 workspaceService,
                 mavenTestRunner,
@@ -115,7 +132,8 @@ class WorkspaceFixTaskExecutorTests {
                 diffTool,
                 commitTool,
                 pushTool,
-                pullRequestTool
+                pullRequestTool,
+                testRunService
         );
 
         assertThatThrownBy(() -> executor.execute(task()))
@@ -134,6 +152,7 @@ class WorkspaceFixTaskExecutorTests {
         RecordingPushTool pushTool = new RecordingPushTool(true);
         RecordingPullRequestTool pullRequestTool = new RecordingPullRequestTool();
         RecordingMavenTestRunner mavenTestRunner = new RecordingMavenTestRunner(0, "tests passed");
+        RecordingFixTaskTestRunService testRunService = new RecordingFixTaskTestRunService();
         FixTaskExecutor executor = new NoopFixTaskExecutor(
                 workspaceService,
                 mavenTestRunner,
@@ -141,7 +160,8 @@ class WorkspaceFixTaskExecutorTests {
                 diffTool,
                 commitTool,
                 pushTool,
-                pullRequestTool
+                pullRequestTool,
+                testRunService
         );
 
         assertThatThrownBy(() -> executor.execute(task()))
@@ -217,6 +237,72 @@ class WorkspaceFixTaskExecutorTests {
 
         private int callOrder() {
             return callOrder;
+        }
+    }
+
+    private static final class RecordingFixTaskTestRunService implements FixTaskTestRunService {
+
+        private String taskId;
+        private String command;
+        private int exitCode;
+        private String output;
+        private Instant startedAt;
+        private Instant finishedAt;
+
+        @Override
+        public FixTaskTestRunVo recordTestRun(
+                String taskId,
+                String command,
+                int exitCode,
+                String output,
+                Instant startedAt,
+                Instant finishedAt
+        ) {
+            this.taskId = taskId;
+            this.command = command;
+            this.exitCode = exitCode;
+            this.output = output;
+            this.startedAt = startedAt;
+            this.finishedAt = finishedAt;
+            return new FixTaskTestRunVo(
+                    "test-run-123",
+                    taskId,
+                    command,
+                    exitCode,
+                    output,
+                    startedAt,
+                    finishedAt,
+                    java.time.Duration.between(startedAt, finishedAt).toMillis()
+            );
+        }
+
+        @Override
+        public List<FixTaskTestRunVo> listTestRuns(String taskId) {
+            return List.of();
+        }
+
+        private String taskId() {
+            return taskId;
+        }
+
+        private String command() {
+            return command;
+        }
+
+        private int exitCode() {
+            return exitCode;
+        }
+
+        private String output() {
+            return output;
+        }
+
+        private Instant startedAt() {
+            return startedAt;
+        }
+
+        private Instant finishedAt() {
+            return finishedAt;
         }
     }
 
