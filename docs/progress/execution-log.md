@@ -583,3 +583,21 @@ Validation:
 
 - `mvn -pl PatchPilot -Dtest=FixTaskToolCallMigrationTests,FixTaskToolCallConvertTests,InMemoryFixTaskToolCallServiceTests,MyBatisFixTaskToolCallServiceTests,TaskControllerTests,WorkspaceFixTaskExecutorTests test`: first failed because the tool-call VO, entity, mapper, service, controller endpoint, and executor dependency did not exist, then passed after implementation, 18 tests run, 0 failures, 0 errors.
 - `mvn -pl PatchPilot test`: passed, 138 tests run, 0 failures, 0 errors.
+
+## 2026-06-19
+
+Implemented MySQL-backed task queue from `docs/plans/021-mysql-backed-task-queue.md`.
+
+Changes:
+
+- Added Flyway migration `V8__create_fix_task_queue_item.sql` for durable queue records.
+- Added `FixTaskQueueItemStatus`, `FixTaskQueueItemEntity`, `FixTaskQueueItemVo`, `FixTaskQueueItemConvert`, and `FixTaskQueueItemMapper`.
+- Added `MyBatisFixTaskQueue` for `local` and `docker` profiles.
+- Added `FixTaskQueuePoller` to claim queued items, execute `FixTaskWorker`, and persist `COMPLETED` or `FAILED` queue item status.
+- Enabled Spring scheduling in `PatchPilotApplication`.
+- Scoped `InMemoryFixTaskQueue` to the default profile so default tests remain database-free.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=FixTaskQueueItemMigrationTests,FixTaskQueueItemConvertTests,MyBatisFixTaskQueueTests,FixTaskQueuePollerTests test`: first failed because the queue item VO, entity, enum, mapper, MyBatis queue, poller, and migration did not exist, then passed after implementation, 10 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot test`: passed, 148 tests run, 0 failures, 0 errors.

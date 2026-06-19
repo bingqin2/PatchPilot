@@ -1,0 +1,70 @@
+package io.patchpilot.backend.task.service.impl;
+
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import io.patchpilot.backend.task.convert.FixTaskQueueItemConvert;
+import io.patchpilot.backend.task.domain.entity.FixTaskQueueItemEntity;
+import io.patchpilot.backend.task.domain.enums.FixTaskQueueItemStatus;
+import io.patchpilot.backend.task.domain.vo.FixTaskQueueItemVo;
+import io.patchpilot.backend.task.mapper.FixTaskQueueItemMapper;
+import io.patchpilot.backend.task.service.FixTaskQueue;
+import org.springframework.context.annotation.Profile;
+import org.springframework.stereotype.Service;
+
+import java.time.Instant;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+@Service
+@Profile({"local", "docker"})
+public class MyBatisFixTaskQueue implements FixTaskQueue {
+
+    private final FixTaskQueueItemMapper queueItemMapper;
+
+    public MyBatisFixTaskQueue(FixTaskQueueItemMapper queueItemMapper) {
+        this.queueItemMapper = queueItemMapper;
+    }
+
+    @Override
+    public void enqueue(String taskId) {
+        Instant now = Instant.now();
+        FixTaskQueueItemEntity entity = FixTaskQueueItemConvert.newPendingEntity(
+                UUID.randomUUID().toString(),
+                taskId,
+                now
+        );
+        queueItemMapper.insert(entity);
+    }
+
+    public Optional<FixTaskQueueItemVo> claimNext() {
+        Instant now = Instant.now();
+        LambdaQueryWrapper<FixTaskQueueItemEntity> queryWrapper = new LambdaQueryWrapper<FixTaskQueueItemEntity>()
+                .eq(FixTaskQueueItemEntity::getStatus, FixTaskQueueItemStatus.PENDING.name())
+                .le(FixTaskQueueItemEntity::getAvailableAt, now);
+        List<FixTaskQueueItemEntity> pendingItems = queueItemMapper.selectList(queryWrapper);
+        Optional<FixTaskQueueItemEntity> nextItem = pendingItems.stream()
+                .min(Comparator.comparing(FixTaskQueueItemEntity::getAvailableAt));
+        if (nextItem.isEmpty()) {
+            return Optional.empty();
+        }
+        FixTaskQueueItemEntity runningItem = FixTaskQueueItemConvert.replaceRunning(nextItem.get(), now);
+        queueItemMapper.updateById(runningItem);
+        return Optional.of(FixTaskQueueItemConvert.toVo(runningItem));
+    }
+
+    public void markCompleted(String queueItemId) {
+        FixTaskQueueItemEntity currentItem = currentItem(queueItemId);
+        queueItemMapper.updateById(FixTaskQueueItemConvert.replaceCompleted(currentItem, Instant.now()));
+    }
+
+    public void markFailed(String queueItemId, String failureReason) {
+        FixTaskQueueItemEntity currentItem = currentItem(queueItemId);
+        queueItemMapper.updateById(FixTaskQueueItemConvert.replaceFailed(currentItem, failureReason, Instant.now()));
+    }
+
+    private FixTaskQueueItemEntity currentItem(String queueItemId) {
+        return Optional.ofNullable(queueItemMapper.selectById(queueItemId))
+                .orElseThrow(() -> new IllegalArgumentException("Queue item not found: " + queueItemId));
+    }
+}
