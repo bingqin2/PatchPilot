@@ -2,9 +2,11 @@ package io.patchpilot.backend.task;
 
 import io.patchpilot.backend.task.domain.bo.CreateFixTaskCommand;
 import io.patchpilot.backend.task.domain.enums.FixTaskTimelineEventType;
+import io.patchpilot.backend.task.domain.vo.FixTaskModelCallVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskTestRunVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskToolCallVo;
+import io.patchpilot.backend.task.service.FixTaskModelCallService;
 import io.patchpilot.backend.task.service.FixTaskTestRunService;
 import io.patchpilot.backend.task.service.FixTaskTimelineService;
 import io.patchpilot.backend.task.service.FixTaskService;
@@ -43,6 +45,9 @@ class TaskControllerTests {
 
     @Autowired
     private FixTaskToolCallService fixTaskToolCallService;
+
+    @Autowired
+    private FixTaskModelCallService fixTaskModelCallService;
 
     @Test
     void should_list_tasks() throws Exception {
@@ -178,6 +183,51 @@ class TaskControllerTests {
     @Test
     void should_return_404_for_missing_task_tool_calls() throws Exception {
         mockMvc.perform(get("/api/tasks/{id}/tool-calls", "missing-task"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("Task not found"));
+    }
+
+    @Test
+    void should_get_task_model_calls_by_task_id() throws Exception {
+        FixTaskVo task = createTask("delivery-model-calls");
+        FixTaskModelCallVo modelCall = fixTaskModelCallService.recordModelCall(
+                task.id(),
+                "openai",
+                "gpt-4.1-mini",
+                "Fix calculator bug",
+                "Changed Calculator#add",
+                120,
+                80,
+                true,
+                null,
+                Instant.parse("2026-06-20T01:00:00Z"),
+                Instant.parse("2026-06-20T01:00:04Z")
+        );
+
+        mockMvc.perform(get("/api/tasks/{id}/model-calls", task.id()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].id").value(modelCall.id()))
+                .andExpect(jsonPath("$.data[0].taskId").value(task.id()))
+                .andExpect(jsonPath("$.data[0].provider").value("openai"))
+                .andExpect(jsonPath("$.data[0].model").value("gpt-4.1-mini"))
+                .andExpect(jsonPath("$.data[0].promptSummary").value("Fix calculator bug"))
+                .andExpect(jsonPath("$.data[0].responseSummary").value("Changed Calculator#add"))
+                .andExpect(jsonPath("$.data[0].promptTokens").value(120))
+                .andExpect(jsonPath("$.data[0].completionTokens").value(80))
+                .andExpect(jsonPath("$.data[0].totalTokens").value(200))
+                .andExpect(jsonPath("$.data[0].success").value(true))
+                .andExpect(jsonPath("$.data[0].errorMessage").value(nullValue()))
+                .andExpect(jsonPath("$.data[0].startedAt").value("2026-06-20T01:00:00Z"))
+                .andExpect(jsonPath("$.data[0].finishedAt").value("2026-06-20T01:00:04Z"))
+                .andExpect(jsonPath("$.data[0].durationMs").value(4000));
+    }
+
+    @Test
+    void should_return_404_for_missing_task_model_calls() throws Exception {
+        mockMvc.perform(get("/api/tasks/{id}/model-calls", "missing-task"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.message").value("Task not found"));

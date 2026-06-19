@@ -1,11 +1,13 @@
 package io.patchpilot.backend.task;
 
 import io.patchpilot.backend.common.response.ApiResponse;
+import io.patchpilot.backend.task.domain.vo.FixTaskModelCallVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskTestRunVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskTimelineEventVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskToolCallVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import io.patchpilot.backend.task.service.FixTaskControlService;
+import io.patchpilot.backend.task.service.FixTaskModelCallService;
 import io.patchpilot.backend.task.service.FixTaskTestRunService;
 import io.patchpilot.backend.task.service.FixTaskTimelineService;
 import io.patchpilot.backend.task.service.FixTaskService;
@@ -27,6 +29,7 @@ public class TaskController {
     private final FixTaskTimelineService fixTaskTimelineService;
     private final FixTaskTestRunService fixTaskTestRunService;
     private final FixTaskToolCallService fixTaskToolCallService;
+    private final FixTaskModelCallService fixTaskModelCallService;
     private final FixTaskControlService fixTaskControlService;
 
     public TaskController(
@@ -34,12 +37,14 @@ public class TaskController {
             FixTaskTimelineService fixTaskTimelineService,
             FixTaskTestRunService fixTaskTestRunService,
             FixTaskToolCallService fixTaskToolCallService,
+            FixTaskModelCallService fixTaskModelCallService,
             FixTaskControlService fixTaskControlService
     ) {
         this.fixTaskService = fixTaskService;
         this.fixTaskTimelineService = fixTaskTimelineService;
         this.fixTaskTestRunService = fixTaskTestRunService;
         this.fixTaskToolCallService = fixTaskToolCallService;
+        this.fixTaskModelCallService = fixTaskModelCallService;
         this.fixTaskControlService = fixTaskControlService;
     }
 
@@ -77,6 +82,14 @@ public class TaskController {
             return ResponseEntity.status(404).body(ApiResponse.fail("Task not found"));
         }
         return ResponseEntity.ok(ApiResponse.ok(fixTaskToolCallService.listToolCalls(id)));
+    }
+
+    @GetMapping("/{id}/model-calls")
+    public ResponseEntity<ApiResponse<List<FixTaskModelCallVo>>> getTaskModelCalls(@PathVariable String id) {
+        if (fixTaskService.findTask(id).isEmpty()) {
+            return ResponseEntity.status(404).body(ApiResponse.fail("Task not found"));
+        }
+        return ResponseEntity.ok(ApiResponse.ok(fixTaskModelCallService.listModelCalls(id)));
     }
 
     @PostMapping("/{id}/cancel")
