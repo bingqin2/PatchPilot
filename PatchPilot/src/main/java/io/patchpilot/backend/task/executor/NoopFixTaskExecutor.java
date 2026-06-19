@@ -60,11 +60,21 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
     @Override
     public FixTaskExecutionResult execute(FixTaskVo task) {
         taskCancellationChecker.throwIfCancelled(task.id());
-        PreparedWorkspaceResult preparedWorkspace = workspaceService.prepareRepository(new CloneWorkspaceCommand(
+        PreparedWorkspaceResult preparedWorkspace = auditToolCall(
                 task.id(),
-                task.repositoryOwner(),
-                task.repositoryName()
-        ));
+                "WorkspaceService",
+                "repository=%s/%s".formatted(task.repositoryOwner(), task.repositoryName()),
+                () -> workspaceService.prepareRepository(new CloneWorkspaceCommand(
+                        task.id(),
+                        task.repositoryOwner(),
+                        task.repositoryName()
+                )),
+                result -> "workspaceDir=%s, repositoryDir=%s, branchName=%s".formatted(
+                        result.workspaceDir(),
+                        result.repositoryDir(),
+                        result.branchName()
+                )
+        );
         taskCancellationChecker.throwIfCancelled(task.id());
         auditToolCall(
                 task.id(),
@@ -105,7 +115,7 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
                         preparedWorkspace.repositoryDir(),
                         "PatchPilot task " + task.id()
                 ),
-                () -> commitTool.commitAll(preparedWorkspace.repositoryDir(), "PatchPilot task " + task.id())
+                () -> commitTool.commitAll(task.id(), preparedWorkspace.repositoryDir(), "PatchPilot task " + task.id())
         );
         taskCancellationChecker.throwIfCancelled(task.id());
         auditToolCall(
@@ -115,7 +125,7 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
                         preparedWorkspace.repositoryDir(),
                         preparedWorkspace.branchName()
                 ),
-                () -> pushTool.pushBranch(preparedWorkspace.repositoryDir(), preparedWorkspace.branchName())
+                () -> pushTool.pushBranch(task.id(), preparedWorkspace.repositoryDir(), preparedWorkspace.branchName())
         );
         taskCancellationChecker.throwIfCancelled(task.id());
         PullRequestResult pullRequestResult = auditToolCall(
@@ -169,6 +179,7 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
                     startedAt,
                     finishedAt
             );
+            taskCancellationChecker.throwIfCancelled(taskId);
             throw exception;
         }
     }

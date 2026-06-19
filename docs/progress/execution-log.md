@@ -738,3 +738,28 @@ Validation:
 - `mvn -pl PatchPilot -Dtest=WorkspaceFixTaskExecutorTests test`: first failed because a cancelled Maven process result was still raised as `IllegalStateException`; then passed after checking cancellation before Maven exit-code failure handling, 6 tests run, 0 failures, 0 errors.
 - `mvn -pl PatchPilot -Dtest=TaskProcessRegistryTests,MavenTestRunnerTests,DefaultFixTaskControlServiceTests,WorkspaceFixTaskExecutorTests,GitHubWebhookControllerTests test`: passed, 31 tests run, 0 failures, 0 errors.
 - `mvn -pl PatchPilot test`: passed, 192 tests run, 0 failures, 0 errors.
+
+## 2026-06-20
+
+Implemented Git process cancellation and recovery guidance from `docs/plans/029-git-process-cancellation-recovery.md`.
+
+Changes:
+
+- Added `GitWorkspaceRecoveryInspector` to read known Git half-finished states without deleting files or running recovery commands.
+- Detects `.git/index.lock`, `.git/HEAD.lock`, `.git/MERGE_HEAD`, `.git/rebase-merge`, and `.git/rebase-apply`.
+- Extended `GitCommandRunner` with task-aware clone, branch, diff, stage, commit, and push overloads.
+- Reused `TaskProcessRegistry` so task cancellation can interrupt Git processes as well as Maven processes.
+- Passed task ids through workspace clone/branch creation, commit, and push.
+- Added recovery guidance to clone, branch creation, commit, and push failure messages when known Git lock or in-progress states are present.
+- Added `WorkspaceService` tool-call audit records for repository preparation.
+- Converted commit and push failures into cancellation when the durable task state has become `CANCELLED` during the Git operation.
+- Kept recovery read-only; manual cleanup remains explicit.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=GitWorkspaceRecoveryInspectorTests test`: first failed because `GitWorkspaceRecoveryInspector` did not exist, then passed, 6 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=GitCommandRunnerTests test`: first failed because task-aware overloads, process registry injection, and `startProcess` override point did not exist, then passed, 13 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=GitWorkspaceServiceTests,CommitToolTests,PushToolTests,WorkspaceFixTaskExecutorTests test`: first failed because task-aware tool APIs and recovery inspector injection did not exist, then passed, 21 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=WorkspaceFixTaskExecutorTests test`: first failed because commit and push cancellation still surfaced as Git failures, then passed after checking cancellation after failed audited tool calls, 8 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=GitWorkspaceRecoveryInspectorTests,GitCommandRunnerTests,GitWorkspaceServiceTests,CommitToolTests,PushToolTests,WorkspaceFixTaskExecutorTests,GitHubWebhookControllerTests test`: first failed because new constructors needed explicit Spring injection and webhook test doubles still overrode old commit/push signatures, then passed, 52 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot test`: passed, 209 tests run, 0 failures, 0 errors.

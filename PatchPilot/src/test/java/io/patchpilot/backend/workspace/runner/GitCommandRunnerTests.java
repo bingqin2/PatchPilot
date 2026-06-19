@@ -2,13 +2,21 @@ package io.patchpilot.backend.workspace.runner;
 
 import io.patchpilot.backend.github.config.GitHubProperties;
 import io.patchpilot.backend.runner.service.CommandExecutionGuard;
+import io.patchpilot.backend.task.process.TaskProcessRegistry;
 import io.patchpilot.backend.workspace.config.WorkspaceProperties;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.lang.reflect.Method;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -149,6 +157,30 @@ class GitCommandRunnerTests {
                 .hasMessage("Command directory escapes workspace root: " + outsideRepositoryDir.toAbsolutePath().normalize());
     }
 
+    @Test
+    void should_register_and_unregister_task_process_when_task_id_is_provided() {
+        RecordingTaskProcessRegistry processRegistry = new RecordingTaskProcessRegistry();
+        RecordingProcess process = new RecordingProcess(0, "diff");
+        GitCommandRunner runner = runner(processRegistry, process);
+
+        GitCommandResult result = runner.diff("task-123", tempDir);
+
+        assertThat(result.exitCode()).isZero();
+        assertThat(processRegistry.events()).containsExactly("register:task-123", "unregister:task-123");
+        assertThat(processRegistry.registeredProcess()).isSameAs(process);
+    }
+
+    @Test
+    void should_not_register_process_when_task_id_is_not_provided() {
+        RecordingTaskProcessRegistry processRegistry = new RecordingTaskProcessRegistry();
+        GitCommandRunner runner = runner(processRegistry, new RecordingProcess(0, "diff"));
+
+        GitCommandResult result = runner.diff(tempDir);
+
+        assertThat(result.exitCode()).isZero();
+        assertThat(processRegistry.events()).isEmpty();
+    }
+
     private static String sanitize(GitCommandRunner runner, String value) throws Exception {
         Method sanitize = GitCommandRunner.class.getDeclaredMethod("sanitize", String.class);
         sanitize.setAccessible(true);
@@ -156,9 +188,19 @@ class GitCommandRunnerTests {
     }
 
     private GitCommandRunner runner() {
+        return runner(new TaskProcessRegistry());
+    }
+
+    private GitCommandRunner runner(TaskProcessRegistry processRegistry) {
         WorkspaceProperties properties = new WorkspaceProperties();
         properties.setRootDir(tempDir);
-        return new GitCommandRunner(new GitHubProperties(), new CommandExecutionGuard(properties));
+        return new GitCommandRunner(new GitHubProperties(), new CommandExecutionGuard(properties), processRegistry);
+    }
+
+    private GitCommandRunner runner(TaskProcessRegistry processRegistry, Process process) {
+        WorkspaceProperties properties = new WorkspaceProperties();
+        properties.setRootDir(tempDir);
+        return new RecordingGitCommandRunner(new GitHubProperties(), new CommandExecutionGuard(properties), processRegistry, process);
     }
 
     private static void createGitRepository(Path repositoryDir) throws Exception {
@@ -198,5 +240,106 @@ class GitCommandRunnerTests {
             throw new IllegalStateException(output);
         }
         return output;
+    }
+
+    private static final class RecordingGitCommandRunner extends GitCommandRunner {
+
+        private final Process process;
+
+        private RecordingGitCommandRunner(
+                GitHubProperties gitHubProperties,
+                CommandExecutionGuard commandExecutionGuard,
+                TaskProcessRegistry taskProcessRegistry,
+                Process process
+        ) {
+            super(gitHubProperties, commandExecutionGuard, taskProcessRegistry);
+            this.process = process;
+        }
+
+        @Override
+        protected Process startProcess(List<String> command) {
+            return process;
+        }
+    }
+
+    private static final class RecordingTaskProcessRegistry extends TaskProcessRegistry {
+
+        private final List<String> events = new ArrayList<>();
+        private Process registeredProcess;
+
+        private RecordingTaskProcessRegistry() {
+            super(Duration.ZERO);
+        }
+
+        @Override
+        public void register(String taskId, Process process) {
+            events.add("register:" + taskId);
+            registeredProcess = process;
+        }
+
+        @Override
+        public void unregister(String taskId, Process process) {
+            events.add("unregister:" + taskId);
+        }
+
+        private List<String> events() {
+            return events;
+        }
+
+        private Process registeredProcess() {
+            return registeredProcess;
+        }
+    }
+
+    private static final class RecordingProcess extends Process {
+
+        private final int exitCode;
+        private final byte[] output;
+        private final AtomicBoolean destroyedForcibly = new AtomicBoolean(false);
+
+        private RecordingProcess(int exitCode, String output) {
+            this.exitCode = exitCode;
+            this.output = output.getBytes();
+        }
+
+        @Override
+        public OutputStream getOutputStream() {
+            return OutputStream.nullOutputStream();
+        }
+
+        @Override
+        public InputStream getInputStream() {
+            return new ByteArrayInputStream(output);
+        }
+
+        @Override
+        public InputStream getErrorStream() {
+            return InputStream.nullInputStream();
+        }
+
+        @Override
+        public int waitFor() {
+            return exitCode;
+        }
+
+        @Override
+        public boolean waitFor(long timeout, TimeUnit unit) {
+            return true;
+        }
+
+        @Override
+        public int exitValue() {
+            return exitCode;
+        }
+
+        @Override
+        public void destroy() {
+        }
+
+        @Override
+        public Process destroyForcibly() {
+            destroyedForcibly.set(true);
+            return this;
+        }
     }
 }

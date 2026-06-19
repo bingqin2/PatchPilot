@@ -71,8 +71,10 @@ class WorkspaceFixTaskExecutorTests {
         assertThat(mavenTestRunner.repositoryDir()).isEqualTo(Path.of("/tmp/workspace/repo"));
         assertThat(mavenTestRunner.taskId()).isEqualTo("task-123");
         assertThat(commitTool.repositoryDir()).isEqualTo(Path.of("/tmp/workspace/repo"));
+        assertThat(commitTool.taskId()).isEqualTo("task-123");
         assertThat(commitTool.message()).isEqualTo("PatchPilot task task-123");
         assertThat(pushTool.repositoryDir()).isEqualTo(Path.of("/tmp/workspace/repo"));
+        assertThat(pushTool.taskId()).isEqualTo("task-123");
         assertThat(pushTool.branchName()).isEqualTo("patchpilot/task-123");
         assertThat(pullRequestTool.taskId()).isEqualTo("task-123");
         assertThat(pullRequestTool.branchName()).isEqualTo("patchpilot/task-123");
@@ -88,7 +90,7 @@ class WorkspaceFixTaskExecutorTests {
         assertThat(testRunService.startedAt()).isBeforeOrEqualTo(testRunService.finishedAt());
         assertThat(toolCallService.toolCalls())
                 .extracting(FixTaskToolCallVo::toolName)
-                .containsExactly("PatchWorkflow", "DiffTool", "CommitTool", "PushTool", "PullRequestTool");
+                .containsExactly("WorkspaceService", "PatchWorkflow", "DiffTool", "CommitTool", "PushTool", "PullRequestTool");
         assertThat(toolCallService.toolCalls())
                 .allSatisfy(toolCall -> {
                     assertThat(toolCall.taskId()).isEqualTo("task-123");
@@ -133,7 +135,7 @@ class WorkspaceFixTaskExecutorTests {
         assertThat(pullRequestTool.callOrder()).isZero();
         assertThat(toolCallService.toolCalls())
                 .extracting(FixTaskToolCallVo::toolName)
-                .containsExactly("PatchWorkflow", "DiffTool");
+                .containsExactly("WorkspaceService", "PatchWorkflow", "DiffTool");
     }
 
     @Test
@@ -167,7 +169,7 @@ class WorkspaceFixTaskExecutorTests {
         assertThat(pullRequestTool.callOrder()).isZero();
         assertThat(toolCallService.toolCalls())
                 .extracting(FixTaskToolCallVo::toolName)
-                .containsExactly("PatchWorkflow", "DiffTool", "CommitTool");
+                .containsExactly("WorkspaceService", "PatchWorkflow", "DiffTool", "CommitTool");
         assertThat(toolCallService.lastToolCall().success()).isFalse();
         assertThat(toolCallService.lastToolCall().outputSummary()).isEqualTo("git commit failed: nothing to commit");
     }
@@ -202,7 +204,7 @@ class WorkspaceFixTaskExecutorTests {
         assertThat(pullRequestTool.callOrder()).isZero();
         assertThat(toolCallService.toolCalls())
                 .extracting(FixTaskToolCallVo::toolName)
-                .containsExactly("PatchWorkflow", "DiffTool", "CommitTool", "PushTool");
+                .containsExactly("WorkspaceService", "PatchWorkflow", "DiffTool", "CommitTool", "PushTool");
         assertThat(toolCallService.lastToolCall().success()).isFalse();
         assertThat(toolCallService.lastToolCall().outputSummary()).isEqualTo("git push failed: permission denied");
     }
@@ -273,6 +275,69 @@ class WorkspaceFixTaskExecutorTests {
         assertThat(testRunService.exitCode()).isEqualTo(130);
         assertThat(commitTool.callOrder()).isZero();
         assertThat(pushTool.callOrder()).isZero();
+        assertThat(pullRequestTool.callOrder()).isZero();
+    }
+
+    @Test
+    void should_treat_commit_failure_as_cancellation_when_task_was_cancelled_during_commit() {
+        RecordingWorkspaceService workspaceService = new RecordingWorkspaceService();
+        RecordingPatchWorkflow patchWorkflow = new RecordingPatchWorkflow();
+        RecordingDiffTool diffTool = new RecordingDiffTool();
+        RecordingCommitTool commitTool = new RecordingCommitTool(true);
+        RecordingPushTool pushTool = new RecordingPushTool(false);
+        RecordingPullRequestTool pullRequestTool = new RecordingPullRequestTool();
+        RecordingMavenTestRunner mavenTestRunner = new RecordingMavenTestRunner(0, "tests passed");
+        RecordingFixTaskTestRunService testRunService = new RecordingFixTaskTestRunService();
+        RecordingFixTaskToolCallService toolCallService = new RecordingFixTaskToolCallService();
+        StageCancellingChecker cancellationChecker = new StageCancellingChecker(6);
+        FixTaskExecutor executor = new NoopFixTaskExecutor(
+                workspaceService,
+                mavenTestRunner,
+                patchWorkflow,
+                diffTool,
+                commitTool,
+                pushTool,
+                pullRequestTool,
+                testRunService,
+                toolCallService,
+                cancellationChecker
+        );
+
+        assertThatThrownBy(() -> executor.execute(task()))
+                .isInstanceOf(TaskCancellationException.class)
+                .hasMessage("Task cancelled: task-123");
+        assertThat(pushTool.callOrder()).isZero();
+        assertThat(pullRequestTool.callOrder()).isZero();
+    }
+
+    @Test
+    void should_treat_push_failure_as_cancellation_when_task_was_cancelled_during_push() {
+        RecordingWorkspaceService workspaceService = new RecordingWorkspaceService();
+        RecordingPatchWorkflow patchWorkflow = new RecordingPatchWorkflow();
+        RecordingDiffTool diffTool = new RecordingDiffTool();
+        RecordingCommitTool commitTool = new RecordingCommitTool(false);
+        RecordingPushTool pushTool = new RecordingPushTool(true);
+        RecordingPullRequestTool pullRequestTool = new RecordingPullRequestTool();
+        RecordingMavenTestRunner mavenTestRunner = new RecordingMavenTestRunner(0, "tests passed");
+        RecordingFixTaskTestRunService testRunService = new RecordingFixTaskTestRunService();
+        RecordingFixTaskToolCallService toolCallService = new RecordingFixTaskToolCallService();
+        StageCancellingChecker cancellationChecker = new StageCancellingChecker(7);
+        FixTaskExecutor executor = new NoopFixTaskExecutor(
+                workspaceService,
+                mavenTestRunner,
+                patchWorkflow,
+                diffTool,
+                commitTool,
+                pushTool,
+                pullRequestTool,
+                testRunService,
+                toolCallService,
+                cancellationChecker
+        );
+
+        assertThatThrownBy(() -> executor.execute(task()))
+                .isInstanceOf(TaskCancellationException.class)
+                .hasMessage("Task cancelled: task-123");
         assertThat(pullRequestTool.callOrder()).isZero();
     }
 
@@ -522,6 +587,7 @@ class WorkspaceFixTaskExecutorTests {
     private static final class RecordingCommitTool extends CommitTool {
 
         private final boolean fail;
+        private String taskId;
         private Path repositoryDir;
         private String message;
         private int callOrder;
@@ -543,6 +609,12 @@ class WorkspaceFixTaskExecutorTests {
 
         @Override
         public String commitAll(Path repositoryDir, String message) {
+            return commitAll(null, repositoryDir, message);
+        }
+
+        @Override
+        public String commitAll(String taskId, Path repositoryDir, String message) {
+            this.taskId = taskId;
             this.repositoryDir = repositoryDir;
             this.message = message;
             this.callOrder = CallOrder.next();
@@ -550,6 +622,10 @@ class WorkspaceFixTaskExecutorTests {
                 throw new IllegalStateException("git commit failed: nothing to commit");
             }
             return "committed";
+        }
+
+        private String taskId() {
+            return taskId;
         }
 
         private Path repositoryDir() {
@@ -568,6 +644,7 @@ class WorkspaceFixTaskExecutorTests {
     private static final class RecordingPushTool extends PushTool {
 
         private final boolean fail;
+        private String taskId;
         private Path repositoryDir;
         private String branchName;
         private int callOrder;
@@ -584,6 +661,12 @@ class WorkspaceFixTaskExecutorTests {
 
         @Override
         public String pushBranch(Path repositoryDir, String branchName) {
+            return pushBranch(null, repositoryDir, branchName);
+        }
+
+        @Override
+        public String pushBranch(String taskId, Path repositoryDir, String branchName) {
+            this.taskId = taskId;
             this.repositoryDir = repositoryDir;
             this.branchName = branchName;
             this.callOrder = CallOrder.next();
@@ -591,6 +674,10 @@ class WorkspaceFixTaskExecutorTests {
                 throw new IllegalStateException("git push failed: permission denied");
             }
             return "pushed";
+        }
+
+        private String taskId() {
+            return taskId;
         }
 
         private Path repositoryDir() {
