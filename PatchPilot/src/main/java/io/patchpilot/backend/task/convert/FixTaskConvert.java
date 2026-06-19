@@ -25,7 +25,10 @@ public final class FixTaskConvert {
                 entity.getCommentId(),
                 FixTaskStatus.valueOf(entity.getStatus()),
                 entity.getFailureReason(),
-                entity.getCreatedAt()
+                entity.getCreatedAt(),
+                entity.getPullRequestUrl(),
+                entity.getCompletedAt(),
+                entity.getUpdatedAt()
         );
     }
 
@@ -43,10 +46,18 @@ public final class FixTaskConvert {
         entity.setStatus(FixTaskStatus.PENDING.name());
         entity.setFailureReason(null);
         entity.setCreatedAt(createdAt);
+        entity.setPullRequestUrl(null);
+        entity.setCompletedAt(null);
+        entity.setUpdatedAt(createdAt);
         return entity;
     }
 
-    public static FixTaskEntity replaceStatus(FixTaskEntity current, FixTaskStatus status, String failureReason) {
+    public static FixTaskEntity replaceStatus(
+            FixTaskEntity current,
+            FixTaskStatus status,
+            String failureReason,
+            Instant updatedAt
+    ) {
         FixTaskEntity entity = new FixTaskEntity();
         entity.setId(current.getId());
         entity.setRepositoryOwner(current.getRepositoryOwner());
@@ -60,6 +71,17 @@ public final class FixTaskConvert {
         entity.setStatus(status.name());
         entity.setFailureReason(failureReason);
         entity.setCreatedAt(current.getCreatedAt());
+        entity.setPullRequestUrl(current.getPullRequestUrl());
+        entity.setCompletedAt(current.getCompletedAt());
+        entity.setUpdatedAt(updatedAt);
+        return entity;
+    }
+
+    public static FixTaskEntity replaceCompleted(FixTaskEntity current, String pullRequestUrl, Instant completedAt) {
+        FixTaskEntity entity = replaceStatus(current, FixTaskStatus.COMPLETED, null, completedAt);
+        entity.setPullRequestUrl(pullRequestUrl);
+        entity.setCompletedAt(completedAt);
+        entity.setUpdatedAt(completedAt);
         return entity;
     }
 }

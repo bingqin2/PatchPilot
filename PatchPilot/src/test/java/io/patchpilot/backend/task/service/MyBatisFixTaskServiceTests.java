@@ -49,6 +49,9 @@ class MyBatisFixTaskServiceTests {
         assertThat(insertedEntity.getStatus()).isEqualTo(FixTaskStatus.PENDING.name());
         assertThat(insertedEntity.getFailureReason()).isNull();
         assertThat(insertedEntity.getCreatedAt()).isNotNull();
+        assertThat(insertedEntity.getPullRequestUrl()).isNull();
+        assertThat(insertedEntity.getCompletedAt()).isNull();
+        assertThat(insertedEntity.getUpdatedAt()).isEqualTo(insertedEntity.getCreatedAt());
 
         assertThat(task.id()).isEqualTo(insertedEntity.getId());
         assertThat(creationResult.created()).isTrue();
@@ -87,8 +90,33 @@ class MyBatisFixTaskServiceTests {
         assertThat(updatedEntity.getId()).isEqualTo("task-123");
         assertThat(updatedEntity.getStatus()).isEqualTo(FixTaskStatus.FAILED.name());
         assertThat(updatedEntity.getFailureReason()).isEqualTo("maven test failed");
+        assertThat(updatedEntity.getUpdatedAt()).isAfter(current.getUpdatedAt());
         assertThat(failedTask.status()).isEqualTo(FixTaskStatus.FAILED);
         assertThat(failedTask.failureReason()).isEqualTo("maven test failed");
+    }
+
+    @Test
+    void should_mark_completed_with_pull_request_url_and_timestamps() {
+        FixTaskEntity current = entity("task-123", "delivery-123", FixTaskStatus.RUNNING_TESTS,
+                null, Instant.parse("2026-06-19T01:02:03Z"));
+        when(fixTaskMapper.selectById("task-123")).thenReturn(current);
+        when(fixTaskMapper.updateById(any(FixTaskEntity.class))).thenReturn(1);
+        ArgumentCaptor<FixTaskEntity> entityCaptor = ArgumentCaptor.forClass(FixTaskEntity.class);
+
+        FixTaskVo completedTask = fixTaskService.markCompleted(
+                "task-123",
+                "https://github.com/octocat/hello-world/pull/7"
+        );
+
+        verify(fixTaskMapper).updateById(entityCaptor.capture());
+        FixTaskEntity updatedEntity = entityCaptor.getValue();
+        assertThat(updatedEntity.getStatus()).isEqualTo(FixTaskStatus.COMPLETED.name());
+        assertThat(updatedEntity.getFailureReason()).isNull();
+        assertThat(updatedEntity.getPullRequestUrl()).isEqualTo("https://github.com/octocat/hello-world/pull/7");
+        assertThat(updatedEntity.getCompletedAt()).isNotNull();
+        assertThat(updatedEntity.getUpdatedAt()).isEqualTo(updatedEntity.getCompletedAt());
+        assertThat(completedTask.pullRequestUrl()).isEqualTo("https://github.com/octocat/hello-world/pull/7");
+        assertThat(completedTask.completedAt()).isEqualTo(updatedEntity.getCompletedAt());
     }
 
     @Test
@@ -155,6 +183,9 @@ class MyBatisFixTaskServiceTests {
         entity.setStatus(status.name());
         entity.setFailureReason(failureReason);
         entity.setCreatedAt(createdAt);
+        entity.setPullRequestUrl(null);
+        entity.setCompletedAt(null);
+        entity.setUpdatedAt(createdAt);
         return entity;
     }
 }

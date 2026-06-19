@@ -46,6 +46,15 @@ public class FixTaskEntity {
     @TableField("created_at")
     private Instant createdAt;
 
+    @TableField("pull_request_url")
+    private String pullRequestUrl;
+
+    @TableField("completed_at")
+    private Instant completedAt;
+
+    @TableField("updated_at")
+    private Instant updatedAt;
+
     public String getId() {
         return id;
     }
@@ -140,5 +149,29 @@ public class FixTaskEntity {
 
     public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getPullRequestUrl() {
+        return pullRequestUrl;
+    }
+
+    public void setPullRequestUrl(String pullRequestUrl) {
+        this.pullRequestUrl = pullRequestUrl;
+    }
+
+    public Instant getCompletedAt() {
+        return completedAt;
+    }
+
+    public void setCompletedAt(Instant completedAt) {
+        this.completedAt = completedAt;
+    }
+
+    public Instant getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(Instant updatedAt) {
+        this.updatedAt = updatedAt;
     }
 }

@@ -38,6 +38,8 @@ class AsyncFixTaskDispatcherTests {
         FixTaskVo completedTask = awaitTaskStatus(fixTaskService, task.id(), FixTaskStatus.COMPLETED);
         assertThat(executor.taskId()).isEqualTo(task.id());
         assertThat(completedTask.status()).isEqualTo(FixTaskStatus.COMPLETED);
+        assertThat(completedTask.pullRequestUrl()).isEqualTo("https://github.com/octocat/hello-world/pull/7");
+        assertThat(completedTask.completedAt()).isNotNull();
         assertThat(issueCommentTool.completedTaskId()).isEqualTo(task.id());
         assertThat(issueCommentTool.pullRequestUrl()).isEqualTo("https://github.com/octocat/hello-world/pull/7");
     }
@@ -271,8 +273,8 @@ class AsyncFixTaskDispatcherTests {
         }
 
         @Override
-        public FixTaskVo markCompleted(String id) {
-            FixTaskVo task = super.markCompleted(id);
+        public FixTaskVo markCompleted(String id, String pullRequestUrl) {
+            FixTaskVo task = super.markCompleted(id, pullRequestUrl);
             statuses.add(task.status());
             return task;
         }

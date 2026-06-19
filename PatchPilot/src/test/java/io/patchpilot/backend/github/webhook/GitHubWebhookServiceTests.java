@@ -94,6 +94,11 @@ class GitHubWebhookServiceTests {
         }
 
         @Override
+        public FixTaskVo markCompleted(String id, String pullRequestUrl) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public FixTaskVo markFailed(String id, String failureReason) {
             throw new UnsupportedOperationException();
         }

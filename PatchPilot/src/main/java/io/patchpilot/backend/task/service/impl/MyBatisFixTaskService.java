@@ -62,8 +62,12 @@ public class MyBatisFixTaskService implements FixTaskService {
     }
 
     @Override
-    public FixTaskVo markCompleted(String id) {
-        return replaceStatus(id, FixTaskStatus.COMPLETED, null);
+    public FixTaskVo markCompleted(String id, String pullRequestUrl) {
+        FixTaskEntity currentTask = Optional.ofNullable(fixTaskMapper.selectById(id))
+                .orElseThrow(() -> new IllegalArgumentException("Task not found: " + id));
+        FixTaskEntity updatedTask = FixTaskConvert.replaceCompleted(currentTask, pullRequestUrl, Instant.now());
+        fixTaskMapper.updateById(updatedTask);
+        return FixTaskConvert.toVo(updatedTask);
     }
 
     @Override
@@ -88,7 +92,7 @@ public class MyBatisFixTaskService implements FixTaskService {
     private FixTaskVo replaceStatus(String id, FixTaskStatus status, String failureReason) {
         FixTaskEntity currentTask = Optional.ofNullable(fixTaskMapper.selectById(id))
                 .orElseThrow(() -> new IllegalArgumentException("Task not found: " + id));
-        FixTaskEntity updatedTask = FixTaskConvert.replaceStatus(currentTask, status, failureReason);
+        FixTaskEntity updatedTask = FixTaskConvert.replaceStatus(currentTask, status, failureReason, Instant.now());
         fixTaskMapper.updateById(updatedTask);
         return FixTaskConvert.toVo(updatedTask);
     }

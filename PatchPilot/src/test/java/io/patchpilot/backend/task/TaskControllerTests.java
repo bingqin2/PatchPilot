@@ -35,7 +35,10 @@ class TaskControllerTests {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.length()", greaterThanOrEqualTo(1)))
                 .andExpect(jsonPath("$.data[0].id").value(not(nullValue())))
-                .andExpect(jsonPath("$.data[0].status").value("PENDING"));
+                .andExpect(jsonPath("$.data[0].status").value("PENDING"))
+                .andExpect(jsonPath("$.data[0].pullRequestUrl").value(nullValue()))
+                .andExpect(jsonPath("$.data[0].completedAt").value(nullValue()))
+                .andExpect(jsonPath("$.data[0].updatedAt").value(not(nullValue())));
     }
 
     @Test
@@ -49,7 +52,10 @@ class TaskControllerTests {
                 .andExpect(jsonPath("$.data.repositoryOwner").value("octocat"))
                 .andExpect(jsonPath("$.data.repositoryName").value("hello-world"))
                 .andExpect(jsonPath("$.data.issueNumber").value(42))
-                .andExpect(jsonPath("$.data.status").value("PENDING"));
+                .andExpect(jsonPath("$.data.status").value("PENDING"))
+                .andExpect(jsonPath("$.data.pullRequestUrl").value(nullValue()))
+                .andExpect(jsonPath("$.data.completedAt").value(nullValue()))
+                .andExpect(jsonPath("$.data.updatedAt").value(not(nullValue())));
     }
 
     @Test

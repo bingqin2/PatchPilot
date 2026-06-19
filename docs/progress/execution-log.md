@@ -446,3 +446,26 @@ Validation:
 - `mvn -pl PatchPilot -Dtest=FixTaskMigrationTests,FixTaskConvertTests,MyBatisFixTaskServiceTests,InMemoryFixTaskServiceTests,PatchPilotApplicationTests,GitHubWebhookControllerTests,GitHubWebhookServiceTests test`: passed, 23 tests run, 0 failures, 0 errors.
 - `mvn test` from repository root: passed, 89 tests run, 0 failures, 0 errors.
 - `mvn clean package` from repository root: passed, 89 tests run, 0 failures, 0 errors, and generated `PatchPilot/target/patchpilot-backend-0.0.1-SNAPSHOT.jar`.
+
+## 2026-06-19
+
+Implemented task result persistence from `docs/plans/015-task-result-persistence.md`.
+
+Changes:
+
+- Added Flyway migration `V2__add_fix_task_result_fields.sql` for `pull_request_url`, `completed_at`, and `updated_at`.
+- Extended `FixTaskVo`, `FixTaskEntity`, and `FixTaskConvert` with result metadata fields.
+- Added `FixTaskService#markCompleted(String id, String pullRequestUrl)` while keeping the old single-argument method as a compatibility default.
+- Updated in-memory and MyBatis task services to persist PR URL, completion time, and update time.
+- Updated the async dispatcher to persist the Pull Request URL returned by task execution.
+- Added task API assertions for additive JSON fields `pullRequestUrl`, `completedAt`, and `updatedAt`.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=FixTaskResultMigrationTests test`: first failed because the V2 migration file did not exist, then passed after adding it, 1 test run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=FixTaskConvertTests test`: first failed because result fields and `replaceCompleted(...)` did not exist, then passed after updating DTO/entity/converter, 3 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=InMemoryFixTaskServiceTests,MyBatisFixTaskServiceTests test`: first failed because `markCompleted(id, pullRequestUrl)` did not exist, then passed after service updates, 11 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=AsyncFixTaskDispatcherTests,TaskControllerTests test`: first failed because completed tasks did not retain `pullRequestUrl`, then passed after dispatcher wiring, 7 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=FixTaskResultMigrationTests,FixTaskConvertTests,InMemoryFixTaskServiceTests,MyBatisFixTaskServiceTests,AsyncFixTaskDispatcherTests,TaskControllerTests,GitHubWebhookControllerTests test`: passed, 30 tests run, 0 failures, 0 errors.
+- `mvn test` from repository root: passed, 92 tests run, 0 failures, 0 errors.
+- `mvn clean package` from repository root: passed, 92 tests run, 0 failures, 0 errors, and generated `PatchPilot/target/patchpilot-backend-0.0.1-SNAPSHOT.jar`.

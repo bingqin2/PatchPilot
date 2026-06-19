@@ -44,7 +44,7 @@ public class AsyncFixTaskDispatcher implements FixTaskDispatcher {
             issueCommentTool.commentFailed(failedTask, failureReason);
             return;
         }
-        FixTaskVo completedTask = fixTaskService.markCompleted(taskId);
+        FixTaskVo completedTask = fixTaskService.markCompleted(taskId, executionResult.pullRequestUrl());
         issueCommentTool.commentCompleted(completedTask, executionResult.pullRequestUrl());
     }
 

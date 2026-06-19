@@ -18,12 +18,18 @@ class InMemoryFixTaskServiceTests {
         FixTaskVo task = createTask("delivery-completed");
 
         FixTaskVo runningTask = fixTaskService.markRunning(task.id());
-        FixTaskVo completedTask = fixTaskService.markCompleted(task.id());
+        FixTaskVo completedTask = fixTaskService.markCompleted(
+                task.id(),
+                "https://github.com/octocat/hello-world/pull/7"
+        );
 
         assertThat(task.status()).isEqualTo(FixTaskStatus.PENDING);
         assertThat(runningTask.status()).isEqualTo(FixTaskStatus.RUNNING);
         assertThat(completedTask.status()).isEqualTo(FixTaskStatus.COMPLETED);
         assertThat(completedTask.failureReason()).isNull();
+        assertThat(completedTask.pullRequestUrl()).isEqualTo("https://github.com/octocat/hello-world/pull/7");
+        assertThat(completedTask.completedAt()).isNotNull();
+        assertThat(completedTask.updatedAt()).isEqualTo(completedTask.completedAt());
         assertThat(fixTaskService.findTask(task.id()))
                 .get()
                 .extracting(FixTaskVo::status)
@@ -38,6 +44,7 @@ class InMemoryFixTaskServiceTests {
 
         assertThat(runningTestsTask.status()).isEqualTo(FixTaskStatus.RUNNING_TESTS);
         assertThat(runningTestsTask.failureReason()).isNull();
+        assertThat(runningTestsTask.updatedAt()).isAfterOrEqualTo(task.updatedAt());
         assertThat(fixTaskService.findTask(task.id()))
                 .get()
                 .extracting(FixTaskVo::status)
@@ -52,6 +59,7 @@ class InMemoryFixTaskServiceTests {
 
         assertThat(failedTask.status()).isEqualTo(FixTaskStatus.FAILED);
         assertThat(failedTask.failureReason()).isEqualTo("executor failed");
+        assertThat(failedTask.updatedAt()).isAfterOrEqualTo(task.updatedAt());
         assertThat(fixTaskService.findTask(task.id()))
                 .get()
                 .extracting(FixTaskVo::failureReason)

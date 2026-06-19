@@ -30,6 +30,7 @@ public class InMemoryFixTaskService implements FixTaskService {
     @Override
     public FixTaskCreationResult createFixTaskIfAbsent(CreateFixTaskCommand command) {
         String taskId = UUID.randomUUID().toString();
+        Instant createdAt = Instant.now();
         FixTaskVo task = new FixTaskVo(
                 taskId,
                 command.repositoryOwner(),
@@ -42,7 +43,10 @@ public class InMemoryFixTaskService implements FixTaskService {
                 command.commentId(),
                 FixTaskStatus.PENDING,
                 null,
-                Instant.now()
+                createdAt,
+                null,
+                null,
+                createdAt
         );
         tasks.put(taskId, task);
         return new FixTaskCreationResult(task, true);
@@ -59,8 +63,31 @@ public class InMemoryFixTaskService implements FixTaskService {
     }
 
     @Override
-    public FixTaskVo markCompleted(String id) {
-        return replaceStatus(id, FixTaskStatus.COMPLETED, null);
+    public FixTaskVo markCompleted(String id, String pullRequestUrl) {
+        Instant completedAt = Instant.now();
+        FixTaskVo updatedTask = tasks.compute(id, (taskId, currentTask) -> {
+            if (currentTask == null) {
+                throw new IllegalArgumentException("Task not found: " + taskId);
+            }
+            return new FixTaskVo(
+                    currentTask.id(),
+                    currentTask.repositoryOwner(),
+                    currentTask.repositoryName(),
+                    currentTask.issueNumber(),
+                    currentTask.installationId(),
+                    currentTask.triggerUser(),
+                    currentTask.triggerComment(),
+                    currentTask.deliveryId(),
+                    currentTask.commentId(),
+                    FixTaskStatus.COMPLETED,
+                    null,
+                    currentTask.createdAt(),
+                    pullRequestUrl,
+                    completedAt,
+                    completedAt
+            );
+        });
+        return updatedTask;
     }
 
     @Override
@@ -97,7 +124,10 @@ public class InMemoryFixTaskService implements FixTaskService {
                     currentTask.commentId(),
                     status,
                     failureReason,
-                    currentTask.createdAt()
+                    currentTask.createdAt(),
+                    currentTask.pullRequestUrl(),
+                    currentTask.completedAt(),
+                    Instant.now()
             );
         });
         return updatedTask;

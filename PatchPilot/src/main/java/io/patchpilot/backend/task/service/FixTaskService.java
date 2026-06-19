@@ -19,7 +19,11 @@ public interface FixTaskService {
 
     FixTaskVo markRunningTests(String id);
 
-    FixTaskVo markCompleted(String id);
+    default FixTaskVo markCompleted(String id) {
+        return markCompleted(id, null);
+    }
+
+    FixTaskVo markCompleted(String id, String pullRequestUrl);
 
     FixTaskVo markFailed(String id, String failureReason);
 
