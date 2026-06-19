@@ -8,9 +8,13 @@ COPY PatchPilot/src ./PatchPilot/src
 
 RUN mvn -pl PatchPilot -am -DskipTests package
 
-FROM eclipse-temurin:17-jre
+FROM maven:3.9-eclipse-temurin-17
 
 WORKDIR /app
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends git ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY --from=build /workspace/PatchPilot/target/patchpilot-backend-*.jar /app/patchpilot-backend.jar
 

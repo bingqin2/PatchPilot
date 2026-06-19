@@ -106,7 +106,7 @@ docs/progress/execution-log.md
 - Inspect: `pom.xml`
 - Inspect: `PatchPilot/pom.xml`
 
-- [ ] **Step 1: Confirm the root parent is an aggregator**
+- [x] **Step 1: Confirm the root parent is an aggregator**
 
 Expected root `pom.xml` has:
 
@@ -117,7 +117,7 @@ Expected root `pom.xml` has:
 </modules>
 ```
 
-- [ ] **Step 2: Confirm the backend module inherits from the root parent**
+- [x] **Step 2: Confirm the backend module inherits from the root parent**
 
 Expected `PatchPilot/pom.xml` has:
 
@@ -130,7 +130,7 @@ Expected `PatchPilot/pom.xml` has:
 </parent>
 ```
 
-- [ ] **Step 3: Run root Maven test**
+- [x] **Step 3: Run root Maven test**
 
 Run from `/Users/wangbingqin/Documents/agent`:
 
@@ -152,7 +152,7 @@ BUILD SUCCESS
 
 - Modify: `PatchPilot/pom.xml`
 
-- [ ] **Step 1: Add the web, validation, actuator, MySQL, Flyway, and MyBatis-Plus dependencies**
+- [x] **Step 1: Add the web, validation, actuator, MySQL, Flyway, and MyBatis-Plus dependencies**
 
 Update `PatchPilot/pom.xml` dependencies to include:
 
@@ -197,7 +197,7 @@ Update `PatchPilot/pom.xml` dependencies to include:
 
 Keep `spring-boot-starter-test` for tests.
 
-- [ ] **Step 2: Run Maven dependency resolution through tests**
+- [x] **Step 2: Run Maven dependency resolution through tests**
 
 Run:
 
@@ -221,7 +221,7 @@ If dependency resolution fails because a version changed, check the current MyBa
 - Create: `PatchPilot/src/main/resources/application-local.properties`
 - Create: `PatchPilot/src/main/resources/application-docker.properties`
 
-- [ ] **Step 1: Update base application properties**
+- [x] **Step 1: Update base application properties**
 
 Use:
 
@@ -232,7 +232,7 @@ management.endpoints.web.exposure.include=health,info
 management.endpoint.health.probes.enabled=true
 ```
 
-- [ ] **Step 2: Add local profile**
+- [x] **Step 2: Add local profile**
 
 Create `application-local.properties`:
 
@@ -248,7 +248,7 @@ mybatis-plus.configuration.map-underscore-to-camel-case=true
 
 Flyway is disabled for the foundation version because no schema migration exists yet. The first persistence plan should enable Flyway and add `V1__init_patchpilot.sql`.
 
-- [ ] **Step 3: Add docker profile**
+- [x] **Step 3: Add docker profile**
 
 Create `application-docker.properties`:
 
@@ -262,7 +262,7 @@ spring.flyway.enabled=false
 mybatis-plus.configuration.map-underscore-to-camel-case=true
 ```
 
-- [ ] **Step 4: Run tests**
+- [x] **Step 4: Run tests**
 
 Run:
 
@@ -284,7 +284,7 @@ BUILD SUCCESS
 - Create: `PatchPilot/src/main/java/io/patchpilot/backend/observability/HealthController.java`
 - Create: `PatchPilot/src/test/java/io/patchpilot/backend/observability/HealthControllerTests.java`
 
-- [ ] **Step 1: Write the failing health controller test**
+- [x] **Step 1: Write the failing health controller test**
 
 Create `HealthControllerTests.java`:
 
@@ -317,7 +317,7 @@ class HealthControllerTests {
 }
 ```
 
-- [ ] **Step 2: Run the health test to verify it fails**
+- [x] **Step 2: Run the health test to verify it fails**
 
 Run:
 
@@ -331,7 +331,7 @@ Expected result:
 Compilation failure or test failure because HealthController does not exist.
 ```
 
-- [ ] **Step 3: Add the API response record**
+- [x] **Step 3: Add the API response record**
 
 Create `ApiResponse.java`:
 
@@ -346,7 +346,7 @@ public record ApiResponse<T>(boolean success, T data, String message) {
 }
 ```
 
-- [ ] **Step 4: Add HealthController**
+- [x] **Step 4: Add HealthController**
 
 Create `HealthController.java`:
 
@@ -372,7 +372,7 @@ public class HealthController {
 }
 ```
 
-- [ ] **Step 5: Run the health test to verify it passes**
+- [x] **Step 5: Run the health test to verify it passes**
 
 Run:
 
@@ -387,7 +387,7 @@ Tests run: 1, Failures: 0, Errors: 0
 BUILD SUCCESS
 ```
 
-- [ ] **Step 6: Run all tests from root**
+- [x] **Step 6: Run all tests from root**
 
 Run:
 
@@ -408,7 +408,7 @@ BUILD SUCCESS
 - Inspect: `PatchPilot/Dockerfile`
 - Inspect: `docker-compose.yml`
 
-- [ ] **Step 1: Validate compose syntax**
+- [x] **Step 1: Validate compose syntax**
 
 Run:
 
@@ -424,7 +424,7 @@ services:
   patchpilot-backend:
 ```
 
-- [ ] **Step 2: Build the backend jar from root**
+- [x] **Step 2: Build the backend jar from root**
 
 Run:
 
@@ -439,7 +439,7 @@ PatchPilot Backend ... SUCCESS
 BUILD SUCCESS
 ```
 
-- [ ] **Step 3: Build the backend Docker image**
+- [x] **Step 3: Build the backend Docker image**
 
 Run:
 
@@ -455,6 +455,8 @@ patchpilot-backend:local  Built
 
 If Docker fails while resolving base images through a local mirror, record the mirror/DNS problem in `docs/progress/execution-log.md`. Do not change Dockerfile image names unless the mirror problem is resolved or a new base image decision is recorded.
 
+Result: attempted on 2026-06-18. The first run failed while resolving `maven:3.9-eclipse-temurin-17` and `eclipse-temurin:17-jre` through `https://docker.mirrors.ustc.edu.cn` with EOF. After the base images were pulled successfully, rerunning `docker compose build patchpilot-backend` passed and built `patchpilot-backend:local`.
+
 ### Task 6: Update documentation after implementation
 
 **Files:**
@@ -462,7 +464,7 @@ If Docker fails while resolving base images through a local mirror, record the m
 - Modify: `docs/progress/execution-log.md`
 - Modify: `docs/plans/000-project-foundation.md`
 
-- [ ] **Step 1: Record validation commands**
+- [x] **Step 1: Record validation commands**
 
 Append an entry to `docs/progress/execution-log.md`:
 
@@ -479,7 +481,7 @@ Validation:
 - `docker compose build patchpilot-backend`: record the actual result.
 ```
 
-- [ ] **Step 2: Update foundation plan progress**
+- [x] **Step 2: Update foundation plan progress**
 
 In `docs/plans/000-project-foundation.md`, mark completed items only after they are actually implemented and validated.
 
@@ -489,14 +491,14 @@ Do not mark GitHub, agent, database schema, or React UI items as complete in thi
 
 The foundation version is accepted when:
 
-- [ ] Root `mvn test` passes.
-- [ ] Root `mvn clean package` passes.
-- [ ] `docker compose config` passes.
-- [ ] `docker compose build patchpilot-backend` either passes or has a documented environment-specific mirror/DNS failure.
-- [ ] `/health` returns a structured response in tests.
-- [ ] Spring Boot Actuator is available for standard health checks.
-- [ ] MySQL profile configuration exists but schema migration is deferred to the persistence phase.
-- [ ] `docs/progress/execution-log.md` records validation evidence.
+- [x] Root `mvn test` passes.
+- [x] Root `mvn clean package` passes.
+- [x] `docker compose config` passes.
+- [x] `docker compose build patchpilot-backend` passes.
+- [x] `/health` returns a structured response in tests.
+- [x] Spring Boot Actuator is available for standard health checks.
+- [x] MySQL profile configuration exists but schema migration is deferred to the persistence phase.
+- [x] `docs/progress/execution-log.md` records validation evidence.
 
 ## Notes For Later Plans
 

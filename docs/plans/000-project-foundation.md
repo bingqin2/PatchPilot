@@ -12,17 +12,17 @@ This phase does not implement the full agent workflow. It creates the project ba
 
 ## Progress
 
-- [ ] Create product documents under `docs/product`.
-- [ ] Create agent governance documents under `docs/agent`.
-- [ ] Create progress tracking documents under `docs/progress`.
-- [ ] Add or verify root ignore rules.
-- [ ] Add Spring Web dependency.
-- [ ] Add Spring Boot Actuator dependency.
-- [ ] Add local profile configuration.
-- [ ] Add a health endpoint if Actuator is not enough for the demo.
-- [ ] Add tests for application startup and health.
-- [ ] Run Maven tests.
-- [ ] Record validation results in `docs/progress/execution-log.md`.
+- [x] Create product documents under `docs/product`.
+- [x] Create agent governance documents under `docs/agent`.
+- [x] Create progress tracking documents under `docs/progress`.
+- [x] Add or verify root ignore rules.
+- [x] Add Spring Web dependency.
+- [x] Add Spring Boot Actuator dependency.
+- [x] Add local profile configuration.
+- [x] Add a health endpoint if Actuator is not enough for the demo.
+- [x] Add tests for application startup and health.
+- [x] Run Maven tests.
+- [x] Record validation results in `docs/progress/execution-log.md`.
 
 ## Surprises & Discoveries
 
@@ -31,6 +31,12 @@ This phase does not implement the full agent workflow. It creates the project ba
 
 - Observation: The current Maven project uses Spring Boot 3.5.15 and Java 17.
   Evidence: `pom.xml` defines `spring-boot-starter-parent` version `3.5.15` and `java.version` as `17`.
+
+- Observation: Mockito's inline mock maker cannot self-attach in the local macOS/JDK test environment.
+  Evidence: `mvn test` failed until test resources selected `mock-maker-subclass`.
+
+- Observation: Docker image builds can be blocked by configured registry mirrors before Dockerfile execution.
+  Evidence: `docker compose build patchpilot-backend` initially failed against `https://docker.mirrors.ustc.edu.cn`, then passed after the base images were pulled successfully.
 
 ## Decision Log
 
@@ -44,7 +50,7 @@ This phase does not implement the full agent workflow. It creates the project ba
 
 ## Outcomes & Retrospective
 
-Pending. Fill this section after the phase is implemented and validated.
+The basic backend foundation is implemented. The root Maven build runs tests and packages the Spring Boot backend with Java 17, `/health` is covered by MockMvc, Actuator health is configured, Docker Compose syntax is valid, and the backend Docker image builds as `patchpilot-backend:local`.
 
 ## Context and Orientation
 
