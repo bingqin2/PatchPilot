@@ -4,9 +4,11 @@ import io.patchpilot.backend.task.domain.bo.CreateFixTaskCommand;
 import io.patchpilot.backend.task.domain.enums.FixTaskTimelineEventType;
 import io.patchpilot.backend.task.domain.vo.FixTaskTestRunVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
+import io.patchpilot.backend.task.domain.vo.FixTaskToolCallVo;
 import io.patchpilot.backend.task.service.FixTaskTestRunService;
 import io.patchpilot.backend.task.service.FixTaskTimelineService;
 import io.patchpilot.backend.task.service.FixTaskService;
+import io.patchpilot.backend.task.service.FixTaskToolCallService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -37,6 +39,9 @@ class TaskControllerTests {
 
     @Autowired
     private FixTaskTestRunService fixTaskTestRunService;
+
+    @Autowired
+    private FixTaskToolCallService fixTaskToolCallService;
 
     @Test
     void should_list_tasks() throws Exception {
@@ -136,6 +141,42 @@ class TaskControllerTests {
     @Test
     void should_return_404_for_missing_task_test_runs() throws Exception {
         mockMvc.perform(get("/api/tasks/{id}/test-runs", "missing-task"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("Task not found"));
+    }
+
+    @Test
+    void should_get_task_tool_calls_by_task_id() throws Exception {
+        FixTaskVo task = createTask("delivery-tool-calls");
+        FixTaskToolCallVo toolCall = fixTaskToolCallService.recordToolCall(
+                task.id(),
+                "CommitTool",
+                "repositoryDir=/tmp/workspace/repo, message=PatchPilot task task-123",
+                "committed",
+                true,
+                Instant.parse("2026-06-19T09:00:00Z"),
+                Instant.parse("2026-06-19T09:00:02Z")
+        );
+
+        mockMvc.perform(get("/api/tasks/{id}/tool-calls", task.id()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].id").value(toolCall.id()))
+                .andExpect(jsonPath("$.data[0].taskId").value(task.id()))
+                .andExpect(jsonPath("$.data[0].toolName").value("CommitTool"))
+                .andExpect(jsonPath("$.data[0].inputSummary").value("repositoryDir=/tmp/workspace/repo, message=PatchPilot task task-123"))
+                .andExpect(jsonPath("$.data[0].outputSummary").value("committed"))
+                .andExpect(jsonPath("$.data[0].success").value(true))
+                .andExpect(jsonPath("$.data[0].startedAt").value("2026-06-19T09:00:00Z"))
+                .andExpect(jsonPath("$.data[0].finishedAt").value("2026-06-19T09:00:02Z"))
+                .andExpect(jsonPath("$.data[0].durationMs").value(2000));
+    }
+
+    @Test
+    void should_return_404_for_missing_task_tool_calls() throws Exception {
+        mockMvc.perform(get("/api/tasks/{id}/tool-calls", "missing-task"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.message").value("Task not found"));

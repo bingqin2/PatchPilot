@@ -565,3 +565,21 @@ Validation:
 
 - `mvn -pl PatchPilot -Dtest=FixTaskTestRunMigrationTests,FixTaskTestRunConvertTests,InMemoryFixTaskTestRunServiceTests,MyBatisFixTaskTestRunServiceTests,TaskControllerTests,WorkspaceFixTaskExecutorTests test`: first failed because the test-run VO, entity, mapper, service, controller endpoint, and executor dependency did not exist, then passed after implementation, 16 tests run, 0 failures, 0 errors.
 - `mvn -pl PatchPilot test`: passed, 131 tests run, 0 failures, 0 errors.
+
+## 2026-06-19
+
+Implemented tool-call audit records from `docs/plans/020-tool-call-audit-records.md`.
+
+Changes:
+
+- Added Flyway migration `V7__create_fix_task_tool_call.sql` for the `fix_task_tool_call` table.
+- Added `FixTaskToolCallVo`, `FixTaskToolCallEntity`, `FixTaskToolCallConvert`, and `FixTaskToolCallMapper`.
+- Added `FixTaskToolCallService` with default in-memory and MyBatis-backed implementations.
+- Added `GET /api/tasks/{id}/tool-calls` to expose ordered tool-call audit records for a task.
+- Updated `NoopFixTaskExecutor` to record `PatchWorkflow`, `DiffTool`, `CommitTool`, `PushTool`, and `PullRequestTool` success or failure with input/output summaries and timing.
+- Kept Maven verification records in `fix_task_test_run`; tool-call audit does not duplicate Maven test-run details.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=FixTaskToolCallMigrationTests,FixTaskToolCallConvertTests,InMemoryFixTaskToolCallServiceTests,MyBatisFixTaskToolCallServiceTests,TaskControllerTests,WorkspaceFixTaskExecutorTests test`: first failed because the tool-call VO, entity, mapper, service, controller endpoint, and executor dependency did not exist, then passed after implementation, 18 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot test`: passed, 138 tests run, 0 failures, 0 errors.

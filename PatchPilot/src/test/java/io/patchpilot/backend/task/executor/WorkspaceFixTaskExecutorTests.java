@@ -14,9 +14,11 @@ import io.patchpilot.backend.runner.domain.vo.TestRunResult;
 import io.patchpilot.backend.runner.service.MavenTestRunner;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.vo.FixTaskTestRunVo;
+import io.patchpilot.backend.task.domain.vo.FixTaskToolCallVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import io.patchpilot.backend.task.executor.domain.FixTaskExecutionResult;
 import io.patchpilot.backend.task.service.FixTaskTestRunService;
+import io.patchpilot.backend.task.service.FixTaskToolCallService;
 import io.patchpilot.backend.workspace.runner.GitCommandResult;
 import io.patchpilot.backend.workspace.runner.GitCommandRunner;
 import io.patchpilot.backend.workspace.domain.bo.CloneWorkspaceCommand;
@@ -44,6 +46,7 @@ class WorkspaceFixTaskExecutorTests {
         RecordingPullRequestTool pullRequestTool = new RecordingPullRequestTool();
         RecordingMavenTestRunner mavenTestRunner = new RecordingMavenTestRunner(0, "tests passed");
         RecordingFixTaskTestRunService testRunService = new RecordingFixTaskTestRunService();
+        RecordingFixTaskToolCallService toolCallService = new RecordingFixTaskToolCallService();
         FixTaskExecutor executor = new NoopFixTaskExecutor(
                 workspaceService,
                 mavenTestRunner,
@@ -52,7 +55,8 @@ class WorkspaceFixTaskExecutorTests {
                 commitTool,
                 pushTool,
                 pullRequestTool,
-                testRunService
+                testRunService,
+                toolCallService
         );
 
         FixTaskExecutionResult result = executor.execute(task());
@@ -80,6 +84,15 @@ class WorkspaceFixTaskExecutorTests {
         assertThat(testRunService.exitCode()).isZero();
         assertThat(testRunService.output()).isEqualTo("tests passed");
         assertThat(testRunService.startedAt()).isBeforeOrEqualTo(testRunService.finishedAt());
+        assertThat(toolCallService.toolCalls())
+                .extracting(FixTaskToolCallVo::toolName)
+                .containsExactly("PatchWorkflow", "DiffTool", "CommitTool", "PushTool", "PullRequestTool");
+        assertThat(toolCallService.toolCalls())
+                .allSatisfy(toolCall -> {
+                    assertThat(toolCall.taskId()).isEqualTo("task-123");
+                    assertThat(toolCall.success()).isTrue();
+                    assertThat(toolCall.startedAt()).isBeforeOrEqualTo(toolCall.finishedAt());
+                });
     }
 
     @Test
@@ -92,6 +105,7 @@ class WorkspaceFixTaskExecutorTests {
         RecordingPullRequestTool pullRequestTool = new RecordingPullRequestTool();
         RecordingMavenTestRunner mavenTestRunner = new RecordingMavenTestRunner(1, "test failed");
         RecordingFixTaskTestRunService testRunService = new RecordingFixTaskTestRunService();
+        RecordingFixTaskToolCallService toolCallService = new RecordingFixTaskToolCallService();
         FixTaskExecutor executor = new NoopFixTaskExecutor(
                 workspaceService,
                 mavenTestRunner,
@@ -100,7 +114,8 @@ class WorkspaceFixTaskExecutorTests {
                 commitTool,
                 pushTool,
                 pullRequestTool,
-                testRunService
+                testRunService,
+                toolCallService
         );
 
         assertThatThrownBy(() -> executor.execute(task()))
@@ -113,6 +128,9 @@ class WorkspaceFixTaskExecutorTests {
         assertThat(commitTool.callOrder()).isZero();
         assertThat(pushTool.callOrder()).isZero();
         assertThat(pullRequestTool.callOrder()).isZero();
+        assertThat(toolCallService.toolCalls())
+                .extracting(FixTaskToolCallVo::toolName)
+                .containsExactly("PatchWorkflow", "DiffTool");
     }
 
     @Test
@@ -125,6 +143,7 @@ class WorkspaceFixTaskExecutorTests {
         RecordingPullRequestTool pullRequestTool = new RecordingPullRequestTool();
         RecordingMavenTestRunner mavenTestRunner = new RecordingMavenTestRunner(0, "tests passed");
         RecordingFixTaskTestRunService testRunService = new RecordingFixTaskTestRunService();
+        RecordingFixTaskToolCallService toolCallService = new RecordingFixTaskToolCallService();
         FixTaskExecutor executor = new NoopFixTaskExecutor(
                 workspaceService,
                 mavenTestRunner,
@@ -133,7 +152,8 @@ class WorkspaceFixTaskExecutorTests {
                 commitTool,
                 pushTool,
                 pullRequestTool,
-                testRunService
+                testRunService,
+                toolCallService
         );
 
         assertThatThrownBy(() -> executor.execute(task()))
@@ -141,6 +161,11 @@ class WorkspaceFixTaskExecutorTests {
                 .hasMessage("git commit failed: nothing to commit");
         assertThat(pushTool.callOrder()).isZero();
         assertThat(pullRequestTool.callOrder()).isZero();
+        assertThat(toolCallService.toolCalls())
+                .extracting(FixTaskToolCallVo::toolName)
+                .containsExactly("PatchWorkflow", "DiffTool", "CommitTool");
+        assertThat(toolCallService.lastToolCall().success()).isFalse();
+        assertThat(toolCallService.lastToolCall().outputSummary()).isEqualTo("git commit failed: nothing to commit");
     }
 
     @Test
@@ -153,6 +178,7 @@ class WorkspaceFixTaskExecutorTests {
         RecordingPullRequestTool pullRequestTool = new RecordingPullRequestTool();
         RecordingMavenTestRunner mavenTestRunner = new RecordingMavenTestRunner(0, "tests passed");
         RecordingFixTaskTestRunService testRunService = new RecordingFixTaskTestRunService();
+        RecordingFixTaskToolCallService toolCallService = new RecordingFixTaskToolCallService();
         FixTaskExecutor executor = new NoopFixTaskExecutor(
                 workspaceService,
                 mavenTestRunner,
@@ -161,13 +187,19 @@ class WorkspaceFixTaskExecutorTests {
                 commitTool,
                 pushTool,
                 pullRequestTool,
-                testRunService
+                testRunService,
+                toolCallService
         );
 
         assertThatThrownBy(() -> executor.execute(task()))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("git push failed: permission denied");
         assertThat(pullRequestTool.callOrder()).isZero();
+        assertThat(toolCallService.toolCalls())
+                .extracting(FixTaskToolCallVo::toolName)
+                .containsExactly("PatchWorkflow", "DiffTool", "CommitTool", "PushTool");
+        assertThat(toolCallService.lastToolCall().success()).isFalse();
+        assertThat(toolCallService.lastToolCall().outputSummary()).isEqualTo("git push failed: permission denied");
     }
 
     private static FixTaskVo task() {
@@ -303,6 +335,51 @@ class WorkspaceFixTaskExecutorTests {
 
         private Instant finishedAt() {
             return finishedAt;
+        }
+    }
+
+    private static final class RecordingFixTaskToolCallService implements FixTaskToolCallService {
+
+        private final List<FixTaskToolCallVo> toolCalls = new java.util.ArrayList<>();
+
+        @Override
+        public FixTaskToolCallVo recordToolCall(
+                String taskId,
+                String toolName,
+                String inputSummary,
+                String outputSummary,
+                boolean success,
+                Instant startedAt,
+                Instant finishedAt
+        ) {
+            FixTaskToolCallVo toolCall = new FixTaskToolCallVo(
+                    "tool-call-" + (toolCalls.size() + 1),
+                    taskId,
+                    toolName,
+                    inputSummary,
+                    outputSummary,
+                    success,
+                    startedAt,
+                    finishedAt,
+                    java.time.Duration.between(startedAt, finishedAt).toMillis()
+            );
+            toolCalls.add(toolCall);
+            return toolCall;
+        }
+
+        @Override
+        public List<FixTaskToolCallVo> listToolCalls(String taskId) {
+            return toolCalls.stream()
+                    .filter(toolCall -> toolCall.taskId().equals(taskId))
+                    .toList();
+        }
+
+        private List<FixTaskToolCallVo> toolCalls() {
+            return toolCalls;
+        }
+
+        private FixTaskToolCallVo lastToolCall() {
+            return toolCalls.get(toolCalls.size() - 1);
         }
     }
 
