@@ -618,3 +618,23 @@ Validation:
 
 - `mvn -pl PatchPilot -Dtest=MyBatisFixTaskQueueTests,FixTaskQueuePollerTests test`: first failed because `TaskQueueProperties`, retry-aware queue constructor, and `recoverTimedOutRunningItems()` did not exist, then passed after implementation, 10 tests run, 0 failures, 0 errors.
 - `mvn -pl PatchPilot test`: passed, 150 tests run, 0 failures, 0 errors.
+
+## 2026-06-19
+
+Implemented queue observability API from `docs/plans/023-queue-observability-api.md`.
+
+Changes:
+
+- Added `FixTaskQueueQueryService` to separate read-only queue inspection from queue execution.
+- Added `FixTaskQueueSummaryVo` for aggregate queue state.
+- Added default-profile empty queue query implementation so no-database local runs still expose queue endpoints safely.
+- Added `MyBatisFixTaskQueueQueryService` for `local` and `docker` profiles to list queue items and summarize status counts from `fix_task_queue_item`.
+- Added `GET /api/task-queue/items` with optional `status` filtering.
+- Added `GET /api/task-queue/summary` for total, pending, available pending, delayed pending, running, completed, and failed counts.
+- Kept this phase read-only: no queue mutation or admin retry endpoint was added.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=MyBatisFixTaskQueueQueryServiceTests,TaskControllerTests test`: first failed because the queue query service and summary VO did not exist, then passed after implementation, 14 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=TaskQueueControllerTests,MyBatisFixTaskQueueQueryServiceTests,TaskControllerTests test`: passed, 16 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot test`: passed, 157 tests run, 0 failures, 0 errors.
