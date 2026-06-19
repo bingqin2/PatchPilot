@@ -799,3 +799,21 @@ Validation:
 - `mvn -pl PatchPilot -Dtest=OpenAiCompatibleModelClientTests test`: first failed because agent config, provider domain, and client classes did not exist, then passed after implementation, 3 tests run, 0 failures, 0 errors.
 - `mvn -pl PatchPilot -Dtest=PatchPilotApplicationTests,OpenAiCompatibleModelClientTests test`: passed, 4 tests run, 0 failures, 0 errors.
 - `mvn -pl PatchPilot test`: passed, 219 tests run, 0 failures, 0 errors.
+
+## 2026-06-20
+
+Implemented structured fix-plan generation from `docs/plans/032-structured-fix-plan-generation.md`.
+
+Changes:
+
+- Added `FixPlanGenerator` as a model-backed planning boundary.
+- Added typed `FixPlan` output with summary, target files, steps, and risk fields.
+- Added `FixPlanGenerationException` for invalid or incomplete model output.
+- Built deterministic system and user prompts from `FixTaskVo` metadata.
+- Kept execution unchanged: `NoopFixTaskExecutor` and `SimplePatchWorkflow` do not call the fix-plan generator yet.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=FixPlanGeneratorTests test`: first failed because `FixPlanGenerator`, `FixPlan`, and `FixPlanGenerationException` did not exist, then passed after implementation, 3 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=PatchPilotApplicationTests,FixPlanGeneratorTests,WorkspaceFixTaskExecutorTests test`: first failed because Spring could not choose the production `FixPlanGenerator` constructor, then passed after marking it with `@Autowired`, 12 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot test`: passed, 222 tests run, 0 failures, 0 errors.
