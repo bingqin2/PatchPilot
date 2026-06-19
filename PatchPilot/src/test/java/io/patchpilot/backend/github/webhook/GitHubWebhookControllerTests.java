@@ -354,6 +354,11 @@ class GitHubWebhookControllerTests {
                 public String commitAll(Path repositoryDir, String message) {
                     return "test commit";
                 }
+
+                @Override
+                public String commitAll(String taskId, Path repositoryDir, String message) {
+                    return commitAll(repositoryDir, message);
+                }
             };
         }
 
@@ -364,6 +369,11 @@ class GitHubWebhookControllerTests {
                 @Override
                 public String pushBranch(Path repositoryDir, String branchName) {
                     return "test push";
+                }
+
+                @Override
+                public String pushBranch(String taskId, Path repositoryDir, String branchName) {
+                    return pushBranch(repositoryDir, branchName);
                 }
             };
         }
