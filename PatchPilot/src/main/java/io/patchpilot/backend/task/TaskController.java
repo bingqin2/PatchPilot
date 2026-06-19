@@ -1,8 +1,10 @@
 package io.patchpilot.backend.task;
 
 import io.patchpilot.backend.common.response.ApiResponse;
+import io.patchpilot.backend.task.domain.vo.FixTaskTestRunVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskTimelineEventVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
+import io.patchpilot.backend.task.service.FixTaskTestRunService;
 import io.patchpilot.backend.task.service.FixTaskTimelineService;
 import io.patchpilot.backend.task.service.FixTaskService;
 import org.springframework.http.ResponseEntity;
@@ -19,10 +21,16 @@ public class TaskController {
 
     private final FixTaskService fixTaskService;
     private final FixTaskTimelineService fixTaskTimelineService;
+    private final FixTaskTestRunService fixTaskTestRunService;
 
-    public TaskController(FixTaskService fixTaskService, FixTaskTimelineService fixTaskTimelineService) {
+    public TaskController(
+            FixTaskService fixTaskService,
+            FixTaskTimelineService fixTaskTimelineService,
+            FixTaskTestRunService fixTaskTestRunService
+    ) {
         this.fixTaskService = fixTaskService;
         this.fixTaskTimelineService = fixTaskTimelineService;
+        this.fixTaskTestRunService = fixTaskTestRunService;
     }
 
     @GetMapping
@@ -43,5 +51,13 @@ public class TaskController {
             return ResponseEntity.status(404).body(ApiResponse.fail("Task not found"));
         }
         return ResponseEntity.ok(ApiResponse.ok(fixTaskTimelineService.listEvents(id)));
+    }
+
+    @GetMapping("/{id}/test-runs")
+    public ResponseEntity<ApiResponse<List<FixTaskTestRunVo>>> getTaskTestRuns(@PathVariable String id) {
+        if (fixTaskService.findTask(id).isEmpty()) {
+            return ResponseEntity.status(404).body(ApiResponse.fail("Task not found"));
+        }
+        return ResponseEntity.ok(ApiResponse.ok(fixTaskTestRunService.listTestRuns(id)));
     }
 }

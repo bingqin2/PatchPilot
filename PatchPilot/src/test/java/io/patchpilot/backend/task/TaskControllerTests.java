@@ -2,7 +2,9 @@ package io.patchpilot.backend.task;
 
 import io.patchpilot.backend.task.domain.bo.CreateFixTaskCommand;
 import io.patchpilot.backend.task.domain.enums.FixTaskTimelineEventType;
+import io.patchpilot.backend.task.domain.vo.FixTaskTestRunVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
+import io.patchpilot.backend.task.service.FixTaskTestRunService;
 import io.patchpilot.backend.task.service.FixTaskTimelineService;
 import io.patchpilot.backend.task.service.FixTaskService;
 import org.junit.jupiter.api.Test;
@@ -10,6 +12,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.servlet.MockMvc;
+
+import java.time.Instant;
 
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.not;
@@ -30,6 +34,9 @@ class TaskControllerTests {
 
     @Autowired
     private FixTaskTimelineService fixTaskTimelineService;
+
+    @Autowired
+    private FixTaskTestRunService fixTaskTestRunService;
 
     @Test
     void should_list_tasks() throws Exception {
@@ -95,6 +102,40 @@ class TaskControllerTests {
     @Test
     void should_return_404_for_missing_task_timeline() throws Exception {
         mockMvc.perform(get("/api/tasks/{id}/timeline", "missing-task"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("Task not found"));
+    }
+
+    @Test
+    void should_get_task_test_runs_by_task_id() throws Exception {
+        FixTaskVo task = createTask("delivery-test-runs");
+        FixTaskTestRunVo testRun = fixTaskTestRunService.recordTestRun(
+                task.id(),
+                "./mvnw test",
+                1,
+                "test failed",
+                Instant.parse("2026-06-19T08:00:00Z"),
+                Instant.parse("2026-06-19T08:00:05Z")
+        );
+
+        mockMvc.perform(get("/api/tasks/{id}/test-runs", task.id()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].id").value(testRun.id()))
+                .andExpect(jsonPath("$.data[0].taskId").value(task.id()))
+                .andExpect(jsonPath("$.data[0].command").value("./mvnw test"))
+                .andExpect(jsonPath("$.data[0].exitCode").value(1))
+                .andExpect(jsonPath("$.data[0].output").value("test failed"))
+                .andExpect(jsonPath("$.data[0].startedAt").value("2026-06-19T08:00:00Z"))
+                .andExpect(jsonPath("$.data[0].finishedAt").value("2026-06-19T08:00:05Z"))
+                .andExpect(jsonPath("$.data[0].durationMs").value(5000));
+    }
+
+    @Test
+    void should_return_404_for_missing_task_test_runs() throws Exception {
+        mockMvc.perform(get("/api/tasks/{id}/test-runs", "missing-task"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.message").value("Task not found"));
