@@ -101,6 +101,25 @@ class IssueCommentToolTests {
     }
 
     @Test
+    void should_update_status_comment_when_active_task_already_exists() {
+        RecordingGitHubIssueCommentClient client = new RecordingGitHubIssueCommentClient();
+        IssueCommentTool tool = new IssueCommentTool(client);
+
+        Optional<IssueCommentResult> result = tool.updateActiveTaskExists(task(
+                FixTaskStatus.RUNNING,
+                123L,
+                null,
+                null
+        ));
+
+        assertThat(result).isPresent();
+        assertThat(client.updateCommand().commentId()).isEqualTo(123);
+        assertThat(client.updateCommand().body()).contains("PatchPilot is already working on this issue.");
+        assertThat(client.updateCommand().body()).contains("Status: RUNNING");
+        assertThat(client.updateCommand().body()).contains("Task: task-123");
+    }
+
+    @Test
     void should_skip_update_when_status_comment_id_is_missing() {
         RecordingGitHubIssueCommentClient client = new RecordingGitHubIssueCommentClient();
         IssueCommentTool tool = new IssueCommentTool(client);

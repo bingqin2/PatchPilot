@@ -57,6 +57,33 @@ class GitHubWebhookServiceTests {
     }
 
     @Test
+    void should_return_duplicate_delivery_before_active_task_exists_for_same_delivery() {
+        ExistingActiveDeliveryFixTaskService fixTaskService = new ExistingActiveDeliveryFixTaskService();
+        RecordingFixTaskDispatcher fixTaskDispatcher = new RecordingFixTaskDispatcher();
+        RecordingIssueCommentTool issueCommentTool = new RecordingIssueCommentTool();
+        RecordingTimelineService timelineService = new RecordingTimelineService();
+        GitHubWebhookService webhookService = new GitHubWebhookService(
+                new ObjectMapper(),
+                fixTaskService,
+                fixTaskDispatcher,
+                issueCommentTool,
+                timelineService
+        );
+
+        WebhookHandleResult result = webhookService.handle(
+                "issue_comment",
+                "delivery-existing-active",
+                issueCommentPayload("/agent fix")
+        );
+
+        assertThat(result.status()).isEqualTo(WebhookHandleStatus.DUPLICATE_DELIVERY);
+        assertThat(result.taskId()).isEqualTo("task-existing-active");
+        assertThat(fixTaskDispatcher.dispatchCount()).isZero();
+        assertThat(issueCommentTool.activeTaskExistsCount()).isZero();
+        assertThat(timelineService.eventTypes()).isEmpty();
+    }
+
+    @Test
     void should_create_status_comment_attach_it_and_dispatch_created_task() {
         FixTaskService fixTaskService = new InMemoryFixTaskService();
         RecordingFixTaskDispatcher fixTaskDispatcher = new RecordingFixTaskDispatcher();
@@ -114,6 +141,53 @@ class GitHubWebhookServiceTests {
         assertThat(task.statusCommentId()).isNull();
         assertThat(fixTaskDispatcher.dispatchedTaskId()).isEqualTo(task.id());
         assertThat(timelineService.eventTypes()).containsExactly(FixTaskTimelineEventType.TASK_CREATED);
+    }
+
+    @Test
+    void should_return_active_task_exists_without_creating_or_dispatching_duplicate_issue_task() {
+        FixTaskService fixTaskService = new InMemoryFixTaskService();
+        FixTaskVo activeTask = fixTaskService.createFixTask(new CreateFixTaskCommand(
+                "octocat",
+                "hello-world",
+                42,
+                12345,
+                "alice",
+                "/agent fix",
+                "delivery-active-original",
+                11111
+        ));
+        activeTask = fixTaskService.attachStatusComment(
+                activeTask.id(),
+                123,
+                "https://github.com/octocat/hello-world/issues/42#issuecomment-123"
+        );
+        activeTask = fixTaskService.markRunning(activeTask.id());
+        RecordingFixTaskDispatcher fixTaskDispatcher = new RecordingFixTaskDispatcher();
+        RecordingIssueCommentTool issueCommentTool = new RecordingIssueCommentTool();
+        RecordingTimelineService timelineService = new RecordingTimelineService();
+        GitHubWebhookService webhookService = new GitHubWebhookService(
+                new ObjectMapper(),
+                fixTaskService,
+                fixTaskDispatcher,
+                issueCommentTool,
+                timelineService
+        );
+
+        WebhookHandleResult result = webhookService.handle(
+                "issue_comment",
+                "delivery-active-duplicate",
+                issueCommentPayload("/agent fix touch docs/demo.md")
+        );
+
+        assertThat(result.status()).isEqualTo(WebhookHandleStatus.ACTIVE_TASK_EXISTS);
+        assertThat(result.taskId()).isEqualTo(activeTask.id());
+        assertThat(fixTaskService.listTasks()).hasSize(1);
+        assertThat(fixTaskDispatcher.dispatchCount()).isZero();
+        assertThat(issueCommentTool.acceptedCount()).isZero();
+        assertThat(issueCommentTool.activeTaskExistsCount()).isEqualTo(1);
+        assertThat(issueCommentTool.activeTaskExistsTaskId()).isEqualTo(activeTask.id());
+        assertThat(timelineService.eventTypes()).containsExactly(FixTaskTimelineEventType.ACTIVE_TASK_EXISTS);
+        assertThat(timelineService.messages()).containsExactly("Ignored duplicate /agent fix while task is active");
     }
 
     private static String issueCommentPayload(String commentBody) {
@@ -195,6 +269,20 @@ class GitHubWebhookServiceTests {
             return Optional.empty();
         }
 
+        @Override
+        public Optional<FixTaskVo> findTaskByDeliveryId(String deliveryId) {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<FixTaskVo> findActiveTaskForIssue(
+                String repositoryOwner,
+                String repositoryName,
+                long issueNumber
+        ) {
+            return Optional.empty();
+        }
+
         private FixTaskVo existingTask(String deliveryId) {
             return new FixTaskVo(
                     "task-existing",
@@ -207,6 +295,85 @@ class GitHubWebhookServiceTests {
                     deliveryId,
                     98765,
                     FixTaskStatus.COMPLETED,
+                    null,
+                    Instant.parse("2026-06-19T01:02:03Z")
+            );
+        }
+    }
+
+    private static final class ExistingActiveDeliveryFixTaskService implements FixTaskService {
+
+        @Override
+        public FixTaskVo createFixTask(CreateFixTaskCommand command) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public FixTaskVo markRunning(String id) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public FixTaskVo markRunningTests(String id) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public FixTaskVo markCompleted(String id) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public FixTaskVo markCompleted(String id, String pullRequestUrl) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public FixTaskVo markFailed(String id, String failureReason) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public FixTaskVo attachStatusComment(String id, long statusCommentId, String statusCommentUrl) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public List<FixTaskVo> listTasks() {
+            return List.of();
+        }
+
+        @Override
+        public Optional<FixTaskVo> findTask(String id) {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<FixTaskVo> findTaskByDeliveryId(String deliveryId) {
+            return Optional.of(existingTask(deliveryId));
+        }
+
+        @Override
+        public Optional<FixTaskVo> findActiveTaskForIssue(
+                String repositoryOwner,
+                String repositoryName,
+                long issueNumber
+        ) {
+            return Optional.of(existingTask("delivery-existing-active"));
+        }
+
+        private FixTaskVo existingTask(String deliveryId) {
+            return new FixTaskVo(
+                    "task-existing-active",
+                    "octocat",
+                    "hello-world",
+                    42,
+                    12345,
+                    "alice",
+                    "/agent fix",
+                    deliveryId,
+                    98765,
+                    FixTaskStatus.RUNNING,
                     null,
                     Instant.parse("2026-06-19T01:02:03Z")
             );
@@ -236,7 +403,9 @@ class GitHubWebhookServiceTests {
     private static class RecordingIssueCommentTool extends IssueCommentTool {
 
         private final AtomicInteger acceptedCount = new AtomicInteger();
+        private final AtomicInteger activeTaskExistsCount = new AtomicInteger();
         private final AtomicReference<String> acceptedTaskId = new AtomicReference<>();
+        private final AtomicReference<String> activeTaskExistsTaskId = new AtomicReference<>();
 
         private RecordingIssueCommentTool() {
             super(new GitHubIssueCommentClient(new GitHubProperties()) {
@@ -254,12 +423,27 @@ class GitHubWebhookServiceTests {
             return new IssueCommentResult(123, "https://github.com/octocat/hello-world/issues/42#issuecomment-123");
         }
 
+        @Override
+        public Optional<IssueCommentResult> updateActiveTaskExists(FixTaskVo task) {
+            activeTaskExistsCount.incrementAndGet();
+            activeTaskExistsTaskId.set(task.id());
+            return Optional.of(new IssueCommentResult(123, "https://github.com/octocat/hello-world/issues/42#issuecomment-123"));
+        }
+
         int acceptedCount() {
             return acceptedCount.get();
         }
 
         String acceptedTaskId() {
             return acceptedTaskId.get();
+        }
+
+        int activeTaskExistsCount() {
+            return activeTaskExistsCount.get();
+        }
+
+        String activeTaskExistsTaskId() {
+            return activeTaskExistsTaskId.get();
         }
     }
 

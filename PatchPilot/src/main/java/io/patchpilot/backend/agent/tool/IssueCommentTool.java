@@ -45,6 +45,11 @@ public class IssueCommentTool {
         return update(task, "PatchPilot failed the task.", FixTaskStatus.FAILED, null, task.failureReason());
     }
 
+    public Optional<IssueCommentResult> updateActiveTaskExists(FixTaskVo task) {
+        return update(task, "PatchPilot is already working on this issue.", task.status(), task.pullRequestUrl(),
+                task.failureReason());
+    }
+
     public IssueCommentResult commentCompleted(FixTaskVo task, String pullRequestUrl) {
         return updateCompleted(task).orElseGet(() -> gitHubIssueCommentClient.createIssueComment(command(task, body(
                 "PatchPilot completed the task.",

@@ -174,6 +174,40 @@ class MyBatisFixTaskServiceTests {
     }
 
     @Test
+    void should_find_task_by_delivery_id() {
+        FixTaskEntity existingTask = entity("task-123", "delivery-123", FixTaskStatus.PENDING,
+                null, Instant.parse("2026-06-19T01:00:00Z"));
+        when(fixTaskMapper.selectOne(any())).thenReturn(existingTask);
+
+        assertThat(fixTaskService.findTaskByDeliveryId("delivery-123"))
+                .get()
+                .extracting(FixTaskVo::id)
+                .isEqualTo("task-123");
+    }
+
+    @Test
+    void should_find_active_task_for_issue_newest_first() {
+        FixTaskEntity olderTask = entity("task-older", "delivery-older", FixTaskStatus.PENDING,
+                null, Instant.parse("2026-06-19T01:00:00Z"));
+        FixTaskEntity newerTask = entity("task-newer", "delivery-newer", FixTaskStatus.RUNNING_TESTS,
+                null, Instant.parse("2026-06-19T02:00:00Z"));
+        when(fixTaskMapper.selectList(any())).thenReturn(List.of(olderTask, newerTask));
+
+        assertThat(fixTaskService.findActiveTaskForIssue("octocat", "hello-world", 42))
+                .get()
+                .extracting(FixTaskVo::id)
+                .isEqualTo("task-newer");
+    }
+
+    @Test
+    void should_return_empty_when_issue_has_no_active_task() {
+        when(fixTaskMapper.selectList(any())).thenReturn(List.of());
+
+        assertThat(fixTaskService.findActiveTaskForIssue("octocat", "hello-world", 42))
+                .isEmpty();
+    }
+
+    @Test
     void should_reject_status_transition_for_missing_task() {
         when(fixTaskMapper.selectById("missing-task")).thenReturn(null);
 

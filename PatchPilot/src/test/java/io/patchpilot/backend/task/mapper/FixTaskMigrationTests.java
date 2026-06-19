@@ -33,4 +33,17 @@ class FixTaskMigrationTests {
         assertThat(sql).contains("unique key uk_fix_task_delivery_id");
         assertThat(sql).contains("(delivery_id)");
     }
+
+    @Test
+    void should_add_active_task_issue_lookup_index() throws IOException {
+        String sql = Files.readString(Path.of("src/main/resources/db/migration/V5__add_fix_task_active_lookup_index.sql"))
+                .toLowerCase(Locale.ROOT);
+
+        assertThat(sql).contains("alter table fix_task");
+        assertThat(sql).contains("idx_fix_task_issue_status");
+        assertThat(sql).contains("repository_owner");
+        assertThat(sql).contains("repository_name");
+        assertThat(sql).contains("issue_number");
+        assertThat(sql).contains("status");
+    }
 }

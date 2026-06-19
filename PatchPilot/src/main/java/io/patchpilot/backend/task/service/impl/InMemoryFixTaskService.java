@@ -140,6 +140,23 @@ public class InMemoryFixTaskService implements FixTaskService {
         return Optional.ofNullable(tasks.get(id));
     }
 
+    @Override
+    public Optional<FixTaskVo> findTaskByDeliveryId(String deliveryId) {
+        return tasks.values().stream()
+                .filter(task -> task.deliveryId().equals(deliveryId))
+                .findFirst();
+    }
+
+    @Override
+    public Optional<FixTaskVo> findActiveTaskForIssue(String repositoryOwner, String repositoryName, long issueNumber) {
+        return tasks.values().stream()
+                .filter(task -> task.repositoryOwner().equals(repositoryOwner))
+                .filter(task -> task.repositoryName().equals(repositoryName))
+                .filter(task -> task.issueNumber() == issueNumber)
+                .filter(task -> task.status().isActive())
+                .max(Comparator.comparing(FixTaskVo::createdAt));
+    }
+
     private FixTaskVo replaceStatus(String id, FixTaskStatus status, String failureReason) {
         FixTaskVo updatedTask = tasks.compute(id, (taskId, currentTask) -> {
             if (currentTask == null) {
