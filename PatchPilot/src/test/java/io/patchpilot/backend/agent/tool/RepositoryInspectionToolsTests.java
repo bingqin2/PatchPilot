@@ -1,5 +1,6 @@
 package io.patchpilot.backend.agent.tool;
 
+import io.patchpilot.backend.workspace.config.WorkspaceProperties;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -23,7 +24,7 @@ class RepositoryInspectionToolsTests {
         Files.writeString(repositoryDir.resolve("src/main/java/App.java"), "class App {}\n");
         Files.writeString(repositoryDir.resolve(".git/config"), "ignored\n");
         Files.writeString(repositoryDir.resolve("target/classes/App.class"), "ignored\n");
-        RepoTreeTool tool = new RepoTreeTool(new RepositoryFileScanner());
+        RepoTreeTool tool = new RepoTreeTool(scanner());
 
         String tree = tool.tree(repositoryDir);
 
@@ -37,7 +38,7 @@ class RepositoryInspectionToolsTests {
         Files.createDirectories(repositoryDir.resolve("src/main/java"));
         Files.writeString(repositoryDir.resolve("README.md"), "PatchPilot\nNo match\n");
         Files.writeString(repositoryDir.resolve("src/main/java/App.java"), "class App {\n  String name = \"PatchPilot\";\n}\n");
-        CodeSearchTool tool = new CodeSearchTool(new RepositoryFileScanner());
+        CodeSearchTool tool = new CodeSearchTool(scanner());
 
         String matches = tool.search(repositoryDir, "PatchPilot");
 
@@ -50,7 +51,7 @@ class RepositoryInspectionToolsTests {
     void should_skip_generated_directories_when_searching() throws Exception {
         Files.createDirectories(repositoryDir.resolve("target/classes"));
         Files.writeString(repositoryDir.resolve("target/classes/App.java"), "PatchPilot\n");
-        CodeSearchTool tool = new CodeSearchTool(new RepositoryFileScanner());
+        CodeSearchTool tool = new CodeSearchTool(scanner());
 
         String matches = tool.search(repositoryDir, "PatchPilot");
 
@@ -59,7 +60,7 @@ class RepositoryInspectionToolsTests {
 
     @Test
     void should_reject_blank_search_query() {
-        CodeSearchTool tool = new CodeSearchTool(new RepositoryFileScanner());
+        CodeSearchTool tool = new CodeSearchTool(scanner());
 
         assertThatThrownBy(() -> tool.search(repositoryDir, " "))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -69,10 +70,40 @@ class RepositoryInspectionToolsTests {
     @Test
     void should_limit_search_matches() throws Exception {
         Files.writeString(repositoryDir.resolve("README.md"), "PatchPilot\n".repeat(60));
-        CodeSearchTool tool = new CodeSearchTool(new RepositoryFileScanner());
+        CodeSearchTool tool = new CodeSearchTool(scanner());
 
         String matches = tool.search(repositoryDir, "PatchPilot");
 
         assertThat(matches.lines()).hasSize(50);
+    }
+
+    @Test
+    void should_reject_repository_tree_outside_workspace_root() {
+        WorkspaceProperties properties = new WorkspaceProperties();
+        properties.setRootDir(repositoryDir);
+        Path outsideRepositoryDir = repositoryDir.getParent().resolve("outside-repo");
+        RepoTreeTool tool = new RepoTreeTool(new RepositoryFileScanner(properties));
+
+        assertThatThrownBy(() -> tool.tree(outsideRepositoryDir))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Repository directory escapes workspace root: " + outsideRepositoryDir.toAbsolutePath().normalize());
+    }
+
+    @Test
+    void should_reject_code_search_outside_workspace_root() {
+        WorkspaceProperties properties = new WorkspaceProperties();
+        properties.setRootDir(repositoryDir);
+        Path outsideRepositoryDir = repositoryDir.getParent().resolve("outside-repo");
+        CodeSearchTool tool = new CodeSearchTool(new RepositoryFileScanner(properties));
+
+        assertThatThrownBy(() -> tool.search(outsideRepositoryDir, "PatchPilot"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Repository directory escapes workspace root: " + outsideRepositoryDir.toAbsolutePath().normalize());
+    }
+
+    private RepositoryFileScanner scanner() {
+        WorkspaceProperties properties = new WorkspaceProperties();
+        properties.setRootDir(repositoryDir);
+        return new RepositoryFileScanner(properties);
     }
 }

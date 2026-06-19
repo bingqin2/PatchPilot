@@ -5,6 +5,7 @@ import io.patchpilot.backend.agent.workflow.domain.PatchWorkflowResult;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import io.patchpilot.backend.workspace.WorkspacePathResolver;
+import io.patchpilot.backend.workspace.config.WorkspaceProperties;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -22,7 +23,7 @@ class SimplePatchWorkflowTests {
 
     @Test
     void should_apply_touch_instruction_as_deterministic_file_patch() throws Exception {
-        SimplePatchWorkflow workflow = new SimplePatchWorkflow(new FileWriteTool(new WorkspacePathResolver()));
+        SimplePatchWorkflow workflow = workflow();
 
         PatchWorkflowResult result = workflow.apply(task("/agent fix touch docs/demo.md"), repositoryDir);
 
@@ -39,7 +40,7 @@ class SimplePatchWorkflowTests {
 
     @Test
     void should_skip_patch_when_comment_has_no_touch_instruction() {
-        SimplePatchWorkflow workflow = new SimplePatchWorkflow(new FileWriteTool(new WorkspacePathResolver()));
+        SimplePatchWorkflow workflow = workflow();
 
         PatchWorkflowResult result = workflow.apply(task("/agent fix"), repositoryDir);
 
@@ -49,11 +50,17 @@ class SimplePatchWorkflowTests {
 
     @Test
     void should_reject_unsafe_touch_paths() {
-        SimplePatchWorkflow workflow = new SimplePatchWorkflow(new FileWriteTool(new WorkspacePathResolver()));
+        SimplePatchWorkflow workflow = workflow();
 
         assertThatThrownBy(() -> workflow.apply(task("/agent fix touch ../outside.md"), repositoryDir))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Repository path escapes workspace: ../outside.md");
+    }
+
+    private SimplePatchWorkflow workflow() {
+        WorkspaceProperties properties = new WorkspaceProperties();
+        properties.setRootDir(repositoryDir);
+        return new SimplePatchWorkflow(new FileWriteTool(new WorkspacePathResolver(properties)));
     }
 
     private static FixTaskVo task(String triggerComment) {
