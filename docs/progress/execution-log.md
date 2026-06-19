@@ -835,3 +835,25 @@ Validation:
 - `mvn -pl PatchPilot -Dtest=PlannedPatchWorkflowTests test`: first failed because `PlannedPatchWorkflow` did not exist, then passed after implementation, 4 tests run, 0 failures, 0 errors.
 - `mvn -pl PatchPilot -Dtest=PatchPilotApplicationTests,PlannedPatchWorkflowTests,SimplePatchWorkflowTests,WorkspaceFixTaskExecutorTests test`: passed, 16 tests run, 0 failures, 0 errors.
 - `mvn -pl PatchPilot test`: passed, 226 tests run, 0 failures, 0 errors.
+
+## 2026-06-20
+
+Implemented plan-driven executor integration from `docs/plans/034-plan-driven-executor-integration.md`.
+
+Changes:
+
+- Added `PlanDrivenPatchWorkflow` as the production `PatchWorkflow`.
+- Wired production patching as `FixPlanGenerator` followed by `PlannedPatchWorkflow`.
+- Added `PatchWorkflowConfiguration` to provide the planned patch workflow bean.
+- Kept `SimplePatchWorkflow` available as a deterministic test helper but no longer registered it as a Spring component.
+- Added an application-context assertion that production has one `PatchWorkflow` bean and it is plan-driven.
+- Preserved the existing executor sequence after patching: diff, Maven tests, commit, push, and Pull Request creation.
+- Added explicit Maven compiler annotation processor configuration for Lombok because the current branch contains Lombok-based entity and constructor changes.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=PlanDrivenPatchWorkflowTests test`: first failed because `PlanDrivenPatchWorkflow` did not exist, then passed after implementation, 1 test run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=PatchPilotApplicationTests test`: first failed because Lombok-generated accessors were unavailable during compilation, then passed after adding the compiler annotation processor configuration, 2 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=PlanDrivenPatchWorkflowTests,PlannedPatchWorkflowTests,PatchPilotApplicationTests test`: passed, 8 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=WorkspaceFixTaskExecutorTests,GitHubWebhookControllerTests,PlanDrivenPatchWorkflowTests,PlannedPatchWorkflowTests,PatchPilotApplicationTests test`: passed, 24 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot test`: passed, 229 tests run, 0 failures, 0 errors.

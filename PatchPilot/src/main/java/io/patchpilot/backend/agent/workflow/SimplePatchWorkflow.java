@@ -3,14 +3,12 @@ package io.patchpilot.backend.agent.workflow;
 import io.patchpilot.backend.agent.tool.FileWriteTool;
 import io.patchpilot.backend.agent.workflow.domain.PatchWorkflowResult;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
-import org.springframework.stereotype.Component;
 
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-@Component
 public class SimplePatchWorkflow implements PatchWorkflow {
 
     private static final Pattern TOUCH_INSTRUCTION = Pattern.compile("(?:^|\\s)touch\\s+(\\S+)");

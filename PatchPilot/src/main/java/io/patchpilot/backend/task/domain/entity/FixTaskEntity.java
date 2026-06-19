@@ -4,9 +4,11 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import lombok.Data;
 
 import java.time.Instant;
 
+@Data
 @TableName("fix_task")
 public class FixTaskEntity {
 
@@ -61,139 +63,4 @@ public class FixTaskEntity {
     @TableField("status_comment_url")
     private String statusCommentUrl;
 
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    public String getRepositoryOwner() {
-        return repositoryOwner;
-    }
-
-    public void setRepositoryOwner(String repositoryOwner) {
-        this.repositoryOwner = repositoryOwner;
-    }
-
-    public String getRepositoryName() {
-        return repositoryName;
-    }
-
-    public void setRepositoryName(String repositoryName) {
-        this.repositoryName = repositoryName;
-    }
-
-    public long getIssueNumber() {
-        return issueNumber;
-    }
-
-    public void setIssueNumber(long issueNumber) {
-        this.issueNumber = issueNumber;
-    }
-
-    public long getInstallationId() {
-        return installationId;
-    }
-
-    public void setInstallationId(long installationId) {
-        this.installationId = installationId;
-    }
-
-    public String getTriggerUser() {
-        return triggerUser;
-    }
-
-    public void setTriggerUser(String triggerUser) {
-        this.triggerUser = triggerUser;
-    }
-
-    public String getTriggerComment() {
-        return triggerComment;
-    }
-
-    public void setTriggerComment(String triggerComment) {
-        this.triggerComment = triggerComment;
-    }
-
-    public String getDeliveryId() {
-        return deliveryId;
-    }
-
-    public void setDeliveryId(String deliveryId) {
-        this.deliveryId = deliveryId;
-    }
-
-    public long getCommentId() {
-        return commentId;
-    }
-
-    public void setCommentId(long commentId) {
-        this.commentId = commentId;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
-    public String getFailureReason() {
-        return failureReason;
-    }
-
-    public void setFailureReason(String failureReason) {
-        this.failureReason = failureReason;
-    }
-
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public String getPullRequestUrl() {
-        return pullRequestUrl;
-    }
-
-    public void setPullRequestUrl(String pullRequestUrl) {
-        this.pullRequestUrl = pullRequestUrl;
-    }
-
-    public Instant getCompletedAt() {
-        return completedAt;
-    }
-
-    public void setCompletedAt(Instant completedAt) {
-        this.completedAt = completedAt;
-    }
-
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    public Long getStatusCommentId() {
-        return statusCommentId;
-    }
-
-    public void setStatusCommentId(Long statusCommentId) {
-        this.statusCommentId = statusCommentId;
-    }
-
-    public String getStatusCommentUrl() {
-        return statusCommentUrl;
-    }
-
-    public void setStatusCommentUrl(String statusCommentUrl) {
-        this.statusCommentUrl = statusCommentUrl;
-    }
 }
