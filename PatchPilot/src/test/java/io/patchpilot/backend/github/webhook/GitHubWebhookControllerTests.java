@@ -2,12 +2,16 @@ package io.patchpilot.backend.github.webhook;
 
 import io.patchpilot.backend.agent.tool.CommitTool;
 import io.patchpilot.backend.agent.tool.DiffTool;
+import io.patchpilot.backend.agent.tool.IssueCommentTool;
 import io.patchpilot.backend.agent.tool.PullRequestTool;
 import io.patchpilot.backend.agent.tool.PushTool;
 import io.patchpilot.backend.agent.workflow.PatchWorkflow;
 import io.patchpilot.backend.agent.workflow.domain.PatchWorkflowResult;
+import io.patchpilot.backend.github.client.GitHubIssueCommentClient;
 import io.patchpilot.backend.github.client.GitHubPullRequestClient;
+import io.patchpilot.backend.github.client.domain.CreateIssueCommentCommand;
 import io.patchpilot.backend.github.client.domain.CreatePullRequestCommand;
+import io.patchpilot.backend.github.client.domain.IssueCommentResult;
 import io.patchpilot.backend.github.client.domain.PullRequestResult;
 import io.patchpilot.backend.github.config.GitHubProperties;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
@@ -365,6 +369,17 @@ class GitHubWebhookControllerTests {
                 @Override
                 public PullRequestResult createPullRequest(CreatePullRequestCommand command) {
                     return new PullRequestResult("https://github.com/octocat/hello-world/pull/7");
+                }
+            });
+        }
+
+        @Bean
+        @Primary
+        IssueCommentTool issueCommentTool() {
+            return new IssueCommentTool(new GitHubIssueCommentClient(new GitHubProperties()) {
+                @Override
+                public IssueCommentResult createIssueComment(CreateIssueCommentCommand command) {
+                    return new IssueCommentResult(123, "https://github.com/octocat/hello-world/issues/42#issuecomment-123");
                 }
             });
         }

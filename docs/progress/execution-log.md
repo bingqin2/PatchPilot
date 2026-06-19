@@ -393,3 +393,31 @@ Validation:
 - `mvn -pl PatchPilot -Dtest=GitHubPullRequestClientTests,PullRequestToolTests,WorkspaceFixTaskExecutorTests,GitHubWebhookControllerTests test`: first failed because Spring could not choose a `GitHubPullRequestClient` constructor, then passed after marking the production constructor for injection, 16 tests run, 0 failures, 0 errors.
 - `mvn test` from repository root: passed, 73 tests run, 0 failures, 0 errors.
 - `mvn clean package` from repository root: passed, 73 tests run, 0 failures, 0 errors, and generated `PatchPilot/target/patchpilot-backend-0.0.1-SNAPSHOT.jar`.
+
+## 2026-06-19
+
+Implemented Issue comment feedback from `docs/plans/013-issue-comment-feedback.md`.
+
+Changes:
+
+- Added `GitHubIssueCommentClient` for GitHub Issue comment API calls using Java `HttpClient`.
+- Added `CreateIssueCommentCommand`, `IssueCommentResult`, and `GitHubIssueCommentException`.
+- Added `IssueCommentTool` to build completion and failure comments from task context.
+- Added `FixTaskExecutionResult` so task execution can return the created PR URL.
+- Updated `FixTaskExecutor` and `NoopFixTaskExecutor` to return the PR URL after Pull Request creation.
+- Updated `AsyncFixTaskDispatcher` to comment on the original Issue after `COMPLETED` or `FAILED` status updates.
+- Kept task status stable when a post-completion Issue comment fails.
+- Isolated webhook controller tests from real GitHub Issue comment API calls with a primary test `IssueCommentTool`.
+- Kept this phase limited to status feedback: no retries, persisted PR URLs, persisted comment IDs, merges, or model provider calls were added.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=GitHubIssueCommentClientTests test`: first failed because Issue comment client classes did not exist, then passed after implementation, 3 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=IssueCommentToolTests test`: first failed because `IssueCommentTool` did not exist, then passed after implementation, 2 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=WorkspaceFixTaskExecutorTests test`: first failed because `FixTaskExecutionResult` did not exist and the executor returned `void`, then passed after returning the PR URL, 4 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=AsyncFixTaskDispatcherTests test`: first failed because the dispatcher did not accept `IssueCommentTool`, then passed after posting completion and failure comments, 3 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=AsyncFixTaskDispatcherTests#should_keep_completed_status_when_completion_comment_fails test`: first failed because completion comment failure triggered a failure comment and status rewrite, then passed after narrowing the executor failure boundary, 1 test run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=AsyncFixTaskDispatcherTests test`: passed after the boundary fix, 4 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=GitHubIssueCommentClientTests,IssueCommentToolTests,WorkspaceFixTaskExecutorTests,AsyncFixTaskDispatcherTests,GitHubWebhookControllerTests test`: passed, 21 tests run, 0 failures, 0 errors.
+- `mvn test` from repository root: passed, 79 tests run, 0 failures, 0 errors.
+- `mvn clean package` from repository root: passed, 79 tests run, 0 failures, 0 errors, and generated `PatchPilot/target/patchpilot-backend-0.0.1-SNAPSHOT.jar`.

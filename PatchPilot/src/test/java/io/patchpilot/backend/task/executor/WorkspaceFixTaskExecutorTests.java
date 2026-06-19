@@ -14,6 +14,7 @@ import io.patchpilot.backend.runner.domain.vo.TestRunResult;
 import io.patchpilot.backend.runner.service.MavenTestRunner;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
+import io.patchpilot.backend.task.executor.domain.FixTaskExecutionResult;
 import io.patchpilot.backend.workspace.runner.GitCommandResult;
 import io.patchpilot.backend.workspace.runner.GitCommandRunner;
 import io.patchpilot.backend.workspace.domain.bo.CloneWorkspaceCommand;
@@ -49,8 +50,9 @@ class WorkspaceFixTaskExecutorTests {
                 pullRequestTool
         );
 
-        executor.execute(task());
+        FixTaskExecutionResult result = executor.execute(task());
 
+        assertThat(result.pullRequestUrl()).isEqualTo("https://github.com/octocat/hello-world/pull/7");
         assertThat(workspaceService.command().taskId()).isEqualTo("task-123");
         assertThat(workspaceService.command().repositoryOwner()).isEqualTo("octocat");
         assertThat(workspaceService.command().repositoryName()).isEqualTo("hello-world");
