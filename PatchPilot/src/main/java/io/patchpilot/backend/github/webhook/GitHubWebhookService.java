@@ -3,6 +3,7 @@ package io.patchpilot.backend.github.webhook;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.patchpilot.backend.task.domain.bo.CreateFixTaskCommand;
+import io.patchpilot.backend.task.domain.bo.FixTaskCreationResult;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import io.patchpilot.backend.task.service.FixTaskDispatcher;
 import io.patchpilot.backend.task.service.FixTaskService;
@@ -59,7 +60,7 @@ public class GitHubWebhookService {
         if (!isAgentFixCommand(commentBody)) {
             return WebhookHandleResult.ignored();
         }
-        FixTaskVo task = fixTaskService.createFixTask(new CreateFixTaskCommand(
+        FixTaskCreationResult creationResult = fixTaskService.createFixTaskIfAbsent(new CreateFixTaskCommand(
                 requiredText(root, "repository", "owner", "login"),
                 requiredText(root, "repository", "name"),
                 requiredLong(root, "issue", "number"),
@@ -69,6 +70,10 @@ public class GitHubWebhookService {
                 deliveryId,
                 requiredLong(root, "comment", "id")
         ));
+        FixTaskVo task = creationResult.task();
+        if (!creationResult.created()) {
+            return WebhookHandleResult.duplicate(task.id());
+        }
         fixTaskDispatcher.dispatch(task.id());
         return WebhookHandleResult.taskCreated(task.id());
     }
