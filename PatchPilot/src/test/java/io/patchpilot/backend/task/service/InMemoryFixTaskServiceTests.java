@@ -67,6 +67,26 @@ class InMemoryFixTaskServiceTests {
     }
 
     @Test
+    void should_attach_status_comment_metadata() {
+        FixTaskVo task = createTask("delivery-status-comment");
+
+        FixTaskVo updatedTask = fixTaskService.attachStatusComment(
+                task.id(),
+                123,
+                "https://github.com/octocat/hello-world/issues/42#issuecomment-123"
+        );
+
+        assertThat(updatedTask.status()).isEqualTo(FixTaskStatus.PENDING);
+        assertThat(updatedTask.statusCommentId()).isEqualTo(123L);
+        assertThat(updatedTask.statusCommentUrl()).isEqualTo("https://github.com/octocat/hello-world/issues/42#issuecomment-123");
+        assertThat(updatedTask.updatedAt()).isAfterOrEqualTo(task.updatedAt());
+        assertThat(fixTaskService.findTask(task.id()))
+                .get()
+                .extracting(FixTaskVo::statusCommentId)
+                .isEqualTo(123L);
+    }
+
+    @Test
     void should_reject_status_transition_for_missing_task() {
         assertThatThrownBy(() -> fixTaskService.markRunning("missing-task"))
                 .isInstanceOf(IllegalArgumentException.class)

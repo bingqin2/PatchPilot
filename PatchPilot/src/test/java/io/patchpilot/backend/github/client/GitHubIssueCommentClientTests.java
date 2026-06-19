@@ -3,6 +3,7 @@ package io.patchpilot.backend.github.client;
 import io.patchpilot.backend.github.client.domain.CreateIssueCommentCommand;
 import io.patchpilot.backend.github.client.domain.GitHubIssueCommentException;
 import io.patchpilot.backend.github.client.domain.IssueCommentResult;
+import io.patchpilot.backend.github.client.domain.UpdateIssueCommentCommand;
 import io.patchpilot.backend.github.config.GitHubProperties;
 import org.junit.jupiter.api.Test;
 
@@ -74,6 +75,52 @@ class GitHubIssueCommentClientTests {
                 .hasMessage("GitHub issue comment creation failed: HTTP 403");
     }
 
+    @Test
+    void should_update_issue_comment_with_expected_request() {
+        RecordingHttpClient httpClient = new RecordingHttpClient(
+                200,
+                "{\"id\":123,\"html_url\":\"https://github.com/octocat/hello-world/issues/42#issuecomment-123\"}"
+        );
+        GitHubIssueCommentClient client = new GitHubIssueCommentClient(httpClient, properties("secret-token"));
+
+        IssueCommentResult result = client.updateIssueComment(updateCommand());
+
+        assertThat(result.id()).isEqualTo(123);
+        assertThat(result.url()).isEqualTo("https://github.com/octocat/hello-world/issues/42#issuecomment-123");
+        assertThat(httpClient.request().method()).isEqualTo("PATCH");
+        assertThat(httpClient.request().uri())
+                .isEqualTo(URI.create("https://api.github.com/repos/octocat/hello-world/issues/comments/123"));
+        assertThat(httpClient.request().headers().firstValue("Authorization")).contains("Bearer secret-token");
+        assertThat(httpClient.request().headers().firstValue("Accept")).contains("application/vnd.github+json");
+        assertThat(httpClient.request().headers().firstValue("X-GitHub-Api-Version")).contains("2022-11-28");
+        assertThat(httpClient.request().headers().firstValue("Content-Type")).contains("application/json");
+        assertThat(httpClient.body()).contains("\"body\":\"Status: COMPLETED\\n\\nPR: https://github.com/octocat/hello-world/pull/7\"");
+    }
+
+    @Test
+    void should_fail_before_updating_comment_when_token_is_missing() {
+        RecordingHttpClient httpClient = new RecordingHttpClient(
+                200,
+                "{\"id\":123,\"html_url\":\"https://github.com/octocat/hello-world/issues/42#issuecomment-123\"}"
+        );
+        GitHubIssueCommentClient client = new GitHubIssueCommentClient(httpClient, properties(" "));
+
+        assertThatThrownBy(() -> client.updateIssueComment(updateCommand()))
+                .isInstanceOf(GitHubIssueCommentException.class)
+                .hasMessage("GitHub token is required to update Issue comments");
+        assertThat(httpClient.request()).isNull();
+    }
+
+    @Test
+    void should_fail_when_github_returns_non_ok_status_for_update() {
+        RecordingHttpClient httpClient = new RecordingHttpClient(404, "{\"message\":\"Not Found\"}");
+        GitHubIssueCommentClient client = new GitHubIssueCommentClient(httpClient, properties("secret-token"));
+
+        assertThatThrownBy(() -> client.updateIssueComment(updateCommand()))
+                .isInstanceOf(GitHubIssueCommentException.class)
+                .hasMessage("GitHub issue comment update failed: HTTP 404");
+    }
+
     private static GitHubProperties properties(String token) {
         GitHubProperties properties = new GitHubProperties();
         properties.setToken(token);
@@ -86,6 +133,15 @@ class GitHubIssueCommentClientTests {
                 "hello-world",
                 42,
                 "PatchPilot completed the task.\n\nPR: https://github.com/octocat/hello-world/pull/7"
+        );
+    }
+
+    private static UpdateIssueCommentCommand updateCommand() {
+        return new UpdateIssueCommentCommand(
+                "octocat",
+                "hello-world",
+                123,
+                "Status: COMPLETED\n\nPR: https://github.com/octocat/hello-world/pull/7"
         );
     }
 

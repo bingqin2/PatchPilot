@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.patchpilot.backend.github.client.domain.CreateIssueCommentCommand;
 import io.patchpilot.backend.github.client.domain.GitHubIssueCommentException;
 import io.patchpilot.backend.github.client.domain.IssueCommentResult;
+import io.patchpilot.backend.github.client.domain.UpdateIssueCommentCommand;
 import io.patchpilot.backend.github.config.GitHubProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -63,12 +64,41 @@ public class GitHubIssueCommentClient {
         return issueCommentResult(response.body());
     }
 
+    public IssueCommentResult updateIssueComment(UpdateIssueCommentCommand command) {
+        String token = token();
+        if (token.isBlank()) {
+            throw new GitHubIssueCommentException("GitHub token is required to update Issue comments");
+        }
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(issueCommentUri(command))
+                .header("Authorization", "Bearer " + token)
+                .header("Accept", "application/vnd.github+json")
+                .header("X-GitHub-Api-Version", "2022-11-28")
+                .header("Content-Type", "application/json")
+                .method("PATCH", HttpRequest.BodyPublishers.ofString(updateRequestBody(command)))
+                .build();
+
+        HttpResponse<String> response = send(request, "GitHub issue comment update failed");
+        if (response.statusCode() != 200) {
+            throw new GitHubIssueCommentException("GitHub issue comment update failed: HTTP " + response.statusCode());
+        }
+        return issueCommentResult(response.body());
+    }
+
     private URI issueCommentsUri(CreateIssueCommentCommand command) {
         return URI.create(GITHUB_API_BASE_URL
                 + "/repos/" + command.owner()
                 + "/" + command.repository()
                 + "/issues/" + command.issueNumber()
                 + "/comments");
+    }
+
+    private URI issueCommentUri(UpdateIssueCommentCommand command) {
+        return URI.create(GITHUB_API_BASE_URL
+                + "/repos/" + command.owner()
+                + "/" + command.repository()
+                + "/issues/comments/" + command.commentId());
     }
 
     private String requestBody(CreateIssueCommentCommand command) {
@@ -80,13 +110,25 @@ public class GitHubIssueCommentClient {
     }
 
     private HttpResponse<String> send(HttpRequest request) {
+        return send(request, "GitHub issue comment creation failed");
+    }
+
+    private String updateRequestBody(UpdateIssueCommentCommand command) {
+        try {
+            return objectMapper.writeValueAsString(Map.of("body", command.body()));
+        } catch (JsonProcessingException exception) {
+            throw new GitHubIssueCommentException("Failed to serialize GitHub issue comment request", exception);
+        }
+    }
+
+    private HttpResponse<String> send(HttpRequest request, String failureMessage) {
         try {
             return httpClient.send(request, HttpResponse.BodyHandlers.ofString());
         } catch (IOException exception) {
-            throw new GitHubIssueCommentException("GitHub issue comment creation failed", exception);
+            throw new GitHubIssueCommentException(failureMessage, exception);
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
-            throw new GitHubIssueCommentException("GitHub issue comment creation interrupted", exception);
+            throw new GitHubIssueCommentException(failureMessage + " interrupted", exception);
         }
     }
 

@@ -2,6 +2,8 @@ package io.patchpilot.backend.github.webhook;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.patchpilot.backend.agent.tool.IssueCommentTool;
+import io.patchpilot.backend.github.client.domain.IssueCommentResult;
 import io.patchpilot.backend.task.domain.bo.CreateFixTaskCommand;
 import io.patchpilot.backend.task.domain.bo.FixTaskCreationResult;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
@@ -23,16 +25,19 @@ public class GitHubWebhookService {
     private final ObjectMapper objectMapper;
     private final FixTaskService fixTaskService;
     private final FixTaskDispatcher fixTaskDispatcher;
+    private final IssueCommentTool issueCommentTool;
     private final ConcurrentMap<String, WebhookHandleResult> deliveryResults = new ConcurrentHashMap<>();
 
     public GitHubWebhookService(
             ObjectMapper objectMapper,
             FixTaskService fixTaskService,
-            FixTaskDispatcher fixTaskDispatcher
+            FixTaskDispatcher fixTaskDispatcher,
+            IssueCommentTool issueCommentTool
     ) {
         this.objectMapper = objectMapper;
         this.fixTaskService = fixTaskService;
         this.fixTaskDispatcher = fixTaskDispatcher;
+        this.issueCommentTool = issueCommentTool;
     }
 
     public WebhookHandleResult handle(String event, String deliveryId, String payload) {
@@ -74,8 +79,18 @@ public class GitHubWebhookService {
         if (!creationResult.created()) {
             return WebhookHandleResult.duplicate(task.id());
         }
+        createStatusComment(task);
         fixTaskDispatcher.dispatch(task.id());
         return WebhookHandleResult.taskCreated(task.id());
+    }
+
+    private void createStatusComment(FixTaskVo task) {
+        try {
+            IssueCommentResult commentResult = issueCommentTool.commentAccepted(task);
+            fixTaskService.attachStatusComment(task.id(), commentResult.id(), commentResult.url());
+        } catch (RuntimeException exception) {
+            // GitHub comment feedback must not block the durable task workflow.
+        }
     }
 
     private static boolean isAgentFixCommand(String commentBody) {

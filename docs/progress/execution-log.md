@@ -469,3 +469,31 @@ Validation:
 - `mvn -pl PatchPilot -Dtest=FixTaskResultMigrationTests,FixTaskConvertTests,InMemoryFixTaskServiceTests,MyBatisFixTaskServiceTests,AsyncFixTaskDispatcherTests,TaskControllerTests,GitHubWebhookControllerTests test`: passed, 30 tests run, 0 failures, 0 errors.
 - `mvn test` from repository root: passed, 92 tests run, 0 failures, 0 errors.
 - `mvn clean package` from repository root: passed, 92 tests run, 0 failures, 0 errors, and generated `PatchPilot/target/patchpilot-backend-0.0.1-SNAPSHOT.jar`.
+
+## 2026-06-19
+
+Implemented editable Issue comment lifecycle feedback from `docs/plans/016-edit-issue-comment-lifecycle.md`.
+
+Changes:
+
+- Added Flyway migration `V3__add_fix_task_status_comment.sql` for `status_comment_id` and `status_comment_url`.
+- Extended `FixTaskVo`, `FixTaskEntity`, and `FixTaskConvert` with PatchPilot-owned status comment metadata.
+- Added `FixTaskService#attachStatusComment(...)` for both in-memory and MyBatis-backed task services.
+- Added `UpdateIssueCommentCommand` and `GitHubIssueCommentClient#updateIssueComment(...)` using GitHub's Issue comment PATCH endpoint.
+- Updated `IssueCommentTool` with lifecycle methods for accepted, running, running tests, completed, and failed task states.
+- Updated webhook handling to create one initial PatchPilot status comment, persist its id and URL, and avoid duplicate status comments for duplicate deliveries.
+- Updated async dispatch to edit the same status comment after `RUNNING`, `RUNNING_TESTS`, `COMPLETED`, and `FAILED` transitions.
+- Kept GitHub comment creation/update failures non-blocking so durable task state remains authoritative.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=FixTaskStatusCommentMigrationTests test`: first failed because the V3 migration file did not exist, then passed after adding it, 1 test run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=FixTaskConvertTests,InMemoryFixTaskServiceTests,MyBatisFixTaskServiceTests test`: first failed because status comment fields and `attachStatusComment(...)` did not exist, then passed after DTO/entity/converter/service updates, 17 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=GitHubIssueCommentClientTests test`: first failed because `UpdateIssueCommentCommand` and `updateIssueComment(...)` did not exist, then passed after PATCH client implementation, 6 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=IssueCommentToolTests test`: first failed because lifecycle comment methods did not exist, then passed after tool updates, 6 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=GitHubWebhookServiceTests test`: first failed because webhook handling did not create/save the accepted status comment, then passed after wiring `IssueCommentTool`, 3 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=AsyncFixTaskDispatcherTests test`: first failed because only terminal comments were updated, then passed after adding lifecycle updates, 4 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=GitHubWebhookControllerTests,TaskControllerTests,AsyncFixTaskDispatcherTests test`: passed, 15 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=FixTaskStatusCommentMigrationTests,FixTaskConvertTests,InMemoryFixTaskServiceTests,MyBatisFixTaskServiceTests,GitHubIssueCommentClientTests,IssueCommentToolTests,GitHubWebhookServiceTests,AsyncFixTaskDispatcherTests,TaskControllerTests,GitHubWebhookControllerTests test`: passed, 48 tests run, 0 failures, 0 errors.
+- `mvn test` from repository root: passed, 105 tests run, 0 failures, 0 errors.
+- `mvn clean package` from repository root: passed, 105 tests run, 0 failures, 0 errors, and generated `PatchPilot/target/patchpilot-backend-0.0.1-SNAPSHOT.jar`.

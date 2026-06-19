@@ -52,6 +52,8 @@ class MyBatisFixTaskServiceTests {
         assertThat(insertedEntity.getPullRequestUrl()).isNull();
         assertThat(insertedEntity.getCompletedAt()).isNull();
         assertThat(insertedEntity.getUpdatedAt()).isEqualTo(insertedEntity.getCreatedAt());
+        assertThat(insertedEntity.getStatusCommentId()).isNull();
+        assertThat(insertedEntity.getStatusCommentUrl()).isNull();
 
         assertThat(task.id()).isEqualTo(insertedEntity.getId());
         assertThat(creationResult.created()).isTrue();
@@ -117,6 +119,31 @@ class MyBatisFixTaskServiceTests {
         assertThat(updatedEntity.getUpdatedAt()).isEqualTo(updatedEntity.getCompletedAt());
         assertThat(completedTask.pullRequestUrl()).isEqualTo("https://github.com/octocat/hello-world/pull/7");
         assertThat(completedTask.completedAt()).isEqualTo(updatedEntity.getCompletedAt());
+    }
+
+    @Test
+    void should_attach_status_comment_metadata() {
+        FixTaskEntity current = entity("task-123", "delivery-123", FixTaskStatus.PENDING,
+                null, Instant.parse("2026-06-19T01:02:03Z"));
+        when(fixTaskMapper.selectById("task-123")).thenReturn(current);
+        when(fixTaskMapper.updateById(any(FixTaskEntity.class))).thenReturn(1);
+        ArgumentCaptor<FixTaskEntity> entityCaptor = ArgumentCaptor.forClass(FixTaskEntity.class);
+
+        FixTaskVo updatedTask = fixTaskService.attachStatusComment(
+                "task-123",
+                123,
+                "https://github.com/octocat/hello-world/issues/42#issuecomment-123"
+        );
+
+        verify(fixTaskMapper).updateById(entityCaptor.capture());
+        FixTaskEntity updatedEntity = entityCaptor.getValue();
+        assertThat(updatedEntity.getId()).isEqualTo("task-123");
+        assertThat(updatedEntity.getStatus()).isEqualTo(FixTaskStatus.PENDING.name());
+        assertThat(updatedEntity.getStatusCommentId()).isEqualTo(123L);
+        assertThat(updatedEntity.getStatusCommentUrl()).isEqualTo("https://github.com/octocat/hello-world/issues/42#issuecomment-123");
+        assertThat(updatedEntity.getUpdatedAt()).isAfter(current.getUpdatedAt());
+        assertThat(updatedTask.statusCommentId()).isEqualTo(123L);
+        assertThat(updatedTask.statusCommentUrl()).isEqualTo("https://github.com/octocat/hello-world/issues/42#issuecomment-123");
     }
 
     @Test
@@ -186,6 +213,8 @@ class MyBatisFixTaskServiceTests {
         entity.setPullRequestUrl(null);
         entity.setCompletedAt(null);
         entity.setUpdatedAt(createdAt);
+        entity.setStatusCommentId(null);
+        entity.setStatusCommentUrl(null);
         return entity;
     }
 }

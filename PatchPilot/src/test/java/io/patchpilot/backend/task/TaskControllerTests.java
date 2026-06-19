@@ -38,7 +38,9 @@ class TaskControllerTests {
                 .andExpect(jsonPath("$.data[0].status").value("PENDING"))
                 .andExpect(jsonPath("$.data[0].pullRequestUrl").value(nullValue()))
                 .andExpect(jsonPath("$.data[0].completedAt").value(nullValue()))
-                .andExpect(jsonPath("$.data[0].updatedAt").value(not(nullValue())));
+                .andExpect(jsonPath("$.data[0].updatedAt").value(not(nullValue())))
+                .andExpect(jsonPath("$.data[0].statusCommentId").value(nullValue()))
+                .andExpect(jsonPath("$.data[0].statusCommentUrl").value(nullValue()));
     }
 
     @Test
@@ -55,7 +57,9 @@ class TaskControllerTests {
                 .andExpect(jsonPath("$.data.status").value("PENDING"))
                 .andExpect(jsonPath("$.data.pullRequestUrl").value(nullValue()))
                 .andExpect(jsonPath("$.data.completedAt").value(nullValue()))
-                .andExpect(jsonPath("$.data.updatedAt").value(not(nullValue())));
+                .andExpect(jsonPath("$.data.updatedAt").value(not(nullValue())))
+                .andExpect(jsonPath("$.data.statusCommentId").value(nullValue()))
+                .andExpect(jsonPath("$.data.statusCommentUrl").value(nullValue()));
     }
 
     @Test

@@ -4,6 +4,7 @@ import io.patchpilot.backend.agent.tool.IssueCommentTool;
 import io.patchpilot.backend.github.client.GitHubIssueCommentClient;
 import io.patchpilot.backend.github.client.domain.CreateIssueCommentCommand;
 import io.patchpilot.backend.github.client.domain.IssueCommentResult;
+import io.patchpilot.backend.github.client.domain.UpdateIssueCommentCommand;
 import io.patchpilot.backend.github.config.GitHubProperties;
 import io.patchpilot.backend.task.domain.bo.CreateFixTaskCommand;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
@@ -19,6 +20,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -40,8 +42,9 @@ class AsyncFixTaskDispatcherTests {
         assertThat(completedTask.status()).isEqualTo(FixTaskStatus.COMPLETED);
         assertThat(completedTask.pullRequestUrl()).isEqualTo("https://github.com/octocat/hello-world/pull/7");
         assertThat(completedTask.completedAt()).isNotNull();
-        assertThat(issueCommentTool.completedTaskId()).isEqualTo(task.id());
-        assertThat(issueCommentTool.pullRequestUrl()).isEqualTo("https://github.com/octocat/hello-world/pull/7");
+        assertThat(issueCommentTool.updatedStatuses())
+                .containsSequence(FixTaskStatus.RUNNING, FixTaskStatus.RUNNING_TESTS, FixTaskStatus.COMPLETED);
+        assertThat(issueCommentTool.updatedTaskIds()).contains(task.id());
     }
 
     @Test
@@ -75,27 +78,29 @@ class AsyncFixTaskDispatcherTests {
         FixTaskVo failedTask = awaitTaskStatus(fixTaskService, task.id(), FixTaskStatus.FAILED);
         assertThat(failedTask.status()).isEqualTo(FixTaskStatus.FAILED);
         assertThat(failedTask.failureReason()).isEqualTo("executor failed");
-        assertThat(issueCommentTool.failedTaskId()).isEqualTo(task.id());
-        assertThat(issueCommentTool.failureReason()).isEqualTo("executor failed");
+        assertThat(issueCommentTool.updatedStatuses())
+                .containsSequence(FixTaskStatus.RUNNING, FixTaskStatus.RUNNING_TESTS, FixTaskStatus.FAILED);
+        assertThat(issueCommentTool.failureReasons()).contains("executor failed");
     }
 
     @Test
-    void should_keep_completed_status_when_completion_comment_fails() throws Exception {
+    void should_keep_completed_status_when_status_comment_update_fails() throws Exception {
         FixTaskService fixTaskService = new InMemoryFixTaskService();
         RecordingExecutor executor = new RecordingExecutor();
-        FailingCompletionIssueCommentTool issueCommentTool = new FailingCompletionIssueCommentTool();
+        FailingUpdateIssueCommentTool issueCommentTool = new FailingUpdateIssueCommentTool();
         FixTaskDispatcher dispatcher = new AsyncFixTaskDispatcher(fixTaskService, executor, issueCommentTool);
         FixTaskVo task = createTask(fixTaskService, "delivery-dispatch-comment-failed");
 
         dispatcher.dispatch(task.id());
 
-        assertThat(issueCommentTool.awaitCompletion()).isTrue();
-        assertThat(issueCommentTool.awaitFailureComment()).isFalse();
-        assertThat(fixTaskService.findTask(task.id()).orElseThrow().status()).isEqualTo(FixTaskStatus.COMPLETED);
+        assertThat(issueCommentTool.awaitUpdate()).isTrue();
+        FixTaskVo completedTask = awaitTaskStatus(fixTaskService, task.id(), FixTaskStatus.COMPLETED);
+        assertThat(completedTask.status()).isEqualTo(FixTaskStatus.COMPLETED);
+        assertThat(completedTask.failureReason()).isNull();
     }
 
     private static FixTaskVo createTask(FixTaskService fixTaskService, String deliveryId) {
-        return fixTaskService.createFixTask(new CreateFixTaskCommand(
+        FixTaskVo task = fixTaskService.createFixTask(new CreateFixTaskCommand(
                 "octocat",
                 "hello-world",
                 42,
@@ -105,6 +110,11 @@ class AsyncFixTaskDispatcherTests {
                 deliveryId,
                 98765
         ));
+        return fixTaskService.attachStatusComment(
+                task.id(),
+                123,
+                "https://github.com/octocat/hello-world/issues/42#issuecomment-123"
+        );
     }
 
     private static FixTaskVo awaitTaskStatus(
@@ -168,10 +178,9 @@ class AsyncFixTaskDispatcherTests {
     private static final class RecordingIssueCommentTool extends IssueCommentTool {
 
         private final CountDownLatch latch = new CountDownLatch(1);
-        private final AtomicReference<String> completedTaskId = new AtomicReference<>();
-        private final AtomicReference<String> pullRequestUrl = new AtomicReference<>();
-        private final AtomicReference<String> failedTaskId = new AtomicReference<>();
-        private final AtomicReference<String> failureReason = new AtomicReference<>();
+        private final List<FixTaskStatus> updatedStatuses = new CopyOnWriteArrayList<>();
+        private final List<String> updatedTaskIds = new CopyOnWriteArrayList<>();
+        private final List<String> failureReasons = new CopyOnWriteArrayList<>();
 
         private RecordingIssueCommentTool() {
             super(new GitHubIssueCommentClient(new GitHubProperties()) {
@@ -179,52 +188,68 @@ class AsyncFixTaskDispatcherTests {
                 public IssueCommentResult createIssueComment(CreateIssueCommentCommand command) {
                     return new IssueCommentResult(123, "https://github.com/octocat/hello-world/issues/42#issuecomment-123");
                 }
+
+                @Override
+                public IssueCommentResult updateIssueComment(UpdateIssueCommentCommand command) {
+                    return new IssueCommentResult(command.commentId(), "https://github.com/octocat/hello-world/issues/42#issuecomment-123");
+                }
             });
         }
 
         @Override
-        public IssueCommentResult commentCompleted(FixTaskVo task, String pullRequestUrl) {
-            this.completedTaskId.set(task.id());
-            this.pullRequestUrl.set(pullRequestUrl);
-            latch.countDown();
-            return new IssueCommentResult(123, "https://github.com/octocat/hello-world/issues/42#issuecomment-123");
+        public Optional<IssueCommentResult> updateRunning(FixTaskVo task) {
+            record(task);
+            return Optional.of(new IssueCommentResult(123, "https://github.com/octocat/hello-world/issues/42#issuecomment-123"));
         }
 
         @Override
-        public IssueCommentResult commentFailed(FixTaskVo task, String failureReason) {
-            this.failedTaskId.set(task.id());
-            this.failureReason.set(failureReason);
+        public Optional<IssueCommentResult> updateRunningTests(FixTaskVo task) {
+            record(task);
+            return Optional.of(new IssueCommentResult(123, "https://github.com/octocat/hello-world/issues/42#issuecomment-123"));
+        }
+
+        @Override
+        public Optional<IssueCommentResult> updateCompleted(FixTaskVo task) {
+            record(task);
             latch.countDown();
-            return new IssueCommentResult(123, "https://github.com/octocat/hello-world/issues/42#issuecomment-123");
+            return Optional.of(new IssueCommentResult(123, "https://github.com/octocat/hello-world/issues/42#issuecomment-123"));
+        }
+
+        @Override
+        public Optional<IssueCommentResult> updateFailed(FixTaskVo task) {
+            record(task);
+            failureReasons.add(task.failureReason());
+            latch.countDown();
+            return Optional.of(new IssueCommentResult(123, "https://github.com/octocat/hello-world/issues/42#issuecomment-123"));
         }
 
         private boolean await() throws InterruptedException {
             return latch.await(3, TimeUnit.SECONDS);
         }
 
-        private String completedTaskId() {
-            return completedTaskId.get();
+        private List<FixTaskStatus> updatedStatuses() {
+            return updatedStatuses;
         }
 
-        private String pullRequestUrl() {
-            return pullRequestUrl.get();
+        private List<String> updatedTaskIds() {
+            return updatedTaskIds;
         }
 
-        private String failedTaskId() {
-            return failedTaskId.get();
+        private List<String> failureReasons() {
+            return failureReasons;
         }
 
-        private String failureReason() {
-            return failureReason.get();
+        private void record(FixTaskVo task) {
+            updatedStatuses.add(task.status());
+            updatedTaskIds.add(task.id());
         }
     }
 
-    private static final class FailingCompletionIssueCommentTool extends IssueCommentTool {
+    private static final class FailingUpdateIssueCommentTool extends IssueCommentTool {
 
-        private final CountDownLatch completionLatch = new CountDownLatch(1);
-        private final CountDownLatch failureCommentLatch = new CountDownLatch(1);
+        private final CountDownLatch updateLatch = new CountDownLatch(1);
 
-        private FailingCompletionIssueCommentTool() {
+        private FailingUpdateIssueCommentTool() {
             super(new GitHubIssueCommentClient(new GitHubProperties()) {
                 @Override
                 public IssueCommentResult createIssueComment(CreateIssueCommentCommand command) {
@@ -234,23 +259,23 @@ class AsyncFixTaskDispatcherTests {
         }
 
         @Override
-        public IssueCommentResult commentCompleted(FixTaskVo task, String pullRequestUrl) {
-            completionLatch.countDown();
-            throw new IllegalStateException("comment failed");
+        public Optional<IssueCommentResult> updateRunning(FixTaskVo task) {
+            return Optional.of(new IssueCommentResult(123, "https://github.com/octocat/hello-world/issues/42#issuecomment-123"));
         }
 
         @Override
-        public IssueCommentResult commentFailed(FixTaskVo task, String failureReason) {
-            failureCommentLatch.countDown();
-            return new IssueCommentResult(123, "https://github.com/octocat/hello-world/issues/42#issuecomment-123");
+        public Optional<IssueCommentResult> updateRunningTests(FixTaskVo task) {
+            return Optional.of(new IssueCommentResult(123, "https://github.com/octocat/hello-world/issues/42#issuecomment-123"));
         }
 
-        private boolean awaitCompletion() throws InterruptedException {
-            return completionLatch.await(3, TimeUnit.SECONDS);
+        @Override
+        public Optional<IssueCommentResult> updateCompleted(FixTaskVo task) {
+            updateLatch.countDown();
+            throw new IllegalStateException("comment update failed");
         }
 
-        private boolean awaitFailureComment() throws InterruptedException {
-            return failureCommentLatch.await(250, TimeUnit.MILLISECONDS);
+        private boolean awaitUpdate() throws InterruptedException {
+            return updateLatch.await(3, TimeUnit.SECONDS);
         }
     }
 
