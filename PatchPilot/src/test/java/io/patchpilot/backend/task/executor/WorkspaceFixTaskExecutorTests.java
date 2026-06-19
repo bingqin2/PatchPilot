@@ -2,6 +2,7 @@ package io.patchpilot.backend.task.executor;
 
 import io.patchpilot.backend.agent.tool.CommitTool;
 import io.patchpilot.backend.agent.tool.DiffTool;
+import io.patchpilot.backend.agent.tool.PushTool;
 import io.patchpilot.backend.agent.workflow.PatchWorkflow;
 import io.patchpilot.backend.agent.workflow.domain.PatchWorkflowResult;
 import io.patchpilot.backend.runner.domain.vo.TestRunResult;
@@ -29,9 +30,10 @@ class WorkspaceFixTaskExecutorTests {
         RecordingWorkspaceService workspaceService = new RecordingWorkspaceService();
         RecordingPatchWorkflow patchWorkflow = new RecordingPatchWorkflow();
         RecordingDiffTool diffTool = new RecordingDiffTool();
-        RecordingCommitTool commitTool = new RecordingCommitTool();
+        RecordingCommitTool commitTool = new RecordingCommitTool(false);
+        RecordingPushTool pushTool = new RecordingPushTool();
         RecordingMavenTestRunner mavenTestRunner = new RecordingMavenTestRunner(0, "tests passed");
-        FixTaskExecutor executor = new NoopFixTaskExecutor(workspaceService, mavenTestRunner, patchWorkflow, diffTool, commitTool);
+        FixTaskExecutor executor = new NoopFixTaskExecutor(workspaceService, mavenTestRunner, patchWorkflow, diffTool, commitTool, pushTool);
 
         executor.execute(task());
 
@@ -43,9 +45,12 @@ class WorkspaceFixTaskExecutorTests {
         assertThat(mavenTestRunner.repositoryDir()).isEqualTo(Path.of("/tmp/workspace/repo"));
         assertThat(commitTool.repositoryDir()).isEqualTo(Path.of("/tmp/workspace/repo"));
         assertThat(commitTool.message()).isEqualTo("PatchPilot task task-123");
+        assertThat(pushTool.repositoryDir()).isEqualTo(Path.of("/tmp/workspace/repo"));
+        assertThat(pushTool.branchName()).isEqualTo("patchpilot/task-123");
         assertThat(patchWorkflow.callOrder()).isLessThan(diffTool.callOrder());
         assertThat(diffTool.callOrder()).isLessThan(mavenTestRunner.callOrder());
         assertThat(mavenTestRunner.callOrder()).isLessThan(commitTool.callOrder());
+        assertThat(commitTool.callOrder()).isLessThan(pushTool.callOrder());
     }
 
     @Test
@@ -53,14 +58,32 @@ class WorkspaceFixTaskExecutorTests {
         RecordingWorkspaceService workspaceService = new RecordingWorkspaceService();
         RecordingPatchWorkflow patchWorkflow = new RecordingPatchWorkflow();
         RecordingDiffTool diffTool = new RecordingDiffTool();
-        RecordingCommitTool commitTool = new RecordingCommitTool();
+        RecordingCommitTool commitTool = new RecordingCommitTool(false);
+        RecordingPushTool pushTool = new RecordingPushTool();
         RecordingMavenTestRunner mavenTestRunner = new RecordingMavenTestRunner(1, "test failed");
-        FixTaskExecutor executor = new NoopFixTaskExecutor(workspaceService, mavenTestRunner, patchWorkflow, diffTool, commitTool);
+        FixTaskExecutor executor = new NoopFixTaskExecutor(workspaceService, mavenTestRunner, patchWorkflow, diffTool, commitTool, pushTool);
 
         assertThatThrownBy(() -> executor.execute(task()))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("maven tests failed: test failed");
         assertThat(commitTool.callOrder()).isZero();
+        assertThat(pushTool.callOrder()).isZero();
+    }
+
+    @Test
+    void should_not_push_when_local_commit_fails() {
+        RecordingWorkspaceService workspaceService = new RecordingWorkspaceService();
+        RecordingPatchWorkflow patchWorkflow = new RecordingPatchWorkflow();
+        RecordingDiffTool diffTool = new RecordingDiffTool();
+        RecordingCommitTool commitTool = new RecordingCommitTool(true);
+        RecordingPushTool pushTool = new RecordingPushTool();
+        RecordingMavenTestRunner mavenTestRunner = new RecordingMavenTestRunner(0, "tests passed");
+        FixTaskExecutor executor = new NoopFixTaskExecutor(workspaceService, mavenTestRunner, patchWorkflow, diffTool, commitTool, pushTool);
+
+        assertThatThrownBy(() -> executor.execute(task()))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("git commit failed: nothing to commit");
+        assertThat(pushTool.callOrder()).isZero();
     }
 
     private static FixTaskVo task() {
@@ -186,11 +209,12 @@ class WorkspaceFixTaskExecutorTests {
 
     private static final class RecordingCommitTool extends CommitTool {
 
+        private final boolean fail;
         private Path repositoryDir;
         private String message;
         private int callOrder;
 
-        private RecordingCommitTool() {
+        private RecordingCommitTool(boolean fail) {
             super(new GitCommandRunner() {
                 @Override
                 public GitCommandResult stageAll(Path repositoryDir) {
@@ -202,6 +226,7 @@ class WorkspaceFixTaskExecutorTests {
                     return new GitCommandResult(0, "committed");
                 }
             });
+            this.fail = fail;
         }
 
         @Override
@@ -209,6 +234,9 @@ class WorkspaceFixTaskExecutorTests {
             this.repositoryDir = repositoryDir;
             this.message = message;
             this.callOrder = CallOrder.next();
+            if (fail) {
+                throw new IllegalStateException("git commit failed: nothing to commit");
+            }
             return "committed";
         }
 
@@ -218,6 +246,42 @@ class WorkspaceFixTaskExecutorTests {
 
         private String message() {
             return message;
+        }
+
+        private int callOrder() {
+            return callOrder;
+        }
+    }
+
+    private static final class RecordingPushTool extends PushTool {
+
+        private Path repositoryDir;
+        private String branchName;
+        private int callOrder;
+
+        private RecordingPushTool() {
+            super(new GitCommandRunner() {
+                @Override
+                public GitCommandResult pushBranch(Path repositoryDir, String branchName) {
+                    return new GitCommandResult(0, "pushed");
+                }
+            });
+        }
+
+        @Override
+        public String pushBranch(Path repositoryDir, String branchName) {
+            this.repositoryDir = repositoryDir;
+            this.branchName = branchName;
+            this.callOrder = CallOrder.next();
+            return "pushed";
+        }
+
+        private Path repositoryDir() {
+            return repositoryDir;
+        }
+
+        private String branchName() {
+            return branchName;
         }
 
         private int callOrder() {

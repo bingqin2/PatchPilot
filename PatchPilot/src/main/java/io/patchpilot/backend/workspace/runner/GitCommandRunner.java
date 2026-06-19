@@ -84,6 +84,20 @@ public class GitCommandRunner {
         ));
     }
 
+    public GitCommandResult pushBranch(Path repositoryDir, String branchName) {
+        if (branchName == null || branchName.isBlank()) {
+            throw new IllegalArgumentException("Branch name must not be blank");
+        }
+        return runGit(List.of(
+                "git",
+                "-C",
+                repositoryDir.toString(),
+                "push",
+                "origin",
+                "HEAD:" + branchName
+        ));
+    }
+
     private GitCommandResult runGit(List<String> command) {
         ProcessBuilder processBuilder = new ProcessBuilder(command);
         processBuilder.redirectErrorStream(true);

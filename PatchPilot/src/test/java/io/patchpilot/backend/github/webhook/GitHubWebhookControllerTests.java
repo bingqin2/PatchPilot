@@ -2,6 +2,7 @@ package io.patchpilot.backend.github.webhook;
 
 import io.patchpilot.backend.agent.tool.CommitTool;
 import io.patchpilot.backend.agent.tool.DiffTool;
+import io.patchpilot.backend.agent.tool.PushTool;
 import io.patchpilot.backend.agent.workflow.PatchWorkflow;
 import io.patchpilot.backend.agent.workflow.domain.PatchWorkflowResult;
 import io.patchpilot.backend.github.config.GitHubProperties;
@@ -338,6 +339,17 @@ class GitHubWebhookControllerTests {
                 @Override
                 public String commitAll(Path repositoryDir, String message) {
                     return "test commit";
+                }
+            };
+        }
+
+        @Bean
+        @Primary
+        PushTool pushTool() {
+            return new PushTool(new GitCommandRunner(new GitHubProperties())) {
+                @Override
+                public String pushBranch(Path repositoryDir, String branchName) {
+                    return "test push";
                 }
             };
         }

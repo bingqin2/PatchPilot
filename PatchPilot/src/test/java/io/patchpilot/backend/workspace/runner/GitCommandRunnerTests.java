@@ -109,6 +109,34 @@ class GitCommandRunnerTests {
                 .hasMessage("Commit message must not be blank");
     }
 
+    @Test
+    void should_push_current_head_to_origin_branch() throws Exception {
+        Path originDir = tempDir.resolve("origin.git");
+        runGit(tempDir, "init", "--bare", originDir.toString());
+        Path repositoryDir = tempDir.resolve("push-repo");
+        createGitRepository(repositoryDir);
+        runGit(repositoryDir, "remote", "add", "origin", originDir.toString());
+        runGit(repositoryDir, "checkout", "-b", "patchpilot/task-123");
+        Files.writeString(repositoryDir.resolve("README.md"), "hello\nchanged\n");
+        runGit(repositoryDir, "add", "--all");
+        runGit(repositoryDir, "commit", "-m", "PatchPilot task task-123");
+        GitCommandRunner runner = new GitCommandRunner(new GitHubProperties());
+
+        GitCommandResult result = runner.pushBranch(repositoryDir, "patchpilot/task-123");
+
+        assertThat(result.exitCode()).isEqualTo(0);
+        assertThat(runGit(originDir, "rev-parse", "--verify", "refs/heads/patchpilot/task-123")).isNotBlank();
+    }
+
+    @Test
+    void should_reject_blank_push_branch_name() {
+        GitCommandRunner runner = new GitCommandRunner(new GitHubProperties());
+
+        assertThatThrownBy(() -> runner.pushBranch(tempDir, " "))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Branch name must not be blank");
+    }
+
     private static String sanitize(GitCommandRunner runner, String value) throws Exception {
         Method sanitize = GitCommandRunner.class.getDeclaredMethod("sanitize", String.class);
         sanitize.setAccessible(true);

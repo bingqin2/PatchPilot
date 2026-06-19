@@ -346,3 +346,26 @@ Validation:
 - `mvn -pl PatchPilot -Dtest=GitCommandRunnerTests,CommitToolTests,WorkspaceFixTaskExecutorTests,GitHubWebhookControllerTests test`: passed, 21 tests run, 0 failures, 0 errors.
 - `mvn test` from repository root: passed, 63 tests run, 0 failures, 0 errors.
 - `mvn clean package` from repository root: passed, 63 tests run, 0 failures, 0 errors, and generated `PatchPilot/target/patchpilot-backend-0.0.1-SNAPSHOT.jar`.
+
+## 2026-06-19
+
+Implemented remote task branch push from `docs/plans/011-remote-branch-push.md`.
+
+Changes:
+
+- Added controlled `GitCommandRunner#pushBranch(...)` using `git -C <repo> push origin HEAD:<branch>`.
+- Added `PushTool` to wrap push execution and surface clear failure messages.
+- Updated task execution order to push the prepared task branch only after patch workflow, diff inspection, Maven verification, and local commit succeed.
+- Ensured Maven test failures and commit failures do not push.
+- Isolated webhook controller tests from real push side effects with a primary test `PushTool`.
+- Kept this phase limited to branch push: no GitHub REST API calls, Pull Requests, or issue comments were added.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=GitCommandRunnerTests test`: first failed because `pushBranch` did not exist, then passed after implementation, 10 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=PushToolTests test`: first failed because `PushTool` did not exist, then passed after implementation, 2 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=WorkspaceFixTaskExecutorTests test`: first failed because the executor did not accept `PushTool`, then passed after wiring push after commit, 3 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=GitHubWebhookControllerTests test`: first failed because the Spring test context used the real push tool against a fake workspace, then passed after adding a test push tool bean, 8 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=GitCommandRunnerTests,PushToolTests,WorkspaceFixTaskExecutorTests,GitHubWebhookControllerTests test`: passed, 23 tests run, 0 failures, 0 errors.
+- `mvn test` from repository root: passed, 68 tests run, 0 failures, 0 errors.
+- `mvn clean package` from repository root: passed, 68 tests run, 0 failures, 0 errors, and generated `PatchPilot/target/patchpilot-backend-0.0.1-SNAPSHOT.jar`.
