@@ -69,6 +69,7 @@ class WorkspaceFixTaskExecutorTests {
         assertThat(patchWorkflow.repositoryDir()).isEqualTo(Path.of("/tmp/workspace/repo"));
         assertThat(diffTool.repositoryDir()).isEqualTo(Path.of("/tmp/workspace/repo"));
         assertThat(mavenTestRunner.repositoryDir()).isEqualTo(Path.of("/tmp/workspace/repo"));
+        assertThat(mavenTestRunner.taskId()).isEqualTo("task-123");
         assertThat(commitTool.repositoryDir()).isEqualTo(Path.of("/tmp/workspace/repo"));
         assertThat(commitTool.message()).isEqualTo("PatchPilot task task-123");
         assertThat(pushTool.repositoryDir()).isEqualTo(Path.of("/tmp/workspace/repo"));
@@ -241,6 +242,40 @@ class WorkspaceFixTaskExecutorTests {
         assertThat(cancellationChecker.checkedTaskIds()).contains("task-123");
     }
 
+    @Test
+    void should_treat_non_zero_maven_result_as_cancellation_when_task_was_cancelled_during_tests() {
+        RecordingWorkspaceService workspaceService = new RecordingWorkspaceService();
+        RecordingPatchWorkflow patchWorkflow = new RecordingPatchWorkflow();
+        RecordingDiffTool diffTool = new RecordingDiffTool();
+        RecordingCommitTool commitTool = new RecordingCommitTool(false);
+        RecordingPushTool pushTool = new RecordingPushTool(false);
+        RecordingPullRequestTool pullRequestTool = new RecordingPullRequestTool();
+        RecordingMavenTestRunner mavenTestRunner = new RecordingMavenTestRunner(130, "maven test command interrupted");
+        RecordingFixTaskTestRunService testRunService = new RecordingFixTaskTestRunService();
+        RecordingFixTaskToolCallService toolCallService = new RecordingFixTaskToolCallService();
+        StageCancellingChecker cancellationChecker = new StageCancellingChecker(5);
+        FixTaskExecutor executor = new NoopFixTaskExecutor(
+                workspaceService,
+                mavenTestRunner,
+                patchWorkflow,
+                diffTool,
+                commitTool,
+                pushTool,
+                pullRequestTool,
+                testRunService,
+                toolCallService,
+                cancellationChecker
+        );
+
+        assertThatThrownBy(() -> executor.execute(task()))
+                .isInstanceOf(TaskCancellationException.class)
+                .hasMessage("Task cancelled: task-123");
+        assertThat(testRunService.exitCode()).isEqualTo(130);
+        assertThat(commitTool.callOrder()).isZero();
+        assertThat(pushTool.callOrder()).isZero();
+        assertThat(pullRequestTool.callOrder()).isZero();
+    }
+
     private static FixTaskVo task() {
         return new FixTaskVo(
                 "task-123",
@@ -287,6 +322,7 @@ class WorkspaceFixTaskExecutorTests {
 
         private final int exitCode;
         private final String output;
+        private String taskId;
         private Path repositoryDir;
         private int callOrder;
 
@@ -296,10 +332,20 @@ class WorkspaceFixTaskExecutorTests {
         }
 
         @Override
+        public TestRunResult runTests(String taskId, Path repositoryDir) {
+            this.taskId = taskId;
+            return runTests(repositoryDir);
+        }
+
+        @Override
         public TestRunResult runTests(Path repositoryDir) {
             this.repositoryDir = repositoryDir;
             this.callOrder = CallOrder.next();
             return new TestRunResult("./mvnw test", exitCode, output);
+        }
+
+        private String taskId() {
+            return taskId;
         }
 
         private Path repositoryDir() {

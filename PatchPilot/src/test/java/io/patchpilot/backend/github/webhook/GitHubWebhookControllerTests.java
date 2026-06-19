@@ -316,6 +316,11 @@ class GitHubWebhookControllerTests {
                 public TestRunResult runTests(Path repositoryDir) {
                     return new TestRunResult("./mvnw test", 0, "tests passed");
                 }
+
+                @Override
+                public TestRunResult runTests(String taskId, Path repositoryDir) {
+                    return runTests(repositoryDir);
+                }
             };
         }
 

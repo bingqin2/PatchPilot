@@ -5,6 +5,7 @@ import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.enums.FixTaskTimelineEventType;
 import io.patchpilot.backend.task.domain.vo.FixTaskTimelineEventVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
+import io.patchpilot.backend.task.process.TaskProcessRegistry;
 import io.patchpilot.backend.task.service.impl.DefaultFixTaskControlService;
 import io.patchpilot.backend.task.service.impl.InMemoryFixTaskService;
 import org.junit.jupiter.api.Test;
@@ -21,10 +22,12 @@ class DefaultFixTaskControlServiceTests {
     private final InMemoryFixTaskService fixTaskService = new InMemoryFixTaskService();
     private final RecordingFixTaskQueue fixTaskQueue = new RecordingFixTaskQueue();
     private final RecordingTimelineService fixTaskTimelineService = new RecordingTimelineService();
+    private final RecordingTaskProcessRegistry taskProcessRegistry = new RecordingTaskProcessRegistry();
     private final FixTaskControlService controlService = new DefaultFixTaskControlService(
             fixTaskService,
             fixTaskQueue,
-            fixTaskTimelineService
+            fixTaskTimelineService,
+            taskProcessRegistry
     );
 
     @Test
@@ -36,6 +39,7 @@ class DefaultFixTaskControlServiceTests {
         assertThat(cancelledTask.status()).isEqualTo(FixTaskStatus.CANCELLED);
         assertThat(cancelledTask.failureReason()).isEqualTo("Task cancelled by user request");
         assertThat(fixTaskQueue.cancelledTaskIds()).containsExactly(task.id());
+        assertThat(taskProcessRegistry.cancelledTaskIds()).isEmpty();
         assertThat(fixTaskTimelineService.eventTypes()).containsExactly(FixTaskTimelineEventType.CANCELLED);
         assertThat(fixTaskTimelineService.messages()).containsExactly("Task cancelled by user request");
     }
@@ -49,6 +53,7 @@ class DefaultFixTaskControlServiceTests {
 
         assertThat(cancelledTask.status()).isEqualTo(FixTaskStatus.CANCELLED);
         assertThat(fixTaskQueue.cancelledTaskIds()).isEmpty();
+        assertThat(taskProcessRegistry.cancelledTaskIds()).containsExactly(task.id());
         assertThat(fixTaskTimelineService.eventTypes()).containsExactly(FixTaskTimelineEventType.CANCELLED);
     }
 
@@ -61,6 +66,7 @@ class DefaultFixTaskControlServiceTests {
 
         assertThat(cancelledTask.status()).isEqualTo(FixTaskStatus.CANCELLED);
         assertThat(fixTaskQueue.cancelledTaskIds()).isEmpty();
+        assertThat(taskProcessRegistry.cancelledTaskIds()).containsExactly(task.id());
         assertThat(fixTaskTimelineService.eventTypes()).containsExactly(FixTaskTimelineEventType.CANCELLED);
     }
 
@@ -166,6 +172,21 @@ class DefaultFixTaskControlServiceTests {
 
         private List<String> messages() {
             return messages;
+        }
+    }
+
+    private static final class RecordingTaskProcessRegistry extends TaskProcessRegistry {
+
+        private final List<String> cancelledTaskIds = new CopyOnWriteArrayList<>();
+
+        @Override
+        public boolean cancel(String taskId) {
+            cancelledTaskIds.add(taskId);
+            return true;
+        }
+
+        private List<String> cancelledTaskIds() {
+            return cancelledTaskIds;
         }
     }
 }

@@ -717,3 +717,24 @@ Validation:
 
 - `mvn -pl PatchPilot -Dtest=DefaultFixTaskControlServiceTests,TaskControllerTests,FixTaskWorkerTests,WorkspaceFixTaskExecutorTests test`: first failed because `TaskCancellationChecker`, `TaskCancellationException`, and the extended executor constructor did not exist; then failed once because the cancellation test fired before test-run recording; then passed after implementation and test correction, 34 tests run, 0 failures, 0 errors.
 - `mvn -pl PatchPilot test`: passed, 187 tests run, 0 failures, 0 errors.
+
+## 2026-06-20
+
+Implemented cancellable Maven process runner from `docs/plans/028-cancellable-process-runner.md`.
+
+Changes:
+
+- Added `TaskProcessRegistry` to register the currently running external process for each task.
+- Added task-scoped Maven execution through `MavenTestRunner#runTests(String taskId, Path repositoryDir)`.
+- Updated Maven process execution to register and unregister task processes around `ProcessBuilder` execution.
+- Updated task cancellation control to interrupt a registered process when cancelling `RUNNING` or `RUNNING_TESTS` tasks.
+- Updated `NoopFixTaskExecutor` to pass the task id into Maven test execution.
+- Rechecked cancellation after recording Maven test results so a cancelled Maven process is not reported as a failed task.
+- Deferred Git process cancellation and repository recovery to plan 029.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=TaskProcessRegistryTests,MavenTestRunnerTests,DefaultFixTaskControlServiceTests,WorkspaceFixTaskExecutorTests test`: first failed because `TaskProcessRegistry`, task-aware Maven execution, and the extended control-service constructor did not exist; then failed once because a recording test runner still overrode the old `runCommand` signature; then passed after implementation and test correction, 22 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=WorkspaceFixTaskExecutorTests test`: first failed because a cancelled Maven process result was still raised as `IllegalStateException`; then passed after checking cancellation before Maven exit-code failure handling, 6 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=TaskProcessRegistryTests,MavenTestRunnerTests,DefaultFixTaskControlServiceTests,WorkspaceFixTaskExecutorTests,GitHubWebhookControllerTests test`: passed, 31 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot test`: passed, 192 tests run, 0 failures, 0 errors.
