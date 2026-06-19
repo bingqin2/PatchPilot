@@ -31,10 +31,12 @@ public class DefaultFixTaskControlService implements FixTaskControlService {
     @Override
     public FixTaskVo cancelTask(String taskId) {
         FixTaskVo task = currentTask(taskId);
-        if (task.status() != FixTaskStatus.PENDING) {
-            throw new IllegalStateException("Only pending tasks can be cancelled");
+        if (!task.status().isActive()) {
+            throw new IllegalStateException("Only active tasks can be cancelled");
         }
-        fixTaskQueue.cancelPendingForTask(taskId);
+        if (task.status() == FixTaskStatus.PENDING) {
+            fixTaskQueue.cancelPendingForTask(taskId);
+        }
         FixTaskVo cancelledTask = fixTaskService.markCancelled(taskId, CANCELLATION_REASON);
         fixTaskTimelineService.recordEvent(taskId, FixTaskTimelineEventType.CANCELLED, CANCELLATION_REASON);
         return cancelledTask;

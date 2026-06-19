@@ -699,3 +699,21 @@ Validation:
 - `mvn -pl PatchPilot -Dtest=InMemoryFixTaskServiceTests,MyBatisFixTaskServiceTests,MyBatisFixTaskQueueTests,TaskControllerTests test`: first failed because the new service methods and status enums did not exist, confirming the red test path.
 - `mvn -pl PatchPilot -Dtest=InMemoryFixTaskServiceTests,MyBatisFixTaskServiceTests,MyBatisFixTaskQueueTests,MyBatisFixTaskQueueQueryServiceTests,TaskQueueControllerTests,TaskControllerTests test`: passed, 54 tests run, 0 failures, 0 errors.
 - `mvn -pl PatchPilot -Dtest=DefaultFixTaskControlServiceTests,InMemoryFixTaskServiceTests,MyBatisFixTaskServiceTests,MyBatisFixTaskQueueTests,MyBatisFixTaskQueueQueryServiceTests,TaskQueueControllerTests,TaskControllerTests test`: passed, 58 tests run, 0 failures, 0 errors.
+
+## 2026-06-20
+
+Implemented running task cancellation safety from `docs/plans/027-running-task-cancellation-safety.md`.
+
+Changes:
+
+- Extended task cancellation to active `RUNNING` and `RUNNING_TESTS` tasks while keeping terminal tasks non-cancellable.
+- Added `TaskCancellationChecker` and `TaskCancellationException` for durable task-state cancellation checks.
+- Added `DefaultTaskCancellationChecker` backed by `FixTaskService`.
+- Updated `NoopFixTaskExecutor` to check cancellation at execution stage boundaries before later side effects.
+- Updated `FixTaskWorker` so cancellation exceptions stop execution cleanly without overwriting `CANCELLED` tasks as `FAILED`.
+- Kept this phase scoped to stage-boundary safety; Maven/Git process interruption is not implemented yet.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=DefaultFixTaskControlServiceTests,TaskControllerTests,FixTaskWorkerTests,WorkspaceFixTaskExecutorTests test`: first failed because `TaskCancellationChecker`, `TaskCancellationException`, and the extended executor constructor did not exist; then failed once because the cancellation test fired before test-run recording; then passed after implementation and test correction, 34 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot test`: passed, 187 tests run, 0 failures, 0 errors.

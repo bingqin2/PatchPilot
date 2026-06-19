@@ -3,6 +3,7 @@ package io.patchpilot.backend.task.service.impl;
 import io.patchpilot.backend.agent.tool.IssueCommentTool;
 import io.patchpilot.backend.task.domain.enums.FixTaskTimelineEventType;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
+import io.patchpilot.backend.task.executor.TaskCancellationException;
 import io.patchpilot.backend.task.executor.FixTaskExecutor;
 import io.patchpilot.backend.task.executor.domain.FixTaskExecutionResult;
 import io.patchpilot.backend.task.service.FixTaskService;
@@ -39,6 +40,9 @@ public class FixTaskWorker {
             recordTimelineEvent(taskId, FixTaskTimelineEventType.RUNNING_TESTS, "Running verification");
             updateStatusComment(() -> issueCommentTool.updateRunningTests(runningTestsTask));
             executionResult = fixTaskExecutor.execute(runningTestsTask);
+        } catch (TaskCancellationException exception) {
+            recordTimelineEvent(taskId, FixTaskTimelineEventType.CANCELLED, "Task cancelled by user request");
+            return;
         } catch (RuntimeException exception) {
             String failureReason = failureReason(exception);
             FixTaskVo failedTask = fixTaskService.markFailed(taskId, failureReason);

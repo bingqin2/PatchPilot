@@ -31,6 +31,7 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
     private final PullRequestTool pullRequestTool;
     private final FixTaskTestRunService fixTaskTestRunService;
     private final FixTaskToolCallService fixTaskToolCallService;
+    private final TaskCancellationChecker taskCancellationChecker;
 
     public NoopFixTaskExecutor(
             WorkspaceService workspaceService,
@@ -41,7 +42,8 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
             PushTool pushTool,
             PullRequestTool pullRequestTool,
             FixTaskTestRunService fixTaskTestRunService,
-            FixTaskToolCallService fixTaskToolCallService
+            FixTaskToolCallService fixTaskToolCallService,
+            TaskCancellationChecker taskCancellationChecker
     ) {
         this.workspaceService = workspaceService;
         this.mavenTestRunner = mavenTestRunner;
@@ -52,15 +54,18 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
         this.pullRequestTool = pullRequestTool;
         this.fixTaskTestRunService = fixTaskTestRunService;
         this.fixTaskToolCallService = fixTaskToolCallService;
+        this.taskCancellationChecker = taskCancellationChecker;
     }
 
     @Override
     public FixTaskExecutionResult execute(FixTaskVo task) {
+        taskCancellationChecker.throwIfCancelled(task.id());
         PreparedWorkspaceResult preparedWorkspace = workspaceService.prepareRepository(new CloneWorkspaceCommand(
                 task.id(),
                 task.repositoryOwner(),
                 task.repositoryName()
         ));
+        taskCancellationChecker.throwIfCancelled(task.id());
         auditToolCall(
                 task.id(),
                 "PatchWorkflow",
@@ -70,12 +75,14 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
                 ),
                 () -> patchWorkflow.apply(task, preparedWorkspace.repositoryDir()).summary()
         );
+        taskCancellationChecker.throwIfCancelled(task.id());
         auditToolCall(
                 task.id(),
                 "DiffTool",
                 "repositoryDir=%s".formatted(preparedWorkspace.repositoryDir()),
                 () -> diffTool.diff(preparedWorkspace.repositoryDir())
         );
+        taskCancellationChecker.throwIfCancelled(task.id());
         Instant testStartedAt = Instant.now();
         TestRunResult testRunResult = mavenTestRunner.runTests(preparedWorkspace.repositoryDir());
         Instant testFinishedAt = Instant.now();
@@ -90,6 +97,7 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
         if (testRunResult.exitCode() != 0) {
             throw new IllegalStateException("maven tests failed: " + testRunResult.output());
         }
+        taskCancellationChecker.throwIfCancelled(task.id());
         auditToolCall(
                 task.id(),
                 "CommitTool",
@@ -99,6 +107,7 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
                 ),
                 () -> commitTool.commitAll(preparedWorkspace.repositoryDir(), "PatchPilot task " + task.id())
         );
+        taskCancellationChecker.throwIfCancelled(task.id());
         auditToolCall(
                 task.id(),
                 "PushTool",
@@ -108,6 +117,7 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
                 ),
                 () -> pushTool.pushBranch(preparedWorkspace.repositoryDir(), preparedWorkspace.branchName())
         );
+        taskCancellationChecker.throwIfCancelled(task.id());
         PullRequestResult pullRequestResult = auditToolCall(
                 task.id(),
                 "PullRequestTool",

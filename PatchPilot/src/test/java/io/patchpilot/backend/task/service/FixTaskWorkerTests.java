@@ -12,6 +12,7 @@ import io.patchpilot.backend.task.domain.enums.FixTaskTimelineEventType;
 import io.patchpilot.backend.task.domain.vo.FixTaskTimelineEventVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import io.patchpilot.backend.task.executor.FixTaskExecutor;
+import io.patchpilot.backend.task.executor.TaskCancellationException;
 import io.patchpilot.backend.task.executor.domain.FixTaskExecutionResult;
 import io.patchpilot.backend.task.service.impl.FixTaskWorker;
 import io.patchpilot.backend.task.service.impl.InMemoryFixTaskService;
@@ -99,6 +100,25 @@ class FixTaskWorkerTests {
     }
 
     @Test
+    void should_keep_cancelled_status_when_executor_observes_cancellation() {
+        CancellingFixTaskService fixTaskService = new CancellingFixTaskService();
+        CancellingExecutor executor = new CancellingExecutor();
+        RecordingIssueCommentTool issueCommentTool = new RecordingIssueCommentTool();
+        RecordingTimelineService timelineService = new RecordingTimelineService();
+        FixTaskWorker worker = new FixTaskWorker(fixTaskService, executor, issueCommentTool, timelineService);
+        FixTaskVo task = createTask(fixTaskService, "delivery-worker-cancelled");
+
+        worker.execute(task.id());
+
+        FixTaskVo cancelledTask = fixTaskService.findTask(task.id()).orElseThrow();
+        assertThat(cancelledTask.status()).isEqualTo(FixTaskStatus.CANCELLED);
+        assertThat(cancelledTask.failureReason()).isEqualTo("Task cancelled by user request");
+        assertThat(fixTaskService.statuses()).doesNotContain(FixTaskStatus.FAILED, FixTaskStatus.COMPLETED);
+        assertThat(timelineService.eventTypes()).contains(FixTaskTimelineEventType.CANCELLED);
+        assertThat(timelineService.eventTypes()).doesNotContain(FixTaskTimelineEventType.FAILED);
+    }
+
+    @Test
     void should_keep_completed_status_when_status_comment_update_fails() {
         FixTaskService fixTaskService = new InMemoryFixTaskService();
         RecordingExecutor executor = new RecordingExecutor();
@@ -159,6 +179,14 @@ class FixTaskWorkerTests {
         @Override
         public FixTaskExecutionResult execute(FixTaskVo task) {
             throw new IllegalStateException("executor failed");
+        }
+    }
+
+    private static final class CancellingExecutor implements FixTaskExecutor {
+
+        @Override
+        public FixTaskExecutionResult execute(FixTaskVo task) {
+            throw new TaskCancellationException(task.id());
         }
     }
 
@@ -264,7 +292,7 @@ class FixTaskWorkerTests {
         }
     }
 
-    private static final class RecordingFixTaskService extends InMemoryFixTaskService {
+    private static class RecordingFixTaskService extends InMemoryFixTaskService {
 
         private final List<FixTaskStatus> statuses = new CopyOnWriteArrayList<>();
 
@@ -296,8 +324,19 @@ class FixTaskWorkerTests {
             return task;
         }
 
-        private List<FixTaskStatus> statuses() {
+        protected List<FixTaskStatus> statuses() {
             return statuses;
+        }
+    }
+
+    private static final class CancellingFixTaskService extends RecordingFixTaskService {
+
+        @Override
+        public FixTaskVo markRunningTests(String id) {
+            FixTaskVo task = super.markRunningTests(id);
+            FixTaskVo cancelledTask = super.markCancelled(id, "Task cancelled by user request");
+            statuses().add(cancelledTask.status());
+            return task;
         }
     }
 
