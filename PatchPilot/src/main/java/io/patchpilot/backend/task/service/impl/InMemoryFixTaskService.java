@@ -1,9 +1,11 @@
 package io.patchpilot.backend.task.service.impl;
 
 import io.patchpilot.backend.task.domain.bo.CreateFixTaskCommand;
+import io.patchpilot.backend.task.domain.bo.FixTaskCreationResult;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import io.patchpilot.backend.task.service.FixTaskService;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -15,12 +17,18 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 @Service
+@Profile("default")
 public class InMemoryFixTaskService implements FixTaskService {
 
     private final ConcurrentMap<String, FixTaskVo> tasks = new ConcurrentHashMap<>();
 
     @Override
     public FixTaskVo createFixTask(CreateFixTaskCommand command) {
+        return createFixTaskIfAbsent(command).task();
+    }
+
+    @Override
+    public FixTaskCreationResult createFixTaskIfAbsent(CreateFixTaskCommand command) {
         String taskId = UUID.randomUUID().toString();
         FixTaskVo task = new FixTaskVo(
                 taskId,
@@ -37,7 +45,7 @@ public class InMemoryFixTaskService implements FixTaskService {
                 Instant.now()
         );
         tasks.put(taskId, task);
-        return task;
+        return new FixTaskCreationResult(task, true);
     }
 
     @Override

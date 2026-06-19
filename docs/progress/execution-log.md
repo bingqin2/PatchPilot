@@ -421,3 +421,28 @@ Validation:
 - `mvn -pl PatchPilot -Dtest=GitHubIssueCommentClientTests,IssueCommentToolTests,WorkspaceFixTaskExecutorTests,AsyncFixTaskDispatcherTests,GitHubWebhookControllerTests test`: passed, 21 tests run, 0 failures, 0 errors.
 - `mvn test` from repository root: passed, 79 tests run, 0 failures, 0 errors.
 - `mvn clean package` from repository root: passed, 79 tests run, 0 failures, 0 errors, and generated `PatchPilot/target/patchpilot-backend-0.0.1-SNAPSHOT.jar`.
+
+## 2026-06-19
+
+Implemented MySQL task persistence from `docs/plans/014-mysql-task-persistence.md`.
+
+Changes:
+
+- Added Flyway migration `V1__create_fix_task.sql` for the `fix_task` table and unique `delivery_id`.
+- Added `FixTaskEntity`, `FixTaskMapper`, and `FixTaskConvert` for MyBatis-Plus persistence mapping.
+- Added `MyBatisFixTaskService` for `local` and `docker` profiles, preserving duplicate delivery handling and task status transitions.
+- Added a task creation result contract so webhook handling can return `DUPLICATE_DELIVERY` without re-dispatching when MySQL already has the delivery id.
+- Kept `InMemoryFixTaskService` as the default no-database service.
+- Enabled Flyway migrations for `application-local.properties` and `application-docker.properties`.
+- Added migration, converter, and MyBatis service tests.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=FixTaskMigrationTests test`: first failed because the migration file did not exist, then passed after adding it, 1 test run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=FixTaskConvertTests test`: first failed because entity/converter classes did not exist, then passed after implementation, 2 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=MyBatisFixTaskServiceTests test`: first failed because `MyBatisFixTaskService` did not exist, then passed after implementation, 6 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=PatchPilotApplicationTests,GitHubWebhookControllerTests,InMemoryFixTaskServiceTests test`: passed, 13 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=GitHubWebhookServiceTests,MyBatisFixTaskServiceTests test`: first failed because `FixTaskCreationResult` did not exist, then passed after adding the creation-result contract, 7 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=FixTaskMigrationTests,FixTaskConvertTests,MyBatisFixTaskServiceTests,InMemoryFixTaskServiceTests,PatchPilotApplicationTests,GitHubWebhookControllerTests,GitHubWebhookServiceTests test`: passed, 23 tests run, 0 failures, 0 errors.
+- `mvn test` from repository root: passed, 89 tests run, 0 failures, 0 errors.
+- `mvn clean package` from repository root: passed, 89 tests run, 0 failures, 0 errors, and generated `PatchPilot/target/patchpilot-backend-0.0.1-SNAPSHOT.jar`.
