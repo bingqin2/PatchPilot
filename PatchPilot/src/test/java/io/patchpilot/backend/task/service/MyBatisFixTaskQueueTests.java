@@ -62,7 +62,7 @@ class MyBatisFixTaskQueueTests {
                 Instant.parse("2026-06-19T10:00:00Z")
         );
         when(queueItemMapper.selectList(any())).thenReturn(List.of(newer, older));
-        when(queueItemMapper.updateById(any(FixTaskQueueItemEntity.class))).thenReturn(1);
+        when(queueItemMapper.update(any(FixTaskQueueItemEntity.class), any())).thenReturn(1);
         ArgumentCaptor<FixTaskQueueItemEntity> entityCaptor = ArgumentCaptor.forClass(FixTaskQueueItemEntity.class);
 
         Optional<FixTaskQueueItemVo> claimed = queue.claimNext();
@@ -72,11 +72,26 @@ class MyBatisFixTaskQueueTests {
         assertThat(claimed.get().taskId()).isEqualTo("task-older");
         assertThat(claimed.get().status()).isEqualTo(FixTaskQueueItemStatus.RUNNING);
         assertThat(claimed.get().attemptCount()).isEqualTo(1);
-        verify(queueItemMapper).updateById(entityCaptor.capture());
+        verify(queueItemMapper).update(entityCaptor.capture(), any());
         FixTaskQueueItemEntity updatedEntity = entityCaptor.getValue();
         assertThat(updatedEntity.getStatus()).isEqualTo(FixTaskQueueItemStatus.RUNNING.name());
         assertThat(updatedEntity.getAttemptCount()).isEqualTo(1);
         assertThat(updatedEntity.getLockedAt()).isNotNull();
+    }
+
+    @Test
+    void should_return_empty_when_selected_pending_item_was_claimed_by_another_worker() {
+        FixTaskQueueItemEntity selected = entity(
+                "queue-claimed",
+                "task-claimed",
+                FixTaskQueueItemStatus.PENDING,
+                0,
+                Instant.parse("2026-06-19T10:00:00Z")
+        );
+        when(queueItemMapper.selectList(any())).thenReturn(List.of(selected));
+        when(queueItemMapper.update(any(FixTaskQueueItemEntity.class), any())).thenReturn(0);
+
+        assertThat(queue.claimNext()).isEmpty();
     }
 
     @Test
@@ -85,7 +100,7 @@ class MyBatisFixTaskQueueTests {
 
         assertThat(queue.claimNext()).isEmpty();
 
-        verify(queueItemMapper, never()).updateById(any(FixTaskQueueItemEntity.class));
+        verify(queueItemMapper, never()).update(any(FixTaskQueueItemEntity.class), any());
     }
 
     @Test

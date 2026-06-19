@@ -638,3 +638,21 @@ Validation:
 - `mvn -pl PatchPilot -Dtest=MyBatisFixTaskQueueQueryServiceTests,TaskControllerTests test`: first failed because the queue query service and summary VO did not exist, then passed after implementation, 14 tests run, 0 failures, 0 errors.
 - `mvn -pl PatchPilot -Dtest=TaskQueueControllerTests,MyBatisFixTaskQueueQueryServiceTests,TaskControllerTests test`: passed, 16 tests run, 0 failures, 0 errors.
 - `mvn -pl PatchPilot test`: passed, 157 tests run, 0 failures, 0 errors.
+
+## 2026-06-19
+
+Implemented concurrent queue claim safety from `docs/plans/024-concurrent-queue-claim-safety.md`.
+
+Changes:
+
+- Updated `MyBatisFixTaskQueue#claimNext()` to use a conditional update for claiming selected pending queue items.
+- The conditional update now requires the item id, `PENDING` status, and `available_at <= now`.
+- `claimNext()` returns a running queue item only when the update affects one row.
+- If another worker claims the selected item first and the update affects zero rows, `claimNext()` now returns `Optional.empty()` so the losing worker does not execute the task.
+- Kept this phase scoped to claim safety: no distributed lock service, queue mutation API, or `FOR UPDATE SKIP LOCKED` path was added.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=MyBatisFixTaskQueueTests test`: first failed because the old implementation still used `updateById` and returned a claimed item even when a conditional update would affect zero rows, then passed after implementation, 8 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=MyBatisFixTaskQueueTests,FixTaskQueuePollerTests,MyBatisFixTaskQueueQueryServiceTests,TaskQueueControllerTests test`: passed, 16 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot test`: passed, 158 tests run, 0 failures, 0 errors.

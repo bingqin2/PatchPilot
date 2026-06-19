@@ -1,6 +1,7 @@
 package io.patchpilot.backend.task.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import io.patchpilot.backend.task.convert.FixTaskQueueItemConvert;
 import io.patchpilot.backend.task.config.TaskQueueProperties;
 import io.patchpilot.backend.task.domain.entity.FixTaskQueueItemEntity;
@@ -52,7 +53,14 @@ public class MyBatisFixTaskQueue implements FixTaskQueue {
             return Optional.empty();
         }
         FixTaskQueueItemEntity runningItem = FixTaskQueueItemConvert.replaceRunning(nextItem.get(), now);
-        queueItemMapper.updateById(runningItem);
+        LambdaUpdateWrapper<FixTaskQueueItemEntity> updateWrapper = new LambdaUpdateWrapper<FixTaskQueueItemEntity>()
+                .eq(FixTaskQueueItemEntity::getId, nextItem.get().getId())
+                .eq(FixTaskQueueItemEntity::getStatus, FixTaskQueueItemStatus.PENDING.name())
+                .le(FixTaskQueueItemEntity::getAvailableAt, now);
+        int updatedRows = queueItemMapper.update(runningItem, updateWrapper);
+        if (updatedRows != 1) {
+            return Optional.empty();
+        }
         return Optional.of(FixTaskQueueItemConvert.toVo(runningItem));
     }
 
