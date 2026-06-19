@@ -780,3 +780,22 @@ Validation:
 
 - `mvn -pl PatchPilot -Dtest=FixTaskModelCallConvertTests,FixTaskModelCallMigrationTests,InMemoryFixTaskModelCallServiceTests,MyBatisFixTaskModelCallServiceTests,TaskControllerTests test`: first failed because model-call VO/entity/converter/mapper/service and controller wiring did not exist, then passed after implementation, 25 tests run, 0 failures, 0 errors.
 - `mvn -pl PatchPilot test`: passed, 216 tests run, 0 failures, 0 errors.
+
+## 2026-06-20
+
+Implemented model provider client boundary from `docs/plans/031-model-provider-client-boundary.md`.
+
+Changes:
+
+- Added `AgentProperties` under `patchpilot.agent` for provider, model, base URL, and API key.
+- Added `ModelProviderClient`, request/response records, and `ModelProviderException`.
+- Added `OpenAiCompatibleModelClient` using Java `HttpClient` against `/chat/completions`.
+- Recorded successful and failed model client calls through `FixTaskModelCallService`.
+- Added environment-backed defaults for `PATCHPILOT_AGENT_PROVIDER`, `PATCHPILOT_AGENT_MODEL`, `PATCHPILOT_AGENT_BASE_URL`, and `PATCHPILOT_AGENT_API_KEY`.
+- Kept this phase boundary-only: no workflow path invokes the model client yet.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=OpenAiCompatibleModelClientTests test`: first failed because agent config, provider domain, and client classes did not exist, then passed after implementation, 3 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=PatchPilotApplicationTests,OpenAiCompatibleModelClientTests test`: passed, 4 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot test`: passed, 219 tests run, 0 failures, 0 errors.
