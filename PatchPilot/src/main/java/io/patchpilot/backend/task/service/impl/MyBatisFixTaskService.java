@@ -103,6 +103,24 @@ public class MyBatisFixTaskService implements FixTaskService {
                 .map(FixTaskConvert::toVo);
     }
 
+    @Override
+    public Optional<FixTaskVo> findTaskByDeliveryId(String deliveryId) {
+        return findByDeliveryId(deliveryId)
+                .map(FixTaskConvert::toVo);
+    }
+
+    @Override
+    public Optional<FixTaskVo> findActiveTaskForIssue(String repositoryOwner, String repositoryName, long issueNumber) {
+        LambdaQueryWrapper<FixTaskEntity> queryWrapper = new LambdaQueryWrapper<FixTaskEntity>()
+                .eq(FixTaskEntity::getRepositoryOwner, repositoryOwner)
+                .eq(FixTaskEntity::getRepositoryName, repositoryName)
+                .eq(FixTaskEntity::getIssueNumber, issueNumber)
+                .in(FixTaskEntity::getStatus, activeStatusNames());
+        return fixTaskMapper.selectList(queryWrapper).stream()
+                .max(Comparator.comparing(FixTaskEntity::getCreatedAt))
+                .map(FixTaskConvert::toVo);
+    }
+
     private FixTaskVo replaceStatus(String id, FixTaskStatus status, String failureReason) {
         FixTaskEntity currentTask = Optional.ofNullable(fixTaskMapper.selectById(id))
                 .orElseThrow(() -> new IllegalArgumentException("Task not found: " + id));
@@ -115,5 +133,13 @@ public class MyBatisFixTaskService implements FixTaskService {
         LambdaQueryWrapper<FixTaskEntity> queryWrapper = new LambdaQueryWrapper<FixTaskEntity>()
                 .eq(FixTaskEntity::getDeliveryId, deliveryId);
         return Optional.ofNullable(fixTaskMapper.selectOne(queryWrapper));
+    }
+
+    private static List<String> activeStatusNames() {
+        return List.of(
+                FixTaskStatus.PENDING.name(),
+                FixTaskStatus.RUNNING.name(),
+                FixTaskStatus.RUNNING_TESTS.name()
+        );
     }
 }

@@ -523,3 +523,26 @@ Validation:
 - `mvn -pl PatchPilot -Dtest=FixTaskTimelineMigrationTests,FixTaskTimelineEventConvertTests,InMemoryFixTaskTimelineServiceTests,MyBatisFixTaskTimelineServiceTests,TaskControllerTests,GitHubWebhookServiceTests,AsyncFixTaskDispatcherTests,GitHubWebhookControllerTests test`: passed, 25 tests run, 0 failures, 0 errors.
 - `mvn test` from repository root: passed, 112 tests run, 0 failures, 0 errors.
 - `mvn clean package` from repository root: passed, 112 tests run, 0 failures, 0 errors, and generated `PatchPilot/target/patchpilot-backend-0.0.1-SNAPSHOT.jar`.
+
+## 2026-06-19
+
+Implemented active task deduplication and the in-process queue boundary from `docs/plans/018-active-task-deduplication-queue.md`.
+
+Changes:
+
+- Added `FixTaskService#findTaskByDeliveryId(...)` so duplicate delivery idempotency can be checked before issue-level active task deduplication.
+- Added `FixTaskService#findActiveTaskForIssue(...)` for both in-memory and MyBatis-backed task services.
+- Added Flyway migration `V5__add_fix_task_active_lookup_index.sql` for `repository_owner`, `repository_name`, `issue_number`, and `status` lookup.
+- Added `WebhookHandleStatus.ACTIVE_TASK_EXISTS` and `FixTaskTimelineEventType.ACTIVE_TASK_EXISTS`.
+- Updated webhook handling so a second `/agent fix` for the same active issue returns the existing task id, records a timeline event, edits the existing status comment when possible, and does not create or dispatch a second task.
+- Preserved duplicate delivery priority over active task deduplication, including active tasks found by delivery id after process restart.
+- Added `FixTaskQueue` and `InMemoryFixTaskQueue` as the queue abstraction.
+- Moved task execution lifecycle transitions from `AsyncFixTaskDispatcher` into `FixTaskWorker`.
+- Reduced `AsyncFixTaskDispatcher` to enqueue task ids only.
+- Kept this phase in-process only: no Redis, RabbitMQ, Kafka, or docker-compose service was added.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=InMemoryFixTaskServiceTests,MyBatisFixTaskServiceTests,FixTaskMigrationTests,IssueCommentToolTests,GitHubWebhookServiceTests,AsyncFixTaskDispatcherTests,FixTaskWorkerTests,InMemoryFixTaskQueueTests test`: first failed because the new queue, worker, active-task lookup, webhook status, timeline event, comment update, and migration did not exist, then passed after implementation, 36 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=InMemoryFixTaskServiceTests,MyBatisFixTaskServiceTests,GitHubWebhookServiceTests test`: first failed because `findTaskByDeliveryId(...)` was not part of the service contract, then passed after adding the contract and duplicate-before-active webhook check, 24 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot test`: passed, 124 tests run, 0 failures, 0 errors.

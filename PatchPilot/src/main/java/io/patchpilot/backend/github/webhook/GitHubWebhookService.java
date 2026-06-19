@@ -70,10 +70,29 @@ public class GitHubWebhookService {
         if (!isAgentFixCommand(commentBody)) {
             return WebhookHandleResult.ignored();
         }
+        WebhookHandleResult duplicateDeliveryResult = fixTaskService.findTaskByDeliveryId(deliveryId)
+                .map(task -> WebhookHandleResult.duplicate(task.id()))
+                .orElse(null);
+        if (duplicateDeliveryResult != null) {
+            return duplicateDeliveryResult;
+        }
+        String repositoryOwner = requiredText(root, "repository", "owner", "login");
+        String repositoryName = requiredText(root, "repository", "name");
+        long issueNumber = requiredLong(root, "issue", "number");
+        WebhookHandleResult activeTaskResult = fixTaskService.findActiveTaskForIssue(
+                        repositoryOwner,
+                        repositoryName,
+                        issueNumber
+                )
+                .map(this::handleActiveTaskExists)
+                .orElse(null);
+        if (activeTaskResult != null) {
+            return activeTaskResult;
+        }
         FixTaskCreationResult creationResult = fixTaskService.createFixTaskIfAbsent(new CreateFixTaskCommand(
-                requiredText(root, "repository", "owner", "login"),
-                requiredText(root, "repository", "name"),
-                requiredLong(root, "issue", "number"),
+                repositoryOwner,
+                repositoryName,
+                issueNumber,
                 optionalLong(root, 0, "installation", "id"),
                 requiredText(root, "comment", "user", "login"),
                 commentBody,
@@ -90,11 +109,29 @@ public class GitHubWebhookService {
         return WebhookHandleResult.taskCreated(task.id());
     }
 
+    private WebhookHandleResult handleActiveTaskExists(FixTaskVo activeTask) {
+        recordTimelineEvent(
+                activeTask.id(),
+                FixTaskTimelineEventType.ACTIVE_TASK_EXISTS,
+                "Ignored duplicate /agent fix while task is active"
+        );
+        updateStatusComment(() -> issueCommentTool.updateActiveTaskExists(activeTask));
+        return WebhookHandleResult.activeTaskExists(activeTask.id());
+    }
+
     private void createStatusComment(FixTaskVo task) {
         try {
             IssueCommentResult commentResult = issueCommentTool.commentAccepted(task);
             fixTaskService.attachStatusComment(task.id(), commentResult.id(), commentResult.url());
             recordTimelineEvent(task.id(), FixTaskTimelineEventType.STATUS_COMMENT_CREATED, "Status comment created");
+        } catch (RuntimeException exception) {
+            // GitHub comment feedback must not block the durable task workflow.
+        }
+    }
+
+    private static void updateStatusComment(Runnable update) {
+        try {
+            update.run();
         } catch (RuntimeException exception) {
             // GitHub comment feedback must not block the durable task workflow.
         }

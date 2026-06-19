@@ -32,4 +32,8 @@ public interface FixTaskService {
     List<FixTaskVo> listTasks();
 
     Optional<FixTaskVo> findTask(String id);
+
+    Optional<FixTaskVo> findTaskByDeliveryId(String deliveryId);
+
+    Optional<FixTaskVo> findActiveTaskForIssue(String repositoryOwner, String repositoryName, long issueNumber);
 }

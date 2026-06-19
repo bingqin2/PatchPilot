@@ -87,6 +87,35 @@ class InMemoryFixTaskServiceTests {
     }
 
     @Test
+    void should_find_active_task_for_issue() {
+        FixTaskVo task = createTask("delivery-active");
+
+        assertThat(fixTaskService.findActiveTaskForIssue("octocat", "hello-world", 42))
+                .get()
+                .extracting(FixTaskVo::id)
+                .isEqualTo(task.id());
+    }
+
+    @Test
+    void should_find_task_by_delivery_id() {
+        FixTaskVo task = createTask("delivery-lookup");
+
+        assertThat(fixTaskService.findTaskByDeliveryId("delivery-lookup"))
+                .get()
+                .extracting(FixTaskVo::id)
+                .isEqualTo(task.id());
+    }
+
+    @Test
+    void should_ignore_completed_task_when_finding_active_task_for_issue() {
+        FixTaskVo task = createTask("delivery-completed-active-lookup");
+        fixTaskService.markCompleted(task.id(), "https://github.com/octocat/hello-world/pull/7");
+
+        assertThat(fixTaskService.findActiveTaskForIssue("octocat", "hello-world", 42))
+                .isEmpty();
+    }
+
+    @Test
     void should_reject_status_transition_for_missing_task() {
         assertThatThrownBy(() -> fixTaskService.markRunning("missing-task"))
                 .isInstanceOf(IllegalArgumentException.class)

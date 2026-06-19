@@ -13,4 +13,8 @@ public record WebhookHandleResult(WebhookHandleStatus status, String taskId) {
     public static WebhookHandleResult duplicate(String taskId) {
         return new WebhookHandleResult(WebhookHandleStatus.DUPLICATE_DELIVERY, taskId);
     }
+
+    public static WebhookHandleResult activeTaskExists(String taskId) {
+        return new WebhookHandleResult(WebhookHandleStatus.ACTIVE_TASK_EXISTS, taskId);
+    }
 }
