@@ -15,11 +15,13 @@ import io.patchpilot.backend.task.service.FixTaskToolCallService;
 import io.patchpilot.backend.workspace.domain.bo.CloneWorkspaceCommand;
 import io.patchpilot.backend.workspace.domain.vo.PreparedWorkspaceResult;
 import io.patchpilot.backend.workspace.service.WorkspaceService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 
 @Service
+@RequiredArgsConstructor
 public class NoopFixTaskExecutor implements FixTaskExecutor {
 
     private final WorkspaceService workspaceService;
@@ -32,30 +34,6 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
     private final FixTaskTestRunService fixTaskTestRunService;
     private final FixTaskToolCallService fixTaskToolCallService;
     private final TaskCancellationChecker taskCancellationChecker;
-
-    public NoopFixTaskExecutor(
-            WorkspaceService workspaceService,
-            MavenTestRunner mavenTestRunner,
-            PatchWorkflow patchWorkflow,
-            DiffTool diffTool,
-            CommitTool commitTool,
-            PushTool pushTool,
-            PullRequestTool pullRequestTool,
-            FixTaskTestRunService fixTaskTestRunService,
-            FixTaskToolCallService fixTaskToolCallService,
-            TaskCancellationChecker taskCancellationChecker
-    ) {
-        this.workspaceService = workspaceService;
-        this.mavenTestRunner = mavenTestRunner;
-        this.patchWorkflow = patchWorkflow;
-        this.diffTool = diffTool;
-        this.commitTool = commitTool;
-        this.pushTool = pushTool;
-        this.pullRequestTool = pullRequestTool;
-        this.fixTaskTestRunService = fixTaskTestRunService;
-        this.fixTaskToolCallService = fixTaskToolCallService;
-        this.taskCancellationChecker = taskCancellationChecker;
-    }
 
     @Override
     public FixTaskExecutionResult execute(FixTaskVo task) {
