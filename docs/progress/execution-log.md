@@ -322,3 +322,27 @@ Validation:
 - `mvn -pl PatchPilot -Dtest=SimplePatchWorkflowTests,WorkspaceFixTaskExecutorTests,GitHubWebhookControllerTests test`: passed, 13 tests run, 0 failures, 0 errors.
 - `mvn test` from repository root: passed, 57 tests run, 0 failures, 0 errors.
 - `mvn clean package` from repository root: passed, 57 tests run, 0 failures, 0 errors, and generated `PatchPilot/target/patchpilot-backend-0.0.1-SNAPSHOT.jar`.
+
+## 2026-06-19
+
+Implemented the local commit workflow from `docs/plans/010-local-commit-workflow.md`.
+
+Changes:
+
+- Added controlled `GitCommandRunner#stageAll(...)` using `git -C <repo> add --all`.
+- Added controlled `GitCommandRunner#commit(...)` using `git -C <repo> commit -m <message>`.
+- Added `CommitTool` to stage and commit all repository changes with clear failure messages.
+- Updated task execution order to commit only after patch workflow, diff inspection, and successful Maven verification.
+- Ensured Maven test failures do not create commits.
+- Isolated webhook controller tests from real commit side effects with a primary test `CommitTool`.
+- Kept this phase local-only: no branch push, GitHub API calls, issue comments, or Pull Requests were added.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=GitCommandRunnerTests test`: first failed because `stageAll` and `commit` did not exist, then passed after implementation, 8 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=CommitToolTests test`: first failed because `CommitTool` did not exist, then passed after implementation, 3 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=WorkspaceFixTaskExecutorTests test`: first failed because the executor did not accept `CommitTool`, then passed after wiring commit after Maven verification, 2 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=GitHubWebhookControllerTests test`: first failed because the Spring test context used the real commit tool against a fake workspace, then passed after adding a test commit tool bean, 8 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=GitCommandRunnerTests,CommitToolTests,WorkspaceFixTaskExecutorTests,GitHubWebhookControllerTests test`: passed, 21 tests run, 0 failures, 0 errors.
+- `mvn test` from repository root: passed, 63 tests run, 0 failures, 0 errors.
+- `mvn clean package` from repository root: passed, 63 tests run, 0 failures, 0 errors, and generated `PatchPilot/target/patchpilot-backend-0.0.1-SNAPSHOT.jar`.

@@ -60,6 +60,30 @@ public class GitCommandRunner {
         ));
     }
 
+    public GitCommandResult stageAll(Path repositoryDir) {
+        return runGit(List.of(
+                "git",
+                "-C",
+                repositoryDir.toString(),
+                "add",
+                "--all"
+        ));
+    }
+
+    public GitCommandResult commit(Path repositoryDir, String message) {
+        if (message == null || message.isBlank()) {
+            throw new IllegalArgumentException("Commit message must not be blank");
+        }
+        return runGit(List.of(
+                "git",
+                "-C",
+                repositoryDir.toString(),
+                "commit",
+                "-m",
+                message
+        ));
+    }
+
     private GitCommandResult runGit(List<String> command) {
         ProcessBuilder processBuilder = new ProcessBuilder(command);
         processBuilder.redirectErrorStream(true);

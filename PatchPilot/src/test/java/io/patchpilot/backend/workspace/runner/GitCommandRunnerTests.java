@@ -73,6 +73,42 @@ class GitCommandRunnerTests {
         assertThat(result.output()).contains("+changed");
     }
 
+    @Test
+    void should_stage_all_repository_changes() throws Exception {
+        Path repositoryDir = tempDir.resolve("stage-repo");
+        createGitRepository(repositoryDir);
+        Files.writeString(repositoryDir.resolve("README.md"), "hello\nchanged\n");
+        GitCommandRunner runner = new GitCommandRunner(new GitHubProperties());
+
+        GitCommandResult result = runner.stageAll(repositoryDir);
+
+        assertThat(result.exitCode()).isEqualTo(0);
+        assertThat(runGit(repositoryDir, "diff", "--cached", "--")).contains("+changed");
+    }
+
+    @Test
+    void should_commit_staged_repository_changes() throws Exception {
+        Path repositoryDir = tempDir.resolve("commit-repo");
+        createGitRepository(repositoryDir);
+        Files.writeString(repositoryDir.resolve("README.md"), "hello\nchanged\n");
+        runGit(repositoryDir, "add", "--all");
+        GitCommandRunner runner = new GitCommandRunner(new GitHubProperties());
+
+        GitCommandResult result = runner.commit(repositoryDir, "PatchPilot task task-123");
+
+        assertThat(result.exitCode()).isEqualTo(0);
+        assertThat(lastCommitMessage(repositoryDir)).isEqualTo("PatchPilot task task-123");
+    }
+
+    @Test
+    void should_reject_blank_commit_message() {
+        GitCommandRunner runner = new GitCommandRunner(new GitHubProperties());
+
+        assertThatThrownBy(() -> runner.commit(tempDir, " "))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Commit message must not be blank");
+    }
+
     private static String sanitize(GitCommandRunner runner, String value) throws Exception {
         Method sanitize = GitCommandRunner.class.getDeclaredMethod("sanitize", String.class);
         sanitize.setAccessible(true);
@@ -91,6 +127,10 @@ class GitCommandRunnerTests {
 
     private static String currentBranch(Path repositoryDir) throws Exception {
         return runGit(repositoryDir, "branch", "--show-current").trim();
+    }
+
+    private static String lastCommitMessage(Path repositoryDir) throws Exception {
+        return runGit(repositoryDir, "log", "-1", "--pretty=%s").trim();
     }
 
     private static String runGit(Path repositoryDir, String... args) throws Exception {

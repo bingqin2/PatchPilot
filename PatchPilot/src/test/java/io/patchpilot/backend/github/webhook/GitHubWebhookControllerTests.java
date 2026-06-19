@@ -1,5 +1,6 @@
 package io.patchpilot.backend.github.webhook;
 
+import io.patchpilot.backend.agent.tool.CommitTool;
 import io.patchpilot.backend.agent.tool.DiffTool;
 import io.patchpilot.backend.agent.workflow.PatchWorkflow;
 import io.patchpilot.backend.agent.workflow.domain.PatchWorkflowResult;
@@ -326,6 +327,17 @@ class GitHubWebhookControllerTests {
                 @Override
                 public String diff(Path repositoryDir) {
                     return "test diff";
+                }
+            };
+        }
+
+        @Bean
+        @Primary
+        CommitTool commitTool() {
+            return new CommitTool(new GitCommandRunner(new GitHubProperties())) {
+                @Override
+                public String commitAll(Path repositoryDir, String message) {
+                    return "test commit";
                 }
             };
         }

@@ -1,5 +1,6 @@
 package io.patchpilot.backend.task.executor;
 
+import io.patchpilot.backend.agent.tool.CommitTool;
 import io.patchpilot.backend.agent.tool.DiffTool;
 import io.patchpilot.backend.agent.workflow.PatchWorkflow;
 import io.patchpilot.backend.runner.domain.vo.TestRunResult;
@@ -17,17 +18,20 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
     private final MavenTestRunner mavenTestRunner;
     private final PatchWorkflow patchWorkflow;
     private final DiffTool diffTool;
+    private final CommitTool commitTool;
 
     public NoopFixTaskExecutor(
             WorkspaceService workspaceService,
             MavenTestRunner mavenTestRunner,
             PatchWorkflow patchWorkflow,
-            DiffTool diffTool
+            DiffTool diffTool,
+            CommitTool commitTool
     ) {
         this.workspaceService = workspaceService;
         this.mavenTestRunner = mavenTestRunner;
         this.patchWorkflow = patchWorkflow;
         this.diffTool = diffTool;
+        this.commitTool = commitTool;
     }
 
     @Override
@@ -43,5 +47,6 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
         if (testRunResult.exitCode() != 0) {
             throw new IllegalStateException("maven tests failed: " + testRunResult.output());
         }
+        commitTool.commitAll(preparedWorkspace.repositoryDir(), "PatchPilot task " + task.id());
     }
 }
