@@ -84,7 +84,7 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
         );
         taskCancellationChecker.throwIfCancelled(task.id());
         Instant testStartedAt = Instant.now();
-        TestRunResult testRunResult = mavenTestRunner.runTests(preparedWorkspace.repositoryDir());
+        TestRunResult testRunResult = mavenTestRunner.runTests(task.id(), preparedWorkspace.repositoryDir());
         Instant testFinishedAt = Instant.now();
         fixTaskTestRunService.recordTestRun(
                 task.id(),
@@ -94,10 +94,10 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
                 testStartedAt,
                 testFinishedAt
         );
+        taskCancellationChecker.throwIfCancelled(task.id());
         if (testRunResult.exitCode() != 0) {
             throw new IllegalStateException("maven tests failed: " + testRunResult.output());
         }
-        taskCancellationChecker.throwIfCancelled(task.id());
         auditToolCall(
                 task.id(),
                 "CommitTool",

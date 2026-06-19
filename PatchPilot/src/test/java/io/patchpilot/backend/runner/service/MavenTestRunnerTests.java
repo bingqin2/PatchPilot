@@ -1,6 +1,7 @@
 package io.patchpilot.backend.runner.service;
 
 import io.patchpilot.backend.runner.domain.vo.TestRunResult;
+import io.patchpilot.backend.task.process.TaskProcessRegistry;
 import io.patchpilot.backend.workspace.config.WorkspaceProperties;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -9,6 +10,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -89,6 +91,21 @@ class MavenTestRunnerTests {
     }
 
     @Test
+    void should_register_and_unregister_task_process_when_task_id_is_provided() throws Exception {
+        Path repositoryDir = tempDir.resolve("registered-wrapper-repo");
+        Files.createDirectories(repositoryDir);
+        createMavenWrapper(repositoryDir, "echo wrapper-ok \"$@\"\nexit 0\n");
+        RecordingTaskProcessRegistry processRegistry = new RecordingTaskProcessRegistry();
+        MavenTestRunner runner = runner(Duration.ofSeconds(300), processRegistry);
+
+        TestRunResult result = runner.runTests("task-123", repositoryDir);
+
+        assertThat(result.exitCode()).isZero();
+        assertThat(processRegistry.registeredTaskIds()).containsExactly("task-123");
+        assertThat(processRegistry.unregisteredTaskIds()).containsExactly("task-123");
+    }
+
+    @Test
     void should_fail_for_unsupported_repository() {
         MavenTestRunner runner = new MavenTestRunner();
 
@@ -120,9 +137,13 @@ class MavenTestRunnerTests {
     }
 
     private MavenTestRunner runner(Duration timeout) {
+        return runner(timeout, new TaskProcessRegistry());
+    }
+
+    private MavenTestRunner runner(Duration timeout, TaskProcessRegistry processRegistry) {
         WorkspaceProperties properties = new WorkspaceProperties();
         properties.setRootDir(tempDir);
-        return new MavenTestRunner(timeout, new CommandExecutionGuard(properties));
+        return new MavenTestRunner(timeout, new CommandExecutionGuard(properties), processRegistry);
     }
 
     private static final class RecordingMavenTestRunner extends MavenTestRunner {
@@ -131,7 +152,7 @@ class MavenTestRunnerTests {
         private List<String> command;
 
         @Override
-        protected TestRunResult runCommand(Path repositoryDir, List<String> command) {
+        protected TestRunResult runCommand(String taskId, Path repositoryDir, List<String> command) {
             this.repositoryDir = repositoryDir;
             this.command = List.copyOf(command);
             return new TestRunResult(String.join(" ", command), 0, "recorded");
@@ -143,6 +164,30 @@ class MavenTestRunnerTests {
 
         private List<String> command() {
             return command;
+        }
+    }
+
+    private static final class RecordingTaskProcessRegistry extends TaskProcessRegistry {
+
+        private final List<String> registeredTaskIds = new CopyOnWriteArrayList<>();
+        private final List<String> unregisteredTaskIds = new CopyOnWriteArrayList<>();
+
+        @Override
+        public void register(String taskId, Process process) {
+            registeredTaskIds.add(taskId);
+        }
+
+        @Override
+        public void unregister(String taskId, Process process) {
+            unregisteredTaskIds.add(taskId);
+        }
+
+        private List<String> registeredTaskIds() {
+            return registeredTaskIds;
+        }
+
+        private List<String> unregisteredTaskIds() {
+            return unregisteredTaskIds;
         }
     }
 }
