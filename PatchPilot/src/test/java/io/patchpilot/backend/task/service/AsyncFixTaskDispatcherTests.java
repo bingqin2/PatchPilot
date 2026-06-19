@@ -8,6 +8,8 @@ import io.patchpilot.backend.github.client.domain.UpdateIssueCommentCommand;
 import io.patchpilot.backend.github.config.GitHubProperties;
 import io.patchpilot.backend.task.domain.bo.CreateFixTaskCommand;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
+import io.patchpilot.backend.task.domain.enums.FixTaskTimelineEventType;
+import io.patchpilot.backend.task.domain.vo.FixTaskTimelineEventVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import io.patchpilot.backend.task.executor.FixTaskExecutor;
 import io.patchpilot.backend.task.executor.domain.FixTaskExecutionResult;
@@ -31,7 +33,8 @@ class AsyncFixTaskDispatcherTests {
         FixTaskService fixTaskService = new InMemoryFixTaskService();
         RecordingExecutor executor = new RecordingExecutor();
         RecordingIssueCommentTool issueCommentTool = new RecordingIssueCommentTool();
-        FixTaskDispatcher dispatcher = new AsyncFixTaskDispatcher(fixTaskService, executor, issueCommentTool);
+        RecordingTimelineService timelineService = new RecordingTimelineService();
+        FixTaskDispatcher dispatcher = new AsyncFixTaskDispatcher(fixTaskService, executor, issueCommentTool, timelineService);
         FixTaskVo task = createTask(fixTaskService, "delivery-dispatch-completed");
 
         dispatcher.dispatch(task.id());
@@ -45,6 +48,13 @@ class AsyncFixTaskDispatcherTests {
         assertThat(issueCommentTool.updatedStatuses())
                 .containsSequence(FixTaskStatus.RUNNING, FixTaskStatus.RUNNING_TESTS, FixTaskStatus.COMPLETED);
         assertThat(issueCommentTool.updatedTaskIds()).contains(task.id());
+        assertThat(timelineService.eventTypes())
+                .containsSequence(
+                        FixTaskTimelineEventType.RUNNING,
+                        FixTaskTimelineEventType.RUNNING_TESTS,
+                        FixTaskTimelineEventType.PR_CREATED,
+                        FixTaskTimelineEventType.COMPLETED
+                );
     }
 
     @Test
@@ -52,7 +62,8 @@ class AsyncFixTaskDispatcherTests {
         RecordingFixTaskService fixTaskService = new RecordingFixTaskService();
         RecordingExecutor executor = new RecordingExecutor();
         RecordingIssueCommentTool issueCommentTool = new RecordingIssueCommentTool();
-        FixTaskDispatcher dispatcher = new AsyncFixTaskDispatcher(fixTaskService, executor, issueCommentTool);
+        RecordingTimelineService timelineService = new RecordingTimelineService();
+        FixTaskDispatcher dispatcher = new AsyncFixTaskDispatcher(fixTaskService, executor, issueCommentTool, timelineService);
         FixTaskVo task = createTask(fixTaskService, "delivery-dispatch-running-tests");
 
         dispatcher.dispatch(task.id());
@@ -69,7 +80,8 @@ class AsyncFixTaskDispatcherTests {
         FixTaskService fixTaskService = new InMemoryFixTaskService();
         FailingExecutor executor = new FailingExecutor();
         RecordingIssueCommentTool issueCommentTool = new RecordingIssueCommentTool();
-        FixTaskDispatcher dispatcher = new AsyncFixTaskDispatcher(fixTaskService, executor, issueCommentTool);
+        RecordingTimelineService timelineService = new RecordingTimelineService();
+        FixTaskDispatcher dispatcher = new AsyncFixTaskDispatcher(fixTaskService, executor, issueCommentTool, timelineService);
         FixTaskVo task = createTask(fixTaskService, "delivery-dispatch-failed");
 
         dispatcher.dispatch(task.id());
@@ -81,6 +93,13 @@ class AsyncFixTaskDispatcherTests {
         assertThat(issueCommentTool.updatedStatuses())
                 .containsSequence(FixTaskStatus.RUNNING, FixTaskStatus.RUNNING_TESTS, FixTaskStatus.FAILED);
         assertThat(issueCommentTool.failureReasons()).contains("executor failed");
+        assertThat(timelineService.eventTypes())
+                .containsSequence(
+                        FixTaskTimelineEventType.RUNNING,
+                        FixTaskTimelineEventType.RUNNING_TESTS,
+                        FixTaskTimelineEventType.FAILED
+                );
+        assertThat(timelineService.messages()).contains("executor failed");
     }
 
     @Test
@@ -88,7 +107,8 @@ class AsyncFixTaskDispatcherTests {
         FixTaskService fixTaskService = new InMemoryFixTaskService();
         RecordingExecutor executor = new RecordingExecutor();
         FailingUpdateIssueCommentTool issueCommentTool = new FailingUpdateIssueCommentTool();
-        FixTaskDispatcher dispatcher = new AsyncFixTaskDispatcher(fixTaskService, executor, issueCommentTool);
+        RecordingTimelineService timelineService = new RecordingTimelineService();
+        FixTaskDispatcher dispatcher = new AsyncFixTaskDispatcher(fixTaskService, executor, issueCommentTool, timelineService);
         FixTaskVo task = createTask(fixTaskService, "delivery-dispatch-comment-failed");
 
         dispatcher.dispatch(task.id());
@@ -313,6 +333,38 @@ class AsyncFixTaskDispatcherTests {
 
         private List<FixTaskStatus> statuses() {
             return statuses;
+        }
+    }
+
+    private static final class RecordingTimelineService implements FixTaskTimelineService {
+
+        private final List<FixTaskTimelineEventType> eventTypes = new CopyOnWriteArrayList<>();
+        private final List<String> messages = new CopyOnWriteArrayList<>();
+
+        @Override
+        public FixTaskTimelineEventVo recordEvent(String taskId, FixTaskTimelineEventType eventType, String message) {
+            eventTypes.add(eventType);
+            messages.add(message);
+            return new FixTaskTimelineEventVo(
+                    "event-" + eventTypes.size(),
+                    taskId,
+                    eventType,
+                    message,
+                    java.time.Instant.parse("2026-06-19T08:00:00Z").plusSeconds(eventTypes.size())
+            );
+        }
+
+        @Override
+        public List<FixTaskTimelineEventVo> listEvents(String taskId) {
+            return List.of();
+        }
+
+        private List<FixTaskTimelineEventType> eventTypes() {
+            return eventTypes;
+        }
+
+        private List<String> messages() {
+            return messages;
         }
     }
 }

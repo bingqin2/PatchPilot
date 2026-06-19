@@ -6,9 +6,11 @@ import io.patchpilot.backend.agent.tool.IssueCommentTool;
 import io.patchpilot.backend.github.client.domain.IssueCommentResult;
 import io.patchpilot.backend.task.domain.bo.CreateFixTaskCommand;
 import io.patchpilot.backend.task.domain.bo.FixTaskCreationResult;
+import io.patchpilot.backend.task.domain.enums.FixTaskTimelineEventType;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import io.patchpilot.backend.task.service.FixTaskDispatcher;
 import io.patchpilot.backend.task.service.FixTaskService;
+import io.patchpilot.backend.task.service.FixTaskTimelineService;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -26,18 +28,21 @@ public class GitHubWebhookService {
     private final FixTaskService fixTaskService;
     private final FixTaskDispatcher fixTaskDispatcher;
     private final IssueCommentTool issueCommentTool;
+    private final FixTaskTimelineService fixTaskTimelineService;
     private final ConcurrentMap<String, WebhookHandleResult> deliveryResults = new ConcurrentHashMap<>();
 
     public GitHubWebhookService(
             ObjectMapper objectMapper,
             FixTaskService fixTaskService,
             FixTaskDispatcher fixTaskDispatcher,
-            IssueCommentTool issueCommentTool
+            IssueCommentTool issueCommentTool,
+            FixTaskTimelineService fixTaskTimelineService
     ) {
         this.objectMapper = objectMapper;
         this.fixTaskService = fixTaskService;
         this.fixTaskDispatcher = fixTaskDispatcher;
         this.issueCommentTool = issueCommentTool;
+        this.fixTaskTimelineService = fixTaskTimelineService;
     }
 
     public WebhookHandleResult handle(String event, String deliveryId, String payload) {
@@ -79,6 +84,7 @@ public class GitHubWebhookService {
         if (!creationResult.created()) {
             return WebhookHandleResult.duplicate(task.id());
         }
+        recordTimelineEvent(task.id(), FixTaskTimelineEventType.TASK_CREATED, "Task accepted from /agent fix");
         createStatusComment(task);
         fixTaskDispatcher.dispatch(task.id());
         return WebhookHandleResult.taskCreated(task.id());
@@ -88,8 +94,17 @@ public class GitHubWebhookService {
         try {
             IssueCommentResult commentResult = issueCommentTool.commentAccepted(task);
             fixTaskService.attachStatusComment(task.id(), commentResult.id(), commentResult.url());
+            recordTimelineEvent(task.id(), FixTaskTimelineEventType.STATUS_COMMENT_CREATED, "Status comment created");
         } catch (RuntimeException exception) {
             // GitHub comment feedback must not block the durable task workflow.
+        }
+    }
+
+    private void recordTimelineEvent(String taskId, FixTaskTimelineEventType eventType, String message) {
+        try {
+            fixTaskTimelineService.recordEvent(taskId, eventType, message);
+        } catch (RuntimeException exception) {
+            // Timeline feedback must not block the durable task workflow.
         }
     }
 

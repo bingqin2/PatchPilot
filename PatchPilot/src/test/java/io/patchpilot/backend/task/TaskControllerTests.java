@@ -1,7 +1,9 @@
 package io.patchpilot.backend.task;
 
 import io.patchpilot.backend.task.domain.bo.CreateFixTaskCommand;
+import io.patchpilot.backend.task.domain.enums.FixTaskTimelineEventType;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
+import io.patchpilot.backend.task.service.FixTaskTimelineService;
 import io.patchpilot.backend.task.service.FixTaskService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +27,9 @@ class TaskControllerTests {
 
     @Autowired
     private FixTaskService fixTaskService;
+
+    @Autowired
+    private FixTaskTimelineService fixTaskTimelineService;
 
     @Test
     void should_list_tasks() throws Exception {
@@ -68,6 +73,31 @@ class TaskControllerTests {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.data").value(nullValue()));
+    }
+
+    @Test
+    void should_get_task_timeline_by_task_id() throws Exception {
+        FixTaskVo task = createTask("delivery-timeline");
+        fixTaskTimelineService.recordEvent(task.id(), FixTaskTimelineEventType.TASK_CREATED, "Task accepted");
+        fixTaskTimelineService.recordEvent(task.id(), FixTaskTimelineEventType.RUNNING, "Task is running");
+
+        mockMvc.perform(get("/api/tasks/{id}/timeline", task.id()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.length()").value(2))
+                .andExpect(jsonPath("$.data[0].taskId").value(task.id()))
+                .andExpect(jsonPath("$.data[0].eventType").value("TASK_CREATED"))
+                .andExpect(jsonPath("$.data[0].message").value("Task accepted"))
+                .andExpect(jsonPath("$.data[0].createdAt").value(not(nullValue())))
+                .andExpect(jsonPath("$.data[1].eventType").value("RUNNING"));
+    }
+
+    @Test
+    void should_return_404_for_missing_task_timeline() throws Exception {
+        mockMvc.perform(get("/api/tasks/{id}/timeline", "missing-task"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("Task not found"));
     }
 
     private FixTaskVo createTask(String deliveryId) {

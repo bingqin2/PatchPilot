@@ -497,3 +497,29 @@ Validation:
 - `mvn -pl PatchPilot -Dtest=FixTaskStatusCommentMigrationTests,FixTaskConvertTests,InMemoryFixTaskServiceTests,MyBatisFixTaskServiceTests,GitHubIssueCommentClientTests,IssueCommentToolTests,GitHubWebhookServiceTests,AsyncFixTaskDispatcherTests,TaskControllerTests,GitHubWebhookControllerTests test`: passed, 48 tests run, 0 failures, 0 errors.
 - `mvn test` from repository root: passed, 105 tests run, 0 failures, 0 errors.
 - `mvn clean package` from repository root: passed, 105 tests run, 0 failures, 0 errors, and generated `PatchPilot/target/patchpilot-backend-0.0.1-SNAPSHOT.jar`.
+
+## 2026-06-19
+
+Implemented task execution timeline from `docs/plans/017-task-execution-timeline.md`.
+
+Changes:
+
+- Added Flyway migration `V4__create_fix_task_timeline_event.sql` for timeline events.
+- Added timeline event enum, VO, entity, converter, and MyBatis mapper.
+- Added `FixTaskTimelineService` with default in-memory and MyBatis-backed implementations.
+- Added `GET /api/tasks/{id}/timeline` to expose ordered task timeline events.
+- Updated webhook handling to record `TASK_CREATED` and `STATUS_COMMENT_CREATED`.
+- Updated async dispatch to record `RUNNING`, `RUNNING_TESTS`, `PR_CREATED`, `COMPLETED`, and `FAILED`.
+- Kept timeline write failures non-blocking so durable task status transitions remain authoritative.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=FixTaskTimelineMigrationTests test`: first failed because the V4 migration file did not exist, then passed after adding it, 1 test run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=FixTaskTimelineEventConvertTests test`: first failed because timeline domain/converter classes did not exist, then passed after implementation, 1 test run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=InMemoryFixTaskTimelineServiceTests,MyBatisFixTaskTimelineServiceTests test`: first failed because `FixTaskTimelineService` implementations did not exist, then passed after implementation, 3 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=TaskControllerTests test`: first failed because `GET /api/tasks/{id}/timeline` did not exist, then passed after adding the endpoint, 5 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=GitHubWebhookServiceTests,AsyncFixTaskDispatcherTests test`: first failed because webhook and dispatcher were not wired to `FixTaskTimelineService`, then passed after lifecycle event recording, 7 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=GitHubWebhookControllerTests,TaskControllerTests test`: passed, 13 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=FixTaskTimelineMigrationTests,FixTaskTimelineEventConvertTests,InMemoryFixTaskTimelineServiceTests,MyBatisFixTaskTimelineServiceTests,TaskControllerTests,GitHubWebhookServiceTests,AsyncFixTaskDispatcherTests,GitHubWebhookControllerTests test`: passed, 25 tests run, 0 failures, 0 errors.
+- `mvn test` from repository root: passed, 112 tests run, 0 failures, 0 errors.
+- `mvn clean package` from repository root: passed, 112 tests run, 0 failures, 0 errors, and generated `PatchPilot/target/patchpilot-backend-0.0.1-SNAPSHOT.jar`.

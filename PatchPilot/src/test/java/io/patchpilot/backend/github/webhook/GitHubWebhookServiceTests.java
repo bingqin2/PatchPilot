@@ -10,10 +10,13 @@ import io.patchpilot.backend.github.config.GitHubProperties;
 import io.patchpilot.backend.task.domain.bo.CreateFixTaskCommand;
 import io.patchpilot.backend.task.domain.bo.FixTaskCreationResult;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
+import io.patchpilot.backend.task.domain.enums.FixTaskTimelineEventType;
+import io.patchpilot.backend.task.domain.vo.FixTaskTimelineEventVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import io.patchpilot.backend.task.service.impl.InMemoryFixTaskService;
 import io.patchpilot.backend.task.service.FixTaskDispatcher;
 import io.patchpilot.backend.task.service.FixTaskService;
+import io.patchpilot.backend.task.service.FixTaskTimelineService;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -31,11 +34,13 @@ class GitHubWebhookServiceTests {
         ExistingDeliveryFixTaskService fixTaskService = new ExistingDeliveryFixTaskService();
         RecordingFixTaskDispatcher fixTaskDispatcher = new RecordingFixTaskDispatcher();
         RecordingIssueCommentTool issueCommentTool = new RecordingIssueCommentTool();
+        RecordingTimelineService timelineService = new RecordingTimelineService();
         GitHubWebhookService webhookService = new GitHubWebhookService(
                 new ObjectMapper(),
                 fixTaskService,
                 fixTaskDispatcher,
-                issueCommentTool
+                issueCommentTool,
+                timelineService
         );
 
         WebhookHandleResult result = webhookService.handle(
@@ -48,6 +53,7 @@ class GitHubWebhookServiceTests {
         assertThat(result.taskId()).isEqualTo("task-existing");
         assertThat(fixTaskDispatcher.dispatchCount()).isZero();
         assertThat(issueCommentTool.acceptedCount()).isZero();
+        assertThat(timelineService.eventTypes()).isEmpty();
     }
 
     @Test
@@ -55,11 +61,13 @@ class GitHubWebhookServiceTests {
         FixTaskService fixTaskService = new InMemoryFixTaskService();
         RecordingFixTaskDispatcher fixTaskDispatcher = new RecordingFixTaskDispatcher();
         RecordingIssueCommentTool issueCommentTool = new RecordingIssueCommentTool();
+        RecordingTimelineService timelineService = new RecordingTimelineService();
         GitHubWebhookService webhookService = new GitHubWebhookService(
                 new ObjectMapper(),
                 fixTaskService,
                 fixTaskDispatcher,
-                issueCommentTool
+                issueCommentTool,
+                timelineService
         );
 
         WebhookHandleResult result = webhookService.handle(
@@ -74,6 +82,10 @@ class GitHubWebhookServiceTests {
         assertThat(task.statusCommentId()).isEqualTo(123L);
         assertThat(task.statusCommentUrl()).isEqualTo("https://github.com/octocat/hello-world/issues/42#issuecomment-123");
         assertThat(fixTaskDispatcher.dispatchedTaskId()).isEqualTo(task.id());
+        assertThat(timelineService.eventTypes())
+                .containsExactly(FixTaskTimelineEventType.TASK_CREATED, FixTaskTimelineEventType.STATUS_COMMENT_CREATED);
+        assertThat(timelineService.messages())
+                .containsExactly("Task accepted from /agent fix", "Status comment created");
     }
 
     @Test
@@ -81,11 +93,13 @@ class GitHubWebhookServiceTests {
         FixTaskService fixTaskService = new InMemoryFixTaskService();
         RecordingFixTaskDispatcher fixTaskDispatcher = new RecordingFixTaskDispatcher();
         FailingAcceptedIssueCommentTool issueCommentTool = new FailingAcceptedIssueCommentTool();
+        RecordingTimelineService timelineService = new RecordingTimelineService();
         GitHubWebhookService webhookService = new GitHubWebhookService(
                 new ObjectMapper(),
                 fixTaskService,
                 fixTaskDispatcher,
-                issueCommentTool
+                issueCommentTool,
+                timelineService
         );
 
         WebhookHandleResult result = webhookService.handle(
@@ -99,6 +113,7 @@ class GitHubWebhookServiceTests {
         assertThat(issueCommentTool.acceptedCount()).isEqualTo(1);
         assertThat(task.statusCommentId()).isNull();
         assertThat(fixTaskDispatcher.dispatchedTaskId()).isEqualTo(task.id());
+        assertThat(timelineService.eventTypes()).containsExactly(FixTaskTimelineEventType.TASK_CREATED);
     }
 
     private static String issueCommentPayload(String commentBody) {
@@ -254,6 +269,42 @@ class GitHubWebhookServiceTests {
         public IssueCommentResult commentAccepted(FixTaskVo task) {
             super.commentAccepted(task);
             throw new GitHubIssueCommentException("comment failed");
+        }
+    }
+
+    private static final class RecordingTimelineService implements FixTaskTimelineService {
+
+        private final List<FixTaskTimelineEventType> eventTypes = new java.util.concurrent.CopyOnWriteArrayList<>();
+        private final List<String> messages = new java.util.concurrent.CopyOnWriteArrayList<>();
+
+        @Override
+        public FixTaskTimelineEventVo recordEvent(
+                String taskId,
+                FixTaskTimelineEventType eventType,
+                String message
+        ) {
+            eventTypes.add(eventType);
+            messages.add(message);
+            return new FixTaskTimelineEventVo(
+                    "event-" + eventTypes.size(),
+                    taskId,
+                    eventType,
+                    message,
+                    Instant.parse("2026-06-19T08:00:00Z").plusSeconds(eventTypes.size())
+            );
+        }
+
+        @Override
+        public List<FixTaskTimelineEventVo> listEvents(String taskId) {
+            return List.of();
+        }
+
+        private List<FixTaskTimelineEventType> eventTypes() {
+            return eventTypes;
+        }
+
+        private List<String> messages() {
+            return messages;
         }
     }
 }
