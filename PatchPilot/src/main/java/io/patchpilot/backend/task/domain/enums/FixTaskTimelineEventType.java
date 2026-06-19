@@ -8,5 +8,7 @@ public enum FixTaskTimelineEventType {
     RUNNING_TESTS,
     PR_CREATED,
     COMPLETED,
-    FAILED
+    FAILED,
+    CANCELLED,
+    REQUEUED
 }

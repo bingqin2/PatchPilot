@@ -67,6 +67,38 @@ class InMemoryFixTaskServiceTests {
     }
 
     @Test
+    void should_mark_pending_task_cancelled() {
+        FixTaskVo task = createTask("delivery-cancelled");
+
+        FixTaskVo cancelledTask = fixTaskService.markCancelled(task.id(), "cancelled by user");
+
+        assertThat(cancelledTask.status()).isEqualTo(FixTaskStatus.CANCELLED);
+        assertThat(cancelledTask.failureReason()).isEqualTo("cancelled by user");
+        assertThat(cancelledTask.updatedAt()).isAfterOrEqualTo(task.updatedAt());
+        assertThat(fixTaskService.findTask(task.id()))
+                .get()
+                .extracting(FixTaskVo::status)
+                .isEqualTo(FixTaskStatus.CANCELLED);
+    }
+
+    @Test
+    void should_mark_terminal_task_pending_for_retry() {
+        FixTaskVo task = createTask("delivery-retry");
+        fixTaskService.markFailed(task.id(), "executor failed");
+
+        FixTaskVo retriedTask = fixTaskService.markPendingForRetry(task.id());
+
+        assertThat(retriedTask.status()).isEqualTo(FixTaskStatus.PENDING);
+        assertThat(retriedTask.failureReason()).isNull();
+        assertThat(retriedTask.pullRequestUrl()).isNull();
+        assertThat(retriedTask.completedAt()).isNull();
+        assertThat(fixTaskService.findTask(task.id()))
+                .get()
+                .extracting(FixTaskVo::status)
+                .isEqualTo(FixTaskStatus.PENDING);
+    }
+
+    @Test
     void should_attach_status_comment_metadata() {
         FixTaskVo task = createTask("delivery-status-comment");
 

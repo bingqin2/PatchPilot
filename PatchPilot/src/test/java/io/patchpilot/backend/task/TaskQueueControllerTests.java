@@ -65,7 +65,8 @@ class TaskQueueControllerTests {
                 1,
                 2,
                 3,
-                1
+                1,
+                0
         ));
 
         mockMvc.perform(get("/api/task-queue/summary"))
@@ -77,6 +78,7 @@ class TaskQueueControllerTests {
                 .andExpect(jsonPath("$.data.delayedPendingCount").value(1))
                 .andExpect(jsonPath("$.data.runningCount").value(2))
                 .andExpect(jsonPath("$.data.completedCount").value(3))
-                .andExpect(jsonPath("$.data.failedCount").value(1));
+                .andExpect(jsonPath("$.data.failedCount").value(1))
+                .andExpect(jsonPath("$.data.cancelledCount").value(0));
     }
 }

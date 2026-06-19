@@ -56,18 +56,20 @@ class MyBatisFixTaskQueueQueryServiceTests {
                 entity("queue-delayed", "task-delayed", FixTaskQueueItemStatus.PENDING, 1, Instant.now().plusSeconds(60)),
                 entity("queue-running", "task-running", FixTaskQueueItemStatus.RUNNING, 1, Instant.now().minusSeconds(30)),
                 entity("queue-completed", "task-completed", FixTaskQueueItemStatus.COMPLETED, 1, Instant.now().minusSeconds(120)),
-                entity("queue-failed", "task-failed", FixTaskQueueItemStatus.FAILED, 3, Instant.now().minusSeconds(180))
+                entity("queue-failed", "task-failed", FixTaskQueueItemStatus.FAILED, 3, Instant.now().minusSeconds(180)),
+                entity("queue-cancelled", "task-cancelled", FixTaskQueueItemStatus.CANCELLED, 0, Instant.now().minusSeconds(240))
         ));
 
         FixTaskQueueSummaryVo summary = queryService.summary();
 
-        assertThat(summary.totalCount()).isEqualTo(5);
+        assertThat(summary.totalCount()).isEqualTo(6);
         assertThat(summary.pendingCount()).isEqualTo(2);
         assertThat(summary.availablePendingCount()).isEqualTo(1);
         assertThat(summary.delayedPendingCount()).isEqualTo(1);
         assertThat(summary.runningCount()).isEqualTo(1);
         assertThat(summary.completedCount()).isEqualTo(1);
         assertThat(summary.failedCount()).isEqualTo(1);
+        assertThat(summary.cancelledCount()).isEqualTo(1);
     }
 
     private static FixTaskQueueItemEntity entity(

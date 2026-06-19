@@ -27,6 +27,14 @@ public interface FixTaskService {
 
     FixTaskVo markFailed(String id, String failureReason);
 
+    default FixTaskVo markCancelled(String id, String failureReason) {
+        throw new UnsupportedOperationException("Task cancellation is not supported");
+    }
+
+    default FixTaskVo markPendingForRetry(String id) {
+        throw new UnsupportedOperationException("Task retry is not supported");
+    }
+
     FixTaskVo attachStatusComment(String id, long statusCommentId, String statusCommentUrl);
 
     List<FixTaskVo> listTasks();

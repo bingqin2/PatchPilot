@@ -679,3 +679,23 @@ Validation:
 - `mvn -pl PatchPilot -Dtest=WorkspacePathResolverTests,FileToolsTests,SimplePatchWorkflowTests,RepositoryInspectionToolsTests test`: passed, 19 tests run, 0 failures, 0 errors.
 - `mvn -pl PatchPilot -Dtest=CommandExecutionGuardTests,GitCommandRunnerTests,MavenTestRunnerTests,WorkspacePathResolverTests,FileToolsTests,RepositoryInspectionToolsTests,SimplePatchWorkflowTests,GitWorkspaceServiceTests,PatchPilotApplicationTests test`: passed, 47 tests run, 0 failures, 0 errors.
 - `mvn -pl PatchPilot test`: passed, 167 tests run, 0 failures, 0 errors.
+
+## 2026-06-20
+
+Implemented task control API from `docs/plans/026-task-control-api.md`.
+
+Changes:
+
+- Added `CANCELLED` task status and `CANCELLED` / `REQUEUED` timeline event types.
+- Added `FixTaskControlService` to own user-driven task lifecycle actions.
+- Added `POST /api/tasks/{id}/cancel` for pending tasks only.
+- Added `POST /api/tasks/{id}/retry` for failed or cancelled tasks only.
+- Added pending queue-item cancellation support and `CANCELLED` queue item status.
+- Extended queue summary responses with `cancelledCount`.
+- Kept cancellation scoped to pending tasks because running worker interruption is not implemented yet.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=InMemoryFixTaskServiceTests,MyBatisFixTaskServiceTests,MyBatisFixTaskQueueTests,TaskControllerTests test`: first failed because the new service methods and status enums did not exist, confirming the red test path.
+- `mvn -pl PatchPilot -Dtest=InMemoryFixTaskServiceTests,MyBatisFixTaskServiceTests,MyBatisFixTaskQueueTests,MyBatisFixTaskQueueQueryServiceTests,TaskQueueControllerTests,TaskControllerTests test`: passed, 54 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=DefaultFixTaskControlServiceTests,InMemoryFixTaskServiceTests,MyBatisFixTaskServiceTests,MyBatisFixTaskQueueTests,MyBatisFixTaskQueueQueryServiceTests,TaskQueueControllerTests,TaskControllerTests test`: passed, 58 tests run, 0 failures, 0 errors.

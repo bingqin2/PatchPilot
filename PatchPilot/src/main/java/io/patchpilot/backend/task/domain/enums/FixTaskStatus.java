@@ -5,7 +5,8 @@ public enum FixTaskStatus {
     RUNNING,
     RUNNING_TESTS,
     COMPLETED,
-    FAILED;
+    FAILED,
+    CANCELLED;
 
     public boolean isActive() {
         return this == PENDING || this == RUNNING || this == RUNNING_TESTS;

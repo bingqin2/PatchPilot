@@ -91,6 +91,13 @@ public final class FixTaskConvert {
         return entity;
     }
 
+    public static FixTaskEntity replacePendingForRetry(FixTaskEntity current, Instant updatedAt) {
+        FixTaskEntity entity = replaceStatus(current, FixTaskStatus.PENDING, null, updatedAt);
+        entity.setPullRequestUrl(null);
+        entity.setCompletedAt(null);
+        return entity;
+    }
+
     public static FixTaskEntity attachStatusComment(
             FixTaskEntity current,
             long statusCommentId,
