@@ -56,7 +56,8 @@ class WorkspaceFixTaskExecutorTests {
                 pushTool,
                 pullRequestTool,
                 testRunService,
-                toolCallService
+                toolCallService,
+                taskId -> { }
         );
 
         FixTaskExecutionResult result = executor.execute(task());
@@ -115,7 +116,8 @@ class WorkspaceFixTaskExecutorTests {
                 pushTool,
                 pullRequestTool,
                 testRunService,
-                toolCallService
+                toolCallService,
+                taskId -> { }
         );
 
         assertThatThrownBy(() -> executor.execute(task()))
@@ -153,7 +155,8 @@ class WorkspaceFixTaskExecutorTests {
                 pushTool,
                 pullRequestTool,
                 testRunService,
-                toolCallService
+                toolCallService,
+                taskId -> { }
         );
 
         assertThatThrownBy(() -> executor.execute(task()))
@@ -188,7 +191,8 @@ class WorkspaceFixTaskExecutorTests {
                 pushTool,
                 pullRequestTool,
                 testRunService,
-                toolCallService
+                toolCallService,
+                taskId -> { }
         );
 
         assertThatThrownBy(() -> executor.execute(task()))
@@ -200,6 +204,41 @@ class WorkspaceFixTaskExecutorTests {
                 .containsExactly("PatchWorkflow", "DiffTool", "CommitTool", "PushTool");
         assertThat(toolCallService.lastToolCall().success()).isFalse();
         assertThat(toolCallService.lastToolCall().outputSummary()).isEqualTo("git push failed: permission denied");
+    }
+
+    @Test
+    void should_stop_before_commit_when_task_is_cancelled_after_tests() {
+        RecordingWorkspaceService workspaceService = new RecordingWorkspaceService();
+        RecordingPatchWorkflow patchWorkflow = new RecordingPatchWorkflow();
+        RecordingDiffTool diffTool = new RecordingDiffTool();
+        RecordingCommitTool commitTool = new RecordingCommitTool(false);
+        RecordingPushTool pushTool = new RecordingPushTool(false);
+        RecordingPullRequestTool pullRequestTool = new RecordingPullRequestTool();
+        RecordingMavenTestRunner mavenTestRunner = new RecordingMavenTestRunner(0, "tests passed");
+        RecordingFixTaskTestRunService testRunService = new RecordingFixTaskTestRunService();
+        RecordingFixTaskToolCallService toolCallService = new RecordingFixTaskToolCallService();
+        StageCancellingChecker cancellationChecker = new StageCancellingChecker(5);
+        FixTaskExecutor executor = new NoopFixTaskExecutor(
+                workspaceService,
+                mavenTestRunner,
+                patchWorkflow,
+                diffTool,
+                commitTool,
+                pushTool,
+                pullRequestTool,
+                testRunService,
+                toolCallService,
+                cancellationChecker
+        );
+
+        assertThatThrownBy(() -> executor.execute(task()))
+                .isInstanceOf(TaskCancellationException.class)
+                .hasMessage("Task cancelled: task-123");
+        assertThat(testRunService.taskId()).isEqualTo("task-123");
+        assertThat(commitTool.callOrder()).isZero();
+        assertThat(pushTool.callOrder()).isZero();
+        assertThat(pullRequestTool.callOrder()).isZero();
+        assertThat(cancellationChecker.checkedTaskIds()).contains("task-123");
     }
 
     private static FixTaskVo task() {
@@ -554,6 +593,28 @@ class WorkspaceFixTaskExecutorTests {
 
         private int callOrder() {
             return callOrder;
+        }
+    }
+
+    private static final class StageCancellingChecker implements TaskCancellationChecker {
+
+        private final int cancelAtCheck;
+        private final List<String> checkedTaskIds = new java.util.ArrayList<>();
+
+        private StageCancellingChecker(int cancelAtCheck) {
+            this.cancelAtCheck = cancelAtCheck;
+        }
+
+        @Override
+        public void throwIfCancelled(String taskId) {
+            checkedTaskIds.add(taskId);
+            if (checkedTaskIds.size() >= cancelAtCheck) {
+                throw new TaskCancellationException(taskId);
+            }
+        }
+
+        private List<String> checkedTaskIds() {
+            return checkedTaskIds;
         }
     }
 

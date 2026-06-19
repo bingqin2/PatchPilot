@@ -204,14 +204,26 @@ class TaskControllerTests {
     }
 
     @Test
-    void should_return_409_when_cancelling_running_task() throws Exception {
+    void should_cancel_running_task() throws Exception {
         FixTaskVo task = createTask("delivery-cancel-running-http");
         fixTaskService.markRunning(task.id());
 
         mockMvc.perform(post("/api/tasks/{id}/cancel", task.id()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value(task.id()))
+                .andExpect(jsonPath("$.data.status").value("CANCELLED"));
+    }
+
+    @Test
+    void should_return_409_when_cancelling_terminal_task() throws Exception {
+        FixTaskVo task = createTask("delivery-cancel-terminal-http");
+        fixTaskService.markCompleted(task.id(), "https://github.com/octocat/hello-world/pull/7");
+
+        mockMvc.perform(post("/api/tasks/{id}/cancel", task.id()))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.message").value("Only pending tasks can be cancelled"));
+                .andExpect(jsonPath("$.message").value("Only active tasks can be cancelled"));
     }
 
     @Test

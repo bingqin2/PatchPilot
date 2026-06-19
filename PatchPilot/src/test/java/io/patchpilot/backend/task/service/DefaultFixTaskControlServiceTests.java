@@ -41,15 +41,37 @@ class DefaultFixTaskControlServiceTests {
     }
 
     @Test
-    void should_reject_cancelling_running_task() {
+    void should_cancel_running_task_without_cancelling_queue_item() {
         FixTaskVo task = createTask("delivery-control-cancel-running");
         fixTaskService.markRunning(task.id());
 
+        FixTaskVo cancelledTask = controlService.cancelTask(task.id());
+
+        assertThat(cancelledTask.status()).isEqualTo(FixTaskStatus.CANCELLED);
+        assertThat(fixTaskQueue.cancelledTaskIds()).isEmpty();
+        assertThat(fixTaskTimelineService.eventTypes()).containsExactly(FixTaskTimelineEventType.CANCELLED);
+    }
+
+    @Test
+    void should_cancel_running_tests_task_without_cancelling_queue_item() {
+        FixTaskVo task = createTask("delivery-control-cancel-running-tests");
+        fixTaskService.markRunningTests(task.id());
+
+        FixTaskVo cancelledTask = controlService.cancelTask(task.id());
+
+        assertThat(cancelledTask.status()).isEqualTo(FixTaskStatus.CANCELLED);
+        assertThat(fixTaskQueue.cancelledTaskIds()).isEmpty();
+        assertThat(fixTaskTimelineService.eventTypes()).containsExactly(FixTaskTimelineEventType.CANCELLED);
+    }
+
+    @Test
+    void should_reject_cancelling_terminal_task() {
+        FixTaskVo task = createTask("delivery-control-cancel-terminal");
+        fixTaskService.markCompleted(task.id(), "https://github.com/octocat/hello-world/pull/7");
+
         assertThatThrownBy(() -> controlService.cancelTask(task.id()))
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessage("Only pending tasks can be cancelled");
-
-        assertThat(fixTaskQueue.cancelledTaskIds()).isEmpty();
+                .hasMessage("Only active tasks can be cancelled");
     }
 
     @Test
