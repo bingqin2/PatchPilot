@@ -19,7 +19,9 @@ public record FixTaskVo(
         Instant createdAt,
         String pullRequestUrl,
         Instant completedAt,
-        Instant updatedAt
+        Instant updatedAt,
+        Long statusCommentId,
+        String statusCommentUrl
 ) {
 
     public FixTaskVo(
@@ -37,6 +39,6 @@ public record FixTaskVo(
             Instant createdAt
     ) {
         this(id, repositoryOwner, repositoryName, issueNumber, installationId, triggerUser, triggerComment,
-                deliveryId, commentId, status, failureReason, createdAt, null, null, createdAt);
+                deliveryId, commentId, status, failureReason, createdAt, null, null, createdAt, null, null);
     }
 }

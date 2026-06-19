@@ -13,6 +13,7 @@ import io.patchpilot.backend.github.client.domain.CreateIssueCommentCommand;
 import io.patchpilot.backend.github.client.domain.CreatePullRequestCommand;
 import io.patchpilot.backend.github.client.domain.IssueCommentResult;
 import io.patchpilot.backend.github.client.domain.PullRequestResult;
+import io.patchpilot.backend.github.client.domain.UpdateIssueCommentCommand;
 import io.patchpilot.backend.github.config.GitHubProperties;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import org.junit.jupiter.api.Test;
@@ -380,6 +381,11 @@ class GitHubWebhookControllerTests {
                 @Override
                 public IssueCommentResult createIssueComment(CreateIssueCommentCommand command) {
                     return new IssueCommentResult(123, "https://github.com/octocat/hello-world/issues/42#issuecomment-123");
+                }
+
+                @Override
+                public IssueCommentResult updateIssueComment(UpdateIssueCommentCommand command) {
+                    return new IssueCommentResult(command.commentId(), "https://github.com/octocat/hello-world/issues/42#issuecomment-123");
                 }
             });
         }

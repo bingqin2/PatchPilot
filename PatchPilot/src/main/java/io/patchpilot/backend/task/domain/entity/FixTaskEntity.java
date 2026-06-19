@@ -55,6 +55,12 @@ public class FixTaskEntity {
     @TableField("updated_at")
     private Instant updatedAt;
 
+    @TableField("status_comment_id")
+    private Long statusCommentId;
+
+    @TableField("status_comment_url")
+    private String statusCommentUrl;
+
     public String getId() {
         return id;
     }
@@ -173,5 +179,21 @@ public class FixTaskEntity {
 
     public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public Long getStatusCommentId() {
+        return statusCommentId;
+    }
+
+    public void setStatusCommentId(Long statusCommentId) {
+        this.statusCommentId = statusCommentId;
+    }
+
+    public String getStatusCommentUrl() {
+        return statusCommentUrl;
+    }
+
+    public void setStatusCommentUrl(String statusCommentUrl) {
+        this.statusCommentUrl = statusCommentUrl;
     }
 }

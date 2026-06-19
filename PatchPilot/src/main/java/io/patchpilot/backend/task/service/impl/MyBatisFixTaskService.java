@@ -76,6 +76,20 @@ public class MyBatisFixTaskService implements FixTaskService {
     }
 
     @Override
+    public FixTaskVo attachStatusComment(String id, long statusCommentId, String statusCommentUrl) {
+        FixTaskEntity currentTask = Optional.ofNullable(fixTaskMapper.selectById(id))
+                .orElseThrow(() -> new IllegalArgumentException("Task not found: " + id));
+        FixTaskEntity updatedTask = FixTaskConvert.attachStatusComment(
+                currentTask,
+                statusCommentId,
+                statusCommentUrl,
+                Instant.now()
+        );
+        fixTaskMapper.updateById(updatedTask);
+        return FixTaskConvert.toVo(updatedTask);
+    }
+
+    @Override
     public List<FixTaskVo> listTasks() {
         return fixTaskMapper.selectList(null).stream()
                 .sorted(Comparator.comparing(FixTaskEntity::getCreatedAt).reversed())

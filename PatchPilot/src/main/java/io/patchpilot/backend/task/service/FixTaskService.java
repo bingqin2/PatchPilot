@@ -27,6 +27,8 @@ public interface FixTaskService {
 
     FixTaskVo markFailed(String id, String failureReason);
 
+    FixTaskVo attachStatusComment(String id, long statusCommentId, String statusCommentUrl);
+
     List<FixTaskVo> listTasks();
 
     Optional<FixTaskVo> findTask(String id);

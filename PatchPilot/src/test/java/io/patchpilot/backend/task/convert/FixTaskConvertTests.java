@@ -35,6 +35,8 @@ class FixTaskConvertTests {
         assertThat(entity.getPullRequestUrl()).isNull();
         assertThat(entity.getCompletedAt()).isNull();
         assertThat(entity.getUpdatedAt()).isEqualTo(createdAt);
+        assertThat(entity.getStatusCommentId()).isNull();
+        assertThat(entity.getStatusCommentUrl()).isNull();
 
         assertThat(vo.id()).isEqualTo("task-123");
         assertThat(vo.repositoryOwner()).isEqualTo("octocat");
@@ -51,6 +53,8 @@ class FixTaskConvertTests {
         assertThat(vo.pullRequestUrl()).isNull();
         assertThat(vo.completedAt()).isNull();
         assertThat(vo.updatedAt()).isEqualTo(createdAt);
+        assertThat(vo.statusCommentId()).isNull();
+        assertThat(vo.statusCommentUrl()).isNull();
     }
 
     @Test
@@ -61,6 +65,8 @@ class FixTaskConvertTests {
         current.setPullRequestUrl("https://github.com/octocat/hello-world/pull/7");
         current.setCompletedAt(Instant.parse("2026-06-19T01:04:00Z"));
         current.setUpdatedAt(Instant.parse("2026-06-19T01:04:00Z"));
+        current.setStatusCommentId(123L);
+        current.setStatusCommentUrl("https://github.com/octocat/hello-world/issues/42#issuecomment-123");
         Instant updatedAt = Instant.parse("2026-06-19T01:05:00Z");
 
         FixTaskEntity updated = FixTaskConvert.replaceStatus(current, FixTaskStatus.FAILED, "tests failed", updatedAt);
@@ -78,6 +84,8 @@ class FixTaskConvertTests {
         assertThat(updated.getPullRequestUrl()).isEqualTo(current.getPullRequestUrl());
         assertThat(updated.getCompletedAt()).isEqualTo(current.getCompletedAt());
         assertThat(updated.getUpdatedAt()).isEqualTo(updatedAt);
+        assertThat(updated.getStatusCommentId()).isEqualTo(123L);
+        assertThat(updated.getStatusCommentUrl()).isEqualTo("https://github.com/octocat/hello-world/issues/42#issuecomment-123");
         assertThat(updated.getStatus()).isEqualTo(FixTaskStatus.FAILED.name());
         assertThat(updated.getFailureReason()).isEqualTo("tests failed");
     }
@@ -101,6 +109,27 @@ class FixTaskConvertTests {
         assertThat(completed.getCompletedAt()).isEqualTo(completedAt);
         assertThat(completed.getUpdatedAt()).isEqualTo(completedAt);
         assertThat(completed.getCreatedAt()).isEqualTo(createdAt);
+    }
+
+    @Test
+    void should_attach_status_comment_metadata() {
+        Instant createdAt = Instant.parse("2026-06-19T01:02:03Z");
+        Instant updatedAt = Instant.parse("2026-06-19T01:03:00Z");
+        FixTaskEntity current = FixTaskConvert.newEntity("task-123", command("delivery-123"), createdAt);
+
+        FixTaskEntity updated = FixTaskConvert.attachStatusComment(
+                current,
+                123,
+                "https://github.com/octocat/hello-world/issues/42#issuecomment-123",
+                updatedAt
+        );
+
+        assertThat(updated.getId()).isEqualTo("task-123");
+        assertThat(updated.getStatus()).isEqualTo(FixTaskStatus.PENDING.name());
+        assertThat(updated.getStatusCommentId()).isEqualTo(123L);
+        assertThat(updated.getStatusCommentUrl()).isEqualTo("https://github.com/octocat/hello-world/issues/42#issuecomment-123");
+        assertThat(updated.getUpdatedAt()).isEqualTo(updatedAt);
+        assertThat(updated.getCreatedAt()).isEqualTo(createdAt);
     }
 
     private CreateFixTaskCommand command(String deliveryId) {

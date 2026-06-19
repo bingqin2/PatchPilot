@@ -33,19 +33,29 @@ public class AsyncFixTaskDispatcher implements FixTaskDispatcher {
     }
 
     private void executeTask(String taskId) {
-        fixTaskService.markRunning(taskId);
+        FixTaskVo runningTask = fixTaskService.markRunning(taskId);
+        updateStatusComment(() -> issueCommentTool.updateRunning(runningTask));
         FixTaskExecutionResult executionResult;
         try {
             FixTaskVo runningTestsTask = fixTaskService.markRunningTests(taskId);
+            updateStatusComment(() -> issueCommentTool.updateRunningTests(runningTestsTask));
             executionResult = fixTaskExecutor.execute(runningTestsTask);
         } catch (RuntimeException exception) {
             String failureReason = failureReason(exception);
             FixTaskVo failedTask = fixTaskService.markFailed(taskId, failureReason);
-            issueCommentTool.commentFailed(failedTask, failureReason);
+            updateStatusComment(() -> issueCommentTool.updateFailed(failedTask));
             return;
         }
         FixTaskVo completedTask = fixTaskService.markCompleted(taskId, executionResult.pullRequestUrl());
-        issueCommentTool.commentCompleted(completedTask, executionResult.pullRequestUrl());
+        updateStatusComment(() -> issueCommentTool.updateCompleted(completedTask));
+    }
+
+    private static void updateStatusComment(Runnable update) {
+        try {
+            update.run();
+        } catch (RuntimeException exception) {
+            // GitHub comment feedback must not change durable task status.
+        }
     }
 
     private static String failureReason(RuntimeException exception) {

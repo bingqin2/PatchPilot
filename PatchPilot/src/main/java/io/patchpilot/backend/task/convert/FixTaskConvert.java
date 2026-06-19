@@ -28,7 +28,9 @@ public final class FixTaskConvert {
                 entity.getCreatedAt(),
                 entity.getPullRequestUrl(),
                 entity.getCompletedAt(),
-                entity.getUpdatedAt()
+                entity.getUpdatedAt(),
+                entity.getStatusCommentId(),
+                entity.getStatusCommentUrl()
         );
     }
 
@@ -49,6 +51,8 @@ public final class FixTaskConvert {
         entity.setPullRequestUrl(null);
         entity.setCompletedAt(null);
         entity.setUpdatedAt(createdAt);
+        entity.setStatusCommentId(null);
+        entity.setStatusCommentUrl(null);
         return entity;
     }
 
@@ -74,6 +78,8 @@ public final class FixTaskConvert {
         entity.setPullRequestUrl(current.getPullRequestUrl());
         entity.setCompletedAt(current.getCompletedAt());
         entity.setUpdatedAt(updatedAt);
+        entity.setStatusCommentId(current.getStatusCommentId());
+        entity.setStatusCommentUrl(current.getStatusCommentUrl());
         return entity;
     }
 
@@ -82,6 +88,23 @@ public final class FixTaskConvert {
         entity.setPullRequestUrl(pullRequestUrl);
         entity.setCompletedAt(completedAt);
         entity.setUpdatedAt(completedAt);
+        return entity;
+    }
+
+    public static FixTaskEntity attachStatusComment(
+            FixTaskEntity current,
+            long statusCommentId,
+            String statusCommentUrl,
+            Instant updatedAt
+    ) {
+        FixTaskEntity entity = replaceStatus(
+                current,
+                FixTaskStatus.valueOf(current.getStatus()),
+                current.getFailureReason(),
+                updatedAt
+        );
+        entity.setStatusCommentId(statusCommentId);
+        entity.setStatusCommentUrl(statusCommentUrl);
         return entity;
     }
 }
