@@ -23,6 +23,7 @@ class FixTaskQueuePollerTests {
 
         poller.pollOnce();
 
+        assertThat(queue.recovered()).isTrue();
         assertThat(queue.claimed()).isTrue();
         assertThat(worker.taskId()).isNull();
         assertThat(queue.completedQueueItemId()).isNull();
@@ -37,6 +38,8 @@ class FixTaskQueuePollerTests {
 
         poller.pollOnce();
 
+        assertThat(queue.recovered()).isTrue();
+        assertThat(queue.recoveredBeforeClaim()).isTrue();
         assertThat(worker.taskId()).isEqualTo("task-123");
         assertThat(queue.completedQueueItemId()).isEqualTo("queue-123");
         assertThat(queue.failedQueueItemId()).isNull();
@@ -74,18 +77,27 @@ class FixTaskQueuePollerTests {
     private static final class RecordingQueue extends MyBatisFixTaskQueue {
 
         private final Optional<FixTaskQueueItemVo> nextItem;
+        private boolean recovered;
         private boolean claimed;
+        private boolean recoveredBeforeClaim;
         private String completedQueueItemId;
         private String failedQueueItemId;
         private String failureReason;
 
         private RecordingQueue(Optional<FixTaskQueueItemVo> nextItem) {
-            super(null);
+            super(null, null);
             this.nextItem = nextItem;
         }
 
         @Override
+        public int recoverTimedOutRunningItems() {
+            recovered = true;
+            return 0;
+        }
+
+        @Override
         public Optional<FixTaskQueueItemVo> claimNext() {
+            recoveredBeforeClaim = recovered;
             claimed = true;
             return nextItem;
         }
@@ -103,6 +115,14 @@ class FixTaskQueuePollerTests {
 
         private boolean claimed() {
             return claimed;
+        }
+
+        private boolean recovered() {
+            return recovered;
+        }
+
+        private boolean recoveredBeforeClaim() {
+            return recoveredBeforeClaim;
         }
 
         private String completedQueueItemId() {

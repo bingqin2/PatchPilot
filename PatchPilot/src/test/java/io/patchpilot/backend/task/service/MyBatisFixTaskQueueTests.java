@@ -4,6 +4,7 @@ import io.patchpilot.backend.task.domain.entity.FixTaskQueueItemEntity;
 import io.patchpilot.backend.task.domain.enums.FixTaskQueueItemStatus;
 import io.patchpilot.backend.task.domain.vo.FixTaskQueueItemVo;
 import io.patchpilot.backend.task.mapper.FixTaskQueueItemMapper;
+import io.patchpilot.backend.task.config.TaskQueueProperties;
 import io.patchpilot.backend.task.service.impl.MyBatisFixTaskQueue;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -22,7 +23,7 @@ import static org.mockito.Mockito.when;
 class MyBatisFixTaskQueueTests {
 
     private final FixTaskQueueItemMapper queueItemMapper = mock(FixTaskQueueItemMapper.class);
-    private final MyBatisFixTaskQueue queue = new MyBatisFixTaskQueue(queueItemMapper);
+    private final MyBatisFixTaskQueue queue = new MyBatisFixTaskQueue(queueItemMapper, properties());
 
     @Test
     void should_enqueue_pending_queue_item() {
@@ -110,7 +111,7 @@ class MyBatisFixTaskQueueTests {
     }
 
     @Test
-    void should_mark_queue_item_failed_with_failure_reason() {
+    void should_retry_queue_item_when_attempts_remain() {
         FixTaskQueueItemEntity current = entity(
                 "queue-123",
                 "task-123",
@@ -126,9 +127,58 @@ class MyBatisFixTaskQueueTests {
 
         verify(queueItemMapper).updateById(entityCaptor.capture());
         FixTaskQueueItemEntity updatedEntity = entityCaptor.getValue();
-        assertThat(updatedEntity.getStatus()).isEqualTo(FixTaskQueueItemStatus.FAILED.name());
+        assertThat(updatedEntity.getStatus()).isEqualTo(FixTaskQueueItemStatus.PENDING.name());
         assertThat(updatedEntity.getLastError()).isEqualTo("worker failed");
+        assertThat(updatedEntity.getLockedAt()).isNull();
+        assertThat(updatedEntity.getAvailableAt()).isAfter(current.getAvailableAt());
         assertThat(updatedEntity.getUpdatedAt()).isAfter(current.getUpdatedAt());
+    }
+
+    @Test
+    void should_mark_queue_item_failed_when_max_attempts_reached() {
+        FixTaskQueueItemEntity current = entity(
+                "queue-123",
+                "task-123",
+                FixTaskQueueItemStatus.RUNNING,
+                3,
+                Instant.parse("2026-06-19T10:00:00Z")
+        );
+        when(queueItemMapper.selectById("queue-123")).thenReturn(current);
+        when(queueItemMapper.updateById(any(FixTaskQueueItemEntity.class))).thenReturn(1);
+        ArgumentCaptor<FixTaskQueueItemEntity> entityCaptor = ArgumentCaptor.forClass(FixTaskQueueItemEntity.class);
+
+        queue.markFailed("queue-123", "worker failed permanently");
+
+        verify(queueItemMapper).updateById(entityCaptor.capture());
+        FixTaskQueueItemEntity updatedEntity = entityCaptor.getValue();
+        assertThat(updatedEntity.getStatus()).isEqualTo(FixTaskQueueItemStatus.FAILED.name());
+        assertThat(updatedEntity.getLastError()).isEqualTo("worker failed permanently");
+        assertThat(updatedEntity.getUpdatedAt()).isAfter(current.getUpdatedAt());
+    }
+
+    @Test
+    void should_recover_timed_out_running_items() {
+        FixTaskQueueItemEntity staleRunning = entity(
+                "queue-stale",
+                "task-stale",
+                FixTaskQueueItemStatus.RUNNING,
+                1,
+                Instant.parse("2026-06-19T10:00:00Z")
+        );
+        staleRunning.setLockedAt(Instant.parse("2026-06-19T10:00:05Z"));
+        when(queueItemMapper.selectList(any())).thenReturn(List.of(staleRunning));
+        when(queueItemMapper.updateById(any(FixTaskQueueItemEntity.class))).thenReturn(1);
+        ArgumentCaptor<FixTaskQueueItemEntity> entityCaptor = ArgumentCaptor.forClass(FixTaskQueueItemEntity.class);
+
+        int recoveredCount = queue.recoverTimedOutRunningItems();
+
+        assertThat(recoveredCount).isEqualTo(1);
+        verify(queueItemMapper).updateById(entityCaptor.capture());
+        FixTaskQueueItemEntity updatedEntity = entityCaptor.getValue();
+        assertThat(updatedEntity.getStatus()).isEqualTo(FixTaskQueueItemStatus.PENDING.name());
+        assertThat(updatedEntity.getLockedAt()).isNull();
+        assertThat(updatedEntity.getAvailableAt()).isAfter(staleRunning.getAvailableAt());
+        assertThat(updatedEntity.getUpdatedAt()).isAfter(staleRunning.getUpdatedAt());
     }
 
     private static FixTaskQueueItemEntity entity(
@@ -149,5 +199,13 @@ class MyBatisFixTaskQueueTests {
         entity.setCreatedAt(createdAt);
         entity.setUpdatedAt(createdAt);
         return entity;
+    }
+
+    private static TaskQueueProperties properties() {
+        TaskQueueProperties properties = new TaskQueueProperties();
+        properties.setMaxAttempts(3);
+        properties.setRetryDelayMs(30000);
+        properties.setVisibilityTimeoutMs(300000);
+        return properties;
     }
 }
