@@ -3,10 +3,12 @@ package io.patchpilot.backend.task;
 import io.patchpilot.backend.common.response.ApiResponse;
 import io.patchpilot.backend.task.domain.vo.FixTaskTestRunVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskTimelineEventVo;
+import io.patchpilot.backend.task.domain.vo.FixTaskToolCallVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import io.patchpilot.backend.task.service.FixTaskTestRunService;
 import io.patchpilot.backend.task.service.FixTaskTimelineService;
 import io.patchpilot.backend.task.service.FixTaskService;
+import io.patchpilot.backend.task.service.FixTaskToolCallService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -22,15 +24,18 @@ public class TaskController {
     private final FixTaskService fixTaskService;
     private final FixTaskTimelineService fixTaskTimelineService;
     private final FixTaskTestRunService fixTaskTestRunService;
+    private final FixTaskToolCallService fixTaskToolCallService;
 
     public TaskController(
             FixTaskService fixTaskService,
             FixTaskTimelineService fixTaskTimelineService,
-            FixTaskTestRunService fixTaskTestRunService
+            FixTaskTestRunService fixTaskTestRunService,
+            FixTaskToolCallService fixTaskToolCallService
     ) {
         this.fixTaskService = fixTaskService;
         this.fixTaskTimelineService = fixTaskTimelineService;
         this.fixTaskTestRunService = fixTaskTestRunService;
+        this.fixTaskToolCallService = fixTaskToolCallService;
     }
 
     @GetMapping
@@ -59,5 +64,13 @@ public class TaskController {
             return ResponseEntity.status(404).body(ApiResponse.fail("Task not found"));
         }
         return ResponseEntity.ok(ApiResponse.ok(fixTaskTestRunService.listTestRuns(id)));
+    }
+
+    @GetMapping("/{id}/tool-calls")
+    public ResponseEntity<ApiResponse<List<FixTaskToolCallVo>>> getTaskToolCalls(@PathVariable String id) {
+        if (fixTaskService.findTask(id).isEmpty()) {
+            return ResponseEntity.status(404).body(ApiResponse.fail("Task not found"));
+        }
+        return ResponseEntity.ok(ApiResponse.ok(fixTaskToolCallService.listToolCalls(id)));
     }
 }
