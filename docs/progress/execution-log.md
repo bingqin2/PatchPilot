@@ -857,3 +857,22 @@ Validation:
 - `mvn -pl PatchPilot -Dtest=PlanDrivenPatchWorkflowTests,PlannedPatchWorkflowTests,PatchPilotApplicationTests test`: passed, 8 tests run, 0 failures, 0 errors.
 - `mvn -pl PatchPilot -Dtest=WorkspaceFixTaskExecutorTests,GitHubWebhookControllerTests,PlanDrivenPatchWorkflowTests,PlannedPatchWorkflowTests,PatchPilotApplicationTests test`: passed, 24 tests run, 0 failures, 0 errors.
 - `mvn -pl PatchPilot test`: passed, 229 tests run, 0 failures, 0 errors.
+
+## 2026-06-20
+
+Completed low-risk Lombok cleanup from `docs/plans/035-code-simplification-lombok-cleanup.md`.
+
+Changes:
+
+- Removed duplicated getter/setter methods from task persistence entities that are now covered by Lombok `@Data`.
+- Replaced pure dependency-injection constructors with `@RequiredArgsConstructor` in task controllers, task services, queue components, workflow classes, repository tools, file tools, issue/PR tools, and command guard code.
+- Replaced repeated blank-string checks with Spring `StringUtils` instead of adding Hutool for a small helper-only cleanup.
+- Kept explicit constructors where they still document overloads, default helper creation, package-private test seams, or custom initialization.
+- Verified `.idea/` and `.DS_Store` are ignored and not tracked.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=FixTaskQueueItemConvertTests,FixTaskTestRunConvertTests,FixTaskTimelineEventConvertTests,FixTaskToolCallConvertTests,MyBatisFixTaskQueueTests,MyBatisFixTaskTestRunServiceTests,MyBatisFixTaskTimelineServiceTests,MyBatisFixTaskToolCallServiceTests test`: passed, 19 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=PatchPilotApplicationTests,TaskControllerTests,TaskQueueControllerTests,FixTaskWorkerTests,WorkspaceFixTaskExecutorTests,CommandExecutionGuardTests,RepositoryInspectionToolsTests,FileToolsTests,DiffToolTests,PullRequestToolTests,IssueCommentToolTests,MyBatisFixTaskServiceTests,MyBatisFixTaskQueueTests,MyBatisFixTaskQueueQueryServiceTests,MyBatisFixTaskModelCallServiceTests,MyBatisFixTaskTestRunServiceTests,MyBatisFixTaskTimelineServiceTests,MyBatisFixTaskToolCallServiceTests test`: passed, 95 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=GitCommandRunnerTests,OpenAiCompatibleModelClientTests,GitHubIssueCommentClientTests,GitHubPullRequestClientTests,GitHubWebhookServiceTests,GitHubWebhookSignatureVerifierTests,FixPlanGeneratorTests,SimplePatchWorkflowTests,PlannedPatchWorkflowTests,RepositoryInspectionToolsTests,MavenTestRunnerTests,CommandExecutionGuardTests,TaskProcessRegistryTests,FixTaskWorkerTests,FixTaskQueuePollerTests test`: passed, 70 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot test`: passed, 229 tests run, 0 failures, 0 errors.

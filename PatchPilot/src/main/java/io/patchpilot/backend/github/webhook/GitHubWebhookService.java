@@ -12,6 +12,7 @@ import io.patchpilot.backend.task.service.FixTaskDispatcher;
 import io.patchpilot.backend.task.service.FixTaskService;
 import io.patchpilot.backend.task.service.FixTaskTimelineService;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
@@ -46,7 +47,7 @@ public class GitHubWebhookService {
     }
 
     public WebhookHandleResult handle(String event, String deliveryId, String payload) {
-        if (deliveryId == null || deliveryId.isBlank()) {
+        if (!StringUtils.hasText(deliveryId)) {
             throw new InvalidWebhookPayloadException("Missing X-GitHub-Delivery header");
         }
         WebhookHandleResult existingResult = deliveryResults.get(deliveryId);

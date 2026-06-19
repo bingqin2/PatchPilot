@@ -4,16 +4,14 @@ import io.patchpilot.backend.github.client.GitHubPullRequestClient;
 import io.patchpilot.backend.github.client.domain.CreatePullRequestCommand;
 import io.patchpilot.backend.github.client.domain.PullRequestResult;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 public class PullRequestTool {
 
     private final GitHubPullRequestClient gitHubPullRequestClient;
-
-    public PullRequestTool(GitHubPullRequestClient gitHubPullRequestClient) {
-        this.gitHubPullRequestClient = gitHubPullRequestClient;
-    }
 
     public PullRequestResult createPullRequest(FixTaskVo task, String branchName) {
         return gitHubPullRequestClient.createPullRequest(new CreatePullRequestCommand(

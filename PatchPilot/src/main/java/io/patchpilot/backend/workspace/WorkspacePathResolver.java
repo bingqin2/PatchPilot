@@ -3,6 +3,7 @@ package io.patchpilot.backend.workspace;
 import io.patchpilot.backend.workspace.config.WorkspaceProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.nio.file.Path;
 
@@ -21,7 +22,7 @@ public class WorkspacePathResolver {
     }
 
     public Path resolveRepositoryPath(Path repositoryDir, String relativePath) {
-        if (relativePath == null || relativePath.isBlank()) {
+        if (!StringUtils.hasText(relativePath)) {
             throw new IllegalArgumentException("Repository path must not be blank");
         }
         Path inputPath = Path.of(relativePath);

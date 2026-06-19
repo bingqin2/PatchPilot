@@ -8,27 +8,18 @@ import io.patchpilot.backend.task.executor.FixTaskExecutor;
 import io.patchpilot.backend.task.executor.domain.FixTaskExecutionResult;
 import io.patchpilot.backend.task.service.FixTaskService;
 import io.patchpilot.backend.task.service.FixTaskTimelineService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 @Service
+@RequiredArgsConstructor
 public class FixTaskWorker {
 
     private final FixTaskService fixTaskService;
     private final FixTaskExecutor fixTaskExecutor;
     private final IssueCommentTool issueCommentTool;
     private final FixTaskTimelineService fixTaskTimelineService;
-
-    public FixTaskWorker(
-            FixTaskService fixTaskService,
-            FixTaskExecutor fixTaskExecutor,
-            IssueCommentTool issueCommentTool,
-            FixTaskTimelineService fixTaskTimelineService
-    ) {
-        this.fixTaskService = fixTaskService;
-        this.fixTaskExecutor = fixTaskExecutor;
-        this.issueCommentTool = issueCommentTool;
-        this.fixTaskTimelineService = fixTaskTimelineService;
-    }
 
     public void execute(String taskId) {
         FixTaskVo runningTask = fixTaskService.markRunning(taskId);
@@ -73,7 +64,7 @@ public class FixTaskWorker {
     }
 
     private static String failureReason(RuntimeException exception) {
-        if (exception.getMessage() == null || exception.getMessage().isBlank()) {
+        if (!StringUtils.hasText(exception.getMessage())) {
             return exception.getClass().getSimpleName();
         }
         return exception.getMessage();

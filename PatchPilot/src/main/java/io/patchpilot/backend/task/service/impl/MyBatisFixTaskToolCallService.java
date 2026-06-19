@@ -6,6 +6,7 @@ import io.patchpilot.backend.task.domain.entity.FixTaskToolCallEntity;
 import io.patchpilot.backend.task.domain.vo.FixTaskToolCallVo;
 import io.patchpilot.backend.task.mapper.FixTaskToolCallMapper;
 import io.patchpilot.backend.task.service.FixTaskToolCallService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
@@ -16,13 +17,10 @@ import java.util.UUID;
 
 @Service
 @Profile({"local", "docker"})
+@RequiredArgsConstructor
 public class MyBatisFixTaskToolCallService implements FixTaskToolCallService {
 
     private final FixTaskToolCallMapper toolCallMapper;
-
-    public MyBatisFixTaskToolCallService(FixTaskToolCallMapper toolCallMapper) {
-        this.toolCallMapper = toolCallMapper;
-    }
 
     @Override
     public FixTaskToolCallVo recordToolCall(

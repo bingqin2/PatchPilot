@@ -4,21 +4,20 @@ import io.patchpilot.backend.agent.tool.FileWriteTool;
 import io.patchpilot.backend.agent.workflow.domain.FixPlan;
 import io.patchpilot.backend.agent.workflow.domain.PatchWorkflowResult;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
+import lombok.RequiredArgsConstructor;
+import org.springframework.util.StringUtils;
 
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+@RequiredArgsConstructor
 public class PlannedPatchWorkflow {
 
     private static final Pattern REPLACE_INSTRUCTION = Pattern.compile("(?:^|\\s)replace\\s+(\\S+)\\s+(.+)", Pattern.DOTALL);
 
     private final FileWriteTool fileWriteTool;
-
-    public PlannedPatchWorkflow(FileWriteTool fileWriteTool) {
-        this.fileWriteTool = fileWriteTool;
-    }
 
     public PatchWorkflowResult apply(FixTaskVo task, Path repositoryDir, FixPlan fixPlan) {
         Optional<ReplacementInstruction> instruction = replacementInstruction(task.triggerComment());
@@ -36,7 +35,7 @@ public class PlannedPatchWorkflow {
     }
 
     private Optional<ReplacementInstruction> replacementInstruction(String triggerComment) {
-        if (triggerComment == null || triggerComment.isBlank()) {
+        if (!StringUtils.hasText(triggerComment)) {
             return Optional.empty();
         }
         Matcher matcher = REPLACE_INSTRUCTION.matcher(triggerComment);

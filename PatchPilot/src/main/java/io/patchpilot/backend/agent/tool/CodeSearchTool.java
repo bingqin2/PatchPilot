@@ -1,6 +1,8 @@
 package io.patchpilot.backend.agent.tool;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.nio.charset.MalformedInputException;
@@ -10,6 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Component
+@RequiredArgsConstructor
 public class CodeSearchTool {
 
     private static final int MAX_SEARCH_FILES = 1_000;
@@ -17,12 +20,8 @@ public class CodeSearchTool {
 
     private final RepositoryFileScanner fileScanner;
 
-    public CodeSearchTool(RepositoryFileScanner fileScanner) {
-        this.fileScanner = fileScanner;
-    }
-
     public String search(Path repositoryDir, String query) {
-        if (query == null || query.isBlank()) {
+        if (!StringUtils.hasText(query)) {
             throw new IllegalArgumentException("Search query must not be blank");
         }
 

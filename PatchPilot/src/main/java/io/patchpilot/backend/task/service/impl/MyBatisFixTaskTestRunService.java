@@ -6,6 +6,7 @@ import io.patchpilot.backend.task.domain.entity.FixTaskTestRunEntity;
 import io.patchpilot.backend.task.domain.vo.FixTaskTestRunVo;
 import io.patchpilot.backend.task.mapper.FixTaskTestRunMapper;
 import io.patchpilot.backend.task.service.FixTaskTestRunService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
@@ -16,13 +17,10 @@ import java.util.UUID;
 
 @Service
 @Profile({"local", "docker"})
+@RequiredArgsConstructor
 public class MyBatisFixTaskTestRunService implements FixTaskTestRunService {
 
     private final FixTaskTestRunMapper testRunMapper;
-
-    public MyBatisFixTaskTestRunService(FixTaskTestRunMapper testRunMapper) {
-        this.testRunMapper = testRunMapper;
-    }
 
     @Override
     public FixTaskTestRunVo recordTestRun(

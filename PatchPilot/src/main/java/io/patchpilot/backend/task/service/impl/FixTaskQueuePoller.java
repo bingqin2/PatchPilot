@@ -1,21 +1,19 @@
 package io.patchpilot.backend.task.service.impl;
 
 import io.patchpilot.backend.task.domain.vo.FixTaskQueueItemVo;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 @Service
 @Profile({"local", "docker"})
+@RequiredArgsConstructor
 public class FixTaskQueuePoller {
 
     private final MyBatisFixTaskQueue fixTaskQueue;
     private final FixTaskWorker fixTaskWorker;
-
-    public FixTaskQueuePoller(MyBatisFixTaskQueue fixTaskQueue, FixTaskWorker fixTaskWorker) {
-        this.fixTaskQueue = fixTaskQueue;
-        this.fixTaskWorker = fixTaskWorker;
-    }
 
     @Scheduled(fixedDelayString = "${patchpilot.task.queue.poll-delay-ms:1000}")
     public void pollOnce() {
@@ -33,7 +31,7 @@ public class FixTaskQueuePoller {
     }
 
     private static String failureReason(RuntimeException exception) {
-        if (exception.getMessage() == null || exception.getMessage().isBlank()) {
+        if (!StringUtils.hasText(exception.getMessage())) {
             return exception.getClass().getSimpleName();
         }
         return exception.getMessage();

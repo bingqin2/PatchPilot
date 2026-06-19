@@ -2,6 +2,7 @@ package io.patchpilot.backend.github.webhook;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -20,7 +21,7 @@ public class GitHubWebhookSignatureVerifier {
     }
 
     public boolean isValid(String payload, String signatureHeader) {
-        if (webhookSecret.isBlank() || signatureHeader == null || !signatureHeader.startsWith("sha256=")) {
+        if (!StringUtils.hasText(webhookSecret) || signatureHeader == null || !signatureHeader.startsWith("sha256=")) {
             return false;
         }
         String expectedSignature = "sha256=" + hmacSha256Hex(payload);

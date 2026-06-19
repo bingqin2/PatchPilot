@@ -6,6 +6,7 @@ import io.patchpilot.backend.task.process.TaskProcessRegistry;
 import io.patchpilot.backend.workspace.config.WorkspaceProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -66,7 +67,7 @@ public class GitCommandRunner {
     }
 
     public GitCommandResult createBranch(String taskId, Path repositoryDir, String branchName) {
-        if (branchName == null || branchName.isBlank()) {
+        if (!StringUtils.hasText(branchName)) {
             throw new IllegalArgumentException("Branch name must not be blank");
         }
         return runGit(taskId, List.of(
@@ -112,7 +113,7 @@ public class GitCommandRunner {
     }
 
     public GitCommandResult commit(String taskId, Path repositoryDir, String message) {
-        if (message == null || message.isBlank()) {
+        if (!StringUtils.hasText(message)) {
             throw new IllegalArgumentException("Commit message must not be blank");
         }
         return runGit(taskId, List.of(
@@ -130,7 +131,7 @@ public class GitCommandRunner {
     }
 
     public GitCommandResult pushBranch(String taskId, Path repositoryDir, String branchName) {
-        if (branchName == null || branchName.isBlank()) {
+        if (!StringUtils.hasText(branchName)) {
             throw new IllegalArgumentException("Branch name must not be blank");
         }
         return runGit(taskId, List.of(
@@ -174,13 +175,13 @@ public class GitCommandRunner {
     }
 
     private void registerProcess(String taskId, Process process) {
-        if (taskId != null && !taskId.isBlank()) {
+        if (StringUtils.hasText(taskId)) {
             taskProcessRegistry.register(taskId, process);
         }
     }
 
     private void unregisterProcess(String taskId, Process process) {
-        if (taskId != null && !taskId.isBlank()) {
+        if (StringUtils.hasText(taskId)) {
             taskProcessRegistry.unregister(taskId, process);
         }
     }
@@ -197,7 +198,7 @@ public class GitCommandRunner {
 
     private String authenticatedUrl(String repositoryUrl) {
         String token = token();
-        if (token.isBlank()) {
+        if (!StringUtils.hasText(token)) {
             return repositoryUrl;
         }
         return repositoryUrl.replace("https://", "https://x-access-token:" + token + "@");
@@ -208,13 +209,17 @@ public class GitCommandRunner {
         if (value == null) {
             return "";
         }
-        if (token.isBlank()) {
+        if (!StringUtils.hasText(token)) {
             return value;
         }
         return value.replace(token, "***");
     }
 
     private String token() {
-        return gitHubProperties.getToken() == null ? "" : gitHubProperties.getToken().trim();
+        return trimmedOrEmpty(gitHubProperties.getToken());
+    }
+
+    private static String trimmedOrEmpty(String value) {
+        return StringUtils.hasText(value) ? value.trim() : "";
     }
 }

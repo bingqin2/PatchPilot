@@ -9,6 +9,7 @@ import io.patchpilot.backend.task.domain.enums.FixTaskQueueItemStatus;
 import io.patchpilot.backend.task.domain.vo.FixTaskQueueItemVo;
 import io.patchpilot.backend.task.mapper.FixTaskQueueItemMapper;
 import io.patchpilot.backend.task.service.FixTaskQueue;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
@@ -20,15 +21,11 @@ import java.util.UUID;
 
 @Service
 @Profile({"local", "docker"})
+@RequiredArgsConstructor
 public class MyBatisFixTaskQueue implements FixTaskQueue {
 
     private final FixTaskQueueItemMapper queueItemMapper;
     private final TaskQueueProperties taskQueueProperties;
-
-    public MyBatisFixTaskQueue(FixTaskQueueItemMapper queueItemMapper, TaskQueueProperties taskQueueProperties) {
-        this.queueItemMapper = queueItemMapper;
-        this.taskQueueProperties = taskQueueProperties;
-    }
 
     @Override
     public void enqueue(String taskId) {

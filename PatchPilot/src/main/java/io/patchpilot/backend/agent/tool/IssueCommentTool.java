@@ -6,18 +6,17 @@ import io.patchpilot.backend.github.client.domain.IssueCommentResult;
 import io.patchpilot.backend.github.client.domain.UpdateIssueCommentCommand;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.util.Optional;
 
 @Component
+@RequiredArgsConstructor
 public class IssueCommentTool {
 
     private final GitHubIssueCommentClient gitHubIssueCommentClient;
-
-    public IssueCommentTool(GitHubIssueCommentClient gitHubIssueCommentClient) {
-        this.gitHubIssueCommentClient = gitHubIssueCommentClient;
-    }
 
     public IssueCommentResult commentAccepted(FixTaskVo task) {
         return gitHubIssueCommentClient.createIssueComment(command(task, body(
@@ -111,10 +110,10 @@ public class IssueCommentTool {
         body.append("Repository: ").append(task.repositoryOwner()).append("/").append(task.repositoryName()).append("\n");
         body.append("Issue: #").append(task.issueNumber()).append("\n");
         body.append("Triggered by: ").append(task.triggerUser()).append("\n");
-        if (pullRequestUrl != null && !pullRequestUrl.isBlank()) {
+        if (StringUtils.hasText(pullRequestUrl)) {
             body.append("PR: ").append(pullRequestUrl).append("\n");
         }
-        if (failureReason != null && !failureReason.isBlank()) {
+        if (StringUtils.hasText(failureReason)) {
             body.append("Reason: ").append(failureReason).append("\n");
         }
         return body.toString();

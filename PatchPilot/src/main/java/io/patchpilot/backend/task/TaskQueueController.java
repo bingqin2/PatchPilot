@@ -5,6 +5,7 @@ import io.patchpilot.backend.task.domain.enums.FixTaskQueueItemStatus;
 import io.patchpilot.backend.task.domain.vo.FixTaskQueueItemVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskQueueSummaryVo;
 import io.patchpilot.backend.task.service.FixTaskQueueQueryService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -14,13 +15,10 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/task-queue")
+@RequiredArgsConstructor
 public class TaskQueueController {
 
     private final FixTaskQueueQueryService fixTaskQueueQueryService;
-
-    public TaskQueueController(FixTaskQueueQueryService fixTaskQueueQueryService) {
-        this.fixTaskQueueQueryService = fixTaskQueueQueryService;
-    }
 
     @GetMapping("/items")
     public ApiResponse<List<FixTaskQueueItemVo>> listItems(

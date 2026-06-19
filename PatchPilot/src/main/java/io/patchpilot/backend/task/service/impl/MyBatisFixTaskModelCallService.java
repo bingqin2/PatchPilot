@@ -6,6 +6,7 @@ import io.patchpilot.backend.task.domain.entity.FixTaskModelCallEntity;
 import io.patchpilot.backend.task.domain.vo.FixTaskModelCallVo;
 import io.patchpilot.backend.task.mapper.FixTaskModelCallMapper;
 import io.patchpilot.backend.task.service.FixTaskModelCallService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
@@ -16,13 +17,10 @@ import java.util.UUID;
 
 @Service
 @Profile({"local", "docker"})
+@RequiredArgsConstructor
 public class MyBatisFixTaskModelCallService implements FixTaskModelCallService {
 
     private final FixTaskModelCallMapper modelCallMapper;
-
-    public MyBatisFixTaskModelCallService(FixTaskModelCallMapper modelCallMapper) {
-        this.modelCallMapper = modelCallMapper;
-    }
 
     @Override
     public FixTaskModelCallVo recordModelCall(

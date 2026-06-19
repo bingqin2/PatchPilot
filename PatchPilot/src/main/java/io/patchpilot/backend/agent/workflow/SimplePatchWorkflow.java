@@ -3,21 +3,20 @@ package io.patchpilot.backend.agent.workflow;
 import io.patchpilot.backend.agent.tool.FileWriteTool;
 import io.patchpilot.backend.agent.workflow.domain.PatchWorkflowResult;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
+import lombok.RequiredArgsConstructor;
+import org.springframework.util.StringUtils;
 
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+@RequiredArgsConstructor
 public class SimplePatchWorkflow implements PatchWorkflow {
 
     private static final Pattern TOUCH_INSTRUCTION = Pattern.compile("(?:^|\\s)touch\\s+(\\S+)");
 
     private final FileWriteTool fileWriteTool;
-
-    public SimplePatchWorkflow(FileWriteTool fileWriteTool) {
-        this.fileWriteTool = fileWriteTool;
-    }
 
     @Override
     public PatchWorkflowResult apply(FixTaskVo task, Path repositoryDir) {
@@ -44,7 +43,7 @@ public class SimplePatchWorkflow implements PatchWorkflow {
     }
 
     private Optional<String> touchPath(String triggerComment) {
-        if (triggerComment == null || triggerComment.isBlank()) {
+        if (!StringUtils.hasText(triggerComment)) {
             return Optional.empty();
         }
         Matcher matcher = TOUCH_INSTRUCTION.matcher(triggerComment);

@@ -4,9 +4,11 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import lombok.Data;
 
 import java.time.Instant;
 
+@Data
 @TableName("fix_task_test_run")
 public class FixTaskTestRunEntity {
 
@@ -33,68 +35,4 @@ public class FixTaskTestRunEntity {
 
     @TableField("duration_ms")
     private long durationMs;
-
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    public String getTaskId() {
-        return taskId;
-    }
-
-    public void setTaskId(String taskId) {
-        this.taskId = taskId;
-    }
-
-    public String getCommand() {
-        return command;
-    }
-
-    public void setCommand(String command) {
-        this.command = command;
-    }
-
-    public int getExitCode() {
-        return exitCode;
-    }
-
-    public void setExitCode(int exitCode) {
-        this.exitCode = exitCode;
-    }
-
-    public String getOutput() {
-        return output;
-    }
-
-    public void setOutput(String output) {
-        this.output = output;
-    }
-
-    public Instant getStartedAt() {
-        return startedAt;
-    }
-
-    public void setStartedAt(Instant startedAt) {
-        this.startedAt = startedAt;
-    }
-
-    public Instant getFinishedAt() {
-        return finishedAt;
-    }
-
-    public void setFinishedAt(Instant finishedAt) {
-        this.finishedAt = finishedAt;
-    }
-
-    public long getDurationMs() {
-        return durationMs;
-    }
-
-    public void setDurationMs(long durationMs) {
-        this.durationMs = durationMs;
-    }
 }

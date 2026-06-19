@@ -1,6 +1,7 @@
 package io.patchpilot.backend.task.process;
 
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.time.Duration;
 import java.util.Objects;
@@ -58,7 +59,7 @@ public class TaskProcessRegistry {
     }
 
     private static String requireTaskId(String taskId) {
-        if (taskId == null || taskId.isBlank()) {
+        if (!StringUtils.hasText(taskId)) {
             throw new IllegalArgumentException("Task id must not be blank");
         }
         return taskId;

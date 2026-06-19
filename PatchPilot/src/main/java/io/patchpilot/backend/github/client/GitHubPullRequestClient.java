@@ -9,6 +9,7 @@ import io.patchpilot.backend.github.client.domain.PullRequestResult;
 import io.patchpilot.backend.github.config.GitHubProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.net.URI;
@@ -43,7 +44,7 @@ public class GitHubPullRequestClient {
 
     public PullRequestResult createPullRequest(CreatePullRequestCommand command) {
         String token = token();
-        if (token.isBlank()) {
+        if (!StringUtils.hasText(token)) {
             throw new GitHubPullRequestException("GitHub token is required to create Pull Requests");
         }
 
@@ -95,7 +96,7 @@ public class GitHubPullRequestClient {
         try {
             JsonNode root = objectMapper.readTree(responseBody);
             JsonNode htmlUrl = root.get("html_url");
-            if (htmlUrl == null || !htmlUrl.isTextual() || htmlUrl.asText().isBlank()) {
+            if (htmlUrl == null || !htmlUrl.isTextual() || !StringUtils.hasText(htmlUrl.asText())) {
                 throw new GitHubPullRequestException("GitHub pull request response did not include html_url");
             }
             return htmlUrl.asText();
@@ -105,6 +106,7 @@ public class GitHubPullRequestClient {
     }
 
     private String token() {
-        return gitHubProperties.getToken() == null ? "" : gitHubProperties.getToken().trim();
+        return StringUtils.hasText(gitHubProperties.getToken()) ? gitHubProperties.getToken().trim()
+                : "";
     }
 }
