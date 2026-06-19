@@ -2,6 +2,7 @@ package io.patchpilot.backend.task.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.patchpilot.backend.task.convert.FixTaskQueueItemConvert;
+import io.patchpilot.backend.task.config.TaskQueueProperties;
 import io.patchpilot.backend.task.domain.entity.FixTaskQueueItemEntity;
 import io.patchpilot.backend.task.domain.enums.FixTaskQueueItemStatus;
 import io.patchpilot.backend.task.domain.vo.FixTaskQueueItemVo;
@@ -21,9 +22,11 @@ import java.util.UUID;
 public class MyBatisFixTaskQueue implements FixTaskQueue {
 
     private final FixTaskQueueItemMapper queueItemMapper;
+    private final TaskQueueProperties taskQueueProperties;
 
-    public MyBatisFixTaskQueue(FixTaskQueueItemMapper queueItemMapper) {
+    public MyBatisFixTaskQueue(FixTaskQueueItemMapper queueItemMapper, TaskQueueProperties taskQueueProperties) {
         this.queueItemMapper = queueItemMapper;
+        this.taskQueueProperties = taskQueueProperties;
     }
 
     @Override
@@ -60,7 +63,31 @@ public class MyBatisFixTaskQueue implements FixTaskQueue {
 
     public void markFailed(String queueItemId, String failureReason) {
         FixTaskQueueItemEntity currentItem = currentItem(queueItemId);
-        queueItemMapper.updateById(FixTaskQueueItemConvert.replaceFailed(currentItem, failureReason, Instant.now()));
+        Instant now = Instant.now();
+        if (currentItem.getAttemptCount() >= taskQueueProperties.getMaxAttempts()) {
+            queueItemMapper.updateById(FixTaskQueueItemConvert.replaceFailed(currentItem, failureReason, now));
+            return;
+        }
+        Instant nextAvailableAt = now.plusMillis(taskQueueProperties.getRetryDelayMs());
+        queueItemMapper.updateById(FixTaskQueueItemConvert.replacePendingAfterFailure(
+                currentItem,
+                failureReason,
+                nextAvailableAt,
+                now
+        ));
+    }
+
+    public int recoverTimedOutRunningItems() {
+        Instant now = Instant.now();
+        Instant timeoutThreshold = now.minusMillis(taskQueueProperties.getVisibilityTimeoutMs());
+        LambdaQueryWrapper<FixTaskQueueItemEntity> queryWrapper = new LambdaQueryWrapper<FixTaskQueueItemEntity>()
+                .eq(FixTaskQueueItemEntity::getStatus, FixTaskQueueItemStatus.RUNNING.name())
+                .le(FixTaskQueueItemEntity::getLockedAt, timeoutThreshold);
+        List<FixTaskQueueItemEntity> timedOutItems = queueItemMapper.selectList(queryWrapper);
+        timedOutItems.forEach(item -> queueItemMapper.updateById(
+                FixTaskQueueItemConvert.replacePendingAfterTimeout(item, now, now)
+        ));
+        return timedOutItems.size();
     }
 
     private FixTaskQueueItemEntity currentItem(String queueItemId) {

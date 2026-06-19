@@ -19,6 +19,7 @@ public class FixTaskQueuePoller {
 
     @Scheduled(fixedDelayString = "${patchpilot.task.queue.poll-delay-ms:1000}")
     public void pollOnce() {
+        fixTaskQueue.recoverTimedOutRunningItems();
         fixTaskQueue.claimNext().ifPresent(this::execute);
     }
 

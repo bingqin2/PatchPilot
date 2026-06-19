@@ -42,6 +42,34 @@ public final class FixTaskQueueItemConvert {
         return entity;
     }
 
+    public static FixTaskQueueItemEntity replacePendingAfterFailure(
+            FixTaskQueueItemEntity current,
+            String failureReason,
+            Instant availableAt,
+            Instant updatedAt
+    ) {
+        FixTaskQueueItemEntity entity = copy(current);
+        entity.setStatus(FixTaskQueueItemStatus.PENDING.name());
+        entity.setLastError(failureReason);
+        entity.setAvailableAt(availableAt);
+        entity.setLockedAt(null);
+        entity.setUpdatedAt(updatedAt);
+        return entity;
+    }
+
+    public static FixTaskQueueItemEntity replacePendingAfterTimeout(
+            FixTaskQueueItemEntity current,
+            Instant availableAt,
+            Instant updatedAt
+    ) {
+        FixTaskQueueItemEntity entity = copy(current);
+        entity.setStatus(FixTaskQueueItemStatus.PENDING.name());
+        entity.setAvailableAt(availableAt);
+        entity.setLockedAt(null);
+        entity.setUpdatedAt(updatedAt);
+        return entity;
+    }
+
     public static FixTaskQueueItemEntity replaceFailed(
             FixTaskQueueItemEntity current,
             String failureReason,

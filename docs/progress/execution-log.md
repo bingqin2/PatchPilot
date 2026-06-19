@@ -601,3 +601,20 @@ Validation:
 
 - `mvn -pl PatchPilot -Dtest=FixTaskQueueItemMigrationTests,FixTaskQueueItemConvertTests,MyBatisFixTaskQueueTests,FixTaskQueuePollerTests test`: first failed because the queue item VO, entity, enum, mapper, MyBatis queue, poller, and migration did not exist, then passed after implementation, 10 tests run, 0 failures, 0 errors.
 - `mvn -pl PatchPilot test`: passed, 148 tests run, 0 failures, 0 errors.
+
+## 2026-06-19
+
+Implemented queue recovery and retry behavior from `docs/plans/022-queue-recovery-and-retry.md`.
+
+Changes:
+
+- Added `TaskQueueProperties` with `patchpilot.task.queue` settings for max attempts, retry delay, and visibility timeout.
+- Registered queue properties in `PatchPilotApplication`.
+- Updated `MyBatisFixTaskQueue#markFailed(...)` so transient worker failures return the item to `PENDING` until max attempts are reached.
+- Added stale `RUNNING` item recovery through `MyBatisFixTaskQueue#recoverTimedOutRunningItems()`.
+- Updated `FixTaskQueuePoller` to recover timed-out running items before claiming new work.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=MyBatisFixTaskQueueTests,FixTaskQueuePollerTests test`: first failed because `TaskQueueProperties`, retry-aware queue constructor, and `recoverTimedOutRunningItems()` did not exist, then passed after implementation, 10 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot test`: passed, 150 tests run, 0 failures, 0 errors.
