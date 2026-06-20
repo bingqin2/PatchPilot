@@ -1120,3 +1120,17 @@ Validation:
 
 - `mvn -pl PatchPilot -Dtest=TaskControllerTests test`: first failed because `/api/tasks/{taskId}/summary` did not exist, then passed after adding the summary service and controller route, 26 tests run, 0 failures, 0 errors.
 - `mvn -pl PatchPilot test`: passed, 247 tests run, 0 failures, 0 errors.
+
+Implemented task metrics test pass rate from `docs/plans/045-task-metrics-test-pass-rate.md`.
+
+Changes:
+
+- Extended task metrics summary with test-run count, passed/failed test-run counts, and test pass rate.
+- Aggregated test-run metrics through the existing `FixTaskTestRunService`.
+- Preserved zero values when no tasks or test runs exist.
+- Covered the new metrics fields in service and controller tests.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=DefaultFixTaskMetricsServiceTests,TaskControllerTests test`: first failed because metrics summary did not expose test-run fields and metrics service did not depend on test-run service, then passed after implementation, 28 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot test`: passed, 247 tests run, 0 failures, 0 errors.

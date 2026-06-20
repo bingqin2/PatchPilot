@@ -3,10 +3,12 @@ package io.patchpilot.backend.task.service.impl;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.vo.FixTaskMetricsSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskModelCallVo;
+import io.patchpilot.backend.task.domain.vo.FixTaskTestRunVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import io.patchpilot.backend.task.service.FixTaskMetricsService;
 import io.patchpilot.backend.task.service.FixTaskModelCallService;
 import io.patchpilot.backend.task.service.FixTaskService;
+import io.patchpilot.backend.task.service.FixTaskTestRunService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -19,6 +21,7 @@ public class DefaultFixTaskMetricsService implements FixTaskMetricsService {
 
     private final FixTaskService fixTaskService;
     private final FixTaskModelCallService fixTaskModelCallService;
+    private final FixTaskTestRunService fixTaskTestRunService;
 
     @Override
     public FixTaskMetricsSummaryVo summary() {
@@ -38,6 +41,7 @@ public class DefaultFixTaskMetricsService implements FixTaskMetricsService {
         long totalModelTokens = totalModelTokens(tasks);
         long averageModelTokensPerCompletedTask = completedCount == 0 ? 0
                 : completedTaskModelTokens(tasks) / completedCount;
+        TestRunMetrics testRunMetrics = testRunMetrics(tasks);
 
         return new FixTaskMetricsSummaryVo(
                 totalCount,
@@ -51,7 +55,11 @@ public class DefaultFixTaskMetricsService implements FixTaskMetricsService {
                 (double) failedCount / totalCount,
                 averageCompletionDurationMs,
                 totalModelTokens,
-                averageModelTokensPerCompletedTask
+                averageModelTokensPerCompletedTask,
+                testRunMetrics.testRunCount(),
+                testRunMetrics.passedTestRunCount(),
+                testRunMetrics.failedTestRunCount(),
+                testRunMetrics.testPassRate()
         );
     }
 
@@ -87,5 +95,38 @@ public class DefaultFixTaskMetricsService implements FixTaskMetricsService {
         return fixTaskModelCallService.listModelCalls(taskId).stream()
                 .mapToLong(FixTaskModelCallVo::totalTokens)
                 .sum();
+    }
+
+    private TestRunMetrics testRunMetrics(List<FixTaskVo> tasks) {
+        List<FixTaskTestRunVo> testRuns = tasks.stream()
+                .flatMap(task -> fixTaskTestRunService.listTestRuns(task.id()).stream())
+                .toList();
+        return TestRunMetrics.from(testRuns);
+    }
+
+    private record TestRunMetrics(
+            long testRunCount,
+            long passedTestRunCount,
+            long failedTestRunCount,
+            double testPassRate
+    ) {
+
+        private static TestRunMetrics from(List<FixTaskTestRunVo> testRuns) {
+            long testRunCount = testRuns.size();
+            if (testRunCount == 0) {
+                return new TestRunMetrics(0, 0, 0, 0.0);
+            }
+
+            long passedTestRunCount = testRuns.stream()
+                    .filter(testRun -> testRun.exitCode() == 0)
+                    .count();
+            long failedTestRunCount = testRunCount - passedTestRunCount;
+            return new TestRunMetrics(
+                    testRunCount,
+                    passedTestRunCount,
+                    failedTestRunCount,
+                    (double) passedTestRunCount / testRunCount
+            );
+        }
     }
 }

@@ -12,10 +12,14 @@ public record FixTaskMetricsSummaryVo(
         double failureRate,
         long averageCompletionDurationMs,
         long totalModelTokens,
-        long averageModelTokensPerCompletedTask
+        long averageModelTokensPerCompletedTask,
+        long testRunCount,
+        long passedTestRunCount,
+        long failedTestRunCount,
+        double testPassRate
 ) {
 
     public static FixTaskMetricsSummaryVo empty() {
-        return new FixTaskMetricsSummaryVo(0, 0, 0, 0, 0, 0, 0, 0.0, 0.0, 0, 0, 0);
+        return new FixTaskMetricsSummaryVo(0, 0, 0, 0, 0, 0, 0, 0.0, 0.0, 0, 0, 0, 0, 0, 0, 0.0);
     }
 }
