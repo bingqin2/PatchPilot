@@ -1042,3 +1042,24 @@ Validation:
 
 - `mvn -pl PatchPilot -Dtest=FixTaskTestRunOutputStorageMigrationTests,MyBatisFixTaskTestRunServiceTests,InMemoryFixTaskTestRunServiceTests test`: first failed because migration `V10__expand_fix_task_test_run_output.sql` did not exist and 120k-character output was still truncated to the old `TEXT` limit, then passed after implementation, 8 tests run, 0 failures, 0 errors.
 - `mvn -pl PatchPilot test`: passed, 238 tests run, 0 failures, 0 errors.
+
+Ran GitHub smoke test after the test-run output storage fix from `docs/plans/040-github-smoke-run-after-storage-fix.md`.
+
+Smoke setup:
+
+- Local IDEA backend was running on `http://127.0.0.1:18080` with the `idea` profile.
+- Docker MySQL was reachable through the IDEA compose profile on `127.0.0.1:3307`.
+- Cloudflare Tunnel was restarted against `http://127.0.0.1:18080`.
+- GitHub webhook payload URL was updated to the new temporary tunnel URL.
+
+Smoke result:
+
+- GitHub webhook delivery for `/agent fix replace docs/demo.md PatchPilot storage smoke test` created task `73c92ed1-d2d5-4be3-a5ad-c1ff7047f12c`.
+- Task detail returned `status=COMPLETED`, `failureReason=null`, and `pullRequestUrl=https://github.com/bingqin2/PatchPilot/pull/8`.
+- Queue summary returned `pendingCount=0`, `runningCount=0`, `completedCount=5`, `failedCount=0`, and `cancelledCount=0`.
+- Test-run API returned a persisted `mvn test` record with exit code `0`, duration `12769` ms, and full Maven test output including `Tests run: 238, Failures: 0, Errors: 0, Skipped: 0`.
+- Timeline ended with `PR_CREATED` followed by `COMPLETED`.
+
+Follow-up:
+
+- The timeline recorded `STATUS_COMMENT_FAILED` with `GitHub issue comment creation failed: HTTP 403`; task execution still completed because issue comments are best-effort. Recheck the fine-grained GitHub token's `Issues: Read and write` permission or regenerate/reload the token before relying on issue status comments.
