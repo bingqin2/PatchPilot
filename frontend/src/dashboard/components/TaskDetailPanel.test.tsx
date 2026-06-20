@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import type { TaskDetailState } from '../types';
-import { TaskDetailPanel } from './TaskDetailPanel';
+import { TaskDetailPanel, taskLinkFor } from './TaskDetailPanel';
 import type { FixTask, FixTaskAuditSummary } from '../../types';
 
 const task: FixTask = {
@@ -91,4 +92,35 @@ test('shows missing latest test evidence when no test result is recorded', () =>
 
   expect(screen.getByText('Tests 0')).toBeInTheDocument();
   expect(screen.getByText('Latest test None')).toBeInTheDocument();
+});
+
+test('builds a shareable task link from the current dashboard URL', () => {
+  expect(taskLinkFor('task-1', 'http://127.0.0.1:5173/?status=FAILED')).toBe(
+    'http://127.0.0.1:5173/?status=FAILED&taskId=task-1'
+  );
+});
+
+test('copies the selected task deep link', async () => {
+  const writeText = vi.fn().mockResolvedValue(undefined);
+  Object.defineProperty(navigator, 'clipboard', {
+    configurable: true,
+    value: { writeText }
+  });
+  window.history.replaceState(null, '', '/?status=FAILED');
+
+  render(
+    <TaskDetailPanel
+      task={task}
+      detail={baseDetail}
+      loading={false}
+      actionInFlight={false}
+      onCancelTask={vi.fn()}
+      onRetryTask={vi.fn()}
+    />
+  );
+
+  await userEvent.click(screen.getByRole('button', { name: /copy link/i }));
+
+  expect(writeText).toHaveBeenCalledWith('http://localhost:3000/?status=FAILED&taskId=task-1');
+  expect(screen.getByText('Task link copied')).toBeInTheDocument();
 });

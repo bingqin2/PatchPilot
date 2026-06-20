@@ -1564,3 +1564,17 @@ Validation:
 - `npm test -- --run src/api.test.ts`: first failed because raw JSON parsing errors surfaced, then passed after adding guarded response parsing, 7 tests run, 0 failures.
 - `npm test` in `frontend/`: passed, 34 tests run, 0 failures.
 - `npm run build` in `frontend/`: passed, production build generated `dist/`.
+
+Implemented dashboard copy task link from `docs/plans/072-dashboard-copy-task-link.md`.
+
+Changes:
+
+- Added a `Copy link` action to `TaskDetailPanel`.
+- Generated shareable selected-task links from the current dashboard URL by setting `taskId`.
+- Preserved existing query parameters when adding or replacing `taskId`.
+- Added a short success or failure status after clipboard writes.
+- Documented the copyable task link in README and frontend design docs.
+
+Validation:
+
+- `npm test -- --run src/dashboard/components/TaskDetailPanel.test.tsx`: first failed because `taskLinkFor` and the `Copy link` button did not exist, then passed after adding link generation and clipboard behavior, 4 tests run, 0 failures.

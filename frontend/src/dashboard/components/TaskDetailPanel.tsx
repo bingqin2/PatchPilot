@@ -1,4 +1,5 @@
-import { ExternalLink, RotateCcw, XCircle } from 'lucide-react';
+import { Copy, ExternalLink, RotateCcw, XCircle } from 'lucide-react';
+import { useState } from 'react';
 import type { FixTask } from '../../types';
 import { compactTime, duration, issueUrl } from '../format';
 import type { TaskDetailState } from '../types';
@@ -22,6 +23,8 @@ export function TaskDetailPanel({
   onCancelTask,
   onRetryTask
 }: TaskDetailPanelProps) {
+  const [copyStatus, setCopyStatus] = useState<string | null>(null);
+
   if (!task) {
     return (
       <section className="panel detail-panel">
@@ -35,6 +38,19 @@ export function TaskDetailPanel({
   const canRetry = task.status === 'FAILED' || task.status === 'CANCELLED';
   const latestTestStatus = testStatus(detail.summary?.latestTestRunExitCode);
 
+  async function copyTaskLink() {
+    if (!task) {
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(taskLinkFor(task.id));
+      setCopyStatus('Task link copied');
+    } catch {
+      setCopyStatus('Copy failed');
+    }
+  }
+
   return (
     <section className="panel detail-panel">
       <div className="panel-header">
@@ -43,6 +59,11 @@ export function TaskDetailPanel({
           <p>{task.id}</p>
         </div>
         <div className="detail-actions">
+          <button className="secondary-button" type="button" onClick={() => void copyTaskLink()}>
+            <Copy size={14} />
+            Copy link
+          </button>
+          {copyStatus ? <span className="copy-status">{copyStatus}</span> : null}
           <a className="external-link" href={issueUrl(task)} target="_blank" rel="noreferrer">
             Open Issue
             <ExternalLink size={14} />
@@ -180,4 +201,10 @@ function testStatus(exitCode: number | null | undefined) {
     return 'None';
   }
   return exitCode === 0 ? 'PASS' : 'FAIL';
+}
+
+export function taskLinkFor(taskId: string, href = window.location.href) {
+  const url = new URL(href);
+  url.searchParams.set('taskId', taskId);
+  return url.toString();
 }

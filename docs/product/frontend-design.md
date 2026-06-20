@@ -30,7 +30,7 @@ The page coordinator is `frontend/src/App.tsx`. It loads backend data, owns sele
 Reusable dashboard components live under `frontend/src/dashboard/components/`:
 
 - `TaskListPanel`: task list, status filters, backend-backed search, pagination counts, issue/status/PR links.
-- `TaskDetailPanel`: selected task summary, execution evidence strip, timeline, test runs, tool calls, model calls, cancel/retry actions.
+- `TaskDetailPanel`: selected task summary, copyable task deep link, execution evidence strip, timeline, test runs, tool calls, model calls, cancel/retry actions.
 - `QueuePanel`: read-only queue health, summary, and queue items.
 - `ConfigurationPanel`: read-only runtime configuration summary with provider, model, workspace, queue policy, configured/missing secret states, and setup health hints.
 - `FailureCausePanel`, `ModelUsagePanel`, and `LatencyPanel`: operational summary cards for failure grouping, token usage, call counts, estimated model cost, and execution latency.
@@ -45,7 +45,7 @@ The first screen is the working dashboard:
 - Metrics summarize task health.
 - Operational summaries highlight failure causes, model usage, and latency without requiring terminal inspection.
 - The task list supports status filters, backend-backed search over task history, loaded-versus-total counts, and incremental loading.
-- Selecting a task updates the `?taskId=` URL parameter and reveals an execution evidence summary, timeline events, Maven test output, tool-call records, model-call records, and GitHub links.
+- Selecting a task updates the `?taskId=` URL parameter and reveals a copyable task link, execution evidence summary, timeline events, Maven test output, tool-call records, model-call records, and GitHub links.
 - Queue visibility shows whether work is pending, delayed, running, failed, or cancelled, with failed/delayed/running health hints before the row list.
 - Configuration visibility shows the active provider, model, workspace root, queue policy, whether required secrets are configured, and clear health hints for missing secrets or weak optional settings without exposing secret values.
 - Cancel and retry are available only for task states where those actions make sense.
