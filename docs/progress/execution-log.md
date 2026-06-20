@@ -1149,3 +1149,18 @@ Validation:
 
 - `npm test` in `frontend/`: first failed because `src/App.tsx` did not exist, then failed because the task detail omitted the latest summary event, then passed after implementation, 2 tests run, 0 failures.
 - `npm run build` in `frontend/`: first failed because TypeScript config did not match Vite/Vitest module resolution and test globals, then passed after separating Vite and Vitest config, production build generated `dist/`.
+
+Implemented dashboard task status filters from `docs/plans/047-dashboard-task-filters.md`.
+
+Changes:
+
+- Added `ALL`, `PENDING`, `RUNNING`, `RUNNING_TESTS`, `COMPLETED`, `FAILED`, and `CANCELLED` filters to the React task list.
+- Updated the frontend task API helper to call `/api/tasks?limit=50` for all tasks and `/api/tasks?limit=50&status={STATUS}` for filtered lists.
+- Reset selected task details when the current selection is not present in the filtered result.
+- Added empty-state copy for filtered task lists.
+- Documented the dashboard status filters in README.
+
+Validation:
+
+- `npm test` in `frontend/`: first failed because the filter controls were not implemented, then failed because the test used ambiguous status text and missing task-detail mocks, then passed after implementation, 3 tests run, 0 failures.
+- `npm run build` in `frontend/`: passed, production build generated `dist/`.

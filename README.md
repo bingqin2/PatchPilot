@@ -21,7 +21,7 @@ PatchPilot is not a chatbot and does not auto-merge code. The current target is 
 .
 ├── PatchPilot/        # Spring Boot backend
 ├── docs/              # Product docs, plans, progress logs, and operator guides
-├── frontend/          # Reserved for the future React dashboard
+├── frontend/          # React operations dashboard
 ├── docker-compose.yml # Local MySQL + backend runtime
 └── .env.example       # Self-hosted configuration template
 ```
@@ -163,6 +163,7 @@ curl http://127.0.0.1:8080/api/tasks/metrics/summary
 ## Frontend Dashboard
 
 The React dashboard lives in `frontend/` and calls the backend through Vite's `/api` proxy.
+It includes read-only task metrics, status filters backed by `GET /api/tasks?status=...`, task detail summaries, timeline events, test runs, tool calls, and model calls.
 
 ```bash
 cd frontend
@@ -210,7 +211,7 @@ PatchPilot must not:
 
 - Maven repositories are the first supported target.
 - The current runtime is single-process; API and worker separation is future work.
-- The React dashboard is planned but not implemented.
+- The React dashboard is read-only and does not create, cancel, retry, or merge tasks.
 - Temporary Cloudflare URLs are for local testing only.
 
 ## Development Workflow

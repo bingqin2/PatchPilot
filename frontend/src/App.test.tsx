@@ -1,4 +1,5 @@
 import { render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import App from './App';
 
 const completedTask = {
@@ -128,6 +129,12 @@ beforeEach(() => {
     if (url === '/api/tasks?limit=50') {
       return jsonResponse([completedTask, failedTask]);
     }
+    if (url === '/api/tasks?limit=50&status=FAILED') {
+      return jsonResponse([failedTask]);
+    }
+    if (url === '/api/tasks?limit=50&status=CANCELLED') {
+      return jsonResponse([]);
+    }
     if (url === '/api/tasks/metrics/summary') {
       return jsonResponse({
         totalCount: 2,
@@ -163,6 +170,39 @@ beforeEach(() => {
     if (url === '/api/tasks/task-1/model-calls') {
       return jsonResponse(modelCalls);
     }
+    if (url === '/api/tasks/task-2/summary') {
+      return jsonResponse({
+        ...summary,
+        task: failedTask,
+        latestTimelineEvent: {
+          id: 'timeline-failed',
+          taskId: 'task-2',
+          eventType: 'FAILED',
+          message: 'Task failed',
+          createdAt: '2026-06-20T01:06:00Z'
+        }
+      });
+    }
+    if (url === '/api/tasks/task-2/timeline') {
+      return jsonResponse([
+        {
+          id: 'timeline-failed',
+          taskId: 'task-2',
+          eventType: 'FAILED',
+          message: 'Task failed',
+          createdAt: '2026-06-20T01:06:00Z'
+        }
+      ]);
+    }
+    if (url === '/api/tasks/task-2/test-runs') {
+      return jsonResponse([]);
+    }
+    if (url === '/api/tasks/task-2/tool-calls') {
+      return jsonResponse([]);
+    }
+    if (url === '/api/tasks/task-2/model-calls') {
+      return jsonResponse([]);
+    }
     return jsonResponse(null, false, 'not found', 404);
   }));
 });
@@ -175,8 +215,8 @@ test('renders operational task dashboard from backend APIs', async () => {
   render(<App />);
 
   expect(await screen.findByRole('heading', { name: 'PatchPilot Operations' })).toBeInTheDocument();
-  expect(screen.getByText('COMPLETED')).toBeInTheDocument();
-  expect(screen.getByText('FAILED')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: /COMPLETED bingqin2\/PatchPilot #1/ })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: /FAILED bingqin2\/PatchPilot #2/ })).toBeInTheDocument();
   expect(screen.getByText('maven tests failed')).toBeInTheDocument();
   expect(screen.getByRole('link', { name: 'PR #8' })).toHaveAttribute(
     'href',
@@ -202,6 +242,28 @@ test('shows an actionable error when a backend request fails', async () => {
 
   const alert = await screen.findByRole('alert');
   expect(within(alert).getByText('backend unavailable')).toBeInTheDocument();
+});
+
+test('filters tasks by status with backend query parameters', async () => {
+  const user = userEvent.setup();
+  const fetchMock = vi.mocked(fetch);
+
+  render(<App />);
+
+  expect(await screen.findByText('/agent fix replace docs/demo.md PatchPilot smoke test')).toBeInTheDocument();
+
+  await user.click(screen.getByRole('button', { name: 'FAILED' }));
+
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks?limit=50&status=FAILED'));
+  expect(screen.queryByText('/agent fix replace docs/demo.md PatchPilot smoke test')).not.toBeInTheDocument();
+  expect(await screen.findByText('/agent fix replace docs/demo.md broken')).toBeInTheDocument();
+  expect(await screen.findAllByText('Task failed')).not.toHaveLength(0);
+
+  await user.click(screen.getByRole('button', { name: 'CANCELLED' }));
+
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks?limit=50&status=CANCELLED'));
+  expect(screen.getByText('No CANCELLED tasks found.')).toBeInTheDocument();
+  expect(screen.getByText('Select a task to inspect execution records.')).toBeInTheDocument();
 });
 
 function jsonResponse(data: unknown, success = true, message: string | null = null, status = 200) {
