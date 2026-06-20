@@ -197,22 +197,22 @@ beforeEach(() => {
   vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
     const url = input.toString();
     if (url === '/api/tasks?limit=50') {
-      return jsonResponse([completedTask, failedTask]);
+      return jsonResponse(taskPage([completedTask, failedTask]));
     }
     if (url === '/api/tasks?limit=50&status=RUNNING') {
-      return jsonResponse([runningTask]);
+      return jsonResponse(taskPage([runningTask]));
     }
     if (url === '/api/tasks?limit=50&status=FAILED') {
-      return jsonResponse([failedTask]);
+      return jsonResponse(taskPage([failedTask]));
     }
     if (url === '/api/tasks?limit=50&query=broken') {
-      return jsonResponse([failedTask]);
+      return jsonResponse(taskPage([failedTask]));
     }
     if (url === '/api/tasks?limit=50&query=broken&status=FAILED') {
-      return jsonResponse([failedTask]);
+      return jsonResponse(taskPage([failedTask]));
     }
     if (url === '/api/tasks?limit=50&status=CANCELLED') {
-      return jsonResponse([]);
+      return jsonResponse(taskPage([]));
     }
     if (url === '/api/tasks/metrics/summary') {
       return jsonResponse({
@@ -495,10 +495,10 @@ test('loads the next backend task page with offset pagination', async () => {
     };
 
     if (url === '/api/tasks?limit=50') {
-      return jsonResponse(firstPage);
+      return jsonResponse(taskPage(firstPage, 50, 0, true));
     }
     if (url === '/api/tasks?limit=50&offset=50') {
-      return jsonResponse([nextPageTask]);
+      return jsonResponse(taskPage([nextPageTask], 50, 50, false));
     }
     if (url === '/api/tasks/metrics/summary') {
       return jsonResponse({
@@ -613,4 +613,8 @@ function jsonResponse(data: unknown, success = true, message: string | null = nu
     status,
     json: async () => ({ success, data, message })
   } as Response);
+}
+
+function taskPage(items: unknown[], limit = 50, offset = 0, hasMore = false) {
+  return { items, limit, offset, hasMore };
 }

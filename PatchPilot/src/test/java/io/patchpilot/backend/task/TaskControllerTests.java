@@ -56,14 +56,49 @@ class TaskControllerTests {
         mockMvc.perform(get("/api/tasks"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.length()", greaterThanOrEqualTo(1)))
-                .andExpect(jsonPath("$.data[0].id").value(not(nullValue())))
-                .andExpect(jsonPath("$.data[0].status").value("PENDING"))
-                .andExpect(jsonPath("$.data[0].pullRequestUrl").value(nullValue()))
-                .andExpect(jsonPath("$.data[0].completedAt").value(nullValue()))
-                .andExpect(jsonPath("$.data[0].updatedAt").value(not(nullValue())))
-                .andExpect(jsonPath("$.data[0].statusCommentId").value(nullValue()))
-                .andExpect(jsonPath("$.data[0].statusCommentUrl").value(nullValue()));
+                .andExpect(jsonPath("$.data.items.length()", greaterThanOrEqualTo(1)))
+                .andExpect(jsonPath("$.data.limit").value(50))
+                .andExpect(jsonPath("$.data.offset").value(0))
+                .andExpect(jsonPath("$.data.hasMore").value(false))
+                .andExpect(jsonPath("$.data.items[0].id").value(not(nullValue())))
+                .andExpect(jsonPath("$.data.items[0].status").value("PENDING"))
+                .andExpect(jsonPath("$.data.items[0].pullRequestUrl").value(nullValue()))
+                .andExpect(jsonPath("$.data.items[0].completedAt").value(nullValue()))
+                .andExpect(jsonPath("$.data.items[0].updatedAt").value(not(nullValue())))
+                .andExpect(jsonPath("$.data.items[0].statusCommentId").value(nullValue()))
+                .andExpect(jsonPath("$.data.items[0].statusCommentUrl").value(nullValue()));
+    }
+
+    @Test
+    void should_return_task_list_pagination_metadata() throws Exception {
+        FixTaskVo olderTask = createTask(command("pagination-owner", "pagination-repo", "delivery-page-older"));
+        FixTaskVo newerTask = createTask(command("pagination-owner", "pagination-repo", "delivery-page-newer"));
+
+        mockMvc.perform(get("/api/tasks")
+                        .param("repositoryOwner", "pagination-owner")
+                        .param("repositoryName", "pagination-repo")
+                        .param("limit", "1")
+                        .param("offset", "0"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.items.length()").value(1))
+                .andExpect(jsonPath("$.data.items[0].id").value(newerTask.id()))
+                .andExpect(jsonPath("$.data.limit").value(1))
+                .andExpect(jsonPath("$.data.offset").value(0))
+                .andExpect(jsonPath("$.data.hasMore").value(true));
+
+        mockMvc.perform(get("/api/tasks")
+                        .param("repositoryOwner", "pagination-owner")
+                        .param("repositoryName", "pagination-repo")
+                        .param("limit", "1")
+                        .param("offset", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.items.length()").value(1))
+                .andExpect(jsonPath("$.data.items[0].id").value(olderTask.id()))
+                .andExpect(jsonPath("$.data.limit").value(1))
+                .andExpect(jsonPath("$.data.offset").value(1))
+                .andExpect(jsonPath("$.data.hasMore").value(false));
     }
 
     @Test
@@ -82,11 +117,11 @@ class TaskControllerTests {
                         .param("limit", "1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.length()").value(1))
-                .andExpect(jsonPath("$.data[0].id").value(failedTask.id()))
-                .andExpect(jsonPath("$.data[0].status").value("FAILED"))
-                .andExpect(jsonPath("$.data[0].repositoryOwner").value("octocat"))
-                .andExpect(jsonPath("$.data[0].repositoryName").value("hello-world"));
+                .andExpect(jsonPath("$.data.items.length()").value(1))
+                .andExpect(jsonPath("$.data.items[0].id").value(failedTask.id()))
+                .andExpect(jsonPath("$.data.items[0].status").value("FAILED"))
+                .andExpect(jsonPath("$.data.items[0].repositoryOwner").value("octocat"))
+                .andExpect(jsonPath("$.data.items[0].repositoryName").value("hello-world"));
     }
 
     @Test
@@ -105,9 +140,9 @@ class TaskControllerTests {
                         .param("offset", "1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.length()").value(1))
-                .andExpect(jsonPath("$.data[0].id").value(olderMatchingTask.id()))
-                .andExpect(jsonPath("$.data[0].failureReason").value("maven failed because search target"));
+                .andExpect(jsonPath("$.data.items.length()").value(1))
+                .andExpect(jsonPath("$.data.items[0].id").value(olderMatchingTask.id()))
+                .andExpect(jsonPath("$.data.items[0].failureReason").value("maven failed because search target"));
     }
 
     @Test

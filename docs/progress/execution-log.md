@@ -1346,3 +1346,19 @@ Validation:
 - `npm test -- src/App.test.tsx -t "preserves status filter when searching backend task history"`: passed, preserving `query` and `status` together.
 - `npm test -- src/App.test.tsx -t "loads the next backend task page with offset pagination"`: first failed because there was no `Load more tasks` button, then passed after adding offset pagination.
 - `npm test` in `frontend/`: passed, 13 tests run, 0 failures.
+
+Implemented task list pagination metadata from `docs/plans/060-task-list-pagination-metadata.md`.
+
+Changes:
+
+- Changed `GET /api/tasks` response data from a plain task array to a task page object.
+- Added `FixTaskPageVo` with `items`, `limit`, `offset`, and `hasMore`.
+- Computed `hasMore` by internally requesting one extra task beyond the requested page size.
+- Updated the frontend task API type and dashboard state to consume `page.items` and `page.hasMore`.
+- Kept task detail, metrics, queue, control, and audit endpoints unchanged.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=TaskControllerTests test`: first failed because `data` was still an array, then passed after adding `FixTaskPageVo`; a follow-up failure from shared test data was fixed by filtering pagination metadata tests to a dedicated repository, 29 tests run, 0 failures.
+- `npm test -- src/App.test.tsx -t "renders operational task dashboard from backend APIs"`: first failed because `tasks.find` received a page object, then passed after using `page.items`.
+- `npm test` in `frontend/`: passed, 13 tests run, 0 failures.

@@ -1,6 +1,7 @@
 import type {
   ApiResponse,
   FixTask,
+  FixTaskPage,
   FixTaskAuditSummary,
   FixTaskMetricsSummary,
   FixTaskQueueItem,
@@ -19,7 +20,7 @@ interface ListTasksOptions {
   offset?: number;
 }
 
-export async function listTasks(options: TaskStatusFilter | ListTasksOptions = 'ALL'): Promise<FixTask[]> {
+export async function listTasks(options: TaskStatusFilter | ListTasksOptions = 'ALL'): Promise<FixTaskPage> {
   const normalizedOptions = typeof options === 'string' ? { status: options } : options;
   const searchParams = new URLSearchParams({ limit: String(normalizedOptions.limit ?? 50) });
   if (normalizedOptions.offset !== undefined) {
@@ -32,7 +33,7 @@ export async function listTasks(options: TaskStatusFilter | ListTasksOptions = '
   if (status !== 'ALL') {
     searchParams.set('status', status);
   }
-  return getApi<FixTask[]>(`/api/tasks?${searchParams.toString()}`);
+  return getApi<FixTaskPage>(`/api/tasks?${searchParams.toString()}`);
 }
 
 export async function getMetricsSummary(): Promise<FixTaskMetricsSummary> {
