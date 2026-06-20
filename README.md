@@ -163,7 +163,7 @@ curl http://127.0.0.1:8080/api/tasks/metrics/summary
 ## Frontend Dashboard
 
 The React dashboard lives in `frontend/` and calls the backend through Vite's `/api` proxy.
-It includes read-only task metrics, status filters backed by `GET /api/tasks?status=...`, task detail summaries, timeline events, test runs, tool calls, and model calls.
+It includes task metrics, status filters backed by `GET /api/tasks?status=...`, task detail summaries, timeline events, test runs, tool calls, model calls, and task control actions for cancel/retry.
 
 ```bash
 cd frontend
@@ -211,7 +211,7 @@ PatchPilot must not:
 
 - Maven repositories are the first supported target.
 - The current runtime is single-process; API and worker separation is future work.
-- The React dashboard is read-only and does not create, cancel, retry, or merge tasks.
+- The React dashboard does not create tasks or merge Pull Requests.
 - Temporary Cloudflare URLs are for local testing only.
 
 ## Development Workflow

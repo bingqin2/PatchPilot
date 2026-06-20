@@ -1,13 +1,15 @@
-import { AlertCircle, CheckCircle2, CircleDot, ExternalLink, GitPullRequest, RefreshCw, Terminal } from 'lucide-react';
+import { AlertCircle, CheckCircle2, CircleDot, ExternalLink, GitPullRequest, RefreshCw, RotateCcw, Terminal, XCircle } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  cancelTask,
   getMetricsSummary,
   getModelCalls,
   getTaskSummary,
   getTestRuns,
   getTimeline,
   getToolCalls,
-  listTasks
+  listTasks,
+  retryTask
 } from './api';
 import type {
   FixTask,
@@ -55,6 +57,7 @@ export default function App() {
   const [detail, setDetail] = useState<TaskDetailState>(emptyDetail);
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [actionTaskId, setActionTaskId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const selectedTask = useMemo(
@@ -123,6 +126,32 @@ export default function App() {
       cancelled = true;
     };
   }, [selectedTask]);
+
+  const handleCancelTask = useCallback(async (taskId: string) => {
+    setActionTaskId(taskId);
+    setError(null);
+    try {
+      await cancelTask(taskId);
+      await refresh();
+    } catch (caught) {
+      setError(errorMessage(caught));
+    } finally {
+      setActionTaskId(null);
+    }
+  }, [refresh]);
+
+  const handleRetryTask = useCallback(async (taskId: string) => {
+    setActionTaskId(taskId);
+    setError(null);
+    try {
+      await retryTask(taskId);
+      await refresh();
+    } catch (caught) {
+      setError(errorMessage(caught));
+    } finally {
+      setActionTaskId(null);
+    }
+  }, [refresh]);
 
   return (
     <main className="app-shell">
@@ -201,13 +230,34 @@ export default function App() {
           </div>
         </section>
 
-        <TaskDetailPanel task={selectedTask} detail={detail} loading={detailLoading} />
+        <TaskDetailPanel
+          task={selectedTask}
+          detail={detail}
+          loading={detailLoading}
+          actionInFlight={actionTaskId === selectedTask?.id}
+          onCancelTask={handleCancelTask}
+          onRetryTask={handleRetryTask}
+        />
       </section>
     </main>
   );
 }
 
-function TaskDetailPanel({ task, detail, loading }: { task: FixTask | null; detail: TaskDetailState; loading: boolean }) {
+function TaskDetailPanel({
+  task,
+  detail,
+  loading,
+  actionInFlight,
+  onCancelTask,
+  onRetryTask
+}: {
+  task: FixTask | null;
+  detail: TaskDetailState;
+  loading: boolean;
+  actionInFlight: boolean;
+  onCancelTask: (taskId: string) => Promise<void>;
+  onRetryTask: (taskId: string) => Promise<void>;
+}) {
   if (!task) {
     return (
       <section className="panel detail-panel">
@@ -217,6 +267,9 @@ function TaskDetailPanel({ task, detail, loading }: { task: FixTask | null; deta
     );
   }
 
+  const canCancel = task.status === 'PENDING' || task.status === 'RUNNING' || task.status === 'RUNNING_TESTS';
+  const canRetry = task.status === 'FAILED' || task.status === 'CANCELLED';
+
   return (
     <section className="panel detail-panel">
       <div className="panel-header">
@@ -224,12 +277,36 @@ function TaskDetailPanel({ task, detail, loading }: { task: FixTask | null; deta
           <h2>{task.repositoryOwner}/{task.repositoryName} #{task.issueNumber}</h2>
           <p>{task.id}</p>
         </div>
-        {task.pullRequestUrl ? (
-          <a className="external-link" href={task.pullRequestUrl} target="_blank" rel="noreferrer">
-            Open PR
-            <ExternalLink size={14} />
-          </a>
-        ) : null}
+        <div className="detail-actions">
+          {canCancel ? (
+            <button
+              className="secondary-button danger-button"
+              type="button"
+              disabled={actionInFlight}
+              onClick={() => void onCancelTask(task.id)}
+            >
+              <XCircle size={14} />
+              Cancel task
+            </button>
+          ) : null}
+          {canRetry ? (
+            <button
+              className="secondary-button"
+              type="button"
+              disabled={actionInFlight}
+              onClick={() => void onRetryTask(task.id)}
+            >
+              <RotateCcw size={14} />
+              Retry task
+            </button>
+          ) : null}
+          {task.pullRequestUrl ? (
+            <a className="external-link" href={task.pullRequestUrl} target="_blank" rel="noreferrer">
+              Open PR
+              <ExternalLink size={14} />
+            </a>
+          ) : null}
+        </div>
       </div>
 
       <div className="detail-summary">
