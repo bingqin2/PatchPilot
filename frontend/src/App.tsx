@@ -4,10 +4,12 @@ import {
   cancelTask,
   getMetricsSummary,
   getModelCalls,
+  getQueueSummary,
   getTaskSummary,
   getTestRuns,
   getTimeline,
   getToolCalls,
+  listQueueItems,
   listTasks,
   retryTask
 } from './api';
@@ -16,6 +18,8 @@ import type {
   FixTaskAuditSummary,
   FixTaskMetricsSummary,
   FixTaskModelCall,
+  FixTaskQueueItem,
+  FixTaskQueueSummary,
   FixTaskTestRun,
   FixTaskTimelineEvent,
   FixTaskToolCall,
@@ -52,6 +56,8 @@ const statusFilters: TaskStatusFilter[] = [
 export default function App() {
   const [tasks, setTasks] = useState<FixTask[]>([]);
   const [metrics, setMetrics] = useState<FixTaskMetricsSummary | null>(null);
+  const [queueSummary, setQueueSummary] = useState<FixTaskQueueSummary | null>(null);
+  const [queueItems, setQueueItems] = useState<FixTaskQueueItem[]>([]);
   const [statusFilter, setStatusFilter] = useState<TaskStatusFilter>('ALL');
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [detail, setDetail] = useState<TaskDetailState>(emptyDetail);
@@ -69,9 +75,16 @@ export default function App() {
     setLoading(true);
     setError(null);
     try {
-      const [taskList, metricsSummary] = await Promise.all([listTasks(statusFilter), getMetricsSummary()]);
+      const [taskList, metricsSummary, queueSummaryData, queueItemList] = await Promise.all([
+        listTasks(statusFilter),
+        getMetricsSummary(),
+        getQueueSummary(),
+        listQueueItems()
+      ]);
       setTasks(taskList);
       setMetrics(metricsSummary);
+      setQueueSummary(queueSummaryData);
+      setQueueItems(queueItemList);
       setSelectedTaskId((current) => {
         if (current && taskList.some((task) => task.id === current)) {
           return current;
@@ -239,7 +252,43 @@ export default function App() {
           onRetryTask={handleRetryTask}
         />
       </section>
+
+      <QueuePanel summary={queueSummary} items={queueItems} />
     </main>
+  );
+}
+
+function QueuePanel({ summary, items }: { summary: FixTaskQueueSummary | null; items: FixTaskQueueItem[] }) {
+  return (
+    <section className="panel queue-panel">
+      <div className="panel-header">
+        <div>
+          <h2>Queue</h2>
+          <p>{summary ? `${summary.totalCount} queue items` : 'Loading queue state'}</p>
+        </div>
+      </div>
+      <div className="queue-summary">
+        <SummaryItem label="Pending" value={`${summary?.pendingCount ?? 0} pending`} />
+        <SummaryItem label="Available" value={`${summary?.availablePendingCount ?? 0} available`} />
+        <SummaryItem label="Delayed" value={`${summary?.delayedPendingCount ?? 0} delayed`} />
+        <SummaryItem label="Running" value={summary?.runningCount ?? 0} />
+        <SummaryItem label="Failed" value={summary?.failedCount ?? 0} />
+        <SummaryItem label="Cancelled" value={summary?.cancelledCount ?? 0} />
+      </div>
+      <div className="queue-list">
+        {items.map((item) => (
+          <div className="queue-row" key={item.id}>
+            <span className={`status-pill status-${item.status.toLowerCase()}`}>{item.status}</span>
+            <strong>{item.id}</strong>
+            <span>{item.taskId}</span>
+            <span>attempt {item.attemptCount}</span>
+            <time>{compactTime(item.availableAt)}</time>
+            {item.lastError ? <p>{item.lastError}</p> : null}
+          </div>
+        ))}
+        {items.length === 0 ? <p className="empty-state">No queue items.</p> : null}
+      </div>
+    </section>
   );
 }
 

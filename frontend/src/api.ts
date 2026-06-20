@@ -3,6 +3,8 @@ import type {
   FixTask,
   FixTaskAuditSummary,
   FixTaskMetricsSummary,
+  FixTaskQueueItem,
+  FixTaskQueueSummary,
   FixTaskModelCall,
   FixTaskTestRun,
   FixTaskTimelineEvent,
@@ -20,6 +22,14 @@ export async function listTasks(status: TaskStatusFilter = 'ALL'): Promise<FixTa
 
 export async function getMetricsSummary(): Promise<FixTaskMetricsSummary> {
   return getApi<FixTaskMetricsSummary>('/api/tasks/metrics/summary');
+}
+
+export async function getQueueSummary(): Promise<FixTaskQueueSummary> {
+  return getApi<FixTaskQueueSummary>('/api/task-queue/summary');
+}
+
+export async function listQueueItems(): Promise<FixTaskQueueItem[]> {
+  return getApi<FixTaskQueueItem[]>('/api/task-queue/items');
 }
 
 export async function getTaskSummary(taskId: string): Promise<FixTaskAuditSummary> {

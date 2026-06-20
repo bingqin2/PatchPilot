@@ -2,6 +2,8 @@ export type TaskStatus = 'PENDING' | 'RUNNING' | 'RUNNING_TESTS' | 'COMPLETED' |
 
 export type TaskStatusFilter = 'ALL' | TaskStatus;
 
+export type QueueItemStatus = 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
+
 export interface ApiResponse<T> {
   success: boolean;
   data: T;
@@ -45,6 +47,29 @@ export interface FixTaskMetricsSummary {
   passedTestRunCount: number;
   failedTestRunCount: number;
   testPassRate: number;
+}
+
+export interface FixTaskQueueSummary {
+  totalCount: number;
+  pendingCount: number;
+  availablePendingCount: number;
+  delayedPendingCount: number;
+  runningCount: number;
+  completedCount: number;
+  failedCount: number;
+  cancelledCount: number;
+}
+
+export interface FixTaskQueueItem {
+  id: string;
+  taskId: string;
+  status: QueueItemStatus;
+  attemptCount: number;
+  lastError: string | null;
+  availableAt: string;
+  lockedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface FixTaskAuditSummary {

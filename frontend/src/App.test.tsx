@@ -157,6 +157,42 @@ const modelCalls = [
   }
 ];
 
+const queueSummary = {
+  totalCount: 4,
+  pendingCount: 2,
+  availablePendingCount: 1,
+  delayedPendingCount: 1,
+  runningCount: 1,
+  completedCount: 0,
+  failedCount: 1,
+  cancelledCount: 0
+};
+
+const queueItems = [
+  {
+    id: 'queue-1',
+    taskId: 'task-3',
+    status: 'RUNNING',
+    attemptCount: 2,
+    lastError: null,
+    availableAt: '2026-06-20T01:10:00Z',
+    lockedAt: '2026-06-20T01:10:30Z',
+    createdAt: '2026-06-20T01:09:00Z',
+    updatedAt: '2026-06-20T01:10:30Z'
+  },
+  {
+    id: 'queue-2',
+    taskId: 'task-2',
+    status: 'FAILED',
+    attemptCount: 3,
+    lastError: 'maven test command timed out',
+    availableAt: '2026-06-20T01:05:00Z',
+    lockedAt: null,
+    createdAt: '2026-06-20T01:04:00Z',
+    updatedAt: '2026-06-20T01:06:00Z'
+  }
+];
+
 beforeEach(() => {
   vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
     const url = input.toString();
@@ -191,6 +227,12 @@ beforeEach(() => {
         failedTestRunCount: 0,
         testPassRate: 1
       });
+    }
+    if (url === '/api/task-queue/summary') {
+      return jsonResponse(queueSummary);
+    }
+    if (url === '/api/task-queue/items') {
+      return jsonResponse(queueItems);
     }
     if (url === '/api/tasks/task-1/summary') {
       return jsonResponse(summary);
@@ -303,12 +345,31 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(screen.getByText('50%')).toBeInTheDocument();
   expect(screen.getByText('Test pass')).toBeInTheDocument();
   expect(screen.getByText('100%')).toBeInTheDocument();
+  expect(screen.getByText('Queue')).toBeInTheDocument();
+  expect(screen.getByText('1 delayed')).toBeInTheDocument();
+  expect(screen.getByText('maven test command timed out')).toBeInTheDocument();
 
   await waitFor(() => expect(screen.getByText('Task completed')).toBeInTheDocument());
   expect(screen.getByText('Pull request opened')).toBeInTheDocument();
   expect(screen.getByText('Tests run: 247, Failures: 0, Errors: 0')).toBeInTheDocument();
   expect(screen.getByText('replace')).toBeInTheDocument();
   expect(screen.getByText('gpt-5.5')).toBeInTheDocument();
+});
+
+test('loads queue summary and items from backend APIs', async () => {
+  const fetchMock = vi.mocked(fetch);
+
+  render(<App />);
+
+  expect(await screen.findByText('Queue')).toBeInTheDocument();
+  expect(screen.getByText('2 pending')).toBeInTheDocument();
+  expect(screen.getByText('1 available')).toBeInTheDocument();
+  expect(screen.getByText('queue-1')).toBeInTheDocument();
+  expect(screen.getByText('task-3')).toBeInTheDocument();
+  expect(screen.getByText('attempt 2')).toBeInTheDocument();
+
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/task-queue/summary'));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/task-queue/items'));
 });
 
 test('shows an actionable error when a backend request fails', async () => {
