@@ -658,6 +658,47 @@ pre {
   padding: 14px 16px;
 }
 
+.queue-health {
+  align-items: center;
+  border-bottom: 1px solid #e6ebef;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 16px;
+}
+
+.queue-health strong,
+.queue-health span {
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 5px 9px;
+}
+
+.queue-health-idle strong,
+.queue-health-idle span {
+  background: #dff6e7;
+  color: #126b35;
+}
+
+.queue-health-active strong,
+.queue-health-active span {
+  background: #e0eefb;
+  color: #155b91;
+}
+
+.queue-health-advisory strong,
+.queue-health-advisory span {
+  background: #fff2cf;
+  color: #7c5600;
+}
+
+.queue-health-critical strong,
+.queue-health-critical span {
+  background: #fde5df;
+  color: #a13724;
+}
+
 .queue-list {
   border-top: 1px solid #e6ebef;
   display: grid;
