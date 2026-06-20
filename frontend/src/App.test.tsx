@@ -340,6 +340,11 @@ test('renders operational task dashboard from backend APIs', async () => {
     'href',
     'https://github.com/bingqin2/PatchPilot/pull/8'
   );
+  const issueLinks = screen.getAllByRole('link', { name: 'Open Issue' });
+  expect(issueLinks).toHaveLength(3);
+  expect(issueLinks[0]).toHaveAttribute('href', 'https://github.com/bingqin2/PatchPilot/issues/1');
+  expect(issueLinks[1]).toHaveAttribute('href', 'https://github.com/bingqin2/PatchPilot/issues/2');
+  expect(issueLinks[2]).toHaveAttribute('href', 'https://github.com/bingqin2/PatchPilot/issues/1');
 
   expect(screen.getByText('Completion')).toBeInTheDocument();
   expect(screen.getByText('50%')).toBeInTheDocument();

@@ -1196,3 +1196,17 @@ Validation:
 
 - `npm test` in `frontend/`: first failed because the Queue panel did not exist, then passed after implementation, 6 tests run, 0 failures.
 - `npm run build` in `frontend/`: passed, production build generated `dist/`.
+
+Implemented dashboard issue links from `docs/plans/050-dashboard-issue-links.md`.
+
+Changes:
+
+- Added generated GitHub Issue links from task repository owner, repository name, and issue number.
+- Rendered `Open Issue` links in visible task rows.
+- Rendered `Open Issue` in the selected task detail header alongside existing Pull Request links.
+- Documented dashboard issue links in README.
+
+Validation:
+
+- `npm test` in `frontend/`: first failed because no `Open Issue` links existed, then passed after implementation, 6 tests run, 0 failures.
+- `npm run build` in `frontend/`: passed, production build generated `dist/`.
