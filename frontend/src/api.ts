@@ -1,5 +1,6 @@
 import type {
   ApiResponse,
+  ConfigurationSummary,
   FixTask,
   FixTaskFailureCauseSummary,
   FixTaskLatencySummary,
@@ -53,6 +54,10 @@ export async function getModelUsageSummary(): Promise<FixTaskModelUsageSummary> 
 
 export async function getLatencySummary(): Promise<FixTaskLatencySummary> {
   return getApi<FixTaskLatencySummary>('/api/tasks/metrics/latency');
+}
+
+export async function getConfigurationSummary(): Promise<ConfigurationSummary> {
+  return getApi<ConfigurationSummary>('/api/configuration/summary');
 }
 
 export async function getQueueSummary(): Promise<FixTaskQueueSummary> {

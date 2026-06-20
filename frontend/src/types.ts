@@ -86,6 +86,20 @@ export interface FixTaskLatencySummary {
   maxTestRunDurationMs: number;
 }
 
+export interface ConfigurationSummary {
+  agentProvider: string;
+  agentModel: string;
+  agentBaseUrl: string;
+  agentApiKeyConfigured: boolean;
+  githubTokenConfigured: boolean;
+  githubWebhookSecretConfigured: boolean;
+  workspaceRootDir: string;
+  queueMaxAttempts: number;
+  queueRetryDelayMs: number;
+  queueVisibilityTimeoutMs: number;
+  modelCostConfigured: boolean;
+}
+
 export interface FixTaskQueueSummary {
   totalCount: number;
   pendingCount: number;

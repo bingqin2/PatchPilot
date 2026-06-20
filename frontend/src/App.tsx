@@ -2,6 +2,7 @@ import { AlertCircle, RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   cancelTask,
+  getConfigurationSummary,
   getFailureCauseSummary,
   getLatencySummary,
   getMetricsSummary,
@@ -16,6 +17,7 @@ import {
   listTasks,
   retryTask
 } from './api';
+import { ConfigurationPanel } from './dashboard/components/ConfigurationPanel';
 import { FailureCausePanel } from './dashboard/components/FailureCausePanel';
 import { LatencyPanel } from './dashboard/components/LatencyPanel';
 import { MetricCard } from './dashboard/components/MetricCard';
@@ -27,6 +29,7 @@ import { duration, percent } from './dashboard/format';
 import { emptyDetail } from './dashboard/types';
 import type { TaskDetailState } from './dashboard/types';
 import type {
+  ConfigurationSummary,
   FixTask,
   FixTaskFailureCauseSummary,
   FixTaskLatencySummary,
@@ -45,6 +48,7 @@ export default function App() {
   const [failureCauses, setFailureCauses] = useState<FixTaskFailureCauseSummary[]>([]);
   const [modelUsage, setModelUsage] = useState<FixTaskModelUsageSummary | null>(null);
   const [latency, setLatency] = useState<FixTaskLatencySummary | null>(null);
+  const [configuration, setConfiguration] = useState<ConfigurationSummary | null>(null);
   const [queueSummary, setQueueSummary] = useState<FixTaskQueueSummary | null>(null);
   const [queueItems, setQueueItems] = useState<FixTaskQueueItem[]>([]);
   const [statusFilter, setStatusFilter] = useState<TaskStatusFilter>('ALL');
@@ -74,6 +78,7 @@ export default function App() {
         failureCauseSummary,
         modelUsageSummary,
         latencySummary,
+        configurationSummary,
         queueSummaryData,
         queueItemList
       ] = await Promise.all([
@@ -82,6 +87,7 @@ export default function App() {
         getFailureCauseSummary(),
         getModelUsageSummary(),
         getLatencySummary(),
+        getConfigurationSummary(),
         getQueueSummary(),
         listQueueItems()
       ]);
@@ -90,6 +96,7 @@ export default function App() {
       setFailureCauses(failureCauseSummary);
       setModelUsage(modelUsageSummary);
       setLatency(latencySummary);
+      setConfiguration(configurationSummary);
       setQueueSummary(queueSummaryData);
       setQueueItems(queueItemList);
       setCanLoadMoreTasks(taskList.hasMore);
@@ -254,6 +261,8 @@ export default function App() {
           onRetryTask={handleRetryTask}
         />
       </section>
+
+      <ConfigurationPanel configuration={configuration} />
 
       <QueuePanel summary={queueSummary} items={queueItems} />
     </main>
