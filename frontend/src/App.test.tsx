@@ -205,6 +205,12 @@ beforeEach(() => {
     if (url === '/api/tasks?limit=50&status=FAILED') {
       return jsonResponse([failedTask]);
     }
+    if (url === '/api/tasks?limit=50&query=broken') {
+      return jsonResponse([failedTask]);
+    }
+    if (url === '/api/tasks?limit=50&query=broken&status=FAILED') {
+      return jsonResponse([failedTask]);
+    }
     if (url === '/api/tasks?limit=50&status=CANCELLED') {
       return jsonResponse([]);
     }
@@ -436,7 +442,7 @@ test('filters tasks by status with backend query parameters', async () => {
   expect(screen.getByText('Select a task to inspect execution records.')).toBeInTheDocument();
 });
 
-test('searches the currently loaded task list locally', async () => {
+test('searches tasks with backend query parameters', async () => {
   const user = userEvent.setup();
   const fetchMock = vi.mocked(fetch);
 
@@ -449,7 +455,111 @@ test('searches the currently loaded task list locally', async () => {
   expect(screen.queryByText('/agent fix replace docs/demo.md PatchPilot smoke test')).not.toBeInTheDocument();
   expect(screen.getByText('/agent fix replace docs/demo.md broken')).toBeInTheDocument();
   expect(await screen.findByText('Task failed')).toBeInTheDocument();
-  expect(fetchMock).not.toHaveBeenCalledWith(expect.stringContaining('query='));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks?limit=50&query=broken'));
+});
+
+test('preserves status filter when searching backend task history', async () => {
+  const user = userEvent.setup();
+  const fetchMock = vi.mocked(fetch);
+
+  render(<App />);
+
+  expect(await screen.findByText('/agent fix replace docs/demo.md PatchPilot smoke test')).toBeInTheDocument();
+
+  await user.click(screen.getByRole('button', { name: 'FAILED' }));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks?limit=50&status=FAILED'));
+
+  await user.type(screen.getByRole('searchbox', { name: 'Search tasks' }), 'broken');
+
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks?limit=50&query=broken&status=FAILED'));
+  expect(screen.getByText('/agent fix replace docs/demo.md broken')).toBeInTheDocument();
+});
+
+test('loads the next backend task page with offset pagination', async () => {
+  const user = userEvent.setup();
+  const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+    const url = input.toString();
+    const firstPage = Array.from({ length: 50 }, (_, index) => ({
+      ...completedTask,
+      id: `page-task-${index + 1}`,
+      issueNumber: index + 10,
+      triggerComment: `/agent fix page ${index + 1}`,
+      pullRequestUrl: null,
+      statusCommentUrl: null
+    }));
+    const nextPageTask = {
+      ...failedTask,
+      id: 'page-task-51',
+      issueNumber: 60,
+      triggerComment: '/agent fix page 51'
+    };
+
+    if (url === '/api/tasks?limit=50') {
+      return jsonResponse(firstPage);
+    }
+    if (url === '/api/tasks?limit=50&offset=50') {
+      return jsonResponse([nextPageTask]);
+    }
+    if (url === '/api/tasks/metrics/summary') {
+      return jsonResponse({
+        totalCount: 51,
+        pendingCount: 0,
+        runningCount: 0,
+        runningTestsCount: 0,
+        completedCount: 50,
+        failedCount: 1,
+        cancelledCount: 0,
+        completionRate: 0.98,
+        failureRate: 0.02,
+        averageCompletionDurationMs: 60000,
+        totalModelTokens: 1800,
+        averageModelTokensPerCompletedTask: 36,
+        testRunCount: 1,
+        passedTestRunCount: 1,
+        failedTestRunCount: 0,
+        testPassRate: 1
+      });
+    }
+    if (url === '/api/task-queue/summary') {
+      return jsonResponse(queueSummary);
+    }
+    if (url === '/api/task-queue/items') {
+      return jsonResponse(queueItems);
+    }
+    if (url === '/api/tasks/page-task-1/summary') {
+      return jsonResponse({
+        ...summary,
+        task: firstPage[0],
+        timelineEventCount: 0,
+        testRunCount: 0,
+        toolCallCount: 0,
+        modelCallCount: 0,
+        totalModelTokens: 0,
+        latestTimelineEvent: null,
+        latestTestRunExitCode: null,
+        latestTestRunDurationMs: null
+      });
+    }
+    if (
+      url === '/api/tasks/page-task-1/timeline' ||
+      url === '/api/tasks/page-task-1/test-runs' ||
+      url === '/api/tasks/page-task-1/tool-calls' ||
+      url === '/api/tasks/page-task-1/model-calls'
+    ) {
+      return jsonResponse([]);
+    }
+    return jsonResponse(null, false, 'not found', 404);
+  });
+  vi.stubGlobal('fetch', fetchMock);
+
+  render(<App />);
+
+  expect(await screen.findByText('/agent fix page 50')).toBeInTheDocument();
+
+  await user.click(screen.getByRole('button', { name: 'Load more tasks' }));
+
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks?limit=50&offset=50'));
+  expect(await screen.findByText('/agent fix page 51')).toBeInTheDocument();
 });
 
 test('shows empty states for missing task detail records', async () => {
