@@ -4,10 +4,12 @@ import io.patchpilot.backend.task.domain.bo.CreateFixTaskCommand;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.vo.FixTaskMetricsSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskModelCallVo;
+import io.patchpilot.backend.task.domain.vo.FixTaskTestRunVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import io.patchpilot.backend.task.service.impl.DefaultFixTaskMetricsService;
 import io.patchpilot.backend.task.service.impl.InMemoryFixTaskModelCallService;
 import io.patchpilot.backend.task.service.impl.InMemoryFixTaskService;
+import io.patchpilot.backend.task.service.impl.InMemoryFixTaskTestRunService;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -21,9 +23,11 @@ class DefaultFixTaskMetricsServiceTests {
 
     private final FixTaskService fixTaskService = new InMemoryFixTaskService();
     private final FixTaskModelCallService fixTaskModelCallService = new InMemoryFixTaskModelCallService();
+    private final FixTaskTestRunService fixTaskTestRunService = new InMemoryFixTaskTestRunService();
     private final FixTaskMetricsService fixTaskMetricsService = new DefaultFixTaskMetricsService(
             fixTaskService,
-            fixTaskModelCallService
+            fixTaskModelCallService,
+            fixTaskTestRunService
     );
 
     @Test
@@ -42,6 +46,10 @@ class DefaultFixTaskMetricsServiceTests {
         assertThat(summary.averageCompletionDurationMs()).isZero();
         assertThat(summary.totalModelTokens()).isZero();
         assertThat(summary.averageModelTokensPerCompletedTask()).isZero();
+        assertThat(summary.testRunCount()).isZero();
+        assertThat(summary.passedTestRunCount()).isZero();
+        assertThat(summary.failedTestRunCount()).isZero();
+        assertThat(summary.testPassRate()).isZero();
     }
 
     @Test
@@ -73,6 +81,10 @@ class DefaultFixTaskMetricsServiceTests {
                                 modelCall("completed", 40, 10)
                         ),
                         "failed", List.of(modelCall("failed", 20, 5))
+                )),
+                new StaticFixTaskTestRunService(Map.of(
+                        "completed", List.of(testRun("completed", 0)),
+                        "failed", List.of(testRun("failed", 1), testRun("failed", 0))
                 ))
         );
 
@@ -90,6 +102,10 @@ class DefaultFixTaskMetricsServiceTests {
         assertThat(summary.averageCompletionDurationMs()).isEqualTo(10000);
         assertThat(summary.totalModelTokens()).isEqualTo(225);
         assertThat(summary.averageModelTokensPerCompletedTask()).isEqualTo(200);
+        assertThat(summary.testRunCount()).isEqualTo(3);
+        assertThat(summary.passedTestRunCount()).isEqualTo(2);
+        assertThat(summary.failedTestRunCount()).isEqualTo(1);
+        assertThat(summary.testPassRate()).isEqualTo(2.0 / 3.0);
     }
 
     private FixTaskVo createTask(String deliveryId) {
@@ -156,6 +172,19 @@ class DefaultFixTaskMetricsServiceTests {
                 promptTokens + completionTokens,
                 true,
                 null,
+                Instant.parse("2026-06-20T01:00:00Z"),
+                Instant.parse("2026-06-20T01:00:02Z"),
+                2000
+        );
+    }
+
+    private static FixTaskTestRunVo testRun(String taskId, int exitCode) {
+        return new FixTaskTestRunVo(
+                "test-run-" + taskId + "-" + exitCode,
+                taskId,
+                "./mvnw test",
+                exitCode,
+                exitCode == 0 ? "tests passed" : "tests failed",
                 Instant.parse("2026-06-20T01:00:00Z"),
                 Instant.parse("2026-06-20T01:00:02Z"),
                 2000
@@ -241,6 +270,28 @@ class DefaultFixTaskMetricsServiceTests {
         @Override
         public List<FixTaskModelCallVo> listModelCalls(String taskId) {
             return modelCalls.getOrDefault(taskId, List.of());
+        }
+    }
+
+    private record StaticFixTaskTestRunService(
+            Map<String, List<FixTaskTestRunVo>> testRuns
+    ) implements FixTaskTestRunService {
+
+        @Override
+        public FixTaskTestRunVo recordTestRun(
+                String taskId,
+                String command,
+                int exitCode,
+                String output,
+                Instant startedAt,
+                Instant finishedAt
+        ) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public List<FixTaskTestRunVo> listTestRuns(String taskId) {
+            return testRuns.getOrDefault(taskId, List.of());
         }
     }
 }

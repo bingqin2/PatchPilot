@@ -447,6 +447,22 @@ class TaskControllerTests {
                 Instant.parse("2026-06-20T02:00:00Z"),
                 Instant.parse("2026-06-20T02:00:04Z")
         );
+        fixTaskTestRunService.recordTestRun(
+                completedTask.id(),
+                "./mvnw test",
+                0,
+                "tests passed",
+                Instant.parse("2026-06-20T02:00:05Z"),
+                Instant.parse("2026-06-20T02:00:09Z")
+        );
+        fixTaskTestRunService.recordTestRun(
+                failedTask.id(),
+                "./mvnw test",
+                1,
+                "tests failed",
+                Instant.parse("2026-06-20T02:00:10Z"),
+                Instant.parse("2026-06-20T02:00:14Z")
+        );
 
         mockMvc.perform(get("/api/tasks/metrics/summary"))
                 .andExpect(status().isOk())
@@ -458,7 +474,11 @@ class TaskControllerTests {
                 .andExpect(jsonPath("$.data.failureRate").value(greaterThanOrEqualTo(0.0)))
                 .andExpect(jsonPath("$.data.averageCompletionDurationMs").value(greaterThanOrEqualTo(0)))
                 .andExpect(jsonPath("$.data.totalModelTokens").value(greaterThanOrEqualTo(200)))
-                .andExpect(jsonPath("$.data.averageModelTokensPerCompletedTask").value(greaterThanOrEqualTo(0)));
+                .andExpect(jsonPath("$.data.averageModelTokensPerCompletedTask").value(greaterThanOrEqualTo(0)))
+                .andExpect(jsonPath("$.data.testRunCount").value(greaterThanOrEqualTo(2)))
+                .andExpect(jsonPath("$.data.passedTestRunCount").value(greaterThanOrEqualTo(1)))
+                .andExpect(jsonPath("$.data.failedTestRunCount").value(greaterThanOrEqualTo(1)))
+                .andExpect(jsonPath("$.data.testPassRate").value(greaterThanOrEqualTo(0.0)));
     }
 
     private FixTaskVo createTask(String deliveryId) {
