@@ -1460,3 +1460,19 @@ Validation:
 - `mvn -pl PatchPilot test`: passed, 261 tests run, 0 failures.
 - `npm test` in `frontend/`: passed, 17 tests run, 0 failures.
 - `npm run build` in `frontend/`: passed, production build generated `dist/`.
+
+Implemented dashboard configuration health hints from `docs/plans/066-dashboard-configuration-health.md`.
+
+Changes:
+
+- Added `ConfigurationPanel` health evaluation for required secret status.
+- Added advisory checks for missing model cost, invalid queue attempts, negative retry delay, and very low visibility timeout.
+- Rendered `Configuration healthy`, setup issue counts, advisory counts, and terse issue rows.
+- Updated the dashboard default test fixture to represent a healthy configuration.
+- Documented configuration health hints in README and frontend design docs.
+
+Validation:
+
+- `npm test -- --run src/dashboard/components/ConfigurationPanel.test.tsx`: first failed because no health summary or issue rows existed, then passed after adding panel health evaluation and styles, 3 tests run, 0 failures.
+- `npm test` in `frontend/`: passed, 20 tests run, 0 failures.
+- `npm run build` in `frontend/`: passed, production build generated `dist/`.

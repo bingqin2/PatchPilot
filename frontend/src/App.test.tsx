@@ -223,7 +223,7 @@ const configurationSummary = {
   agentBaseUrl: 'https://api.example.test/v1',
   agentApiKeyConfigured: true,
   githubTokenConfigured: true,
-  githubWebhookSecretConfigured: false,
+  githubWebhookSecretConfigured: true,
   workspaceRootDir: '/tmp/patchpilot/workspaces',
   queueMaxAttempts: 3,
   queueRetryDelayMs: 30000,
@@ -429,8 +429,9 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(screen.getByText('openai-compatible')).toBeInTheDocument();
   expect(screen.getByText('https://api.example.test/v1')).toBeInTheDocument();
   expect(screen.getByText('/tmp/patchpilot/workspaces')).toBeInTheDocument();
+  expect(screen.getByText('Configuration healthy')).toBeInTheDocument();
   expect(screen.getByText('Agent key Configured')).toBeInTheDocument();
-  expect(screen.getByText('Webhook secret Missing')).toBeInTheDocument();
+  expect(screen.getByText('Webhook secret Configured')).toBeInTheDocument();
   expect(screen.getByText('Queue attempts 3')).toBeInTheDocument();
   expect(screen.getByText('Queue')).toBeInTheDocument();
   expect(screen.getByText('1 delayed')).toBeInTheDocument();
