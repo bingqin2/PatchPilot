@@ -331,6 +331,7 @@ test('renders operational task dashboard from backend APIs', async () => {
   render(<App />);
 
   expect(await screen.findByRole('heading', { name: 'PatchPilot Operations' })).toBeInTheDocument();
+  expect(screen.getByText('2 of 2 tasks visible')).toBeInTheDocument();
   expect(screen.getByRole('button', { name: /COMPLETED bingqin2\/PatchPilot #1/ })).toBeInTheDocument();
   expect(screen.getByRole('button', { name: /FAILED bingqin2\/PatchPilot #2/ })).toBeInTheDocument();
   expect(screen.getByText('maven tests failed')).toBeInTheDocument();
@@ -495,10 +496,10 @@ test('loads the next backend task page with offset pagination', async () => {
     };
 
     if (url === '/api/tasks?limit=50') {
-      return jsonResponse(taskPage(firstPage, 50, 0, true));
+      return jsonResponse(taskPage(firstPage, 50, 0, true, 51));
     }
     if (url === '/api/tasks?limit=50&offset=50') {
-      return jsonResponse(taskPage([nextPageTask], 50, 50, false));
+      return jsonResponse(taskPage([nextPageTask], 50, 50, false, 51));
     }
     if (url === '/api/tasks/metrics/summary') {
       return jsonResponse({
@@ -615,6 +616,6 @@ function jsonResponse(data: unknown, success = true, message: string | null = nu
   } as Response);
 }
 
-function taskPage(items: unknown[], limit = 50, offset = 0, hasMore = false) {
-  return { items, limit, offset, hasMore };
+function taskPage(items: unknown[], limit = 50, offset = 0, hasMore = false, total = items.length) {
+  return { items, limit, offset, hasMore, total };
 }

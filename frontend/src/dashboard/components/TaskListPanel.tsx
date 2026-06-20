@@ -18,6 +18,7 @@ interface TaskListPanelProps {
   statusFilter: TaskStatusFilter;
   searchQuery: string;
   loading: boolean;
+  totalCount: number;
   canLoadMore: boolean;
   loadingMore: boolean;
   onStatusFilterChange: (status: TaskStatusFilter) => void;
@@ -32,6 +33,7 @@ export function TaskListPanel({
   statusFilter,
   searchQuery,
   loading,
+  totalCount,
   canLoadMore,
   loadingMore,
   onStatusFilterChange,
@@ -44,7 +46,7 @@ export function TaskListPanel({
       <div className="panel-header">
         <div>
           <h2>Tasks</h2>
-          <p>{loading ? 'Loading latest tasks' : `${tasks.length} visible tasks`}</p>
+          <p>{loading ? 'Loading latest tasks' : `${tasks.length} of ${totalCount} tasks visible`}</p>
         </div>
       </div>
       <div className="filter-bar" aria-label="Task status filters">

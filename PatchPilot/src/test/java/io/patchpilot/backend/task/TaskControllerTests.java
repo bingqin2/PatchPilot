@@ -85,7 +85,8 @@ class TaskControllerTests {
                 .andExpect(jsonPath("$.data.items[0].id").value(newerTask.id()))
                 .andExpect(jsonPath("$.data.limit").value(1))
                 .andExpect(jsonPath("$.data.offset").value(0))
-                .andExpect(jsonPath("$.data.hasMore").value(true));
+                .andExpect(jsonPath("$.data.hasMore").value(true))
+                .andExpect(jsonPath("$.data.total").value(2));
 
         mockMvc.perform(get("/api/tasks")
                         .param("repositoryOwner", "pagination-owner")
@@ -98,7 +99,8 @@ class TaskControllerTests {
                 .andExpect(jsonPath("$.data.items[0].id").value(olderTask.id()))
                 .andExpect(jsonPath("$.data.limit").value(1))
                 .andExpect(jsonPath("$.data.offset").value(1))
-                .andExpect(jsonPath("$.data.hasMore").value(false));
+                .andExpect(jsonPath("$.data.hasMore").value(false))
+                .andExpect(jsonPath("$.data.total").value(2));
     }
 
     @Test

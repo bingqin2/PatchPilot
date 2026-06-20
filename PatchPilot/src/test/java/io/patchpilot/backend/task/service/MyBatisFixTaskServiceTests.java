@@ -240,6 +240,29 @@ class MyBatisFixTaskServiceTests {
     }
 
     @Test
+    void should_count_tasks_with_query_filters_without_limit_or_offset() {
+        when(fixTaskMapper.selectCount(any())).thenReturn(2L);
+
+        long total = fixTaskService.countTasks(new FixTaskListQuery(
+                "search target",
+                FixTaskStatus.FAILED,
+                "octocat",
+                "hello-world",
+                1,
+                1
+        ));
+
+        assertThat(total).isEqualTo(2);
+        ArgumentCaptor<Wrapper<FixTaskEntity>> wrapperCaptor = ArgumentCaptor.forClass(Wrapper.class);
+        verify(fixTaskMapper).selectCount(wrapperCaptor.capture());
+        assertThat(wrapperCaptor.getValue().getSqlSegment())
+                .doesNotContain("LIMIT")
+                .contains("status")
+                .contains("repository_owner")
+                .contains("repository_name");
+    }
+
+    @Test
     void should_find_task_by_id() {
         FixTaskEntity existingTask = entity("task-123", "delivery-123", FixTaskStatus.PENDING,
                 null, Instant.parse("2026-06-19T01:00:00Z"));

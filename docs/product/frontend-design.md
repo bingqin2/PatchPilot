@@ -26,7 +26,7 @@ The page coordinator is `frontend/src/App.tsx`. It loads backend data, owns sele
 
 Reusable dashboard components live under `frontend/src/dashboard/components/`:
 
-- `TaskListPanel`: task list, status filters, local search, issue/status/PR links.
+- `TaskListPanel`: task list, status filters, backend-backed search, pagination counts, issue/status/PR links.
 - `TaskDetailPanel`: selected task summary, timeline, test runs, tool calls, model calls, cancel/retry actions.
 - `QueuePanel`: read-only queue summary and queue items.
 - `MetricCard`, `RecordLine`, and `SummaryItem`: small shared presentation units.
@@ -38,7 +38,7 @@ Formatting helpers live in `frontend/src/dashboard/format.ts`.
 The first screen is the working dashboard:
 
 - Metrics summarize task health.
-- The task list supports status filters and local search over currently loaded tasks.
+- The task list supports status filters, backend-backed search over task history, loaded-versus-total counts, and incremental loading.
 - Selecting a task reveals timeline events, Maven test output, tool-call records, model-call records, and GitHub links.
 - Queue visibility shows whether work is pending, delayed, running, failed, or cancelled.
 - Cancel and retry are available only for task states where those actions make sense.
@@ -68,11 +68,8 @@ Target capabilities:
 
 ## Future Work
 
-Backend-backed task search should replace or complement the current local-only search when task history grows. The future API shape can be `GET /api/tasks?query=...&status=...&limit=...`, backed by MySQL filtering and pagination.
-
 Additional future work:
 
-- Pagination for task history.
 - Dedicated task detail route with shareable URLs.
 - Dashboard views for model cost and latency.
 - Worker and queue health panels.

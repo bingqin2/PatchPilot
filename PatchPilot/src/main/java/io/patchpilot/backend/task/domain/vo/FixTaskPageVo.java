@@ -6,6 +6,7 @@ public record FixTaskPageVo(
         List<FixTaskVo> items,
         int limit,
         int offset,
-        boolean hasMore
+        boolean hasMore,
+        long total
 ) {
 }

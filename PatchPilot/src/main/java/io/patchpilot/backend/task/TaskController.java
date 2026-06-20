@@ -144,17 +144,30 @@ public class TaskController {
         FixTaskStatus parsedStatus = parseStatus(status);
         int parsedLimit = parseLimit(limit);
         int parsedOffset = parseOffset(offset);
-        List<FixTaskVo> tasks = fixTaskService.listTasks(new FixTaskListQuery(
-                blankToNull(query),
+        String parsedQuery = blankToNull(query);
+        String parsedRepositoryOwner = blankToNull(repositoryOwner);
+        String parsedRepositoryName = blankToNull(repositoryName);
+        FixTaskListQuery pageQuery = new FixTaskListQuery(
+                parsedQuery,
                 parsedStatus,
-                blankToNull(repositoryOwner),
-                blankToNull(repositoryName),
+                parsedRepositoryOwner,
+                parsedRepositoryName,
                 parsedLimit + 1,
                 parsedOffset
-        ));
+        );
+        FixTaskListQuery countQuery = new FixTaskListQuery(
+                parsedQuery,
+                parsedStatus,
+                parsedRepositoryOwner,
+                parsedRepositoryName,
+                Integer.MAX_VALUE,
+                0
+        );
+        List<FixTaskVo> tasks = fixTaskService.listTasks(pageQuery);
+        long total = fixTaskService.countTasks(countQuery);
         boolean hasMore = tasks.size() > parsedLimit;
         List<FixTaskVo> pageItems = hasMore ? tasks.subList(0, parsedLimit) : tasks;
-        return new FixTaskPageVo(pageItems, parsedLimit, parsedOffset, hasMore);
+        return new FixTaskPageVo(pageItems, parsedLimit, parsedOffset, hasMore, total);
     }
 
     private static FixTaskStatus parseStatus(String status) {

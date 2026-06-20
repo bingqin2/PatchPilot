@@ -44,6 +44,17 @@ public interface FixTaskService {
         return listTasks();
     }
 
+    default long countTasks(FixTaskListQuery query) {
+        return listTasks(new FixTaskListQuery(
+                query.query(),
+                query.status(),
+                query.repositoryOwner(),
+                query.repositoryName(),
+                Integer.MAX_VALUE,
+                0
+        )).size();
+    }
+
     Optional<FixTaskVo> findTask(String id);
 
     Optional<FixTaskVo> findTaskByDeliveryId(String deliveryId);
