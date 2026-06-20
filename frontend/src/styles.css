@@ -281,6 +281,7 @@ h3 {
 
 .task-comment,
 .task-failure,
+.task-times,
 .task-link {
   font-size: 13px;
   grid-column: 1 / -1;
@@ -293,6 +294,13 @@ h3 {
 
 .task-failure {
   color: #a13724;
+}
+
+.task-times {
+  color: #637181;
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .task-link,

@@ -1238,3 +1238,17 @@ Changes:
 Validation:
 
 - `npm test` in `frontend/`: first failed because `Status Comment` links were not rendered, then passed after implementation, 6 tests run, 0 failures.
+
+Implemented dashboard task timestamps from `docs/plans/053-dashboard-task-timestamps.md`.
+
+Changes:
+
+- Added frontend coverage for task row creation and update timestamps.
+- Rendered `Created` and `Updated` times in each dashboard task row using existing task API fields.
+- Preserved the original ISO timestamp through `dateTime` attributes.
+- Added wrapping timestamp styling for task rows.
+- Documented task timestamp visibility in README.
+
+Validation:
+
+- `npm test` in `frontend/`: first failed because task rows did not render `Created` and `Updated` times, then passed after implementation, 7 tests run, 0 failures.

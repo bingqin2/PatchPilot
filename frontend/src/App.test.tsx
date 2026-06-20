@@ -387,6 +387,24 @@ test('loads queue summary and items from backend APIs', async () => {
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/task-queue/items'));
 });
 
+test('shows task creation and update times in task rows', async () => {
+  render(<App />);
+
+  const completedTaskRow = await screen.findByRole('button', { name: /COMPLETED bingqin2\/PatchPilot #1/ });
+  const completedTimes = within(completedTaskRow).getAllByText(/^(Created|Updated) /);
+  expect(completedTimes[0]).toHaveTextContent(/^Created /);
+  expect(completedTimes[0]).toHaveAttribute('datetime', completedTask.createdAt);
+  expect(completedTimes[1]).toHaveTextContent(/^Updated /);
+  expect(completedTimes[1]).toHaveAttribute('datetime', completedTask.updatedAt);
+
+  const failedTaskRow = screen.getByRole('button', { name: /FAILED bingqin2\/PatchPilot #2/ });
+  const failedTimes = within(failedTaskRow).getAllByText(/^(Created|Updated) /);
+  expect(failedTimes[0]).toHaveTextContent(/^Created /);
+  expect(failedTimes[0]).toHaveAttribute('datetime', failedTask.createdAt);
+  expect(failedTimes[1]).toHaveTextContent(/^Updated /);
+  expect(failedTimes[1]).toHaveAttribute('datetime', failedTask.updatedAt);
+});
+
 test('shows an actionable error when a backend request fails', async () => {
   vi.stubGlobal('fetch', vi.fn(async () => jsonResponse(null, false, 'backend unavailable', 500)));
 
