@@ -1523,3 +1523,28 @@ Validation:
 - `npm test -- --run src/App.test.tsx -t "taskId URL parameter"`: first failed because URL task selection and URL updates did not exist, then passed after adding URL-backed task selection, 2 tests run, 0 failures.
 - `npm test` in `frontend/`: passed, 28 tests run, 0 failures.
 - `npm run build` in `frontend/`: passed, production build generated `dist/`.
+
+Implemented configurable frontend backend URL from `docs/plans/070-configurable-frontend-backend-url.md`.
+
+Changes:
+
+- Added a Vite proxy target helper that defaults to `http://127.0.0.1:8080`.
+- Allowed `PATCHPILOT_FRONTEND_BACKEND_URL` and `VITE_PATCHPILOT_BACKEND_URL` to override the frontend dev proxy target.
+- Documented IDEA `18080` frontend proxy usage in `.env.example`, README, and frontend design docs.
+
+Validation:
+
+- `npx vitest run --config vitest.config.ts viteProxy.test.ts`: first failed because `backendProxyTarget` did not exist, then passed after adding the helper, 3 tests run, 0 failures.
+- `npm test` in `frontend/`: passed, 31 tests run, 0 failures.
+- `npm run build` in `frontend/`: passed, production build generated `dist/`.
+
+Follow-up fix:
+
+- Loaded the repository root `.env` from Vite config so `PATCHPILOT_FRONTEND_BACKEND_URL` works when `npm run dev` is launched inside `frontend/`.
+- Added coverage for parsing the frontend backend URL from `.env` content.
+
+Validation:
+
+- `npx vitest run --config vitest.config.ts viteProxy.test.ts`: first failed because `.env` parsing was not implemented, then passed after adding repository `.env` loading, 4 tests run, 0 failures.
+- `npm test` in `frontend/`: passed, 32 tests run, 0 failures.
+- `npm run build` in `frontend/`: passed, production build generated `dist/`.

@@ -193,6 +193,12 @@ npm run dev
 
 Open the printed Vite URL, usually `http://127.0.0.1:5173`. Keep the backend running on `http://127.0.0.1:8080` so dashboard requests can reach the task APIs.
 
+If the backend is started from the IDEA run configuration, it runs on `18080`. Set the frontend proxy target in the repository root `.env` or before starting Vite:
+
+```bash
+PATCHPILOT_FRONTEND_BACKEND_URL=http://127.0.0.1:18080 npm run dev
+```
+
 Validate the dashboard:
 
 ```bash

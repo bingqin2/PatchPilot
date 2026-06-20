@@ -22,6 +22,8 @@ Core principles:
 
 The current frontend lives in `frontend/` and uses React, Vite, and TypeScript.
 
+During local development, Vite proxies `/api` and `/health` to `PATCHPILOT_FRONTEND_BACKEND_URL` or `VITE_PATCHPILOT_BACKEND_URL` from the shell environment or repository root `.env`, defaulting to `http://127.0.0.1:8080`.
+
 The page coordinator is `frontend/src/App.tsx`. It loads backend data, owns selected-task state, applies status filters and local search, and coordinates cancel/retry actions.
 
 Reusable dashboard components live under `frontend/src/dashboard/components/`:
