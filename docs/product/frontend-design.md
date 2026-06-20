@@ -1,0 +1,103 @@
+# Frontend Design Direction
+
+## Purpose
+
+PatchPilot's frontend is an operations dashboard for maintainers, developers, and demos. Its job is to make the backend workflow visible: which issue triggered a task, what the agent did, where it failed, what tests ran, and which Pull Request was created.
+
+The frontend is not the primary trigger surface. GitHub issue comments remain the main task trigger, and GitHub Pull Requests remain the review surface.
+
+## Design Philosophy
+
+The interface should feel like an engineering control plane, not a chatbot, marketing page, or generic AI SaaS product. Operators should be able to scan task state quickly, inspect evidence, and jump back to GitHub when human review is needed.
+
+Core principles:
+
+- Prefer dense but readable operational views over large promotional sections.
+- Show real task records, not abstract "AI progress" copy.
+- Keep controls explicit and limited to safe operations.
+- Make failures first-class: failed tests, cancelled tasks, queue errors, and agent exceptions should be easy to inspect.
+- Preserve GitHub as the source of code review and merge decisions.
+
+## Current Structure
+
+The current frontend lives in `frontend/` and uses React, Vite, and TypeScript.
+
+The page coordinator is `frontend/src/App.tsx`. It loads backend data, owns selected-task state, applies status filters and local search, and coordinates cancel/retry actions.
+
+Reusable dashboard components live under `frontend/src/dashboard/components/`:
+
+- `TaskListPanel`: task list, status filters, local search, issue/status/PR links.
+- `TaskDetailPanel`: selected task summary, timeline, test runs, tool calls, model calls, cancel/retry actions.
+- `QueuePanel`: read-only queue summary and queue items.
+- `MetricCard`, `RecordLine`, and `SummaryItem`: small shared presentation units.
+
+Formatting helpers live in `frontend/src/dashboard/format.ts`.
+
+## Current UX Model
+
+The first screen is the working dashboard:
+
+- Metrics summarize task health.
+- The task list supports status filters and local search over currently loaded tasks.
+- Selecting a task reveals timeline events, Maven test output, tool-call records, model-call records, and GitHub links.
+- Queue visibility shows whether work is pending, delayed, running, failed, or cancelled.
+- Cancel and retry are available only for task states where those actions make sense.
+
+This keeps the UI focused on operator questions:
+
+- What is running right now?
+- What failed and why?
+- Did tests pass?
+- What did the agent call?
+- How many model tokens were used?
+- Where is the GitHub issue or Pull Request?
+
+## Final Target
+
+The long-term frontend target is a complete maintainer dashboard for safe issue-to-PR automation.
+
+Target capabilities:
+
+- Search and filter complete task history.
+- Inspect task timeline, model calls, tool calls, command runs, and test records.
+- Track queue health, retries, cancellation, and worker recovery.
+- Surface cost, latency, success rate, failure rate, and test pass rate.
+- Link every important UI object back to GitHub.
+- Provide safe operator controls such as cancel, retry, and configuration inspection.
+- Support demo readiness by making a full task lifecycle understandable without reading logs.
+
+## Future Work
+
+Backend-backed task search should replace or complement the current local-only search when task history grows. The future API shape can be `GET /api/tasks?query=...&status=...&limit=...`, backed by MySQL filtering and pagination.
+
+Additional future work:
+
+- Pagination for task history.
+- Dedicated task detail route with shareable URLs.
+- Dashboard views for model cost and latency.
+- Worker and queue health panels.
+- Configuration visibility for webhook URL, model provider, and sandbox settings.
+- Better failure grouping by cause, such as GitHub auth, Maven tests, model errors, and command sandbox rejections.
+
+## Non-Goals
+
+The frontend should not:
+
+- Create tasks as the primary workflow before GitHub issue comments are mature.
+- Auto-merge Pull Requests.
+- Replace GitHub's review UI.
+- Hide task execution behind a chat-only interface.
+- Become a marketing landing page.
+- Execute arbitrary commands from the browser.
+
+## Success Criteria
+
+The frontend is successful when a maintainer can open it during a live demo or local test run and answer these questions without terminal access:
+
+- Which task was created from which GitHub issue?
+- What is its current status?
+- What did the agent do?
+- Which tools and model calls ran?
+- Did Maven tests pass?
+- If it failed, what was the failure reason?
+- If it succeeded, where is the Pull Request?
