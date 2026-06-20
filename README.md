@@ -160,6 +160,7 @@ Task metrics:
 curl http://127.0.0.1:8080/api/tasks/metrics/summary
 curl http://127.0.0.1:8080/api/tasks/metrics/failure-causes
 curl http://127.0.0.1:8080/api/tasks/metrics/model-usage
+curl http://127.0.0.1:8080/api/tasks/metrics/latency
 ```
 
 Model cost estimates default to `0`. Configure per-token prices when needed:
@@ -172,7 +173,7 @@ PATCHPILOT_AGENT_COST_COMPLETION_TOKEN_USD=0.000002
 ## Frontend Dashboard
 
 The React dashboard lives in `frontend/` and calls the backend through Vite's `/api` proxy.
-It includes task metrics, failure-cause grouping, model token and estimated-cost summaries, status filters and full-history search backed by `GET /api/tasks`, total-count and `hasMore`-backed `Load more` task pagination, task creation/update times, GitHub Issue, status comment, and Pull Request links, task detail summaries, timeline events, test runs, tool calls and model calls with durations, empty states for missing detail records, task control actions for cancel/retry, and a read-only queue panel backed by `/api/task-queue/*`.
+It includes task metrics, failure-cause grouping, model token and estimated-cost summaries, latency summaries, status filters and full-history search backed by `GET /api/tasks`, total-count and `hasMore`-backed `Load more` task pagination, task creation/update times, GitHub Issue, status comment, and Pull Request links, task detail summaries, timeline events, test runs, tool calls and model calls with durations, empty states for missing detail records, task control actions for cancel/retry, and a read-only queue panel backed by `/api/task-queue/*`.
 The page coordinator is `frontend/src/App.tsx`; reusable dashboard UI lives under `frontend/src/dashboard/components/`, with shared formatting helpers in `frontend/src/dashboard/format.ts`.
 The dashboard task list requests `query`, `status`, `limit`, and `offset` from the backend and consumes the task page response with `items`, `limit`, `offset`, `hasMore`, and `total`.
 

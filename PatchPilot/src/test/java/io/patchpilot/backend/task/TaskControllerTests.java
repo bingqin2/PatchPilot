@@ -609,6 +609,60 @@ class TaskControllerTests {
                 .andExpect(jsonPath("$.data.estimatedCostUsd").value(greaterThanOrEqualTo(0.0)));
     }
 
+    @Test
+    void should_get_task_latency_summary() throws Exception {
+        FixTaskVo completedTask = createTask("delivery-latency-completed");
+        FixTaskVo failedTask = createTask("delivery-latency-failed");
+        fixTaskService.markCompleted(completedTask.id(), "https://github.com/octocat/hello-world/pull/7");
+        fixTaskService.markFailed(failedTask.id(), "maven failed");
+        fixTaskModelCallService.recordModelCall(
+                completedTask.id(),
+                "openai",
+                "gpt-5.5",
+                "Fix issue",
+                "Changed demo file",
+                120,
+                80,
+                true,
+                null,
+                Instant.parse("2026-06-20T02:00:00Z"),
+                Instant.parse("2026-06-20T02:00:04Z")
+        );
+        fixTaskToolCallService.recordToolCall(
+                completedTask.id(),
+                "ReadFileTool",
+                "docs/demo.md",
+                "read file",
+                true,
+                Instant.parse("2026-06-20T02:00:05Z"),
+                Instant.parse("2026-06-20T02:00:06Z")
+        );
+        fixTaskTestRunService.recordTestRun(
+                failedTask.id(),
+                "./mvnw test",
+                1,
+                "tests failed",
+                Instant.parse("2026-06-20T02:00:10Z"),
+                Instant.parse("2026-06-20T02:00:14Z")
+        );
+
+        mockMvc.perform(get("/api/tasks/metrics/latency"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.completedTaskCount").value(greaterThanOrEqualTo(1)))
+                .andExpect(jsonPath("$.data.averageTaskDurationMs").value(greaterThanOrEqualTo(0)))
+                .andExpect(jsonPath("$.data.maxTaskDurationMs").value(greaterThanOrEqualTo(0)))
+                .andExpect(jsonPath("$.data.modelCallCount").value(greaterThanOrEqualTo(1)))
+                .andExpect(jsonPath("$.data.averageModelCallDurationMs").value(greaterThanOrEqualTo(4000)))
+                .andExpect(jsonPath("$.data.maxModelCallDurationMs").value(greaterThanOrEqualTo(4000)))
+                .andExpect(jsonPath("$.data.toolCallCount").value(greaterThanOrEqualTo(1)))
+                .andExpect(jsonPath("$.data.averageToolCallDurationMs").value(greaterThanOrEqualTo(1000)))
+                .andExpect(jsonPath("$.data.maxToolCallDurationMs").value(greaterThanOrEqualTo(1000)))
+                .andExpect(jsonPath("$.data.testRunCount").value(greaterThanOrEqualTo(1)))
+                .andExpect(jsonPath("$.data.averageTestRunDurationMs").value(greaterThanOrEqualTo(4000)))
+                .andExpect(jsonPath("$.data.maxTestRunDurationMs").value(greaterThanOrEqualTo(4000)));
+    }
+
     private FixTaskVo createTask(String deliveryId) {
         return createTask(command("octocat", "hello-world", deliveryId));
     }

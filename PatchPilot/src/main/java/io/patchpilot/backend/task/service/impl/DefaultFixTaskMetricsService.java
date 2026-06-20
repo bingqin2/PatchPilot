@@ -3,15 +3,18 @@ package io.patchpilot.backend.task.service.impl;
 import io.patchpilot.backend.agent.config.AgentProperties;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.vo.FixTaskFailureCauseSummaryVo;
+import io.patchpilot.backend.task.domain.vo.FixTaskLatencySummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskMetricsSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskModelCallVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskModelUsageSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskTestRunVo;
+import io.patchpilot.backend.task.domain.vo.FixTaskToolCallVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import io.patchpilot.backend.task.service.FixTaskMetricsService;
 import io.patchpilot.backend.task.service.FixTaskModelCallService;
 import io.patchpilot.backend.task.service.FixTaskService;
 import io.patchpilot.backend.task.service.FixTaskTestRunService;
+import io.patchpilot.backend.task.service.FixTaskToolCallService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -36,6 +39,7 @@ public class DefaultFixTaskMetricsService implements FixTaskMetricsService {
     private final FixTaskService fixTaskService;
     private final FixTaskModelCallService fixTaskModelCallService;
     private final FixTaskTestRunService fixTaskTestRunService;
+    private final FixTaskToolCallService fixTaskToolCallService;
     private final AgentProperties agentProperties;
 
     @Override
@@ -120,6 +124,48 @@ public class DefaultFixTaskMetricsService implements FixTaskMetricsService {
                 successfulCalls,
                 failedCalls,
                 estimatedCostUsd
+        );
+    }
+
+    @Override
+    public FixTaskLatencySummaryVo latency() {
+        List<FixTaskVo> tasks = fixTaskService.listTasks();
+        if (tasks.isEmpty()) {
+            return FixTaskLatencySummaryVo.empty();
+        }
+
+        DurationMetrics taskDurations = DurationMetrics.from(tasks.stream()
+                .filter(task -> task.status() == FixTaskStatus.COMPLETED)
+                .filter(task -> task.completedAt() != null)
+                .mapToLong(task -> Duration.between(task.createdAt(), task.completedAt()).toMillis())
+                .boxed()
+                .toList());
+        DurationMetrics modelDurations = DurationMetrics.from(tasks.stream()
+                .flatMap(task -> fixTaskModelCallService.listModelCalls(task.id()).stream())
+                .map(FixTaskModelCallVo::durationMs)
+                .toList());
+        DurationMetrics toolDurations = DurationMetrics.from(tasks.stream()
+                .flatMap(task -> fixTaskToolCallService.listToolCalls(task.id()).stream())
+                .map(FixTaskToolCallVo::durationMs)
+                .toList());
+        DurationMetrics testRunDurations = DurationMetrics.from(tasks.stream()
+                .flatMap(task -> fixTaskTestRunService.listTestRuns(task.id()).stream())
+                .map(FixTaskTestRunVo::durationMs)
+                .toList());
+
+        return new FixTaskLatencySummaryVo(
+                taskDurations.count(),
+                taskDurations.averageMs(),
+                taskDurations.maxMs(),
+                modelDurations.count(),
+                modelDurations.averageMs(),
+                modelDurations.maxMs(),
+                toolDurations.count(),
+                toolDurations.averageMs(),
+                toolDurations.maxMs(),
+                testRunDurations.count(),
+                testRunDurations.averageMs(),
+                testRunDurations.maxMs()
         );
     }
 
@@ -209,6 +255,29 @@ public class DefaultFixTaskMetricsService implements FixTaskMetricsService {
                     failedTestRunCount,
                     (double) passedTestRunCount / testRunCount
             );
+        }
+    }
+
+    private record DurationMetrics(
+            long count,
+            long averageMs,
+            long maxMs
+    ) {
+
+        private static DurationMetrics from(List<Long> durations) {
+            if (durations.isEmpty()) {
+                return new DurationMetrics(0, 0, 0);
+            }
+            long count = durations.size();
+            long averageMs = (long) durations.stream()
+                    .mapToLong(Long::longValue)
+                    .average()
+                    .orElse(0.0);
+            long maxMs = durations.stream()
+                    .mapToLong(Long::longValue)
+                    .max()
+                    .orElse(0);
+            return new DurationMetrics(count, averageMs, maxMs);
         }
     }
 }

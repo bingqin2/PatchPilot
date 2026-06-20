@@ -159,7 +159,7 @@ h3 {
 .summary-panel-grid {
   display: grid;
   gap: 16px;
-  grid-template-columns: minmax(0, 1fr) minmax(320px, 0.8fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   margin-bottom: 16px;
 }
 
@@ -192,14 +192,16 @@ h3 {
   font-size: 16px;
 }
 
-.model-usage-grid {
+.model-usage-grid,
+.latency-grid {
   display: grid;
   gap: 8px;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   padding: 0 16px 16px;
 }
 
-.model-usage-grid div {
+.model-usage-grid div,
+.latency-grid div {
   background: #f7f9fb;
   border: 1px solid #dbe3ea;
   border-radius: 6px;
@@ -212,7 +214,8 @@ h3 {
   grid-column: 1 / -1;
 }
 
-.model-usage-grid span {
+.model-usage-grid span,
+.latency-grid span {
   color: #637181;
   display: block;
   font-size: 12px;
@@ -220,13 +223,15 @@ h3 {
   margin-bottom: 6px;
 }
 
-.model-usage-grid strong {
+.model-usage-grid strong,
+.latency-grid strong {
   color: #202b36;
   display: block;
   font-size: 20px;
 }
 
-.model-usage-grid p {
+.model-usage-grid p,
+.latency-grid p {
   color: #637181;
   font-size: 12px;
   margin-top: 4px;

@@ -29,7 +29,7 @@ Reusable dashboard components live under `frontend/src/dashboard/components/`:
 - `TaskListPanel`: task list, status filters, backend-backed search, pagination counts, issue/status/PR links.
 - `TaskDetailPanel`: selected task summary, timeline, test runs, tool calls, model calls, cancel/retry actions.
 - `QueuePanel`: read-only queue summary and queue items.
-- `FailureCausePanel` and `ModelUsagePanel`: operational summary cards for failure grouping, token usage, call counts, and estimated model cost.
+- `FailureCausePanel`, `ModelUsagePanel`, and `LatencyPanel`: operational summary cards for failure grouping, token usage, call counts, estimated model cost, and execution latency.
 - `MetricCard`, `RecordLine`, and `SummaryItem`: small shared presentation units.
 
 Formatting helpers live in `frontend/src/dashboard/format.ts`.
@@ -39,7 +39,7 @@ Formatting helpers live in `frontend/src/dashboard/format.ts`.
 The first screen is the working dashboard:
 
 - Metrics summarize task health.
-- Operational summaries highlight failure causes and model usage without requiring terminal inspection.
+- Operational summaries highlight failure causes, model usage, and latency without requiring terminal inspection.
 - The task list supports status filters, backend-backed search over task history, loaded-versus-total counts, and incremental loading.
 - Selecting a task reveals timeline events, Maven test output, tool-call records, model-call records, and GitHub links.
 - Queue visibility shows whether work is pending, delayed, running, failed, or cancelled.
