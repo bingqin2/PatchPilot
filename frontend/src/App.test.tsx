@@ -263,15 +263,7 @@ beforeEach(() => {
       });
     }
     if (url === '/api/tasks/task-2/timeline') {
-      return jsonResponse([
-        {
-          id: 'timeline-failed',
-          taskId: 'task-2',
-          eventType: 'FAILED',
-          message: 'Task failed',
-          createdAt: '2026-06-20T01:06:00Z'
-        }
-      ]);
+      return jsonResponse([]);
     }
     if (url === '/api/tasks/task-2/test-runs') {
       return jsonResponse([]);
@@ -427,13 +419,26 @@ test('filters tasks by status with backend query parameters', async () => {
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks?limit=50&status=FAILED'));
   expect(screen.queryByText('/agent fix replace docs/demo.md PatchPilot smoke test')).not.toBeInTheDocument();
   expect(await screen.findByText('/agent fix replace docs/demo.md broken')).toBeInTheDocument();
-  expect(await screen.findAllByText('Task failed')).not.toHaveLength(0);
+  expect(await screen.findByText('Task failed')).toBeInTheDocument();
 
   await user.click(screen.getByRole('button', { name: 'CANCELLED' }));
 
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks?limit=50&status=CANCELLED'));
   expect(screen.getByText('No CANCELLED tasks found.')).toBeInTheDocument();
   expect(screen.getByText('Select a task to inspect execution records.')).toBeInTheDocument();
+});
+
+test('shows empty states for missing task detail records', async () => {
+  const user = userEvent.setup();
+
+  render(<App />);
+
+  await user.click(await screen.findByRole('button', { name: 'FAILED' }));
+
+  expect(await screen.findByText('No timeline events recorded.')).toBeInTheDocument();
+  expect(screen.getByText('No Maven test runs recorded.')).toBeInTheDocument();
+  expect(screen.getByText('No tool calls recorded.')).toBeInTheDocument();
+  expect(screen.getByText('No model calls recorded.')).toBeInTheDocument();
 });
 
 test('cancels active tasks and refreshes dashboard data', async () => {
