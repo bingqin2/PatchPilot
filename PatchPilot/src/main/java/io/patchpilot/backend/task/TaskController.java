@@ -1,6 +1,7 @@
 package io.patchpilot.backend.task;
 
 import io.patchpilot.backend.common.response.ApiResponse;
+import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.vo.FixTaskMetricsSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskModelCallVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskTestRunVo;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -38,8 +40,17 @@ public class TaskController {
     private final FixTaskMetricsService fixTaskMetricsService;
 
     @GetMapping
-    public ApiResponse<List<FixTaskVo>> listTasks() {
-        return ApiResponse.ok(fixTaskService.listTasks());
+    public ResponseEntity<ApiResponse<List<FixTaskVo>>> listTasks(
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String repositoryOwner,
+            @RequestParam(required = false) String repositoryName,
+            @RequestParam(required = false) Integer limit
+    ) {
+        try {
+            return ResponseEntity.ok(ApiResponse.ok(filteredTasks(status, repositoryOwner, repositoryName, limit)));
+        } catch (IllegalArgumentException exception) {
+            return ResponseEntity.badRequest().body(ApiResponse.fail(exception.getMessage()));
+        }
     }
 
     @GetMapping("/metrics/summary")
@@ -106,5 +117,37 @@ public class TaskController {
         } catch (IllegalStateException exception) {
             return ResponseEntity.status(409).body(ApiResponse.fail(exception.getMessage()));
         }
+    }
+
+    private List<FixTaskVo> filteredTasks(String status, String repositoryOwner, String repositoryName, Integer limit) {
+        FixTaskStatus parsedStatus = parseStatus(status);
+        int parsedLimit = parseLimit(limit);
+        return fixTaskService.listTasks().stream()
+                .filter(task -> parsedStatus == null || task.status() == parsedStatus)
+                .filter(task -> repositoryOwner == null || task.repositoryOwner().equals(repositoryOwner))
+                .filter(task -> repositoryName == null || task.repositoryName().equals(repositoryName))
+                .limit(parsedLimit)
+                .toList();
+    }
+
+    private static FixTaskStatus parseStatus(String status) {
+        if (status == null || status.isBlank()) {
+            return null;
+        }
+        try {
+            return FixTaskStatus.valueOf(status);
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalArgumentException("Invalid task status: " + status);
+        }
+    }
+
+    private static int parseLimit(Integer limit) {
+        if (limit == null) {
+            return Integer.MAX_VALUE;
+        }
+        if (limit < 1 || limit > 100) {
+            throw new IllegalArgumentException("limit must be between 1 and 100");
+        }
+        return limit;
     }
 }
