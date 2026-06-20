@@ -1,12 +1,14 @@
 package io.patchpilot.backend.task;
 
 import io.patchpilot.backend.common.response.ApiResponse;
+import io.patchpilot.backend.task.domain.vo.FixTaskMetricsSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskModelCallVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskTestRunVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskTimelineEventVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskToolCallVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import io.patchpilot.backend.task.service.FixTaskControlService;
+import io.patchpilot.backend.task.service.FixTaskMetricsService;
 import io.patchpilot.backend.task.service.FixTaskModelCallService;
 import io.patchpilot.backend.task.service.FixTaskTestRunService;
 import io.patchpilot.backend.task.service.FixTaskTimelineService;
@@ -33,10 +35,16 @@ public class TaskController {
     private final FixTaskToolCallService fixTaskToolCallService;
     private final FixTaskModelCallService fixTaskModelCallService;
     private final FixTaskControlService fixTaskControlService;
+    private final FixTaskMetricsService fixTaskMetricsService;
 
     @GetMapping
     public ApiResponse<List<FixTaskVo>> listTasks() {
         return ApiResponse.ok(fixTaskService.listTasks());
+    }
+
+    @GetMapping("/metrics/summary")
+    public ApiResponse<FixTaskMetricsSummaryVo> getTaskMetricsSummary() {
+        return ApiResponse.ok(fixTaskMetricsService.summary());
     }
 
     @GetMapping("/{id}")

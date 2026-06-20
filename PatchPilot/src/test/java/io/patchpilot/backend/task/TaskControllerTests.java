@@ -329,6 +329,39 @@ class TaskControllerTests {
                 .andExpect(jsonPath("$.data.failedCount").value(0));
     }
 
+    @Test
+    void should_get_task_metrics_summary() throws Exception {
+        FixTaskVo completedTask = createTask("delivery-metrics-completed");
+        FixTaskVo failedTask = createTask("delivery-metrics-failed");
+        fixTaskService.markCompleted(completedTask.id(), "https://github.com/octocat/hello-world/pull/7");
+        fixTaskService.markFailed(failedTask.id(), "maven failed");
+        fixTaskModelCallService.recordModelCall(
+                completedTask.id(),
+                "openai",
+                "gpt-5.5",
+                "Fix issue",
+                "Changed demo file",
+                120,
+                80,
+                true,
+                null,
+                Instant.parse("2026-06-20T02:00:00Z"),
+                Instant.parse("2026-06-20T02:00:04Z")
+        );
+
+        mockMvc.perform(get("/api/tasks/metrics/summary"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.totalCount").value(greaterThanOrEqualTo(2)))
+                .andExpect(jsonPath("$.data.completedCount").value(greaterThanOrEqualTo(1)))
+                .andExpect(jsonPath("$.data.failedCount").value(greaterThanOrEqualTo(1)))
+                .andExpect(jsonPath("$.data.completionRate").value(greaterThanOrEqualTo(0.0)))
+                .andExpect(jsonPath("$.data.failureRate").value(greaterThanOrEqualTo(0.0)))
+                .andExpect(jsonPath("$.data.averageCompletionDurationMs").value(greaterThanOrEqualTo(0)))
+                .andExpect(jsonPath("$.data.totalModelTokens").value(greaterThanOrEqualTo(200)))
+                .andExpect(jsonPath("$.data.averageModelTokensPerCompletedTask").value(greaterThanOrEqualTo(0)));
+    }
+
     private FixTaskVo createTask(String deliveryId) {
         return fixTaskService.createFixTask(new CreateFixTaskCommand(
                 "octocat",
