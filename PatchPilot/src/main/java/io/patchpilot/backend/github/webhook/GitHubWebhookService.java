@@ -11,6 +11,7 @@ import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import io.patchpilot.backend.task.service.FixTaskDispatcher;
 import io.patchpilot.backend.task.service.FixTaskService;
 import io.patchpilot.backend.task.service.FixTaskTimelineService;
+import io.patchpilot.backend.task.service.LogSummary;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -126,6 +127,11 @@ public class GitHubWebhookService {
             fixTaskService.attachStatusComment(task.id(), commentResult.id(), commentResult.url());
             recordTimelineEvent(task.id(), FixTaskTimelineEventType.STATUS_COMMENT_CREATED, "Status comment created");
         } catch (RuntimeException exception) {
+            recordTimelineEvent(
+                    task.id(),
+                    FixTaskTimelineEventType.STATUS_COMMENT_FAILED,
+                    "Status comment failed: " + statusCommentFailureReason(exception)
+            );
             // GitHub comment feedback must not block the durable task workflow.
         }
     }
@@ -144,6 +150,13 @@ public class GitHubWebhookService {
         } catch (RuntimeException exception) {
             // Timeline feedback must not block the durable task workflow.
         }
+    }
+
+    private static String statusCommentFailureReason(RuntimeException exception) {
+        if (!StringUtils.hasText(exception.getMessage())) {
+            return exception.getClass().getSimpleName();
+        }
+        return LogSummary.truncateFailureReason(exception.getMessage());
     }
 
     private static boolean isAgentFixCommand(String commentBody) {

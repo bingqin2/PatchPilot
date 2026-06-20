@@ -16,7 +16,7 @@ import java.time.Instant;
 import java.util.List;
 
 @Service
-@Profile({"local", "docker"})
+@Profile({"local", "docker", "idea"})
 @RequiredArgsConstructor
 public class MyBatisFixTaskQueueQueryService implements FixTaskQueueQueryService {
 

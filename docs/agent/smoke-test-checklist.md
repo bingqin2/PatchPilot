@@ -52,6 +52,13 @@ Configure the test repository webhook:
 
 Expected: GitHub webhook ping returns `200`.
 
+Confirm the GitHub token has repository permissions:
+
+- `Contents`: Read and write
+- `Issues`: Read and write
+- `Pull requests`: Read and write
+- `Metadata`: Read-only
+
 ## 6. Trigger A Deterministic Task
 
 Comment on a test issue. Use an existing file in the target repository:

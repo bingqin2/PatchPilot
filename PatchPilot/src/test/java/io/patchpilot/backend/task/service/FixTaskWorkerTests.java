@@ -152,6 +152,8 @@ class FixTaskWorkerTests {
         FixTaskVo completedTask = fixTaskService.findTask(task.id()).orElseThrow();
         assertThat(completedTask.status()).isEqualTo(FixTaskStatus.COMPLETED);
         assertThat(completedTask.failureReason()).isNull();
+        assertThat(timelineService.eventTypes()).contains(FixTaskTimelineEventType.STATUS_COMMENT_FAILED);
+        assertThat(timelineService.messages()).contains("Status comment failed: comment update failed");
     }
 
     private static FixTaskVo createTask(FixTaskService fixTaskService, String deliveryId) {

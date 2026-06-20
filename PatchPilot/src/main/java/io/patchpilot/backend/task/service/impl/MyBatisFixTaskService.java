@@ -21,7 +21,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Service
-@Profile({"local", "docker"})
+@Profile({"local", "docker", "idea"})
 @RequiredArgsConstructor
 public class MyBatisFixTaskService implements FixTaskService {
 

@@ -41,7 +41,7 @@ Useful docs:
 - Docker Desktop
 - `cloudflared` for temporary webhook URLs
 - A GitHub repository for testing
-- A GitHub token with repository contents and Pull Request permissions
+- A GitHub token with repository contents, issue comment, and Pull Request permissions
 - An OpenAI-compatible API key for model-backed planning
 
 ## Configuration
@@ -61,6 +61,13 @@ PATCHPILOT_AGENT_API_KEY=your_model_provider_api_key
 ```
 
 The webhook secret must match the GitHub webhook configuration. The GitHub token is used for clone, push, issue comments, and Pull Request creation. Do not commit `.env`.
+
+For a fine-grained GitHub token, grant these repository permissions:
+
+- `Contents`: Read and write
+- `Issues`: Read and write
+- `Pull requests`: Read and write
+- `Metadata`: Read-only
 
 ## Run With Docker Compose
 
