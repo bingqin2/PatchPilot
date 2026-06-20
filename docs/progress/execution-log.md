@@ -1492,3 +1492,19 @@ Validation:
 - `npm test -- --run src/dashboard/components/QueuePanel.test.tsx`: first failed because queue health labels did not exist, then passed after adding health evaluation and styles, 4 tests run, 0 failures.
 - `npm test` in `frontend/`: passed, 24 tests run, 0 failures.
 - `npm run build` in `frontend/`: passed, production build generated `dist/`.
+
+Implemented dashboard detail evidence summary from `docs/plans/068-dashboard-detail-evidence-summary.md`.
+
+Changes:
+
+- Added an `Execution evidence` strip to `TaskDetailPanel`.
+- Summarized timeline, test-run, tool-call, and model-call counts from the existing detail summary response.
+- Surfaced latest test status as `PASS`, `FAIL`, or `None` before the detailed Maven output.
+- Added focused component coverage for populated evidence and missing latest test evidence.
+- Documented the detail evidence strip in README and frontend design docs.
+
+Validation:
+
+- `npm test -- --run src/dashboard/components/TaskDetailPanel.test.tsx`: first failed because the evidence strip did not exist, then passed after adding the component rendering and styles, 2 tests run, 0 failures.
+- `npm test` in `frontend/`: passed, 26 tests run, 0 failures.
+- `npm run build` in `frontend/`: passed, production build generated `dist/`.

@@ -33,6 +33,7 @@ export function TaskDetailPanel({
 
   const canCancel = task.status === 'PENDING' || task.status === 'RUNNING' || task.status === 'RUNNING_TESTS';
   const canRetry = task.status === 'FAILED' || task.status === 'CANCELLED';
+  const latestTestStatus = testStatus(detail.summary?.latestTestRunExitCode);
 
   return (
     <section className="panel detail-panel">
@@ -89,6 +90,17 @@ export function TaskDetailPanel({
         <SummaryItem label="Tools" value={detail.summary?.toolCallCount ?? 0} />
         <SummaryItem label="Models" value={detail.summary?.modelCallCount ?? 0} />
         <SummaryItem label="Tokens" value={detail.summary?.totalModelTokens ?? 0} />
+      </div>
+
+      <div className="evidence-summary" aria-label="Execution evidence">
+        <span>Execution evidence</span>
+        <strong>Timeline {detail.summary?.timelineEventCount ?? 0}</strong>
+        <strong>Tests {detail.summary?.testRunCount ?? 0}</strong>
+        <strong>Tools {detail.summary?.toolCallCount ?? 0}</strong>
+        <strong>Model calls {detail.summary?.modelCallCount ?? 0}</strong>
+        <strong className={`evidence-test evidence-test-${latestTestStatus.toLowerCase()}`}>
+          Latest test {latestTestStatus}
+        </strong>
       </div>
 
       {detail.summary?.latestTimelineEvent ? (
@@ -161,4 +173,11 @@ export function TaskDetailPanel({
       </section>
     </section>
   );
+}
+
+function testStatus(exitCode: number | null | undefined) {
+  if (exitCode === null || exitCode === undefined) {
+    return 'None';
+  }
+  return exitCode === 0 ? 'PASS' : 'FAIL';
 }

@@ -525,6 +525,48 @@ h3 {
   font-size: 20px;
 }
 
+.evidence-summary {
+  align-items: center;
+  border-top: 1px solid #e6ebef;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 16px;
+}
+
+.evidence-summary span,
+.evidence-summary strong {
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 5px 9px;
+}
+
+.evidence-summary span {
+  background: #eef0f2;
+  color: #52606e;
+}
+
+.evidence-summary strong {
+  background: #f5f7f9;
+  color: #202b36;
+}
+
+.evidence-summary .evidence-test-pass {
+  background: #dff6e7;
+  color: #126b35;
+}
+
+.evidence-summary .evidence-test-fail {
+  background: #fde5df;
+  color: #a13724;
+}
+
+.evidence-summary .evidence-test-none {
+  background: #eef0f2;
+  color: #52606e;
+}
+
 .latest-event {
   background: #f8fafb;
   border-top: 1px solid #e6ebef;
