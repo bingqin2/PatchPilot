@@ -16,6 +16,7 @@ Core principles:
 - Show real task records, not abstract "AI progress" copy.
 - Keep controls explicit and limited to safe operations.
 - Make failures first-class: failed tests, cancelled tasks, queue errors, and agent exceptions should be easy to inspect.
+- Make setup failures readable: backend/proxy connectivity problems should tell operators what to check.
 - Preserve GitHub as the source of code review and merge decisions.
 
 ## Current Structure

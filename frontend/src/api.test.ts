@@ -186,3 +186,33 @@ test('loads non-sensitive configuration summary from backend API', async () => {
     modelCostConfigured: true
   });
 });
+
+test('shows actionable backend guidance when API response is empty', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: false,
+    status: 502,
+    json: async () => {
+      throw new SyntaxError('Unexpected end of JSON input');
+    }
+  } as unknown as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  await expect(listTasks()).rejects.toThrow(
+    'Backend request failed. Check that PatchPilot backend is running and the frontend proxy target is correct.'
+  );
+});
+
+test('shows actionable backend guidance when API response is not JSON', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: false,
+    status: 502,
+    json: async () => {
+      throw new SyntaxError('Unexpected token < in JSON at position 0');
+    }
+  } as unknown as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  await expect(getConfigurationSummary()).rejects.toThrow(
+    'Backend request failed. Check that PatchPilot backend is running and the frontend proxy target is correct.'
+  );
+});

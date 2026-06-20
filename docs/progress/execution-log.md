@@ -1548,3 +1548,19 @@ Validation:
 - `npx vitest run --config vitest.config.ts viteProxy.test.ts`: first failed because `.env` parsing was not implemented, then passed after adding repository `.env` loading, 4 tests run, 0 failures.
 - `npm test` in `frontend/`: passed, 32 tests run, 0 failures.
 - `npm run build` in `frontend/`: passed, production build generated `dist/`.
+
+Implemented dashboard API error guidance from `docs/plans/071-dashboard-api-error-guidance.md`.
+
+Changes:
+
+- Added a shared frontend API request helper for GET and POST calls.
+- Converted fetch failures and JSON parsing failures into an actionable backend/proxy guidance message.
+- Preserved backend-provided JSON error messages for valid PatchPilot error envelopes.
+- Added API tests for empty and non-JSON responses.
+- Documented the dashboard backend/proxy error behavior in README and frontend design docs.
+
+Validation:
+
+- `npm test -- --run src/api.test.ts`: first failed because raw JSON parsing errors surfaced, then passed after adding guarded response parsing, 7 tests run, 0 failures.
+- `npm test` in `frontend/`: passed, 34 tests run, 0 failures.
+- `npm run build` in `frontend/`: passed, production build generated `dist/`.

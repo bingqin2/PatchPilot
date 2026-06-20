@@ -24,6 +24,9 @@ interface ListTasksOptions {
   offset?: number;
 }
 
+const backendConnectionError =
+  'Backend request failed. Check that PatchPilot backend is running and the frontend proxy target is correct.';
+
 export async function listTasks(options: TaskStatusFilter | ListTasksOptions = 'ALL'): Promise<FixTaskPage> {
   const normalizedOptions = typeof options === 'string' ? { status: options } : options;
   const searchParams = new URLSearchParams({ limit: String(normalizedOptions.limit ?? 50) });
@@ -97,19 +100,32 @@ export async function retryTask(taskId: string): Promise<FixTask> {
 }
 
 async function getApi<T>(path: string): Promise<T> {
-  const response = await fetch(path);
-  const body = (await response.json()) as ApiResponse<T>;
+  return requestApi<T>(path);
+}
+
+async function postApi<T>(path: string): Promise<T> {
+  return requestApi<T>(path, { method: 'POST' });
+}
+
+async function requestApi<T>(path: string, init?: RequestInit): Promise<T> {
+  let response: Response;
+  try {
+    response = init ? await fetch(path, init) : await fetch(path);
+  } catch {
+    throw new Error(backendConnectionError);
+  }
+
+  const body = await parseApiResponse<T>(response);
   if (!response.ok || !body.success) {
     throw new Error(body.message ?? `Request failed: ${response.status}`);
   }
   return body.data;
 }
 
-async function postApi<T>(path: string): Promise<T> {
-  const response = await fetch(path, { method: 'POST' });
-  const body = (await response.json()) as ApiResponse<T>;
-  if (!response.ok || !body.success) {
-    throw new Error(body.message ?? `Request failed: ${response.status}`);
+async function parseApiResponse<T>(response: Response): Promise<ApiResponse<T>> {
+  try {
+    return (await response.json()) as ApiResponse<T>;
+  } catch {
+    throw new Error(backendConnectionError);
   }
-  return body.data;
 }
