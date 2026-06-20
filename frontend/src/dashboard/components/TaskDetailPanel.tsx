@@ -114,6 +114,7 @@ export function TaskDetailPanel({
               <time>{compactTime(event.createdAt)}</time>
             </div>
           ))}
+          {!loading && detail.timeline.length === 0 ? <p className="empty-state">No timeline events recorded.</p> : null}
         </div>
       </section>
 
@@ -129,6 +130,7 @@ export function TaskDetailPanel({
             <pre>{run.output}</pre>
           </div>
         ))}
+        {!loading && detail.testRuns.length === 0 ? <p className="empty-state">No Maven test runs recorded.</p> : null}
       </section>
 
       <section className="detail-section split-section">
@@ -137,12 +139,14 @@ export function TaskDetailPanel({
           {detail.toolCalls.map((call) => (
             <RecordLine key={call.id} title={call.toolName} meta={call.success ? 'success' : 'failed'} body={call.outputSummary} />
           ))}
+          {!loading && detail.toolCalls.length === 0 ? <p className="empty-state">No tool calls recorded.</p> : null}
         </div>
         <div>
           <h3>Model Calls</h3>
           {detail.modelCalls.map((call) => (
             <RecordLine key={call.id} title={call.model} meta={`${call.totalTokens} tokens`} body={call.responseSummary} />
           ))}
+          {!loading && detail.modelCalls.length === 0 ? <p className="empty-state">No model calls recorded.</p> : null}
         </div>
       </section>
     </section>

@@ -1252,3 +1252,16 @@ Changes:
 Validation:
 
 - `npm test` in `frontend/`: first failed because task rows did not render `Created` and `Updated` times, then passed after implementation, 7 tests run, 0 failures.
+
+Implemented dashboard detail empty states from `docs/plans/054-dashboard-detail-empty-states.md`.
+
+Changes:
+
+- Added frontend coverage for task detail sections with missing records.
+- Rendered empty states for absent timeline events, Maven test runs, tool calls, and model calls.
+- Limited empty states to completed detail-loading states so loading copy remains distinct.
+- Documented detail empty-state behavior in README.
+
+Validation:
+
+- `npm test` in `frontend/`: first failed because missing detail records produced blank sections, then passed after implementation, 8 tests run, 0 failures.
