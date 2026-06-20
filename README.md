@@ -140,6 +140,7 @@ curl http://127.0.0.1:8080/api/tasks
 curl "http://127.0.0.1:8080/api/tasks?status=FAILED&limit=20"
 curl "http://127.0.0.1:8080/api/tasks?repositoryOwner=bingqin2&repositoryName=PatchPilot"
 curl http://127.0.0.1:8080/api/tasks/{taskId}
+curl http://127.0.0.1:8080/api/tasks/{taskId}/summary
 curl http://127.0.0.1:8080/api/tasks/{taskId}/timeline
 curl http://127.0.0.1:8080/api/tasks/{taskId}/test-runs
 curl http://127.0.0.1:8080/api/tasks/{taskId}/tool-calls
