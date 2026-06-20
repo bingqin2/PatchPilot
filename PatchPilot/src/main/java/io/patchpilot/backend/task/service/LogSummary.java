@@ -3,6 +3,7 @@ package io.patchpilot.backend.task.service;
 public final class LogSummary {
 
     public static final int MAX_TEXT_COLUMN_CHARS = 60_000;
+    public static final int MAX_TEST_RUN_OUTPUT_CHARS = 1_000_000;
     public static final int MAX_FAILURE_REASON_CHARS = 2_000;
 
     private LogSummary() {
@@ -10,6 +11,10 @@ public final class LogSummary {
 
     public static String truncateForTextColumn(String value) {
         return truncate(value, MAX_TEXT_COLUMN_CHARS);
+    }
+
+    public static String truncateTestRunOutput(String value) {
+        return truncate(value, MAX_TEST_RUN_OUTPUT_CHARS);
     }
 
     public static String truncateFailureReason(String value) {

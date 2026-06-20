@@ -51,17 +51,34 @@ class InMemoryFixTaskTestRunServiceTests {
     }
 
     @Test
-    void should_truncate_test_output_before_recording() {
+    void should_truncate_very_large_test_output_before_recording() {
         FixTaskTestRunVo testRun = testRunService.recordTestRun(
                 "task-123",
                 "./mvnw test",
                 1,
-                "x".repeat(70_000),
+                "x".repeat(1_100_000),
                 Instant.parse("2026-06-19T08:00:00Z"),
                 Instant.parse("2026-06-19T08:00:05Z")
         );
 
-        assertThat(testRun.output()).hasSizeLessThanOrEqualTo(60_000);
+        assertThat(testRun.output()).hasSizeLessThanOrEqualTo(LogSummary.MAX_TEST_RUN_OUTPUT_CHARS);
         assertThat(testRun.output()).contains("[truncated ");
+    }
+
+    @Test
+    void should_keep_large_test_output_that_fits_mediumtext() {
+        String longOutput = "x".repeat(120_000);
+
+        FixTaskTestRunVo testRun = testRunService.recordTestRun(
+                "task-123",
+                "./mvnw test",
+                1,
+                longOutput,
+                Instant.parse("2026-06-19T08:00:00Z"),
+                Instant.parse("2026-06-19T08:00:05Z")
+        );
+
+        assertThat(testRun.output()).hasSize(longOutput.length());
+        assertThat(testRun.output()).doesNotContain("[truncated ");
     }
 }

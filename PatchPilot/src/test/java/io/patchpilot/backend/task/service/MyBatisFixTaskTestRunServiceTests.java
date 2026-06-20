@@ -47,10 +47,10 @@ class MyBatisFixTaskTestRunServiceTests {
     }
 
     @Test
-    void should_truncate_test_output_before_insert() {
+    void should_truncate_very_large_test_output_before_insert() {
         when(testRunMapper.insert(any(FixTaskTestRunEntity.class))).thenReturn(1);
         ArgumentCaptor<FixTaskTestRunEntity> entityCaptor = ArgumentCaptor.forClass(FixTaskTestRunEntity.class);
-        String longOutput = "x".repeat(70_000);
+        String longOutput = "x".repeat(1_100_000);
 
         FixTaskTestRunVo testRun = testRunService.recordTestRun(
                 "task-123",
@@ -63,9 +63,30 @@ class MyBatisFixTaskTestRunServiceTests {
 
         verify(testRunMapper).insert(entityCaptor.capture());
         String insertedOutput = entityCaptor.getValue().getOutput();
-        assertThat(insertedOutput).hasSizeLessThanOrEqualTo(60_000);
+        assertThat(insertedOutput).hasSizeLessThanOrEqualTo(LogSummary.MAX_TEST_RUN_OUTPUT_CHARS);
         assertThat(insertedOutput).contains("[truncated ");
         assertThat(testRun.output()).isEqualTo(insertedOutput);
+    }
+
+    @Test
+    void should_keep_large_test_output_that_fits_mediumtext() {
+        when(testRunMapper.insert(any(FixTaskTestRunEntity.class))).thenReturn(1);
+        ArgumentCaptor<FixTaskTestRunEntity> entityCaptor = ArgumentCaptor.forClass(FixTaskTestRunEntity.class);
+        String longOutput = "x".repeat(120_000);
+
+        FixTaskTestRunVo testRun = testRunService.recordTestRun(
+                "task-123",
+                "./mvnw test",
+                1,
+                longOutput,
+                Instant.parse("2026-06-19T08:00:00Z"),
+                Instant.parse("2026-06-19T08:00:05Z")
+        );
+
+        verify(testRunMapper).insert(entityCaptor.capture());
+        assertThat(entityCaptor.getValue().getOutput()).hasSize(longOutput.length());
+        assertThat(testRun.output()).hasSize(longOutput.length());
+        assertThat(testRun.output()).doesNotContain("[truncated ");
     }
 
     @Test
