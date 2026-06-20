@@ -1280,3 +1280,18 @@ Validation:
 
 - `npm test` in `frontend/`: first failed because task detail tool/model call records did not show durations, then passed after implementation, 9 tests run, 0 failures.
 - `npm run build` in `frontend/`: passed, production build generated `dist/`.
+
+Implemented dashboard task search from `docs/plans/056-dashboard-task-search.md`.
+
+Changes:
+
+- Added a task search input to the React task list panel.
+- Filtered the currently loaded frontend task list by task id, repository, issue number, status, trigger comment, and failure reason.
+- Kept status filters backed by existing backend query parameters.
+- Added a distinct empty state when local search has no matches.
+- Documented local dashboard search and recorded backend `GET /api/tasks?query=...` search as future work.
+
+Validation:
+
+- `npm test` in `frontend/`: first failed because the task list had no `Search tasks` searchbox, then passed after implementation, 10 tests run, 0 failures.
+- `npm run build` in `frontend/`: passed, production build generated `dist/`.

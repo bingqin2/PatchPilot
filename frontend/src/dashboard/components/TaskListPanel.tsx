@@ -16,8 +16,10 @@ interface TaskListPanelProps {
   tasks: FixTask[];
   selectedTask: FixTask | null;
   statusFilter: TaskStatusFilter;
+  searchQuery: string;
   loading: boolean;
   onStatusFilterChange: (status: TaskStatusFilter) => void;
+  onSearchQueryChange: (query: string) => void;
   onSelectTask: (taskId: string) => void;
 }
 
@@ -25,8 +27,10 @@ export function TaskListPanel({
   tasks,
   selectedTask,
   statusFilter,
+  searchQuery,
   loading,
   onStatusFilterChange,
+  onSearchQueryChange,
   onSelectTask
 }: TaskListPanelProps) {
   return (
@@ -49,6 +53,16 @@ export function TaskListPanel({
             {status}
           </button>
         ))}
+      </div>
+      <div className="task-search">
+        <label htmlFor="task-search-input">Search tasks</label>
+        <input
+          id="task-search-input"
+          type="search"
+          value={searchQuery}
+          onChange={(event) => onSearchQueryChange(event.target.value)}
+          placeholder="Task, repository, issue, status, comment, failure"
+        />
       </div>
       <div className="task-list">
         {tasks.map((task) => (
@@ -88,7 +102,11 @@ export function TaskListPanel({
             ) : null}
           </button>
         ))}
-        {!loading && tasks.length === 0 ? <p className="empty-state">No {statusFilter} tasks found.</p> : null}
+        {!loading && tasks.length === 0 ? (
+          <p className="empty-state">
+            {searchQuery.trim() ? `No tasks match "${searchQuery.trim()}".` : `No ${statusFilter} tasks found.`}
+          </p>
+        ) : null}
       </div>
     </section>
   );

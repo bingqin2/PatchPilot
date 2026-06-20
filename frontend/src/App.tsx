@@ -34,6 +34,7 @@ export default function App() {
   const [queueSummary, setQueueSummary] = useState<FixTaskQueueSummary | null>(null);
   const [queueItems, setQueueItems] = useState<FixTaskQueueItem[]>([]);
   const [statusFilter, setStatusFilter] = useState<TaskStatusFilter>('ALL');
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [detail, setDetail] = useState<TaskDetailState>(emptyDetail);
   const [loading, setLoading] = useState(true);
@@ -41,9 +42,11 @@ export default function App() {
   const [actionTaskId, setActionTaskId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const visibleTasks = useMemo(() => filterTasks(tasks, searchQuery), [tasks, searchQuery]);
+
   const selectedTask = useMemo(
-    () => tasks.find((task) => task.id === selectedTaskId) ?? tasks[0] ?? null,
-    [selectedTaskId, tasks]
+    () => visibleTasks.find((task) => task.id === selectedTaskId) ?? visibleTasks[0] ?? null,
+    [selectedTaskId, visibleTasks]
   );
 
   const refresh = useCallback(async () => {
@@ -171,11 +174,13 @@ export default function App() {
 
       <section className="workspace-grid">
         <TaskListPanel
-          tasks={tasks}
+          tasks={visibleTasks}
           selectedTask={selectedTask}
           statusFilter={statusFilter}
+          searchQuery={searchQuery}
           loading={loading}
           onStatusFilterChange={setStatusFilter}
+          onSearchQueryChange={setSearchQuery}
           onSelectTask={setSelectedTaskId}
         />
 
@@ -196,4 +201,27 @@ export default function App() {
 
 function errorMessage(caught: unknown) {
   return caught instanceof Error ? caught.message : 'Dashboard request failed';
+}
+
+function filterTasks(tasks: FixTask[], query: string) {
+  const normalizedQuery = query.trim().toLowerCase();
+  if (!normalizedQuery) {
+    return tasks;
+  }
+
+  return tasks.filter((task) => {
+    const searchable = [
+      task.id,
+      `${task.repositoryOwner}/${task.repositoryName}`,
+      task.repositoryOwner,
+      task.repositoryName,
+      `#${task.issueNumber}`,
+      String(task.issueNumber),
+      task.status,
+      task.triggerComment,
+      task.failureReason ?? ''
+    ].join(' ').toLowerCase();
+
+    return searchable.includes(normalizedQuery);
+  });
 }
