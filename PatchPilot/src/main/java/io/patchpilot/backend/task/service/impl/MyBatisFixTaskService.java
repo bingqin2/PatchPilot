@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.patchpilot.backend.task.convert.FixTaskConvert;
 import io.patchpilot.backend.task.domain.bo.CreateFixTaskCommand;
 import io.patchpilot.backend.task.domain.bo.FixTaskCreationResult;
+import io.patchpilot.backend.task.domain.bo.FixTaskListQuery;
 import io.patchpilot.backend.task.domain.entity.FixTaskEntity;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
@@ -103,8 +104,23 @@ public class MyBatisFixTaskService implements FixTaskService {
 
     @Override
     public List<FixTaskVo> listTasks() {
-        return fixTaskMapper.selectList(null).stream()
-                .sorted(Comparator.comparing(FixTaskEntity::getCreatedAt).reversed())
+        return listTasks(FixTaskListQuery.all());
+    }
+
+    @Override
+    public List<FixTaskVo> listTasks(FixTaskListQuery query) {
+        LambdaQueryWrapper<FixTaskEntity> queryWrapper = new LambdaQueryWrapper<FixTaskEntity>()
+                .eq(query.status() != null, FixTaskEntity::getStatus, query.status() == null ? null : query.status().name())
+                .eq(query.repositoryOwner() != null, FixTaskEntity::getRepositoryOwner, query.repositoryOwner())
+                .eq(query.repositoryName() != null, FixTaskEntity::getRepositoryName, query.repositoryName())
+                .and(query.query() != null, wrapper -> addSearchConditions(wrapper, query.query()))
+                .orderByDesc(FixTaskEntity::getCreatedAt)
+                .orderByDesc(FixTaskEntity::getId)
+                .last("LIMIT " + query.offset() + ", " + query.limit());
+        return fixTaskMapper.selectList(queryWrapper).stream()
+                .sorted(Comparator.comparing(FixTaskEntity::getCreatedAt)
+                        .thenComparing(FixTaskEntity::getId)
+                        .reversed())
                 .map(FixTaskConvert::toVo)
                 .toList();
     }
@@ -153,5 +169,33 @@ public class MyBatisFixTaskService implements FixTaskService {
                 FixTaskStatus.RUNNING.name(),
                 FixTaskStatus.RUNNING_TESTS.name()
         );
+    }
+
+    private static void addSearchConditions(LambdaQueryWrapper<FixTaskEntity> wrapper, String query) {
+        String escapedQuery = escapeLike(query);
+        String issueNumberPattern = "%" + escapedQuery + "%";
+        wrapper.like(FixTaskEntity::getId, escapedQuery)
+                .or()
+                .like(FixTaskEntity::getRepositoryOwner, escapedQuery)
+                .or()
+                .like(FixTaskEntity::getRepositoryName, escapedQuery)
+                .or()
+                .apply("CAST(issue_number AS CHAR) LIKE {0}", issueNumberPattern)
+                .or()
+                .like(FixTaskEntity::getTriggerUser, escapedQuery)
+                .or()
+                .like(FixTaskEntity::getTriggerComment, escapedQuery)
+                .or()
+                .like(FixTaskEntity::getDeliveryId, escapedQuery)
+                .or()
+                .like(FixTaskEntity::getFailureReason, escapedQuery)
+                .or()
+                .like(FixTaskEntity::getPullRequestUrl, escapedQuery);
+    }
+
+    private static String escapeLike(String value) {
+        return value.replace("\\", "\\\\")
+                .replace("%", "\\%")
+                .replace("_", "\\_");
     }
 }

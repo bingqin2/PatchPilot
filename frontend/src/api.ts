@@ -12,8 +12,23 @@ import type {
   TaskStatusFilter
 } from './types';
 
-export async function listTasks(status: TaskStatusFilter = 'ALL'): Promise<FixTask[]> {
-  const searchParams = new URLSearchParams({ limit: '50' });
+interface ListTasksOptions {
+  status?: TaskStatusFilter;
+  query?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export async function listTasks(options: TaskStatusFilter | ListTasksOptions = 'ALL'): Promise<FixTask[]> {
+  const normalizedOptions = typeof options === 'string' ? { status: options } : options;
+  const searchParams = new URLSearchParams({ limit: String(normalizedOptions.limit ?? 50) });
+  if (normalizedOptions.offset !== undefined) {
+    searchParams.set('offset', String(normalizedOptions.offset));
+  }
+  if (normalizedOptions.query?.trim()) {
+    searchParams.set('query', normalizedOptions.query.trim());
+  }
+  const status = normalizedOptions.status ?? 'ALL';
   if (status !== 'ALL') {
     searchParams.set('status', status);
   }

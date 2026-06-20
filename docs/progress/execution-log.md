@@ -1309,3 +1309,23 @@ Changes:
 Validation:
 
 - Documentation-only planning change; no runtime tests required.
+
+Implemented backend task search and offset pagination from `docs/plans/058-backend-task-search-pagination.md`.
+
+Changes:
+
+- Added `FixTaskListQuery` as the backend task-list query object.
+- Extended `GET /api/tasks` with optional `query` and `offset` parameters while preserving the existing list response shape.
+- Moved task-list filtering from controller stream filtering into `FixTaskService#listTasks(FixTaskListQuery)`.
+- Implemented equivalent query behavior for default in-memory tasks and MyBatis-backed task storage.
+- Kept exact status and repository filters, newest-first sorting, and offset/limit application after filtering.
+- Extended the frontend `listTasks()` helper to accept future `{ status, query, limit, offset }` options without changing the current dashboard UI behavior.
+- Documented backend task-list search support and the remaining dashboard wiring work.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=TaskControllerTests test`: first failed because `query` and `offset` were ignored, then passed after implementation, 28 tests run, 0 failures.
+- `mvn -pl PatchPilot -Dtest=InMemoryFixTaskServiceTests,MyBatisFixTaskServiceTests test`: passed after adding equivalent service coverage, 25 tests run, 0 failures.
+- `npm test` in `frontend/`: passed after adding API helper coverage for `{ status, query, limit, offset }`, 11 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed, 251 tests run, 0 failures.
+- `npm run build` in `frontend/`: passed, production build generated `dist/`.

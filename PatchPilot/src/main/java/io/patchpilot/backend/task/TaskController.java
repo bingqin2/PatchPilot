@@ -1,6 +1,7 @@
 package io.patchpilot.backend.task;
 
 import io.patchpilot.backend.common.response.ApiResponse;
+import io.patchpilot.backend.task.domain.bo.FixTaskListQuery;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.vo.FixTaskAuditSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskMetricsSummaryVo;
@@ -44,13 +45,15 @@ public class TaskController {
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<FixTaskVo>>> listTasks(
+            @RequestParam(required = false) String query,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String repositoryOwner,
             @RequestParam(required = false) String repositoryName,
-            @RequestParam(required = false) Integer limit
+            @RequestParam(required = false) Integer limit,
+            @RequestParam(required = false) Integer offset
     ) {
         try {
-            return ResponseEntity.ok(ApiResponse.ok(filteredTasks(status, repositoryOwner, repositoryName, limit)));
+            return ResponseEntity.ok(ApiResponse.ok(queryTasks(query, status, repositoryOwner, repositoryName, limit, offset)));
         } catch (IllegalArgumentException exception) {
             return ResponseEntity.badRequest().body(ApiResponse.fail(exception.getMessage()));
         }
@@ -129,15 +132,25 @@ public class TaskController {
         }
     }
 
-    private List<FixTaskVo> filteredTasks(String status, String repositoryOwner, String repositoryName, Integer limit) {
+    private List<FixTaskVo> queryTasks(
+            String query,
+            String status,
+            String repositoryOwner,
+            String repositoryName,
+            Integer limit,
+            Integer offset
+    ) {
         FixTaskStatus parsedStatus = parseStatus(status);
         int parsedLimit = parseLimit(limit);
-        return fixTaskService.listTasks().stream()
-                .filter(task -> parsedStatus == null || task.status() == parsedStatus)
-                .filter(task -> repositoryOwner == null || task.repositoryOwner().equals(repositoryOwner))
-                .filter(task -> repositoryName == null || task.repositoryName().equals(repositoryName))
-                .limit(parsedLimit)
-                .toList();
+        int parsedOffset = parseOffset(offset);
+        return fixTaskService.listTasks(new FixTaskListQuery(
+                blankToNull(query),
+                parsedStatus,
+                blankToNull(repositoryOwner),
+                blankToNull(repositoryName),
+                parsedLimit,
+                parsedOffset
+        ));
     }
 
     private static FixTaskStatus parseStatus(String status) {
@@ -153,11 +166,28 @@ public class TaskController {
 
     private static int parseLimit(Integer limit) {
         if (limit == null) {
-            return Integer.MAX_VALUE;
+            return 50;
         }
         if (limit < 1 || limit > 100) {
             throw new IllegalArgumentException("limit must be between 1 and 100");
         }
         return limit;
+    }
+
+    private static int parseOffset(Integer offset) {
+        if (offset == null) {
+            return 0;
+        }
+        if (offset < 0 || offset > 10000) {
+            throw new IllegalArgumentException("offset must be between 0 and 10000");
+        }
+        return offset;
+    }
+
+    private static String blankToNull(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.trim();
     }
 }
