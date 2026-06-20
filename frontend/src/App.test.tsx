@@ -434,6 +434,9 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(screen.getByText('Webhook secret Configured')).toBeInTheDocument();
   expect(screen.getByText('Queue attempts 3')).toBeInTheDocument();
   expect(screen.getByText('Queue')).toBeInTheDocument();
+  expect(screen.getByText('Queue has failures')).toBeInTheDocument();
+  expect(screen.getByText('1 failed item')).toBeInTheDocument();
+  expect(screen.getByText('1 running item')).toBeInTheDocument();
   expect(screen.getByText('1 delayed')).toBeInTheDocument();
   expect(screen.getByText('maven test command timed out')).toBeInTheDocument();
 

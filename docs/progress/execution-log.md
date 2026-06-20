@@ -1476,3 +1476,19 @@ Validation:
 - `npm test -- --run src/dashboard/components/ConfigurationPanel.test.tsx`: first failed because no health summary or issue rows existed, then passed after adding panel health evaluation and styles, 3 tests run, 0 failures.
 - `npm test` in `frontend/`: passed, 20 tests run, 0 failures.
 - `npm run build` in `frontend/`: passed, production build generated `dist/`.
+
+Implemented dashboard queue health hints from `docs/plans/067-dashboard-queue-health.md`.
+
+Changes:
+
+- Added `QueuePanel` health evaluation using existing queue summary data.
+- Rendered `Queue has failures`, `Queue delayed`, `Queue active`, and `Queue idle` states.
+- Added count details for failed, delayed, and running queue items.
+- Preserved the existing queue summary cards and queue row list.
+- Documented queue health hints in README and frontend design docs.
+
+Validation:
+
+- `npm test -- --run src/dashboard/components/QueuePanel.test.tsx`: first failed because queue health labels did not exist, then passed after adding health evaluation and styles, 4 tests run, 0 failures.
+- `npm test` in `frontend/`: passed, 24 tests run, 0 failures.
+- `npm run build` in `frontend/`: passed, production build generated `dist/`.
