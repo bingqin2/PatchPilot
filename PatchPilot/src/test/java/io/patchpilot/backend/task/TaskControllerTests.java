@@ -273,6 +273,66 @@ class TaskControllerTests {
     }
 
     @Test
+    void should_get_task_audit_summary_by_task_id() throws Exception {
+        FixTaskVo task = createTask("delivery-audit-summary");
+        fixTaskTimelineService.recordEvent(task.id(), FixTaskTimelineEventType.TASK_CREATED, "Task accepted");
+        fixTaskTimelineService.recordEvent(task.id(), FixTaskTimelineEventType.COMPLETED, "Task completed");
+        fixTaskTestRunService.recordTestRun(
+                task.id(),
+                "./mvnw test",
+                0,
+                "tests passed",
+                Instant.parse("2026-06-20T03:00:00Z"),
+                Instant.parse("2026-06-20T03:00:07Z")
+        );
+        fixTaskToolCallService.recordToolCall(
+                task.id(),
+                "DiffTool",
+                "repositoryDir=/tmp/workspace/repo",
+                "diff ok",
+                true,
+                Instant.parse("2026-06-20T03:00:08Z"),
+                Instant.parse("2026-06-20T03:00:09Z")
+        );
+        fixTaskModelCallService.recordModelCall(
+                task.id(),
+                "openai",
+                "gpt-5.5",
+                "Fix issue",
+                "Changed demo file",
+                120,
+                80,
+                true,
+                null,
+                Instant.parse("2026-06-20T03:00:10Z"),
+                Instant.parse("2026-06-20T03:00:14Z")
+        );
+
+        mockMvc.perform(get("/api/tasks/{id}/summary", task.id()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.task.id").value(task.id()))
+                .andExpect(jsonPath("$.data.task.status").value("PENDING"))
+                .andExpect(jsonPath("$.data.timelineEventCount").value(2))
+                .andExpect(jsonPath("$.data.testRunCount").value(1))
+                .andExpect(jsonPath("$.data.toolCallCount").value(1))
+                .andExpect(jsonPath("$.data.modelCallCount").value(1))
+                .andExpect(jsonPath("$.data.totalModelTokens").value(200))
+                .andExpect(jsonPath("$.data.latestTimelineEvent.eventType").value("COMPLETED"))
+                .andExpect(jsonPath("$.data.latestTimelineEvent.message").value("Task completed"))
+                .andExpect(jsonPath("$.data.latestTestRunExitCode").value(0))
+                .andExpect(jsonPath("$.data.latestTestRunDurationMs").value(7000));
+    }
+
+    @Test
+    void should_return_404_for_missing_task_audit_summary() throws Exception {
+        mockMvc.perform(get("/api/tasks/{id}/summary", "missing-task"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("Task not found"));
+    }
+
+    @Test
     void should_cancel_pending_task() throws Exception {
         FixTaskVo task = createTask("delivery-cancel-http");
 

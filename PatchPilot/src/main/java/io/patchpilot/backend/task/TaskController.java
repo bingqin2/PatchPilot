@@ -2,12 +2,14 @@ package io.patchpilot.backend.task;
 
 import io.patchpilot.backend.common.response.ApiResponse;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
+import io.patchpilot.backend.task.domain.vo.FixTaskAuditSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskMetricsSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskModelCallVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskTestRunVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskTimelineEventVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskToolCallVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
+import io.patchpilot.backend.task.service.FixTaskAuditSummaryService;
 import io.patchpilot.backend.task.service.FixTaskControlService;
 import io.patchpilot.backend.task.service.FixTaskMetricsService;
 import io.patchpilot.backend.task.service.FixTaskModelCallService;
@@ -38,6 +40,7 @@ public class TaskController {
     private final FixTaskModelCallService fixTaskModelCallService;
     private final FixTaskControlService fixTaskControlService;
     private final FixTaskMetricsService fixTaskMetricsService;
+    private final FixTaskAuditSummaryService fixTaskAuditSummaryService;
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<FixTaskVo>>> listTasks(
@@ -62,6 +65,13 @@ public class TaskController {
     public ResponseEntity<ApiResponse<FixTaskVo>> getTask(@PathVariable String id) {
         return fixTaskService.findTask(id)
                 .map(task -> ResponseEntity.ok(ApiResponse.ok(task)))
+                .orElseGet(() -> ResponseEntity.status(404).body(ApiResponse.fail("Task not found")));
+    }
+
+    @GetMapping("/{id}/summary")
+    public ResponseEntity<ApiResponse<FixTaskAuditSummaryVo>> getTaskAuditSummary(@PathVariable String id) {
+        return fixTaskAuditSummaryService.summary(id)
+                .map(summary -> ResponseEntity.ok(ApiResponse.ok(summary)))
                 .orElseGet(() -> ResponseEntity.status(404).body(ApiResponse.fail("Task not found")));
     }
 

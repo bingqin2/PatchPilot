@@ -1106,3 +1106,17 @@ Validation:
 
 - `mvn -pl PatchPilot -Dtest=TaskControllerTests test`: first failed because the task list endpoint ignored query parameters and returned HTTP `200` for invalid filters, then passed after controller filtering and validation, 24 tests run, 0 failures, 0 errors.
 - `mvn -pl PatchPilot test`: passed, 245 tests run, 0 failures, 0 errors.
+
+Implemented task detail audit summary API from `docs/plans/044-task-detail-audit-summary-api.md`.
+
+Changes:
+
+- Added `FixTaskAuditSummaryVo` for single-task audit summaries.
+- Added `FixTaskAuditSummaryService` and `DefaultFixTaskAuditSummaryService` to aggregate existing task, timeline, test-run, tool-call, and model-call records.
+- Exposed `GET /api/tasks/{taskId}/summary`.
+- Documented the summary endpoint in README.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=TaskControllerTests test`: first failed because `/api/tasks/{taskId}/summary` did not exist, then passed after adding the summary service and controller route, 26 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot test`: passed, 247 tests run, 0 failures, 0 errors.
