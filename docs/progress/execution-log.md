@@ -1078,3 +1078,17 @@ Validation:
 - `mvn -pl PatchPilot -Dtest=GitHubIssueCommentClientTests test`: first failed because HTTP `403` messages only included the status code, then passed after adding the permission hint, 7 tests run, 0 failures, 0 errors.
 - `mvn -pl PatchPilot -Dtest=GitHubIssueCommentClientTests,GitHubWebhookServiceTests,FixTaskWorkerTests test`: passed, 18 tests run, 0 failures, 0 errors.
 - `mvn -pl PatchPilot test`: passed, 239 tests run, 0 failures, 0 errors.
+
+Implemented task metrics summary API from `docs/plans/042-task-metrics-summary-api.md`.
+
+Changes:
+
+- Added `FixTaskMetricsSummaryVo` for task-level operational metrics.
+- Added `FixTaskMetricsService` and `DefaultFixTaskMetricsService` to aggregate status counts, completion/failure rates, completion duration, and model token usage from existing task and model-call records.
+- Exposed `GET /api/tasks/metrics/summary`.
+- Documented the metrics endpoint in README.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=DefaultFixTaskMetricsServiceTests,TaskControllerTests test`: first failed because metrics service classes did not exist, then failed on a non-deterministic same-millisecond duration assertion, then passed after using fixed test data, 23 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot test`: passed, 242 tests run, 0 failures, 0 errors.

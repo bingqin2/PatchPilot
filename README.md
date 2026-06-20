@@ -151,6 +151,12 @@ curl http://127.0.0.1:8080/api/task-queue/summary
 curl http://127.0.0.1:8080/api/task-queue/items
 ```
 
+Task metrics:
+
+```bash
+curl http://127.0.0.1:8080/api/tasks/metrics/summary
+```
+
 ## Backend Tests
 
 Run all backend tests:
