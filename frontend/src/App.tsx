@@ -1,0 +1,343 @@
+import { AlertCircle, CheckCircle2, CircleDot, ExternalLink, GitPullRequest, RefreshCw, Terminal } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  getMetricsSummary,
+  getModelCalls,
+  getTaskSummary,
+  getTestRuns,
+  getTimeline,
+  getToolCalls,
+  listTasks
+} from './api';
+import type {
+  FixTask,
+  FixTaskAuditSummary,
+  FixTaskMetricsSummary,
+  FixTaskModelCall,
+  FixTaskTestRun,
+  FixTaskTimelineEvent,
+  FixTaskToolCall,
+  TaskStatus
+} from './types';
+
+interface TaskDetailState {
+  summary: FixTaskAuditSummary | null;
+  timeline: FixTaskTimelineEvent[];
+  testRuns: FixTaskTestRun[];
+  toolCalls: FixTaskToolCall[];
+  modelCalls: FixTaskModelCall[];
+}
+
+const emptyDetail: TaskDetailState = {
+  summary: null,
+  timeline: [],
+  testRuns: [],
+  toolCalls: [],
+  modelCalls: []
+};
+
+export default function App() {
+  const [tasks, setTasks] = useState<FixTask[]>([]);
+  const [metrics, setMetrics] = useState<FixTaskMetricsSummary | null>(null);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [detail, setDetail] = useState<TaskDetailState>(emptyDetail);
+  const [loading, setLoading] = useState(true);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const selectedTask = useMemo(
+    () => tasks.find((task) => task.id === selectedTaskId) ?? tasks[0] ?? null,
+    [selectedTaskId, tasks]
+  );
+
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [taskList, metricsSummary] = await Promise.all([listTasks(), getMetricsSummary()]);
+      setTasks(taskList);
+      setMetrics(metricsSummary);
+      setSelectedTaskId((current) => current ?? taskList[0]?.id ?? null);
+    } catch (caught) {
+      setError(errorMessage(caught));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  useEffect(() => {
+    if (!selectedTask) {
+      setDetail(emptyDetail);
+      return;
+    }
+
+    let cancelled = false;
+    setDetailLoading(true);
+    setError(null);
+    Promise.all([
+      getTaskSummary(selectedTask.id),
+      getTimeline(selectedTask.id),
+      getTestRuns(selectedTask.id),
+      getToolCalls(selectedTask.id),
+      getModelCalls(selectedTask.id)
+    ])
+      .then(([summary, timeline, testRuns, toolCalls, modelCalls]) => {
+        if (!cancelled) {
+          setDetail({ summary, timeline, testRuns, toolCalls, modelCalls });
+        }
+      })
+      .catch((caught) => {
+        if (!cancelled) {
+          setError(errorMessage(caught));
+          setDetail(emptyDetail);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setDetailLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedTask]);
+
+  return (
+    <main className="app-shell">
+      <header className="top-bar">
+        <div>
+          <p className="eyebrow">Self-hosted agent control plane</p>
+          <h1>PatchPilot Operations</h1>
+        </div>
+        <button className="icon-button" type="button" onClick={() => void refresh()} aria-label="Refresh dashboard">
+          <RefreshCw size={17} />
+          Refresh
+        </button>
+      </header>
+
+      {error ? (
+        <section className="alert" role="alert">
+          <AlertCircle size={18} />
+          <span>{error}</span>
+        </section>
+      ) : null}
+
+      <section className="metrics-grid" aria-label="Task metrics">
+        <MetricCard label="Tasks" value={metrics?.totalCount ?? 0} detail={`${metrics?.completedCount ?? 0} completed`} />
+        <MetricCard label="Failed" value={metrics?.failedCount ?? 0} detail={`${percent(metrics?.failureRate)} failure rate`} />
+        <MetricCard label="Completion" value={percent(metrics?.completionRate)} detail={`${duration(metrics?.averageCompletionDurationMs)} avg`} />
+        <MetricCard label="Test pass" value={percent(metrics?.testPassRate)} detail={`${metrics?.passedTestRunCount ?? 0}/${metrics?.testRunCount ?? 0} runs`} />
+        <MetricCard label="Model tokens" value={metrics?.totalModelTokens ?? 0} detail={`${metrics?.averageModelTokensPerCompletedTask ?? 0} avg completed`} />
+      </section>
+
+      <section className="workspace-grid">
+        <section className="panel task-list-panel">
+          <div className="panel-header">
+            <div>
+              <h2>Tasks</h2>
+              <p>{loading ? 'Loading latest tasks' : `${tasks.length} visible tasks`}</p>
+            </div>
+          </div>
+          <div className="task-list">
+            {tasks.map((task) => (
+              <button
+                className={task.id === selectedTask?.id ? 'task-row task-row-active' : 'task-row'}
+                key={task.id}
+                type="button"
+                onClick={() => setSelectedTaskId(task.id)}
+              >
+                <span className={`status-pill status-${task.status.toLowerCase().replace('_', '-')}`}>
+                  {statusIcon(task.status)}
+                  {task.status}
+                </span>
+                <span className="task-repo">{task.repositoryOwner}/{task.repositoryName}</span>
+                <span className="task-issue">#{task.issueNumber}</span>
+                <span className="task-comment">{task.triggerComment}</span>
+                {task.failureReason ? <span className="task-failure">{task.failureReason}</span> : null}
+                {task.pullRequestUrl ? (
+                  <a className="task-link" href={task.pullRequestUrl} target="_blank" rel="noreferrer">
+                    <GitPullRequest size={14} />
+                    PR #{pullRequestNumber(task.pullRequestUrl)}
+                  </a>
+                ) : null}
+              </button>
+            ))}
+            {!loading && tasks.length === 0 ? <p className="empty-state">No tasks yet.</p> : null}
+          </div>
+        </section>
+
+        <TaskDetailPanel task={selectedTask} detail={detail} loading={detailLoading} />
+      </section>
+    </main>
+  );
+}
+
+function TaskDetailPanel({ task, detail, loading }: { task: FixTask | null; detail: TaskDetailState; loading: boolean }) {
+  if (!task) {
+    return (
+      <section className="panel detail-panel">
+        <h2>Task Detail</h2>
+        <p className="empty-state">Select a task to inspect execution records.</p>
+      </section>
+    );
+  }
+
+  return (
+    <section className="panel detail-panel">
+      <div className="panel-header">
+        <div>
+          <h2>{task.repositoryOwner}/{task.repositoryName} #{task.issueNumber}</h2>
+          <p>{task.id}</p>
+        </div>
+        {task.pullRequestUrl ? (
+          <a className="external-link" href={task.pullRequestUrl} target="_blank" rel="noreferrer">
+            Open PR
+            <ExternalLink size={14} />
+          </a>
+        ) : null}
+      </div>
+
+      <div className="detail-summary">
+        <SummaryItem label="Timeline" value={detail.summary?.timelineEventCount ?? 0} />
+        <SummaryItem label="Tests" value={detail.summary?.testRunCount ?? 0} />
+        <SummaryItem label="Tools" value={detail.summary?.toolCallCount ?? 0} />
+        <SummaryItem label="Models" value={detail.summary?.modelCallCount ?? 0} />
+        <SummaryItem label="Tokens" value={detail.summary?.totalModelTokens ?? 0} />
+      </div>
+
+      {detail.summary?.latestTimelineEvent ? (
+        <div className="latest-event">
+          <span>Latest event</span>
+          <strong>{detail.summary.latestTimelineEvent.eventType}</strong>
+          <p>{detail.summary.latestTimelineEvent.message}</p>
+        </div>
+      ) : null}
+
+      {loading ? <p className="empty-state">Loading task records...</p> : null}
+
+      <section className="detail-section">
+        <h3>Timeline</h3>
+        <div className="timeline">
+          {detail.timeline.map((event) => (
+            <div className="timeline-item" key={event.id}>
+              <span className="timeline-dot" />
+              <div>
+                <strong>{event.eventType}</strong>
+                <p>{event.message}</p>
+              </div>
+              <time>{compactTime(event.createdAt)}</time>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="detail-section">
+        <h3>Maven Test Output</h3>
+        {detail.testRuns.map((run) => (
+          <div className="test-run" key={run.id}>
+            <div className="test-run-header">
+              <span className={run.exitCode === 0 ? 'result-pass' : 'result-fail'}>exit {run.exitCode}</span>
+              <span>{run.command}</span>
+              <span>{duration(run.durationMs)}</span>
+            </div>
+            <pre>{run.output}</pre>
+          </div>
+        ))}
+      </section>
+
+      <section className="detail-section split-section">
+        <div>
+          <h3>Tool Calls</h3>
+          {detail.toolCalls.map((call) => (
+            <RecordLine key={call.id} title={call.toolName} meta={call.success ? 'success' : 'failed'} body={call.outputSummary} />
+          ))}
+        </div>
+        <div>
+          <h3>Model Calls</h3>
+          {detail.modelCalls.map((call) => (
+            <RecordLine key={call.id} title={call.model} meta={`${call.totalTokens} tokens`} body={call.responseSummary} />
+          ))}
+        </div>
+      </section>
+    </section>
+  );
+}
+
+function MetricCard({ label, value, detail }: { label: string; value: string | number; detail: string }) {
+  return (
+    <div className="metric-card">
+      <span>{label}</span>
+      <strong>{value}</strong>
+      <p>{detail}</p>
+    </div>
+  );
+}
+
+function SummaryItem({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div>
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  );
+}
+
+function RecordLine({ title, meta, body }: { title: string; meta: string; body: string }) {
+  return (
+    <div className="record-line">
+      <div>
+        <strong>{title}</strong>
+        <span>{meta}</span>
+      </div>
+      <p>{body}</p>
+    </div>
+  );
+}
+
+function statusIcon(status: TaskStatus) {
+  if (status === 'COMPLETED') {
+    return <CheckCircle2 size={14} />;
+  }
+  if (status === 'FAILED' || status === 'CANCELLED') {
+    return <AlertCircle size={14} />;
+  }
+  if (status === 'RUNNING_TESTS') {
+    return <Terminal size={14} />;
+  }
+  return <CircleDot size={14} />;
+}
+
+function percent(value?: number) {
+  return `${Math.round((value ?? 0) * 100)}%`;
+}
+
+function duration(value?: number | null) {
+  if (!value) {
+    return '0 ms';
+  }
+  if (value < 1000) {
+    return `${value} ms`;
+  }
+  return `${(value / 1000).toFixed(1)}s`;
+}
+
+function compactTime(value: string) {
+  return new Intl.DateTimeFormat(undefined, {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  }).format(new Date(value));
+}
+
+function pullRequestNumber(url: string) {
+  return url.split('/').filter(Boolean).at(-1) ?? 'link';
+}
+
+function errorMessage(caught: unknown) {
+  return caught instanceof Error ? caught.message : 'Dashboard request failed';
+}

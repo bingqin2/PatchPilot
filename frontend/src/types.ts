@@ -1,0 +1,106 @@
+export type TaskStatus = 'PENDING' | 'RUNNING' | 'RUNNING_TESTS' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
+
+export interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  message: string | null;
+}
+
+export interface FixTask {
+  id: string;
+  repositoryOwner: string;
+  repositoryName: string;
+  issueNumber: number;
+  installationId: number;
+  triggerUser: string;
+  triggerComment: string;
+  deliveryId: string;
+  commentId: number;
+  status: TaskStatus;
+  failureReason: string | null;
+  createdAt: string;
+  pullRequestUrl: string | null;
+  completedAt: string | null;
+  updatedAt: string;
+  statusCommentId: number | null;
+  statusCommentUrl: string | null;
+}
+
+export interface FixTaskMetricsSummary {
+  totalCount: number;
+  pendingCount: number;
+  runningCount: number;
+  runningTestsCount: number;
+  completedCount: number;
+  failedCount: number;
+  cancelledCount: number;
+  completionRate: number;
+  failureRate: number;
+  averageCompletionDurationMs: number;
+  totalModelTokens: number;
+  averageModelTokensPerCompletedTask: number;
+  testRunCount: number;
+  passedTestRunCount: number;
+  failedTestRunCount: number;
+  testPassRate: number;
+}
+
+export interface FixTaskAuditSummary {
+  task: FixTask;
+  timelineEventCount: number;
+  testRunCount: number;
+  toolCallCount: number;
+  modelCallCount: number;
+  totalModelTokens: number;
+  latestTimelineEvent: FixTaskTimelineEvent | null;
+  latestTestRunExitCode: number | null;
+  latestTestRunDurationMs: number | null;
+}
+
+export interface FixTaskTimelineEvent {
+  id: string;
+  taskId: string;
+  eventType: string;
+  message: string;
+  createdAt: string;
+}
+
+export interface FixTaskTestRun {
+  id: string;
+  taskId: string;
+  command: string;
+  exitCode: number;
+  output: string;
+  startedAt: string;
+  finishedAt: string;
+  durationMs: number;
+}
+
+export interface FixTaskToolCall {
+  id: string;
+  taskId: string;
+  toolName: string;
+  inputSummary: string;
+  outputSummary: string;
+  success: boolean;
+  startedAt: string;
+  finishedAt: string;
+  durationMs: number;
+}
+
+export interface FixTaskModelCall {
+  id: string;
+  taskId: string;
+  provider: string;
+  model: string;
+  promptSummary: string;
+  responseSummary: string;
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+  success: boolean;
+  errorMessage: string | null;
+  startedAt: string;
+  finishedAt: string;
+  durationMs: number;
+}
