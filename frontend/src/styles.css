@@ -212,6 +212,35 @@ h3 {
   color: #ffffff;
 }
 
+.task-search {
+  border-bottom: 1px solid #edf1f5;
+  display: grid;
+  gap: 6px;
+  padding: 12px 16px;
+}
+
+.task-search label {
+  color: #52606e;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.task-search input {
+  background: #ffffff;
+  border: 1px solid #cfd9e2;
+  border-radius: 6px;
+  color: #17202a;
+  font: inherit;
+  min-height: 36px;
+  padding: 0 10px;
+  width: 100%;
+}
+
+.task-search input:focus {
+  border-color: #187b78;
+  outline: 2px solid rgba(24, 123, 120, 0.16);
+}
+
 .task-row {
   background: transparent;
   border: 0;

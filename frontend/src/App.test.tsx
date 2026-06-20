@@ -436,6 +436,22 @@ test('filters tasks by status with backend query parameters', async () => {
   expect(screen.getByText('Select a task to inspect execution records.')).toBeInTheDocument();
 });
 
+test('searches the currently loaded task list locally', async () => {
+  const user = userEvent.setup();
+  const fetchMock = vi.mocked(fetch);
+
+  render(<App />);
+
+  expect(await screen.findByText('/agent fix replace docs/demo.md PatchPilot smoke test')).toBeInTheDocument();
+
+  await user.type(screen.getByRole('searchbox', { name: 'Search tasks' }), 'broken');
+
+  expect(screen.queryByText('/agent fix replace docs/demo.md PatchPilot smoke test')).not.toBeInTheDocument();
+  expect(screen.getByText('/agent fix replace docs/demo.md broken')).toBeInTheDocument();
+  expect(await screen.findByText('Task failed')).toBeInTheDocument();
+  expect(fetchMock).not.toHaveBeenCalledWith(expect.stringContaining('query='));
+});
+
 test('shows empty states for missing task detail records', async () => {
   const user = userEvent.setup();
 
