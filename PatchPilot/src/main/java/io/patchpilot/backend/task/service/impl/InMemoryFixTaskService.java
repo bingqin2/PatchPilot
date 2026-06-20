@@ -2,6 +2,7 @@ package io.patchpilot.backend.task.service.impl;
 
 import io.patchpilot.backend.task.domain.bo.CreateFixTaskCommand;
 import io.patchpilot.backend.task.domain.bo.FixTaskCreationResult;
+import io.patchpilot.backend.task.domain.bo.FixTaskListQuery;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import io.patchpilot.backend.task.service.FixTaskService;
@@ -140,8 +141,19 @@ public class InMemoryFixTaskService implements FixTaskService {
 
     @Override
     public List<FixTaskVo> listTasks() {
+        return listTasks(FixTaskListQuery.all());
+    }
+
+    @Override
+    public List<FixTaskVo> listTasks(FixTaskListQuery query) {
         return tasks.values().stream()
                 .sorted(Comparator.comparing(FixTaskVo::createdAt).reversed())
+                .filter(task -> query.status() == null || task.status() == query.status())
+                .filter(task -> query.repositoryOwner() == null || task.repositoryOwner().equals(query.repositoryOwner()))
+                .filter(task -> query.repositoryName() == null || task.repositoryName().equals(query.repositoryName()))
+                .filter(task -> matchesQuery(task, query.query()))
+                .skip(query.offset())
+                .limit(query.limit())
                 .toList();
     }
 
@@ -222,5 +234,25 @@ public class InMemoryFixTaskService implements FixTaskService {
             );
         });
         return updatedTask;
+    }
+
+    private static boolean matchesQuery(FixTaskVo task, String query) {
+        if (query == null || query.isBlank()) {
+            return true;
+        }
+        String normalizedQuery = query.toLowerCase();
+        String searchable = String.join(
+                " ",
+                task.id(),
+                task.repositoryOwner(),
+                task.repositoryName(),
+                String.valueOf(task.issueNumber()),
+                task.triggerUser(),
+                task.triggerComment(),
+                task.deliveryId(),
+                task.failureReason() == null ? "" : task.failureReason(),
+                task.pullRequestUrl() == null ? "" : task.pullRequestUrl()
+        ).toLowerCase();
+        return searchable.contains(normalizedQuery);
     }
 }

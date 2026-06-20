@@ -1,12 +1,18 @@
 package io.patchpilot.backend.task.service;
 
+import com.baomidou.mybatisplus.core.conditions.Wrapper;
+import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import io.patchpilot.backend.task.domain.bo.CreateFixTaskCommand;
 import io.patchpilot.backend.task.domain.bo.FixTaskCreationResult;
+import io.patchpilot.backend.task.domain.bo.FixTaskListQuery;
 import io.patchpilot.backend.task.domain.entity.FixTaskEntity;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import io.patchpilot.backend.task.mapper.FixTaskMapper;
 import io.patchpilot.backend.task.service.impl.MyBatisFixTaskService;
+import org.apache.ibatis.builder.MapperBuilderAssistant;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -25,6 +31,14 @@ class MyBatisFixTaskServiceTests {
 
     private final FixTaskMapper fixTaskMapper = mock(FixTaskMapper.class);
     private final FixTaskService fixTaskService = new MyBatisFixTaskService(fixTaskMapper);
+
+    @BeforeAll
+    static void initializeMyBatisPlusMetadata() {
+        TableInfoHelper.initTableInfo(
+                new MapperBuilderAssistant(new MybatisConfiguration(), ""),
+                FixTaskEntity.class
+        );
+    }
 
     @Test
     void should_create_pending_task() {
@@ -197,6 +211,32 @@ class MyBatisFixTaskServiceTests {
         assertThat(tasks)
                 .extracting(FixTaskVo::id)
                 .containsExactly("task-newer", "task-older");
+    }
+
+    @Test
+    void should_list_tasks_with_query_status_limit_and_offset() {
+        FixTaskEntity olderMatchingTask = entity("task-older", "delivery-query-older", FixTaskStatus.FAILED,
+                "maven failed because search target", Instant.parse("2026-06-19T01:00:00Z"));
+        FixTaskEntity newerMatchingTask = entity("task-newer", "delivery-query-newer", FixTaskStatus.FAILED,
+                "maven failed because search target", Instant.parse("2026-06-19T02:00:00Z"));
+        when(fixTaskMapper.selectList(any())).thenReturn(List.of(olderMatchingTask, newerMatchingTask));
+
+        List<FixTaskVo> tasks = fixTaskService.listTasks(new FixTaskListQuery(
+                "search target",
+                FixTaskStatus.FAILED,
+                "octocat",
+                "hello-world",
+                1,
+                1
+        ));
+
+        assertThat(tasks)
+                .extracting(FixTaskVo::id)
+                .containsExactly("task-newer", "task-older");
+        ArgumentCaptor<Wrapper<FixTaskEntity>> wrapperCaptor = ArgumentCaptor.forClass(Wrapper.class);
+        verify(fixTaskMapper).selectList(wrapperCaptor.capture());
+        assertThat(wrapperCaptor.getValue().getSqlSegment())
+                .contains("LIMIT 1, 1");
     }
 
     @Test

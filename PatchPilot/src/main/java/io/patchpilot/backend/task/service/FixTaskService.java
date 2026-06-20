@@ -2,6 +2,7 @@ package io.patchpilot.backend.task.service;
 
 import io.patchpilot.backend.task.domain.bo.CreateFixTaskCommand;
 import io.patchpilot.backend.task.domain.bo.FixTaskCreationResult;
+import io.patchpilot.backend.task.domain.bo.FixTaskListQuery;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 
 import java.util.List;
@@ -38,6 +39,10 @@ public interface FixTaskService {
     FixTaskVo attachStatusComment(String id, long statusCommentId, String statusCommentUrl);
 
     List<FixTaskVo> listTasks();
+
+    default List<FixTaskVo> listTasks(FixTaskListQuery query) {
+        return listTasks();
+    }
 
     Optional<FixTaskVo> findTask(String id);
 

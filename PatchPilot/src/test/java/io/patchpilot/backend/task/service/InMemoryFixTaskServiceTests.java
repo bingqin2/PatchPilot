@@ -1,10 +1,13 @@
 package io.patchpilot.backend.task.service;
 
 import io.patchpilot.backend.task.domain.bo.CreateFixTaskCommand;
+import io.patchpilot.backend.task.domain.bo.FixTaskListQuery;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import io.patchpilot.backend.task.service.impl.InMemoryFixTaskService;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -136,6 +139,29 @@ class InMemoryFixTaskServiceTests {
                 .get()
                 .extracting(FixTaskVo::id)
                 .isEqualTo(task.id());
+    }
+
+    @Test
+    void should_list_tasks_with_query_status_limit_and_offset() {
+        FixTaskVo olderMatchingTask = createTask("delivery-query-older");
+        FixTaskVo newerMatchingTask = createTask("delivery-query-newer");
+        FixTaskVo skippedTask = createTask("delivery-query-skipped");
+        fixTaskService.markFailed(olderMatchingTask.id(), "maven failed because search target");
+        fixTaskService.markFailed(newerMatchingTask.id(), "maven failed because search target");
+        fixTaskService.markFailed(skippedTask.id(), "different failure");
+
+        List<FixTaskVo> tasks = fixTaskService.listTasks(new FixTaskListQuery(
+                "search target",
+                FixTaskStatus.FAILED,
+                "octocat",
+                "hello-world",
+                1,
+                1
+        ));
+
+        assertThat(tasks)
+                .extracting(FixTaskVo::id)
+                .containsExactly(olderMatchingTask.id());
     }
 
     @Test

@@ -165,6 +165,7 @@ curl http://127.0.0.1:8080/api/tasks/metrics/summary
 The React dashboard lives in `frontend/` and calls the backend through Vite's `/api` proxy.
 It includes task metrics, status filters backed by `GET /api/tasks?status=...`, local task search over the currently loaded list, task creation/update times, GitHub Issue, status comment, and Pull Request links, task detail summaries, timeline events, test runs, tool calls and model calls with durations, empty states for missing detail records, task control actions for cancel/retry, and a read-only queue panel backed by `/api/task-queue/*`.
 The page coordinator is `frontend/src/App.tsx`; reusable dashboard UI lives under `frontend/src/dashboard/components/`, with shared formatting helpers in `frontend/src/dashboard/format.ts`.
+The backend task list API also accepts `query` and `offset` for full-history search and pagination preparation, while the current dashboard still applies search locally to the loaded task list.
 
 ```bash
 cd frontend
@@ -213,7 +214,7 @@ PatchPilot must not:
 - Maven repositories are the first supported target.
 - The current runtime is single-process; API and worker separation is future work.
 - The React dashboard does not create tasks or merge Pull Requests.
-- The React dashboard search is local to the currently loaded task list; backend `GET /api/tasks?query=...` search is future work.
+- The React dashboard search is local to the currently loaded task list; wiring the dashboard search input to backend `GET /api/tasks?query=...` is future work.
 - Temporary Cloudflare URLs are for local testing only.
 
 ## Development Workflow

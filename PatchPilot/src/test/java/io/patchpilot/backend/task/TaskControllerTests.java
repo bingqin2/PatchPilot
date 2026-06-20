@@ -90,6 +90,35 @@ class TaskControllerTests {
     }
 
     @Test
+    void should_search_tasks_and_apply_offset_after_filtering() throws Exception {
+        FixTaskVo olderMatchingTask = createTask(command("octocat", "hello-world", "delivery-search-older"));
+        FixTaskVo newerMatchingTask = createTask(command("octocat", "hello-world", "delivery-search-newer"));
+        FixTaskVo skippedTask = createTask(command("octocat", "hello-world", "delivery-search-skipped"));
+        fixTaskService.markFailed(olderMatchingTask.id(), "maven failed because search target");
+        fixTaskService.markFailed(newerMatchingTask.id(), "maven failed because search target");
+        fixTaskService.markFailed(skippedTask.id(), "different failure");
+
+        mockMvc.perform(get("/api/tasks")
+                        .param("query", "search target")
+                        .param("status", "FAILED")
+                        .param("limit", "1")
+                        .param("offset", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].id").value(olderMatchingTask.id()))
+                .andExpect(jsonPath("$.data[0].failureReason").value("maven failed because search target"));
+    }
+
+    @Test
+    void should_return_bad_request_for_invalid_task_list_offset() throws Exception {
+        mockMvc.perform(get("/api/tasks").param("offset", "-1"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("offset must be between 0 and 10000"));
+    }
+
+    @Test
     void should_return_bad_request_for_invalid_task_list_limit() throws Exception {
         mockMvc.perform(get("/api/tasks").param("limit", "0"))
                 .andExpect(status().isBadRequest())
