@@ -19,7 +19,7 @@ const completedTask = {
   completedAt: '2026-06-20T01:01:00Z',
   updatedAt: '2026-06-20T01:01:00Z',
   statusCommentId: null,
-  statusCommentUrl: null
+  statusCommentUrl: 'https://github.com/bingqin2/PatchPilot/issues/1#issuecomment-4756084894'
 };
 
 const failedTask = {
@@ -345,6 +345,16 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(issueLinks[0]).toHaveAttribute('href', 'https://github.com/bingqin2/PatchPilot/issues/1');
   expect(issueLinks[1]).toHaveAttribute('href', 'https://github.com/bingqin2/PatchPilot/issues/2');
   expect(issueLinks[2]).toHaveAttribute('href', 'https://github.com/bingqin2/PatchPilot/issues/1');
+  const statusCommentLinks = screen.getAllByRole('link', { name: 'Status Comment' });
+  expect(statusCommentLinks).toHaveLength(2);
+  expect(statusCommentLinks[0]).toHaveAttribute(
+    'href',
+    'https://github.com/bingqin2/PatchPilot/issues/1#issuecomment-4756084894'
+  );
+  expect(statusCommentLinks[1]).toHaveAttribute(
+    'href',
+    'https://github.com/bingqin2/PatchPilot/issues/1#issuecomment-4756084894'
+  );
 
   expect(screen.getByText('Completion')).toBeInTheDocument();
   expect(screen.getByText('50%')).toBeInTheDocument();

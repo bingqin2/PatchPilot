@@ -46,6 +46,12 @@ export function TaskDetailPanel({
             Open Issue
             <ExternalLink size={14} />
           </a>
+          {task.statusCommentUrl ? (
+            <a className="external-link" href={task.statusCommentUrl} target="_blank" rel="noreferrer">
+              Status Comment
+              <ExternalLink size={14} />
+            </a>
+          ) : null}
           {canCancel ? (
             <button
               className="secondary-button danger-button"

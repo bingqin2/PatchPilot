@@ -1225,3 +1225,16 @@ Validation:
 
 - `npm test` in `frontend/`: passed, 6 tests run, 0 failures.
 - `npm run build` in `frontend/`: passed, production build generated `dist/`.
+
+Implemented dashboard status comment links from `docs/plans/052-dashboard-status-comment-links.md`.
+
+Changes:
+
+- Added frontend coverage for optional task `statusCommentUrl` links.
+- Rendered `Status Comment` links in task rows when a task exposes a status comment URL.
+- Rendered `Status Comment` in the selected task detail action area when available.
+- Documented dashboard status comment links in README.
+
+Validation:
+
+- `npm test` in `frontend/`: first failed because `Status Comment` links were not rendered, then passed after implementation, 6 tests run, 0 failures.
