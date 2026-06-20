@@ -1210,3 +1210,18 @@ Validation:
 
 - `npm test` in `frontend/`: first failed because no `Open Issue` links existed, then passed after implementation, 6 tests run, 0 failures.
 - `npm run build` in `frontend/`: passed, production build generated `dist/`.
+
+Implemented dashboard component extraction from `docs/plans/051-dashboard-component-extraction.md`.
+
+Changes:
+
+- Kept `frontend/src/App.tsx` as the dashboard data-loading, selection, and task-action coordinator.
+- Extracted task list, task detail, queue panel, metric card, summary item, and record-line rendering into `frontend/src/dashboard/components/`.
+- Moved dashboard formatting helpers into `frontend/src/dashboard/format.ts`.
+- Moved selected-task detail state shape and empty state into `frontend/src/dashboard/types.ts`.
+- Documented the dashboard component boundary in README.
+
+Validation:
+
+- `npm test` in `frontend/`: passed, 6 tests run, 0 failures.
+- `npm run build` in `frontend/`: passed, production build generated `dist/`.

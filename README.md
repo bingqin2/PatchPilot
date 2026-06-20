@@ -164,6 +164,7 @@ curl http://127.0.0.1:8080/api/tasks/metrics/summary
 
 The React dashboard lives in `frontend/` and calls the backend through Vite's `/api` proxy.
 It includes task metrics, status filters backed by `GET /api/tasks?status=...`, GitHub Issue and Pull Request links, task detail summaries, timeline events, test runs, tool calls, model calls, task control actions for cancel/retry, and a read-only queue panel backed by `/api/task-queue/*`.
+The page coordinator is `frontend/src/App.tsx`; reusable dashboard UI lives under `frontend/src/dashboard/components/`, with shared formatting helpers in `frontend/src/dashboard/format.ts`.
 
 ```bash
 cd frontend
