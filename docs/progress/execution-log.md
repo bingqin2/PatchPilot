@@ -1180,3 +1180,19 @@ Validation:
 
 - `npm test` in `frontend/`: first failed because `Cancel task` and `Retry task` controls did not exist, then passed after implementation, 5 tests run, 0 failures.
 - `npm run build` in `frontend/`: passed, production build generated `dist/`.
+
+Implemented dashboard queue observability from `docs/plans/049-dashboard-queue-observability.md`.
+
+Changes:
+
+- Added frontend queue types for queue summaries and queue items.
+- Added API helpers for `/api/task-queue/summary` and `/api/task-queue/items`.
+- Loaded queue data during dashboard refresh.
+- Added a read-only Queue panel showing pending, available, delayed, running, failed, and cancelled counts.
+- Rendered queue item id, task id, status, attempt count, available time, and last error.
+- Documented dashboard queue visibility in README.
+
+Validation:
+
+- `npm test` in `frontend/`: first failed because the Queue panel did not exist, then passed after implementation, 6 tests run, 0 failures.
+- `npm run build` in `frontend/`: passed, production build generated `dist/`.
