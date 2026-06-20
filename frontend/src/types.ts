@@ -30,6 +30,13 @@ export interface FixTask {
   statusCommentUrl: string | null;
 }
 
+export interface FixTaskPage {
+  items: FixTask[];
+  limit: number;
+  offset: number;
+  hasMore: boolean;
+}
+
 export interface FixTaskMetricsSummary {
   totalCount: number;
   pendingCount: number;

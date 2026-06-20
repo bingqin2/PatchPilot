@@ -6,6 +6,7 @@ import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.vo.FixTaskAuditSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskMetricsSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskModelCallVo;
+import io.patchpilot.backend.task.domain.vo.FixTaskPageVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskTestRunVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskTimelineEventVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskToolCallVo;
@@ -44,7 +45,7 @@ public class TaskController {
     private final FixTaskAuditSummaryService fixTaskAuditSummaryService;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<FixTaskVo>>> listTasks(
+    public ResponseEntity<ApiResponse<FixTaskPageVo>> listTasks(
             @RequestParam(required = false) String query,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String repositoryOwner,
@@ -132,7 +133,7 @@ public class TaskController {
         }
     }
 
-    private List<FixTaskVo> queryTasks(
+    private FixTaskPageVo queryTasks(
             String query,
             String status,
             String repositoryOwner,
@@ -143,14 +144,17 @@ public class TaskController {
         FixTaskStatus parsedStatus = parseStatus(status);
         int parsedLimit = parseLimit(limit);
         int parsedOffset = parseOffset(offset);
-        return fixTaskService.listTasks(new FixTaskListQuery(
+        List<FixTaskVo> tasks = fixTaskService.listTasks(new FixTaskListQuery(
                 blankToNull(query),
                 parsedStatus,
                 blankToNull(repositoryOwner),
                 blankToNull(repositoryName),
-                parsedLimit,
+                parsedLimit + 1,
                 parsedOffset
         ));
+        boolean hasMore = tasks.size() > parsedLimit;
+        List<FixTaskVo> pageItems = hasMore ? tasks.subList(0, parsedLimit) : tasks;
+        return new FixTaskPageVo(pageItems, parsedLimit, parsedOffset, hasMore);
     }
 
     private static FixTaskStatus parseStatus(String status) {

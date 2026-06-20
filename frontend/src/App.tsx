@@ -61,16 +61,16 @@ export default function App() {
         getQueueSummary(),
         listQueueItems()
       ]);
-      setTasks(taskList);
+      setTasks(taskList.items);
       setMetrics(metricsSummary);
       setQueueSummary(queueSummaryData);
       setQueueItems(queueItemList);
-      setCanLoadMoreTasks(taskList.length === TASK_PAGE_SIZE);
+      setCanLoadMoreTasks(taskList.hasMore);
       setSelectedTaskId((current) => {
-        if (current && taskList.some((task) => task.id === current)) {
+        if (current && taskList.items.some((task) => task.id === current)) {
           return current;
         }
-        return taskList[0]?.id ?? null;
+        return taskList.items[0]?.id ?? null;
       });
     } catch (caught) {
       setError(errorMessage(caught));
@@ -83,14 +83,14 @@ export default function App() {
     setLoadingMoreTasks(true);
     setError(null);
     try {
-      const nextTasks = await listTasks({
+      const nextTaskPage = await listTasks({
         status: statusFilter,
         query: searchQuery,
         limit: TASK_PAGE_SIZE,
         offset: tasks.length
       });
-      setTasks((current) => [...current, ...nextTasks]);
-      setCanLoadMoreTasks(nextTasks.length === TASK_PAGE_SIZE);
+      setTasks((current) => [...current, ...nextTaskPage.items]);
+      setCanLoadMoreTasks(nextTaskPage.hasMore);
     } catch (caught) {
       setError(errorMessage(caught));
     } finally {

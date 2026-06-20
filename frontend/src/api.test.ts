@@ -8,11 +8,20 @@ test('builds backend task search and pagination query parameters', async () => {
   const fetchMock = vi.fn(async () => ({
     ok: true,
     status: 200,
-    json: async () => ({ success: true, data: [], message: null })
+    json: async () => ({
+      success: true,
+      data: {
+        items: [],
+        limit: 25,
+        offset: 50,
+        hasMore: true
+      },
+      message: null
+    })
   } as Response));
   vi.stubGlobal('fetch', fetchMock);
 
-  await listTasks({
+  const page = await listTasks({
     status: 'FAILED',
     query: ' search target ',
     limit: 25,
@@ -20,4 +29,10 @@ test('builds backend task search and pagination query parameters', async () => {
   });
 
   expect(fetchMock).toHaveBeenCalledWith('/api/tasks?limit=25&offset=50&query=search+target&status=FAILED');
+  expect(page).toEqual({
+    items: [],
+    limit: 25,
+    offset: 50,
+    hasMore: true
+  });
 });
