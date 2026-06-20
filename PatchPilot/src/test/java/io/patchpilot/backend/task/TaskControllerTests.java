@@ -67,6 +67,45 @@ class TaskControllerTests {
     }
 
     @Test
+    void should_filter_tasks_by_status_repository_and_limit() throws Exception {
+        FixTaskVo completedTask = createTask(command("octocat", "hello-world", "delivery-filter-completed"));
+        FixTaskVo failedTask = createTask(command("octocat", "hello-world", "delivery-filter-failed"));
+        FixTaskVo otherRepositoryTask = createTask(command("octocat", "other-repo", "delivery-filter-other"));
+        fixTaskService.markCompleted(completedTask.id(), "https://github.com/octocat/hello-world/pull/7");
+        fixTaskService.markFailed(failedTask.id(), "maven failed");
+        fixTaskService.markFailed(otherRepositoryTask.id(), "maven failed");
+
+        mockMvc.perform(get("/api/tasks")
+                        .param("status", "FAILED")
+                        .param("repositoryOwner", "octocat")
+                        .param("repositoryName", "hello-world")
+                        .param("limit", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].id").value(failedTask.id()))
+                .andExpect(jsonPath("$.data[0].status").value("FAILED"))
+                .andExpect(jsonPath("$.data[0].repositoryOwner").value("octocat"))
+                .andExpect(jsonPath("$.data[0].repositoryName").value("hello-world"));
+    }
+
+    @Test
+    void should_return_bad_request_for_invalid_task_list_limit() throws Exception {
+        mockMvc.perform(get("/api/tasks").param("limit", "0"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("limit must be between 1 and 100"));
+    }
+
+    @Test
+    void should_return_bad_request_for_invalid_task_list_status() throws Exception {
+        mockMvc.perform(get("/api/tasks").param("status", "DONE"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("Invalid task status: DONE"));
+    }
+
+    @Test
     void should_get_task_by_id() throws Exception {
         FixTaskVo task = createTask("delivery-get");
 
@@ -363,15 +402,23 @@ class TaskControllerTests {
     }
 
     private FixTaskVo createTask(String deliveryId) {
-        return fixTaskService.createFixTask(new CreateFixTaskCommand(
-                "octocat",
-                "hello-world",
+        return createTask(command("octocat", "hello-world", deliveryId));
+    }
+
+    private FixTaskVo createTask(CreateFixTaskCommand command) {
+        return fixTaskService.createFixTask(command);
+    }
+
+    private CreateFixTaskCommand command(String owner, String repositoryName, String deliveryId) {
+        return new CreateFixTaskCommand(
+                owner,
+                repositoryName,
                 42,
                 0,
                 "alice",
                 "/agent fix",
                 deliveryId,
                 98765
-        ));
+        );
     }
 }

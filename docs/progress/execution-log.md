@@ -1092,3 +1092,17 @@ Validation:
 
 - `mvn -pl PatchPilot -Dtest=DefaultFixTaskMetricsServiceTests,TaskControllerTests test`: first failed because metrics service classes did not exist, then failed on a non-deterministic same-millisecond duration assertion, then passed after using fixed test data, 23 tests run, 0 failures, 0 errors.
 - `mvn -pl PatchPilot test`: passed, 242 tests run, 0 failures, 0 errors.
+
+Implemented task list filtering API from `docs/plans/043-task-list-filter-api.md`.
+
+Changes:
+
+- Extended `GET /api/tasks` with optional `status`, `repositoryOwner`, `repositoryName`, and `limit` query parameters.
+- Added HTTP `400` responses for invalid task status and out-of-range limits.
+- Kept the default `GET /api/tasks` behavior backward compatible.
+- Documented filtered task-list examples in README.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=TaskControllerTests test`: first failed because the task list endpoint ignored query parameters and returned HTTP `200` for invalid filters, then passed after controller filtering and validation, 24 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot test`: passed, 245 tests run, 0 failures, 0 errors.
