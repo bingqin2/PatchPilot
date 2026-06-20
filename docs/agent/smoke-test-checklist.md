@@ -55,9 +55,11 @@ Expected: GitHub webhook ping returns `200`.
 Confirm the GitHub token has repository permissions:
 
 - `Contents`: Read and write
-- `Issues`: Read and write
+- `Issues`: Read and write, required for PatchPilot status comments on issues
 - `Pull requests`: Read and write
 - `Metadata`: Read-only
+
+Restart or reload the backend after changing token permissions or replacing `PATCHPILOT_GITHUB_TOKEN`.
 
 ## 6. Trigger A Deterministic Task
 
@@ -93,6 +95,8 @@ Expected on success:
 - A `patchpilot/{taskId}` branch exists.
 - A Pull Request is open.
 - The issue status comment links to the Pull Request.
+
+If the task reaches `COMPLETED` but the timeline contains `GitHub issue comment creation failed: HTTP 403`, the PR path is working and only the status-comment permission failed. Recheck the token's `Issues: Read and write` repository permission, then restart or reload the backend.
 
 Expected on failure:
 

@@ -72,7 +72,7 @@ class GitHubIssueCommentClientTests {
 
         assertThatThrownBy(() -> client.createIssueComment(command()))
                 .isInstanceOf(GitHubIssueCommentException.class)
-                .hasMessage("GitHub issue comment creation failed: HTTP 403");
+                .hasMessage(forbiddenMessage("GitHub issue comment creation failed"));
     }
 
     @Test
@@ -119,6 +119,21 @@ class GitHubIssueCommentClientTests {
         assertThatThrownBy(() -> client.updateIssueComment(updateCommand()))
                 .isInstanceOf(GitHubIssueCommentException.class)
                 .hasMessage("GitHub issue comment update failed: HTTP 404");
+    }
+
+    @Test
+    void should_include_permission_hint_when_update_returns_forbidden() {
+        RecordingHttpClient httpClient = new RecordingHttpClient(403, "{\"message\":\"Resource not accessible\"}");
+        GitHubIssueCommentClient client = new GitHubIssueCommentClient(httpClient, properties("secret-token"));
+
+        assertThatThrownBy(() -> client.updateIssueComment(updateCommand()))
+                .isInstanceOf(GitHubIssueCommentException.class)
+                .hasMessage(forbiddenMessage("GitHub issue comment update failed"));
+    }
+
+    private static String forbiddenMessage(String operation) {
+        return operation + ": HTTP 403. Check PATCHPILOT_GITHUB_TOKEN permissions: fine-grained tokens need "
+                + "repository `Issues: Read and write` permission. Restart or reload the backend after changing the token.";
     }
 
     private static GitHubProperties properties(String token) {

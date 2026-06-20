@@ -1063,3 +1063,18 @@ Smoke result:
 Follow-up:
 
 - The timeline recorded `STATUS_COMMENT_FAILED` with `GitHub issue comment creation failed: HTTP 403`; task execution still completed because issue comments are best-effort. Recheck the fine-grained GitHub token's `Issues: Read and write` permission or regenerate/reload the token before relying on issue status comments.
+
+Implemented issue comment permission diagnostics from `docs/plans/041-issue-comment-permission-diagnostics.md`.
+
+Changes:
+
+- Added a shared HTTP failure message helper for GitHub Issue comment create/update calls.
+- Expanded HTTP `403` failures with an actionable `PATCHPILOT_GITHUB_TOKEN` permission hint for fine-grained tokens.
+- Preserved concise existing messages for non-`403` GitHub Issue comment failures.
+- Updated setup and smoke-test docs to call out `Issues: Read and write` as the required permission for PatchPilot status comments.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=GitHubIssueCommentClientTests test`: first failed because HTTP `403` messages only included the status code, then passed after adding the permission hint, 7 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=GitHubIssueCommentClientTests,GitHubWebhookServiceTests,FixTaskWorkerTests test`: passed, 18 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot test`: passed, 239 tests run, 0 failures, 0 errors.
