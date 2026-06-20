@@ -70,6 +70,12 @@ export function TaskListPanel({
               <ExternalLink size={14} />
               Open Issue
             </a>
+            {task.statusCommentUrl ? (
+              <a className="task-link" href={task.statusCommentUrl} target="_blank" rel="noreferrer">
+                <ExternalLink size={14} />
+                Status Comment
+              </a>
+            ) : null}
             {task.pullRequestUrl ? (
               <a className="task-link" href={task.pullRequestUrl} target="_blank" rel="noreferrer">
                 <GitPullRequest size={14} />
