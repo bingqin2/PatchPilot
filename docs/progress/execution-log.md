@@ -1329,3 +1329,20 @@ Validation:
 - `npm test` in `frontend/`: passed after adding API helper coverage for `{ status, query, limit, offset }`, 11 tests run, 0 failures.
 - `mvn -pl PatchPilot test`: passed, 251 tests run, 0 failures.
 - `npm run build` in `frontend/`: passed, production build generated `dist/`.
+
+Implemented dashboard backend search and offset pagination from `docs/plans/059-dashboard-backend-search-pagination.md`.
+
+Changes:
+
+- Wired the dashboard search input to backend `GET /api/tasks?query=...`.
+- Preserved status filters when sending backend search requests.
+- Removed local-only task filtering from the dashboard coordinator.
+- Added `Load more tasks` backed by `offset=tasks.length` and appended subsequent pages.
+- Documented backend-backed dashboard search and the remaining pagination metadata limitation.
+
+Validation:
+
+- `npm test -- src/App.test.tsx -t "searches tasks with backend query parameters"`: first failed because the dashboard still only called `/api/tasks?limit=50`, then passed after wiring `searchQuery` into `listTasks()`.
+- `npm test -- src/App.test.tsx -t "preserves status filter when searching backend task history"`: passed, preserving `query` and `status` together.
+- `npm test -- src/App.test.tsx -t "loads the next backend task page with offset pagination"`: first failed because there was no `Load more tasks` button, then passed after adding offset pagination.
+- `npm test` in `frontend/`: passed, 13 tests run, 0 failures.

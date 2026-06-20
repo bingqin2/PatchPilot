@@ -18,9 +18,12 @@ interface TaskListPanelProps {
   statusFilter: TaskStatusFilter;
   searchQuery: string;
   loading: boolean;
+  canLoadMore: boolean;
+  loadingMore: boolean;
   onStatusFilterChange: (status: TaskStatusFilter) => void;
   onSearchQueryChange: (query: string) => void;
   onSelectTask: (taskId: string) => void;
+  onLoadMoreTasks: () => void;
 }
 
 export function TaskListPanel({
@@ -29,9 +32,12 @@ export function TaskListPanel({
   statusFilter,
   searchQuery,
   loading,
+  canLoadMore,
+  loadingMore,
   onStatusFilterChange,
   onSearchQueryChange,
-  onSelectTask
+  onSelectTask,
+  onLoadMoreTasks
 }: TaskListPanelProps) {
   return (
     <section className="panel task-list-panel">
@@ -106,6 +112,11 @@ export function TaskListPanel({
           <p className="empty-state">
             {searchQuery.trim() ? `No tasks match "${searchQuery.trim()}".` : `No ${statusFilter} tasks found.`}
           </p>
+        ) : null}
+        {!loading && canLoadMore ? (
+          <button className="load-more-button" type="button" onClick={onLoadMoreTasks} disabled={loadingMore}>
+            {loadingMore ? 'Loading more tasks' : 'Load more tasks'}
+          </button>
         ) : null}
       </div>
     </section>

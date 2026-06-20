@@ -259,6 +259,23 @@ h3 {
   box-shadow: inset 3px 0 0 #187b78;
 }
 
+.load-more-button {
+  background: #ffffff;
+  border: 1px solid #cfd9e2;
+  border-radius: 6px;
+  color: #17202a;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+  margin: 14px 16px;
+  min-height: 38px;
+}
+
+.load-more-button:disabled {
+  color: #8b98a5;
+  cursor: wait;
+}
+
 .status-pill {
   align-items: center;
   border-radius: 999px;

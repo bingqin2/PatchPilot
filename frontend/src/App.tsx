@@ -28,6 +28,8 @@ import type {
   TaskStatusFilter
 } from './types';
 
+const TASK_PAGE_SIZE = 50;
+
 export default function App() {
   const [tasks, setTasks] = useState<FixTask[]>([]);
   const [metrics, setMetrics] = useState<FixTaskMetricsSummary | null>(null);
@@ -41,12 +43,12 @@ export default function App() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [actionTaskId, setActionTaskId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  const visibleTasks = useMemo(() => filterTasks(tasks, searchQuery), [tasks, searchQuery]);
+  const [canLoadMoreTasks, setCanLoadMoreTasks] = useState(false);
+  const [loadingMoreTasks, setLoadingMoreTasks] = useState(false);
 
   const selectedTask = useMemo(
-    () => visibleTasks.find((task) => task.id === selectedTaskId) ?? visibleTasks[0] ?? null,
-    [selectedTaskId, visibleTasks]
+    () => tasks.find((task) => task.id === selectedTaskId) ?? tasks[0] ?? null,
+    [selectedTaskId, tasks]
   );
 
   const refresh = useCallback(async () => {
@@ -54,7 +56,7 @@ export default function App() {
     setError(null);
     try {
       const [taskList, metricsSummary, queueSummaryData, queueItemList] = await Promise.all([
-        listTasks(statusFilter),
+        listTasks({ status: statusFilter, query: searchQuery, limit: TASK_PAGE_SIZE }),
         getMetricsSummary(),
         getQueueSummary(),
         listQueueItems()
@@ -63,6 +65,7 @@ export default function App() {
       setMetrics(metricsSummary);
       setQueueSummary(queueSummaryData);
       setQueueItems(queueItemList);
+      setCanLoadMoreTasks(taskList.length === TASK_PAGE_SIZE);
       setSelectedTaskId((current) => {
         if (current && taskList.some((task) => task.id === current)) {
           return current;
@@ -74,7 +77,26 @@ export default function App() {
     } finally {
       setLoading(false);
     }
-  }, [statusFilter]);
+  }, [searchQuery, statusFilter]);
+
+  const handleLoadMoreTasks = useCallback(async () => {
+    setLoadingMoreTasks(true);
+    setError(null);
+    try {
+      const nextTasks = await listTasks({
+        status: statusFilter,
+        query: searchQuery,
+        limit: TASK_PAGE_SIZE,
+        offset: tasks.length
+      });
+      setTasks((current) => [...current, ...nextTasks]);
+      setCanLoadMoreTasks(nextTasks.length === TASK_PAGE_SIZE);
+    } catch (caught) {
+      setError(errorMessage(caught));
+    } finally {
+      setLoadingMoreTasks(false);
+    }
+  }, [searchQuery, statusFilter, tasks.length]);
 
   useEffect(() => {
     void refresh();
@@ -174,14 +196,17 @@ export default function App() {
 
       <section className="workspace-grid">
         <TaskListPanel
-          tasks={visibleTasks}
+          tasks={tasks}
           selectedTask={selectedTask}
           statusFilter={statusFilter}
           searchQuery={searchQuery}
           loading={loading}
+          canLoadMore={canLoadMoreTasks}
+          loadingMore={loadingMoreTasks}
           onStatusFilterChange={setStatusFilter}
           onSearchQueryChange={setSearchQuery}
           onSelectTask={setSelectedTaskId}
+          onLoadMoreTasks={handleLoadMoreTasks}
         />
 
         <TaskDetailPanel
@@ -201,27 +226,4 @@ export default function App() {
 
 function errorMessage(caught: unknown) {
   return caught instanceof Error ? caught.message : 'Dashboard request failed';
-}
-
-function filterTasks(tasks: FixTask[], query: string) {
-  const normalizedQuery = query.trim().toLowerCase();
-  if (!normalizedQuery) {
-    return tasks;
-  }
-
-  return tasks.filter((task) => {
-    const searchable = [
-      task.id,
-      `${task.repositoryOwner}/${task.repositoryName}`,
-      task.repositoryOwner,
-      task.repositoryName,
-      `#${task.issueNumber}`,
-      String(task.issueNumber),
-      task.status,
-      task.triggerComment,
-      task.failureReason ?? ''
-    ].join(' ').toLowerCase();
-
-    return searchable.includes(normalizedQuery);
-  });
 }
