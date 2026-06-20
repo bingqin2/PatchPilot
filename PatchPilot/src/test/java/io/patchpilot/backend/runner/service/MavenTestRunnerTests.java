@@ -9,7 +9,9 @@ import org.junit.jupiter.api.io.TempDir;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -91,6 +93,20 @@ class MavenTestRunnerTests {
     }
 
     @Test
+    void should_capture_large_command_output_without_blocking_until_timeout() throws Exception {
+        Path repositoryDir = tempDir.resolve("large-output-wrapper-repo");
+        Files.createDirectories(repositoryDir);
+        createMavenWrapper(repositoryDir, "i=0\nwhile [ $i -lt 20000 ]; do echo \"line-$i\"; i=$((i + 1)); done\nexit 7\n");
+        MavenTestRunner runner = runner(Duration.ofSeconds(5));
+
+        TestRunResult result = runner.runTests(repositoryDir);
+
+        assertThat(result.exitCode()).isEqualTo(7);
+        assertThat(result.output()).contains("line-0");
+        assertThat(result.output()).contains("line-19999");
+    }
+
+    @Test
     void should_register_and_unregister_task_process_when_task_id_is_provided() throws Exception {
         Path repositoryDir = tempDir.resolve("registered-wrapper-repo");
         Files.createDirectories(repositoryDir);
@@ -103,6 +119,26 @@ class MavenTestRunnerTests {
         assertThat(result.exitCode()).isZero();
         assertThat(processRegistry.registeredTaskIds()).containsExactly("task-123");
         assertThat(processRegistry.unregisteredTaskIds()).containsExactly("task-123");
+    }
+
+    @Test
+    void should_remove_patchpilot_runtime_environment_from_maven_process() {
+        Map<String, String> environment = new HashMap<>();
+        environment.put("PATCHPILOT_GITHUB_TOKEN", "secret-token");
+        environment.put("PATCHPILOT_AGENT_API_KEY", "secret-key");
+        environment.put("SPRING_PROFILES_ACTIVE", "docker");
+        environment.put("PATH", "/usr/bin");
+        environment.put("JAVA_HOME", "/tmp/java");
+
+        MavenTestRunner.sanitizeProcessEnvironment(environment);
+
+        assertThat(environment).containsEntry("PATH", "/usr/bin");
+        assertThat(environment).containsEntry("JAVA_HOME", "/tmp/java");
+        assertThat(environment).doesNotContainKeys(
+                "PATCHPILOT_GITHUB_TOKEN",
+                "PATCHPILOT_AGENT_API_KEY",
+                "SPRING_PROFILES_ACTIVE"
+        );
     }
 
     @Test

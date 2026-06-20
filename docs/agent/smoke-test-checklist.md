@@ -54,10 +54,10 @@ Expected: GitHub webhook ping returns `200`.
 
 ## 6. Trigger A Deterministic Task
 
-Comment on a test issue:
+Comment on a test issue. Use an existing file in the target repository:
 
 ```text
-/agent fix touch docs/demo.md
+/agent fix replace docs/demo.md PatchPilot smoke test
 ```
 
 Expected webhook response body includes `TASK_CREATED`.

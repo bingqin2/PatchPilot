@@ -111,6 +111,28 @@ class GitCommandRunnerTests {
     }
 
     @Test
+    void should_commit_with_patchpilot_author_identity() {
+        RecordingProcess process = new RecordingProcess(0, "committed");
+        RecordingGitCommandRunner runner = recordingRunner(process);
+
+        GitCommandResult result = runner.commit(tempDir, "PatchPilot task task-123");
+
+        assertThat(result.exitCode()).isZero();
+        assertThat(runner.command()).containsExactly(
+                "git",
+                "-C",
+                tempDir.toString(),
+                "-c",
+                "user.name=PatchPilot",
+                "-c",
+                "user.email=patchpilot@example.com",
+                "commit",
+                "-m",
+                "PatchPilot task task-123"
+        );
+    }
+
+    @Test
     void should_reject_blank_commit_message() {
         GitCommandRunner runner = runner();
 
@@ -198,6 +220,14 @@ class GitCommandRunnerTests {
     }
 
     private GitCommandRunner runner(TaskProcessRegistry processRegistry, Process process) {
+        return recordingRunner(processRegistry, process);
+    }
+
+    private RecordingGitCommandRunner recordingRunner(Process process) {
+        return recordingRunner(new TaskProcessRegistry(), process);
+    }
+
+    private RecordingGitCommandRunner recordingRunner(TaskProcessRegistry processRegistry, Process process) {
         WorkspaceProperties properties = new WorkspaceProperties();
         properties.setRootDir(tempDir);
         return new RecordingGitCommandRunner(new GitHubProperties(), new CommandExecutionGuard(properties), processRegistry, process);
@@ -245,6 +275,7 @@ class GitCommandRunnerTests {
     private static final class RecordingGitCommandRunner extends GitCommandRunner {
 
         private final Process process;
+        private List<String> command;
 
         private RecordingGitCommandRunner(
                 GitHubProperties gitHubProperties,
@@ -258,7 +289,12 @@ class GitCommandRunnerTests {
 
         @Override
         protected Process startProcess(List<String> command) {
+            this.command = List.copyOf(command);
             return process;
+        }
+
+        private List<String> command() {
+            return command;
         }
     }
 

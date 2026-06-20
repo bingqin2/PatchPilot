@@ -47,6 +47,28 @@ class MyBatisFixTaskTestRunServiceTests {
     }
 
     @Test
+    void should_truncate_test_output_before_insert() {
+        when(testRunMapper.insert(any(FixTaskTestRunEntity.class))).thenReturn(1);
+        ArgumentCaptor<FixTaskTestRunEntity> entityCaptor = ArgumentCaptor.forClass(FixTaskTestRunEntity.class);
+        String longOutput = "x".repeat(70_000);
+
+        FixTaskTestRunVo testRun = testRunService.recordTestRun(
+                "task-123",
+                "./mvnw test",
+                1,
+                longOutput,
+                Instant.parse("2026-06-19T08:00:00Z"),
+                Instant.parse("2026-06-19T08:00:05Z")
+        );
+
+        verify(testRunMapper).insert(entityCaptor.capture());
+        String insertedOutput = entityCaptor.getValue().getOutput();
+        assertThat(insertedOutput).hasSizeLessThanOrEqualTo(60_000);
+        assertThat(insertedOutput).contains("[truncated ");
+        assertThat(testRun.output()).isEqualTo(insertedOutput);
+    }
+
+    @Test
     void should_list_test_runs_oldest_first() {
         FixTaskTestRunEntity newer = entity(
                 "test-run-newer",

@@ -7,6 +7,7 @@ import io.patchpilot.backend.task.executor.TaskCancellationException;
 import io.patchpilot.backend.task.executor.FixTaskExecutor;
 import io.patchpilot.backend.task.executor.domain.FixTaskExecutionResult;
 import io.patchpilot.backend.task.service.FixTaskService;
+import io.patchpilot.backend.task.service.LogSummary;
 import io.patchpilot.backend.task.service.FixTaskTimelineService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -67,6 +68,6 @@ public class FixTaskWorker {
         if (!StringUtils.hasText(exception.getMessage())) {
             return exception.getClass().getSimpleName();
         }
-        return exception.getMessage();
+        return LogSummary.truncateFailureReason(exception.getMessage());
     }
 }
