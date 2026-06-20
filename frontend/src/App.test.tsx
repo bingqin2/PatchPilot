@@ -363,6 +363,14 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(screen.getByText('gpt-5.5')).toBeInTheDocument();
 });
 
+test('shows tool and model call durations in task detail records', async () => {
+  render(<App />);
+
+  await waitFor(() => expect(screen.getByText('replace')).toBeInTheDocument());
+  expect(screen.getByText('success · 1.0s')).toBeInTheDocument();
+  expect(screen.getByText('1800 tokens · 2.0s')).toBeInTheDocument();
+});
+
 test('loads queue summary and items from backend APIs', async () => {
   const fetchMock = vi.mocked(fetch);
 

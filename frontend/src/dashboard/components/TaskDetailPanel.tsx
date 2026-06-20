@@ -137,14 +137,24 @@ export function TaskDetailPanel({
         <div>
           <h3>Tool Calls</h3>
           {detail.toolCalls.map((call) => (
-            <RecordLine key={call.id} title={call.toolName} meta={call.success ? 'success' : 'failed'} body={call.outputSummary} />
+            <RecordLine
+              key={call.id}
+              title={call.toolName}
+              meta={`${call.success ? 'success' : 'failed'} · ${duration(call.durationMs)}`}
+              body={call.outputSummary}
+            />
           ))}
           {!loading && detail.toolCalls.length === 0 ? <p className="empty-state">No tool calls recorded.</p> : null}
         </div>
         <div>
           <h3>Model Calls</h3>
           {detail.modelCalls.map((call) => (
-            <RecordLine key={call.id} title={call.model} meta={`${call.totalTokens} tokens`} body={call.responseSummary} />
+            <RecordLine
+              key={call.id}
+              title={call.model}
+              meta={`${call.totalTokens} tokens · ${duration(call.durationMs)}`}
+              body={call.responseSummary}
+            />
           ))}
           {!loading && detail.modelCalls.length === 0 ? <p className="empty-state">No model calls recorded.</p> : null}
         </div>

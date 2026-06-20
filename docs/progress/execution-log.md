@@ -1265,3 +1265,18 @@ Changes:
 Validation:
 
 - `npm test` in `frontend/`: first failed because missing detail records produced blank sections, then passed after implementation, 8 tests run, 0 failures.
+
+Implemented dashboard call durations from `docs/plans/055-dashboard-call-durations.md`.
+
+Changes:
+
+- Added frontend coverage for tool-call and model-call duration rendering.
+- Rendered tool-call duration next to the success/failure state in task detail records.
+- Rendered model-call duration next to the total token count in task detail records.
+- Reused the existing dashboard duration formatter, with no backend API or persistence changes.
+- Documented dashboard call durations in README.
+
+Validation:
+
+- `npm test` in `frontend/`: first failed because task detail tool/model call records did not show durations, then passed after implementation, 9 tests run, 0 failures.
+- `npm run build` in `frontend/`: passed, production build generated `dist/`.
