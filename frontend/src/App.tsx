@@ -5,6 +5,7 @@ import {
   getFailureCauseSummary,
   getMetricsSummary,
   getModelCalls,
+  getModelUsageSummary,
   getQueueSummary,
   getTaskSummary,
   getTestRuns,
@@ -16,6 +17,7 @@ import {
 } from './api';
 import { FailureCausePanel } from './dashboard/components/FailureCausePanel';
 import { MetricCard } from './dashboard/components/MetricCard';
+import { ModelUsagePanel } from './dashboard/components/ModelUsagePanel';
 import { QueuePanel } from './dashboard/components/QueuePanel';
 import { TaskDetailPanel } from './dashboard/components/TaskDetailPanel';
 import { TaskListPanel } from './dashboard/components/TaskListPanel';
@@ -26,6 +28,7 @@ import type {
   FixTask,
   FixTaskFailureCauseSummary,
   FixTaskMetricsSummary,
+  FixTaskModelUsageSummary,
   FixTaskQueueItem,
   FixTaskQueueSummary,
   TaskStatusFilter
@@ -37,6 +40,7 @@ export default function App() {
   const [tasks, setTasks] = useState<FixTask[]>([]);
   const [metrics, setMetrics] = useState<FixTaskMetricsSummary | null>(null);
   const [failureCauses, setFailureCauses] = useState<FixTaskFailureCauseSummary[]>([]);
+  const [modelUsage, setModelUsage] = useState<FixTaskModelUsageSummary | null>(null);
   const [queueSummary, setQueueSummary] = useState<FixTaskQueueSummary | null>(null);
   const [queueItems, setQueueItems] = useState<FixTaskQueueItem[]>([]);
   const [statusFilter, setStatusFilter] = useState<TaskStatusFilter>('ALL');
@@ -60,16 +64,25 @@ export default function App() {
     setLoading(true);
     setError(null);
     try {
-      const [taskList, metricsSummary, failureCauseSummary, queueSummaryData, queueItemList] = await Promise.all([
+      const [
+        taskList,
+        metricsSummary,
+        failureCauseSummary,
+        modelUsageSummary,
+        queueSummaryData,
+        queueItemList
+      ] = await Promise.all([
         listTasks({ status: statusFilter, query: searchQuery, limit: TASK_PAGE_SIZE }),
         getMetricsSummary(),
         getFailureCauseSummary(),
+        getModelUsageSummary(),
         getQueueSummary(),
         listQueueItems()
       ]);
       setTasks(taskList.items);
       setMetrics(metricsSummary);
       setFailureCauses(failureCauseSummary);
+      setModelUsage(modelUsageSummary);
       setQueueSummary(queueSummaryData);
       setQueueItems(queueItemList);
       setCanLoadMoreTasks(taskList.hasMore);
@@ -203,7 +216,10 @@ export default function App() {
         <MetricCard label="Model tokens" value={metrics?.totalModelTokens ?? 0} detail={`${metrics?.averageModelTokensPerCompletedTask ?? 0} avg completed`} />
       </section>
 
-      <FailureCausePanel causes={failureCauses} />
+      <section className="summary-panel-grid" aria-label="Operational summaries">
+        <FailureCausePanel causes={failureCauses} />
+        <ModelUsagePanel usage={modelUsage} />
+      </section>
 
       <section className="workspace-grid">
         <TaskListPanel

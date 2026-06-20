@@ -1,9 +1,11 @@
 package io.patchpilot.backend.task.service.impl;
 
+import io.patchpilot.backend.agent.config.AgentProperties;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.vo.FixTaskFailureCauseSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskMetricsSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskModelCallVo;
+import io.patchpilot.backend.task.domain.vo.FixTaskModelUsageSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskTestRunVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import io.patchpilot.backend.task.service.FixTaskMetricsService;
@@ -34,6 +36,7 @@ public class DefaultFixTaskMetricsService implements FixTaskMetricsService {
     private final FixTaskService fixTaskService;
     private final FixTaskModelCallService fixTaskModelCallService;
     private final FixTaskTestRunService fixTaskTestRunService;
+    private final AgentProperties agentProperties;
 
     @Override
     public FixTaskMetricsSummaryVo summary() {
@@ -86,6 +89,38 @@ public class DefaultFixTaskMetricsService implements FixTaskMetricsService {
                 .filter(cause -> counts.getOrDefault(cause, 0L) > 0)
                 .map(cause -> new FixTaskFailureCauseSummaryVo(cause, counts.get(cause)))
                 .toList();
+    }
+
+    @Override
+    public FixTaskModelUsageSummaryVo modelUsage() {
+        List<FixTaskModelCallVo> modelCalls = fixTaskService.listTasks().stream()
+                .flatMap(task -> fixTaskModelCallService.listModelCalls(task.id()).stream())
+                .toList();
+        if (modelCalls.isEmpty()) {
+            return FixTaskModelUsageSummaryVo.empty();
+        }
+
+        long totalPromptTokens = modelCalls.stream()
+                .mapToLong(FixTaskModelCallVo::promptTokens)
+                .sum();
+        long totalCompletionTokens = modelCalls.stream()
+                .mapToLong(FixTaskModelCallVo::completionTokens)
+                .sum();
+        long successfulCalls = modelCalls.stream()
+                .filter(FixTaskModelCallVo::success)
+                .count();
+        long failedCalls = modelCalls.size() - successfulCalls;
+        double estimatedCostUsd = totalPromptTokens * agentProperties.getCost().getPromptTokenUsd()
+                + totalCompletionTokens * agentProperties.getCost().getCompletionTokenUsd();
+
+        return new FixTaskModelUsageSummaryVo(
+                totalPromptTokens,
+                totalCompletionTokens,
+                totalPromptTokens + totalCompletionTokens,
+                successfulCalls,
+                failedCalls,
+                estimatedCostUsd
+        );
     }
 
     private static long countByStatus(List<FixTaskVo> tasks, FixTaskStatus status) {

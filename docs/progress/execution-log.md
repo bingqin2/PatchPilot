@@ -1401,3 +1401,24 @@ Validation:
 - `SPRING_PROFILES_ACTIVE=docker mvn -pl PatchPilot clean test`: passed, 256 tests run, 0 failures.
 - `npm test` in `frontend/`: passed, 14 tests run, 0 failures.
 - `npm run build` in `frontend/`: passed.
+
+Implemented dashboard model cost summary from `docs/plans/063-dashboard-model-cost-summary.md`.
+
+Changes:
+
+- Added `GET /api/tasks/metrics/model-usage`.
+- Added `FixTaskModelUsageSummaryVo`.
+- Extended `FixTaskMetricsService` with `modelUsage()`.
+- Aggregated prompt tokens, completion tokens, total tokens, successful model calls, failed model calls, and estimated USD cost from recorded model-call rows.
+- Added configurable model cost inputs under `patchpilot.agent.cost.prompt-token-usd` and `patchpilot.agent.cost.completion-token-usd`, both defaulting to `0`.
+- Added a frontend API helper, type, and `ModelUsagePanel`.
+- Rendered model usage next to failure causes in the dashboard operational summaries.
+- Documented the model usage endpoint and dashboard cost summary in README and frontend design docs.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=DefaultFixTaskMetricsServiceTests#should_summarize_model_usage_and_estimated_cost,TaskControllerTests#should_get_task_model_usage_summary test`: passed, 2 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts src/App.test.tsx`: first failed because `getModelUsageSummary()` and `Model usage` UI were missing, then failed once on ambiguous `Completion` label, then passed after adding the API helper, panel, and clearer `Completion tokens` label, 15 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed, 258 tests run, 0 failures.
+- `npm test` in `frontend/`: passed, 15 tests run, 0 failures.
+- `npm run build` in `frontend/`: passed.

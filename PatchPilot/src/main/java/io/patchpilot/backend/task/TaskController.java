@@ -7,6 +7,7 @@ import io.patchpilot.backend.task.domain.vo.FixTaskFailureCauseSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskAuditSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskMetricsSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskModelCallVo;
+import io.patchpilot.backend.task.domain.vo.FixTaskModelUsageSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskPageVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskTestRunVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskTimelineEventVo;
@@ -69,6 +70,11 @@ public class TaskController {
     @GetMapping("/metrics/failure-causes")
     public ApiResponse<List<FixTaskFailureCauseSummaryVo>> getTaskFailureCauseSummary() {
         return ApiResponse.ok(fixTaskMetricsService.failureCauses());
+    }
+
+    @GetMapping("/metrics/model-usage")
+    public ApiResponse<FixTaskModelUsageSummaryVo> getTaskModelUsageSummary() {
+        return ApiResponse.ok(fixTaskMetricsService.modelUsage());
     }
 
     @GetMapping("/{id}")
