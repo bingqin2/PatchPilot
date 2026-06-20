@@ -57,6 +57,11 @@ export interface FixTaskMetricsSummary {
   testPassRate: number;
 }
 
+export interface FixTaskFailureCauseSummary {
+  cause: string;
+  count: number;
+}
+
 export interface FixTaskQueueSummary {
   totalCount: number;
   pendingCount: number;

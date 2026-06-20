@@ -234,6 +234,12 @@ beforeEach(() => {
         testPassRate: 1
       });
     }
+    if (url === '/api/tasks/metrics/failure-causes') {
+      return jsonResponse([
+        { cause: 'MAVEN_TESTS', count: 1 },
+        { cause: 'GITHUB_AUTH', count: 1 }
+      ]);
+    }
     if (url === '/api/task-queue/summary') {
       return jsonResponse(queueSummary);
     }
@@ -359,6 +365,9 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(screen.getByText('50%')).toBeInTheDocument();
   expect(screen.getByText('Test pass')).toBeInTheDocument();
   expect(screen.getByText('100%')).toBeInTheDocument();
+  expect(screen.getByText('Failure causes')).toBeInTheDocument();
+  expect(screen.getByText('Maven tests')).toBeInTheDocument();
+  expect(screen.getByText('GitHub auth')).toBeInTheDocument();
   expect(screen.getByText('Queue')).toBeInTheDocument();
   expect(screen.getByText('1 delayed')).toBeInTheDocument();
   expect(screen.getByText('maven test command timed out')).toBeInTheDocument();
@@ -520,6 +529,9 @@ test('loads the next backend task page with offset pagination', async () => {
         failedTestRunCount: 0,
         testPassRate: 1
       });
+    }
+    if (url === '/api/tasks/metrics/failure-causes') {
+      return jsonResponse([{ cause: 'MAVEN_TESTS', count: 1 }]);
     }
     if (url === '/api/task-queue/summary') {
       return jsonResponse(queueSummary);

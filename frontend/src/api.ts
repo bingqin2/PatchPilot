@@ -1,6 +1,7 @@
 import type {
   ApiResponse,
   FixTask,
+  FixTaskFailureCauseSummary,
   FixTaskPage,
   FixTaskAuditSummary,
   FixTaskMetricsSummary,
@@ -38,6 +39,10 @@ export async function listTasks(options: TaskStatusFilter | ListTasksOptions = '
 
 export async function getMetricsSummary(): Promise<FixTaskMetricsSummary> {
   return getApi<FixTaskMetricsSummary>('/api/tasks/metrics/summary');
+}
+
+export async function getFailureCauseSummary(): Promise<FixTaskFailureCauseSummary[]> {
+  return getApi<FixTaskFailureCauseSummary[]>('/api/tasks/metrics/failure-causes');
 }
 
 export async function getQueueSummary(): Promise<FixTaskQueueSummary> {

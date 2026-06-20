@@ -1,6 +1,7 @@
 package io.patchpilot.backend.task.service.impl;
 
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
+import io.patchpilot.backend.task.domain.vo.FixTaskFailureCauseSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskMetricsSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskModelCallVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskTestRunVo;
@@ -13,11 +14,22 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
 public class DefaultFixTaskMetricsService implements FixTaskMetricsService {
+
+    private static final List<String> FAILURE_CAUSE_ORDER = List.of(
+            "MAVEN_TESTS",
+            "GITHUB_AUTH",
+            "MODEL_ERROR",
+            "SANDBOX_REJECTION",
+            "UNKNOWN"
+    );
 
     private final FixTaskService fixTaskService;
     private final FixTaskModelCallService fixTaskModelCallService;
@@ -63,10 +75,45 @@ public class DefaultFixTaskMetricsService implements FixTaskMetricsService {
         );
     }
 
+    @Override
+    public List<FixTaskFailureCauseSummaryVo> failureCauses() {
+        Map<String, Long> counts = new LinkedHashMap<>();
+        fixTaskService.listTasks().stream()
+                .filter(task -> task.status() == FixTaskStatus.FAILED)
+                .map(task -> classifyFailureCause(task.failureReason()))
+                .forEach(cause -> counts.merge(cause, 1L, Long::sum));
+        return FAILURE_CAUSE_ORDER.stream()
+                .filter(cause -> counts.getOrDefault(cause, 0L) > 0)
+                .map(cause -> new FixTaskFailureCauseSummaryVo(cause, counts.get(cause)))
+                .toList();
+    }
+
     private static long countByStatus(List<FixTaskVo> tasks, FixTaskStatus status) {
         return tasks.stream()
                 .filter(task -> task.status() == status)
                 .count();
+    }
+
+    private static String classifyFailureCause(String failureReason) {
+        if (failureReason == null || failureReason.isBlank()) {
+            return "UNKNOWN";
+        }
+        String normalizedReason = failureReason.toLowerCase(Locale.ROOT);
+        if (normalizedReason.contains("maven") || normalizedReason.contains("test command") || normalizedReason.contains("tests failed")) {
+            return "MAVEN_TESTS";
+        }
+        if (normalizedReason.contains("github") || normalizedReason.contains("token") || normalizedReason.contains("permission")
+                || normalizedReason.contains("http 401") || normalizedReason.contains("http 403")
+                || normalizedReason.contains("auth")) {
+            return "GITHUB_AUTH";
+        }
+        if (normalizedReason.contains("model") || normalizedReason.contains("openai")) {
+            return "MODEL_ERROR";
+        }
+        if (normalizedReason.contains("allowlist") || normalizedReason.contains("sandbox") || normalizedReason.contains("command rejected")) {
+            return "SANDBOX_REJECTION";
+        }
+        return "UNKNOWN";
     }
 
     private static long averageCompletionDurationMs(List<FixTaskVo> tasks) {

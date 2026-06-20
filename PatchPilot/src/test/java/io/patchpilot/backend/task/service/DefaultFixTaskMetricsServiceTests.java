@@ -108,6 +108,34 @@ class DefaultFixTaskMetricsServiceTests {
         assertThat(summary.testPassRate()).isEqualTo(2.0 / 3.0);
     }
 
+    @Test
+    void should_summarize_failed_tasks_by_failure_cause() {
+        FixTaskMetricsService metricsService = new DefaultFixTaskMetricsService(
+                new StaticFixTaskService(List.of(
+                        failedTask("maven-tests", "maven tests failed: compilation error"),
+                        failedTask("github-auth", "GitHub issue comment creation failed: HTTP 403"),
+                        failedTask("model-error", "OpenAI-compatible model call failed: invalid API key"),
+                        failedTask("sandbox", "Command rejected by allowlist: rm -rf /tmp/repo"),
+                        failedTask("unknown", "unexpected executor failure"),
+                        task("completed", FixTaskStatus.COMPLETED,
+                                Instant.parse("2026-06-20T01:06:00Z"),
+                                Instant.parse("2026-06-20T01:06:10Z"))
+                )),
+                new StaticFixTaskModelCallService(Map.of()),
+                new StaticFixTaskTestRunService(Map.of())
+        );
+
+        assertThat(metricsService.failureCauses())
+                .extracting("cause", "count")
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple("MAVEN_TESTS", 1L),
+                        org.assertj.core.groups.Tuple.tuple("GITHUB_AUTH", 1L),
+                        org.assertj.core.groups.Tuple.tuple("MODEL_ERROR", 1L),
+                        org.assertj.core.groups.Tuple.tuple("SANDBOX_REJECTION", 1L),
+                        org.assertj.core.groups.Tuple.tuple("UNKNOWN", 1L)
+                );
+    }
+
     private FixTaskVo createTask(String deliveryId) {
         return fixTaskService.createFixTask(new CreateFixTaskCommand(
                 "octocat",
@@ -154,6 +182,28 @@ class DefaultFixTaskMetricsServiceTests {
                 completedAt == null ? null : "https://github.com/octocat/hello-world/pull/7",
                 completedAt,
                 completedAt == null ? createdAt : completedAt,
+                null,
+                null
+        );
+    }
+
+    private static FixTaskVo failedTask(String id, String failureReason) {
+        return new FixTaskVo(
+                id,
+                "octocat",
+                "hello-world",
+                42,
+                0,
+                "alice",
+                "/agent fix",
+                "delivery-" + id,
+                98765,
+                FixTaskStatus.FAILED,
+                failureReason,
+                Instant.parse("2026-06-20T01:00:00Z"),
+                null,
+                null,
+                Instant.parse("2026-06-20T01:00:10Z"),
                 null,
                 null
         );

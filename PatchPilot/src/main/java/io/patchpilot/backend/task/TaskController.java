@@ -3,6 +3,7 @@ package io.patchpilot.backend.task;
 import io.patchpilot.backend.common.response.ApiResponse;
 import io.patchpilot.backend.task.domain.bo.FixTaskListQuery;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
+import io.patchpilot.backend.task.domain.vo.FixTaskFailureCauseSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskAuditSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskMetricsSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskModelCallVo;
@@ -63,6 +64,11 @@ public class TaskController {
     @GetMapping("/metrics/summary")
     public ApiResponse<FixTaskMetricsSummaryVo> getTaskMetricsSummary() {
         return ApiResponse.ok(fixTaskMetricsService.summary());
+    }
+
+    @GetMapping("/metrics/failure-causes")
+    public ApiResponse<List<FixTaskFailureCauseSummaryVo>> getTaskFailureCauseSummary() {
+        return ApiResponse.ok(fixTaskMetricsService.failureCauses());
     }
 
     @GetMapping("/{id}")

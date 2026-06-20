@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
@@ -29,6 +30,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@ActiveProfiles("default")
 class TaskControllerTests {
 
     @Autowired
@@ -545,6 +547,24 @@ class TaskControllerTests {
                 .andExpect(jsonPath("$.data.passedTestRunCount").value(greaterThanOrEqualTo(1)))
                 .andExpect(jsonPath("$.data.failedTestRunCount").value(greaterThanOrEqualTo(1)))
                 .andExpect(jsonPath("$.data.testPassRate").value(greaterThanOrEqualTo(0.0)));
+    }
+
+    @Test
+    void should_get_task_failure_cause_summary() throws Exception {
+        FixTaskVo mavenFailure = createTask("delivery-failure-cause-maven");
+        FixTaskVo githubFailure = createTask("delivery-failure-cause-github");
+        createTask("delivery-failure-cause-pending");
+        fixTaskService.markFailed(mavenFailure.id(), "maven tests failed: compilation error");
+        fixTaskService.markFailed(githubFailure.id(), "GitHub token is required to create Pull Requests");
+
+        mockMvc.perform(get("/api/tasks/metrics/failure-causes"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.length()").value(greaterThanOrEqualTo(2)))
+                .andExpect(jsonPath("$.data[0].cause").value("MAVEN_TESTS"))
+                .andExpect(jsonPath("$.data[0].count").value(greaterThanOrEqualTo(1)))
+                .andExpect(jsonPath("$.data[1].cause").value("GITHUB_AUTH"))
+                .andExpect(jsonPath("$.data[1].count").value(greaterThanOrEqualTo(1)));
     }
 
     private FixTaskVo createTask(String deliveryId) {

@@ -2,6 +2,7 @@ import { AlertCircle, RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   cancelTask,
+  getFailureCauseSummary,
   getMetricsSummary,
   getModelCalls,
   getQueueSummary,
@@ -13,6 +14,7 @@ import {
   listTasks,
   retryTask
 } from './api';
+import { FailureCausePanel } from './dashboard/components/FailureCausePanel';
 import { MetricCard } from './dashboard/components/MetricCard';
 import { QueuePanel } from './dashboard/components/QueuePanel';
 import { TaskDetailPanel } from './dashboard/components/TaskDetailPanel';
@@ -22,6 +24,7 @@ import { emptyDetail } from './dashboard/types';
 import type { TaskDetailState } from './dashboard/types';
 import type {
   FixTask,
+  FixTaskFailureCauseSummary,
   FixTaskMetricsSummary,
   FixTaskQueueItem,
   FixTaskQueueSummary,
@@ -33,6 +36,7 @@ const TASK_PAGE_SIZE = 50;
 export default function App() {
   const [tasks, setTasks] = useState<FixTask[]>([]);
   const [metrics, setMetrics] = useState<FixTaskMetricsSummary | null>(null);
+  const [failureCauses, setFailureCauses] = useState<FixTaskFailureCauseSummary[]>([]);
   const [queueSummary, setQueueSummary] = useState<FixTaskQueueSummary | null>(null);
   const [queueItems, setQueueItems] = useState<FixTaskQueueItem[]>([]);
   const [statusFilter, setStatusFilter] = useState<TaskStatusFilter>('ALL');
@@ -56,14 +60,16 @@ export default function App() {
     setLoading(true);
     setError(null);
     try {
-      const [taskList, metricsSummary, queueSummaryData, queueItemList] = await Promise.all([
+      const [taskList, metricsSummary, failureCauseSummary, queueSummaryData, queueItemList] = await Promise.all([
         listTasks({ status: statusFilter, query: searchQuery, limit: TASK_PAGE_SIZE }),
         getMetricsSummary(),
+        getFailureCauseSummary(),
         getQueueSummary(),
         listQueueItems()
       ]);
       setTasks(taskList.items);
       setMetrics(metricsSummary);
+      setFailureCauses(failureCauseSummary);
       setQueueSummary(queueSummaryData);
       setQueueItems(queueItemList);
       setCanLoadMoreTasks(taskList.hasMore);
@@ -196,6 +202,8 @@ export default function App() {
         <MetricCard label="Test pass" value={percent(metrics?.testPassRate)} detail={`${metrics?.passedTestRunCount ?? 0}/${metrics?.testRunCount ?? 0} runs`} />
         <MetricCard label="Model tokens" value={metrics?.totalModelTokens ?? 0} detail={`${metrics?.averageModelTokensPerCompletedTask ?? 0} avg completed`} />
       </section>
+
+      <FailureCausePanel causes={failureCauses} />
 
       <section className="workspace-grid">
         <TaskListPanel

@@ -1379,3 +1379,25 @@ Validation:
 - `mvn -pl PatchPilot -Dtest=InMemoryFixTaskServiceTests#should_count_tasks_before_limit_and_offset,MyBatisFixTaskServiceTests#should_count_tasks_with_query_filters_without_limit_or_offset test`: passed, 2 tests run, 0 failures.
 - `npm test -- src/App.test.tsx -t "renders operational task dashboard from backend APIs"`: first failed because the task list still rendered `2 visible tasks`, then passed after rendering `2 of 2 tasks visible`.
 - `npm test -- src/api.test.ts`: passed, 1 test run, 0 failures.
+
+Implemented dashboard failure cause summary from `docs/plans/062-dashboard-failure-cause-summary.md`.
+
+Changes:
+
+- Added `GET /api/tasks/metrics/failure-causes`.
+- Added `FixTaskFailureCauseSummaryVo`.
+- Extended `FixTaskMetricsService` with `failureCauses()`.
+- Classified failed task reasons into `MAVEN_TESTS`, `GITHUB_AUTH`, `MODEL_ERROR`, `SANDBOX_REJECTION`, and `UNKNOWN`.
+- Rendered a React failure-cause summary panel in the dashboard.
+- Added a frontend API helper for the new metrics endpoint.
+- Forced full Spring Boot controller/application tests to use the `default` profile so local `.env` values such as `SPRING_PROFILES_ACTIVE=docker` do not activate MyBatis-backed services in unit test context.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=DefaultFixTaskMetricsServiceTests#should_summarize_failed_tasks_by_failure_cause,TaskControllerTests#should_get_task_failure_cause_summary test`: first failed because `failureCauses()` was missing, then failed once due to unstable ordering, then passed after adding the service method and fixed cause order.
+- `npm test -- src/App.test.tsx -t "renders operational task dashboard from backend APIs"`: first failed because the dashboard did not render `Failure causes`, then passed after adding the panel.
+- `mvn -pl PatchPilot test`: passed, 256 tests run, 0 failures.
+- `SPRING_PROFILES_ACTIVE=docker mvn -pl PatchPilot clean -Dtest=PatchPilotApplicationTests,GitHubWebhookControllerTests,TaskControllerTests test`: first reproduced the missing `FixTaskModelCallMapper` context failure, then passed after adding explicit `@ActiveProfiles("default")`.
+- `SPRING_PROFILES_ACTIVE=docker mvn -pl PatchPilot clean test`: passed, 256 tests run, 0 failures.
+- `npm test` in `frontend/`: passed, 14 tests run, 0 failures.
+- `npm run build` in `frontend/`: passed.

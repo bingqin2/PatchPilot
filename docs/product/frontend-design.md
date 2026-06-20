@@ -74,7 +74,6 @@ Additional future work:
 - Dashboard views for model cost and latency.
 - Worker and queue health panels.
 - Configuration visibility for webhook URL, model provider, and sandbox settings.
-- Better failure grouping by cause, such as GitHub auth, Maven tests, model errors, and command sandbox rejections.
 
 ## Non-Goals
 

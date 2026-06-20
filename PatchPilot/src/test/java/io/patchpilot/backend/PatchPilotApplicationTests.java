@@ -5,12 +5,14 @@ import io.patchpilot.backend.agent.workflow.PlanDrivenPatchWorkflow;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
+@ActiveProfiles("default")
 class PatchPilotApplicationTests {
 
     private final ApplicationContext applicationContext;
