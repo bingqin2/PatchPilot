@@ -1134,3 +1134,18 @@ Validation:
 
 - `mvn -pl PatchPilot -Dtest=DefaultFixTaskMetricsServiceTests,TaskControllerTests test`: first failed because metrics summary did not expose test-run fields and metrics service did not depend on test-run service, then passed after implementation, 28 tests run, 0 failures, 0 errors.
 - `mvn -pl PatchPilot test`: passed, 247 tests run, 0 failures, 0 errors.
+
+Implemented the React dashboard scaffold from `docs/plans/046-react-dashboard-scaffold.md`.
+
+Changes:
+
+- Added a React + Vite + TypeScript frontend under `frontend/`.
+- Added typed API helpers for task list, metrics summary, task summary, timeline, test-run, tool-call, and model-call endpoints.
+- Built a compact operations dashboard with metric cards, task list, Pull Request links, selected task summary, timeline, Maven test output, tool calls, and model calls.
+- Added Vitest and Testing Library coverage for successful backend rendering and backend error display.
+- Documented frontend setup and validation commands in README.
+
+Validation:
+
+- `npm test` in `frontend/`: first failed because `src/App.tsx` did not exist, then failed because the task detail omitted the latest summary event, then passed after implementation, 2 tests run, 0 failures.
+- `npm run build` in `frontend/`: first failed because TypeScript config did not match Vite/Vitest module resolution and test globals, then passed after separating Vite and Vitest config, production build generated `dist/`.

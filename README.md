@@ -160,6 +160,26 @@ Task metrics:
 curl http://127.0.0.1:8080/api/tasks/metrics/summary
 ```
 
+## Frontend Dashboard
+
+The React dashboard lives in `frontend/` and calls the backend through Vite's `/api` proxy.
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Open the printed Vite URL, usually `http://127.0.0.1:5173`. Keep the backend running on `http://127.0.0.1:8080` so dashboard requests can reach the task APIs.
+
+Validate the dashboard:
+
+```bash
+cd frontend
+npm test
+npm run build
+```
+
 ## Backend Tests
 
 Run all backend tests:
