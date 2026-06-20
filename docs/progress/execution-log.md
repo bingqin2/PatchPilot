@@ -1295,3 +1295,17 @@ Validation:
 
 - `npm test` in `frontend/`: first failed because the task list had no `Search tasks` searchbox, then passed after implementation, 10 tests run, 0 failures.
 - `npm run build` in `frontend/`: passed, production build generated `dist/`.
+
+Planned backend task history search and pagination from `docs/plans/057-task-history-search-pagination-plan.md`.
+
+Changes:
+
+- Defined the target `GET /api/tasks?query=...&status=...&repositoryOwner=...&repositoryName=...&limit=...&offset=...` API shape.
+- Documented searchable MySQL fields and stable newest-first sorting.
+- Chose to keep the existing list response shape for the first backend-search phase to avoid frontend breakage.
+- Split backend service/query, MyBatis, in-memory, controller, and frontend upgrade work into future implementation steps.
+- Captured tests needed for query, pagination, escaping, and dashboard integration.
+
+Validation:
+
+- Documentation-only planning change; no runtime tests required.
