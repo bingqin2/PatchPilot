@@ -231,6 +231,10 @@ export default function App() {
                 <span className="task-issue">#{task.issueNumber}</span>
                 <span className="task-comment">{task.triggerComment}</span>
                 {task.failureReason ? <span className="task-failure">{task.failureReason}</span> : null}
+                <a className="task-link" href={issueUrl(task)} target="_blank" rel="noreferrer">
+                  <ExternalLink size={14} />
+                  Open Issue
+                </a>
                 {task.pullRequestUrl ? (
                   <a className="task-link" href={task.pullRequestUrl} target="_blank" rel="noreferrer">
                     <GitPullRequest size={14} />
@@ -327,6 +331,10 @@ function TaskDetailPanel({
           <p>{task.id}</p>
         </div>
         <div className="detail-actions">
+          <a className="external-link" href={issueUrl(task)} target="_blank" rel="noreferrer">
+            Open Issue
+            <ExternalLink size={14} />
+          </a>
           {canCancel ? (
             <button
               className="secondary-button danger-button"
@@ -492,6 +500,10 @@ function compactTime(value: string) {
 
 function pullRequestNumber(url: string) {
   return url.split('/').filter(Boolean).at(-1) ?? 'link';
+}
+
+function issueUrl(task: FixTask) {
+  return `https://github.com/${task.repositoryOwner}/${task.repositoryName}/issues/${task.issueNumber}`;
 }
 
 function errorMessage(caught: unknown) {
