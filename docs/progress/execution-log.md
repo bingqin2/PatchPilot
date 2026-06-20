@@ -1164,3 +1164,19 @@ Validation:
 
 - `npm test` in `frontend/`: first failed because the filter controls were not implemented, then failed because the test used ambiguous status text and missing task-detail mocks, then passed after implementation, 3 tests run, 0 failures.
 - `npm run build` in `frontend/`: passed, production build generated `dist/`.
+
+Implemented dashboard task control actions from `docs/plans/048-dashboard-task-control-actions.md`.
+
+Changes:
+
+- Added frontend POST helpers for `/api/tasks/{taskId}/cancel` and `/api/tasks/{taskId}/retry`.
+- Added `Cancel task` in task detail for `PENDING`, `RUNNING`, and `RUNNING_TESTS` tasks.
+- Added `Retry task` in task detail for `FAILED` and `CANCELLED` tasks.
+- Disabled the active action while a control request is in flight.
+- Refreshed dashboard task list, metrics, and selected task detail after successful control actions.
+- Documented dashboard cancel/retry support in README.
+
+Validation:
+
+- `npm test` in `frontend/`: first failed because `Cancel task` and `Retry task` controls did not exist, then passed after implementation, 5 tests run, 0 failures.
+- `npm run build` in `frontend/`: passed, production build generated `dist/`.

@@ -65,7 +65,8 @@ h3 {
 
 .icon-button,
 .external-link,
-.task-link {
+.task-link,
+.secondary-button {
   align-items: center;
   display: inline-flex;
   gap: 8px;
@@ -79,6 +80,28 @@ h3 {
   cursor: pointer;
   min-height: 38px;
   padding: 0 14px;
+}
+
+.secondary-button {
+  background: #ffffff;
+  border: 1px solid #c9d4de;
+  border-radius: 6px;
+  color: #263442;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 750;
+  min-height: 34px;
+  padding: 0 10px;
+}
+
+.secondary-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.danger-button {
+  border-color: #ef8a7b;
+  color: #a13724;
 }
 
 .alert {
@@ -280,6 +303,14 @@ h3 {
 
 .detail-panel {
   overflow: hidden;
+}
+
+.detail-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
 }
 
 .detail-summary {

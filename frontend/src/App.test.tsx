@@ -42,6 +42,40 @@ const failedTask = {
   statusCommentUrl: null
 };
 
+const runningTask = {
+  id: 'task-3',
+  repositoryOwner: 'bingqin2',
+  repositoryName: 'PatchPilot',
+  issueNumber: 3,
+  installationId: 0,
+  triggerUser: 'bingqin2',
+  triggerComment: '/agent fix running task',
+  deliveryId: 'delivery-3',
+  commentId: 103,
+  status: 'RUNNING',
+  failureReason: null,
+  createdAt: '2026-06-20T01:10:00Z',
+  pullRequestUrl: null,
+  completedAt: null,
+  updatedAt: '2026-06-20T01:10:30Z',
+  statusCommentId: null,
+  statusCommentUrl: null
+};
+
+const cancelledTask = {
+  ...runningTask,
+  status: 'CANCELLED',
+  failureReason: 'Task cancelled by user request',
+  updatedAt: '2026-06-20T01:11:00Z'
+};
+
+const retriedTask = {
+  ...failedTask,
+  status: 'PENDING',
+  failureReason: null,
+  updatedAt: '2026-06-20T01:07:00Z'
+};
+
 const summary = {
   task: completedTask,
   timelineEventCount: 4,
@@ -129,6 +163,9 @@ beforeEach(() => {
     if (url === '/api/tasks?limit=50') {
       return jsonResponse([completedTask, failedTask]);
     }
+    if (url === '/api/tasks?limit=50&status=RUNNING') {
+      return jsonResponse([runningTask]);
+    }
     if (url === '/api/tasks?limit=50&status=FAILED') {
       return jsonResponse([failedTask]);
     }
@@ -203,6 +240,45 @@ beforeEach(() => {
     if (url === '/api/tasks/task-2/model-calls') {
       return jsonResponse([]);
     }
+    if (url === '/api/tasks/task-3/summary') {
+      return jsonResponse({
+        ...summary,
+        task: runningTask,
+        latestTimelineEvent: {
+          id: 'timeline-running',
+          taskId: 'task-3',
+          eventType: 'RUNNING',
+          message: 'Task is running',
+          createdAt: '2026-06-20T01:10:30Z'
+        }
+      });
+    }
+    if (url === '/api/tasks/task-3/timeline') {
+      return jsonResponse([
+        {
+          id: 'timeline-running',
+          taskId: 'task-3',
+          eventType: 'RUNNING',
+          message: 'Task is running',
+          createdAt: '2026-06-20T01:10:30Z'
+        }
+      ]);
+    }
+    if (url === '/api/tasks/task-3/test-runs') {
+      return jsonResponse([]);
+    }
+    if (url === '/api/tasks/task-3/tool-calls') {
+      return jsonResponse([]);
+    }
+    if (url === '/api/tasks/task-3/model-calls') {
+      return jsonResponse([]);
+    }
+    if (url === '/api/tasks/task-3/cancel') {
+      return jsonResponse(cancelledTask);
+    }
+    if (url === '/api/tasks/task-2/retry') {
+      return jsonResponse(retriedTask);
+    }
     return jsonResponse(null, false, 'not found', 404);
   }));
 });
@@ -264,6 +340,38 @@ test('filters tasks by status with backend query parameters', async () => {
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks?limit=50&status=CANCELLED'));
   expect(screen.getByText('No CANCELLED tasks found.')).toBeInTheDocument();
   expect(screen.getByText('Select a task to inspect execution records.')).toBeInTheDocument();
+});
+
+test('cancels active tasks and refreshes dashboard data', async () => {
+  const user = userEvent.setup();
+  const fetchMock = vi.mocked(fetch);
+
+  render(<App />);
+
+  await user.click(await screen.findByRole('button', { name: 'RUNNING' }));
+  expect(await screen.findByText('/agent fix running task')).toBeInTheDocument();
+
+  await user.click(await screen.findByRole('button', { name: 'Cancel task' }));
+
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks/task-3/cancel', { method: 'POST' }));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks?limit=50&status=RUNNING'));
+  expect(screen.queryByRole('button', { name: 'Retry task' })).not.toBeInTheDocument();
+});
+
+test('retries failed tasks and refreshes dashboard data', async () => {
+  const user = userEvent.setup();
+  const fetchMock = vi.mocked(fetch);
+
+  render(<App />);
+
+  await user.click(await screen.findByRole('button', { name: 'FAILED' }));
+  expect(await screen.findByText('/agent fix replace docs/demo.md broken')).toBeInTheDocument();
+
+  await user.click(await screen.findByRole('button', { name: 'Retry task' }));
+
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks/task-2/retry', { method: 'POST' }));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks?limit=50&status=FAILED'));
+  expect(screen.queryByRole('button', { name: 'Cancel task' })).not.toBeInTheDocument();
 });
 
 function jsonResponse(data: unknown, success = true, message: string | null = null, status = 200) {
