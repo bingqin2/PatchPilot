@@ -1,8 +1,10 @@
 package io.patchpilot.backend.task.service;
 
+import io.patchpilot.backend.agent.config.AgentProperties;
 import io.patchpilot.backend.task.domain.bo.CreateFixTaskCommand;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.vo.FixTaskMetricsSummaryVo;
+import io.patchpilot.backend.task.domain.vo.FixTaskModelUsageSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskModelCallVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskTestRunVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
@@ -27,7 +29,8 @@ class DefaultFixTaskMetricsServiceTests {
     private final FixTaskMetricsService fixTaskMetricsService = new DefaultFixTaskMetricsService(
             fixTaskService,
             fixTaskModelCallService,
-            fixTaskTestRunService
+            fixTaskTestRunService,
+            new AgentProperties()
     );
 
     @Test
@@ -85,7 +88,8 @@ class DefaultFixTaskMetricsServiceTests {
                 new StaticFixTaskTestRunService(Map.of(
                         "completed", List.of(testRun("completed", 0)),
                         "failed", List.of(testRun("failed", 1), testRun("failed", 0))
-                ))
+                )),
+                new AgentProperties()
         );
 
         FixTaskMetricsSummaryVo summary = metricsService.summary();
@@ -122,7 +126,8 @@ class DefaultFixTaskMetricsServiceTests {
                                 Instant.parse("2026-06-20T01:06:10Z"))
                 )),
                 new StaticFixTaskModelCallService(Map.of()),
-                new StaticFixTaskTestRunService(Map.of())
+                new StaticFixTaskTestRunService(Map.of()),
+                new AgentProperties()
         );
 
         assertThat(metricsService.failureCauses())
@@ -134,6 +139,41 @@ class DefaultFixTaskMetricsServiceTests {
                         org.assertj.core.groups.Tuple.tuple("SANDBOX_REJECTION", 1L),
                         org.assertj.core.groups.Tuple.tuple("UNKNOWN", 1L)
                 );
+    }
+
+    @Test
+    void should_summarize_model_usage_and_estimated_cost() {
+        AgentProperties properties = new AgentProperties();
+        properties.getCost().setPromptTokenUsd(0.000001);
+        properties.getCost().setCompletionTokenUsd(0.000002);
+        FixTaskMetricsService metricsService = new DefaultFixTaskMetricsService(
+                new StaticFixTaskService(List.of(
+                        task("completed", FixTaskStatus.COMPLETED,
+                                Instant.parse("2026-06-20T01:00:00Z"),
+                                Instant.parse("2026-06-20T01:00:10Z")),
+                        task("failed", FixTaskStatus.FAILED,
+                                Instant.parse("2026-06-20T01:01:00Z"),
+                                null)
+                )),
+                new StaticFixTaskModelCallService(Map.of(
+                        "completed", List.of(
+                                modelCall("completed", 1000, 500),
+                                modelCall("completed", 200, 100, false)
+                        ),
+                        "failed", List.of(modelCall("failed", 300, 50))
+                )),
+                new StaticFixTaskTestRunService(Map.of()),
+                properties
+        );
+
+        FixTaskModelUsageSummaryVo usage = metricsService.modelUsage();
+
+        assertThat(usage.totalPromptTokens()).isEqualTo(1500);
+        assertThat(usage.totalCompletionTokens()).isEqualTo(650);
+        assertThat(usage.totalTokens()).isEqualTo(2150);
+        assertThat(usage.successfulCalls()).isEqualTo(2);
+        assertThat(usage.failedCalls()).isEqualTo(1);
+        assertThat(usage.estimatedCostUsd()).isEqualTo(0.0028);
     }
 
     private FixTaskVo createTask(String deliveryId) {
@@ -210,6 +250,10 @@ class DefaultFixTaskMetricsServiceTests {
     }
 
     private static FixTaskModelCallVo modelCall(String taskId, int promptTokens, int completionTokens) {
+        return modelCall(taskId, promptTokens, completionTokens, true);
+    }
+
+    private static FixTaskModelCallVo modelCall(String taskId, int promptTokens, int completionTokens, boolean success) {
         return new FixTaskModelCallVo(
                 "model-call-" + taskId + "-" + promptTokens,
                 taskId,
@@ -220,8 +264,8 @@ class DefaultFixTaskMetricsServiceTests {
                 promptTokens,
                 completionTokens,
                 promptTokens + completionTokens,
-                true,
-                null,
+                success,
+                success ? null : "model failed",
                 Instant.parse("2026-06-20T01:00:00Z"),
                 Instant.parse("2026-06-20T01:00:02Z"),
                 2000

@@ -5,6 +5,7 @@ import type {
   FixTaskPage,
   FixTaskAuditSummary,
   FixTaskMetricsSummary,
+  FixTaskModelUsageSummary,
   FixTaskQueueItem,
   FixTaskQueueSummary,
   FixTaskModelCall,
@@ -43,6 +44,10 @@ export async function getMetricsSummary(): Promise<FixTaskMetricsSummary> {
 
 export async function getFailureCauseSummary(): Promise<FixTaskFailureCauseSummary[]> {
   return getApi<FixTaskFailureCauseSummary[]>('/api/tasks/metrics/failure-causes');
+}
+
+export async function getModelUsageSummary(): Promise<FixTaskModelUsageSummary> {
+  return getApi<FixTaskModelUsageSummary>('/api/tasks/metrics/model-usage');
 }
 
 export async function getQueueSummary(): Promise<FixTaskQueueSummary> {

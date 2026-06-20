@@ -157,6 +157,15 @@ const modelCalls = [
   }
 ];
 
+const modelUsageSummary = {
+  totalPromptTokens: 1500,
+  totalCompletionTokens: 650,
+  totalTokens: 2150,
+  successfulCalls: 2,
+  failedCalls: 1,
+  estimatedCostUsd: 0.0028
+};
+
 const queueSummary = {
   totalCount: 4,
   pendingCount: 2,
@@ -239,6 +248,9 @@ beforeEach(() => {
         { cause: 'MAVEN_TESTS', count: 1 },
         { cause: 'GITHUB_AUTH', count: 1 }
       ]);
+    }
+    if (url === '/api/tasks/metrics/model-usage') {
+      return jsonResponse(modelUsageSummary);
     }
     if (url === '/api/task-queue/summary') {
       return jsonResponse(queueSummary);
@@ -368,6 +380,11 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(screen.getByText('Failure causes')).toBeInTheDocument();
   expect(screen.getByText('Maven tests')).toBeInTheDocument();
   expect(screen.getByText('GitHub auth')).toBeInTheDocument();
+  expect(screen.getByText('Model usage')).toBeInTheDocument();
+  expect(screen.getByText('2,150')).toBeInTheDocument();
+  expect(screen.getByText('2 successful')).toBeInTheDocument();
+  expect(screen.getByText('1 failed')).toBeInTheDocument();
+  expect(screen.getByText('$0.0028')).toBeInTheDocument();
   expect(screen.getByText('Queue')).toBeInTheDocument();
   expect(screen.getByText('1 delayed')).toBeInTheDocument();
   expect(screen.getByText('maven test command timed out')).toBeInTheDocument();
@@ -532,6 +549,9 @@ test('loads the next backend task page with offset pagination', async () => {
     }
     if (url === '/api/tasks/metrics/failure-causes') {
       return jsonResponse([{ cause: 'MAVEN_TESTS', count: 1 }]);
+    }
+    if (url === '/api/tasks/metrics/model-usage') {
+      return jsonResponse(modelUsageSummary);
     }
     if (url === '/api/task-queue/summary') {
       return jsonResponse(queueSummary);

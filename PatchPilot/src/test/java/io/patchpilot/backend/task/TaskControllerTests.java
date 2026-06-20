@@ -567,6 +567,48 @@ class TaskControllerTests {
                 .andExpect(jsonPath("$.data[1].count").value(greaterThanOrEqualTo(1)));
     }
 
+    @Test
+    void should_get_task_model_usage_summary() throws Exception {
+        FixTaskVo successfulTask = createTask("delivery-model-usage-success");
+        FixTaskVo failedTask = createTask("delivery-model-usage-failed");
+        fixTaskModelCallService.recordModelCall(
+                successfulTask.id(),
+                "openai",
+                "gpt-5.5",
+                "Fix issue",
+                "Changed demo file",
+                120,
+                80,
+                true,
+                null,
+                Instant.parse("2026-06-20T02:00:00Z"),
+                Instant.parse("2026-06-20T02:00:04Z")
+        );
+        fixTaskModelCallService.recordModelCall(
+                failedTask.id(),
+                "openai",
+                "gpt-5.5",
+                "Fix issue",
+                "Model failed",
+                50,
+                10,
+                false,
+                "model failed",
+                Instant.parse("2026-06-20T02:00:05Z"),
+                Instant.parse("2026-06-20T02:00:09Z")
+        );
+
+        mockMvc.perform(get("/api/tasks/metrics/model-usage"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.totalPromptTokens").value(greaterThanOrEqualTo(170)))
+                .andExpect(jsonPath("$.data.totalCompletionTokens").value(greaterThanOrEqualTo(90)))
+                .andExpect(jsonPath("$.data.totalTokens").value(greaterThanOrEqualTo(260)))
+                .andExpect(jsonPath("$.data.successfulCalls").value(greaterThanOrEqualTo(1)))
+                .andExpect(jsonPath("$.data.failedCalls").value(greaterThanOrEqualTo(1)))
+                .andExpect(jsonPath("$.data.estimatedCostUsd").value(greaterThanOrEqualTo(0.0)));
+    }
+
     private FixTaskVo createTask(String deliveryId) {
         return createTask(command("octocat", "hello-world", deliveryId));
     }

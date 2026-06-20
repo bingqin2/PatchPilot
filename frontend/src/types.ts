@@ -62,6 +62,15 @@ export interface FixTaskFailureCauseSummary {
   count: number;
 }
 
+export interface FixTaskModelUsageSummary {
+  totalPromptTokens: number;
+  totalCompletionTokens: number;
+  totalTokens: number;
+  successfulCalls: number;
+  failedCalls: number;
+  estimatedCostUsd: number;
+}
+
 export interface FixTaskQueueSummary {
   totalCount: number;
   pendingCount: number;

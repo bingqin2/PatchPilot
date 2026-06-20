@@ -9,6 +9,7 @@ public class AgentProperties {
     private String model = "gpt-4.1-mini";
     private String baseUrl = "https://api.openai.com/v1";
     private String apiKey = "";
+    private Cost cost = new Cost();
 
     public String getProvider() {
         return provider;
@@ -40,5 +41,35 @@ public class AgentProperties {
 
     public void setApiKey(String apiKey) {
         this.apiKey = apiKey;
+    }
+
+    public Cost getCost() {
+        return cost;
+    }
+
+    public void setCost(Cost cost) {
+        this.cost = cost;
+    }
+
+    public static class Cost {
+
+        private double promptTokenUsd = 0.0;
+        private double completionTokenUsd = 0.0;
+
+        public double getPromptTokenUsd() {
+            return promptTokenUsd;
+        }
+
+        public void setPromptTokenUsd(double promptTokenUsd) {
+            this.promptTokenUsd = promptTokenUsd;
+        }
+
+        public double getCompletionTokenUsd() {
+            return completionTokenUsd;
+        }
+
+        public void setCompletionTokenUsd(double completionTokenUsd) {
+            this.completionTokenUsd = completionTokenUsd;
+        }
     }
 }

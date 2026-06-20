@@ -156,7 +156,10 @@ h3 {
   margin-top: 8px;
 }
 
-.failure-cause-panel {
+.summary-panel-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 0.8fr);
   margin-bottom: 16px;
 }
 
@@ -187,6 +190,46 @@ h3 {
 .failure-cause-row strong {
   color: #202b36;
   font-size: 16px;
+}
+
+.model-usage-grid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 0 16px 16px;
+}
+
+.model-usage-grid div {
+  background: #f7f9fb;
+  border: 1px solid #dbe3ea;
+  border-radius: 6px;
+  min-height: 72px;
+  padding: 10px;
+}
+
+.model-usage-grid div:first-child,
+.model-usage-grid div:last-child {
+  grid-column: 1 / -1;
+}
+
+.model-usage-grid span {
+  color: #637181;
+  display: block;
+  font-size: 12px;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+
+.model-usage-grid strong {
+  color: #202b36;
+  display: block;
+  font-size: 20px;
+}
+
+.model-usage-grid p {
+  color: #637181;
+  font-size: 12px;
+  margin-top: 4px;
 }
 
 .workspace-grid {
@@ -596,6 +639,7 @@ pre {
   }
 
   .metrics-grid,
+  .summary-panel-grid,
   .workspace-grid,
   .split-section,
   .queue-summary,

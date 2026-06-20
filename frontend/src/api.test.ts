@@ -1,4 +1,4 @@
-import { getFailureCauseSummary, listTasks } from './api';
+import { getFailureCauseSummary, getModelUsageSummary, listTasks } from './api';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -61,4 +61,36 @@ test('loads failure cause summary from backend metrics API', async () => {
     { cause: 'MAVEN_TESTS', count: 2 },
     { cause: 'GITHUB_AUTH', count: 1 }
   ]);
+});
+
+test('loads model usage summary from backend metrics API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        totalPromptTokens: 1500,
+        totalCompletionTokens: 650,
+        totalTokens: 2150,
+        successfulCalls: 2,
+        failedCalls: 1,
+        estimatedCostUsd: 0.0028
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const usage = await getModelUsageSummary();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/tasks/metrics/model-usage');
+  expect(usage).toEqual({
+    totalPromptTokens: 1500,
+    totalCompletionTokens: 650,
+    totalTokens: 2150,
+    successfulCalls: 2,
+    failedCalls: 1,
+    estimatedCostUsd: 0.0028
+  });
 });
