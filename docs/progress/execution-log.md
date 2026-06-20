@@ -1028,3 +1028,17 @@ Validation:
 - `mvn -pl PatchPilot -Dtest=GitHubWebhookServiceTests#should_dispatch_created_task_when_status_comment_creation_fails,FixTaskWorkerTests#should_keep_completed_status_when_status_comment_update_fails test`: passed, 2 tests run, 0 failures, 0 errors.
 - `mvn -pl PatchPilot -Dtest=GitHubWebhookServiceTests,FixTaskWorkerTests test`: passed, 11 tests run, 0 failures, 0 errors.
 - `mvn -pl PatchPilot test`: passed, 235 tests run, 0 failures, 0 errors.
+
+Implemented test-run output storage expansion from `docs/plans/039-test-run-output-storage.md`.
+
+Changes:
+
+- Added Flyway migration `V10__expand_fix_task_test_run_output.sql` to change `fix_task_test_run.output` to `mediumtext`.
+- Added a dedicated `LogSummary.truncateTestRunOutput(...)` helper with a higher bounded output limit for Maven test logs.
+- Updated in-memory and MyBatis test-run services to use the test-run-specific output limit.
+- Added regression coverage that preserves 120k-character test output and still truncates very large output.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=FixTaskTestRunOutputStorageMigrationTests,MyBatisFixTaskTestRunServiceTests,InMemoryFixTaskTestRunServiceTests test`: first failed because migration `V10__expand_fix_task_test_run_output.sql` did not exist and 120k-character output was still truncated to the old `TEXT` limit, then passed after implementation, 8 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot test`: passed, 238 tests run, 0 failures, 0 errors.

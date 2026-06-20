@@ -37,7 +37,7 @@ public class MyBatisFixTaskTestRunService implements FixTaskTestRunService {
                 taskId,
                 command,
                 exitCode,
-                LogSummary.truncateForTextColumn(output),
+                LogSummary.truncateTestRunOutput(output),
                 startedAt,
                 finishedAt,
                 FixTaskTestRunService.durationMs(startedAt, finishedAt)
