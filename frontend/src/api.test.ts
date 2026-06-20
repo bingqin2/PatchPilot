@@ -14,7 +14,8 @@ test('builds backend task search and pagination query parameters', async () => {
         items: [],
         limit: 25,
         offset: 50,
-        hasMore: true
+        hasMore: true,
+        total: 74
       },
       message: null
     })
@@ -33,6 +34,7 @@ test('builds backend task search and pagination query parameters', async () => {
     items: [],
     limit: 25,
     offset: 50,
-    hasMore: true
+    hasMore: true,
+    total: 74
   });
 });

@@ -165,6 +165,25 @@ class InMemoryFixTaskServiceTests {
     }
 
     @Test
+    void should_count_tasks_before_limit_and_offset() {
+        createTask("delivery-count-older");
+        createTask("delivery-count-newer");
+        FixTaskVo skippedTask = createTask("delivery-count-skipped");
+        fixTaskService.markFailed(skippedTask.id(), "different failure");
+
+        long total = fixTaskService.countTasks(new FixTaskListQuery(
+                "delivery-count",
+                FixTaskStatus.PENDING,
+                "octocat",
+                "hello-world",
+                1,
+                1
+        ));
+
+        assertThat(total).isEqualTo(2);
+    }
+
+    @Test
     void should_ignore_completed_task_when_finding_active_task_for_issue() {
         FixTaskVo task = createTask("delivery-completed-active-lookup");
         fixTaskService.markCompleted(task.id(), "https://github.com/octocat/hello-world/pull/7");

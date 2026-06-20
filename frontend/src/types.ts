@@ -35,6 +35,7 @@ export interface FixTaskPage {
   limit: number;
   offset: number;
   hasMore: boolean;
+  total: number;
 }
 
 export interface FixTaskMetricsSummary {

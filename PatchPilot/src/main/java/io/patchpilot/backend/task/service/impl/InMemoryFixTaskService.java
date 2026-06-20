@@ -16,6 +16,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Stream;
 
 @Service
 @Profile("default")
@@ -146,15 +147,16 @@ public class InMemoryFixTaskService implements FixTaskService {
 
     @Override
     public List<FixTaskVo> listTasks(FixTaskListQuery query) {
-        return tasks.values().stream()
+        return matchingTasks(query)
                 .sorted(Comparator.comparing(FixTaskVo::createdAt).reversed())
-                .filter(task -> query.status() == null || task.status() == query.status())
-                .filter(task -> query.repositoryOwner() == null || task.repositoryOwner().equals(query.repositoryOwner()))
-                .filter(task -> query.repositoryName() == null || task.repositoryName().equals(query.repositoryName()))
-                .filter(task -> matchesQuery(task, query.query()))
                 .skip(query.offset())
                 .limit(query.limit())
                 .toList();
+    }
+
+    @Override
+    public long countTasks(FixTaskListQuery query) {
+        return matchingTasks(query).count();
     }
 
     @Override
@@ -254,5 +256,13 @@ public class InMemoryFixTaskService implements FixTaskService {
                 task.pullRequestUrl() == null ? "" : task.pullRequestUrl()
         ).toLowerCase();
         return searchable.contains(normalizedQuery);
+    }
+
+    private Stream<FixTaskVo> matchingTasks(FixTaskListQuery query) {
+        return tasks.values().stream()
+                .filter(task -> query.status() == null || task.status() == query.status())
+                .filter(task -> query.repositoryOwner() == null || task.repositoryOwner().equals(query.repositoryOwner()))
+                .filter(task -> query.repositoryName() == null || task.repositoryName().equals(query.repositoryName()))
+                .filter(task -> matchesQuery(task, query.query()));
     }
 }

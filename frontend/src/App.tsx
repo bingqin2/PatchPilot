@@ -45,6 +45,7 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [canLoadMoreTasks, setCanLoadMoreTasks] = useState(false);
   const [loadingMoreTasks, setLoadingMoreTasks] = useState(false);
+  const [taskTotal, setTaskTotal] = useState(0);
 
   const selectedTask = useMemo(
     () => tasks.find((task) => task.id === selectedTaskId) ?? tasks[0] ?? null,
@@ -66,6 +67,7 @@ export default function App() {
       setQueueSummary(queueSummaryData);
       setQueueItems(queueItemList);
       setCanLoadMoreTasks(taskList.hasMore);
+      setTaskTotal(taskList.total);
       setSelectedTaskId((current) => {
         if (current && taskList.items.some((task) => task.id === current)) {
           return current;
@@ -91,6 +93,7 @@ export default function App() {
       });
       setTasks((current) => [...current, ...nextTaskPage.items]);
       setCanLoadMoreTasks(nextTaskPage.hasMore);
+      setTaskTotal(nextTaskPage.total);
     } catch (caught) {
       setError(errorMessage(caught));
     } finally {
@@ -201,6 +204,7 @@ export default function App() {
           statusFilter={statusFilter}
           searchQuery={searchQuery}
           loading={loading}
+          totalCount={taskTotal}
           canLoadMore={canLoadMoreTasks}
           loadingMore={loadingMoreTasks}
           onStatusFilterChange={setStatusFilter}

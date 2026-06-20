@@ -1362,3 +1362,20 @@ Validation:
 - `mvn -pl PatchPilot -Dtest=TaskControllerTests test`: first failed because `data` was still an array, then passed after adding `FixTaskPageVo`; a follow-up failure from shared test data was fixed by filtering pagination metadata tests to a dedicated repository, 29 tests run, 0 failures.
 - `npm test -- src/App.test.tsx -t "renders operational task dashboard from backend APIs"`: first failed because `tasks.find` received a page object, then passed after using `page.items`.
 - `npm test` in `frontend/`: passed, 13 tests run, 0 failures.
+
+Implemented task list total count from `docs/plans/061-task-list-total-count.md`.
+
+Changes:
+
+- Added `total` to the `GET /api/tasks` task page response.
+- Added `FixTaskService#countTasks(FixTaskListQuery)` so count logic can use the same filters as task listing without `limit` or `offset`.
+- Implemented matching count behavior in both in-memory and MyBatis-backed task services.
+- Updated the React dashboard task list to show loaded task count versus total matching count.
+- Updated frontend API types and tests for the `total` response field.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=TaskControllerTests#should_return_task_list_pagination_metadata test`: first failed because `$.data.total` was missing, then passed after adding the count field.
+- `mvn -pl PatchPilot -Dtest=InMemoryFixTaskServiceTests#should_count_tasks_before_limit_and_offset,MyBatisFixTaskServiceTests#should_count_tasks_with_query_filters_without_limit_or_offset test`: passed, 2 tests run, 0 failures.
+- `npm test -- src/App.test.tsx -t "renders operational task dashboard from backend APIs"`: first failed because the task list still rendered `2 visible tasks`, then passed after rendering `2 of 2 tasks visible`.
+- `npm test -- src/api.test.ts`: passed, 1 test run, 0 failures.

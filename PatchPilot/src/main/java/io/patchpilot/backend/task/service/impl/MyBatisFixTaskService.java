@@ -109,11 +109,7 @@ public class MyBatisFixTaskService implements FixTaskService {
 
     @Override
     public List<FixTaskVo> listTasks(FixTaskListQuery query) {
-        LambdaQueryWrapper<FixTaskEntity> queryWrapper = new LambdaQueryWrapper<FixTaskEntity>()
-                .eq(query.status() != null, FixTaskEntity::getStatus, query.status() == null ? null : query.status().name())
-                .eq(query.repositoryOwner() != null, FixTaskEntity::getRepositoryOwner, query.repositoryOwner())
-                .eq(query.repositoryName() != null, FixTaskEntity::getRepositoryName, query.repositoryName())
-                .and(query.query() != null, wrapper -> addSearchConditions(wrapper, query.query()))
+        LambdaQueryWrapper<FixTaskEntity> queryWrapper = taskListQueryWrapper(query)
                 .orderByDesc(FixTaskEntity::getCreatedAt)
                 .orderByDesc(FixTaskEntity::getId)
                 .last("LIMIT " + query.offset() + ", " + query.limit());
@@ -123,6 +119,11 @@ public class MyBatisFixTaskService implements FixTaskService {
                         .reversed())
                 .map(FixTaskConvert::toVo)
                 .toList();
+    }
+
+    @Override
+    public long countTasks(FixTaskListQuery query) {
+        return fixTaskMapper.selectCount(taskListQueryWrapper(query));
     }
 
     @Override
@@ -191,6 +192,14 @@ public class MyBatisFixTaskService implements FixTaskService {
                 .like(FixTaskEntity::getFailureReason, escapedQuery)
                 .or()
                 .like(FixTaskEntity::getPullRequestUrl, escapedQuery);
+    }
+
+    private static LambdaQueryWrapper<FixTaskEntity> taskListQueryWrapper(FixTaskListQuery query) {
+        return new LambdaQueryWrapper<FixTaskEntity>()
+                .eq(query.status() != null, FixTaskEntity::getStatus, query.status() == null ? null : query.status().name())
+                .eq(query.repositoryOwner() != null, FixTaskEntity::getRepositoryOwner, query.repositoryOwner())
+                .eq(query.repositoryName() != null, FixTaskEntity::getRepositoryName, query.repositoryName())
+                .and(query.query() != null, wrapper -> addSearchConditions(wrapper, query.query()));
     }
 
     private static String escapeLike(String value) {
