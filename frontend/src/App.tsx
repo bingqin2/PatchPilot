@@ -17,7 +17,8 @@ import type {
   FixTaskTestRun,
   FixTaskTimelineEvent,
   FixTaskToolCall,
-  TaskStatus
+  TaskStatus,
+  TaskStatusFilter
 } from './types';
 
 interface TaskDetailState {
@@ -36,9 +37,20 @@ const emptyDetail: TaskDetailState = {
   modelCalls: []
 };
 
+const statusFilters: TaskStatusFilter[] = [
+  'ALL',
+  'PENDING',
+  'RUNNING',
+  'RUNNING_TESTS',
+  'COMPLETED',
+  'FAILED',
+  'CANCELLED'
+];
+
 export default function App() {
   const [tasks, setTasks] = useState<FixTask[]>([]);
   const [metrics, setMetrics] = useState<FixTaskMetricsSummary | null>(null);
+  const [statusFilter, setStatusFilter] = useState<TaskStatusFilter>('ALL');
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [detail, setDetail] = useState<TaskDetailState>(emptyDetail);
   const [loading, setLoading] = useState(true);
@@ -54,16 +66,21 @@ export default function App() {
     setLoading(true);
     setError(null);
     try {
-      const [taskList, metricsSummary] = await Promise.all([listTasks(), getMetricsSummary()]);
+      const [taskList, metricsSummary] = await Promise.all([listTasks(statusFilter), getMetricsSummary()]);
       setTasks(taskList);
       setMetrics(metricsSummary);
-      setSelectedTaskId((current) => current ?? taskList[0]?.id ?? null);
+      setSelectedTaskId((current) => {
+        if (current && taskList.some((task) => task.id === current)) {
+          return current;
+        }
+        return taskList[0]?.id ?? null;
+      });
     } catch (caught) {
       setError(errorMessage(caught));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [statusFilter]);
 
   useEffect(() => {
     void refresh();
@@ -143,6 +160,19 @@ export default function App() {
               <p>{loading ? 'Loading latest tasks' : `${tasks.length} visible tasks`}</p>
             </div>
           </div>
+          <div className="filter-bar" aria-label="Task status filters">
+            {statusFilters.map((status) => (
+              <button
+                className={status === statusFilter ? 'filter-button filter-button-active' : 'filter-button'}
+                key={status}
+                type="button"
+                onClick={() => setStatusFilter(status)}
+                aria-pressed={status === statusFilter}
+              >
+                {status}
+              </button>
+            ))}
+          </div>
           <div className="task-list">
             {tasks.map((task) => (
               <button
@@ -167,7 +197,7 @@ export default function App() {
                 ) : null}
               </button>
             ))}
-            {!loading && tasks.length === 0 ? <p className="empty-state">No tasks yet.</p> : null}
+            {!loading && tasks.length === 0 ? <p className="empty-state">No {statusFilter} tasks found.</p> : null}
           </div>
         </section>
 

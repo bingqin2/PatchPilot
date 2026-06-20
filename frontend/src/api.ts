@@ -6,11 +6,16 @@ import type {
   FixTaskModelCall,
   FixTaskTestRun,
   FixTaskTimelineEvent,
-  FixTaskToolCall
+  FixTaskToolCall,
+  TaskStatusFilter
 } from './types';
 
-export async function listTasks(): Promise<FixTask[]> {
-  return getApi<FixTask[]>('/api/tasks?limit=50');
+export async function listTasks(status: TaskStatusFilter = 'ALL'): Promise<FixTask[]> {
+  const searchParams = new URLSearchParams({ limit: '50' });
+  if (status !== 'ALL') {
+    searchParams.set('status', status);
+  }
+  return getApi<FixTask[]>(`/api/tasks?${searchParams.toString()}`);
 }
 
 export async function getMetricsSummary(): Promise<FixTaskMetricsSummary> {

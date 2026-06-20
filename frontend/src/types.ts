@@ -1,5 +1,7 @@
 export type TaskStatus = 'PENDING' | 'RUNNING' | 'RUNNING_TESTS' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
 
+export type TaskStatusFilter = 'ALL' | TaskStatus;
+
 export interface ApiResponse<T> {
   success: boolean;
   data: T;
