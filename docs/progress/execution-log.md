@@ -1508,3 +1508,18 @@ Validation:
 - `npm test -- --run src/dashboard/components/TaskDetailPanel.test.tsx`: first failed because the evidence strip did not exist, then passed after adding the component rendering and styles, 2 tests run, 0 failures.
 - `npm test` in `frontend/`: passed, 26 tests run, 0 failures.
 - `npm run build` in `frontend/`: passed, production build generated `dist/`.
+
+Implemented dashboard task deep links from `docs/plans/069-dashboard-task-deep-links.md`.
+
+Changes:
+
+- Initialized selected task state from the `taskId` URL query parameter.
+- Updated `taskId` in the URL when operators select a task row.
+- Preserved existing fallback behavior when no matching task is loaded.
+- Documented dashboard task deep links in README and frontend design docs.
+
+Validation:
+
+- `npm test -- --run src/App.test.tsx -t "taskId URL parameter"`: first failed because URL task selection and URL updates did not exist, then passed after adding URL-backed task selection, 2 tests run, 0 failures.
+- `npm test` in `frontend/`: passed, 28 tests run, 0 failures.
+- `npm run build` in `frontend/`: passed, production build generated `dist/`.
