@@ -23,6 +23,9 @@ import java.util.Map;
 public class GitHubIssueCommentClient {
 
     private static final String GITHUB_API_BASE_URL = "https://api.github.com";
+    private static final String ISSUE_COMMENT_FORBIDDEN_HINT = "Check PATCHPILOT_GITHUB_TOKEN permissions: "
+            + "fine-grained tokens need repository `Issues: Read and write` permission. "
+            + "Restart or reload the backend after changing the token.";
 
     private final HttpClient httpClient;
     private final GitHubProperties gitHubProperties;
@@ -60,7 +63,7 @@ public class GitHubIssueCommentClient {
 
         HttpResponse<String> response = send(request);
         if (response.statusCode() != 201) {
-            throw new GitHubIssueCommentException("GitHub issue comment creation failed: HTTP " + response.statusCode());
+            throw new GitHubIssueCommentException(httpFailureMessage("GitHub issue comment creation failed", response.statusCode()));
         }
         return issueCommentResult(response.body());
     }
@@ -82,7 +85,7 @@ public class GitHubIssueCommentClient {
 
         HttpResponse<String> response = send(request, "GitHub issue comment update failed");
         if (response.statusCode() != 200) {
-            throw new GitHubIssueCommentException("GitHub issue comment update failed: HTTP " + response.statusCode());
+            throw new GitHubIssueCommentException(httpFailureMessage("GitHub issue comment update failed", response.statusCode()));
         }
         return issueCommentResult(response.body());
     }
@@ -131,6 +134,14 @@ public class GitHubIssueCommentClient {
             Thread.currentThread().interrupt();
             throw new GitHubIssueCommentException(failureMessage + " interrupted", exception);
         }
+    }
+
+    private String httpFailureMessage(String operation, int statusCode) {
+        String message = operation + ": HTTP " + statusCode;
+        if (statusCode == 403) {
+            return message + ". " + ISSUE_COMMENT_FORBIDDEN_HINT;
+        }
+        return message;
     }
 
     private IssueCommentResult issueCommentResult(String responseBody) {

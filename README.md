@@ -65,9 +65,11 @@ The webhook secret must match the GitHub webhook configuration. The GitHub token
 For a fine-grained GitHub token, grant these repository permissions:
 
 - `Contents`: Read and write
-- `Issues`: Read and write
+- `Issues`: Read and write, required for PatchPilot status comments on issues
 - `Pull requests`: Read and write
 - `Metadata`: Read-only
+
+After changing token permissions or replacing `PATCHPILOT_GITHUB_TOKEN`, restart or reload the backend so the process uses the new value. If task execution succeeds but the timeline records `GitHub issue comment creation failed: HTTP 403`, recheck the `Issues: Read and write` permission first.
 
 ## Run With Docker Compose
 
