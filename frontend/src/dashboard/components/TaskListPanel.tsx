@@ -1,6 +1,6 @@
 import { AlertCircle, CheckCircle2, CircleDot, ExternalLink, GitPullRequest, Terminal } from 'lucide-react';
 import type { FixTask, TaskStatus, TaskStatusFilter } from '../../types';
-import { issueUrl, pullRequestNumber } from '../format';
+import { compactTime, issueUrl, pullRequestNumber } from '../format';
 
 const statusFilters: TaskStatusFilter[] = [
   'ALL',
@@ -65,6 +65,10 @@ export function TaskListPanel({
             <span className="task-repo">{task.repositoryOwner}/{task.repositoryName}</span>
             <span className="task-issue">#{task.issueNumber}</span>
             <span className="task-comment">{task.triggerComment}</span>
+            <span className="task-times">
+              <time dateTime={task.createdAt}>Created {compactTime(task.createdAt)}</time>
+              <time dateTime={task.updatedAt}>Updated {compactTime(task.updatedAt)}</time>
+            </span>
             {task.failureReason ? <span className="task-failure">{task.failureReason}</span> : null}
             <a className="task-link" href={issueUrl(task)} target="_blank" rel="noreferrer">
               <ExternalLink size={14} />
