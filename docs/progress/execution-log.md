@@ -1440,3 +1440,23 @@ Validation:
 - `mvn -pl PatchPilot -Dtest=DefaultFixTaskMetricsServiceTests#should_summarize_latency_across_tasks_model_calls_tool_calls_and_test_runs test`: first failed because `DefaultFixTaskMetricsService` did not accept a tool-call service and `FixTaskMetricsService#latency()` did not exist.
 - `mvn -pl PatchPilot -Dtest=DefaultFixTaskMetricsServiceTests#should_summarize_latency_across_tasks_model_calls_tool_calls_and_test_runs,TaskControllerTests#should_get_task_latency_summary test`: passed after adding the latency VO, service method, HTTP endpoint, and tool-call duration aggregation, 2 tests run, 0 failures.
 - `npm test -- --run src/api.test.ts src/App.test.tsx`: first failed because `getLatencySummary()` and `Latency` UI were missing, then passed after adding the API helper, panel, and dashboard wiring, 16 tests run, 0 failures.
+
+Implemented dashboard configuration summary from `docs/plans/065-dashboard-configuration-summary.md`.
+
+Changes:
+
+- Added `GET /api/configuration/summary`.
+- Added `ConfigurationSummaryVo` and `ConfigurationController`.
+- Returned provider, model, base URL, workspace root, queue policy, model-cost configuration status, and secret configured/missing booleans.
+- Kept API key, GitHub token, and webhook secret values out of the response.
+- Added frontend `ConfigurationSummary` type and `getConfigurationSummary()` API helper.
+- Added `ConfigurationPanel` to the dashboard, rendered above queue state.
+- Documented the configuration endpoint and dashboard panel in README and frontend design docs.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=ConfigurationControllerTests test`: first failed with 404 because the endpoint did not exist, then passed after adding the controller and VO, 1 test run, 0 failures.
+- `npm test -- --run src/api.test.ts src/App.test.tsx`: first failed because `getConfigurationSummary()` and `Configuration` UI were missing, then passed after adding the API helper, panel, and dashboard wiring, 17 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed, 261 tests run, 0 failures.
+- `npm test` in `frontend/`: passed, 17 tests run, 0 failures.
+- `npm run build` in `frontend/`: passed, production build generated `dist/`.

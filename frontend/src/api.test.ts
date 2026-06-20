@@ -1,4 +1,10 @@
-import { getFailureCauseSummary, getLatencySummary, getModelUsageSummary, listTasks } from './api';
+import {
+  getConfigurationSummary,
+  getFailureCauseSummary,
+  getLatencySummary,
+  getModelUsageSummary,
+  listTasks
+} from './api';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -136,5 +142,47 @@ test('loads latency summary from backend metrics API', async () => {
     testRunCount: 2,
     averageTestRunDurationMs: 7000,
     maxTestRunDurationMs: 10000
+  });
+});
+
+test('loads non-sensitive configuration summary from backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        agentProvider: 'openai-compatible',
+        agentModel: 'gpt-5.5',
+        agentBaseUrl: 'https://api.example.test/v1',
+        agentApiKeyConfigured: true,
+        githubTokenConfigured: true,
+        githubWebhookSecretConfigured: false,
+        workspaceRootDir: '/tmp/patchpilot/workspaces',
+        queueMaxAttempts: 3,
+        queueRetryDelayMs: 30000,
+        queueVisibilityTimeoutMs: 300000,
+        modelCostConfigured: true
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const configuration = await getConfigurationSummary();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/configuration/summary');
+  expect(configuration).toEqual({
+    agentProvider: 'openai-compatible',
+    agentModel: 'gpt-5.5',
+    agentBaseUrl: 'https://api.example.test/v1',
+    agentApiKeyConfigured: true,
+    githubTokenConfigured: true,
+    githubWebhookSecretConfigured: false,
+    workspaceRootDir: '/tmp/patchpilot/workspaces',
+    queueMaxAttempts: 3,
+    queueRetryDelayMs: 30000,
+    queueVisibilityTimeoutMs: 300000,
+    modelCostConfigured: true
   });
 });

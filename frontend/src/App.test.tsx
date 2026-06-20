@@ -217,6 +217,20 @@ const queueItems = [
   }
 ];
 
+const configurationSummary = {
+  agentProvider: 'openai-compatible',
+  agentModel: 'gpt-5.5',
+  agentBaseUrl: 'https://api.example.test/v1',
+  agentApiKeyConfigured: true,
+  githubTokenConfigured: true,
+  githubWebhookSecretConfigured: false,
+  workspaceRootDir: '/tmp/patchpilot/workspaces',
+  queueMaxAttempts: 3,
+  queueRetryDelayMs: 30000,
+  queueVisibilityTimeoutMs: 300000,
+  modelCostConfigured: true
+};
+
 beforeEach(() => {
   vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
     const url = input.toString();
@@ -269,6 +283,9 @@ beforeEach(() => {
     }
     if (url === '/api/tasks/metrics/latency') {
       return jsonResponse(latencySummary);
+    }
+    if (url === '/api/configuration/summary') {
+      return jsonResponse(configurationSummary);
     }
     if (url === '/api/task-queue/summary') {
       return jsonResponse(queueSummary);
@@ -408,6 +425,13 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(screen.getByText('4.0s model avg')).toBeInTheDocument();
   expect(screen.getByText('2.0s tool avg')).toBeInTheDocument();
   expect(screen.getByText('7.0s test avg')).toBeInTheDocument();
+  expect(screen.getByText('Configuration')).toBeInTheDocument();
+  expect(screen.getByText('openai-compatible')).toBeInTheDocument();
+  expect(screen.getByText('https://api.example.test/v1')).toBeInTheDocument();
+  expect(screen.getByText('/tmp/patchpilot/workspaces')).toBeInTheDocument();
+  expect(screen.getByText('Agent key Configured')).toBeInTheDocument();
+  expect(screen.getByText('Webhook secret Missing')).toBeInTheDocument();
+  expect(screen.getByText('Queue attempts 3')).toBeInTheDocument();
   expect(screen.getByText('Queue')).toBeInTheDocument();
   expect(screen.getByText('1 delayed')).toBeInTheDocument();
   expect(screen.getByText('maven test command timed out')).toBeInTheDocument();
@@ -416,7 +440,7 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(screen.getByText('Pull request opened')).toBeInTheDocument();
   expect(screen.getByText('Tests run: 247, Failures: 0, Errors: 0')).toBeInTheDocument();
   expect(screen.getByText('replace')).toBeInTheDocument();
-  expect(screen.getByText('gpt-5.5')).toBeInTheDocument();
+  expect(screen.getAllByText('gpt-5.5')).toHaveLength(2);
 });
 
 test('shows tool and model call durations in task detail records', async () => {
@@ -578,6 +602,9 @@ test('loads the next backend task page with offset pagination', async () => {
     }
     if (url === '/api/tasks/metrics/latency') {
       return jsonResponse(latencySummary);
+    }
+    if (url === '/api/configuration/summary') {
+      return jsonResponse(configurationSummary);
     }
     if (url === '/api/task-queue/summary') {
       return jsonResponse(queueSummary);
