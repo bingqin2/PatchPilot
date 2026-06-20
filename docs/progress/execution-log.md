@@ -894,3 +894,119 @@ Validation:
 
 - `docker compose --env-file .env.example config`: passed, Compose resolves the backend, MySQL, GitHub, workspace, and model provider environment variables.
 - `mvn -pl PatchPilot test`: passed, 229 tests run, 0 failures, 0 errors.
+
+## 2026-06-20
+
+Started end-to-end smoke test hardening from `docs/plans/037-end-to-end-smoke-test-hardening.md`.
+
+Initial state:
+
+- Branch `037-end-to-end-smoke-test-hardening` is active.
+- Local `.env` is not present, so Docker runtime and GitHub webhook smoke tests are blocked until local secrets are configured.
+
+Validation:
+
+- `docker compose --env-file .env.example config`: passed, Compose structure resolves with placeholder values.
+- `mvn -pl PatchPilot test`: passed, 229 tests run, 0 failures, 0 errors.
+- `.env` validation: passed, required keys are present and non-placeholder without exposing values.
+- `docker compose --env-file .env config --quiet`: passed.
+- `docker compose --env-file .env ps -a`: passed, `patchpilot-backend` is up and `patchpilot-mysql` is healthy.
+- Backend logs show Spring Boot active with the `docker` profile, Flyway migrations up to date, and Tomcat started on port 8080.
+- Local API checks passed outside the restricted command sandbox:
+  - `curl http://127.0.0.1:8080/health`: returned `success=true` and `status=UP`.
+  - `curl http://127.0.0.1:8080/api/tasks`: returned `success=true` with an empty task list.
+  - `curl http://127.0.0.1:8080/api/task-queue/summary`: returned `success=true` with zero queue counts.
+- Note: sandboxed local port checks returned connection errors even while Docker and the backend were healthy; unrestricted local checks confirmed the backend is reachable.
+- Cloudflare Tunnel health check reached the backend; `GET /api/github/webhook` returned `405`, confirming the route is reachable and POST-only.
+- GitHub webhook smoke test with `/agent fix replace docs/demo.md PatchPilot smoke test` created task `d87a1b3d-87e3-4435-9ad1-fda9d1f528e5`.
+- Task `d87a1b3d-87e3-4435-9ad1-fda9d1f528e5` reached the worker:
+  - Workspace clone and branch creation succeeded.
+  - Model call succeeded with model `gpt-5.5`.
+  - Planned patch replaced `docs/demo.md`.
+  - Diff tool ran successfully.
+- Task failed during verification with `maven tests failed: maven test command timed out`.
+- Test run record captured `mvn test`, exit code `124`, duration `300001` ms, and output `maven test command timed out`.
+- Root cause investigation:
+  - The backend container runs with `SPRING_PROFILES_ACTIVE=docker`.
+  - `MavenTestRunner` inherited the backend container environment when launching target repository tests.
+  - The target repository Spring tests then loaded the Docker profile and failed to create MyBatis mapper-backed services in the test context.
+  - Re-running the same container workspace with `env -u SPRING_PROFILES_ACTIVE mvn -pl PatchPilot -Dtest=PatchPilotApplicationTests,GitHubWebhookControllerTests,TaskControllerTests test` passed, 30 tests run, 0 failures, 0 errors.
+- Fixed `MavenTestRunner` so child Maven processes remove `PATCHPILOT_*` runtime variables and `SPRING_PROFILES_ACTIVE`.
+- Added a regression test that verifies Maven child process environment sanitization preserves normal variables such as `PATH` and `JAVA_HOME`.
+- Found a second Maven runner issue: output was read only after process exit, so large Maven/Spring output could fill the process pipe and make a failing command look like a timeout.
+- Fixed `MavenTestRunner` to read merged output asynchronously while the process is running and keep partial output on timeout.
+- Added a regression test that emits 20,000 output lines and exits with code 7; it failed with exit code 124 before the fix and passed after output was read asynchronously.
+- Updated smoke test docs from the old unsupported `/agent fix touch ...` command to `/agent fix replace docs/demo.md PatchPilot smoke test`.
+
+Validation after fix:
+
+- `mvn -pl PatchPilot -Dtest=MavenTestRunnerTests test`: first failed because environment sanitization did not exist, then passed after implementation, 9 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=PatchPilotApplicationTests,GitHubWebhookControllerTests,TaskControllerTests test`: passed, 30 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=MavenTestRunnerTests#should_capture_large_command_output_without_blocking_until_timeout test`: first failed with exit code 124 instead of the expected exit code 7, then passed after asynchronous output capture.
+- `mvn -pl PatchPilot -Dtest=MavenTestRunnerTests test`: passed after both fixes, 10 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot test`: passed, 231 tests run, 0 failures, 0 errors.
+
+Follow-up:
+
+- Rebuild the Docker backend image and rerun the GitHub issue smoke test so the running container uses the fixed `MavenTestRunner`.
+
+Second smoke-test rerun:
+
+- Rebuilt and restarted Docker Compose backend with the fixed `MavenTestRunner`.
+- `curl http://127.0.0.1:8080/health`: returned `success=true` and `status=UP`.
+- GitHub webhook smoke test with `/agent fix replace docs/demo.md PatchPilot smoke test` created task `4645c8e7-058b-4ea6-a51e-e00d1d3878be`.
+- The task reached workspace clone, model call, planned patch, diff, and Maven verification.
+- The task then failed while persisting the test run record because full Maven output exceeded MySQL `text` capacity:
+  - `Data too long for column 'output' at row 1`.
+- Fixed test-run persistence by truncating captured Maven output before storing it.
+- Fixed worker failure handling by truncating failure reasons before saving task state, timeline messages, and GitHub status-comment content.
+
+Validation after output truncation fix:
+
+- `mvn -pl PatchPilot -Dtest=MyBatisFixTaskTestRunServiceTests,InMemoryFixTaskTestRunServiceTests,FixTaskWorkerTests test`: first failed because output and failure reasons were not truncated, then passed after implementation, 11 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot test`: passed, 234 tests run, 0 failures, 0 errors.
+
+Follow-up:
+
+- Rebuild the Docker backend image again and rerun the GitHub issue smoke test so the running container uses the output truncation fix.
+
+Third smoke-test rerun:
+
+- Confirmed the running backend image contains `LogSummary.class`, so the output truncation fix is present in the container.
+- GitHub webhook smoke test with `/agent fix replace docs/demo.md PatchPilot smoke test` created task `c550c1ed-bc4e-42b8-aa02-f3de027b0b9e`.
+- The task reached workspace clone, model call, planned patch, diff, and Maven verification.
+- Maven verification succeeded:
+  - `mvn test` exit code `0`.
+  - Duration `43292` ms.
+  - Captured output was truncated before persistence, avoiding the previous MySQL `output` overflow.
+- The task then failed at `CommitTool` because the container workspace had no Git author identity:
+  - `git commit failed: Author identity unknown`.
+  - Git attempted to auto-detect `root@...` inside the container and failed.
+- Fixed `GitCommandRunner#commit(...)` to run commits with a command-scoped PatchPilot author identity:
+  - `git -C <repo> -c user.name=PatchPilot -c user.email=patchpilot@example.com commit -m <message>`.
+- Updated `CommandExecutionGuard` to allow only that exact command-scoped identity form for commits.
+
+Validation after Git author identity fix:
+
+- `mvn -pl PatchPilot -Dtest=GitCommandRunnerTests#should_commit_with_patchpilot_author_identity,CommandExecutionGuardTests#should_allow_mvp_git_and_maven_commands_inside_workspace_root test`: first failed because the commit command lacked author identity and the guard rejected the command-scoped identity form, then passed after implementation, 2 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=CommandExecutionGuardTests,GitCommandRunnerTests,CommitToolTests,WorkspaceFixTaskExecutorTests test`: passed, 32 tests run, 0 failures, 0 errors.
+
+Follow-up:
+
+- Run the full backend test suite, rebuild the Docker backend image, and rerun the GitHub issue smoke test so the running container uses the Git author identity fix.
+
+Fourth smoke-test rerun:
+
+- Rebuilt and restarted Docker Compose backend with the Git author identity fix.
+- `curl http://127.0.0.1:8080/health`: returned `success=true` and `status=UP`.
+- GitHub webhook smoke test with `/agent fix replace docs/demo.md PatchPilot smoke test` created task `7cb4f2ab-189e-4df6-85b0-519f3fabe46c`.
+- The task completed end to end:
+  - Workspace clone and branch creation succeeded.
+  - Planned patch replaced `docs/demo.md`.
+  - Diff tool succeeded.
+  - `mvn test` succeeded with exit code `0` and duration `45088` ms.
+  - Commit succeeded on branch `patchpilot/7cb4f2ab-189e-4df6-85b0-519f3fabe46c`.
+  - Push succeeded to GitHub.
+  - Pull Request creation succeeded: `https://github.com/bingqin2/PatchPilot/pull/7`.
+- Task detail returned `status=COMPLETED`, `failureReason=null`, and `pullRequestUrl=https://github.com/bingqin2/PatchPilot/pull/7`.
+- Timeline ended with `PR_CREATED` followed by `COMPLETED`.

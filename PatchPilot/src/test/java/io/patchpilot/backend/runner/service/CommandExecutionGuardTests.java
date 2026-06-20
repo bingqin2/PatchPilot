@@ -26,6 +26,18 @@ class CommandExecutionGuardTests {
         guard.validate(repositoryDir, List.of("git", "-C", repositoryDir.toString(), "checkout", "-b", "patchpilot/task-123"));
         guard.validate(repositoryDir, List.of("git", "-C", repositoryDir.toString(), "add", "--all"));
         guard.validate(repositoryDir, List.of("git", "-C", repositoryDir.toString(), "commit", "-m", "PatchPilot task task-123"));
+        guard.validate(repositoryDir, List.of(
+                "git",
+                "-C",
+                repositoryDir.toString(),
+                "-c",
+                "user.name=PatchPilot",
+                "-c",
+                "user.email=patchpilot@example.com",
+                "commit",
+                "-m",
+                "PatchPilot task task-123"
+        ));
         guard.validate(repositoryDir, List.of("git", "-C", repositoryDir.toString(), "push", "origin", "HEAD:patchpilot/task-123"));
         guard.validate(repositoryDir, List.of("git", "clone", "--depth", "1", "https://github.com/octocat/hello-world.git", repositoryDir.toString()));
     }

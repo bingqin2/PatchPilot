@@ -100,6 +100,25 @@ class FixTaskWorkerTests {
     }
 
     @Test
+    void should_truncate_long_failure_reason() {
+        FixTaskService fixTaskService = new InMemoryFixTaskService();
+        FailingExecutor executor = new FailingExecutor("x".repeat(10_000));
+        RecordingIssueCommentTool issueCommentTool = new RecordingIssueCommentTool();
+        RecordingTimelineService timelineService = new RecordingTimelineService();
+        FixTaskWorker worker = new FixTaskWorker(fixTaskService, executor, issueCommentTool, timelineService);
+        FixTaskVo task = createTask(fixTaskService, "delivery-worker-long-failure");
+
+        worker.execute(task.id());
+
+        FixTaskVo failedTask = fixTaskService.findTask(task.id()).orElseThrow();
+        assertThat(failedTask.status()).isEqualTo(FixTaskStatus.FAILED);
+        assertThat(failedTask.failureReason()).hasSizeLessThanOrEqualTo(2_000);
+        assertThat(failedTask.failureReason()).contains("[truncated ");
+        assertThat(issueCommentTool.failureReasons()).contains(failedTask.failureReason());
+        assertThat(timelineService.messages()).contains(failedTask.failureReason());
+    }
+
+    @Test
     void should_keep_cancelled_status_when_executor_observes_cancellation() {
         CancellingFixTaskService fixTaskService = new CancellingFixTaskService();
         CancellingExecutor executor = new CancellingExecutor();
@@ -176,9 +195,19 @@ class FixTaskWorkerTests {
 
     private static final class FailingExecutor implements FixTaskExecutor {
 
+        private final String message;
+
+        private FailingExecutor() {
+            this("executor failed");
+        }
+
+        private FailingExecutor(String message) {
+            this.message = message;
+        }
+
         @Override
         public FixTaskExecutionResult execute(FixTaskVo task) {
-            throw new IllegalStateException("executor failed");
+            throw new IllegalStateException(message);
         }
     }
 

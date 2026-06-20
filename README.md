@@ -118,10 +118,10 @@ Open a GitHub issue in the test repository and comment:
 /agent fix
 ```
 
-For deterministic local smoke tests, use:
+For deterministic local smoke tests, use an existing file in the target repository:
 
 ```text
-/agent fix touch docs/demo.md
+/agent fix replace docs/demo.md PatchPilot smoke test
 ```
 
 Check task state:

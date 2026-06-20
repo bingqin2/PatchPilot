@@ -61,9 +61,21 @@ public class CommandExecutionGuard {
     }
 
     private static boolean isCommit(List<String> gitArgs) {
-        return gitArgs.size() == 3
+        if (gitArgs.size() == 3
                 && gitArgs.subList(0, 2).equals(List.of("commit", "-m"))
-                && StringUtils.hasText(gitArgs.get(2));
+                && StringUtils.hasText(gitArgs.get(2))) {
+            return true;
+        }
+        return gitArgs.size() == 7
+                && gitArgs.subList(0, 6).equals(List.of(
+                "-c",
+                "user.name=PatchPilot",
+                "-c",
+                "user.email=patchpilot@example.com",
+                "commit",
+                "-m"
+        ))
+                && StringUtils.hasText(gitArgs.get(6));
     }
 
     private static boolean isPush(List<String> gitArgs) {

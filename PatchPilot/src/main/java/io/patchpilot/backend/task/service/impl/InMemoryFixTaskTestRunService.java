@@ -2,6 +2,7 @@ package io.patchpilot.backend.task.service.impl;
 
 import io.patchpilot.backend.task.domain.vo.FixTaskTestRunVo;
 import io.patchpilot.backend.task.service.FixTaskTestRunService;
+import io.patchpilot.backend.task.service.LogSummary;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
@@ -31,7 +32,7 @@ public class InMemoryFixTaskTestRunService implements FixTaskTestRunService {
                 taskId,
                 command,
                 exitCode,
-                output,
+                LogSummary.truncateForTextColumn(output),
                 startedAt,
                 finishedAt,
                 FixTaskTestRunService.durationMs(startedAt, finishedAt)

@@ -120,6 +120,10 @@ public class GitCommandRunner {
                 "git",
                 "-C",
                 repositoryDir.toString(),
+                "-c",
+                "user.name=PatchPilot",
+                "-c",
+                "user.email=patchpilot@example.com",
                 "commit",
                 "-m",
                 message

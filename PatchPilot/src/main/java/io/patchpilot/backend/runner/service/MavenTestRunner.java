@@ -13,6 +13,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -71,17 +73,23 @@ public class MavenTestRunner {
         ProcessBuilder processBuilder = new ProcessBuilder(command);
         processBuilder.directory(repositoryDir.toFile());
         processBuilder.redirectErrorStream(true);
+        sanitizeProcessEnvironment(processBuilder.environment());
         String commandText = String.join(" ", command);
         try {
             Process process = processBuilder.start();
             registerProcess(taskId, process);
+            CompletableFuture<String> outputFuture = readOutputAsync(process);
             try {
                 boolean finished = process.waitFor(timeout.toMillis(), TimeUnit.MILLISECONDS);
                 if (!finished) {
                     process.destroyForcibly();
-                    return new TestRunResult(commandText, 124, "maven test command timed out");
+                    String output = outputFuture.get(5, TimeUnit.SECONDS);
+                    String timeoutOutput = output.isBlank()
+                            ? "maven test command timed out"
+                            : output + System.lineSeparator() + "maven test command timed out";
+                    return new TestRunResult(commandText, 124, timeoutOutput);
                 }
-                String output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+                String output = outputFuture.get(5, TimeUnit.SECONDS);
                 return new TestRunResult(commandText, process.exitValue(), output);
             } finally {
                 unregisterProcess(taskId, process);
@@ -91,7 +99,19 @@ public class MavenTestRunner {
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
             return new TestRunResult(commandText, 130, "maven test command interrupted");
+        } catch (Exception exception) {
+            return new TestRunResult(commandText, 1, exception.getMessage());
         }
+    }
+
+    private CompletableFuture<String> readOutputAsync(Process process) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                return new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+            } catch (IOException exception) {
+                return exception.getMessage();
+            }
+        });
     }
 
     private void registerProcess(String taskId, Process process) {
@@ -104,5 +124,10 @@ public class MavenTestRunner {
         if (StringUtils.hasText(taskId)) {
             taskProcessRegistry.unregister(taskId, process);
         }
+    }
+
+    static void sanitizeProcessEnvironment(Map<String, String> environment) {
+        environment.keySet().removeIf(key -> key.startsWith("PATCHPILOT_"));
+        environment.remove("SPRING_PROFILES_ACTIVE");
     }
 }
