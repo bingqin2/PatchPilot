@@ -42,7 +42,7 @@ The first screen is the working dashboard:
 - Metrics summarize task health.
 - Operational summaries highlight failure causes, model usage, and latency without requiring terminal inspection.
 - The task list supports status filters, backend-backed search over task history, loaded-versus-total counts, and incremental loading.
-- Selecting a task reveals an execution evidence summary, timeline events, Maven test output, tool-call records, model-call records, and GitHub links.
+- Selecting a task updates the `?taskId=` URL parameter and reveals an execution evidence summary, timeline events, Maven test output, tool-call records, model-call records, and GitHub links.
 - Queue visibility shows whether work is pending, delayed, running, failed, or cancelled, with failed/delayed/running health hints before the row list.
 - Configuration visibility shows the active provider, model, workspace root, queue policy, whether required secrets are configured, and clear health hints for missing secrets or weak optional settings without exposing secret values.
 - Cancel and retry are available only for task states where those actions make sense.
@@ -55,6 +55,7 @@ This keeps the UI focused on operator questions:
 - What did the agent call?
 - How many model tokens were used?
 - Where is the GitHub issue or Pull Request?
+- Can I share a URL that reopens the same task detail?
 
 ## Final Target
 

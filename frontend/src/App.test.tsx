@@ -378,6 +378,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  window.history.replaceState(null, '', '/');
 });
 
 test('renders operational task dashboard from backend APIs', async () => {
@@ -453,6 +454,27 @@ test('shows tool and model call durations in task detail records', async () => {
   await waitFor(() => expect(screen.getByText('replace')).toBeInTheDocument());
   expect(screen.getByText('success · 1.0s')).toBeInTheDocument();
   expect(screen.getByText('1800 tokens · 2.0s')).toBeInTheDocument();
+});
+
+test('selects task detail from taskId URL parameter', async () => {
+  window.history.replaceState(null, '', '/?taskId=task-2');
+
+  render(<App />);
+
+  await waitFor(() => expect(screen.getByText('Task failed')).toBeInTheDocument());
+  expect(screen.getByRole('heading', { name: 'bingqin2/PatchPilot #2' })).toBeInTheDocument();
+  expect(within(screen.getByRole('heading', { name: 'bingqin2/PatchPilot #2' }).closest('section')!).getByText('task-2')).toBeInTheDocument();
+  expect(screen.getByText('Latest test PASS')).toBeInTheDocument();
+});
+
+test('updates taskId URL parameter when selecting a task', async () => {
+  const user = userEvent.setup();
+
+  render(<App />);
+
+  await user.click(await screen.findByRole('button', { name: /FAILED bingqin2\/PatchPilot #2/ }));
+
+  expect(window.location.search).toBe('?taskId=task-2');
 });
 
 test('loads queue summary and items from backend APIs', async () => {

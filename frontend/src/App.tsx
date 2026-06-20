@@ -53,7 +53,7 @@ export default function App() {
   const [queueItems, setQueueItems] = useState<FixTaskQueueItem[]>([]);
   const [statusFilter, setStatusFilter] = useState<TaskStatusFilter>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(() => taskIdFromUrl());
   const [detail, setDetail] = useState<TaskDetailState>(emptyDetail);
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -67,6 +67,11 @@ export default function App() {
     () => tasks.find((task) => task.id === selectedTaskId) ?? tasks[0] ?? null,
     [selectedTaskId, tasks]
   );
+
+  const selectTask = useCallback((taskId: string) => {
+    setSelectedTaskId(taskId);
+    writeTaskIdToUrl(taskId);
+  }, []);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -101,12 +106,7 @@ export default function App() {
       setQueueItems(queueItemList);
       setCanLoadMoreTasks(taskList.hasMore);
       setTaskTotal(taskList.total);
-      setSelectedTaskId((current) => {
-        if (current && taskList.items.some((task) => task.id === current)) {
-          return current;
-        }
-        return taskList.items[0]?.id ?? null;
-      });
+      setSelectedTaskId((current) => selectedTaskIdFromList(taskList.items, current));
     } catch (caught) {
       setError(errorMessage(caught));
     } finally {
@@ -248,7 +248,7 @@ export default function App() {
           loadingMore={loadingMoreTasks}
           onStatusFilterChange={setStatusFilter}
           onSearchQueryChange={setSearchQuery}
-          onSelectTask={setSelectedTaskId}
+          onSelectTask={selectTask}
           onLoadMoreTasks={handleLoadMoreTasks}
         />
 
@@ -271,4 +271,21 @@ export default function App() {
 
 function errorMessage(caught: unknown) {
   return caught instanceof Error ? caught.message : 'Dashboard request failed';
+}
+
+function taskIdFromUrl() {
+  return new URLSearchParams(window.location.search).get('taskId');
+}
+
+function selectedTaskIdFromList(tasks: FixTask[], currentTaskId: string | null) {
+  if (currentTaskId && tasks.some((task) => task.id === currentTaskId)) {
+    return currentTaskId;
+  }
+  return tasks[0]?.id ?? null;
+}
+
+function writeTaskIdToUrl(taskId: string) {
+  const nextUrl = new URL(window.location.href);
+  nextUrl.searchParams.set('taskId', taskId);
+  window.history.replaceState(null, '', `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`);
 }
