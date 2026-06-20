@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   cancelTask,
   getFailureCauseSummary,
+  getLatencySummary,
   getMetricsSummary,
   getModelCalls,
   getModelUsageSummary,
@@ -16,6 +17,7 @@ import {
   retryTask
 } from './api';
 import { FailureCausePanel } from './dashboard/components/FailureCausePanel';
+import { LatencyPanel } from './dashboard/components/LatencyPanel';
 import { MetricCard } from './dashboard/components/MetricCard';
 import { ModelUsagePanel } from './dashboard/components/ModelUsagePanel';
 import { QueuePanel } from './dashboard/components/QueuePanel';
@@ -27,6 +29,7 @@ import type { TaskDetailState } from './dashboard/types';
 import type {
   FixTask,
   FixTaskFailureCauseSummary,
+  FixTaskLatencySummary,
   FixTaskMetricsSummary,
   FixTaskModelUsageSummary,
   FixTaskQueueItem,
@@ -41,6 +44,7 @@ export default function App() {
   const [metrics, setMetrics] = useState<FixTaskMetricsSummary | null>(null);
   const [failureCauses, setFailureCauses] = useState<FixTaskFailureCauseSummary[]>([]);
   const [modelUsage, setModelUsage] = useState<FixTaskModelUsageSummary | null>(null);
+  const [latency, setLatency] = useState<FixTaskLatencySummary | null>(null);
   const [queueSummary, setQueueSummary] = useState<FixTaskQueueSummary | null>(null);
   const [queueItems, setQueueItems] = useState<FixTaskQueueItem[]>([]);
   const [statusFilter, setStatusFilter] = useState<TaskStatusFilter>('ALL');
@@ -69,6 +73,7 @@ export default function App() {
         metricsSummary,
         failureCauseSummary,
         modelUsageSummary,
+        latencySummary,
         queueSummaryData,
         queueItemList
       ] = await Promise.all([
@@ -76,6 +81,7 @@ export default function App() {
         getMetricsSummary(),
         getFailureCauseSummary(),
         getModelUsageSummary(),
+        getLatencySummary(),
         getQueueSummary(),
         listQueueItems()
       ]);
@@ -83,6 +89,7 @@ export default function App() {
       setMetrics(metricsSummary);
       setFailureCauses(failureCauseSummary);
       setModelUsage(modelUsageSummary);
+      setLatency(latencySummary);
       setQueueSummary(queueSummaryData);
       setQueueItems(queueItemList);
       setCanLoadMoreTasks(taskList.hasMore);
@@ -219,6 +226,7 @@ export default function App() {
       <section className="summary-panel-grid" aria-label="Operational summaries">
         <FailureCausePanel causes={failureCauses} />
         <ModelUsagePanel usage={modelUsage} />
+        <LatencyPanel latency={latency} />
       </section>
 
       <section className="workspace-grid">

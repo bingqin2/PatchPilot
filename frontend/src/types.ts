@@ -71,6 +71,21 @@ export interface FixTaskModelUsageSummary {
   estimatedCostUsd: number;
 }
 
+export interface FixTaskLatencySummary {
+  completedTaskCount: number;
+  averageTaskDurationMs: number;
+  maxTaskDurationMs: number;
+  modelCallCount: number;
+  averageModelCallDurationMs: number;
+  maxModelCallDurationMs: number;
+  toolCallCount: number;
+  averageToolCallDurationMs: number;
+  maxToolCallDurationMs: number;
+  testRunCount: number;
+  averageTestRunDurationMs: number;
+  maxTestRunDurationMs: number;
+}
+
 export interface FixTaskQueueSummary {
   totalCount: number;
   pendingCount: number;

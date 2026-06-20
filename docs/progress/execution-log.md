@@ -1422,3 +1422,21 @@ Validation:
 - `mvn -pl PatchPilot test`: passed, 258 tests run, 0 failures.
 - `npm test` in `frontend/`: passed, 15 tests run, 0 failures.
 - `npm run build` in `frontend/`: passed.
+
+Implemented dashboard latency summary from `docs/plans/064-dashboard-latency-summary.md`.
+
+Changes:
+
+- Added `GET /api/tasks/metrics/latency`.
+- Added `FixTaskLatencySummaryVo`.
+- Extended `FixTaskMetricsService` with `latency()`.
+- Aggregated completed task duration, model-call duration, tool-call duration, and test-run duration.
+- Added a frontend API helper, type, and `LatencyPanel`.
+- Rendered latency next to failure causes and model usage in the dashboard operational summaries.
+- Documented the latency endpoint and dashboard latency summary in README and frontend design docs.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=DefaultFixTaskMetricsServiceTests#should_summarize_latency_across_tasks_model_calls_tool_calls_and_test_runs test`: first failed because `DefaultFixTaskMetricsService` did not accept a tool-call service and `FixTaskMetricsService#latency()` did not exist.
+- `mvn -pl PatchPilot -Dtest=DefaultFixTaskMetricsServiceTests#should_summarize_latency_across_tasks_model_calls_tool_calls_and_test_runs,TaskControllerTests#should_get_task_latency_summary test`: passed after adding the latency VO, service method, HTTP endpoint, and tool-call duration aggregation, 2 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts src/App.test.tsx`: first failed because `getLatencySummary()` and `Latency` UI were missing, then passed after adding the API helper, panel, and dashboard wiring, 16 tests run, 0 failures.

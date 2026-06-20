@@ -1,4 +1,4 @@
-import { getFailureCauseSummary, getModelUsageSummary, listTasks } from './api';
+import { getFailureCauseSummary, getLatencySummary, getModelUsageSummary, listTasks } from './api';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -92,5 +92,49 @@ test('loads model usage summary from backend metrics API', async () => {
     successfulCalls: 2,
     failedCalls: 1,
     estimatedCostUsd: 0.0028
+  });
+});
+
+test('loads latency summary from backend metrics API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        completedTaskCount: 2,
+        averageTaskDurationMs: 20000,
+        maxTaskDurationMs: 30000,
+        modelCallCount: 2,
+        averageModelCallDurationMs: 4000,
+        maxModelCallDurationMs: 6000,
+        toolCallCount: 2,
+        averageToolCallDurationMs: 2000,
+        maxToolCallDurationMs: 3000,
+        testRunCount: 2,
+        averageTestRunDurationMs: 7000,
+        maxTestRunDurationMs: 10000
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const latency = await getLatencySummary();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/tasks/metrics/latency');
+  expect(latency).toEqual({
+    completedTaskCount: 2,
+    averageTaskDurationMs: 20000,
+    maxTaskDurationMs: 30000,
+    modelCallCount: 2,
+    averageModelCallDurationMs: 4000,
+    maxModelCallDurationMs: 6000,
+    toolCallCount: 2,
+    averageToolCallDurationMs: 2000,
+    maxToolCallDurationMs: 3000,
+    testRunCount: 2,
+    averageTestRunDurationMs: 7000,
+    maxTestRunDurationMs: 10000
   });
 });

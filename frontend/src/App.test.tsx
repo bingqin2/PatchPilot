@@ -166,6 +166,21 @@ const modelUsageSummary = {
   estimatedCostUsd: 0.0028
 };
 
+const latencySummary = {
+  completedTaskCount: 2,
+  averageTaskDurationMs: 20000,
+  maxTaskDurationMs: 30000,
+  modelCallCount: 2,
+  averageModelCallDurationMs: 4000,
+  maxModelCallDurationMs: 6000,
+  toolCallCount: 2,
+  averageToolCallDurationMs: 2000,
+  maxToolCallDurationMs: 3000,
+  testRunCount: 2,
+  averageTestRunDurationMs: 7000,
+  maxTestRunDurationMs: 10000
+};
+
 const queueSummary = {
   totalCount: 4,
   pendingCount: 2,
@@ -251,6 +266,9 @@ beforeEach(() => {
     }
     if (url === '/api/tasks/metrics/model-usage') {
       return jsonResponse(modelUsageSummary);
+    }
+    if (url === '/api/tasks/metrics/latency') {
+      return jsonResponse(latencySummary);
     }
     if (url === '/api/task-queue/summary') {
       return jsonResponse(queueSummary);
@@ -385,6 +403,11 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(screen.getByText('2 successful')).toBeInTheDocument();
   expect(screen.getByText('1 failed')).toBeInTheDocument();
   expect(screen.getByText('$0.0028')).toBeInTheDocument();
+  expect(screen.getByText('Latency')).toBeInTheDocument();
+  expect(screen.getByText('20.0s avg task')).toBeInTheDocument();
+  expect(screen.getByText('4.0s model avg')).toBeInTheDocument();
+  expect(screen.getByText('2.0s tool avg')).toBeInTheDocument();
+  expect(screen.getByText('7.0s test avg')).toBeInTheDocument();
   expect(screen.getByText('Queue')).toBeInTheDocument();
   expect(screen.getByText('1 delayed')).toBeInTheDocument();
   expect(screen.getByText('maven test command timed out')).toBeInTheDocument();
@@ -552,6 +575,9 @@ test('loads the next backend task page with offset pagination', async () => {
     }
     if (url === '/api/tasks/metrics/model-usage') {
       return jsonResponse(modelUsageSummary);
+    }
+    if (url === '/api/tasks/metrics/latency') {
+      return jsonResponse(latencySummary);
     }
     if (url === '/api/task-queue/summary') {
       return jsonResponse(queueSummary);

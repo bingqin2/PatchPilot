@@ -7,6 +7,7 @@ import io.patchpilot.backend.task.domain.vo.FixTaskMetricsSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskModelUsageSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskModelCallVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskTestRunVo;
+import io.patchpilot.backend.task.domain.vo.FixTaskToolCallVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import io.patchpilot.backend.task.service.impl.DefaultFixTaskMetricsService;
 import io.patchpilot.backend.task.service.impl.InMemoryFixTaskModelCallService;
@@ -30,6 +31,7 @@ class DefaultFixTaskMetricsServiceTests {
             fixTaskService,
             fixTaskModelCallService,
             fixTaskTestRunService,
+            new StaticFixTaskToolCallService(Map.of()),
             new AgentProperties()
     );
 
@@ -89,6 +91,7 @@ class DefaultFixTaskMetricsServiceTests {
                         "completed", List.of(testRun("completed", 0)),
                         "failed", List.of(testRun("failed", 1), testRun("failed", 0))
                 )),
+                new StaticFixTaskToolCallService(Map.of()),
                 new AgentProperties()
         );
 
@@ -127,6 +130,7 @@ class DefaultFixTaskMetricsServiceTests {
                 )),
                 new StaticFixTaskModelCallService(Map.of()),
                 new StaticFixTaskTestRunService(Map.of()),
+                new StaticFixTaskToolCallService(Map.of()),
                 new AgentProperties()
         );
 
@@ -163,6 +167,7 @@ class DefaultFixTaskMetricsServiceTests {
                         "failed", List.of(modelCall("failed", 300, 50))
                 )),
                 new StaticFixTaskTestRunService(Map.of()),
+                new StaticFixTaskToolCallService(Map.of()),
                 properties
         );
 
@@ -174,6 +179,51 @@ class DefaultFixTaskMetricsServiceTests {
         assertThat(usage.successfulCalls()).isEqualTo(2);
         assertThat(usage.failedCalls()).isEqualTo(1);
         assertThat(usage.estimatedCostUsd()).isEqualTo(0.0028);
+    }
+
+    @Test
+    void should_summarize_latency_across_tasks_model_calls_tool_calls_and_test_runs() {
+        FixTaskMetricsService metricsService = new DefaultFixTaskMetricsService(
+                new StaticFixTaskService(List.of(
+                        task("completed-fast", FixTaskStatus.COMPLETED,
+                                Instant.parse("2026-06-20T01:00:00Z"),
+                                Instant.parse("2026-06-20T01:00:10Z")),
+                        task("completed-slow", FixTaskStatus.COMPLETED,
+                                Instant.parse("2026-06-20T01:01:00Z"),
+                                Instant.parse("2026-06-20T01:01:30Z")),
+                        task("failed", FixTaskStatus.FAILED,
+                                Instant.parse("2026-06-20T01:02:00Z"),
+                                null)
+                )),
+                new StaticFixTaskModelCallService(Map.of(
+                        "completed-fast", List.of(modelCall("completed-fast", 100, 50, true, 2000)),
+                        "completed-slow", List.of(modelCall("completed-slow", 200, 100, true, 6000))
+                )),
+                new StaticFixTaskTestRunService(Map.of(
+                        "completed-fast", List.of(testRun("completed-fast", 0, 4000)),
+                        "failed", List.of(testRun("failed", 1, 10000))
+                )),
+                new StaticFixTaskToolCallService(Map.of(
+                        "completed-fast", List.of(toolCall("completed-fast", "ReadFileTool", 1000)),
+                        "completed-slow", List.of(toolCall("completed-slow", "WriteFileTool", 3000))
+                )),
+                new AgentProperties()
+        );
+
+        var latency = metricsService.latency();
+
+        assertThat(latency.completedTaskCount()).isEqualTo(2);
+        assertThat(latency.averageTaskDurationMs()).isEqualTo(20000);
+        assertThat(latency.maxTaskDurationMs()).isEqualTo(30000);
+        assertThat(latency.modelCallCount()).isEqualTo(2);
+        assertThat(latency.averageModelCallDurationMs()).isEqualTo(4000);
+        assertThat(latency.maxModelCallDurationMs()).isEqualTo(6000);
+        assertThat(latency.toolCallCount()).isEqualTo(2);
+        assertThat(latency.averageToolCallDurationMs()).isEqualTo(2000);
+        assertThat(latency.maxToolCallDurationMs()).isEqualTo(3000);
+        assertThat(latency.testRunCount()).isEqualTo(2);
+        assertThat(latency.averageTestRunDurationMs()).isEqualTo(7000);
+        assertThat(latency.maxTestRunDurationMs()).isEqualTo(10000);
     }
 
     private FixTaskVo createTask(String deliveryId) {
@@ -250,10 +300,14 @@ class DefaultFixTaskMetricsServiceTests {
     }
 
     private static FixTaskModelCallVo modelCall(String taskId, int promptTokens, int completionTokens) {
-        return modelCall(taskId, promptTokens, completionTokens, true);
+        return modelCall(taskId, promptTokens, completionTokens, true, 2000);
     }
 
     private static FixTaskModelCallVo modelCall(String taskId, int promptTokens, int completionTokens, boolean success) {
+        return modelCall(taskId, promptTokens, completionTokens, success, 2000);
+    }
+
+    private static FixTaskModelCallVo modelCall(String taskId, int promptTokens, int completionTokens, boolean success, long durationMs) {
         return new FixTaskModelCallVo(
                 "model-call-" + taskId + "-" + promptTokens,
                 taskId,
@@ -267,12 +321,16 @@ class DefaultFixTaskMetricsServiceTests {
                 success,
                 success ? null : "model failed",
                 Instant.parse("2026-06-20T01:00:00Z"),
-                Instant.parse("2026-06-20T01:00:02Z"),
-                2000
+                Instant.parse("2026-06-20T01:00:00Z").plusMillis(durationMs),
+                durationMs
         );
     }
 
     private static FixTaskTestRunVo testRun(String taskId, int exitCode) {
+        return testRun(taskId, exitCode, 2000);
+    }
+
+    private static FixTaskTestRunVo testRun(String taskId, int exitCode, long durationMs) {
         return new FixTaskTestRunVo(
                 "test-run-" + taskId + "-" + exitCode,
                 taskId,
@@ -280,8 +338,22 @@ class DefaultFixTaskMetricsServiceTests {
                 exitCode,
                 exitCode == 0 ? "tests passed" : "tests failed",
                 Instant.parse("2026-06-20T01:00:00Z"),
-                Instant.parse("2026-06-20T01:00:02Z"),
-                2000
+                Instant.parse("2026-06-20T01:00:00Z").plusMillis(durationMs),
+                durationMs
+        );
+    }
+
+    private static FixTaskToolCallVo toolCall(String taskId, String toolName, long durationMs) {
+        return new FixTaskToolCallVo(
+                "tool-call-" + taskId + "-" + toolName,
+                taskId,
+                toolName,
+                "input",
+                "output",
+                true,
+                Instant.parse("2026-06-20T01:00:00Z"),
+                Instant.parse("2026-06-20T01:00:00Z").plusMillis(durationMs),
+                durationMs
         );
     }
 
@@ -386,6 +458,29 @@ class DefaultFixTaskMetricsServiceTests {
         @Override
         public List<FixTaskTestRunVo> listTestRuns(String taskId) {
             return testRuns.getOrDefault(taskId, List.of());
+        }
+    }
+
+    private record StaticFixTaskToolCallService(
+            Map<String, List<FixTaskToolCallVo>> toolCalls
+    ) implements FixTaskToolCallService {
+
+        @Override
+        public FixTaskToolCallVo recordToolCall(
+                String taskId,
+                String toolName,
+                String inputSummary,
+                String outputSummary,
+                boolean success,
+                Instant startedAt,
+                Instant finishedAt
+        ) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public List<FixTaskToolCallVo> listToolCalls(String taskId) {
+            return toolCalls.getOrDefault(taskId, List.of());
         }
     }
 }
