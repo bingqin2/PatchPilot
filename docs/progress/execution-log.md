@@ -1010,3 +1010,21 @@ Fourth smoke-test rerun:
   - Pull Request creation succeeded: `https://github.com/bingqin2/PatchPilot/pull/7`.
 - Task detail returned `status=COMPLETED`, `failureReason=null`, and `pullRequestUrl=https://github.com/bingqin2/PatchPilot/pull/7`.
 - Timeline ended with `PR_CREATED` followed by `COMPLETED`.
+
+## 2026-06-20
+
+Implemented status comment failure observability from `docs/plans/038-status-comment-observability.md`.
+
+Changes:
+
+- Added `STATUS_COMMENT_FAILED` as an additive timeline event.
+- Recorded `STATUS_COMMENT_FAILED` when accepted issue status-comment creation fails, while still dispatching the task.
+- Recorded `STATUS_COMMENT_FAILED` when lifecycle status-comment updates fail in the worker, while preserving the durable task status.
+- Reused failure-reason truncation for status-comment failure messages.
+- Updated setup and smoke-test docs to require fine-grained GitHub token permissions for `Contents`, `Issues`, and `Pull requests`.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=GitHubWebhookServiceTests#should_dispatch_created_task_when_status_comment_creation_fails,FixTaskWorkerTests#should_keep_completed_status_when_status_comment_update_fails test`: passed, 2 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot -Dtest=GitHubWebhookServiceTests,FixTaskWorkerTests test`: passed, 11 tests run, 0 failures, 0 errors.
+- `mvn -pl PatchPilot test`: passed, 235 tests run, 0 failures, 0 errors.

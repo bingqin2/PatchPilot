@@ -140,7 +140,10 @@ class GitHubWebhookServiceTests {
         assertThat(issueCommentTool.acceptedCount()).isEqualTo(1);
         assertThat(task.statusCommentId()).isNull();
         assertThat(fixTaskDispatcher.dispatchedTaskId()).isEqualTo(task.id());
-        assertThat(timelineService.eventTypes()).containsExactly(FixTaskTimelineEventType.TASK_CREATED);
+        assertThat(timelineService.eventTypes())
+                .containsExactly(FixTaskTimelineEventType.TASK_CREATED, FixTaskTimelineEventType.STATUS_COMMENT_FAILED);
+        assertThat(timelineService.messages())
+                .containsExactly("Task accepted from /agent fix", "Status comment failed: comment failed");
     }
 
     @Test

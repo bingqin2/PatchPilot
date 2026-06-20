@@ -25,12 +25,12 @@ public class FixTaskWorker {
     public void execute(String taskId) {
         FixTaskVo runningTask = fixTaskService.markRunning(taskId);
         recordTimelineEvent(taskId, FixTaskTimelineEventType.RUNNING, "Task is running");
-        updateStatusComment(() -> issueCommentTool.updateRunning(runningTask));
+        updateStatusComment(taskId, () -> issueCommentTool.updateRunning(runningTask));
         FixTaskExecutionResult executionResult;
         try {
             FixTaskVo runningTestsTask = fixTaskService.markRunningTests(taskId);
             recordTimelineEvent(taskId, FixTaskTimelineEventType.RUNNING_TESTS, "Running verification");
-            updateStatusComment(() -> issueCommentTool.updateRunningTests(runningTestsTask));
+            updateStatusComment(taskId, () -> issueCommentTool.updateRunningTests(runningTestsTask));
             executionResult = fixTaskExecutor.execute(runningTestsTask);
         } catch (TaskCancellationException exception) {
             recordTimelineEvent(taskId, FixTaskTimelineEventType.CANCELLED, "Task cancelled by user request");
@@ -39,19 +39,24 @@ public class FixTaskWorker {
             String failureReason = failureReason(exception);
             FixTaskVo failedTask = fixTaskService.markFailed(taskId, failureReason);
             recordTimelineEvent(taskId, FixTaskTimelineEventType.FAILED, failureReason);
-            updateStatusComment(() -> issueCommentTool.updateFailed(failedTask));
+            updateStatusComment(taskId, () -> issueCommentTool.updateFailed(failedTask));
             return;
         }
         recordTimelineEvent(taskId, FixTaskTimelineEventType.PR_CREATED, executionResult.pullRequestUrl());
         FixTaskVo completedTask = fixTaskService.markCompleted(taskId, executionResult.pullRequestUrl());
         recordTimelineEvent(taskId, FixTaskTimelineEventType.COMPLETED, "Task completed");
-        updateStatusComment(() -> issueCommentTool.updateCompleted(completedTask));
+        updateStatusComment(taskId, () -> issueCommentTool.updateCompleted(completedTask));
     }
 
-    private static void updateStatusComment(Runnable update) {
+    private void updateStatusComment(String taskId, Runnable update) {
         try {
             update.run();
         } catch (RuntimeException exception) {
+            recordTimelineEvent(
+                    taskId,
+                    FixTaskTimelineEventType.STATUS_COMMENT_FAILED,
+                    "Status comment failed: " + failureReason(exception)
+            );
             // GitHub comment feedback must not change durable task status.
         }
     }

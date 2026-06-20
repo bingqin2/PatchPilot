@@ -1,0 +1,21 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: patchpilot-mysql
+    environment:
+      MYSQL_DATABASE: patchpilot
+      MYSQL_USER: patchpilot
+      MYSQL_PASSWORD: patchpilot
+      MYSQL_ROOT_PASSWORD: patchpilot-root
+    volumes:
+      - patchpilot-mysql-data:/var/lib/mysql
+    ports:
+      - "127.0.0.1:3307:3306"
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -ppatchpilot-root --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  patchpilot-mysql-data:
