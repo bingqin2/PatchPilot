@@ -322,6 +322,10 @@ function errorMessage(caught: unknown) {
 }
 
 function taskIdFromUrl() {
+  const pathMatch = window.location.pathname.match(/^\/tasks\/([^/]+)$/);
+  if (pathMatch) {
+    return decodeURIComponent(pathMatch[1]);
+  }
   return new URLSearchParams(window.location.search).get('taskId');
 }
 
@@ -334,6 +338,7 @@ function selectedTaskIdFromList(tasks: FixTask[], currentTaskId: string | null) 
 
 function writeTaskIdToUrl(taskId: string) {
   const nextUrl = new URL(window.location.href);
-  nextUrl.searchParams.set('taskId', taskId);
+  nextUrl.pathname = `/tasks/${encodeURIComponent(taskId)}`;
+  nextUrl.searchParams.delete('taskId');
   window.history.replaceState(null, '', `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`);
 }

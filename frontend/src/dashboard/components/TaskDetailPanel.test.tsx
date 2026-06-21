@@ -176,7 +176,13 @@ test('shows missing latest test evidence when no test result is recorded', () =>
 
 test('builds a shareable task link from the current dashboard URL', () => {
   expect(taskLinkFor('task-1', 'http://127.0.0.1:5173/?status=FAILED')).toBe(
-    'http://127.0.0.1:5173/?status=FAILED&taskId=task-1'
+    'http://127.0.0.1:5173/tasks/task-1?status=FAILED'
+  );
+});
+
+test('builds a shareable task link with encoded task id and hash fragment', () => {
+  expect(taskLinkFor('task/with spaces', 'http://127.0.0.1:5173/tasks/old-task?status=FAILED#timeline')).toBe(
+    'http://127.0.0.1:5173/tasks/task%2Fwith%20spaces?status=FAILED#timeline'
   );
 });
 
@@ -202,7 +208,7 @@ test('copies the selected task deep link', async () => {
 
   await userEvent.click(screen.getByRole('button', { name: /copy link/i }));
 
-  expect(writeText).toHaveBeenCalledWith('http://localhost:3000/?status=FAILED&taskId=task-1');
+  expect(writeText).toHaveBeenCalledWith('http://localhost:3000/tasks/task-1?status=FAILED');
   expect(screen.getByText('Task link copied')).toBeInTheDocument();
 });
 

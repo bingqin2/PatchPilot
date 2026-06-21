@@ -755,14 +755,26 @@ test('selects task detail from taskId URL parameter', async () => {
   expect(screen.getByText('Latest test PASS')).toBeInTheDocument();
 });
 
-test('updates taskId URL parameter when selecting a task', async () => {
+test('selects task detail from task detail route', async () => {
+  window.history.replaceState(null, '', '/tasks/task-2');
+
+  render(<App />);
+
+  await waitFor(() => expect(screen.getByText('Task failed')).toBeInTheDocument());
+  expect(screen.getByRole('heading', { name: 'bingqin2/PatchPilot #2' })).toBeInTheDocument();
+  expect(within(screen.getByRole('heading', { name: 'bingqin2/PatchPilot #2' }).closest('section')!).getByText('task-2')).toBeInTheDocument();
+});
+
+test('updates selected task route when selecting a task', async () => {
   const user = userEvent.setup();
+  window.history.replaceState(null, '', '/?status=FAILED&taskId=task-1');
 
   render(<App />);
 
   await user.click(await screen.findByRole('button', { name: /FAILED bingqin2\/PatchPilot #2/ }));
 
-  expect(window.location.search).toBe('?taskId=task-2');
+  expect(window.location.pathname).toBe('/tasks/task-2');
+  expect(window.location.search).toBe('?status=FAILED');
 });
 
 test('loads queue summary and items from backend APIs', async () => {
