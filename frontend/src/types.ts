@@ -40,6 +40,16 @@ export interface FixTaskPage {
   total: number;
 }
 
+export interface FixTaskStatusCounts {
+  totalCount: number;
+  pendingCount: number;
+  runningCount: number;
+  runningTestsCount: number;
+  completedCount: number;
+  failedCount: number;
+  cancelledCount: number;
+}
+
 export interface CreateTaskInput {
   repositoryOwner: string;
   repositoryName: string;

@@ -430,11 +430,14 @@ h3 {
 }
 
 .filter-button {
+  align-items: center;
   background: #f6f8fa;
   border: 1px solid #d6dee6;
   border-radius: 999px;
   color: #52606e;
   cursor: pointer;
+  display: inline-flex;
+  gap: 6px;
   font-size: 12px;
   font-weight: 800;
   min-height: 30px;
@@ -444,6 +447,24 @@ h3 {
 .filter-button-active {
   background: #17202a;
   border-color: #17202a;
+  color: #ffffff;
+}
+
+.filter-count {
+  align-items: center;
+  background: #e9eef3;
+  border-radius: 999px;
+  color: #17202a;
+  display: inline-flex;
+  font-size: 11px;
+  justify-content: center;
+  line-height: 1;
+  min-width: 20px;
+  padding: 3px 6px;
+}
+
+.filter-button-active .filter-count {
+  background: rgba(255, 255, 255, 0.16);
   color: #ffffff;
 }
 

@@ -31,7 +31,7 @@ Selected-task detail uses the `/tasks/{taskId}` frontend route and `GET /api/tas
 
 Reusable dashboard components live under `frontend/src/dashboard/components/`:
 
-- `TaskListPanel`: task list, status filters, repository owner/name filters, created time range filters, backend-backed search, backend-backed newest/oldest sort control, clear-filter action, pagination counts, issue/status/PR links.
+- `TaskListPanel`: task list, status filters with scoped count badges, repository owner/name filters, created time range filters, backend-backed search, backend-backed newest/oldest sort control, clear-filter action, pagination counts, issue/status/PR links.
 - `TaskDetailPanel`: selected task summary, copyable task deep link, copyable task report, queue state and queue history, execution evidence strip, timeline, test runs, tool calls, model calls, cancel/retry actions.
 - `ManualTaskForm`: local demo/debug task creation through `POST /api/tasks`, with explicit repository, issue, trigger user, and `/agent fix` command fields.
 - `QueuePanel`: read-only queue health, summary, and queue items.
@@ -49,7 +49,8 @@ The first screen is the working dashboard:
 - A compact refresh status tells operators when top-level dashboard data is still loading, and the title area shows when the dashboard last refreshed successfully.
 - Operational summaries highlight failure causes, model usage, and latency without requiring terminal inspection.
 - A manual task form can enqueue a local demo/debug task through the same backend task and queue path used by webhook-created tasks.
-- The task list supports URL-backed status filters, repository owner/name filters, created time range filters, backend-backed search over task history, newest/oldest sorting, one-click filter reset, loaded-versus-total counts, and incremental loading.
+- The task list supports URL-backed status filters with scoped count badges, repository owner/name filters, created time range filters, backend-backed search over task history, newest/oldest sorting, one-click filter reset, loaded-versus-total counts, and incremental loading.
+- Status count badges come from `GET /api/tasks/status-counts`. They follow search, repository, and created-time filters, but ignore the active status, sort, limit, and offset so operators can see the distribution before switching status tabs.
 - Selecting a task updates the `/tasks/{taskId}` route while preserving active filter query parameters, loads aggregate task detail in one request, and reveals a copyable task link, copyable Markdown report, queue state, queue history, execution evidence summary, timeline events, Maven test output, tool-call records, model-call records, and GitHub links.
 - Queue visibility shows whether work is pending, delayed, running, failed, or cancelled, with failed/delayed/running health hints before the row list.
 - Configuration visibility shows backend `/health` status, the active provider, model, workspace root, queue policy, whether required secrets are configured, and clear health hints for missing secrets or weak optional settings without exposing secret values.

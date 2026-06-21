@@ -7,6 +7,7 @@ import {
   getModelUsageSummary,
   getTaskReport,
   getTaskDetail,
+  getTaskStatusCounts,
   listTasks
 } from './api';
 
@@ -106,6 +107,52 @@ test('builds backend task search sort and pagination query parameters', async ()
     offset: 50,
     hasMore: true,
     total: 74
+  });
+});
+
+test('builds backend task status count query parameters without status or pagination', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        totalCount: 9,
+        pendingCount: 1,
+        runningCount: 2,
+        runningTestsCount: 0,
+        completedCount: 4,
+        failedCount: 2,
+        cancelledCount: 0
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const counts = await getTaskStatusCounts({
+    status: 'FAILED',
+    query: ' search target ',
+    repositoryOwner: ' bingqin2 ',
+    repositoryName: ' PatchPilot ',
+    createdAfter: ' 2026-06-20T01:00:00Z ',
+    createdBefore: ' 2026-06-21T01:00:00Z ',
+    limit: 25,
+    offset: 50,
+    sort: 'createdAtAsc'
+  });
+
+  expect(fetchMock).toHaveBeenCalledWith(
+    '/api/tasks/status-counts?query=search+target&repositoryOwner=bingqin2&repositoryName=PatchPilot&createdAfter=2026-06-20T01%3A00%3A00Z&createdBefore=2026-06-21T01%3A00%3A00Z'
+  );
+  expect(counts).toEqual({
+    totalCount: 9,
+    pendingCount: 1,
+    runningCount: 2,
+    runningTestsCount: 0,
+    completedCount: 4,
+    failedCount: 2,
+    cancelledCount: 0
   });
 });
 

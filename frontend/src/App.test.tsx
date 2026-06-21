@@ -304,6 +304,26 @@ const queueItems = [
   }
 ];
 
+const statusCounts = {
+  totalCount: 2,
+  pendingCount: 0,
+  runningCount: 0,
+  runningTestsCount: 0,
+  completedCount: 1,
+  failedCount: 1,
+  cancelledCount: 0
+};
+
+const narrowedStatusCounts = {
+  totalCount: 1,
+  pendingCount: 0,
+  runningCount: 0,
+  runningTestsCount: 0,
+  completedCount: 0,
+  failedCount: 1,
+  cancelledCount: 0
+};
+
 const configurationSummary = {
   agentProvider: 'openai-compatible',
   agentModel: 'gpt-5.5',
@@ -322,6 +342,20 @@ beforeEach(() => {
   let manualTaskCreated = false;
   vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = input.toString();
+    if (url === '/api/tasks/status-counts') {
+      return jsonResponse(manualTaskCreated ? { ...statusCounts, totalCount: 3, pendingCount: 1 } : statusCounts);
+    }
+    if (url === '/api/tasks/status-counts?query=broken') {
+      return jsonResponse(narrowedStatusCounts);
+    }
+    if (
+      url === '/api/tasks/status-counts?repositoryOwner=bingqin2&repositoryName=PatchPilot' ||
+      url === '/api/tasks/status-counts?createdAfter=2026-06-20T01%3A00%3A00Z&createdBefore=2026-06-21T01%3A00%3A00Z' ||
+      url === '/api/tasks/status-counts?query=broken&repositoryOwner=bingqin2&repositoryName=PatchPilot' ||
+      url === '/api/tasks/status-counts?query=broken&repositoryOwner=bingqin2&repositoryName=PatchPilot&createdAfter=2026-06-20T01%3A00%3A00Z&createdBefore=2026-06-21T01%3A00%3A00Z'
+    ) {
+      return jsonResponse(narrowedStatusCounts);
+    }
     if (url === '/api/tasks?limit=50') {
       return jsonResponse(taskPage(manualTaskCreated ? [manuallyCreatedTask, completedTask, failedTask] : [completedTask, failedTask]));
     }
@@ -825,6 +859,43 @@ test('restores created time filter URL state on initial dashboard load', async (
   );
 });
 
+test('shows task status filter counts from backend status count API', async () => {
+  const fetchMock = vi.mocked(fetch);
+
+  render(<App />);
+
+  expect(await screen.findByRole('button', { name: 'ALL' })).toHaveAttribute('aria-pressed', 'true');
+  expect(within(screen.getByRole('button', { name: 'ALL' })).getByText('2')).toBeInTheDocument();
+  expect(within(screen.getByRole('button', { name: 'COMPLETED' })).getByText('1')).toBeInTheDocument();
+  expect(within(screen.getByRole('button', { name: 'FAILED' })).getByText('1')).toBeInTheDocument();
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks/status-counts'));
+});
+
+test('loads status filter counts for the current search repository and time scope without status', async () => {
+  const user = userEvent.setup();
+  const fetchMock = vi.mocked(fetch);
+  window.history.replaceState(null, '', '/tasks/task-1?status=FAILED&repositoryOwner=bingqin2#timeline');
+
+  render(<App />);
+
+  await user.type(await screen.findByRole('searchbox', { name: 'Search tasks' }), 'broken');
+  await user.type(screen.getByRole('textbox', { name: 'Filter repository name' }), 'PatchPilot');
+  await user.type(screen.getByRole('textbox', { name: 'Filter created after' }), '2026-06-20T01:00:00Z');
+  await user.type(screen.getByRole('textbox', { name: 'Filter created before' }), '2026-06-21T01:00:00Z');
+
+  expect(within(await screen.findByRole('button', { name: 'ALL' })).getByText('1')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'FAILED' })).toHaveAttribute('aria-pressed', 'true');
+  expect(within(screen.getByRole('button', { name: 'FAILED' })).getByText('1')).toBeInTheDocument();
+  await waitFor(() =>
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/tasks/status-counts?query=broken&repositoryOwner=bingqin2&repositoryName=PatchPilot&createdAfter=2026-06-20T01%3A00%3A00Z&createdBefore=2026-06-21T01%3A00%3A00Z'
+    )
+  );
+  expect(fetchMock).not.toHaveBeenCalledWith(
+    '/api/tasks/status-counts?query=broken&repositoryOwner=bingqin2&repositoryName=PatchPilot&createdAfter=2026-06-20T01%3A00%3A00Z&createdBefore=2026-06-21T01%3A00%3A00Z&status=FAILED'
+  );
+});
+
 test('restores task detail route with filter URL state', async () => {
   const fetchMock = vi.mocked(fetch);
   window.history.replaceState(null, '', '/tasks/task-2?status=FAILED&query=broken');
@@ -1096,6 +1167,17 @@ test('shows dashboard refresh progress while top-level data is loading', async (
         resolveTasks = resolve;
       });
     }
+    if (url === '/api/tasks/status-counts') {
+      return jsonResponse({
+        totalCount: 0,
+        pendingCount: 0,
+        runningCount: 0,
+        runningTestsCount: 0,
+        completedCount: 0,
+        failedCount: 0,
+        cancelledCount: 0
+      });
+    }
     if (url === '/api/tasks/metrics/summary') {
       return jsonResponse({
         totalCount: 0,
@@ -1240,6 +1322,20 @@ test('loads the next backend task page with offset pagination', async () => {
       '/api/tasks?limit=50&repositoryOwner=bingqin2&repositoryName=PatchPilot&createdAfter=2026-06-20T01%3A00%3A00Z&createdBefore=2026-06-21T01%3A00%3A00Z&sort=createdAtAsc'
     ) {
       return jsonResponse(taskPage(firstPage, 50, 0, true, 51));
+    }
+    if (
+      url ===
+      '/api/tasks/status-counts?repositoryOwner=bingqin2&repositoryName=PatchPilot&createdAfter=2026-06-20T01%3A00%3A00Z&createdBefore=2026-06-21T01%3A00%3A00Z'
+    ) {
+      return jsonResponse({
+        totalCount: 51,
+        pendingCount: 0,
+        runningCount: 0,
+        runningTestsCount: 0,
+        completedCount: 50,
+        failedCount: 1,
+        cancelledCount: 0
+      });
     }
     if (
       url ===

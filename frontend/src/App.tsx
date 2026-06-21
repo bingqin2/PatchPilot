@@ -12,6 +12,7 @@ import {
   getQueueSummary,
   getTaskDetail,
   getTaskReport,
+  getTaskStatusCounts,
   listQueueItems,
   listTasks,
   retryTask
@@ -36,6 +37,7 @@ import type {
   FixTaskFailureCauseSummary,
   FixTaskLatencySummary,
   FixTaskMetricsSummary,
+  FixTaskStatusCounts,
   FixTaskModelUsageSummary,
   FixTaskQueueItem,
   FixTaskQueueSummary,
@@ -59,6 +61,7 @@ export default function App() {
   const initialFilters = useMemo(() => filtersFromUrl(), []);
   const [tasks, setTasks] = useState<FixTask[]>([]);
   const [metrics, setMetrics] = useState<FixTaskMetricsSummary | null>(null);
+  const [statusCounts, setStatusCounts] = useState<FixTaskStatusCounts | null>(null);
   const [failureCauses, setFailureCauses] = useState<FixTaskFailureCauseSummary[]>([]);
   const [modelUsage, setModelUsage] = useState<FixTaskModelUsageSummary | null>(null);
   const [latency, setLatency] = useState<FixTaskLatencySummary | null>(null);
@@ -211,6 +214,7 @@ export default function App() {
     try {
       const [
         taskList,
+        taskStatusCounts,
         metricsSummary,
         failureCauseSummary,
         modelUsageSummary,
@@ -230,6 +234,13 @@ export default function App() {
           sort: taskSort,
           limit: TASK_PAGE_SIZE
         }),
+        getTaskStatusCounts({
+          query: searchQuery,
+          repositoryOwner: repositoryOwnerFilter,
+          repositoryName: repositoryNameFilter,
+          createdAfter: createdAfterFilter,
+          createdBefore: createdBeforeFilter
+        }),
         getMetricsSummary(),
         getFailureCauseSummary(),
         getModelUsageSummary(),
@@ -240,6 +251,7 @@ export default function App() {
         listQueueItems()
       ]);
       setTasks(taskList.items);
+      setStatusCounts(taskStatusCounts);
       setMetrics(metricsSummary);
       setFailureCauses(failureCauseSummary);
       setModelUsage(modelUsageSummary);
@@ -433,6 +445,7 @@ export default function App() {
           repositoryNameFilter={repositoryNameFilter}
           createdAfterFilter={createdAfterFilter}
           createdBeforeFilter={createdBeforeFilter}
+          statusCounts={statusCounts}
           taskSort={taskSort}
           loading={loading}
           totalCount={taskTotal}
