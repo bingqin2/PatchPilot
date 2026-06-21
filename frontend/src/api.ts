@@ -2,6 +2,7 @@ import type {
   ApiResponse,
   BackendHealth,
   ConfigurationSummary,
+  CreateTaskInput,
   FixTask,
   FixTaskFailureCauseSummary,
   FixTaskLatencySummary,
@@ -28,6 +29,10 @@ interface ListTasksOptions {
 
 const backendConnectionError =
   'Backend request failed. Check that PatchPilot backend is running and the frontend proxy target is correct.';
+
+export async function createTask(input: CreateTaskInput): Promise<FixTask> {
+  return postApi<FixTask>('/api/tasks', input);
+}
 
 export async function listTasks(options: TaskStatusFilter | ListTasksOptions = 'ALL'): Promise<FixTaskPage> {
   const normalizedOptions = typeof options === 'string' ? { status: options } : options;
@@ -117,8 +122,8 @@ async function getApi<T>(path: string): Promise<T> {
   return requestApi<T>(path);
 }
 
-async function postApi<T>(path: string): Promise<T> {
-  return requestApi<T>(path, { method: 'POST' });
+async function postApi<T>(path: string, body?: unknown): Promise<T> {
+  return requestApi<T>(path, postRequest(body));
 }
 
 async function requestApi<T>(path: string, init?: RequestInit): Promise<T> {
@@ -134,6 +139,17 @@ async function requestApi<T>(path: string, init?: RequestInit): Promise<T> {
     throw new Error(body.message ?? `Request failed: ${response.status}`);
   }
   return body.data;
+}
+
+function postRequest(body?: unknown): RequestInit {
+  if (body === undefined) {
+    return { method: 'POST' };
+  }
+  return {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  };
 }
 
 async function parseApiResponse<T>(response: Response): Promise<ApiResponse<T>> {

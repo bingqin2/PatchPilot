@@ -1682,3 +1682,24 @@ Validation:
 
 - `mvn -pl PatchPilot -Dtest=TaskControllerTests#should_get_task_report_by_task_id,TaskControllerTests#should_return_404_for_missing_task_report test`: first failed because `/api/tasks/{taskId}/report` did not exist, then passed after adding the endpoint and report generator, 2 tests run, 0 failures.
 - `npm test -- src/api.test.ts src/dashboard/components/TaskDetailPanel.test.tsx src/App.test.tsx`: first failed because `getTaskReport`, the `Copy report` button, and App wiring did not exist, then passed after adding the API helper and UI flow, 33 tests run, 0 failures.
+
+Implemented dashboard manual task creation from `docs/plans/080-dashboard-manual-task-creation.md`.
+
+Changes:
+
+- Added `POST /api/tasks` for manual dashboard-created tasks.
+- Added `CreateFixTaskDto`, `CreateManualFixTaskCommand`, and `ManualFixTaskService`.
+- Kept manual creation on the same durable task, timeline, dispatcher, and queue path as webhook-created work.
+- Rejected invalid manual task requests and duplicate active work for the same repository issue.
+- Added frontend `createTask()` and a `ManualTaskForm`.
+- Wired the dashboard form to create a task, select the created task id, refresh dashboard data, show success, and preserve form values on creation failure.
+- Documented manual task creation in README and frontend design notes.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=TaskControllerTests#should_create_manual_task_and_dispatch_it,TaskControllerTests#should_return_bad_request_for_invalid_manual_task_request,TaskControllerTests#should_return_conflict_when_manual_task_already_active_for_issue test`: first failed because `POST /api/tasks` returned 405, then passed after adding the endpoint and manual task service, 3 tests run, 0 failures.
+- `mvn -pl PatchPilot -Dtest=TaskControllerTests#should_create_manual_task_and_dispatch_it,TaskControllerTests#should_return_bad_request_for_invalid_manual_task_request,TaskControllerTests#should_return_conflict_when_manual_task_already_active_for_issue,DefaultManualFixTaskServiceTests test`: passed after isolating controller tests from async worker execution and adding service-level coverage, 5 tests run, 0 failures.
+- `npm test -- src/api.test.ts src/App.test.tsx -t "creates manual task|manual task creation"`: first failed because `createTask` and the manual form did not exist, then failed once because handled creation errors still surfaced as unhandled rejections, then passed after adding the API helper, form, App wiring, and handled-error preservation, 2 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed, 272 tests run, 0 failures.
+- `cd frontend && npm test`: passed, 47 tests run, 0 failures.
+- `cd frontend && npm run build`: passed, production bundle generated successfully.

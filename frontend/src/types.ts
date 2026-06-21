@@ -38,6 +38,14 @@ export interface FixTaskPage {
   total: number;
 }
 
+export interface CreateTaskInput {
+  repositoryOwner: string;
+  repositoryName: string;
+  issueNumber: number;
+  triggerUser: string;
+  triggerComment: string;
+}
+
 export interface FixTaskMetricsSummary {
   totalCount: number;
   pendingCount: number;

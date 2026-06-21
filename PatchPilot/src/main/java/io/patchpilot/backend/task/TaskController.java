@@ -1,7 +1,9 @@
 package io.patchpilot.backend.task;
 
 import io.patchpilot.backend.common.response.ApiResponse;
+import io.patchpilot.backend.task.domain.bo.CreateManualFixTaskCommand;
 import io.patchpilot.backend.task.domain.bo.FixTaskListQuery;
+import io.patchpilot.backend.task.domain.dto.CreateFixTaskDto;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.vo.FixTaskFailureCauseSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskAuditSummaryVo;
@@ -26,15 +28,18 @@ import io.patchpilot.backend.task.service.FixTaskTestRunService;
 import io.patchpilot.backend.task.service.FixTaskTimelineService;
 import io.patchpilot.backend.task.service.FixTaskService;
 import io.patchpilot.backend.task.service.FixTaskToolCallService;
+import io.patchpilot.backend.task.service.ManualFixTaskService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.net.URI;
 import java.util.List;
 
 @RestController
@@ -52,6 +57,20 @@ public class TaskController {
     private final FixTaskAuditSummaryService fixTaskAuditSummaryService;
     private final FixTaskQueueQueryService fixTaskQueueQueryService;
     private final FixTaskReportFormatter fixTaskReportFormatter;
+    private final ManualFixTaskService manualFixTaskService;
+
+    @PostMapping
+    public ResponseEntity<ApiResponse<FixTaskVo>> createTask(@RequestBody CreateFixTaskDto request) {
+        try {
+            CreateManualFixTaskCommand command = manualTaskCommand(request);
+            FixTaskVo task = manualFixTaskService.createManualTask(command);
+            return ResponseEntity.created(URI.create("/api/tasks/" + task.id())).body(ApiResponse.ok(task));
+        } catch (IllegalArgumentException exception) {
+            return ResponseEntity.badRequest().body(ApiResponse.fail(exception.getMessage()));
+        } catch (IllegalStateException exception) {
+            return ResponseEntity.status(409).body(ApiResponse.fail(exception.getMessage()));
+        }
+    }
 
     @GetMapping
     public ResponseEntity<ApiResponse<FixTaskPageVo>> listTasks(
@@ -208,6 +227,29 @@ public class TaskController {
         return new FixTaskPageVo(pageItems, parsedLimit, parsedOffset, hasMore, total);
     }
 
+    private static CreateManualFixTaskCommand manualTaskCommand(CreateFixTaskDto request) {
+        if (request == null) {
+            throw new IllegalArgumentException("request body is required");
+        }
+        String repositoryOwner = requiredText(request.repositoryOwner(), "repositoryOwner must not be blank");
+        String repositoryName = requiredText(request.repositoryName(), "repositoryName must not be blank");
+        if (request.issueNumber() == null || request.issueNumber() < 1) {
+            throw new IllegalArgumentException("issueNumber must be positive");
+        }
+        String triggerUser = requiredText(request.triggerUser(), "triggerUser must not be blank");
+        String triggerComment = requiredText(request.triggerComment(), "triggerComment must not be blank");
+        if (!triggerComment.equals("/agent fix") && !triggerComment.startsWith("/agent fix ")) {
+            throw new IllegalArgumentException("triggerComment must start with /agent fix");
+        }
+        return new CreateManualFixTaskCommand(
+                repositoryOwner,
+                repositoryName,
+                request.issueNumber(),
+                triggerUser,
+                triggerComment
+        );
+    }
+
     private FixTaskDetailVo buildTaskDetail(String taskId, FixTaskAuditSummaryVo summary) {
         List<FixTaskQueueItemVo> queueItems = fixTaskQueueQueryService.listByTaskId(taskId);
         return new FixTaskDetailVo(
@@ -255,6 +297,13 @@ public class TaskController {
     private static String blankToNull(String value) {
         if (value == null || value.isBlank()) {
             return null;
+        }
+        return value.trim();
+    }
+
+    private static String requiredText(String value, String message) {
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException(message);
         }
         return value.trim();
     }

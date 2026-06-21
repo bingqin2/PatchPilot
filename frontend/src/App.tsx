@@ -2,6 +2,7 @@ import { AlertCircle, RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   cancelTask,
+  createTask,
   getBackendHealth,
   getConfigurationSummary,
   getFailureCauseSummary,
@@ -20,6 +21,7 @@ import { FailureCausePanel } from './dashboard/components/FailureCausePanel';
 import { LatencyPanel } from './dashboard/components/LatencyPanel';
 import { MetricCard } from './dashboard/components/MetricCard';
 import { ModelUsagePanel } from './dashboard/components/ModelUsagePanel';
+import { ManualTaskForm } from './dashboard/components/ManualTaskForm';
 import { QueuePanel } from './dashboard/components/QueuePanel';
 import { TaskDetailPanel } from './dashboard/components/TaskDetailPanel';
 import { TaskListPanel } from './dashboard/components/TaskListPanel';
@@ -29,6 +31,7 @@ import type { TaskDetailState } from './dashboard/types';
 import type {
   ConfigurationSummary,
   BackendHealth,
+  CreateTaskInput,
   FixTask,
   FixTaskFailureCauseSummary,
   FixTaskLatencySummary,
@@ -63,6 +66,8 @@ export default function App() {
   const [loadingMoreTasks, setLoadingMoreTasks] = useState(false);
   const [taskTotal, setTaskTotal] = useState(0);
   const [lastRefreshedAt, setLastRefreshedAt] = useState<string | null>(null);
+  const [creatingTask, setCreatingTask] = useState(false);
+  const [createTaskStatus, setCreateTaskStatus] = useState<string | null>(null);
 
   const selectedTask = useMemo(
     () => tasks.find((task) => task.id === selectedTaskId) ?? tasks[0] ?? null,
@@ -203,6 +208,24 @@ export default function App() {
 
   const handleCopyReport = useCallback((taskId: string) => getTaskReport(taskId), []);
 
+  const handleCreateTask = useCallback(async (input: CreateTaskInput) => {
+    setCreatingTask(true);
+    setCreateTaskStatus(null);
+    setError(null);
+    try {
+      const task = await createTask(input);
+      setSelectedTaskId(task.id);
+      writeTaskIdToUrl(task.id);
+      setCreateTaskStatus('Manual task queued');
+      await refresh();
+    } catch (caught) {
+      setError(errorMessage(caught));
+      throw caught;
+    } finally {
+      setCreatingTask(false);
+    }
+  }, [refresh]);
+
   return (
     <main className="app-shell">
       <header className="top-bar">
@@ -253,6 +276,12 @@ export default function App() {
         <ModelUsagePanel usage={modelUsage} />
         <LatencyPanel latency={latency} />
       </section>
+
+      <ManualTaskForm
+        creating={creatingTask}
+        successMessage={createTaskStatus}
+        onCreateTask={handleCreateTask}
+      />
 
       <section className="workspace-grid">
         <TaskListPanel
