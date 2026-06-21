@@ -99,7 +99,8 @@ The current implementation target is local self-hosted development first. Hosted
 - Operators may configure trigger-user and repository allowlists for self-hosted demos and private deployments.
 - The system should reject unsupported repositories before cloning or model execution when project detection is possible from metadata.
 - The system must never follow user instructions that request secret exfiltration, destructive repository changes, arbitrary shell execution, or permission escalation.
-- The system should record ignored and rejected decisions with clear operator-facing reasons.
+- The system should record rejected trigger decisions with clear operator-facing reasons.
+- Non-triggering comments may be ignored without creating task or rejection audit records.
 
 ### Agent Workflow
 

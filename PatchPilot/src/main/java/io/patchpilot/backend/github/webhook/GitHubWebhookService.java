@@ -5,8 +5,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.patchpilot.backend.agent.tool.IssueCommentTool;
 import io.patchpilot.backend.github.client.domain.IssueCommentResult;
 import io.patchpilot.backend.safety.CommandSafetyGate;
+import io.patchpilot.backend.safety.domain.RecordRejectedTriggerCommand;
 import io.patchpilot.backend.safety.domain.SafetyGateDecision;
 import io.patchpilot.backend.safety.domain.SafetyGateRequest;
+import io.patchpilot.backend.safety.service.RejectedTriggerAuditService;
+import io.patchpilot.backend.safety.service.impl.InMemoryRejectedTriggerAuditService;
 import io.patchpilot.backend.task.domain.bo.CreateFixTaskCommand;
 import io.patchpilot.backend.task.domain.bo.FixTaskCreationResult;
 import io.patchpilot.backend.task.domain.enums.FixTaskTimelineEventType;
@@ -35,6 +38,7 @@ public class GitHubWebhookService {
     private final IssueCommentTool issueCommentTool;
     private final FixTaskTimelineService fixTaskTimelineService;
     private final CommandSafetyGate commandSafetyGate;
+    private final RejectedTriggerAuditService rejectedTriggerAuditService;
     private final ConcurrentMap<String, WebhookHandleResult> deliveryResults = new ConcurrentHashMap<>();
 
     public GitHubWebhookService(
@@ -44,7 +48,53 @@ public class GitHubWebhookService {
             IssueCommentTool issueCommentTool,
             FixTaskTimelineService fixTaskTimelineService
     ) {
-        this(objectMapper, fixTaskService, fixTaskDispatcher, issueCommentTool, fixTaskTimelineService, new CommandSafetyGate());
+        this(
+                objectMapper,
+                fixTaskService,
+                fixTaskDispatcher,
+                issueCommentTool,
+                fixTaskTimelineService,
+                new InMemoryRejectedTriggerAuditService(),
+                new CommandSafetyGate()
+        );
+    }
+
+    public GitHubWebhookService(
+            ObjectMapper objectMapper,
+            FixTaskService fixTaskService,
+            FixTaskDispatcher fixTaskDispatcher,
+            IssueCommentTool issueCommentTool,
+            FixTaskTimelineService fixTaskTimelineService,
+            CommandSafetyGate commandSafetyGate
+    ) {
+        this(
+                objectMapper,
+                fixTaskService,
+                fixTaskDispatcher,
+                issueCommentTool,
+                fixTaskTimelineService,
+                new InMemoryRejectedTriggerAuditService(),
+                commandSafetyGate
+        );
+    }
+
+    public GitHubWebhookService(
+            ObjectMapper objectMapper,
+            FixTaskService fixTaskService,
+            FixTaskDispatcher fixTaskDispatcher,
+            IssueCommentTool issueCommentTool,
+            FixTaskTimelineService fixTaskTimelineService,
+            RejectedTriggerAuditService rejectedTriggerAuditService
+    ) {
+        this(
+                objectMapper,
+                fixTaskService,
+                fixTaskDispatcher,
+                issueCommentTool,
+                fixTaskTimelineService,
+                rejectedTriggerAuditService,
+                new CommandSafetyGate()
+        );
     }
 
     @Autowired
@@ -54,6 +104,7 @@ public class GitHubWebhookService {
             FixTaskDispatcher fixTaskDispatcher,
             IssueCommentTool issueCommentTool,
             FixTaskTimelineService fixTaskTimelineService,
+            RejectedTriggerAuditService rejectedTriggerAuditService,
             CommandSafetyGate commandSafetyGate
     ) {
         this.objectMapper = objectMapper;
@@ -61,6 +112,7 @@ public class GitHubWebhookService {
         this.fixTaskDispatcher = fixTaskDispatcher;
         this.issueCommentTool = issueCommentTool;
         this.fixTaskTimelineService = fixTaskTimelineService;
+        this.rejectedTriggerAuditService = rejectedTriggerAuditService;
         this.commandSafetyGate = commandSafetyGate;
     }
 
@@ -99,6 +151,16 @@ public class GitHubWebhookService {
                 commentBody
         ));
         if (!safetyDecision.allowed()) {
+            rejectedTriggerAuditService.recordRejectedTrigger(new RecordRejectedTriggerCommand(
+                    "issue_comment",
+                    deliveryId,
+                    repositoryOwner,
+                    repositoryName,
+                    requiredLong(root, "issue", "number"),
+                    triggerUser,
+                    commentBody,
+                    safetyDecision.reason()
+            ));
             return WebhookHandleResult.rejected();
         }
         WebhookHandleResult duplicateDeliveryResult = fixTaskService.findTaskByDeliveryId(deliveryId)

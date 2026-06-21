@@ -3,6 +3,8 @@ package io.patchpilot.backend.task;
 import io.patchpilot.backend.task.domain.bo.CreateFixTaskCommand;
 import io.patchpilot.backend.task.domain.enums.FixTaskQueueItemStatus;
 import io.patchpilot.backend.task.domain.enums.FixTaskTimelineEventType;
+import io.patchpilot.backend.safety.domain.RejectedTriggerAuditVo;
+import io.patchpilot.backend.safety.service.RejectedTriggerAuditService;
 import io.patchpilot.backend.task.domain.vo.FixTaskQueueItemVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskModelCallVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskTestRunVo;
@@ -28,6 +30,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
@@ -67,6 +70,9 @@ class TaskControllerTests {
 
     @Autowired
     private FixTaskQueueQueryService fixTaskQueueQueryService;
+
+    @Autowired
+    private RejectedTriggerAuditService rejectedTriggerAuditService;
 
     @Test
     void should_create_manual_task_and_dispatch_it() throws Exception {
@@ -147,6 +153,18 @@ class TaskControllerTests {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.message").value("Unsafe request rejected: trigger user is not allowed"));
+
+        List<RejectedTriggerAuditVo> audits = rejectedTriggerAuditService.listRejectedTriggers(10);
+        assertThat(audits)
+                .filteredOn(audit -> "unknown-user".equals(audit.triggerUser()))
+                .singleElement()
+                .satisfies(audit -> {
+                    assertThat(audit.source()).isEqualTo("manual");
+                    assertThat(audit.repositoryOwner()).isEqualTo("bingqin2");
+                    assertThat(audit.repositoryName()).isEqualTo("PatchPilot");
+                    assertThat(audit.issueNumber()).isEqualTo(7L);
+                    assertThat(audit.reason()).isEqualTo("Unsafe request rejected: trigger user is not allowed");
+                });
     }
 
     @Test

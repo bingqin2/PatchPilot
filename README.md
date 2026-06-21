@@ -158,9 +158,11 @@ curl http://127.0.0.1:8080/api/tasks/{taskId}/timeline
 curl http://127.0.0.1:8080/api/tasks/{taskId}/test-runs
 curl http://127.0.0.1:8080/api/tasks/{taskId}/tool-calls
 curl http://127.0.0.1:8080/api/tasks/{taskId}/model-calls
+curl "http://127.0.0.1:8080/api/rejected-triggers?limit=20"
 ```
 
 Use `/detail` for dashboard-style task inspection. It returns the task audit summary, latest queue item, queue history, timeline events, test runs, tool calls, and model calls in one response. Use `/report` to copy a Markdown diagnostic summary for a task. The narrower endpoints remain available for focused debugging.
+Use `/api/rejected-triggers` to inspect rejected `/agent fix` attempts that did not create tasks, including unsafe command text, unauthorized users, unauthorized repositories, and the rejection reason.
 
 For local demos or debugging, you can create the same queued task from the backend API without posting a GitHub comment:
 
@@ -267,6 +269,7 @@ PatchPilot must not:
 - Auto-merge Pull Requests.
 - Execute arbitrary model-generated shell commands.
 - Accept task triggers from users or repositories outside configured allowlists.
+- Drop rejected `/agent fix` attempts without an operator-visible audit record.
 - Read or write outside the task workspace.
 - Log secrets.
 - Report success without verification.

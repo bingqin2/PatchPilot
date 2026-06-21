@@ -9,6 +9,9 @@ import io.patchpilot.backend.github.client.domain.IssueCommentResult;
 import io.patchpilot.backend.github.config.GitHubProperties;
 import io.patchpilot.backend.safety.CommandSafetyGate;
 import io.patchpilot.backend.safety.config.SafetyProperties;
+import io.patchpilot.backend.safety.domain.RecordRejectedTriggerCommand;
+import io.patchpilot.backend.safety.domain.RejectedTriggerAuditVo;
+import io.patchpilot.backend.safety.service.RejectedTriggerAuditService;
 import io.patchpilot.backend.task.domain.bo.CreateFixTaskCommand;
 import io.patchpilot.backend.task.domain.bo.FixTaskCreationResult;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
@@ -123,12 +126,14 @@ class GitHubWebhookServiceTests {
         RecordingFixTaskDispatcher fixTaskDispatcher = new RecordingFixTaskDispatcher();
         RecordingIssueCommentTool issueCommentTool = new RecordingIssueCommentTool();
         RecordingTimelineService timelineService = new RecordingTimelineService();
+        RecordingRejectedTriggerAuditService auditService = new RecordingRejectedTriggerAuditService();
         GitHubWebhookService webhookService = new GitHubWebhookService(
                 new ObjectMapper(),
                 fixTaskService,
                 fixTaskDispatcher,
                 issueCommentTool,
-                timelineService
+                timelineService,
+                auditService
         );
 
         WebhookHandleResult result = webhookService.handle(
@@ -143,6 +148,15 @@ class GitHubWebhookServiceTests {
         assertThat(fixTaskDispatcher.dispatchCount()).isZero();
         assertThat(issueCommentTool.acceptedCount()).isZero();
         assertThat(timelineService.eventTypes()).isEmpty();
+        assertThat(auditService.commands()).hasSize(1);
+        assertThat(auditService.commands().get(0).source()).isEqualTo("issue_comment");
+        assertThat(auditService.commands().get(0).deliveryId()).isEqualTo("delivery-dangerous-command");
+        assertThat(auditService.commands().get(0).repositoryOwner()).isEqualTo("octocat");
+        assertThat(auditService.commands().get(0).repositoryName()).isEqualTo("hello-world");
+        assertThat(auditService.commands().get(0).issueNumber()).isEqualTo(42L);
+        assertThat(auditService.commands().get(0).triggerUser()).isEqualTo("alice");
+        assertThat(auditService.commands().get(0).reason())
+                .isEqualTo("Unsafe request rejected: destructive or secret-exfiltration instruction");
     }
 
     @Test
@@ -626,6 +640,37 @@ class GitHubWebhookServiceTests {
 
         private List<String> messages() {
             return messages;
+        }
+    }
+
+    private static final class RecordingRejectedTriggerAuditService implements RejectedTriggerAuditService {
+
+        private final List<RecordRejectedTriggerCommand> commands = new java.util.concurrent.CopyOnWriteArrayList<>();
+
+        @Override
+        public RejectedTriggerAuditVo recordRejectedTrigger(RecordRejectedTriggerCommand command) {
+            commands.add(command);
+            return new RejectedTriggerAuditVo(
+                    "audit-" + commands.size(),
+                    command.source(),
+                    command.deliveryId(),
+                    command.repositoryOwner(),
+                    command.repositoryName(),
+                    command.issueNumber(),
+                    command.triggerUser(),
+                    command.triggerComment(),
+                    command.reason(),
+                    Instant.parse("2026-06-21T00:00:00Z").plusSeconds(commands.size())
+            );
+        }
+
+        @Override
+        public List<RejectedTriggerAuditVo> listRejectedTriggers(int limit) {
+            return List.of();
+        }
+
+        private List<RecordRejectedTriggerCommand> commands() {
+            return commands;
         }
     }
 }
