@@ -1634,3 +1634,19 @@ Validation:
 
 - `mvn -pl PatchPilot -Dtest=TaskControllerTests#should_get_task_detail_by_task_id,TaskControllerTests#should_return_404_for_missing_task_detail test`: first failed because `/api/tasks/{taskId}/detail` did not exist, then passed after adding the response type and controller endpoint, 2 tests run, 0 failures.
 - `npm test -- src/api.test.ts src/App.test.tsx`: first failed because `getTaskDetail()` did not exist and the dashboard still called five detail endpoints, then passed after adding the helper and switching the selected-task loader, 24 tests run, 0 failures.
+
+Implemented task detail queue status from `docs/plans/077-task-detail-queue-status.md`.
+
+Changes:
+
+- Extended `FixTaskQueueQueryService` with `findByTaskId(String taskId)`.
+- Implemented MyBatis-backed task queue lookup by task id, returning the latest queue item by update time.
+- Included the selected task's latest queue item in `GET /api/tasks/{taskId}/detail`.
+- Added frontend task-detail typing for optional queue item data.
+- Rendered queue status, attempt count, last error, available time, and locked time in `TaskDetailPanel`.
+- Documented selected-task queue visibility in README and frontend design notes.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=TaskControllerTests#should_get_task_detail_by_task_id test`: first failed at test compilation because `findByTaskId` did not exist, then passed after adding the service method, queue lookup, and detail response field.
+- `npm test -- src/api.test.ts src/dashboard/components/TaskDetailPanel.test.tsx`: first failed because the task detail panel did not render queue state, then passed after adding queue item typing and rendering, 14 tests run, 0 failures.

@@ -251,6 +251,17 @@ test('loads aggregate task detail from backend API', async () => {
           latestTestRunExitCode: null,
           latestTestRunDurationMs: null
         },
+        queueItem: {
+          id: 'queue-1',
+          taskId: 'task-1',
+          status: 'FAILED',
+          attemptCount: 3,
+          lastError: 'maven tests failed',
+          availableAt: '2026-06-20T01:02:00Z',
+          lockedAt: '2026-06-20T01:01:00Z',
+          createdAt: '2026-06-20T01:00:00Z',
+          updatedAt: '2026-06-20T01:03:00Z'
+        },
         timeline: [],
         testRuns: [],
         toolCalls: [],
@@ -265,6 +276,8 @@ test('loads aggregate task detail from backend API', async () => {
 
   expect(fetchMock).toHaveBeenCalledWith('/api/tasks/task-1/detail');
   expect(detail.summary.task.id).toBe('task-1');
+  expect(detail.queueItem?.status).toBe('FAILED');
+  expect(detail.queueItem?.attemptCount).toBe(3);
   expect(detail.timeline).toEqual([]);
   expect(detail.testRuns).toEqual([]);
   expect(detail.toolCalls).toEqual([]);

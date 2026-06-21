@@ -159,6 +159,17 @@ const modelCalls = [
 
 const detail = {
   summary,
+  queueItem: {
+    id: 'queue-1',
+    taskId: 'task-1',
+    status: 'COMPLETED',
+    attemptCount: 1,
+    lastError: null,
+    availableAt: '2026-06-20T01:00:00Z',
+    lockedAt: '2026-06-20T01:00:20Z',
+    createdAt: '2026-06-20T01:00:00Z',
+    updatedAt: '2026-06-20T01:01:00Z'
+  },
   timeline,
   testRuns,
   toolCalls,
@@ -352,6 +363,7 @@ beforeEach(() => {
             createdAt: '2026-06-20T01:06:00Z'
           }
         },
+        queueItem: null,
         timeline: [],
         testRuns: [],
         toolCalls: [],
@@ -396,6 +408,7 @@ beforeEach(() => {
             createdAt: '2026-06-20T01:10:30Z'
           }
         },
+        queueItem: null,
         timeline: [
           {
             id: 'timeline-running',
@@ -801,6 +814,7 @@ test('loads the next backend task page with offset pagination', async () => {
           latestTestRunExitCode: null,
           latestTestRunDurationMs: null
         },
+        queueItem: null,
         timeline: [],
         testRuns: [],
         toolCalls: [],

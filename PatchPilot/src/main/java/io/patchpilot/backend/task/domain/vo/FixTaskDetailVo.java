@@ -7,6 +7,7 @@ public record FixTaskDetailVo(
         List<FixTaskTimelineEventVo> timeline,
         List<FixTaskTestRunVo> testRuns,
         List<FixTaskToolCallVo> toolCalls,
-        List<FixTaskModelCallVo> modelCalls
+        List<FixTaskModelCallVo> modelCalls,
+        FixTaskQueueItemVo queueItem
 ) {
 }
