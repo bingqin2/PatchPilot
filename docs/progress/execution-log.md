@@ -1876,3 +1876,18 @@ Validation:
 - `mvn -pl PatchPilot -Dtest=GitHubWebhookServiceTests#should_reject_agent_fix_from_unauthorized_trigger_user_before_task_creation+should_reject_agent_fix_for_unauthorized_repository_before_task_creation+should_accept_agent_fix_when_trigger_user_and_repository_are_allowed,DefaultManualFixTaskServiceTests#should_reject_manual_task_when_trigger_user_is_not_allowed+should_reject_manual_task_when_repository_is_not_allowed,TaskControllerTests#should_return_bad_request_when_manual_task_trigger_user_is_not_allowed+should_return_bad_request_when_manual_task_repository_is_not_allowed test`: first failed because `SafetyProperties` did not exist.
 - The same target command then failed because Spring selected the no-arg safety gate constructor, so controller tests still created tasks for unauthorized inputs.
 - The same target command passed after adding configuration binding and constructor injection, 7 tests run, 0 failures.
+
+Implemented rejected trigger audit log from `docs/plans/090-rejected-trigger-audit-log.md`.
+
+Changes:
+
+- Added `RejectedTriggerAuditService` with in-memory and MyBatis implementations.
+- Added `rejected_trigger_audit` MySQL migration for rejected `/agent fix` attempts that do not become tasks.
+- Added `GET /api/rejected-triggers` with bounded `limit` validation.
+- Recorded rejected webhook triggers with source, delivery id, repository, issue number, trigger user, command, reason, and timestamp.
+- Recorded rejected manual task creation attempts through the same audit service.
+- Documented rejected trigger inspection and the separation between rejected triggers and executable task records.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=InMemoryRejectedTriggerAuditServiceTests,MyBatisRejectedTriggerAuditServiceTests,RejectedTriggerAuditControllerTests,RejectedTriggerAuditMigrationTests,GitHubWebhookServiceTests#should_reject_dangerous_agent_fix_command_before_task_creation,TaskControllerTests#should_return_bad_request_when_manual_task_trigger_user_is_not_allowed test`: first failed because the rejected trigger audit model, service, controller, mapper, and migration did not exist; then passed after implementation, 9 tests run, 0 failures.

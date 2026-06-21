@@ -45,6 +45,7 @@ GitHub issue comment created
   -> WebhookController verifies signature
   -> WebhookEventRouter detects /agent fix
   -> CommandSafetyGate rejects unsafe, unsupported, or unauthorized commands
+  -> RejectedTriggerAuditService records rejected triggering attempts
   -> FixTaskService creates a task
   -> TaskWorker runs asynchronously
   -> WorkspaceService clones the repository
@@ -117,6 +118,7 @@ Responsibilities:
 - Route supported events.
 - Detect `/agent fix`.
 - Reject unsafe or unauthorized `/agent fix` commands before task creation.
+- Record rejected triggering attempts for operator inspection.
 - Deduplicate delivery ids.
 - Submit work to task services.
 
