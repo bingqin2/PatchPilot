@@ -832,6 +832,32 @@ test('syncs search query changes into the URL and removes cleared search', async
   expect(window.location.search).toBe('?status=FAILED');
 });
 
+test('hides clear filters when no task filters are active', async () => {
+  render(<App />);
+
+  expect(await screen.findByText('/agent fix replace docs/demo.md PatchPilot smoke test')).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Clear filters' })).not.toBeInTheDocument();
+});
+
+test('clear filters resets active task filters and preserves the selected task route', async () => {
+  const user = userEvent.setup();
+  const fetchMock = vi.mocked(fetch);
+  window.history.replaceState(null, '', '/tasks/task-2?status=FAILED&query=broken&panel=detail#timeline');
+
+  render(<App />);
+
+  expect(await screen.findByText('/agent fix replace docs/demo.md broken')).toBeInTheDocument();
+
+  await user.click(screen.getByRole('button', { name: 'Clear filters' }));
+
+  expect(screen.getByRole('button', { name: 'ALL' })).toHaveAttribute('aria-pressed', 'true');
+  expect(screen.getByRole('searchbox', { name: 'Search tasks' })).toHaveValue('');
+  expect(window.location.pathname).toBe('/tasks/task-2');
+  expect(window.location.search).toBe('?panel=detail');
+  expect(window.location.hash).toBe('#timeline');
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks?limit=50'));
+});
+
 test('loads queue summary and items from backend APIs', async () => {
   const fetchMock = vi.mocked(fetch);
 

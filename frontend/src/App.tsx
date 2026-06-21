@@ -99,6 +99,12 @@ export default function App() {
     writeFiltersToUrl(statusFilter, query);
   }, [statusFilter]);
 
+  const handleClearFilters = useCallback(() => {
+    setStatusFilter('ALL');
+    setSearchQuery('');
+    writeFiltersToUrl('ALL', '');
+  }, []);
+
   const refresh = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -313,8 +319,10 @@ export default function App() {
           totalCount={taskTotal}
           canLoadMore={canLoadMoreTasks}
           loadingMore={loadingMoreTasks}
+          canClearFilters={statusFilter !== 'ALL' || searchQuery.trim().length > 0}
           onStatusFilterChange={handleStatusFilterChange}
           onSearchQueryChange={handleSearchQueryChange}
+          onClearFilters={handleClearFilters}
           onSelectTask={selectTask}
           onLoadMoreTasks={handleLoadMoreTasks}
         />

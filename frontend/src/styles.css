@@ -450,6 +450,7 @@ h3 {
 .task-search {
   border-bottom: 1px solid #edf1f5;
   display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 6px;
   padding: 12px 16px;
 }
@@ -466,6 +467,7 @@ h3 {
   border-radius: 6px;
   color: #17202a;
   font: inherit;
+  grid-column: 1 / -1;
   min-height: 36px;
   padding: 0 10px;
   width: 100%;
@@ -474,6 +476,10 @@ h3 {
 .task-search input:focus {
   border-color: #187b78;
   outline: 2px solid rgba(24, 123, 120, 0.16);
+}
+
+.task-clear-filters-button {
+  justify-self: start;
 }
 
 .task-row {
@@ -952,5 +958,9 @@ pre {
   .top-bar {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .task-search {
+    grid-template-columns: 1fr;
   }
 }
