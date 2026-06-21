@@ -8,10 +8,11 @@ PatchPilot is not a chatbot and does not auto-merge code. The current target is 
 
 - GitHub webhook endpoint for `issue_comment.created`.
 - `/agent fix` trigger detection.
+- Safety gate rejection for unsafe `/agent fix` instructions before task creation.
 - Webhook signature verification.
 - MySQL-backed task, queue, timeline, test-run, tool-call, and model-call records.
 - Local workspace clone, branch, diff, commit, push, and Pull Request creation.
-- Maven test execution with command allowlists.
+- Java/Maven language adapter backed by Maven test execution with command allowlists.
 - OpenAI-compatible model client and plan-driven patch workflow.
 - Issue comment status updates for accepted, running, verification, success, and failure states.
 
@@ -166,6 +167,7 @@ curl -X POST http://127.0.0.1:8080/api/tasks \
 ```
 
 Manual task creation still records a normal task, writes a timeline event, and dispatches work through the queue. It rejects duplicate active work for the same issue.
+The manual API uses the same command safety gate as GitHub webhooks. Unsafe requests such as secret exfiltration, destructive repository changes, or arbitrary shell execution are rejected before task creation.
 
 Runtime configuration summary:
 
@@ -256,10 +258,12 @@ PatchPilot must not:
 - Read or write outside the task workspace.
 - Log secrets.
 - Report success without verification.
+- Create tasks for unsafe `/agent fix` instructions.
 
 ## Current Limitations
 
-- Maven repositories are the first supported target.
+- Java/Maven repositories are the first supported target through the `JavaMavenLanguageAdapter`.
+- Node.js, Python, and Gradle adapters are future work.
 - The current runtime is single-process; API and worker separation is future work.
 - The React dashboard can create manual demo tasks, but GitHub issue comments remain the primary production trigger. It does not merge Pull Requests.
 - Temporary Cloudflare URLs are for local testing only.

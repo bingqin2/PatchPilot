@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.patchpilot.backend.agent.tool.IssueCommentTool;
 import io.patchpilot.backend.github.client.domain.IssueCommentResult;
+import io.patchpilot.backend.safety.CommandSafetyGate;
+import io.patchpilot.backend.safety.domain.SafetyGateDecision;
 import io.patchpilot.backend.task.domain.bo.CreateFixTaskCommand;
 import io.patchpilot.backend.task.domain.bo.FixTaskCreationResult;
 import io.patchpilot.backend.task.domain.enums.FixTaskTimelineEventType;
@@ -12,6 +14,7 @@ import io.patchpilot.backend.task.service.FixTaskDispatcher;
 import io.patchpilot.backend.task.service.FixTaskService;
 import io.patchpilot.backend.task.service.FixTaskTimelineService;
 import io.patchpilot.backend.task.service.LogSummary;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -24,13 +27,13 @@ public class GitHubWebhookService {
 
     private static final String ISSUE_COMMENT_EVENT = "issue_comment";
     private static final String CREATED_ACTION = "created";
-    private static final String AGENT_FIX_COMMAND = "/agent fix";
 
     private final ObjectMapper objectMapper;
     private final FixTaskService fixTaskService;
     private final FixTaskDispatcher fixTaskDispatcher;
     private final IssueCommentTool issueCommentTool;
     private final FixTaskTimelineService fixTaskTimelineService;
+    private final CommandSafetyGate commandSafetyGate;
     private final ConcurrentMap<String, WebhookHandleResult> deliveryResults = new ConcurrentHashMap<>();
 
     public GitHubWebhookService(
@@ -40,11 +43,24 @@ public class GitHubWebhookService {
             IssueCommentTool issueCommentTool,
             FixTaskTimelineService fixTaskTimelineService
     ) {
+        this(objectMapper, fixTaskService, fixTaskDispatcher, issueCommentTool, fixTaskTimelineService, new CommandSafetyGate());
+    }
+
+    @Autowired
+    public GitHubWebhookService(
+            ObjectMapper objectMapper,
+            FixTaskService fixTaskService,
+            FixTaskDispatcher fixTaskDispatcher,
+            IssueCommentTool issueCommentTool,
+            FixTaskTimelineService fixTaskTimelineService,
+            CommandSafetyGate commandSafetyGate
+    ) {
         this.objectMapper = objectMapper;
         this.fixTaskService = fixTaskService;
         this.fixTaskDispatcher = fixTaskDispatcher;
         this.issueCommentTool = issueCommentTool;
         this.fixTaskTimelineService = fixTaskTimelineService;
+        this.commandSafetyGate = commandSafetyGate;
     }
 
     public WebhookHandleResult handle(String event, String deliveryId, String payload) {
@@ -69,8 +85,12 @@ public class GitHubWebhookService {
             return WebhookHandleResult.ignored();
         }
         String commentBody = requiredText(root, "comment", "body");
-        if (!isAgentFixCommand(commentBody)) {
+        if (!commandSafetyGate.isAgentFixCommand(commentBody)) {
             return WebhookHandleResult.ignored();
+        }
+        SafetyGateDecision safetyDecision = commandSafetyGate.evaluate(commentBody);
+        if (!safetyDecision.allowed()) {
+            return WebhookHandleResult.rejected();
         }
         WebhookHandleResult duplicateDeliveryResult = fixTaskService.findTaskByDeliveryId(deliveryId)
                 .map(task -> WebhookHandleResult.duplicate(task.id()))
@@ -157,12 +177,6 @@ public class GitHubWebhookService {
             return exception.getClass().getSimpleName();
         }
         return LogSummary.truncateFailureReason(exception.getMessage());
-    }
-
-    private static boolean isAgentFixCommand(String commentBody) {
-        String trimmedCommentBody = commentBody.trim();
-        return AGENT_FIX_COMMAND.equals(trimmedCommentBody)
-                || trimmedCommentBody.startsWith(AGENT_FIX_COMMAND + " ");
     }
 
     private JsonNode parsePayload(String payload) {

@@ -6,6 +6,10 @@ public record WebhookHandleResult(WebhookHandleStatus status, String taskId) {
         return new WebhookHandleResult(WebhookHandleStatus.IGNORED, null);
     }
 
+    public static WebhookHandleResult rejected() {
+        return new WebhookHandleResult(WebhookHandleStatus.REJECTED, null);
+    }
+
     public static WebhookHandleResult taskCreated(String taskId) {
         return new WebhookHandleResult(WebhookHandleStatus.TASK_CREATED, taskId);
     }

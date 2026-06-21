@@ -1,5 +1,7 @@
 package io.patchpilot.backend.runner.service;
 
+import io.patchpilot.backend.language.domain.LanguageDetectionResult;
+import io.patchpilot.backend.language.impl.JavaMavenLanguageAdapter;
 import io.patchpilot.backend.workspace.config.WorkspaceProperties;
 import io.patchpilot.backend.runner.domain.vo.TestRunResult;
 import io.patchpilot.backend.task.process.TaskProcessRegistry;
@@ -9,7 +11,6 @@ import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
@@ -25,28 +26,43 @@ public class MavenTestRunner {
     private final Duration timeout;
     private final CommandExecutionGuard commandExecutionGuard;
     private final TaskProcessRegistry taskProcessRegistry;
+    private final JavaMavenLanguageAdapter languageAdapter;
 
     public MavenTestRunner() {
-        this(DEFAULT_TIMEOUT, new CommandExecutionGuard(new WorkspaceProperties()), new TaskProcessRegistry());
+        this(DEFAULT_TIMEOUT, new CommandExecutionGuard(new WorkspaceProperties()), new TaskProcessRegistry(), new JavaMavenLanguageAdapter());
     }
 
     @Autowired
-    public MavenTestRunner(CommandExecutionGuard commandExecutionGuard, TaskProcessRegistry taskProcessRegistry) {
-        this(DEFAULT_TIMEOUT, commandExecutionGuard, taskProcessRegistry);
+    public MavenTestRunner(
+            CommandExecutionGuard commandExecutionGuard,
+            TaskProcessRegistry taskProcessRegistry,
+            JavaMavenLanguageAdapter languageAdapter
+    ) {
+        this(DEFAULT_TIMEOUT, commandExecutionGuard, taskProcessRegistry, languageAdapter);
     }
 
     MavenTestRunner(Duration timeout) {
-        this(timeout, new CommandExecutionGuard(new WorkspaceProperties()), new TaskProcessRegistry());
+        this(timeout, new CommandExecutionGuard(new WorkspaceProperties()), new TaskProcessRegistry(), new JavaMavenLanguageAdapter());
     }
 
     MavenTestRunner(Duration timeout, CommandExecutionGuard commandExecutionGuard) {
-        this(timeout, commandExecutionGuard, new TaskProcessRegistry());
+        this(timeout, commandExecutionGuard, new TaskProcessRegistry(), new JavaMavenLanguageAdapter());
     }
 
     MavenTestRunner(Duration timeout, CommandExecutionGuard commandExecutionGuard, TaskProcessRegistry taskProcessRegistry) {
+        this(timeout, commandExecutionGuard, taskProcessRegistry, new JavaMavenLanguageAdapter());
+    }
+
+    MavenTestRunner(
+            Duration timeout,
+            CommandExecutionGuard commandExecutionGuard,
+            TaskProcessRegistry taskProcessRegistry,
+            JavaMavenLanguageAdapter languageAdapter
+    ) {
         this.timeout = timeout;
         this.commandExecutionGuard = commandExecutionGuard;
         this.taskProcessRegistry = taskProcessRegistry;
+        this.languageAdapter = languageAdapter;
     }
 
     public TestRunResult runTests(Path repositoryDir) {
@@ -55,13 +71,11 @@ public class MavenTestRunner {
 
     public TestRunResult runTests(String taskId, Path repositoryDir) {
         Path repositoryRoot = repositoryDir.toAbsolutePath().normalize();
-        if (Files.isRegularFile(repositoryRoot.resolve("mvnw"))) {
-            return runCommand(taskId, repositoryRoot, List.of("./mvnw", "test"));
+        LanguageDetectionResult detectionResult = languageAdapter.detect(repositoryRoot);
+        if (detectionResult.supported()) {
+            return runCommand(taskId, repositoryRoot, detectionResult.verificationCommand());
         }
-        if (Files.isRegularFile(repositoryRoot.resolve("pom.xml"))) {
-            return runCommand(taskId, repositoryRoot, List.of("mvn", "test"));
-        }
-        throw new IllegalStateException("Unsupported repository: no mvnw or pom.xml found");
+        throw new IllegalStateException(detectionResult.reason());
     }
 
     protected TestRunResult runCommand(Path repositoryDir, List<String> command) {
