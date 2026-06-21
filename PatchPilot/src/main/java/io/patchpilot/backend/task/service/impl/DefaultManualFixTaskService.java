@@ -1,10 +1,14 @@
 package io.patchpilot.backend.task.service.impl;
 
 import io.patchpilot.backend.safety.CommandSafetyGate;
+import io.patchpilot.backend.safety.NoOpTriggerIntentClassifier;
 import io.patchpilot.backend.safety.domain.RecordRejectedTriggerCommand;
 import io.patchpilot.backend.safety.domain.SafetyGateDecision;
 import io.patchpilot.backend.safety.domain.SafetyGateRequest;
+import io.patchpilot.backend.safety.domain.TriggerIntentClassificationRequest;
+import io.patchpilot.backend.safety.domain.TriggerIntentDecision;
 import io.patchpilot.backend.safety.service.RejectedTriggerAuditService;
+import io.patchpilot.backend.safety.service.TriggerIntentClassifier;
 import io.patchpilot.backend.safety.service.impl.InMemoryRejectedTriggerAuditService;
 import io.patchpilot.backend.task.domain.bo.CreateFixTaskCommand;
 import io.patchpilot.backend.task.domain.bo.CreateManualFixTaskCommand;
@@ -27,6 +31,7 @@ public class DefaultManualFixTaskService implements ManualFixTaskService {
     private final FixTaskDispatcher fixTaskDispatcher;
     private final CommandSafetyGate commandSafetyGate;
     private final RejectedTriggerAuditService rejectedTriggerAuditService;
+    private final TriggerIntentClassifier triggerIntentClassifier;
 
     public DefaultManualFixTaskService(
             FixTaskService fixTaskService,
@@ -38,7 +43,8 @@ public class DefaultManualFixTaskService implements ManualFixTaskService {
                 fixTaskTimelineService,
                 fixTaskDispatcher,
                 new InMemoryRejectedTriggerAuditService(),
-                new CommandSafetyGate()
+                new CommandSafetyGate(),
+                new NoOpTriggerIntentClassifier()
         );
     }
 
@@ -53,7 +59,25 @@ public class DefaultManualFixTaskService implements ManualFixTaskService {
                 fixTaskTimelineService,
                 fixTaskDispatcher,
                 new InMemoryRejectedTriggerAuditService(),
-                commandSafetyGate
+                commandSafetyGate,
+                new NoOpTriggerIntentClassifier()
+        );
+    }
+
+    public DefaultManualFixTaskService(
+            FixTaskService fixTaskService,
+            FixTaskTimelineService fixTaskTimelineService,
+            FixTaskDispatcher fixTaskDispatcher,
+            RejectedTriggerAuditService rejectedTriggerAuditService,
+            CommandSafetyGate commandSafetyGate
+    ) {
+        this(
+                fixTaskService,
+                fixTaskTimelineService,
+                fixTaskDispatcher,
+                rejectedTriggerAuditService,
+                commandSafetyGate,
+                new NoOpTriggerIntentClassifier()
         );
     }
 
@@ -63,13 +87,15 @@ public class DefaultManualFixTaskService implements ManualFixTaskService {
             FixTaskTimelineService fixTaskTimelineService,
             FixTaskDispatcher fixTaskDispatcher,
             RejectedTriggerAuditService rejectedTriggerAuditService,
-            CommandSafetyGate commandSafetyGate
+            CommandSafetyGate commandSafetyGate,
+            TriggerIntentClassifier triggerIntentClassifier
     ) {
         this.fixTaskService = fixTaskService;
         this.fixTaskTimelineService = fixTaskTimelineService;
         this.fixTaskDispatcher = fixTaskDispatcher;
         this.rejectedTriggerAuditService = rejectedTriggerAuditService;
         this.commandSafetyGate = commandSafetyGate;
+        this.triggerIntentClassifier = triggerIntentClassifier;
     }
 
     @Override
@@ -92,6 +118,30 @@ public class DefaultManualFixTaskService implements ManualFixTaskService {
                     safetyDecision.reason()
             ));
             throw new IllegalArgumentException(safetyDecision.reason());
+        }
+        TriggerIntentDecision triggerIntentDecision = triggerIntentClassifier.classify(
+                new TriggerIntentClassificationRequest(
+                        classificationId(),
+                        "manual",
+                        command.repositoryOwner(),
+                        command.repositoryName(),
+                        command.issueNumber(),
+                        command.triggerUser(),
+                        command.triggerComment()
+                )
+        );
+        if (!triggerIntentDecision.shouldExecute()) {
+            rejectedTriggerAuditService.recordRejectedTrigger(new RecordRejectedTriggerCommand(
+                    "manual",
+                    "manual-rejected-" + UUID.randomUUID(),
+                    command.repositoryOwner(),
+                    command.repositoryName(),
+                    command.issueNumber(),
+                    command.triggerUser(),
+                    command.triggerComment(),
+                    triggerIntentDecision.rejectionReason()
+            ));
+            throw new IllegalArgumentException(triggerIntentDecision.rejectionReason());
         }
         fixTaskService.findActiveTaskForIssue(
                         command.repositoryOwner(),
@@ -119,5 +169,9 @@ public class DefaultManualFixTaskService implements ManualFixTaskService {
         );
         fixTaskDispatcher.dispatch(task.id());
         return task;
+    }
+
+    private static String classificationId() {
+        return UUID.randomUUID().toString();
     }
 }

@@ -1907,3 +1907,23 @@ Validation:
 - `mvn -pl PatchPilot -Dtest=CommandSafetyGateTests,GitHubWebhookServiceTests#should_reject_unactionable_agent_fix_command_before_task_creation,TaskControllerTests#should_return_bad_request_when_manual_task_command_is_not_actionable test`: first failed because vague commands still created tasks; then passed after adding actionability classification, 9 tests run, 0 failures.
 - `mvn -pl PatchPilot -Dtest=CommandSafetyGateTests,GitHubWebhookServiceTests,GitHubWebhookControllerTests,TaskControllerTests#should_return_bad_request_when_manual_task_command_is_not_actionable test`: passed, 27 tests run, 0 failures.
 - `mvn -pl PatchPilot test -q`: passed.
+
+Implemented model-assisted trigger classification from `docs/plans/092-model-assisted-trigger-classification.md`.
+
+Changes:
+
+- Added optional model-assisted trigger classification after deterministic safety checks and before task creation.
+- Added `TriggerIntentClassifier`, model-backed classification request/decision types, and a disabled-by-default no-op path.
+- Reused the existing OpenAI-compatible `ModelProviderClient` for classification JSON.
+- Rejected model-declined webhook and manual triggers through the existing rejected trigger audit log.
+- Added `PATCHPILOT_MODEL_TRIGGER_CLASSIFICATION_ENABLED` to configuration, `.env.example`, and Docker Compose.
+- Documented that model classification cannot override deterministic safety rejections.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=ModelTriggerIntentClassifierTests,GitHubWebhookServiceTests#should_reject_when_model_trigger_classifier_declines_execution_before_task_creation+should_not_call_model_trigger_classifier_for_dangerous_command_rejected_by_safety_gate,DefaultManualFixTaskServiceTests#should_reject_manual_task_when_model_trigger_classifier_declines_execution test`: first failed because trigger intent classification types and services did not exist; then passed after implementation, 8 tests run, 0 failures.
+- `mvn -pl PatchPilot -Dtest=ConfigurationControllerTests test`: passed after adding `modelTriggerClassificationEnabled` to the non-sensitive configuration summary, 1 test run, 0 failures.
+- `cd frontend && npm test -- src/api.test.ts src/dashboard/components/ConfigurationPanel.test.tsx src/App.test.tsx -t "configuration|Configuration"`: passed after surfacing trigger classifier state in the configuration panel, 3 tests run, 0 failures.
+- `mvn -pl PatchPilot test -q`: passed.
+- `cd frontend && npm test -- --reporter=dot`: passed, 68 tests run, 0 failures.
+- `cd frontend && npm run build`: passed, production bundle generated successfully.

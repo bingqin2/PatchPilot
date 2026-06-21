@@ -5,10 +5,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.patchpilot.backend.agent.tool.IssueCommentTool;
 import io.patchpilot.backend.github.client.domain.IssueCommentResult;
 import io.patchpilot.backend.safety.CommandSafetyGate;
+import io.patchpilot.backend.safety.NoOpTriggerIntentClassifier;
 import io.patchpilot.backend.safety.domain.RecordRejectedTriggerCommand;
 import io.patchpilot.backend.safety.domain.SafetyGateDecision;
 import io.patchpilot.backend.safety.domain.SafetyGateRequest;
+import io.patchpilot.backend.safety.domain.TriggerIntentClassificationRequest;
+import io.patchpilot.backend.safety.domain.TriggerIntentDecision;
 import io.patchpilot.backend.safety.service.RejectedTriggerAuditService;
+import io.patchpilot.backend.safety.service.TriggerIntentClassifier;
 import io.patchpilot.backend.safety.service.impl.InMemoryRejectedTriggerAuditService;
 import io.patchpilot.backend.task.domain.bo.CreateFixTaskCommand;
 import io.patchpilot.backend.task.domain.bo.FixTaskCreationResult;
@@ -39,6 +43,7 @@ public class GitHubWebhookService {
     private final FixTaskTimelineService fixTaskTimelineService;
     private final CommandSafetyGate commandSafetyGate;
     private final RejectedTriggerAuditService rejectedTriggerAuditService;
+    private final TriggerIntentClassifier triggerIntentClassifier;
     private final ConcurrentMap<String, WebhookHandleResult> deliveryResults = new ConcurrentHashMap<>();
 
     public GitHubWebhookService(
@@ -55,7 +60,8 @@ public class GitHubWebhookService {
                 issueCommentTool,
                 fixTaskTimelineService,
                 new InMemoryRejectedTriggerAuditService(),
-                new CommandSafetyGate()
+                new CommandSafetyGate(),
+                new NoOpTriggerIntentClassifier()
         );
     }
 
@@ -74,7 +80,8 @@ public class GitHubWebhookService {
                 issueCommentTool,
                 fixTaskTimelineService,
                 new InMemoryRejectedTriggerAuditService(),
-                commandSafetyGate
+                commandSafetyGate,
+                new NoOpTriggerIntentClassifier()
         );
     }
 
@@ -93,7 +100,29 @@ public class GitHubWebhookService {
                 issueCommentTool,
                 fixTaskTimelineService,
                 rejectedTriggerAuditService,
-                new CommandSafetyGate()
+                new CommandSafetyGate(),
+                new NoOpTriggerIntentClassifier()
+        );
+    }
+
+    public GitHubWebhookService(
+            ObjectMapper objectMapper,
+            FixTaskService fixTaskService,
+            FixTaskDispatcher fixTaskDispatcher,
+            IssueCommentTool issueCommentTool,
+            FixTaskTimelineService fixTaskTimelineService,
+            RejectedTriggerAuditService rejectedTriggerAuditService,
+            CommandSafetyGate commandSafetyGate
+    ) {
+        this(
+                objectMapper,
+                fixTaskService,
+                fixTaskDispatcher,
+                issueCommentTool,
+                fixTaskTimelineService,
+                rejectedTriggerAuditService,
+                commandSafetyGate,
+                new NoOpTriggerIntentClassifier()
         );
     }
 
@@ -105,7 +134,8 @@ public class GitHubWebhookService {
             IssueCommentTool issueCommentTool,
             FixTaskTimelineService fixTaskTimelineService,
             RejectedTriggerAuditService rejectedTriggerAuditService,
-            CommandSafetyGate commandSafetyGate
+            CommandSafetyGate commandSafetyGate,
+            TriggerIntentClassifier triggerIntentClassifier
     ) {
         this.objectMapper = objectMapper;
         this.fixTaskService = fixTaskService;
@@ -114,6 +144,7 @@ public class GitHubWebhookService {
         this.fixTaskTimelineService = fixTaskTimelineService;
         this.rejectedTriggerAuditService = rejectedTriggerAuditService;
         this.commandSafetyGate = commandSafetyGate;
+        this.triggerIntentClassifier = triggerIntentClassifier;
     }
 
     public WebhookHandleResult handle(String event, String deliveryId, String payload) {
@@ -179,6 +210,30 @@ public class GitHubWebhookService {
                 .orElse(null);
         if (activeTaskResult != null) {
             return activeTaskResult;
+        }
+        TriggerIntentDecision triggerIntentDecision = triggerIntentClassifier.classify(
+                new TriggerIntentClassificationRequest(
+                        classificationId(deliveryId),
+                        "issue_comment",
+                        repositoryOwner,
+                        repositoryName,
+                        issueNumber,
+                        triggerUser,
+                        commentBody
+                )
+        );
+        if (!triggerIntentDecision.shouldExecute()) {
+            rejectedTriggerAuditService.recordRejectedTrigger(new RecordRejectedTriggerCommand(
+                    "issue_comment",
+                    deliveryId,
+                    repositoryOwner,
+                    repositoryName,
+                    issueNumber,
+                    triggerUser,
+                    commentBody,
+                    triggerIntentDecision.rejectionReason()
+            ));
+            return WebhookHandleResult.rejected();
         }
         FixTaskCreationResult creationResult = fixTaskService.createFixTaskIfAbsent(new CreateFixTaskCommand(
                 repositoryOwner,
@@ -246,6 +301,11 @@ public class GitHubWebhookService {
             return exception.getClass().getSimpleName();
         }
         return LogSummary.truncateFailureReason(exception.getMessage());
+    }
+
+    private static String classificationId(String deliveryId) {
+        return java.util.UUID.nameUUIDFromBytes(("issue-comment:" + deliveryId).getBytes(java.nio.charset.StandardCharsets.UTF_8))
+                .toString();
     }
 
     private JsonNode parsePayload(String payload) {

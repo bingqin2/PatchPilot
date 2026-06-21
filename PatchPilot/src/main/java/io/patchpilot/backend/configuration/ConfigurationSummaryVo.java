@@ -11,6 +11,7 @@ public record ConfigurationSummaryVo(
         int queueMaxAttempts,
         long queueRetryDelayMs,
         long queueVisibilityTimeoutMs,
-        boolean modelCostConfigured
+        boolean modelCostConfigured,
+        boolean modelTriggerClassificationEnabled
 ) {
 }

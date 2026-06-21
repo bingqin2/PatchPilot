@@ -97,6 +97,9 @@ The current implementation target is local self-hosted development first. Hosted
 
 - The system must distinguish executable commands from vague comments, jokes, prompt injection attempts, and destructive requests.
 - Empty or vague trigger bodies such as `/agent fix`, `/agent fix help`, and `/agent fix make it better` must be rejected before task creation.
+- Operators may enable model-assisted trigger classification after deterministic safety checks to reject vague, non-maintenance, or unclear requests before task creation.
+- Model-assisted classification must not override deterministic safety rejections.
+- If model-assisted classification fails or returns malformed output, the system must reject the trigger conservatively.
 - The system should reject or ignore comments from unauthorized users and repositories.
 - Operators may configure trigger-user and repository allowlists for self-hosted demos and private deployments.
 - The system should reject unsupported repositories before cloning or model execution when project detection is possible from metadata.
