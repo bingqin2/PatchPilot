@@ -215,11 +215,23 @@ export default function App() {
           <p className="eyebrow">Self-hosted agent control plane</p>
           <h1>PatchPilot Operations</h1>
         </div>
-        <button className="icon-button" type="button" onClick={() => void refresh()} aria-label="Refresh dashboard">
+        <button
+          className="icon-button"
+          type="button"
+          onClick={() => void refresh()}
+          aria-label={loading ? 'Refreshing dashboard' : 'Refresh dashboard'}
+          disabled={loading}
+        >
           <RefreshCw size={17} />
-          Refresh
+          {loading ? 'Refreshing' : 'Refresh'}
         </button>
       </header>
+
+      {loading ? (
+        <section className="refresh-status" role="status">
+          Dashboard refreshing
+        </section>
+      ) : null}
 
       {error ? (
         <section className="alert" role="alert">

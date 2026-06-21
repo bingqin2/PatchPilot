@@ -1593,3 +1593,16 @@ Validation:
 
 - `npm test -- --run src/api.test.ts src/dashboard/components/ConfigurationPanel.test.tsx`: first failed because `getBackendHealth()` and backend health UI did not exist, then passed after adding the API helper and panel rendering, 11 tests run, 0 failures.
 - `npm test -- --run src/App.test.tsx`: first failed because a custom App test fetch mock did not handle `/health`, then passed after adding the health fixture, 14 tests run, 0 failures.
+
+Implemented dashboard refresh state from `docs/plans/074-dashboard-refresh-state.md`.
+
+Changes:
+
+- Disabled the top-level refresh button while dashboard refresh is in flight.
+- Changed the refresh button label and accessible name to `Refreshing`.
+- Added a compact `Dashboard refreshing` status region during top-level data loading.
+- Documented refresh progress feedback in README and frontend design docs.
+
+Validation:
+
+- `npm test -- --run src/App.test.tsx -t "dashboard refresh progress"`: first failed because no refresh status region or disabled refreshing button existed, then passed after adding refresh state UI, 1 test run, 0 failures.
