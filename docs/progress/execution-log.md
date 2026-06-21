@@ -1816,3 +1816,24 @@ Validation:
 - `cd frontend && npm run build`: passed, production bundle generated successfully.
 - `mvn -pl PatchPilot test`: passed, 280 tests run, 0 failures.
 - `git diff --check`: passed with no whitespace errors.
+
+Implemented dashboard status filter counts from `docs/plans/087-dashboard-status-filter-counts.md`.
+
+Changes:
+
+- Added `GET /api/tasks/status-counts` for total and per-status task counts.
+- Reused the existing task-list query model for search, repository, and created-time count scopes.
+- Kept status counts independent from the active status filter, sort, limit, and offset.
+- Returned parameter-specific HTTP 400 responses for invalid created-time count filters.
+- Added a frontend `getTaskStatusCounts()` API helper and `FixTaskStatusCounts` type.
+- Loaded status counts during dashboard refresh and rendered count badges on status filter buttons.
+- Preserved status button accessible names as the status labels while showing visual count badges.
+- Documented scoped status count behavior in README and frontend design notes.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=TaskControllerTests#should_count_tasks_by_status_for_filtered_scope+should_return_bad_request_for_invalid_status_count_created_time_filter test`: first failed because `/api/tasks/status-counts` did not exist and was handled as a task id route, then passed after adding the endpoint and status count response, 2 tests run, 0 failures.
+- `cd frontend && npm test -- src/api.test.ts src/App.test.tsx -t "status count|status filter counts"`: first failed because `getTaskStatusCounts()` did not exist and status buttons had no count badges, then passed after adding the API helper, dashboard refresh wiring, and button badges, 3 tests run, 0 failures.
+- `mvn -pl PatchPilot test -q`: passed.
+- `cd frontend && npm test -- --reporter=dot`: passed, 6 test files and 68 tests.
+- `cd frontend && npm run build`: passed, production bundle generated successfully.

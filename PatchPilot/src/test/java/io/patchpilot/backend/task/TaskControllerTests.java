@@ -225,6 +225,56 @@ class TaskControllerTests {
     }
 
     @Test
+    void should_count_tasks_by_status_for_filtered_scope() throws Exception {
+        FixTaskVo olderPendingTask = createTask(command(
+                "status-count-owner",
+                "status-count-repo",
+                "delivery-status-count-pending-older"
+        ));
+        FixTaskVo completedTask = createTask(command(
+                "status-count-owner",
+                "status-count-repo",
+                "delivery-status-count-completed"
+        ));
+        FixTaskVo failedTask = createTask(command(
+                "status-count-owner",
+                "status-count-repo",
+                "delivery-status-count-failed"
+        ));
+        FixTaskVo otherRepositoryTask = createTask(command(
+                "status-count-owner",
+                "other-repo",
+                "delivery-status-count-other"
+        ));
+        fixTaskService.markCompleted(completedTask.id(), "https://github.com/status-count-owner/status-count-repo/pull/1");
+        fixTaskService.markFailed(failedTask.id(), "search target failed");
+        fixTaskService.markFailed(otherRepositoryTask.id(), "search target failed");
+
+        mockMvc.perform(get("/api/tasks/status-counts")
+                        .param("query", "search target")
+                        .param("repositoryOwner", "status-count-owner")
+                        .param("repositoryName", "status-count-repo")
+                        .param("createdAfter", olderPendingTask.createdAt().plusNanos(1).toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.totalCount").value(1))
+                .andExpect(jsonPath("$.data.pendingCount").value(0))
+                .andExpect(jsonPath("$.data.runningCount").value(0))
+                .andExpect(jsonPath("$.data.runningTestsCount").value(0))
+                .andExpect(jsonPath("$.data.completedCount").value(0))
+                .andExpect(jsonPath("$.data.failedCount").value(1))
+                .andExpect(jsonPath("$.data.cancelledCount").value(0));
+    }
+
+    @Test
+    void should_return_bad_request_for_invalid_status_count_created_time_filter() throws Exception {
+        mockMvc.perform(get("/api/tasks/status-counts").param("createdBefore", "not-an-instant"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("createdBefore must be an ISO-8601 instant"));
+    }
+
+    @Test
     void should_return_bad_request_for_invalid_created_time_filter() throws Exception {
         mockMvc.perform(get("/api/tasks").param("createdAfter", "not-an-instant"))
                 .andExpect(status().isBadRequest())

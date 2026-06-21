@@ -10,6 +10,7 @@ import type {
   FixTaskDetail,
   FixTaskAuditSummary,
   FixTaskMetricsSummary,
+  FixTaskStatusCounts,
   FixTaskModelUsageSummary,
   FixTaskQueueItem,
   FixTaskQueueSummary,
@@ -46,6 +47,26 @@ export async function listTasks(options: TaskStatusFilter | ListTasksOptions = '
   if (normalizedOptions.offset !== undefined) {
     searchParams.set('offset', String(normalizedOptions.offset));
   }
+  appendTaskFilterSearchParams(searchParams, normalizedOptions);
+  if (normalizedOptions.sort && normalizedOptions.sort !== 'createdAtDesc') {
+    searchParams.set('sort', normalizedOptions.sort);
+  }
+  const status = normalizedOptions.status ?? 'ALL';
+  if (status !== 'ALL') {
+    searchParams.set('status', status);
+  }
+  return getApi<FixTaskPage>(`/api/tasks?${searchParams.toString()}`);
+}
+
+export async function getTaskStatusCounts(options: ListTasksOptions = {}): Promise<FixTaskStatusCounts> {
+  const searchParams = new URLSearchParams();
+  appendTaskFilterSearchParams(searchParams, options);
+  const queryString = searchParams.toString();
+  const path = queryString ? `/api/tasks/status-counts?${queryString}` : '/api/tasks/status-counts';
+  return getApi<FixTaskStatusCounts>(path);
+}
+
+function appendTaskFilterSearchParams(searchParams: URLSearchParams, normalizedOptions: ListTasksOptions) {
   if (normalizedOptions.query?.trim()) {
     searchParams.set('query', normalizedOptions.query.trim());
   }
@@ -61,14 +82,6 @@ export async function listTasks(options: TaskStatusFilter | ListTasksOptions = '
   if (normalizedOptions.createdBefore?.trim()) {
     searchParams.set('createdBefore', normalizedOptions.createdBefore.trim());
   }
-  if (normalizedOptions.sort && normalizedOptions.sort !== 'createdAtDesc') {
-    searchParams.set('sort', normalizedOptions.sort);
-  }
-  const status = normalizedOptions.status ?? 'ALL';
-  if (status !== 'ALL') {
-    searchParams.set('status', status);
-  }
-  return getApi<FixTaskPage>(`/api/tasks?${searchParams.toString()}`);
 }
 
 export async function getMetricsSummary(): Promise<FixTaskMetricsSummary> {

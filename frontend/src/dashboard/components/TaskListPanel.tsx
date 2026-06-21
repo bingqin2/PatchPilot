@@ -1,5 +1,5 @@
 import { AlertCircle, CheckCircle2, CircleDot, ExternalLink, GitPullRequest, Terminal } from 'lucide-react';
-import type { FixTask, TaskSort, TaskStatus, TaskStatusFilter } from '../../types';
+import type { FixTask, FixTaskStatusCounts, TaskSort, TaskStatus, TaskStatusFilter } from '../../types';
 import { compactTime, issueUrl, pullRequestNumber } from '../format';
 
 const statusFilters: TaskStatusFilter[] = [
@@ -21,6 +21,7 @@ interface TaskListPanelProps {
   repositoryNameFilter: string;
   createdAfterFilter: string;
   createdBeforeFilter: string;
+  statusCounts: FixTaskStatusCounts | null;
   taskSort: TaskSort;
   loading: boolean;
   totalCount: number;
@@ -48,6 +49,7 @@ export function TaskListPanel({
   repositoryNameFilter,
   createdAfterFilter,
   createdBeforeFilter,
+  statusCounts,
   taskSort,
   loading,
   totalCount,
@@ -81,8 +83,10 @@ export function TaskListPanel({
             type="button"
             onClick={() => onStatusFilterChange(status)}
             aria-pressed={status === statusFilter}
+            aria-label={status}
           >
-            {status}
+            <span>{status}</span>
+            <span className="filter-count" aria-hidden="true">{statusCount(statusCounts, status)}</span>
           </button>
         ))}
       </div>
@@ -222,6 +226,31 @@ function emptyTaskListMessage(
     return 'No tasks match selected created time filters.';
   }
   return `No ${statusFilter} tasks found.`;
+}
+
+function statusCount(statusCounts: FixTaskStatusCounts | null, status: TaskStatusFilter) {
+  if (!statusCounts) {
+    return 0;
+  }
+  if (status === 'ALL') {
+    return statusCounts.totalCount;
+  }
+  if (status === 'PENDING') {
+    return statusCounts.pendingCount;
+  }
+  if (status === 'RUNNING') {
+    return statusCounts.runningCount;
+  }
+  if (status === 'RUNNING_TESTS') {
+    return statusCounts.runningTestsCount;
+  }
+  if (status === 'COMPLETED') {
+    return statusCounts.completedCount;
+  }
+  if (status === 'FAILED') {
+    return statusCounts.failedCount;
+  }
+  return statusCounts.cancelledCount;
 }
 
 function statusIcon(status: TaskStatus) {

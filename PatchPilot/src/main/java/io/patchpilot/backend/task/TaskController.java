@@ -15,6 +15,7 @@ import io.patchpilot.backend.task.domain.vo.FixTaskModelCallVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskModelUsageSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskPageVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskQueueItemVo;
+import io.patchpilot.backend.task.domain.vo.FixTaskStatusCountsVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskTestRunVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskTimelineEventVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskToolCallVo;
@@ -98,6 +99,27 @@ public class TaskController {
                     limit,
                     offset,
                     sort
+            )));
+        } catch (IllegalArgumentException exception) {
+            return ResponseEntity.badRequest().body(ApiResponse.fail(exception.getMessage()));
+        }
+    }
+
+    @GetMapping("/status-counts")
+    public ResponseEntity<ApiResponse<FixTaskStatusCountsVo>> getTaskStatusCounts(
+            @RequestParam(required = false) String query,
+            @RequestParam(required = false) String repositoryOwner,
+            @RequestParam(required = false) String repositoryName,
+            @RequestParam(required = false) String createdAfter,
+            @RequestParam(required = false) String createdBefore
+    ) {
+        try {
+            return ResponseEntity.ok(ApiResponse.ok(countTasksByStatus(
+                    query,
+                    repositoryOwner,
+                    repositoryName,
+                    createdAfter,
+                    createdBefore
             )));
         } catch (IllegalArgumentException exception) {
             return ResponseEntity.badRequest().body(ApiResponse.fail(exception.getMessage()));
@@ -226,7 +248,7 @@ public class TaskController {
         String parsedRepositoryName = blankToNull(repositoryName);
         Instant parsedCreatedAfter = parseInstant(createdAfter, "createdAfter");
         Instant parsedCreatedBefore = parseInstant(createdBefore, "createdBefore");
-        FixTaskListQuery pageQuery = new FixTaskListQuery(
+        FixTaskListQuery pageQuery = taskListQuery(
                 parsedQuery,
                 parsedStatus,
                 parsedRepositoryOwner,
@@ -237,7 +259,7 @@ public class TaskController {
                 parsedOffset,
                 parsedSort
         );
-        FixTaskListQuery countQuery = new FixTaskListQuery(
+        FixTaskListQuery countQuery = taskListQuery(
                 parsedQuery,
                 parsedStatus,
                 parsedRepositoryOwner,
@@ -253,6 +275,74 @@ public class TaskController {
         boolean hasMore = tasks.size() > parsedLimit;
         List<FixTaskVo> pageItems = hasMore ? tasks.subList(0, parsedLimit) : tasks;
         return new FixTaskPageVo(pageItems, parsedLimit, parsedOffset, hasMore, total);
+    }
+
+    private FixTaskStatusCountsVo countTasksByStatus(
+            String query,
+            String repositoryOwner,
+            String repositoryName,
+            String createdAfter,
+            String createdBefore
+    ) {
+        String parsedQuery = blankToNull(query);
+        String parsedRepositoryOwner = blankToNull(repositoryOwner);
+        String parsedRepositoryName = blankToNull(repositoryName);
+        Instant parsedCreatedAfter = parseInstant(createdAfter, "createdAfter");
+        Instant parsedCreatedBefore = parseInstant(createdBefore, "createdBefore");
+        return new FixTaskStatusCountsVo(
+                countTasksWithStatus(parsedQuery, null, parsedRepositoryOwner, parsedRepositoryName, parsedCreatedAfter, parsedCreatedBefore),
+                countTasksWithStatus(parsedQuery, FixTaskStatus.PENDING, parsedRepositoryOwner, parsedRepositoryName, parsedCreatedAfter, parsedCreatedBefore),
+                countTasksWithStatus(parsedQuery, FixTaskStatus.RUNNING, parsedRepositoryOwner, parsedRepositoryName, parsedCreatedAfter, parsedCreatedBefore),
+                countTasksWithStatus(parsedQuery, FixTaskStatus.RUNNING_TESTS, parsedRepositoryOwner, parsedRepositoryName, parsedCreatedAfter, parsedCreatedBefore),
+                countTasksWithStatus(parsedQuery, FixTaskStatus.COMPLETED, parsedRepositoryOwner, parsedRepositoryName, parsedCreatedAfter, parsedCreatedBefore),
+                countTasksWithStatus(parsedQuery, FixTaskStatus.FAILED, parsedRepositoryOwner, parsedRepositoryName, parsedCreatedAfter, parsedCreatedBefore),
+                countTasksWithStatus(parsedQuery, FixTaskStatus.CANCELLED, parsedRepositoryOwner, parsedRepositoryName, parsedCreatedAfter, parsedCreatedBefore)
+        );
+    }
+
+    private long countTasksWithStatus(
+            String query,
+            FixTaskStatus status,
+            String repositoryOwner,
+            String repositoryName,
+            Instant createdAfter,
+            Instant createdBefore
+    ) {
+        return fixTaskService.countTasks(taskListQuery(
+                query,
+                status,
+                repositoryOwner,
+                repositoryName,
+                createdAfter,
+                createdBefore,
+                Integer.MAX_VALUE,
+                0,
+                FixTaskSort.CREATED_AT_DESC
+        ));
+    }
+
+    private static FixTaskListQuery taskListQuery(
+            String query,
+            FixTaskStatus status,
+            String repositoryOwner,
+            String repositoryName,
+            Instant createdAfter,
+            Instant createdBefore,
+            int limit,
+            int offset,
+            FixTaskSort sort
+    ) {
+        return new FixTaskListQuery(
+                query,
+                status,
+                repositoryOwner,
+                repositoryName,
+                createdAfter,
+                createdBefore,
+                limit,
+                offset,
+                sort
+        );
     }
 
     private static CreateManualFixTaskCommand manualTaskCommand(CreateFixTaskDto request) {
