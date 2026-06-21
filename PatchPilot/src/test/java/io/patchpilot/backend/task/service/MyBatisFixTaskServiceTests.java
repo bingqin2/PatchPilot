@@ -269,6 +269,34 @@ class MyBatisFixTaskServiceTests {
     }
 
     @Test
+    void should_list_tasks_with_created_time_range() {
+        FixTaskEntity newerTask = entity("task-newer", "delivery-created-range-newer", FixTaskStatus.COMPLETED,
+                null, Instant.parse("2026-06-19T02:00:00Z"));
+        when(fixTaskMapper.selectList(any())).thenReturn(List.of(newerTask));
+
+        List<FixTaskVo> tasks = fixTaskService.listTasks(new FixTaskListQuery(
+                null,
+                null,
+                "octocat",
+                "hello-world",
+                Instant.parse("2026-06-19T01:00:00Z"),
+                Instant.parse("2026-06-19T03:00:00Z"),
+                10,
+                0,
+                FixTaskSort.CREATED_AT_DESC
+        ));
+
+        assertThat(tasks)
+                .extracting(FixTaskVo::id)
+                .containsExactly("task-newer");
+        ArgumentCaptor<Wrapper<FixTaskEntity>> wrapperCaptor = ArgumentCaptor.forClass(Wrapper.class);
+        verify(fixTaskMapper).selectList(wrapperCaptor.capture());
+        assertThat(wrapperCaptor.getValue().getSqlSegment())
+                .contains("created_at")
+                .contains("LIMIT 0, 10");
+    }
+
+    @Test
     void should_count_tasks_with_query_filters_without_limit_or_offset() {
         when(fixTaskMapper.selectCount(any())).thenReturn(2L);
 

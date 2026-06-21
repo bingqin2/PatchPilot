@@ -19,6 +19,8 @@ interface TaskListPanelProps {
   searchQuery: string;
   repositoryOwnerFilter: string;
   repositoryNameFilter: string;
+  createdAfterFilter: string;
+  createdBeforeFilter: string;
   taskSort: TaskSort;
   loading: boolean;
   totalCount: number;
@@ -29,6 +31,8 @@ interface TaskListPanelProps {
   onSearchQueryChange: (query: string) => void;
   onRepositoryOwnerFilterChange: (repositoryOwner: string) => void;
   onRepositoryNameFilterChange: (repositoryName: string) => void;
+  onCreatedAfterFilterChange: (createdAfter: string) => void;
+  onCreatedBeforeFilterChange: (createdBefore: string) => void;
   onTaskSortChange: (sort: TaskSort) => void;
   onClearFilters: () => void;
   onSelectTask: (taskId: string) => void;
@@ -42,6 +46,8 @@ export function TaskListPanel({
   searchQuery,
   repositoryOwnerFilter,
   repositoryNameFilter,
+  createdAfterFilter,
+  createdBeforeFilter,
   taskSort,
   loading,
   totalCount,
@@ -52,6 +58,8 @@ export function TaskListPanel({
   onSearchQueryChange,
   onRepositoryOwnerFilterChange,
   onRepositoryNameFilterChange,
+  onCreatedAfterFilterChange,
+  onCreatedBeforeFilterChange,
   onTaskSortChange,
   onClearFilters,
   onSelectTask,
@@ -103,6 +111,22 @@ export function TaskListPanel({
           value={repositoryNameFilter}
           onChange={(event) => onRepositoryNameFilterChange(event.target.value)}
           placeholder="PatchPilot"
+        />
+        <label className="task-created-after-label" htmlFor="task-created-after-input">Filter created after</label>
+        <input
+          className="task-created-after-input"
+          id="task-created-after-input"
+          value={createdAfterFilter}
+          onChange={(event) => onCreatedAfterFilterChange(event.target.value)}
+          placeholder="2026-06-20T01:00:00Z"
+        />
+        <label className="task-created-before-label" htmlFor="task-created-before-input">Filter created before</label>
+        <input
+          className="task-created-before-input"
+          id="task-created-before-input"
+          value={createdBeforeFilter}
+          onChange={(event) => onCreatedBeforeFilterChange(event.target.value)}
+          placeholder="2026-06-21T01:00:00Z"
         />
         <label className="task-sort-label" htmlFor="task-sort-select">Sort tasks</label>
         <select
@@ -160,7 +184,14 @@ export function TaskListPanel({
         ))}
         {!loading && tasks.length === 0 ? (
           <p className="empty-state">
-            {emptyTaskListMessage(statusFilter, searchQuery, repositoryOwnerFilter, repositoryNameFilter)}
+            {emptyTaskListMessage(
+              statusFilter,
+              searchQuery,
+              repositoryOwnerFilter,
+              repositoryNameFilter,
+              createdAfterFilter,
+              createdBeforeFilter
+            )}
           </p>
         ) : null}
         {!loading && canLoadMore ? (
@@ -177,13 +208,18 @@ function emptyTaskListMessage(
   statusFilter: TaskStatusFilter,
   searchQuery: string,
   repositoryOwnerFilter: string,
-  repositoryNameFilter: string
+  repositoryNameFilter: string,
+  createdAfterFilter: string,
+  createdBeforeFilter: string
 ) {
   if (searchQuery.trim()) {
     return `No tasks match "${searchQuery.trim()}".`;
   }
   if (repositoryOwnerFilter.trim() || repositoryNameFilter.trim()) {
     return 'No tasks match selected repository filters.';
+  }
+  if (createdAfterFilter.trim() || createdBeforeFilter.trim()) {
+    return 'No tasks match selected created time filters.';
   }
   return `No ${statusFilter} tasks found.`;
 }

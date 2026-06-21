@@ -1793,3 +1793,26 @@ Validation:
 - `cd frontend && npm run build`: passed, production bundle generated successfully.
 - `git diff --check`: passed with no whitespace errors.
 - `mvn -pl PatchPilot test`: passed, 276 tests run, 0 failures.
+
+Implemented dashboard created time filters from `docs/plans/086-dashboard-created-time-filters.md`.
+
+Changes:
+
+- Added optional backend `createdAfter` and `createdBefore` task-list filters using ISO-8601 instant values.
+- Applied inclusive created-time filtering in both in-memory and MyBatis-backed task listing.
+- Returned a parameter-specific HTTP 400 response for invalid created-time filter values.
+- Passed trimmed created-time filter values from the frontend API helper to `GET /api/tasks`.
+- Added `Filter created after` and `Filter created before` controls to the dashboard task list.
+- Restored created-time filters from the URL and kept them synchronized with status, search, repository, selected task route, hash fragments, and non-default sort state.
+- Included created-time filters in refresh and `Load more` pagination requests.
+- Updated `Clear filters` to reset status, search, repository, and created-time filters while preserving active sort state.
+- Documented created-time filter behavior in README and frontend design notes.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=TaskControllerTests#should_filter_tasks_by_created_time_range+should_return_bad_request_for_invalid_created_time_filter,InMemoryFixTaskServiceTests#should_list_tasks_with_created_time_range,MyBatisFixTaskServiceTests#should_list_tasks_with_created_time_range test`: first failed because task-list queries had no created-time fields and services ignored created time; then passed after adding backend parsing and service filters, 4 tests run, 0 failures.
+- `cd frontend && npm test -- src/api.test.ts src/App.test.tsx -t "created time filter|backend task search sort|offset pagination"`: first failed because `listTasks` omitted `createdAfter`/`createdBefore`, the dashboard had no created-time controls, and pagination did not carry created-time filters; then passed after adding API parameters, URL state, task-list controls, reset behavior, and pagination propagation, 5 tests run, 0 failures.
+- `cd frontend && npm test`: passed, 65 tests run, 0 failures.
+- `cd frontend && npm run build`: passed, production bundle generated successfully.
+- `mvn -pl PatchPilot test`: passed, 280 tests run, 0 failures.
+- `git diff --check`: passed with no whitespace errors.

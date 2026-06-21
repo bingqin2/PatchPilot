@@ -348,7 +348,12 @@ beforeEach(() => {
     }
     if (url.startsWith('/api/tasks?')) {
       const searchParams = new URLSearchParams(url.slice('/api/tasks?'.length));
-      if (searchParams.has('repositoryOwner') || searchParams.has('repositoryName')) {
+      if (
+        searchParams.has('repositoryOwner') ||
+        searchParams.has('repositoryName') ||
+        searchParams.has('createdAfter') ||
+        searchParams.has('createdBefore')
+      ) {
         const narrowedToFailed = searchParams.get('query') === 'broken' || searchParams.get('status') === 'FAILED';
         return jsonResponse(taskPage(narrowedToFailed ? [failedTask] : [completedTask, failedTask]));
       }
@@ -804,6 +809,22 @@ test('restores repository filter URL state on initial dashboard load', async () 
   );
 });
 
+test('restores created time filter URL state on initial dashboard load', async () => {
+  const fetchMock = vi.mocked(fetch);
+  window.history.replaceState(null, '', '/?createdAfter=2026-06-20T01:00:00Z&createdBefore=2026-06-21T01:00:00Z');
+
+  render(<App />);
+
+  expect(await screen.findByText('/agent fix replace docs/demo.md PatchPilot smoke test')).toBeInTheDocument();
+  expect(screen.getByRole('textbox', { name: 'Filter created after' })).toHaveValue('2026-06-20T01:00:00Z');
+  expect(screen.getByRole('textbox', { name: 'Filter created before' })).toHaveValue('2026-06-21T01:00:00Z');
+  await waitFor(() =>
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/tasks?limit=50&createdAfter=2026-06-20T01%3A00%3A00Z&createdBefore=2026-06-21T01%3A00%3A00Z'
+    )
+  );
+});
+
 test('restores task detail route with filter URL state', async () => {
   const fetchMock = vi.mocked(fetch);
   window.history.replaceState(null, '', '/tasks/task-2?status=FAILED&query=broken');
@@ -847,6 +868,28 @@ test('syncs repository filter changes into the URL and backend request', async (
   await waitFor(() =>
     expect(fetchMock).toHaveBeenCalledWith(
       '/api/tasks?limit=50&query=broken&repositoryOwner=bingqin2&repositoryName=PatchPilot&sort=createdAtAsc&status=FAILED'
+    )
+  );
+});
+
+test('syncs created time filter changes into the URL and backend request', async () => {
+  const user = userEvent.setup();
+  const fetchMock = vi.mocked(fetch);
+  window.history.replaceState(null, '', '/tasks/task-1?status=FAILED&query=broken&repositoryOwner=bingqin2&repositoryName=PatchPilot&sort=createdAtAsc#timeline');
+
+  render(<App />);
+
+  await user.type(await screen.findByRole('textbox', { name: 'Filter created after' }), '2026-06-20T01:00:00Z');
+  await user.type(screen.getByRole('textbox', { name: 'Filter created before' }), '2026-06-21T01:00:00Z');
+
+  expect(window.location.pathname).toBe('/tasks/task-1');
+  expect(window.location.search).toBe(
+    '?status=FAILED&query=broken&repositoryOwner=bingqin2&repositoryName=PatchPilot&sort=createdAtAsc&createdAfter=2026-06-20T01%3A00%3A00Z&createdBefore=2026-06-21T01%3A00%3A00Z'
+  );
+  expect(window.location.hash).toBe('#timeline');
+  await waitFor(() =>
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/tasks?limit=50&query=broken&repositoryOwner=bingqin2&repositoryName=PatchPilot&createdAfter=2026-06-20T01%3A00%3A00Z&createdBefore=2026-06-21T01%3A00%3A00Z&sort=createdAtAsc&status=FAILED'
     )
   );
 });
@@ -976,6 +1019,26 @@ test('clear filters resets repository filters and preserves active sort state', 
 
   expect(screen.getByRole('textbox', { name: 'Filter repository owner' })).toHaveValue('');
   expect(screen.getByRole('textbox', { name: 'Filter repository name' })).toHaveValue('');
+  expect(screen.getByRole('combobox', { name: 'Sort tasks' })).toHaveValue('createdAtAsc');
+  expect(window.location.search).toBe('?sort=createdAtAsc');
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks?limit=50&sort=createdAtAsc'));
+});
+
+test('clear filters resets created time filters and preserves active sort state', async () => {
+  const user = userEvent.setup();
+  const fetchMock = vi.mocked(fetch);
+  window.history.replaceState(
+    null,
+    '',
+    '/tasks/task-2?status=FAILED&query=broken&sort=createdAtAsc&createdAfter=2026-06-20T01:00:00Z&createdBefore=2026-06-21T01:00:00Z'
+  );
+
+  render(<App />);
+
+  await user.click(await screen.findByRole('button', { name: 'Clear filters' }));
+
+  expect(screen.getByRole('textbox', { name: 'Filter created after' })).toHaveValue('');
+  expect(screen.getByRole('textbox', { name: 'Filter created before' })).toHaveValue('');
   expect(screen.getByRole('combobox', { name: 'Sort tasks' })).toHaveValue('createdAtAsc');
   expect(window.location.search).toBe('?sort=createdAtAsc');
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks?limit=50&sort=createdAtAsc'));
@@ -1150,7 +1213,11 @@ test('preserves status filter when searching backend task history', async () => 
 
 test('loads the next backend task page with offset pagination', async () => {
   const user = userEvent.setup();
-  window.history.replaceState(null, '', '/?repositoryOwner=bingqin2&repositoryName=PatchPilot&sort=createdAtAsc');
+  window.history.replaceState(
+    null,
+    '',
+    '/?repositoryOwner=bingqin2&repositoryName=PatchPilot&createdAfter=2026-06-20T01:00:00Z&createdBefore=2026-06-21T01:00:00Z&sort=createdAtAsc'
+  );
   const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
     const url = input.toString();
     const firstPage = Array.from({ length: 50 }, (_, index) => ({
@@ -1168,10 +1235,16 @@ test('loads the next backend task page with offset pagination', async () => {
       triggerComment: '/agent fix page 51'
     };
 
-    if (url === '/api/tasks?limit=50&repositoryOwner=bingqin2&repositoryName=PatchPilot&sort=createdAtAsc') {
+    if (
+      url ===
+      '/api/tasks?limit=50&repositoryOwner=bingqin2&repositoryName=PatchPilot&createdAfter=2026-06-20T01%3A00%3A00Z&createdBefore=2026-06-21T01%3A00%3A00Z&sort=createdAtAsc'
+    ) {
       return jsonResponse(taskPage(firstPage, 50, 0, true, 51));
     }
-    if (url === '/api/tasks?limit=50&offset=50&repositoryOwner=bingqin2&repositoryName=PatchPilot&sort=createdAtAsc') {
+    if (
+      url ===
+      '/api/tasks?limit=50&offset=50&repositoryOwner=bingqin2&repositoryName=PatchPilot&createdAfter=2026-06-20T01%3A00%3A00Z&createdBefore=2026-06-21T01%3A00%3A00Z&sort=createdAtAsc'
+    ) {
       return jsonResponse(taskPage([nextPageTask], 50, 50, false, 51));
     }
     if (url === '/api/tasks/metrics/summary') {
@@ -1275,7 +1348,7 @@ test('loads the next backend task page with offset pagination', async () => {
 
   await waitFor(() =>
     expect(fetchMock).toHaveBeenCalledWith(
-      '/api/tasks?limit=50&offset=50&repositoryOwner=bingqin2&repositoryName=PatchPilot&sort=createdAtAsc'
+      '/api/tasks?limit=50&offset=50&repositoryOwner=bingqin2&repositoryName=PatchPilot&createdAfter=2026-06-20T01%3A00%3A00Z&createdBefore=2026-06-21T01%3A00%3A00Z&sort=createdAtAsc'
     )
   );
   expect(await screen.findByText('/agent fix page 51')).toBeInTheDocument();

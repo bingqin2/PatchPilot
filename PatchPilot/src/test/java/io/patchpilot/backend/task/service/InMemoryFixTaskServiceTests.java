@@ -186,6 +186,28 @@ class InMemoryFixTaskServiceTests {
     }
 
     @Test
+    void should_list_tasks_with_created_time_range() {
+        FixTaskVo olderTask = createTask("delivery-created-range-older");
+        FixTaskVo newerTask = createTask("delivery-created-range-newer");
+
+        List<FixTaskVo> tasks = fixTaskService.listTasks(new FixTaskListQuery(
+                null,
+                null,
+                "octocat",
+                "hello-world",
+                olderTask.createdAt().plusNanos(1),
+                newerTask.createdAt().plusNanos(1),
+                10,
+                0,
+                FixTaskSort.CREATED_AT_DESC
+        ));
+
+        assertThat(tasks)
+                .extracting(FixTaskVo::id)
+                .containsExactly(newerTask.id());
+    }
+
+    @Test
     void should_count_tasks_before_limit_and_offset() {
         createTask("delivery-count-older");
         createTask("delivery-count-newer");

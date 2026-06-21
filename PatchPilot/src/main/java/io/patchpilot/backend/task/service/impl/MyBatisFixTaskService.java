@@ -197,6 +197,8 @@ public class MyBatisFixTaskService implements FixTaskService {
                 .eq(query.status() != null, FixTaskEntity::getStatus, query.status() == null ? null : query.status().name())
                 .eq(query.repositoryOwner() != null, FixTaskEntity::getRepositoryOwner, query.repositoryOwner())
                 .eq(query.repositoryName() != null, FixTaskEntity::getRepositoryName, query.repositoryName())
+                .ge(query.createdAfter() != null, FixTaskEntity::getCreatedAt, query.createdAfter())
+                .le(query.createdBefore() != null, FixTaskEntity::getCreatedAt, query.createdBefore())
                 .and(query.query() != null, wrapper -> addSearchConditions(wrapper, query.query()));
     }
 
