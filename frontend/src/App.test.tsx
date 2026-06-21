@@ -385,13 +385,18 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  vi.useRealTimers();
   window.history.replaceState(null, '', '/');
 });
 
 test('renders operational task dashboard from backend APIs', async () => {
+  vi.useFakeTimers({ shouldAdvanceTime: true });
+  vi.setSystemTime(new Date('2026-06-21T08:15:30Z'));
   render(<App />);
 
   expect(await screen.findByRole('heading', { name: 'PatchPilot Operations' })).toBeInTheDocument();
+  expect(screen.getByText(/Last refreshed/)).toBeInTheDocument();
+  expect(screen.getByText(/Last refreshed/)).toHaveAttribute('datetime', '2026-06-21T08:15:30.000Z');
   expect(screen.getByText('2 of 2 tasks visible')).toBeInTheDocument();
   expect(screen.getByRole('button', { name: /COMPLETED bingqin2\/PatchPilot #1/ })).toBeInTheDocument();
   expect(screen.getByRole('button', { name: /FAILED bingqin2\/PatchPilot #2/ })).toBeInTheDocument();

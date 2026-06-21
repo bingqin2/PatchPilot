@@ -26,7 +26,7 @@ import { ModelUsagePanel } from './dashboard/components/ModelUsagePanel';
 import { QueuePanel } from './dashboard/components/QueuePanel';
 import { TaskDetailPanel } from './dashboard/components/TaskDetailPanel';
 import { TaskListPanel } from './dashboard/components/TaskListPanel';
-import { duration, percent } from './dashboard/format';
+import { compactDateTime, duration, percent } from './dashboard/format';
 import { emptyDetail } from './dashboard/types';
 import type { TaskDetailState } from './dashboard/types';
 import type {
@@ -65,6 +65,7 @@ export default function App() {
   const [canLoadMoreTasks, setCanLoadMoreTasks] = useState(false);
   const [loadingMoreTasks, setLoadingMoreTasks] = useState(false);
   const [taskTotal, setTaskTotal] = useState(0);
+  const [lastRefreshedAt, setLastRefreshedAt] = useState<string | null>(null);
 
   const selectedTask = useMemo(
     () => tasks.find((task) => task.id === selectedTaskId) ?? tasks[0] ?? null,
@@ -113,6 +114,7 @@ export default function App() {
       setCanLoadMoreTasks(taskList.hasMore);
       setTaskTotal(taskList.total);
       setSelectedTaskId((current) => selectedTaskIdFromList(taskList.items, current));
+      setLastRefreshedAt(new Date().toISOString());
     } catch (caught) {
       setError(errorMessage(caught));
     } finally {
@@ -214,6 +216,11 @@ export default function App() {
         <div>
           <p className="eyebrow">Self-hosted agent control plane</p>
           <h1>PatchPilot Operations</h1>
+          {lastRefreshedAt ? (
+            <time className="last-refresh-time" dateTime={lastRefreshedAt}>
+              Last refreshed {compactDateTime(lastRefreshedAt)}
+            </time>
+          ) : null}
         </div>
         <button
           className="icon-button"

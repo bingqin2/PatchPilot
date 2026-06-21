@@ -1606,3 +1606,16 @@ Changes:
 Validation:
 
 - `npm test -- --run src/App.test.tsx -t "dashboard refresh progress"`: first failed because no refresh status region or disabled refreshing button existed, then passed after adding refresh state UI, 1 test run, 0 failures.
+
+Implemented dashboard last refresh time from `docs/plans/075-dashboard-last-refresh-time.md`.
+
+Changes:
+
+- Tracked a `lastRefreshedAt` timestamp after successful top-level dashboard refreshes.
+- Rendered `Last refreshed` under the dashboard title.
+- Added a reusable compact date-time formatter for title-level timestamps.
+- Documented last-refresh feedback in README and frontend design docs.
+
+Validation:
+
+- `npm test -- --run src/App.test.tsx -t "renders operational task dashboard"`: first failed because no `Last refreshed` timestamp existed, then passed after adding the refresh timestamp state and title rendering, 1 test run, 0 failures.
