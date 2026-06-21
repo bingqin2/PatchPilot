@@ -67,7 +67,7 @@ test('creates manual task through backend API', async () => {
   expect(task.status).toBe('PENDING');
 });
 
-test('builds backend task search and pagination query parameters', async () => {
+test('builds backend task search sort and pagination query parameters', async () => {
   const fetchMock = vi.fn(async () => ({
     ok: true,
     status: 200,
@@ -89,10 +89,11 @@ test('builds backend task search and pagination query parameters', async () => {
     status: 'FAILED',
     query: ' search target ',
     limit: 25,
-    offset: 50
+    offset: 50,
+    sort: 'createdAtAsc'
   });
 
-  expect(fetchMock).toHaveBeenCalledWith('/api/tasks?limit=25&offset=50&query=search+target&status=FAILED');
+  expect(fetchMock).toHaveBeenCalledWith('/api/tasks?limit=25&offset=50&query=search+target&sort=createdAtAsc&status=FAILED');
   expect(page).toEqual({
     items: [],
     limit: 25,

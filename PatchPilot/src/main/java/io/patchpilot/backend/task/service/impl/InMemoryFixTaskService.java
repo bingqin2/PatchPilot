@@ -3,6 +3,7 @@ package io.patchpilot.backend.task.service.impl;
 import io.patchpilot.backend.task.domain.bo.CreateFixTaskCommand;
 import io.patchpilot.backend.task.domain.bo.FixTaskCreationResult;
 import io.patchpilot.backend.task.domain.bo.FixTaskListQuery;
+import io.patchpilot.backend.task.domain.enums.FixTaskSort;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import io.patchpilot.backend.task.service.FixTaskService;
@@ -148,7 +149,7 @@ public class InMemoryFixTaskService implements FixTaskService {
     @Override
     public List<FixTaskVo> listTasks(FixTaskListQuery query) {
         return matchingTasks(query)
-                .sorted(Comparator.comparing(FixTaskVo::createdAt).reversed())
+                .sorted(taskComparator(query.sort()))
                 .skip(query.offset())
                 .limit(query.limit())
                 .toList();
@@ -264,5 +265,11 @@ public class InMemoryFixTaskService implements FixTaskService {
                 .filter(task -> query.repositoryOwner() == null || task.repositoryOwner().equals(query.repositoryOwner()))
                 .filter(task -> query.repositoryName() == null || task.repositoryName().equals(query.repositoryName()))
                 .filter(task -> matchesQuery(task, query.query()));
+    }
+
+    private static Comparator<FixTaskVo> taskComparator(FixTaskSort sort) {
+        Comparator<FixTaskVo> comparator = Comparator.comparing(FixTaskVo::createdAt)
+                .thenComparing(FixTaskVo::id);
+        return sort == FixTaskSort.CREATED_AT_ASC ? comparator : comparator.reversed();
     }
 }

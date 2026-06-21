@@ -6,6 +6,7 @@ import io.patchpilot.backend.task.domain.bo.CreateFixTaskCommand;
 import io.patchpilot.backend.task.domain.bo.FixTaskCreationResult;
 import io.patchpilot.backend.task.domain.bo.FixTaskListQuery;
 import io.patchpilot.backend.task.domain.entity.FixTaskEntity;
+import io.patchpilot.backend.task.domain.enums.FixTaskSort;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import io.patchpilot.backend.task.mapper.FixTaskMapper;
@@ -109,14 +110,11 @@ public class MyBatisFixTaskService implements FixTaskService {
 
     @Override
     public List<FixTaskVo> listTasks(FixTaskListQuery query) {
-        LambdaQueryWrapper<FixTaskEntity> queryWrapper = taskListQueryWrapper(query)
-                .orderByDesc(FixTaskEntity::getCreatedAt)
-                .orderByDesc(FixTaskEntity::getId)
-                .last("LIMIT " + query.offset() + ", " + query.limit());
+        LambdaQueryWrapper<FixTaskEntity> queryWrapper = taskListQueryWrapper(query);
+        applySort(queryWrapper, query.sort());
+        queryWrapper.last("LIMIT " + query.offset() + ", " + query.limit());
         return fixTaskMapper.selectList(queryWrapper).stream()
-                .sorted(Comparator.comparing(FixTaskEntity::getCreatedAt)
-                        .thenComparing(FixTaskEntity::getId)
-                        .reversed())
+                .sorted(taskComparator(query.sort()))
                 .map(FixTaskConvert::toVo)
                 .toList();
     }
@@ -200,6 +198,22 @@ public class MyBatisFixTaskService implements FixTaskService {
                 .eq(query.repositoryOwner() != null, FixTaskEntity::getRepositoryOwner, query.repositoryOwner())
                 .eq(query.repositoryName() != null, FixTaskEntity::getRepositoryName, query.repositoryName())
                 .and(query.query() != null, wrapper -> addSearchConditions(wrapper, query.query()));
+    }
+
+    private static void applySort(LambdaQueryWrapper<FixTaskEntity> queryWrapper, FixTaskSort sort) {
+        if (sort == FixTaskSort.CREATED_AT_ASC) {
+            queryWrapper.orderByAsc(FixTaskEntity::getCreatedAt)
+                    .orderByAsc(FixTaskEntity::getId);
+            return;
+        }
+        queryWrapper.orderByDesc(FixTaskEntity::getCreatedAt)
+                .orderByDesc(FixTaskEntity::getId);
+    }
+
+    private static Comparator<FixTaskEntity> taskComparator(FixTaskSort sort) {
+        Comparator<FixTaskEntity> comparator = Comparator.comparing(FixTaskEntity::getCreatedAt)
+                .thenComparing(FixTaskEntity::getId);
+        return sort == FixTaskSort.CREATED_AT_ASC ? comparator : comparator.reversed();
     }
 
     private static String escapeLike(String value) {

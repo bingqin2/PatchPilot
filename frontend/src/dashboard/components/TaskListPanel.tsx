@@ -1,5 +1,5 @@
 import { AlertCircle, CheckCircle2, CircleDot, ExternalLink, GitPullRequest, Terminal } from 'lucide-react';
-import type { FixTask, TaskStatus, TaskStatusFilter } from '../../types';
+import type { FixTask, TaskSort, TaskStatus, TaskStatusFilter } from '../../types';
 import { compactTime, issueUrl, pullRequestNumber } from '../format';
 
 const statusFilters: TaskStatusFilter[] = [
@@ -17,6 +17,7 @@ interface TaskListPanelProps {
   selectedTask: FixTask | null;
   statusFilter: TaskStatusFilter;
   searchQuery: string;
+  taskSort: TaskSort;
   loading: boolean;
   totalCount: number;
   canLoadMore: boolean;
@@ -24,6 +25,7 @@ interface TaskListPanelProps {
   canClearFilters: boolean;
   onStatusFilterChange: (status: TaskStatusFilter) => void;
   onSearchQueryChange: (query: string) => void;
+  onTaskSortChange: (sort: TaskSort) => void;
   onClearFilters: () => void;
   onSelectTask: (taskId: string) => void;
   onLoadMoreTasks: () => void;
@@ -34,6 +36,7 @@ export function TaskListPanel({
   selectedTask,
   statusFilter,
   searchQuery,
+  taskSort,
   loading,
   totalCount,
   canLoadMore,
@@ -41,6 +44,7 @@ export function TaskListPanel({
   canClearFilters,
   onStatusFilterChange,
   onSearchQueryChange,
+  onTaskSortChange,
   onClearFilters,
   onSelectTask,
   onLoadMoreTasks
@@ -67,14 +71,25 @@ export function TaskListPanel({
         ))}
       </div>
       <div className="task-search">
-        <label htmlFor="task-search-input">Search tasks</label>
+        <label className="task-search-label" htmlFor="task-search-input">Search tasks</label>
         <input
+          className="task-search-input"
           id="task-search-input"
           type="search"
           value={searchQuery}
           onChange={(event) => onSearchQueryChange(event.target.value)}
           placeholder="Task, repository, issue, status, comment, failure"
         />
+        <label className="task-sort-label" htmlFor="task-sort-select">Sort tasks</label>
+        <select
+          className="task-sort-select"
+          id="task-sort-select"
+          value={taskSort}
+          onChange={(event) => onTaskSortChange(event.target.value as TaskSort)}
+        >
+          <option value="createdAtDesc">Newest first</option>
+          <option value="createdAtAsc">Oldest first</option>
+        </select>
         {canClearFilters ? (
           <button className="secondary-button task-clear-filters-button" type="button" onClick={onClearFilters}>
             Clear filters

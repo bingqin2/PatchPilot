@@ -2,6 +2,8 @@ export type TaskStatus = 'PENDING' | 'RUNNING' | 'RUNNING_TESTS' | 'COMPLETED' |
 
 export type TaskStatusFilter = 'ALL' | TaskStatus;
 
+export type TaskSort = 'createdAtDesc' | 'createdAtAsc';
+
 export type QueueItemStatus = 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
 
 export interface ApiResponse<T> {

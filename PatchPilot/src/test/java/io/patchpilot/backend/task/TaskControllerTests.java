@@ -192,6 +192,22 @@ class TaskControllerTests {
     }
 
     @Test
+    void should_sort_tasks_oldest_first() throws Exception {
+        FixTaskVo olderTask = createTask(command("sort-owner", "sort-repo", "delivery-sort-older"));
+        FixTaskVo newerTask = createTask(command("sort-owner", "sort-repo", "delivery-sort-newer"));
+
+        mockMvc.perform(get("/api/tasks")
+                        .param("repositoryOwner", "sort-owner")
+                        .param("repositoryName", "sort-repo")
+                        .param("sort", "createdAtAsc"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.items.length()").value(2))
+                .andExpect(jsonPath("$.data.items[0].id").value(olderTask.id()))
+                .andExpect(jsonPath("$.data.items[1].id").value(newerTask.id()));
+    }
+
+    @Test
     void should_filter_tasks_by_status_repository_and_limit() throws Exception {
         FixTaskVo completedTask = createTask(command("octocat", "hello-world", "delivery-filter-completed"));
         FixTaskVo failedTask = createTask(command("octocat", "hello-world", "delivery-filter-failed"));
@@ -257,6 +273,14 @@ class TaskControllerTests {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.message").value("Invalid task status: DONE"));
+    }
+
+    @Test
+    void should_return_bad_request_for_invalid_task_list_sort() throws Exception {
+        mockMvc.perform(get("/api/tasks").param("sort", "updatedAtDesc"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("sort must be createdAtDesc or createdAtAsc"));
     }
 
     @Test

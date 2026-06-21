@@ -2,6 +2,7 @@ package io.patchpilot.backend.task.service;
 
 import io.patchpilot.backend.task.domain.bo.CreateFixTaskCommand;
 import io.patchpilot.backend.task.domain.bo.FixTaskListQuery;
+import io.patchpilot.backend.task.domain.enums.FixTaskSort;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import io.patchpilot.backend.task.service.impl.InMemoryFixTaskService;
@@ -162,6 +163,26 @@ class InMemoryFixTaskServiceTests {
         assertThat(tasks)
                 .extracting(FixTaskVo::id)
                 .containsExactly(olderMatchingTask.id());
+    }
+
+    @Test
+    void should_list_tasks_oldest_first_when_requested() {
+        FixTaskVo olderTask = createTask("delivery-sort-older");
+        FixTaskVo newerTask = createTask("delivery-sort-newer");
+
+        List<FixTaskVo> tasks = fixTaskService.listTasks(new FixTaskListQuery(
+                "delivery-sort",
+                null,
+                "octocat",
+                "hello-world",
+                10,
+                0,
+                FixTaskSort.CREATED_AT_ASC
+        ));
+
+        assertThat(tasks)
+                .extracting(FixTaskVo::id)
+                .containsExactly(olderTask.id(), newerTask.id());
     }
 
     @Test
