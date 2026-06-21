@@ -141,6 +141,14 @@ export interface FixTaskAuditSummary {
   latestTestRunDurationMs: number | null;
 }
 
+export interface FixTaskDetail {
+  summary: FixTaskAuditSummary;
+  timeline: FixTaskTimelineEvent[];
+  testRuns: FixTaskTestRun[];
+  toolCalls: FixTaskToolCall[];
+  modelCalls: FixTaskModelCall[];
+}
+
 export interface FixTaskTimelineEvent {
   id: string;
   taskId: string;

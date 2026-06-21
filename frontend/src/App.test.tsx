@@ -157,6 +157,14 @@ const modelCalls = [
   }
 ];
 
+const detail = {
+  summary,
+  timeline,
+  testRuns,
+  toolCalls,
+  modelCalls
+};
+
 const modelUsageSummary = {
   totalPromptTokens: 1500,
   totalCompletionTokens: 650,
@@ -300,6 +308,9 @@ beforeEach(() => {
     if (url === '/api/task-queue/items') {
       return jsonResponse(queueItems);
     }
+    if (url === '/api/tasks/task-1/detail') {
+      return jsonResponse(detail);
+    }
     if (url === '/api/tasks/task-1/summary') {
       return jsonResponse(summary);
     }
@@ -328,6 +339,25 @@ beforeEach(() => {
         }
       });
     }
+    if (url === '/api/tasks/task-2/detail') {
+      return jsonResponse({
+        summary: {
+          ...summary,
+          task: failedTask,
+          latestTimelineEvent: {
+            id: 'timeline-failed',
+            taskId: 'task-2',
+            eventType: 'FAILED',
+            message: 'Task failed',
+            createdAt: '2026-06-20T01:06:00Z'
+          }
+        },
+        timeline: [],
+        testRuns: [],
+        toolCalls: [],
+        modelCalls: []
+      });
+    }
     if (url === '/api/tasks/task-2/timeline') {
       return jsonResponse([]);
     }
@@ -351,6 +381,33 @@ beforeEach(() => {
           message: 'Task is running',
           createdAt: '2026-06-20T01:10:30Z'
         }
+      });
+    }
+    if (url === '/api/tasks/task-3/detail') {
+      return jsonResponse({
+        summary: {
+          ...summary,
+          task: runningTask,
+          latestTimelineEvent: {
+            id: 'timeline-running',
+            taskId: 'task-3',
+            eventType: 'RUNNING',
+            message: 'Task is running',
+            createdAt: '2026-06-20T01:10:30Z'
+          }
+        },
+        timeline: [
+          {
+            id: 'timeline-running',
+            taskId: 'task-3',
+            eventType: 'RUNNING',
+            message: 'Task is running',
+            createdAt: '2026-06-20T01:10:30Z'
+          }
+        ],
+        testRuns: [],
+        toolCalls: [],
+        modelCalls: []
       });
     }
     if (url === '/api/tasks/task-3/timeline') {
@@ -392,6 +449,7 @@ afterEach(() => {
 test('renders operational task dashboard from backend APIs', async () => {
   vi.useFakeTimers({ shouldAdvanceTime: true });
   vi.setSystemTime(new Date('2026-06-21T08:15:30Z'));
+  const fetchMock = vi.mocked(fetch);
   render(<App />);
 
   expect(await screen.findByRole('heading', { name: 'PatchPilot Operations' })).toBeInTheDocument();
@@ -456,6 +514,7 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(screen.getByText('maven test command timed out')).toBeInTheDocument();
 
   await waitFor(() => expect(screen.getByText('Task completed')).toBeInTheDocument());
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks/task-1/detail'));
   expect(screen.getByText('Pull request opened')).toBeInTheDocument();
   expect(screen.getByText('Tests run: 247, Failures: 0, Errors: 0')).toBeInTheDocument();
   expect(screen.getByText('replace')).toBeInTheDocument();
@@ -727,6 +786,26 @@ test('loads the next backend task page with offset pagination', async () => {
     }
     if (url === '/api/task-queue/items') {
       return jsonResponse(queueItems);
+    }
+    if (url === '/api/tasks/page-task-1/detail') {
+      return jsonResponse({
+        summary: {
+          ...summary,
+          task: firstPage[0],
+          timelineEventCount: 0,
+          testRunCount: 0,
+          toolCallCount: 0,
+          modelCallCount: 0,
+          totalModelTokens: 0,
+          latestTimelineEvent: null,
+          latestTestRunExitCode: null,
+          latestTestRunDurationMs: null
+        },
+        timeline: [],
+        testRuns: [],
+        toolCalls: [],
+        modelCalls: []
+      });
     }
     if (url === '/api/tasks/page-task-1/summary') {
       return jsonResponse({

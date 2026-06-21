@@ -7,13 +7,9 @@ import {
   getFailureCauseSummary,
   getLatencySummary,
   getMetricsSummary,
-  getModelCalls,
   getModelUsageSummary,
   getQueueSummary,
-  getTaskSummary,
-  getTestRuns,
-  getTimeline,
-  getToolCalls,
+  getTaskDetail,
   listQueueItems,
   listTasks,
   retryTask
@@ -155,16 +151,10 @@ export default function App() {
     let cancelled = false;
     setDetailLoading(true);
     setError(null);
-    Promise.all([
-      getTaskSummary(selectedTask.id),
-      getTimeline(selectedTask.id),
-      getTestRuns(selectedTask.id),
-      getToolCalls(selectedTask.id),
-      getModelCalls(selectedTask.id)
-    ])
-      .then(([summary, timeline, testRuns, toolCalls, modelCalls]) => {
+    getTaskDetail(selectedTask.id)
+      .then((taskDetail) => {
         if (!cancelled) {
-          setDetail({ summary, timeline, testRuns, toolCalls, modelCalls });
+          setDetail(taskDetail);
         }
       })
       .catch((caught) => {
