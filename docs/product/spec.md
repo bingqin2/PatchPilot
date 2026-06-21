@@ -81,6 +81,7 @@ The current implementation target is local self-hosted development first. Hosted
 - The system verifies webhook signatures before processing events.
 - The system handles `issue_comment.created` events.
 - The MVP trigger command is `/agent fix`.
+- The trigger must include an actionable instruction such as a supported patch operation, a file path, or a concrete failure signal.
 - Non-triggering webhook events should return success and be ignored without creating work.
 - Webhook delivery ids should be tracked to support idempotency.
 
@@ -95,6 +96,7 @@ The current implementation target is local self-hosted development first. Hosted
 ### Safety Gate
 
 - The system must distinguish executable commands from vague comments, jokes, prompt injection attempts, and destructive requests.
+- Empty or vague trigger bodies such as `/agent fix`, `/agent fix help`, and `/agent fix make it better` must be rejected before task creation.
 - The system should reject or ignore comments from unauthorized users and repositories.
 - Operators may configure trigger-user and repository allowlists for self-hosted demos and private deployments.
 - The system should reject unsupported repositories before cloning or model execution when project detection is possible from metadata.

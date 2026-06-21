@@ -26,6 +26,50 @@ class CommandSafetyGateTests {
     }
 
     @Test
+    void should_reject_empty_agent_fix_instruction() {
+        CommandSafetyGate safetyGate = new CommandSafetyGate();
+
+        SafetyGateDecision decision = safetyGate.evaluate(request(
+                "octocat",
+                "hello-world",
+                "alice",
+                "/agent fix"
+        ));
+
+        assertThat(decision.allowed()).isFalse();
+        assertThat(decision.reason()).isEqualTo("Unsafe request rejected: instruction is not actionable");
+    }
+
+    @Test
+    void should_reject_vague_agent_fix_instruction() {
+        CommandSafetyGate safetyGate = new CommandSafetyGate();
+
+        SafetyGateDecision decision = safetyGate.evaluate(request(
+                "octocat",
+                "hello-world",
+                "alice",
+                "/agent fix make it better"
+        ));
+
+        assertThat(decision.allowed()).isFalse();
+        assertThat(decision.reason()).isEqualTo("Unsafe request rejected: instruction is not actionable");
+    }
+
+    @Test
+    void should_allow_actionable_problem_instruction() {
+        CommandSafetyGate safetyGate = new CommandSafetyGate();
+
+        SafetyGateDecision decision = safetyGate.evaluate(request(
+                "octocat",
+                "hello-world",
+                "alice",
+                "/agent fix build fails with NullPointerException in task worker"
+        ));
+
+        assertThat(decision.allowed()).isTrue();
+    }
+
+    @Test
     void should_reject_trigger_user_not_in_allowlist() {
         CommandSafetyGate safetyGate = new CommandSafetyGate(safetyProperties(
                 List.of("maintainer"),

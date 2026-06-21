@@ -138,6 +138,33 @@ class TaskControllerTests {
     }
 
     @Test
+    void should_return_bad_request_when_manual_task_command_is_not_actionable() throws Exception {
+        mockMvc.perform(post("/api/tasks")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "repositoryOwner": "bingqin2",
+                                  "repositoryName": "PatchPilot",
+                                  "issueNumber": 7,
+                                  "triggerUser": "local-operator",
+                                  "triggerComment": "/agent fix help"
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("Unsafe request rejected: instruction is not actionable"));
+
+        List<RejectedTriggerAuditVo> audits = rejectedTriggerAuditService.listRejectedTriggers(10);
+        assertThat(audits)
+                .filteredOn(audit -> "/agent fix help".equals(audit.triggerComment()))
+                .singleElement()
+                .satisfies(audit -> {
+                    assertThat(audit.source()).isEqualTo("manual");
+                    assertThat(audit.reason()).isEqualTo("Unsafe request rejected: instruction is not actionable");
+                });
+    }
+
+    @Test
     void should_return_bad_request_when_manual_task_trigger_user_is_not_allowed() throws Exception {
         mockMvc.perform(post("/api/tasks")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -193,7 +220,7 @@ class TaskControllerTests {
                 8,
                 0,
                 "local-operator",
-                "/agent fix",
+                "/agent fix touch docs/existing-task.md",
                 "delivery-manual-active",
                 0
         ));

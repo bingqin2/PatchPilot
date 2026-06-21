@@ -104,7 +104,7 @@ class GitHubWebhookControllerTests {
 
     @Test
     void should_create_task_for_agent_fix_issue_comment() throws Exception {
-        String payload = issueCommentPayload("created", "  /agent fix  ", "octocat", "hello-world");
+        String payload = issueCommentPayload("created", "  /agent fix touch docs/demo.md  ", "octocat", "hello-world");
 
         mockMvc.perform(post("/api/github/webhook")
                         .header("X-GitHub-Event", "issue_comment")
@@ -157,7 +157,7 @@ class GitHubWebhookControllerTests {
 
     @Test
     void should_dispatch_created_task_to_completion() throws Exception {
-        String payload = issueCommentPayload("created", "/agent fix", "octocat", "hello-world");
+        String payload = issueCommentPayload("created", "/agent fix touch docs/demo.md", "octocat", "hello-world");
 
         String taskId = mockMvc.perform(post("/api/github/webhook")
                         .header("X-GitHub-Event", "issue_comment")
@@ -177,7 +177,7 @@ class GitHubWebhookControllerTests {
 
     @Test
     void should_create_task_when_repository_webhook_has_no_installation() throws Exception {
-        String payload = issueCommentPayloadWithoutInstallation("created", "/agent fix", "octocat", "hello-world");
+        String payload = issueCommentPayloadWithoutInstallation("created", "/agent fix touch docs/demo.md", "octocat", "hello-world");
 
         mockMvc.perform(post("/api/github/webhook")
                         .header("X-GitHub-Event", "issue_comment")
@@ -193,7 +193,7 @@ class GitHubWebhookControllerTests {
 
     @Test
     void should_not_create_second_task_for_duplicate_delivery() throws Exception {
-        String payload = issueCommentPayload("created", "/agent fix", "octocat", "hello-world");
+        String payload = issueCommentPayload("created", "/agent fix touch docs/demo.md", "octocat", "hello-world");
 
         mockMvc.perform(post("/api/github/webhook")
                         .header("X-GitHub-Event", "issue_comment")
