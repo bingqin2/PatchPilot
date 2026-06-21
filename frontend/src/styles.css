@@ -54,6 +54,14 @@ h1 {
   line-height: 1.15;
 }
 
+.last-refresh-time {
+  color: #64727f;
+  display: block;
+  font-size: 12px;
+  font-weight: 750;
+  margin-top: 6px;
+}
+
 h2 {
   font-size: 18px;
 }

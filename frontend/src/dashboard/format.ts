@@ -39,6 +39,16 @@ export function compactTime(value: string) {
   }).format(new Date(value));
 }
 
+export function compactDateTime(value: string) {
+  return new Intl.DateTimeFormat(undefined, {
+    month: 'short',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  }).format(new Date(value));
+}
+
 export function pullRequestNumber(url: string) {
   return url.split('/').filter(Boolean).at(-1) ?? 'link';
 }
