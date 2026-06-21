@@ -27,7 +27,7 @@ During local development, Vite proxies `/api` and `/health` to `PATCHPILOT_FRONT
 
 The page coordinator is `frontend/src/App.tsx`. It loads backend data, owns selected-task state, applies status filters and local search, and coordinates manual creation plus cancel/retry actions.
 
-Selected-task detail uses the `/tasks/{taskId}` frontend route and `GET /api/tasks/{taskId}/detail`, an aggregate read-model endpoint that returns the task audit summary, latest queue item, queue history, timeline events, test runs, tool calls, and model calls together. Legacy `?taskId=` links still select the same task. Markdown task reports use `GET /api/tasks/{taskId}/report` so operators can copy a compact diagnostic summary without manually assembling API responses. This keeps the dashboard detail panel to one request per selected task while preserving narrower backend endpoints for curl-based debugging.
+Selected-task detail uses the `/tasks/{taskId}` frontend route and `GET /api/tasks/{taskId}/detail`, an aggregate read-model endpoint that returns the task audit summary, latest queue item, queue history, timeline events, test runs, tool calls, and model calls together. Legacy `?taskId=` links still select the same task. Status and search filters are stored as URL query parameters, so `/tasks/{taskId}?status=FAILED&query=maven` restores the selected task and filtered task list together. Markdown task reports use `GET /api/tasks/{taskId}/report` so operators can copy a compact diagnostic summary without manually assembling API responses. This keeps the dashboard detail panel to one request per selected task while preserving narrower backend endpoints for curl-based debugging.
 
 Reusable dashboard components live under `frontend/src/dashboard/components/`:
 
@@ -49,8 +49,8 @@ The first screen is the working dashboard:
 - A compact refresh status tells operators when top-level dashboard data is still loading, and the title area shows when the dashboard last refreshed successfully.
 - Operational summaries highlight failure causes, model usage, and latency without requiring terminal inspection.
 - A manual task form can enqueue a local demo/debug task through the same backend task and queue path used by webhook-created tasks.
-- The task list supports status filters, backend-backed search over task history, loaded-versus-total counts, and incremental loading.
-- Selecting a task updates the `/tasks/{taskId}` route, loads aggregate task detail in one request, and reveals a copyable task link, copyable Markdown report, queue state, queue history, execution evidence summary, timeline events, Maven test output, tool-call records, model-call records, and GitHub links.
+- The task list supports URL-backed status filters, backend-backed search over task history, loaded-versus-total counts, and incremental loading.
+- Selecting a task updates the `/tasks/{taskId}` route while preserving active filter query parameters, loads aggregate task detail in one request, and reveals a copyable task link, copyable Markdown report, queue state, queue history, execution evidence summary, timeline events, Maven test output, tool-call records, model-call records, and GitHub links.
 - Queue visibility shows whether work is pending, delayed, running, failed, or cancelled, with failed/delayed/running health hints before the row list.
 - Configuration visibility shows backend `/health` status, the active provider, model, workspace root, queue policy, whether required secrets are configured, and clear health hints for missing secrets or weak optional settings without exposing secret values.
 - Cancel and retry are available only for task states where those actions make sense.
