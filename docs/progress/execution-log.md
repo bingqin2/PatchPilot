@@ -1859,3 +1859,20 @@ Validation:
 - `cd frontend && npm test -- --reporter=dot`: passed, 6 test files and 68 tests.
 - `cd frontend && npm run build`: passed, production bundle generated successfully.
 - `git diff --check`: passed with no whitespace errors.
+
+Implemented authorized trigger policy from `docs/plans/089-authorized-trigger-policy.md`.
+
+Changes:
+
+- Added `SafetyProperties` for optional trigger-user and repository allowlists.
+- Added `SafetyGateRequest` so safety decisions can use repository owner, repository name, trigger user, and trigger comment together.
+- Extended `CommandSafetyGate` to reject unsafe commands first, then reject trigger users or repositories outside configured allowlists.
+- Applied the same authorization policy to GitHub webhooks and dashboard/manual task creation before task creation or dispatch.
+- Added environment variables `PATCHPILOT_ALLOWED_TRIGGER_USERS` and `PATCHPILOT_ALLOWED_REPOSITORIES`.
+- Documented allowlist configuration and updated the safety architecture notes.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=GitHubWebhookServiceTests#should_reject_agent_fix_from_unauthorized_trigger_user_before_task_creation+should_reject_agent_fix_for_unauthorized_repository_before_task_creation+should_accept_agent_fix_when_trigger_user_and_repository_are_allowed,DefaultManualFixTaskServiceTests#should_reject_manual_task_when_trigger_user_is_not_allowed+should_reject_manual_task_when_repository_is_not_allowed,TaskControllerTests#should_return_bad_request_when_manual_task_trigger_user_is_not_allowed+should_return_bad_request_when_manual_task_repository_is_not_allowed test`: first failed because `SafetyProperties` did not exist.
+- The same target command then failed because Spring selected the no-arg safety gate constructor, so controller tests still created tasks for unauthorized inputs.
+- The same target command passed after adding configuration binding and constructor injection, 7 tests run, 0 failures.

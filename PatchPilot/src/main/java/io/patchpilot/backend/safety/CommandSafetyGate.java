@@ -1,15 +1,33 @@
 package io.patchpilot.backend.safety;
 
+import io.patchpilot.backend.safety.config.SafetyProperties;
 import io.patchpilot.backend.safety.domain.SafetyGateDecision;
+import io.patchpilot.backend.safety.domain.SafetyGateRequest;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 @Service
 public class CommandSafetyGate {
 
     private static final String AGENT_FIX_COMMAND = "/agent fix";
+    private final Set<String> allowedTriggerUsers;
+    private final Set<String> allowedRepositories;
+
+    public CommandSafetyGate() {
+        this(new SafetyProperties());
+    }
+
+    @Autowired
+    public CommandSafetyGate(SafetyProperties safetyProperties) {
+        this.allowedTriggerUsers = normalizedSet(safetyProperties.getAllowedTriggerUsers());
+        this.allowedRepositories = normalizedSet(safetyProperties.getAllowedRepositories());
+    }
 
     public SafetyGateDecision evaluate(String triggerComment) {
         if (!StringUtils.hasText(triggerComment)) {
@@ -21,6 +39,20 @@ public class CommandSafetyGate {
         }
         if (containsDangerousInstruction(normalized)) {
             return SafetyGateDecision.rejected("Unsafe request rejected: destructive or secret-exfiltration instruction");
+        }
+        return SafetyGateDecision.accepted();
+    }
+
+    public SafetyGateDecision evaluate(SafetyGateRequest request) {
+        SafetyGateDecision commandDecision = evaluate(request.triggerComment());
+        if (!commandDecision.allowed()) {
+            return commandDecision;
+        }
+        if (!isTriggerUserAllowed(request.triggerUser())) {
+            return SafetyGateDecision.rejected("Unsafe request rejected: trigger user is not allowed");
+        }
+        if (!isRepositoryAllowed(request.repositoryOwner(), request.repositoryName())) {
+            return SafetyGateDecision.rejected("Unsafe request rejected: repository is not allowed");
         }
         return SafetyGateDecision.accepted();
     }
@@ -51,5 +83,33 @@ public class CommandSafetyGate {
 
     private static String normalize(String value) {
         return value.trim().replaceAll("\\s+", " ").toLowerCase(Locale.ROOT);
+    }
+
+    private boolean isTriggerUserAllowed(String triggerUser) {
+        return allowedTriggerUsers.isEmpty()
+                || (StringUtils.hasText(triggerUser) && allowedTriggerUsers.contains(normalize(triggerUser)));
+    }
+
+    private boolean isRepositoryAllowed(String repositoryOwner, String repositoryName) {
+        if (allowedRepositories.isEmpty()) {
+            return true;
+        }
+        if (!StringUtils.hasText(repositoryOwner) || !StringUtils.hasText(repositoryName)) {
+            return false;
+        }
+        return allowedRepositories.contains(normalize(repositoryOwner + "/" + repositoryName));
+    }
+
+    private static Set<String> normalizedSet(List<String> values) {
+        Set<String> normalizedValues = new HashSet<>();
+        if (values == null) {
+            return normalizedValues;
+        }
+        for (String value : values) {
+            if (StringUtils.hasText(value)) {
+                normalizedValues.add(normalize(value));
+            }
+        }
+        return normalizedValues;
     }
 }

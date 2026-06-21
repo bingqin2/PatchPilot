@@ -7,6 +7,8 @@ import io.patchpilot.backend.github.client.domain.CreateIssueCommentCommand;
 import io.patchpilot.backend.github.client.domain.GitHubIssueCommentException;
 import io.patchpilot.backend.github.client.domain.IssueCommentResult;
 import io.patchpilot.backend.github.config.GitHubProperties;
+import io.patchpilot.backend.safety.CommandSafetyGate;
+import io.patchpilot.backend.safety.config.SafetyProperties;
 import io.patchpilot.backend.task.domain.bo.CreateFixTaskCommand;
 import io.patchpilot.backend.task.domain.bo.FixTaskCreationResult;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
@@ -144,6 +146,94 @@ class GitHubWebhookServiceTests {
     }
 
     @Test
+    void should_reject_agent_fix_from_unauthorized_trigger_user_before_task_creation() {
+        FixTaskService fixTaskService = new InMemoryFixTaskService();
+        RecordingFixTaskDispatcher fixTaskDispatcher = new RecordingFixTaskDispatcher();
+        RecordingIssueCommentTool issueCommentTool = new RecordingIssueCommentTool();
+        RecordingTimelineService timelineService = new RecordingTimelineService();
+        GitHubWebhookService webhookService = new GitHubWebhookService(
+                new ObjectMapper(),
+                fixTaskService,
+                fixTaskDispatcher,
+                issueCommentTool,
+                timelineService,
+                new CommandSafetyGate(safetyProperties(List.of("maintainer"), List.of("octocat/hello-world")))
+        );
+
+        WebhookHandleResult result = webhookService.handle(
+                "issue_comment",
+                "delivery-unauthorized-user",
+                issueCommentPayload("/agent fix touch docs/demo.md", "alice", "octocat", "hello-world")
+        );
+
+        assertThat(result.status()).isEqualTo(WebhookHandleStatus.REJECTED);
+        assertThat(result.taskId()).isNull();
+        assertThat(fixTaskService.listTasks()).isEmpty();
+        assertThat(fixTaskDispatcher.dispatchCount()).isZero();
+        assertThat(issueCommentTool.acceptedCount()).isZero();
+        assertThat(timelineService.eventTypes()).isEmpty();
+    }
+
+    @Test
+    void should_reject_agent_fix_for_unauthorized_repository_before_task_creation() {
+        FixTaskService fixTaskService = new InMemoryFixTaskService();
+        RecordingFixTaskDispatcher fixTaskDispatcher = new RecordingFixTaskDispatcher();
+        RecordingIssueCommentTool issueCommentTool = new RecordingIssueCommentTool();
+        RecordingTimelineService timelineService = new RecordingTimelineService();
+        GitHubWebhookService webhookService = new GitHubWebhookService(
+                new ObjectMapper(),
+                fixTaskService,
+                fixTaskDispatcher,
+                issueCommentTool,
+                timelineService,
+                new CommandSafetyGate(safetyProperties(List.of("alice"), List.of("octocat/allowed-repo")))
+        );
+
+        WebhookHandleResult result = webhookService.handle(
+                "issue_comment",
+                "delivery-unauthorized-repository",
+                issueCommentPayload("/agent fix touch docs/demo.md", "alice", "octocat", "hello-world")
+        );
+
+        assertThat(result.status()).isEqualTo(WebhookHandleStatus.REJECTED);
+        assertThat(result.taskId()).isNull();
+        assertThat(fixTaskService.listTasks()).isEmpty();
+        assertThat(fixTaskDispatcher.dispatchCount()).isZero();
+        assertThat(issueCommentTool.acceptedCount()).isZero();
+        assertThat(timelineService.eventTypes()).isEmpty();
+    }
+
+    @Test
+    void should_accept_agent_fix_when_trigger_user_and_repository_are_allowed() {
+        FixTaskService fixTaskService = new InMemoryFixTaskService();
+        RecordingFixTaskDispatcher fixTaskDispatcher = new RecordingFixTaskDispatcher();
+        RecordingIssueCommentTool issueCommentTool = new RecordingIssueCommentTool();
+        RecordingTimelineService timelineService = new RecordingTimelineService();
+        GitHubWebhookService webhookService = new GitHubWebhookService(
+                new ObjectMapper(),
+                fixTaskService,
+                fixTaskDispatcher,
+                issueCommentTool,
+                timelineService,
+                new CommandSafetyGate(safetyProperties(List.of("alice"), List.of("octocat/hello-world")))
+        );
+
+        WebhookHandleResult result = webhookService.handle(
+                "issue_comment",
+                "delivery-authorized-trigger",
+                issueCommentPayload("/agent fix touch docs/demo.md", "alice", "octocat", "hello-world")
+        );
+
+        assertThat(result.status()).isEqualTo(WebhookHandleStatus.TASK_CREATED);
+        assertThat(result.taskId()).isNotBlank();
+        assertThat(fixTaskService.listTasks()).hasSize(1);
+        assertThat(fixTaskDispatcher.dispatchCount()).isEqualTo(1);
+        assertThat(issueCommentTool.acceptedCount()).isEqualTo(1);
+        assertThat(timelineService.eventTypes())
+                .containsExactly(FixTaskTimelineEventType.TASK_CREATED, FixTaskTimelineEventType.STATUS_COMMENT_CREATED);
+    }
+
+    @Test
     void should_dispatch_created_task_when_status_comment_creation_fails() {
         FixTaskService fixTaskService = new InMemoryFixTaskService();
         RecordingFixTaskDispatcher fixTaskDispatcher = new RecordingFixTaskDispatcher();
@@ -222,6 +312,15 @@ class GitHubWebhookServiceTests {
     }
 
     private static String issueCommentPayload(String commentBody) {
+        return issueCommentPayload(commentBody, "alice", "octocat", "hello-world");
+    }
+
+    private static String issueCommentPayload(
+            String commentBody,
+            String triggerUser,
+            String owner,
+            String repositoryName
+    ) {
         return """
                 {
                   "action": "created",
@@ -229,9 +328,9 @@ class GitHubWebhookServiceTests {
                     "id": 12345
                   },
                   "repository": {
-                    "name": "hello-world",
+                    "name": "%s",
                     "owner": {
-                      "login": "octocat"
+                      "login": "%s"
                     }
                   },
                   "issue": {
@@ -241,11 +340,18 @@ class GitHubWebhookServiceTests {
                     "id": 98765,
                     "body": "%s",
                     "user": {
-                      "login": "alice"
+                      "login": "%s"
                     }
                   }
                 }
-                """.formatted(commentBody);
+                """.formatted(repositoryName, owner, commentBody, triggerUser);
+    }
+
+    private static SafetyProperties safetyProperties(List<String> allowedTriggerUsers, List<String> allowedRepositories) {
+        SafetyProperties properties = new SafetyProperties();
+        properties.setAllowedTriggerUsers(allowedTriggerUsers);
+        properties.setAllowedRepositories(allowedRepositories);
+        return properties;
     }
 
     private static final class ExistingDeliveryFixTaskService implements FixTaskService {

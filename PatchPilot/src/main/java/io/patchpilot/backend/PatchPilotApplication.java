@@ -1,6 +1,7 @@
 package io.patchpilot.backend;
 
 import io.patchpilot.backend.agent.config.AgentProperties;
+import io.patchpilot.backend.safety.config.SafetyProperties;
 import io.patchpilot.backend.workspace.config.WorkspaceProperties;
 import io.patchpilot.backend.github.config.GitHubProperties;
 import io.patchpilot.backend.task.config.TaskQueueProperties;
@@ -14,7 +15,8 @@ import org.springframework.scheduling.annotation.EnableScheduling;
         WorkspaceProperties.class,
         GitHubProperties.class,
         TaskQueueProperties.class,
-        AgentProperties.class
+        AgentProperties.class,
+        SafetyProperties.class
 })
 @EnableScheduling
 public class PatchPilotApplication {

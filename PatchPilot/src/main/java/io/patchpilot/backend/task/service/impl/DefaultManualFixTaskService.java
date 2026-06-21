@@ -2,6 +2,7 @@ package io.patchpilot.backend.task.service.impl;
 
 import io.patchpilot.backend.safety.CommandSafetyGate;
 import io.patchpilot.backend.safety.domain.SafetyGateDecision;
+import io.patchpilot.backend.safety.domain.SafetyGateRequest;
 import io.patchpilot.backend.task.domain.bo.CreateFixTaskCommand;
 import io.patchpilot.backend.task.domain.bo.CreateManualFixTaskCommand;
 import io.patchpilot.backend.task.domain.enums.FixTaskTimelineEventType;
@@ -46,7 +47,12 @@ public class DefaultManualFixTaskService implements ManualFixTaskService {
 
     @Override
     public FixTaskVo createManualTask(CreateManualFixTaskCommand command) {
-        SafetyGateDecision safetyDecision = commandSafetyGate.evaluate(command.triggerComment());
+        SafetyGateDecision safetyDecision = commandSafetyGate.evaluate(new SafetyGateRequest(
+                command.repositoryOwner(),
+                command.repositoryName(),
+                command.triggerUser(),
+                command.triggerComment()
+        ));
         if (!safetyDecision.allowed()) {
             throw new IllegalArgumentException(safetyDecision.reason());
         }
