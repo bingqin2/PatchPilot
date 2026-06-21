@@ -262,6 +262,30 @@ test('loads aggregate task detail from backend API', async () => {
           createdAt: '2026-06-20T01:00:00Z',
           updatedAt: '2026-06-20T01:03:00Z'
         },
+        queueItems: [
+          {
+            id: 'queue-1',
+            taskId: 'task-1',
+            status: 'FAILED',
+            attemptCount: 3,
+            lastError: 'maven tests failed',
+            availableAt: '2026-06-20T01:02:00Z',
+            lockedAt: '2026-06-20T01:01:00Z',
+            createdAt: '2026-06-20T01:00:00Z',
+            updatedAt: '2026-06-20T01:03:00Z'
+          },
+          {
+            id: 'queue-older',
+            taskId: 'task-1',
+            status: 'PENDING',
+            attemptCount: 1,
+            lastError: null,
+            availableAt: '2026-06-20T00:58:00Z',
+            lockedAt: null,
+            createdAt: '2026-06-20T00:57:00Z',
+            updatedAt: '2026-06-20T00:58:00Z'
+          }
+        ],
         timeline: [],
         testRuns: [],
         toolCalls: [],
@@ -278,6 +302,7 @@ test('loads aggregate task detail from backend API', async () => {
   expect(detail.summary.task.id).toBe('task-1');
   expect(detail.queueItem?.status).toBe('FAILED');
   expect(detail.queueItem?.attemptCount).toBe(3);
+  expect(detail.queueItems.map((item) => item.id)).toEqual(['queue-1', 'queue-older']);
   expect(detail.timeline).toEqual([]);
   expect(detail.testRuns).toEqual([]);
   expect(detail.toolCalls).toEqual([]);

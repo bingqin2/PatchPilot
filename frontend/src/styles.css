@@ -689,6 +689,15 @@ h3 {
   padding: 16px;
 }
 
+.queue-history {
+  display: grid;
+  gap: 10px;
+}
+
+.queue-history .record-line {
+  margin-bottom: 0;
+}
+
 .timeline {
   display: grid;
   gap: 10px;

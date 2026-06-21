@@ -37,12 +37,17 @@ public class MyBatisFixTaskQueueQueryService implements FixTaskQueueQueryService
 
     @Override
     public Optional<FixTaskQueueItemVo> findByTaskId(String taskId) {
+        return listByTaskId(taskId).stream().findFirst();
+    }
+
+    @Override
+    public List<FixTaskQueueItemVo> listByTaskId(String taskId) {
         LambdaQueryWrapper<FixTaskQueueItemEntity> queryWrapper = new LambdaQueryWrapper<FixTaskQueueItemEntity>()
                 .eq(FixTaskQueueItemEntity::getTaskId, taskId)
                 .orderByDesc(FixTaskQueueItemEntity::getUpdatedAt);
         return queueItemMapper.selectList(queryWrapper).stream()
-                .findFirst()
-                .map(FixTaskQueueItemConvert::toVo);
+                .map(FixTaskQueueItemConvert::toVo)
+                .toList();
     }
 
     @Override

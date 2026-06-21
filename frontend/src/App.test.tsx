@@ -170,6 +170,19 @@ const detail = {
     createdAt: '2026-06-20T01:00:00Z',
     updatedAt: '2026-06-20T01:01:00Z'
   },
+  queueItems: [
+    {
+      id: 'queue-1',
+      taskId: 'task-1',
+      status: 'COMPLETED',
+      attemptCount: 1,
+      lastError: null,
+      availableAt: '2026-06-20T01:00:00Z',
+      lockedAt: '2026-06-20T01:00:20Z',
+      createdAt: '2026-06-20T01:00:00Z',
+      updatedAt: '2026-06-20T01:01:00Z'
+    }
+  ],
   timeline,
   testRuns,
   toolCalls,
@@ -364,6 +377,7 @@ beforeEach(() => {
           }
         },
         queueItem: null,
+        queueItems: [],
         timeline: [],
         testRuns: [],
         toolCalls: [],
@@ -409,6 +423,7 @@ beforeEach(() => {
           }
         },
         queueItem: null,
+        queueItems: [],
         timeline: [
           {
             id: 'timeline-running',
@@ -815,6 +830,7 @@ test('loads the next backend task page with offset pagination', async () => {
           latestTestRunDurationMs: null
         },
         queueItem: null,
+        queueItems: [],
         timeline: [],
         testRuns: [],
         toolCalls: [],

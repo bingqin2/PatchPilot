@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { TaskDetailState } from '../types';
 import { TaskDetailPanel, taskLinkFor } from './TaskDetailPanel';
@@ -55,6 +55,30 @@ const baseDetail: TaskDetailState = {
     createdAt: '2026-06-20T01:00:00Z',
     updatedAt: '2026-06-20T01:03:00Z'
   },
+  queueItems: [
+    {
+      id: 'queue-1',
+      taskId: 'task-1',
+      status: 'FAILED',
+      attemptCount: 3,
+      lastError: 'maven tests failed',
+      availableAt: '2026-06-20T01:02:00Z',
+      lockedAt: '2026-06-20T01:01:00Z',
+      createdAt: '2026-06-20T01:00:00Z',
+      updatedAt: '2026-06-20T01:03:00Z'
+    },
+    {
+      id: 'queue-older',
+      taskId: 'task-1',
+      status: 'PENDING',
+      attemptCount: 1,
+      lastError: null,
+      availableAt: '2026-06-20T00:58:00Z',
+      lockedAt: null,
+      createdAt: '2026-06-20T00:57:00Z',
+      updatedAt: '2026-06-20T00:58:00Z'
+    }
+  ],
   timeline: [],
   testRuns: [],
   toolCalls: [],
@@ -96,8 +120,30 @@ test('shows selected task queue state in task detail', () => {
   expect(screen.getByText('Queue FAILED')).toBeInTheDocument();
   expect(screen.getByText('attempt 3')).toBeInTheDocument();
   expect(screen.getByText('maven tests failed')).toBeInTheDocument();
-  expect(screen.getByText(/Available /)).toBeInTheDocument();
-  expect(screen.getByText(/Locked /)).toBeInTheDocument();
+  const queueDetail = screen.getByText('Queue FAILED').closest('.queue-detail');
+  expect(queueDetail).not.toBeNull();
+  expect(within(queueDetail as HTMLElement).getByText(/Available /)).toBeInTheDocument();
+  expect(within(queueDetail as HTMLElement).getByText(/Locked /)).toBeInTheDocument();
+});
+
+test('shows selected task queue history in task detail', () => {
+  render(
+    <TaskDetailPanel
+      task={task}
+      detail={baseDetail}
+      loading={false}
+      actionInFlight={false}
+      onCancelTask={vi.fn()}
+      onRetryTask={vi.fn()}
+    />
+  );
+
+  expect(screen.getByText('Queue History')).toBeInTheDocument();
+  expect(screen.getByText('queue-1')).toBeInTheDocument();
+  expect(screen.getByText('queue-older')).toBeInTheDocument();
+  expect(screen.getByText('FAILED · attempt 3')).toBeInTheDocument();
+  expect(screen.getByText('PENDING · attempt 1')).toBeInTheDocument();
+  expect(screen.getAllByText(/maven tests failed/)).toHaveLength(2);
 });
 
 test('shows missing latest test evidence when no test result is recorded', () => {

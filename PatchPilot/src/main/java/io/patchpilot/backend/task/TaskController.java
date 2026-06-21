@@ -11,6 +11,7 @@ import io.patchpilot.backend.task.domain.vo.FixTaskDetailVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskModelCallVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskModelUsageSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskPageVo;
+import io.patchpilot.backend.task.domain.vo.FixTaskQueueItemVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskTestRunVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskTimelineEventVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskToolCallVo;
@@ -103,14 +104,7 @@ public class TaskController {
     @GetMapping("/{id}/detail")
     public ResponseEntity<ApiResponse<FixTaskDetailVo>> getTaskDetail(@PathVariable String id) {
         return fixTaskAuditSummaryService.summary(id)
-                .map(summary -> ResponseEntity.ok(ApiResponse.ok(new FixTaskDetailVo(
-                        summary,
-                        fixTaskTimelineService.listEvents(id),
-                        fixTaskTestRunService.listTestRuns(id),
-                        fixTaskToolCallService.listToolCalls(id),
-                        fixTaskModelCallService.listModelCalls(id),
-                        fixTaskQueueQueryService.findByTaskId(id).orElse(null)
-                ))))
+                .map(summary -> ResponseEntity.ok(ApiResponse.ok(buildTaskDetail(id, summary))))
                 .orElseGet(() -> ResponseEntity.status(404).body(ApiResponse.fail("Task not found")));
     }
 
@@ -203,6 +197,19 @@ public class TaskController {
         boolean hasMore = tasks.size() > parsedLimit;
         List<FixTaskVo> pageItems = hasMore ? tasks.subList(0, parsedLimit) : tasks;
         return new FixTaskPageVo(pageItems, parsedLimit, parsedOffset, hasMore, total);
+    }
+
+    private FixTaskDetailVo buildTaskDetail(String taskId, FixTaskAuditSummaryVo summary) {
+        List<FixTaskQueueItemVo> queueItems = fixTaskQueueQueryService.listByTaskId(taskId);
+        return new FixTaskDetailVo(
+                summary,
+                fixTaskTimelineService.listEvents(taskId),
+                fixTaskTestRunService.listTestRuns(taskId),
+                fixTaskToolCallService.listToolCalls(taskId),
+                fixTaskModelCallService.listModelCalls(taskId),
+                queueItems.stream().findFirst().orElse(null),
+                queueItems
+        );
     }
 
     private static FixTaskStatus parseStatus(String status) {
