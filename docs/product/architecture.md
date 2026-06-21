@@ -45,6 +45,7 @@ GitHub issue comment created
   -> WebhookController verifies signature
   -> WebhookEventRouter detects /agent fix
   -> CommandSafetyGate rejects unsupported, unauthorized, unsafe, or non-actionable commands
+  -> TriggerIntentClassifier optionally asks the configured model whether the safe request should execute
   -> RejectedTriggerAuditService records rejected triggering attempts
   -> FixTaskService creates a task
   -> TaskWorker runs asynchronously
@@ -118,6 +119,7 @@ Responsibilities:
 - Route supported events.
 - Detect `/agent fix`.
 - Reject unsafe, unauthorized, or non-actionable `/agent fix` commands before task creation.
+- Optionally ask the configured model to classify safe triggers as executable, needing clarification, or rejected.
 - Record rejected triggering attempts for operator inspection.
 - Deduplicate delivery ids.
 - Submit work to task services.

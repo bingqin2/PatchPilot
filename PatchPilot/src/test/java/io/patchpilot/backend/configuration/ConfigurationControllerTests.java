@@ -27,6 +27,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "patchpilot.agent.cost.completion-token-usd=0.000002",
         "patchpilot.github.token=test-github-token",
         "patchpilot.github.webhook-secret=test-webhook-secret",
+        "patchpilot.safety.model-trigger-classification-enabled=true",
         "patchpilot.workspace.root-dir=/tmp/patchpilot/test-workspaces",
         "patchpilot.task.queue.max-attempts=5",
         "patchpilot.task.queue.retry-delay-ms=15000",
@@ -53,6 +54,7 @@ class ConfigurationControllerTests {
                 .andExpect(jsonPath("$.data.queueRetryDelayMs").value(15000))
                 .andExpect(jsonPath("$.data.queueVisibilityTimeoutMs").value(120000))
                 .andExpect(jsonPath("$.data.modelCostConfigured").value(true))
+                .andExpect(jsonPath("$.data.modelTriggerClassificationEnabled").value(true))
                 .andExpect(content().string(not(containsString("test-agent-key"))))
                 .andExpect(content().string(not(containsString("test-github-token"))))
                 .andExpect(content().string(not(containsString("test-webhook-secret"))));

@@ -3,6 +3,7 @@ package io.patchpilot.backend.configuration;
 import io.patchpilot.backend.agent.config.AgentProperties;
 import io.patchpilot.backend.common.response.ApiResponse;
 import io.patchpilot.backend.github.config.GitHubProperties;
+import io.patchpilot.backend.safety.config.SafetyProperties;
 import io.patchpilot.backend.task.config.TaskQueueProperties;
 import io.patchpilot.backend.workspace.config.WorkspaceProperties;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,7 @@ public class ConfigurationController {
     private final GitHubProperties gitHubProperties;
     private final WorkspaceProperties workspaceProperties;
     private final TaskQueueProperties taskQueueProperties;
+    private final SafetyProperties safetyProperties;
 
     @Value("${patchpilot.github.webhook-secret:}")
     private String webhookSecret;
@@ -38,7 +40,8 @@ public class ConfigurationController {
                 taskQueueProperties.getMaxAttempts(),
                 taskQueueProperties.getRetryDelayMs(),
                 taskQueueProperties.getVisibilityTimeoutMs(),
-                modelCostConfigured()
+                modelCostConfigured(),
+                safetyProperties.isModelTriggerClassificationEnabled()
         ));
     }
 

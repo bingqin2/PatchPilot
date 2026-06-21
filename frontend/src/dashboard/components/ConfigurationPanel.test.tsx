@@ -12,7 +12,8 @@ const healthyConfiguration = {
   queueMaxAttempts: 3,
   queueRetryDelayMs: 30000,
   queueVisibilityTimeoutMs: 300000,
-  modelCostConfigured: true
+  modelCostConfigured: true,
+  modelTriggerClassificationEnabled: true
 };
 
 test('shows healthy configuration status when required and advisory settings are valid', () => {
@@ -30,6 +31,7 @@ test('shows healthy configuration status when required and advisory settings are
   expect(screen.getByText('Configuration healthy')).toBeInTheDocument();
   expect(screen.getByText('Backend UP')).toBeInTheDocument();
   expect(screen.getByText('patchpilot-backend')).toBeInTheDocument();
+  expect(screen.getByText('Trigger classifier Enabled')).toBeInTheDocument();
   expect(screen.queryByText('Agent API key is missing')).not.toBeInTheDocument();
   expect(screen.queryByText('Model cost is not configured')).not.toBeInTheDocument();
 });

@@ -2,6 +2,9 @@ package io.patchpilot.backend.task.service;
 
 import io.patchpilot.backend.safety.CommandSafetyGate;
 import io.patchpilot.backend.safety.config.SafetyProperties;
+import io.patchpilot.backend.safety.domain.TriggerIntentClassificationRequest;
+import io.patchpilot.backend.safety.domain.TriggerIntentDecision;
+import io.patchpilot.backend.safety.service.TriggerIntentClassifier;
 import io.patchpilot.backend.task.domain.bo.CreateFixTaskCommand;
 import io.patchpilot.backend.task.domain.bo.CreateManualFixTaskCommand;
 import io.patchpilot.backend.task.domain.enums.FixTaskTimelineEventType;
@@ -141,6 +144,37 @@ class DefaultManualFixTaskServiceTests {
         assertThat(fixTaskDispatcher.taskIds()).isEmpty();
     }
 
+    @Test
+    void should_reject_manual_task_when_model_trigger_classifier_declines_execution() {
+        RecordingTriggerIntentClassifier triggerIntentClassifier = new RecordingTriggerIntentClassifier(
+                TriggerIntentDecision.rejected("The request is not a software maintenance task.")
+        );
+        ManualFixTaskService classifiedManualFixTaskService = new DefaultManualFixTaskService(
+                fixTaskService,
+                fixTaskTimelineService,
+                fixTaskDispatcher,
+                new io.patchpilot.backend.safety.service.impl.InMemoryRejectedTriggerAuditService(),
+                new CommandSafetyGate(),
+                triggerIntentClassifier
+        );
+
+        assertThatThrownBy(() -> classifiedManualFixTaskService.createManualTask(new CreateManualFixTaskCommand(
+                "bingqin2",
+                "PatchPilot",
+                7,
+                "local-operator",
+                "/agent fix touch docs/manual-task.md"
+        )))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Model trigger classification rejected: The request is not a software maintenance task.");
+
+        assertThat(triggerIntentClassifier.request().source()).isEqualTo("manual");
+        assertThat(triggerIntentClassifier.request().triggerComment()).isEqualTo("/agent fix touch docs/manual-task.md");
+        assertThat(fixTaskService.listTasks()).isEmpty();
+        assertThat(fixTaskTimelineService.eventTypes()).isEmpty();
+        assertThat(fixTaskDispatcher.taskIds()).isEmpty();
+    }
+
     private static SafetyProperties safetyProperties(List<String> allowedTriggerUsers, List<String> allowedRepositories) {
         SafetyProperties properties = new SafetyProperties();
         properties.setAllowedTriggerUsers(allowedTriggerUsers);
@@ -191,6 +225,26 @@ class DefaultManualFixTaskServiceTests {
 
         private List<String> taskIds() {
             return taskIds;
+        }
+    }
+
+    private static final class RecordingTriggerIntentClassifier implements TriggerIntentClassifier {
+
+        private final TriggerIntentDecision decision;
+        private TriggerIntentClassificationRequest request;
+
+        private RecordingTriggerIntentClassifier(TriggerIntentDecision decision) {
+            this.decision = decision;
+        }
+
+        @Override
+        public TriggerIntentDecision classify(TriggerIntentClassificationRequest request) {
+            this.request = request;
+            return decision;
+        }
+
+        private TriggerIntentClassificationRequest request() {
+            return request;
         }
     }
 }

@@ -118,6 +118,7 @@ export interface ConfigurationSummary {
   queueRetryDelayMs: number;
   queueVisibilityTimeoutMs: number;
   modelCostConfigured: boolean;
+  modelTriggerClassificationEnabled: boolean;
 }
 
 export interface BackendHealth {

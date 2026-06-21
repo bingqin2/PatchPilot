@@ -83,6 +83,14 @@ PatchPilot only creates a task when the `/agent fix` comment is actionable. Use 
 
 Vague comments such as `/agent fix`, `/agent fix help`, or `/agent fix make it better` are rejected before task creation and appear in `/api/rejected-triggers`.
 
+You can also enable model-assisted trigger classification after the deterministic safety gate:
+
+```bash
+PATCHPILOT_MODEL_TRIGGER_CLASSIFICATION_ENABLED=true
+```
+
+When enabled, PatchPilot asks the configured OpenAI-compatible model whether a safe `/agent fix` request is concrete enough to execute. The model cannot override deterministic safety rejections for unauthorized users, unauthorized repositories, destructive instructions, secret exfiltration, or unsupported commands. If the model call fails or returns invalid JSON, PatchPilot rejects the trigger conservatively and records the reason in `/api/rejected-triggers`.
+
 For a fine-grained GitHub token, grant these repository permissions:
 
 - `Contents`: Read and write

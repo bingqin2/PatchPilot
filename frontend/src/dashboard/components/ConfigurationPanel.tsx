@@ -52,6 +52,7 @@ export function ConfigurationPanel({ configuration, backendHealth }: Configurati
         <div>
           <span>Cost</span>
           <strong>Model cost {configured(configuration?.modelCostConfigured)}</strong>
+          <p>Trigger classifier {enabled(configuration?.modelTriggerClassificationEnabled)}</p>
         </div>
       </div>
       {health.items.length > 0 ? (
@@ -69,6 +70,10 @@ export function ConfigurationPanel({ configuration, backendHealth }: Configurati
 
 function configured(value?: boolean) {
   return value ? 'Configured' : 'Missing';
+}
+
+function enabled(value?: boolean) {
+  return value ? 'Enabled' : 'Disabled';
 }
 
 interface ConfigurationIssue {

@@ -10,6 +10,7 @@ public class SafetyProperties {
 
     private List<String> allowedTriggerUsers = new ArrayList<>();
     private List<String> allowedRepositories = new ArrayList<>();
+    private boolean modelTriggerClassificationEnabled = false;
 
     public List<String> getAllowedTriggerUsers() {
         return allowedTriggerUsers;
@@ -25,5 +26,13 @@ public class SafetyProperties {
 
     public void setAllowedRepositories(List<String> allowedRepositories) {
         this.allowedRepositories = allowedRepositories == null ? new ArrayList<>() : allowedRepositories;
+    }
+
+    public boolean isModelTriggerClassificationEnabled() {
+        return modelTriggerClassificationEnabled;
+    }
+
+    public void setModelTriggerClassificationEnabled(boolean modelTriggerClassificationEnabled) {
+        this.modelTriggerClassificationEnabled = modelTriggerClassificationEnabled;
     }
 }

@@ -335,7 +335,8 @@ const configurationSummary = {
   queueMaxAttempts: 3,
   queueRetryDelayMs: 30000,
   queueVisibilityTimeoutMs: 300000,
-  modelCostConfigured: true
+  modelCostConfigured: true,
+  modelTriggerClassificationEnabled: true
 };
 
 beforeEach(() => {
