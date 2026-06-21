@@ -14,7 +14,9 @@ import io.patchpilot.backend.task.service.FixTaskTestRunService;
 import io.patchpilot.backend.task.service.FixTaskTimelineService;
 import io.patchpilot.backend.task.service.FixTaskService;
 import io.patchpilot.backend.task.service.FixTaskToolCallService;
+import io.patchpilot.backend.task.service.FixTaskDispatcher;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.MediaType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -28,8 +30,10 @@ import java.util.Optional;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.startsWith;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -58,6 +62,80 @@ class TaskControllerTests {
 
     @Autowired
     private FixTaskQueueQueryService fixTaskQueueQueryService;
+
+    @Test
+    void should_create_manual_task_and_dispatch_it() throws Exception {
+        mockMvc.perform(post("/api/tasks")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "repositoryOwner": "bingqin2",
+                                  "repositoryName": "PatchPilot",
+                                  "issueNumber": 7,
+                                  "triggerUser": "local-operator",
+                                  "triggerComment": "/agent fix touch docs/manual-task.md"
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(header().string("Location", startsWith("/api/tasks/")))
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.repositoryOwner").value("bingqin2"))
+                .andExpect(jsonPath("$.data.repositoryName").value("PatchPilot"))
+                .andExpect(jsonPath("$.data.issueNumber").value(7))
+                .andExpect(jsonPath("$.data.installationId").value(0))
+                .andExpect(jsonPath("$.data.triggerUser").value("local-operator"))
+                .andExpect(jsonPath("$.data.triggerComment").value("/agent fix touch docs/manual-task.md"))
+                .andExpect(jsonPath("$.data.deliveryId").value(startsWith("manual-")))
+                .andExpect(jsonPath("$.data.commentId").value(0))
+                .andExpect(jsonPath("$.data.status").value("PENDING"));
+    }
+
+    @Test
+    void should_return_bad_request_for_invalid_manual_task_request() throws Exception {
+        mockMvc.perform(post("/api/tasks")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "repositoryOwner": " ",
+                                  "repositoryName": "PatchPilot",
+                                  "issueNumber": 0,
+                                  "triggerUser": "local-operator",
+                                  "triggerComment": "not an agent command"
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("repositoryOwner must not be blank"));
+    }
+
+    @Test
+    void should_return_conflict_when_manual_task_already_active_for_issue() throws Exception {
+        createTask(new CreateFixTaskCommand(
+                "bingqin2",
+                "PatchPilot",
+                8,
+                0,
+                "local-operator",
+                "/agent fix",
+                "delivery-manual-active",
+                0
+        ));
+
+        mockMvc.perform(post("/api/tasks")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "repositoryOwner": "bingqin2",
+                                  "repositoryName": "PatchPilot",
+                                  "issueNumber": 8,
+                                  "triggerUser": "local-operator",
+                                  "triggerComment": "/agent fix touch docs/manual-task.md"
+                                }
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("An active task already exists for this issue"));
+    }
 
     @Test
     void should_list_tasks() throws Exception {
@@ -867,6 +945,13 @@ class TaskControllerTests {
         @org.springframework.context.annotation.Primary
         FixTaskQueueQueryService recordingFixTaskQueueQueryService() {
             return new RecordingFixTaskQueueQueryService();
+        }
+
+        @org.springframework.context.annotation.Bean
+        @org.springframework.context.annotation.Primary
+        FixTaskDispatcher recordingFixTaskDispatcher() {
+            return taskId -> {
+            };
         }
     }
 

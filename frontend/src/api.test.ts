@@ -1,4 +1,5 @@
 import {
+  createTask,
   getBackendHealth,
   getConfigurationSummary,
   getFailureCauseSummary,
@@ -11,6 +12,59 @@ import {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+});
+
+test('creates manual task through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 201,
+    json: async () => ({
+      success: true,
+      data: {
+        id: 'manual-task-1',
+        repositoryOwner: 'bingqin2',
+        repositoryName: 'PatchPilot',
+        issueNumber: 7,
+        installationId: 0,
+        triggerUser: 'local-operator',
+        triggerComment: '/agent fix touch docs/manual-task.md',
+        deliveryId: 'manual-123',
+        commentId: 0,
+        status: 'PENDING',
+        failureReason: null,
+        createdAt: '2026-06-21T10:00:00Z',
+        pullRequestUrl: null,
+        completedAt: null,
+        updatedAt: '2026-06-21T10:00:00Z',
+        statusCommentId: null,
+        statusCommentUrl: null
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const task = await createTask({
+    repositoryOwner: 'bingqin2',
+    repositoryName: 'PatchPilot',
+    issueNumber: 7,
+    triggerUser: 'local-operator',
+    triggerComment: '/agent fix touch docs/manual-task.md'
+  });
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/tasks', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      repositoryOwner: 'bingqin2',
+      repositoryName: 'PatchPilot',
+      issueNumber: 7,
+      triggerUser: 'local-operator',
+      triggerComment: '/agent fix touch docs/manual-task.md'
+    })
+  });
+  expect(task.id).toBe('manual-task-1');
+  expect(task.status).toBe('PENDING');
 });
 
 test('builds backend task search and pagination query parameters', async () => {

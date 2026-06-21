@@ -76,6 +76,26 @@ const retriedTask = {
   updatedAt: '2026-06-20T01:07:00Z'
 };
 
+const manuallyCreatedTask = {
+  id: 'manual-task-1',
+  repositoryOwner: 'bingqin2',
+  repositoryName: 'PatchPilot',
+  issueNumber: 7,
+  installationId: 0,
+  triggerUser: 'local-operator',
+  triggerComment: '/agent fix touch docs/manual-task.md',
+  deliveryId: 'manual-123',
+  commentId: 0,
+  status: 'PENDING',
+  failureReason: null,
+  createdAt: '2026-06-21T10:00:00Z',
+  pullRequestUrl: null,
+  completedAt: null,
+  updatedAt: '2026-06-21T10:00:00Z',
+  statusCommentId: null,
+  statusCommentUrl: null
+};
+
 const summary = {
   task: completedTask,
   timelineEventCount: 4,
@@ -189,6 +209,41 @@ const detail = {
   modelCalls
 };
 
+const manualTaskDetail = {
+  summary: {
+    ...summary,
+    task: manuallyCreatedTask,
+    timelineEventCount: 1,
+    testRunCount: 0,
+    toolCallCount: 0,
+    modelCallCount: 0,
+    totalModelTokens: 0,
+    latestTimelineEvent: {
+      id: 'timeline-manual',
+      taskId: 'manual-task-1',
+      eventType: 'TASK_CREATED',
+      message: 'Task accepted from dashboard manual creation',
+      createdAt: '2026-06-21T10:00:00Z'
+    },
+    latestTestRunExitCode: null,
+    latestTestRunDurationMs: null
+  },
+  queueItem: null,
+  queueItems: [],
+  timeline: [
+    {
+      id: 'timeline-manual',
+      taskId: 'manual-task-1',
+      eventType: 'TASK_CREATED',
+      message: 'Task accepted from dashboard manual creation',
+      createdAt: '2026-06-21T10:00:00Z'
+    }
+  ],
+  testRuns: [],
+  toolCalls: [],
+  modelCalls: []
+};
+
 const modelUsageSummary = {
   totalPromptTokens: 1500,
   totalCompletionTokens: 650,
@@ -264,10 +319,11 @@ const configurationSummary = {
 };
 
 beforeEach(() => {
-  vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+  let manualTaskCreated = false;
+  vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = input.toString();
     if (url === '/api/tasks?limit=50') {
-      return jsonResponse(taskPage([completedTask, failedTask]));
+      return jsonResponse(taskPage(manualTaskCreated ? [manuallyCreatedTask, completedTask, failedTask] : [completedTask, failedTask]));
     }
     if (url === '/api/tasks?limit=50&status=RUNNING') {
       return jsonResponse(taskPage([runningTask]));
@@ -283,6 +339,10 @@ beforeEach(() => {
     }
     if (url === '/api/tasks?limit=50&status=CANCELLED') {
       return jsonResponse(taskPage([]));
+    }
+    if (url === '/api/tasks' && init?.method === 'POST') {
+      manualTaskCreated = true;
+      return jsonResponse(manuallyCreatedTask, true, null, 201);
     }
     if (url === '/api/tasks/metrics/summary') {
       return jsonResponse({
@@ -334,6 +394,9 @@ beforeEach(() => {
     }
     if (url === '/api/tasks/task-1/detail') {
       return jsonResponse(detail);
+    }
+    if (url === '/api/tasks/manual-task-1/detail') {
+      return jsonResponse(manualTaskDetail);
     }
     if (url === '/api/tasks/task-1/report') {
       return jsonResponse('# PatchPilot Task Report\n\n- Task: `task-1`');
@@ -576,6 +639,109 @@ test('copies selected task report from backend API', async () => {
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks/task-1/report'));
   expect(writeText).toHaveBeenCalledWith('# PatchPilot Task Report\n\n- Task: `task-1`');
   expect(screen.getByText('Task report copied')).toBeInTheDocument();
+});
+
+test('creates a manual task from the dashboard and refreshes task data', async () => {
+  const user = userEvent.setup();
+  const fetchMock = vi.mocked(fetch);
+
+  render(<App />);
+
+  await user.type(await screen.findByLabelText('Repository owner'), 'bingqin2');
+  await user.type(screen.getByLabelText('Repository name'), 'PatchPilot');
+  await user.type(screen.getByLabelText('Issue number'), '7');
+  await user.clear(screen.getByLabelText('Trigger user'));
+  await user.type(screen.getByLabelText('Trigger user'), 'local-operator');
+  await user.type(screen.getByLabelText('Command'), '/agent fix touch docs/manual-task.md');
+  await user.click(screen.getByRole('button', { name: 'Create task' }));
+
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      repositoryOwner: 'bingqin2',
+      repositoryName: 'PatchPilot',
+      issueNumber: 7,
+      triggerUser: 'local-operator',
+      triggerComment: '/agent fix touch docs/manual-task.md'
+    })
+  }));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks?limit=50'));
+  expect(await screen.findByText('Manual task queued')).toBeInTheDocument();
+  expect(screen.getByLabelText('Command')).toHaveValue('');
+});
+
+test('shows manual task creation failures without clearing the form', async () => {
+  const user = userEvent.setup();
+  vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = input.toString();
+    if (url === '/api/tasks' && init?.method === 'POST') {
+      return jsonResponse(null, false, 'An active task already exists for this issue', 409);
+    }
+    if (url === '/api/tasks?limit=50') {
+      return jsonResponse(taskPage([completedTask, failedTask]));
+    }
+    if (url === '/api/tasks/metrics/summary') {
+      return jsonResponse({
+        totalCount: 2,
+        pendingCount: 0,
+        runningCount: 0,
+        runningTestsCount: 0,
+        completedCount: 1,
+        failedCount: 1,
+        cancelledCount: 0,
+        completionRate: 0.5,
+        failureRate: 0.5,
+        averageCompletionDurationMs: 60000,
+        totalModelTokens: 1800,
+        averageModelTokensPerCompletedTask: 1800,
+        testRunCount: 1,
+        passedTestRunCount: 1,
+        failedTestRunCount: 0,
+        testPassRate: 1
+      });
+    }
+    if (url === '/api/tasks/metrics/failure-causes') {
+      return jsonResponse([]);
+    }
+    if (url === '/api/tasks/metrics/model-usage') {
+      return jsonResponse(modelUsageSummary);
+    }
+    if (url === '/api/tasks/metrics/latency') {
+      return jsonResponse(latencySummary);
+    }
+    if (url === '/api/configuration/summary') {
+      return jsonResponse(configurationSummary);
+    }
+    if (url === '/health') {
+      return jsonResponse({
+        status: 'UP',
+        service: 'patchpilot-backend',
+        timestamp: '2026-06-21T01:00:00Z'
+      });
+    }
+    if (url === '/api/task-queue/summary') {
+      return jsonResponse(queueSummary);
+    }
+    if (url === '/api/task-queue/items') {
+      return jsonResponse(queueItems);
+    }
+    if (url === '/api/tasks/task-1/detail') {
+      return jsonResponse(detail);
+    }
+    return jsonResponse(null, false, 'not found', 404);
+  }));
+
+  render(<App />);
+
+  await user.type(await screen.findByLabelText('Repository owner'), 'bingqin2');
+  await user.type(screen.getByLabelText('Repository name'), 'PatchPilot');
+  await user.type(screen.getByLabelText('Issue number'), '7');
+  await user.type(screen.getByLabelText('Command'), '/agent fix touch docs/manual-task.md');
+  await user.click(screen.getByRole('button', { name: 'Create task' }));
+
+  expect(await screen.findByRole('alert')).toHaveTextContent('An active task already exists for this issue');
+  expect(screen.getByLabelText('Command')).toHaveValue('/agent fix touch docs/manual-task.md');
 });
 
 test('selects task detail from taskId URL parameter', async () => {

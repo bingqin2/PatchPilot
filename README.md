@@ -151,6 +151,22 @@ curl http://127.0.0.1:8080/api/tasks/{taskId}/model-calls
 
 Use `/detail` for dashboard-style task inspection. It returns the task audit summary, latest queue item, queue history, timeline events, test runs, tool calls, and model calls in one response. Use `/report` to copy a Markdown diagnostic summary for a task. The narrower endpoints remain available for focused debugging.
 
+For local demos or debugging, you can create the same queued task from the backend API without posting a GitHub comment:
+
+```bash
+curl -X POST http://127.0.0.1:8080/api/tasks \
+  -H "Content-Type: application/json" \
+  -d '{
+    "repositoryOwner": "bingqin2",
+    "repositoryName": "PatchPilot",
+    "issueNumber": 1,
+    "triggerUser": "local-operator",
+    "triggerComment": "/agent fix touch docs/manual-task.md"
+  }'
+```
+
+Manual task creation still records a normal task, writes a timeline event, and dispatches work through the queue. It rejects duplicate active work for the same issue.
+
 Runtime configuration summary:
 
 ```bash
@@ -185,7 +201,7 @@ PATCHPILOT_AGENT_COST_COMPLETION_TOKEN_USD=0.000002
 ## Frontend Dashboard
 
 The React dashboard lives in `frontend/` and calls the backend through Vite's `/api` proxy.
-It includes task metrics, refresh progress and last-refresh feedback, failure-cause grouping, model token and estimated-cost summaries, latency summaries, a non-sensitive runtime configuration panel backed by `/api/configuration/summary`, backend `/health` status, configuration health hints for missing secrets and weak queue/cost settings, status filters and full-history search backed by `GET /api/tasks`, total-count and `hasMore`-backed `Load more` task pagination, task creation/update times, GitHub Issue, status comment, and Pull Request links, `?taskId=` deep links, copyable links and copyable Markdown reports for selected task details, task detail summaries loaded through `GET /api/tasks/{taskId}/detail`, selected-task queue status and queue history with retry/last-error context, execution evidence summaries, timeline events, test runs, tool calls and model calls with durations, empty states for missing detail records, task control actions for cancel/retry, and a read-only queue panel with health hints backed by `/api/task-queue/*`.
+It includes task metrics, refresh progress and last-refresh feedback, failure-cause grouping, model token and estimated-cost summaries, latency summaries, a non-sensitive runtime configuration panel backed by `/api/configuration/summary`, backend `/health` status, configuration health hints for missing secrets and weak queue/cost settings, a manual task creation form backed by `POST /api/tasks`, status filters and full-history search backed by `GET /api/tasks`, total-count and `hasMore`-backed `Load more` task pagination, task creation/update times, GitHub Issue, status comment, and Pull Request links, `?taskId=` deep links, copyable links and copyable Markdown reports for selected task details, task detail summaries loaded through `GET /api/tasks/{taskId}/detail`, selected-task queue status and queue history with retry/last-error context, execution evidence summaries, timeline events, test runs, tool calls and model calls with durations, empty states for missing detail records, task control actions for cancel/retry, and a read-only queue panel with health hints backed by `/api/task-queue/*`.
 The page coordinator is `frontend/src/App.tsx`; reusable dashboard UI lives under `frontend/src/dashboard/components/`, with shared formatting helpers in `frontend/src/dashboard/format.ts`.
 The dashboard task list requests `query`, `status`, `limit`, and `offset` from the backend and consumes the task page response with `items`, `limit`, `offset`, `hasMore`, and `total`.
 The selected-task panel uses the aggregate detail endpoint so opening a task needs one backend detail request instead of separate summary, timeline, test-run, tool-call, and model-call requests.
@@ -243,7 +259,7 @@ PatchPilot must not:
 
 - Maven repositories are the first supported target.
 - The current runtime is single-process; API and worker separation is future work.
-- The React dashboard does not create tasks or merge Pull Requests.
+- The React dashboard can create manual demo tasks, but GitHub issue comments remain the primary production trigger. It does not merge Pull Requests.
 - Temporary Cloudflare URLs are for local testing only.
 
 ## Development Workflow
