@@ -1,4 +1,5 @@
 import {
+  getBackendHealth,
   getConfigurationSummary,
   getFailureCauseSummary,
   getLatencySummary,
@@ -184,6 +185,32 @@ test('loads non-sensitive configuration summary from backend API', async () => {
     queueRetryDelayMs: 30000,
     queueVisibilityTimeoutMs: 300000,
     modelCostConfigured: true
+  });
+});
+
+test('loads backend health status from health endpoint', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        status: 'UP',
+        service: 'patchpilot-backend',
+        timestamp: '2026-06-21T01:00:00Z'
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const health = await getBackendHealth();
+
+  expect(fetchMock).toHaveBeenCalledWith('/health');
+  expect(health).toEqual({
+    status: 'UP',
+    service: 'patchpilot-backend',
+    timestamp: '2026-06-21T01:00:00Z'
   });
 });
 

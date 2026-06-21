@@ -1578,3 +1578,18 @@ Changes:
 Validation:
 
 - `npm test -- --run src/dashboard/components/TaskDetailPanel.test.tsx`: first failed because `taskLinkFor` and the `Copy link` button did not exist, then passed after adding link generation and clipboard behavior, 4 tests run, 0 failures.
+
+Implemented dashboard backend health status from `docs/plans/073-dashboard-backend-health-status.md`.
+
+Changes:
+
+- Added a frontend `BackendHealth` type and `getBackendHealth()` helper for `GET /health`.
+- Loaded backend health during dashboard refresh.
+- Displayed backend status, service name, and timestamp in `ConfigurationPanel`.
+- Added an unavailable backend state when health data is not loaded.
+- Documented backend health visibility in README and frontend design docs.
+
+Validation:
+
+- `npm test -- --run src/api.test.ts src/dashboard/components/ConfigurationPanel.test.tsx`: first failed because `getBackendHealth()` and backend health UI did not exist, then passed after adding the API helper and panel rendering, 11 tests run, 0 failures.
+- `npm test -- --run src/App.test.tsx`: first failed because a custom App test fetch mock did not handle `/health`, then passed after adding the health fixture, 14 tests run, 0 failures.

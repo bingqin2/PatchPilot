@@ -287,6 +287,13 @@ beforeEach(() => {
     if (url === '/api/configuration/summary') {
       return jsonResponse(configurationSummary);
     }
+    if (url === '/health') {
+      return jsonResponse({
+        status: 'UP',
+        service: 'patchpilot-backend',
+        timestamp: '2026-06-21T01:00:00Z'
+      });
+    }
     if (url === '/api/task-queue/summary') {
       return jsonResponse(queueSummary);
     }
@@ -431,6 +438,8 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(screen.getByText('https://api.example.test/v1')).toBeInTheDocument();
   expect(screen.getByText('/tmp/patchpilot/workspaces')).toBeInTheDocument();
   expect(screen.getByText('Configuration healthy')).toBeInTheDocument();
+  expect(screen.getByText('Backend UP')).toBeInTheDocument();
+  expect(screen.getByText('patchpilot-backend')).toBeInTheDocument();
   expect(screen.getByText('Agent key Configured')).toBeInTheDocument();
   expect(screen.getByText('Webhook secret Configured')).toBeInTheDocument();
   expect(screen.getByText('Queue attempts 3')).toBeInTheDocument();
@@ -631,6 +640,13 @@ test('loads the next backend task page with offset pagination', async () => {
     }
     if (url === '/api/configuration/summary') {
       return jsonResponse(configurationSummary);
+    }
+    if (url === '/health') {
+      return jsonResponse({
+        status: 'UP',
+        service: 'patchpilot-backend',
+        timestamp: '2026-06-21T01:00:00Z'
+      });
     }
     if (url === '/api/task-queue/summary') {
       return jsonResponse(queueSummary);

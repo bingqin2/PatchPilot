@@ -16,9 +16,20 @@ const healthyConfiguration = {
 };
 
 test('shows healthy configuration status when required and advisory settings are valid', () => {
-  render(<ConfigurationPanel configuration={healthyConfiguration} />);
+  render(
+    <ConfigurationPanel
+      configuration={healthyConfiguration}
+      backendHealth={{
+        status: 'UP',
+        service: 'patchpilot-backend',
+        timestamp: '2026-06-21T01:00:00Z'
+      }}
+    />
+  );
 
   expect(screen.getByText('Configuration healthy')).toBeInTheDocument();
+  expect(screen.getByText('Backend UP')).toBeInTheDocument();
+  expect(screen.getByText('patchpilot-backend')).toBeInTheDocument();
   expect(screen.queryByText('Agent API key is missing')).not.toBeInTheDocument();
   expect(screen.queryByText('Model cost is not configured')).not.toBeInTheDocument();
 });
@@ -36,10 +47,12 @@ test('shows setup issues and advisories for weak configuration', () => {
         queueVisibilityTimeoutMs: 500,
         modelCostConfigured: false
       }}
+      backendHealth={null}
     />
   );
 
   expect(screen.getByText('3 setup issues')).toBeInTheDocument();
+  expect(screen.getByText('Backend unavailable')).toBeInTheDocument();
   expect(screen.getByText('4 advisory items')).toBeInTheDocument();
   expect(screen.getByText('Agent API key is missing')).toBeInTheDocument();
   expect(screen.getByText('GitHub token is missing')).toBeInTheDocument();
@@ -56,6 +69,11 @@ test('shows advisory status when required secrets are configured but optional se
       configuration={{
         ...healthyConfiguration,
         modelCostConfigured: false
+      }}
+      backendHealth={{
+        status: 'UP',
+        service: 'patchpilot-backend',
+        timestamp: '2026-06-21T01:00:00Z'
       }}
     />
   );
