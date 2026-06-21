@@ -21,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
@@ -40,6 +41,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("default")
+@TestPropertySource(properties = {
+        "patchpilot.safety.allowed-trigger-users=local-operator,alice",
+        "patchpilot.safety.allowed-repositories=bingqin2/PatchPilot,octocat/hello-world"
+})
 class TaskControllerTests {
 
     @Autowired
@@ -124,6 +129,42 @@ class TaskControllerTests {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.message").value("Unsafe request rejected: destructive or secret-exfiltration instruction"));
+    }
+
+    @Test
+    void should_return_bad_request_when_manual_task_trigger_user_is_not_allowed() throws Exception {
+        mockMvc.perform(post("/api/tasks")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "repositoryOwner": "bingqin2",
+                                  "repositoryName": "PatchPilot",
+                                  "issueNumber": 7,
+                                  "triggerUser": "unknown-user",
+                                  "triggerComment": "/agent fix touch docs/manual-task.md"
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("Unsafe request rejected: trigger user is not allowed"));
+    }
+
+    @Test
+    void should_return_bad_request_when_manual_task_repository_is_not_allowed() throws Exception {
+        mockMvc.perform(post("/api/tasks")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "repositoryOwner": "bingqin2",
+                                  "repositoryName": "OtherRepo",
+                                  "issueNumber": 7,
+                                  "triggerUser": "local-operator",
+                                  "triggerComment": "/agent fix touch docs/manual-task.md"
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("Unsafe request rejected: repository is not allowed"));
     }
 
     @Test

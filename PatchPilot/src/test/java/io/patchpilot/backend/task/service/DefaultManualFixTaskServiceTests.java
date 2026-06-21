@@ -1,5 +1,7 @@
 package io.patchpilot.backend.task.service;
 
+import io.patchpilot.backend.safety.CommandSafetyGate;
+import io.patchpilot.backend.safety.config.SafetyProperties;
 import io.patchpilot.backend.task.domain.bo.CreateFixTaskCommand;
 import io.patchpilot.backend.task.domain.bo.CreateManualFixTaskCommand;
 import io.patchpilot.backend.task.domain.enums.FixTaskTimelineEventType;
@@ -89,6 +91,61 @@ class DefaultManualFixTaskServiceTests {
         assertThat(fixTaskService.listTasks()).isEmpty();
         assertThat(fixTaskTimelineService.eventTypes()).isEmpty();
         assertThat(fixTaskDispatcher.taskIds()).isEmpty();
+    }
+
+    @Test
+    void should_reject_manual_task_when_trigger_user_is_not_allowed() {
+        ManualFixTaskService restrictedManualFixTaskService = new DefaultManualFixTaskService(
+                fixTaskService,
+                fixTaskTimelineService,
+                fixTaskDispatcher,
+                new CommandSafetyGate(safetyProperties(List.of("maintainer"), List.of("bingqin2/PatchPilot")))
+        );
+
+        assertThatThrownBy(() -> restrictedManualFixTaskService.createManualTask(new CreateManualFixTaskCommand(
+                "bingqin2",
+                "PatchPilot",
+                7,
+                "local-operator",
+                "/agent fix touch docs/manual-task.md"
+        )))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Unsafe request rejected: trigger user is not allowed");
+
+        assertThat(fixTaskService.listTasks()).isEmpty();
+        assertThat(fixTaskTimelineService.eventTypes()).isEmpty();
+        assertThat(fixTaskDispatcher.taskIds()).isEmpty();
+    }
+
+    @Test
+    void should_reject_manual_task_when_repository_is_not_allowed() {
+        ManualFixTaskService restrictedManualFixTaskService = new DefaultManualFixTaskService(
+                fixTaskService,
+                fixTaskTimelineService,
+                fixTaskDispatcher,
+                new CommandSafetyGate(safetyProperties(List.of("local-operator"), List.of("bingqin2/AllowedRepo")))
+        );
+
+        assertThatThrownBy(() -> restrictedManualFixTaskService.createManualTask(new CreateManualFixTaskCommand(
+                "bingqin2",
+                "PatchPilot",
+                7,
+                "local-operator",
+                "/agent fix touch docs/manual-task.md"
+        )))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Unsafe request rejected: repository is not allowed");
+
+        assertThat(fixTaskService.listTasks()).isEmpty();
+        assertThat(fixTaskTimelineService.eventTypes()).isEmpty();
+        assertThat(fixTaskDispatcher.taskIds()).isEmpty();
+    }
+
+    private static SafetyProperties safetyProperties(List<String> allowedTriggerUsers, List<String> allowedRepositories) {
+        SafetyProperties properties = new SafetyProperties();
+        properties.setAllowedTriggerUsers(allowedTriggerUsers);
+        properties.setAllowedRepositories(allowedRepositories);
+        return properties;
     }
 
     private static final class RecordingTimelineService implements FixTaskTimelineService {

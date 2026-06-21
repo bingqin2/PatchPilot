@@ -9,6 +9,7 @@ PatchPilot is not a chatbot and does not auto-merge code. The current target is 
 - GitHub webhook endpoint for `issue_comment.created`.
 - `/agent fix` trigger detection.
 - Safety gate rejection for unsafe `/agent fix` instructions before task creation.
+- Optional trigger-user and repository allowlists for webhook and manual task creation.
 - Webhook signature verification.
 - MySQL-backed task, queue, timeline, test-run, tool-call, and model-call records.
 - Local workspace clone, branch, diff, commit, push, and Pull Request creation.
@@ -62,6 +63,15 @@ PATCHPILOT_AGENT_API_KEY=your_model_provider_api_key
 ```
 
 The webhook secret must match the GitHub webhook configuration. The GitHub token is used for clone, push, issue comments, and Pull Request creation. Do not commit `.env`.
+
+Optional safety allowlists can restrict who and what repository may create tasks:
+
+```bash
+PATCHPILOT_ALLOWED_TRIGGER_USERS=bingqin2,local-operator
+PATCHPILOT_ALLOWED_REPOSITORIES=bingqin2/PatchPilot
+```
+
+Leave either value empty to keep that dimension unrestricted for local development. When configured, both GitHub webhooks and manual dashboard tasks are checked before task creation.
 
 For a fine-grained GitHub token, grant these repository permissions:
 
@@ -168,6 +178,7 @@ curl -X POST http://127.0.0.1:8080/api/tasks \
 
 Manual task creation still records a normal task, writes a timeline event, and dispatches work through the queue. It rejects duplicate active work for the same issue.
 The manual API uses the same command safety gate as GitHub webhooks. Unsafe requests such as secret exfiltration, destructive repository changes, or arbitrary shell execution are rejected before task creation.
+If safety allowlists are configured, the manual task `triggerUser` and `repositoryOwner/repositoryName` must also match those allowlists.
 
 Runtime configuration summary:
 
@@ -255,6 +266,7 @@ PatchPilot must not:
 - Push directly to the default branch.
 - Auto-merge Pull Requests.
 - Execute arbitrary model-generated shell commands.
+- Accept task triggers from users or repositories outside configured allowlists.
 - Read or write outside the task workspace.
 - Log secrets.
 - Report success without verification.

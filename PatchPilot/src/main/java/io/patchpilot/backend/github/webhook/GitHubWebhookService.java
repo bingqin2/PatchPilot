@@ -6,6 +6,7 @@ import io.patchpilot.backend.agent.tool.IssueCommentTool;
 import io.patchpilot.backend.github.client.domain.IssueCommentResult;
 import io.patchpilot.backend.safety.CommandSafetyGate;
 import io.patchpilot.backend.safety.domain.SafetyGateDecision;
+import io.patchpilot.backend.safety.domain.SafetyGateRequest;
 import io.patchpilot.backend.task.domain.bo.CreateFixTaskCommand;
 import io.patchpilot.backend.task.domain.bo.FixTaskCreationResult;
 import io.patchpilot.backend.task.domain.enums.FixTaskTimelineEventType;
@@ -88,7 +89,15 @@ public class GitHubWebhookService {
         if (!commandSafetyGate.isAgentFixCommand(commentBody)) {
             return WebhookHandleResult.ignored();
         }
-        SafetyGateDecision safetyDecision = commandSafetyGate.evaluate(commentBody);
+        String repositoryOwner = requiredText(root, "repository", "owner", "login");
+        String repositoryName = requiredText(root, "repository", "name");
+        String triggerUser = requiredText(root, "comment", "user", "login");
+        SafetyGateDecision safetyDecision = commandSafetyGate.evaluate(new SafetyGateRequest(
+                repositoryOwner,
+                repositoryName,
+                triggerUser,
+                commentBody
+        ));
         if (!safetyDecision.allowed()) {
             return WebhookHandleResult.rejected();
         }
@@ -98,8 +107,6 @@ public class GitHubWebhookService {
         if (duplicateDeliveryResult != null) {
             return duplicateDeliveryResult;
         }
-        String repositoryOwner = requiredText(root, "repository", "owner", "login");
-        String repositoryName = requiredText(root, "repository", "name");
         long issueNumber = requiredLong(root, "issue", "number");
         WebhookHandleResult activeTaskResult = fixTaskService.findActiveTaskForIssue(
                         repositoryOwner,
@@ -116,7 +123,7 @@ public class GitHubWebhookService {
                 repositoryName,
                 issueNumber,
                 optionalLong(root, 0, "installation", "id"),
-                requiredText(root, "comment", "user", "login"),
+                triggerUser,
                 commentBody,
                 deliveryId,
                 requiredLong(root, "comment", "id")

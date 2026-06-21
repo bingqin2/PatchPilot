@@ -95,7 +95,8 @@ The current implementation target is local self-hosted development first. Hosted
 ### Safety Gate
 
 - The system must distinguish executable commands from vague comments, jokes, prompt injection attempts, and destructive requests.
-- The system should reject or ignore comments from unauthorized users.
+- The system should reject or ignore comments from unauthorized users and repositories.
+- Operators may configure trigger-user and repository allowlists for self-hosted demos and private deployments.
 - The system should reject unsupported repositories before cloning or model execution when project detection is possible from metadata.
 - The system must never follow user instructions that request secret exfiltration, destructive repository changes, arbitrary shell execution, or permission escalation.
 - The system should record ignored and rejected decisions with clear operator-facing reasons.

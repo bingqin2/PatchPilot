@@ -44,7 +44,7 @@ The frontend should stay work-focused and dense enough for repeated debugging. I
 GitHub issue comment created
   -> WebhookController verifies signature
   -> WebhookEventRouter detects /agent fix
-  -> CommandSafetyGate rejects unsafe or unsupported commands
+  -> CommandSafetyGate rejects unsafe, unsupported, or unauthorized commands
   -> FixTaskService creates a task
   -> TaskWorker runs asynchronously
   -> WorkspaceService clones the repository
@@ -116,7 +116,7 @@ Responsibilities:
 - Verify `X-Hub-Signature-256`.
 - Route supported events.
 - Detect `/agent fix`.
-- Reject unsafe `/agent fix` commands before task creation.
+- Reject unsafe or unauthorized `/agent fix` commands before task creation.
 - Deduplicate delivery ids.
 - Submit work to task services.
 
