@@ -21,8 +21,10 @@ interface TaskListPanelProps {
   totalCount: number;
   canLoadMore: boolean;
   loadingMore: boolean;
+  canClearFilters: boolean;
   onStatusFilterChange: (status: TaskStatusFilter) => void;
   onSearchQueryChange: (query: string) => void;
+  onClearFilters: () => void;
   onSelectTask: (taskId: string) => void;
   onLoadMoreTasks: () => void;
 }
@@ -36,8 +38,10 @@ export function TaskListPanel({
   totalCount,
   canLoadMore,
   loadingMore,
+  canClearFilters,
   onStatusFilterChange,
   onSearchQueryChange,
+  onClearFilters,
   onSelectTask,
   onLoadMoreTasks
 }: TaskListPanelProps) {
@@ -71,6 +75,11 @@ export function TaskListPanel({
           onChange={(event) => onSearchQueryChange(event.target.value)}
           placeholder="Task, repository, issue, status, comment, failure"
         />
+        {canClearFilters ? (
+          <button className="secondary-button task-clear-filters-button" type="button" onClick={onClearFilters}>
+            Clear filters
+          </button>
+        ) : null}
       </div>
       <div className="task-list">
         {tasks.map((task) => (

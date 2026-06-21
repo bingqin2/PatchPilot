@@ -1736,3 +1736,19 @@ Validation:
 - `npm test -- src/App.test.tsx -t "filter URL state|task detail route with filters|syncs status filter|syncs search query|removes cleared search"`: first failed because the dashboard ignored URL filter state and did not write filter changes back to the URL, then passed after adding filter parsing and URL sync helpers, 4 tests run, 0 failures.
 - `cd frontend && npm test`: passed, 53 tests run, 0 failures.
 - `cd frontend && npm run build`: passed, production bundle generated successfully.
+
+Implemented dashboard filter reset action from `docs/plans/083-dashboard-filter-reset-action.md`.
+
+Changes:
+
+- Added a `Clear filters` action to the dashboard task list that appears only when status or search filters are active.
+- Reset status to `ALL`, cleared the search input, removed `status` and `query` from the URL, and preserved the selected `/tasks/{taskId}` route, unrelated query parameters, and hash fragments.
+- Let the existing dashboard refresh effect reload the default `GET /api/tasks?limit=50` task page after clearing filters.
+- Added responsive task-search layout styling so the reset action stays aligned on desktop and wraps cleanly on narrow screens.
+- Documented the reset behavior in README and frontend design notes.
+
+Validation:
+
+- `npm test -- src/App.test.tsx -t "clear filters"`: first failed because the dashboard did not expose a `Clear filters` button, then passed after adding the reset action and URL cleanup behavior, 2 tests run, 0 failures.
+- `cd frontend && npm test`: passed, 55 tests run, 0 failures.
+- `cd frontend && npm run build`: passed, production bundle generated successfully.
