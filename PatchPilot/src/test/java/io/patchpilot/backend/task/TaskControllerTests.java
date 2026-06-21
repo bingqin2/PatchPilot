@@ -1,12 +1,15 @@
 package io.patchpilot.backend.task;
 
 import io.patchpilot.backend.task.domain.bo.CreateFixTaskCommand;
+import io.patchpilot.backend.task.domain.enums.FixTaskQueueItemStatus;
 import io.patchpilot.backend.task.domain.enums.FixTaskTimelineEventType;
+import io.patchpilot.backend.task.domain.vo.FixTaskQueueItemVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskModelCallVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskTestRunVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskToolCallVo;
 import io.patchpilot.backend.task.service.FixTaskModelCallService;
+import io.patchpilot.backend.task.service.FixTaskQueueQueryService;
 import io.patchpilot.backend.task.service.FixTaskTestRunService;
 import io.patchpilot.backend.task.service.FixTaskTimelineService;
 import io.patchpilot.backend.task.service.FixTaskService;
@@ -19,6 +22,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
+import java.util.Optional;
 
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.not;
@@ -50,6 +54,9 @@ class TaskControllerTests {
 
     @Autowired
     private FixTaskModelCallService fixTaskModelCallService;
+
+    @Autowired
+    private FixTaskQueueQueryService fixTaskQueueQueryService;
 
     @Test
     void should_list_tasks() throws Exception {
@@ -427,6 +434,17 @@ class TaskControllerTests {
                 Instant.parse("2026-06-20T04:00:09Z"),
                 Instant.parse("2026-06-20T04:00:13Z")
         );
+        ((RecordingFixTaskQueueQueryService) fixTaskQueueQueryService).setQueueItem(new FixTaskQueueItemVo(
+                "queue-detail",
+                task.id(),
+                FixTaskQueueItemStatus.FAILED,
+                3,
+                "maven tests failed",
+                Instant.parse("2026-06-20T04:02:00Z"),
+                Instant.parse("2026-06-20T04:01:00Z"),
+                Instant.parse("2026-06-20T04:00:00Z"),
+                Instant.parse("2026-06-20T04:03:00Z")
+        ));
 
         mockMvc.perform(get("/api/tasks/{id}/detail", task.id()))
                 .andExpect(status().isOk())
@@ -442,7 +460,12 @@ class TaskControllerTests {
                 .andExpect(jsonPath("$.data.timeline[1].message").value("Task completed"))
                 .andExpect(jsonPath("$.data.testRuns[0].id").value(testRun.id()))
                 .andExpect(jsonPath("$.data.toolCalls[0].id").value(toolCall.id()))
-                .andExpect(jsonPath("$.data.modelCalls[0].id").value(modelCall.id()));
+                .andExpect(jsonPath("$.data.modelCalls[0].id").value(modelCall.id()))
+                .andExpect(jsonPath("$.data.queueItem.id").value("queue-detail"))
+                .andExpect(jsonPath("$.data.queueItem.taskId").value(task.id()))
+                .andExpect(jsonPath("$.data.queueItem.status").value("FAILED"))
+                .andExpect(jsonPath("$.data.queueItem.attemptCount").value(3))
+                .andExpect(jsonPath("$.data.queueItem.lastError").value("maven tests failed"));
     }
 
     @Test
@@ -743,5 +766,42 @@ class TaskControllerTests {
                 deliveryId,
                 98765
         );
+    }
+
+    @org.springframework.boot.test.context.TestConfiguration
+    static class QueueQueryTestConfiguration {
+
+        @org.springframework.context.annotation.Bean
+        @org.springframework.context.annotation.Primary
+        FixTaskQueueQueryService recordingFixTaskQueueQueryService() {
+            return new RecordingFixTaskQueueQueryService();
+        }
+    }
+
+    private static final class RecordingFixTaskQueueQueryService implements FixTaskQueueQueryService {
+
+        private FixTaskQueueItemVo queueItem;
+
+        @Override
+        public java.util.List<FixTaskQueueItemVo> listItems(FixTaskQueueItemStatus status) {
+            return queueItem == null ? java.util.List.of() : java.util.List.of(queueItem);
+        }
+
+        @Override
+        public io.patchpilot.backend.task.domain.vo.FixTaskQueueSummaryVo summary() {
+            return io.patchpilot.backend.task.domain.vo.FixTaskQueueSummaryVo.empty();
+        }
+
+        @Override
+        public Optional<FixTaskQueueItemVo> findByTaskId(String taskId) {
+            if (queueItem == null || !queueItem.taskId().equals(taskId)) {
+                return Optional.empty();
+            }
+            return Optional.of(queueItem);
+        }
+
+        private void setQueueItem(FixTaskQueueItemVo queueItem) {
+            this.queueItem = queueItem;
+        }
     }
 }

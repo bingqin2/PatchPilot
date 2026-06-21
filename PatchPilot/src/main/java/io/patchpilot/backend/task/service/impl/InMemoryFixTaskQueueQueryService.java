@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @Profile("default")
@@ -16,6 +17,11 @@ public class InMemoryFixTaskQueueQueryService implements FixTaskQueueQueryServic
     @Override
     public List<FixTaskQueueItemVo> listItems(FixTaskQueueItemStatus status) {
         return List.of();
+    }
+
+    @Override
+    public Optional<FixTaskQueueItemVo> findByTaskId(String taskId) {
+        return Optional.empty();
     }
 
     @Override

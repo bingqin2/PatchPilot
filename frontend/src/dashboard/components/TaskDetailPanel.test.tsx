@@ -44,6 +44,17 @@ const baseSummary: FixTaskAuditSummary = {
 
 const baseDetail: TaskDetailState = {
   summary: baseSummary,
+  queueItem: {
+    id: 'queue-1',
+    taskId: 'task-1',
+    status: 'FAILED',
+    attemptCount: 3,
+    lastError: 'maven tests failed',
+    availableAt: '2026-06-20T01:02:00Z',
+    lockedAt: '2026-06-20T01:01:00Z',
+    createdAt: '2026-06-20T01:00:00Z',
+    updatedAt: '2026-06-20T01:03:00Z'
+  },
   timeline: [],
   testRuns: [],
   toolCalls: [],
@@ -68,6 +79,25 @@ test('shows execution evidence summary for selected task', () => {
   expect(screen.getByText('Tools 3')).toBeInTheDocument();
   expect(screen.getByText('Model calls 2')).toBeInTheDocument();
   expect(screen.getByText('Latest test PASS')).toBeInTheDocument();
+});
+
+test('shows selected task queue state in task detail', () => {
+  render(
+    <TaskDetailPanel
+      task={task}
+      detail={baseDetail}
+      loading={false}
+      actionInFlight={false}
+      onCancelTask={vi.fn()}
+      onRetryTask={vi.fn()}
+    />
+  );
+
+  expect(screen.getByText('Queue FAILED')).toBeInTheDocument();
+  expect(screen.getByText('attempt 3')).toBeInTheDocument();
+  expect(screen.getByText('maven tests failed')).toBeInTheDocument();
+  expect(screen.getByText(/Available /)).toBeInTheDocument();
+  expect(screen.getByText(/Locked /)).toBeInTheDocument();
 });
 
 test('shows missing latest test evidence when no test result is recorded', () => {

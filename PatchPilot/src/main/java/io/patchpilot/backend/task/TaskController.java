@@ -19,6 +19,7 @@ import io.patchpilot.backend.task.service.FixTaskAuditSummaryService;
 import io.patchpilot.backend.task.service.FixTaskControlService;
 import io.patchpilot.backend.task.service.FixTaskMetricsService;
 import io.patchpilot.backend.task.service.FixTaskModelCallService;
+import io.patchpilot.backend.task.service.FixTaskQueueQueryService;
 import io.patchpilot.backend.task.service.FixTaskTestRunService;
 import io.patchpilot.backend.task.service.FixTaskTimelineService;
 import io.patchpilot.backend.task.service.FixTaskService;
@@ -47,6 +48,7 @@ public class TaskController {
     private final FixTaskControlService fixTaskControlService;
     private final FixTaskMetricsService fixTaskMetricsService;
     private final FixTaskAuditSummaryService fixTaskAuditSummaryService;
+    private final FixTaskQueueQueryService fixTaskQueueQueryService;
 
     @GetMapping
     public ResponseEntity<ApiResponse<FixTaskPageVo>> listTasks(
@@ -106,7 +108,8 @@ public class TaskController {
                         fixTaskTimelineService.listEvents(id),
                         fixTaskTestRunService.listTestRuns(id),
                         fixTaskToolCallService.listToolCalls(id),
-                        fixTaskModelCallService.listModelCalls(id)
+                        fixTaskModelCallService.listModelCalls(id),
+                        fixTaskQueueQueryService.findByTaskId(id).orElse(null)
                 ))))
                 .orElseGet(() -> ResponseEntity.status(404).body(ApiResponse.fail("Task not found")));
     }

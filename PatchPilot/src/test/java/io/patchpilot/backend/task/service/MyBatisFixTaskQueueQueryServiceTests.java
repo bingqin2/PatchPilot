@@ -50,6 +50,20 @@ class MyBatisFixTaskQueueQueryServiceTests {
     }
 
     @Test
+    void should_find_latest_queue_item_by_task_id() {
+        when(queueItemMapper.selectList(any())).thenReturn(List.of(
+                entity("queue-latest", "task-123", FixTaskQueueItemStatus.FAILED, 3, Instant.parse("2026-06-19T10:05:00Z")),
+                entity("queue-older", "task-123", FixTaskQueueItemStatus.PENDING, 1, Instant.parse("2026-06-19T10:00:00Z"))
+        ));
+
+        assertThat(queryService.findByTaskId("task-123"))
+                .isPresent()
+                .get()
+                .extracting(FixTaskQueueItemVo::id, FixTaskQueueItemVo::status, FixTaskQueueItemVo::attemptCount)
+                .containsExactly("queue-latest", FixTaskQueueItemStatus.FAILED, 3);
+    }
+
+    @Test
     void should_summarize_queue_status_counts_and_pending_availability() {
         when(queueItemMapper.selectList(any())).thenReturn(List.of(
                 entity("queue-available", "task-available", FixTaskQueueItemStatus.PENDING, 0, Instant.now().minusSeconds(5)),

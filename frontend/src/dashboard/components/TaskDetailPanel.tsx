@@ -124,6 +124,22 @@ export function TaskDetailPanel({
         </strong>
       </div>
 
+      {detail.queueItem ? (
+        <div className="queue-detail">
+          <div>
+            <span>Queue {detail.queueItem.status}</span>
+            <strong>attempt {detail.queueItem.attemptCount}</strong>
+          </div>
+          <div>
+            <time dateTime={detail.queueItem.availableAt}>Available {compactTime(detail.queueItem.availableAt)}</time>
+            {detail.queueItem.lockedAt ? (
+              <time dateTime={detail.queueItem.lockedAt}>Locked {compactTime(detail.queueItem.lockedAt)}</time>
+            ) : null}
+          </div>
+          {detail.queueItem.lastError ? <p>{detail.queueItem.lastError}</p> : null}
+        </div>
+      ) : null}
+
       {detail.summary?.latestTimelineEvent ? (
         <div className="latest-event">
           <span>Latest event</span>

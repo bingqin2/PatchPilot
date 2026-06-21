@@ -143,6 +143,7 @@ export interface FixTaskAuditSummary {
 
 export interface FixTaskDetail {
   summary: FixTaskAuditSummary;
+  queueItem: FixTaskQueueItem | null;
   timeline: FixTaskTimelineEvent[];
   testRuns: FixTaskTestRun[];
   toolCalls: FixTaskToolCall[];

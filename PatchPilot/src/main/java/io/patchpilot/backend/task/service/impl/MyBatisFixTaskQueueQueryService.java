@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @Profile({"local", "docker", "idea"})
@@ -32,6 +33,16 @@ public class MyBatisFixTaskQueueQueryService implements FixTaskQueueQueryService
         return queueItemMapper.selectList(queryWrapper).stream()
                 .map(FixTaskQueueItemConvert::toVo)
                 .toList();
+    }
+
+    @Override
+    public Optional<FixTaskQueueItemVo> findByTaskId(String taskId) {
+        LambdaQueryWrapper<FixTaskQueueItemEntity> queryWrapper = new LambdaQueryWrapper<FixTaskQueueItemEntity>()
+                .eq(FixTaskQueueItemEntity::getTaskId, taskId)
+                .orderByDesc(FixTaskQueueItemEntity::getUpdatedAt);
+        return queueItemMapper.selectList(queryWrapper).stream()
+                .findFirst()
+                .map(FixTaskQueueItemConvert::toVo);
     }
 
     @Override

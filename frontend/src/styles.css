@@ -626,6 +626,45 @@ h3 {
   color: #52606e;
 }
 
+.queue-detail {
+  background: #f8fafb;
+  border-top: 1px solid #e6ebef;
+  display: grid;
+  gap: 8px;
+  padding: 12px 16px;
+}
+
+.queue-detail div {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.queue-detail span,
+.queue-detail strong {
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 5px 9px;
+}
+
+.queue-detail span {
+  background: #e5f2f1;
+  color: #146c69;
+}
+
+.queue-detail strong {
+  background: #f1f4f6;
+  color: #202b36;
+}
+
+.queue-detail time,
+.queue-detail p {
+  color: #52606e;
+  font-size: 13px;
+}
+
 .latest-event {
   background: #f8fafb;
   border-top: 1px solid #e6ebef;
