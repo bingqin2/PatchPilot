@@ -17,6 +17,8 @@ interface TaskListPanelProps {
   selectedTask: FixTask | null;
   statusFilter: TaskStatusFilter;
   searchQuery: string;
+  repositoryOwnerFilter: string;
+  repositoryNameFilter: string;
   taskSort: TaskSort;
   loading: boolean;
   totalCount: number;
@@ -25,6 +27,8 @@ interface TaskListPanelProps {
   canClearFilters: boolean;
   onStatusFilterChange: (status: TaskStatusFilter) => void;
   onSearchQueryChange: (query: string) => void;
+  onRepositoryOwnerFilterChange: (repositoryOwner: string) => void;
+  onRepositoryNameFilterChange: (repositoryName: string) => void;
   onTaskSortChange: (sort: TaskSort) => void;
   onClearFilters: () => void;
   onSelectTask: (taskId: string) => void;
@@ -36,6 +40,8 @@ export function TaskListPanel({
   selectedTask,
   statusFilter,
   searchQuery,
+  repositoryOwnerFilter,
+  repositoryNameFilter,
   taskSort,
   loading,
   totalCount,
@@ -44,6 +50,8 @@ export function TaskListPanel({
   canClearFilters,
   onStatusFilterChange,
   onSearchQueryChange,
+  onRepositoryOwnerFilterChange,
+  onRepositoryNameFilterChange,
   onTaskSortChange,
   onClearFilters,
   onSelectTask,
@@ -79,6 +87,22 @@ export function TaskListPanel({
           value={searchQuery}
           onChange={(event) => onSearchQueryChange(event.target.value)}
           placeholder="Task, repository, issue, status, comment, failure"
+        />
+        <label className="task-repository-owner-label" htmlFor="task-repository-owner-input">Filter repository owner</label>
+        <input
+          className="task-repository-owner-input"
+          id="task-repository-owner-input"
+          value={repositoryOwnerFilter}
+          onChange={(event) => onRepositoryOwnerFilterChange(event.target.value)}
+          placeholder="bingqin2"
+        />
+        <label className="task-repository-name-label" htmlFor="task-repository-name-input">Filter repository name</label>
+        <input
+          className="task-repository-name-input"
+          id="task-repository-name-input"
+          value={repositoryNameFilter}
+          onChange={(event) => onRepositoryNameFilterChange(event.target.value)}
+          placeholder="PatchPilot"
         />
         <label className="task-sort-label" htmlFor="task-sort-select">Sort tasks</label>
         <select
@@ -136,7 +160,7 @@ export function TaskListPanel({
         ))}
         {!loading && tasks.length === 0 ? (
           <p className="empty-state">
-            {searchQuery.trim() ? `No tasks match "${searchQuery.trim()}".` : `No ${statusFilter} tasks found.`}
+            {emptyTaskListMessage(statusFilter, searchQuery, repositoryOwnerFilter, repositoryNameFilter)}
           </p>
         ) : null}
         {!loading && canLoadMore ? (
@@ -147,6 +171,21 @@ export function TaskListPanel({
       </div>
     </section>
   );
+}
+
+function emptyTaskListMessage(
+  statusFilter: TaskStatusFilter,
+  searchQuery: string,
+  repositoryOwnerFilter: string,
+  repositoryNameFilter: string
+) {
+  if (searchQuery.trim()) {
+    return `No tasks match "${searchQuery.trim()}".`;
+  }
+  if (repositoryOwnerFilter.trim() || repositoryNameFilter.trim()) {
+    return 'No tasks match selected repository filters.';
+  }
+  return `No ${statusFilter} tasks found.`;
 }
 
 function statusIcon(status: TaskStatus) {
