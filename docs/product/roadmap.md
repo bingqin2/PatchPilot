@@ -214,6 +214,34 @@ Suggested ExecPlan:
 
 - `docs/plans/006-sandbox-persistence-observability.md`
 
+## Phase 6.5: Safety Gate And Language Adapter Foundation
+
+Goal: prevent unsafe or unsupported work before expensive execution, and prepare PatchPilot to grow beyond one Java/Maven path.
+
+Build:
+
+- Command parser for supported `/agent` actions.
+- Authorization checks for triggering users and repositories.
+- Actionability classifier for vague, abusive, malicious, or non-code comments.
+- Rate-limit and active-task checks before model or workspace execution.
+- `LanguageAdapter` interface for repository detection, allowed test commands, and test result summaries.
+- Java/Maven adapter as the first concrete implementation.
+- Clear ignored or rejected outcomes for unsupported languages and unsafe requests.
+
+Do not build yet:
+
+- Broad multi-language support in one step.
+- Hosted multi-tenant billing.
+- Automatic issue triage without an explicit command.
+
+Exit criteria:
+
+- Vague or malicious `/agent` comments do not create executable work.
+- Unauthorized users cannot trigger repository execution.
+- Supported Java/Maven repositories still run through the existing issue-to-PR path.
+- Unsupported repositories fail safely with an actionable reason.
+- New language support can be added by implementing an adapter instead of rewriting the agent workflow.
+
 
 ## Phase 7: React Operations Dashboard
 
@@ -242,6 +270,30 @@ Exit criteria:
 Suggested ExecPlan:
 
 - `docs/plans/007-react-operations-dashboard.md`
+
+## Phase 7.5: Multi-Language Adapter Expansion
+
+Goal: extend PatchPilot from Java/Maven to a small set of well-supported repository types without weakening safety boundaries.
+
+Build:
+
+- Java/Gradle adapter.
+- Node.js adapter for npm, pnpm, and yarn projects.
+- Python adapter for pytest projects.
+- Adapter-specific documentation and demo repositories.
+- Adapter-aware dashboard and task detail labels.
+
+Do not build yet:
+
+- Every language or build system.
+- Arbitrary user-supplied test commands.
+- Cross-repository or monorepo-wide autonomous refactors.
+
+Exit criteria:
+
+- Each supported adapter can detect a repository, run an allowlisted verification command, record evidence, and create a PR for a simple issue.
+- Unsupported projects are rejected before risky execution.
+- The README clearly lists supported languages and build systems.
 
 ## Phase 8: Product Polish And Demo Readiness
 

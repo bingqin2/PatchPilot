@@ -2,9 +2,11 @@
 
 ## Overview
 
-PatchPilot is an AI software maintenance backend for GitHub repositories. It turns a GitHub Issue into a controlled code-fix workflow: analyze the issue, inspect the repository, generate a patch, run tests, and open a Pull Request for human review.
+PatchPilot is an AI software maintenance backend for GitHub repositories. It turns a GitHub Issue into a controlled code-fix workflow: analyze the issue, inspect the repository, generate a patch, run the supported language's verification command, and open a Pull Request for human review.
 
 The product is not a general chatbot. It is a backend system that uses an agent workflow to operate through explicit tools, persistent tasks, and auditable execution records.
+
+The long-term product target is multi-language issue-to-PR automation. Language support should be added through explicit adapters rather than one unrestricted generic runner.
 
 ## Users
 
@@ -88,6 +90,15 @@ The current implementation target is local self-hosted development first. Hosted
 - A task records repository owner, repository name, issue number, installation id, trigger user, trigger comment, status, timestamps, and failure reason.
 - Task creation must return quickly and must not run repository analysis or model calls inline with webhook handling.
 - A task can be queried by id for status and result.
+- Task creation must pass authorization, command parsing, actionability, language support, and rate-limit checks before expensive execution begins.
+
+### Safety Gate
+
+- The system must distinguish executable commands from vague comments, jokes, prompt injection attempts, and destructive requests.
+- The system should reject or ignore comments from unauthorized users.
+- The system should reject unsupported repositories before cloning or model execution when project detection is possible from metadata.
+- The system must never follow user instructions that request secret exfiltration, destructive repository changes, arbitrary shell execution, or permission escalation.
+- The system should record ignored and rejected decisions with clear operator-facing reasons.
 
 ### Agent Workflow
 
@@ -113,10 +124,12 @@ The current implementation target is local self-hosted development first. Hosted
 
 ### Test Execution
 
-- The MVP supports Java Maven repositories.
-- The system detects `mvnw` and `pom.xml`.
-- The system runs `./mvnw test` when a Maven wrapper exists.
-- The system runs `mvn test` when no wrapper exists.
+- The MVP supports Java Maven repositories first.
+- The long-term system supports multiple language adapters, starting with Java/Maven, Java/Gradle, Node.js, and Python.
+- Each adapter defines project detection, allowed verification commands, test output capture, timeout policy, and unsupported-repository failure reasons.
+- The Java/Maven adapter detects `mvnw` and `pom.xml`.
+- The Java/Maven adapter runs `./mvnw test` when a Maven wrapper exists.
+- The Java/Maven adapter runs `mvn test` when no wrapper exists.
 - The system captures exit code, stdout, stderr, duration, and a short test summary.
 - Test failure must not be reported as a successful fix.
 
@@ -141,7 +154,7 @@ The MVP does not:
 
 - Automatically merge Pull Requests.
 - Push directly to the default branch.
-- Support every programming language.
+- Support every programming language through the first adapter.
 - Support every build system.
 - Build a full admin dashboard.
 - Require a browser extension.
@@ -181,7 +194,9 @@ Planned follow-up capabilities:
 
 - Label trigger such as `ai-fix`.
 - Chrome extension button on GitHub issue pages.
-- Gradle support.
+- Command safety gate for authorization, actionability, unsupported repositories, and unsafe requests.
+- Language adapter foundation.
+- Gradle, Node.js, and Python support.
 - Docker sandbox execution.
 - MySQL-backed durable task history.
 - Redis or queue-backed async execution.
@@ -202,10 +217,17 @@ PatchPilot MVP is successful when:
 - A successful task creates a Pull Request.
 - A failed task records and reports a clear failure reason.
 
+The broader product is successful when:
+
+- A supported repository can be fixed through the correct language adapter.
+- An unsupported repository fails safely with a clear reason.
+- A vague, malicious, or unauthorized `/agent` comment does not start repository execution.
+- Each successful PR includes evidence from the adapter's verification command.
+
 ## Resume Target
 
 The project should support this resume-level description:
 
 ```text
-Built PatchPilot, a Spring Boot GitHub App that turns issue comments into automated code-fix workflows for Java repositories. The agent clones repositories into isolated workspaces, retrieves relevant code context, generates patches, runs Maven tests, and opens Pull Requests with execution traces and test summaries.
+Built PatchPilot, a Spring Boot GitHub App that turns issue comments into automated code-fix workflows. The agent validates commands through a safety gate, clones repositories into isolated workspaces, detects supported language adapters, retrieves relevant code context, generates patches, runs allowlisted tests, and opens Pull Requests with execution traces and test summaries.
 ```

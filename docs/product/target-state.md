@@ -2,10 +2,29 @@
 
 ## Product Target
 
-PatchPilot should become a production-shaped AI software maintenance backend that can safely assist repository maintainers with well-scoped GitHub issues.
+PatchPilot should become a production-shaped AI software maintenance backend that can safely assist repository maintainers with well-scoped GitHub issues across multiple programming languages.
 
-The target state is not autonomous merging. The target state is reliable issue-to-PR automation with human review.
+The target state is not autonomous merging or unrestricted code execution. The target state is reliable, human-reviewed issue-to-PR automation that can expand language support through explicit, tested adapters.
 
+PatchPilot should only execute when a request is clear, authorized, actionable, and supported. Unclear comments, unsupported repositories, unsafe instructions, and abusive usage should be ignored or rejected before task execution begins.
+
+## Language Support Target
+
+PatchPilot should not pretend to solve every repository through one generic workflow. Each supported language should be integrated through a `LanguageAdapter` boundary that defines:
+
+- How to detect the project type.
+- Which files and dependency manifests are important.
+- Which verification commands are allowed.
+- How test results are summarized.
+- Which failure states mean the repository is unsupported.
+
+The first stable adapter remains Java/Maven. Follow-up adapters should prioritize common interview- and demo-friendly stacks:
+
+- Java/Maven and Java/Gradle.
+- Node.js with npm, pnpm, or yarn.
+- Python with pytest.
+
+Adding a new language is only complete when PatchPilot can detect the repository, generate a focused patch, run the adapter's allowed tests, record the evidence, and create a reviewable Pull Request.
 
 ## Deployment Target
 
@@ -136,6 +155,8 @@ A maintainer should be able to:
    - Test output.
    - Failure notes if verification did not pass.
 
+If a comment is vague, non-actionable, malicious, or outside configured language support, the maintainer should see a clear ignored or rejected result instead of a risky task run.
+
 ## Frontend Target
 
 The frontend target is a React operations dashboard for maintainers and demos. It should make the backend workflow visible instead of hiding the engineering work behind a generic chat screen.
@@ -159,8 +180,10 @@ The backend should provide:
 - Durable task records.
 - Async worker execution.
 - Workspace isolation.
+- Command and safety gating before task execution.
+- Language and build-system detection through explicit adapters.
 - Controlled agent tool calls.
-- Maven and Gradle test execution.
+- Maven, Gradle, Node.js, and Python test execution through allowlisted adapter commands.
 - Pull Request automation.
 - Issue comments for success and failure reporting.
 - Audit logs for model calls and tool calls.
@@ -176,6 +199,10 @@ PatchPilot must:
 - Never read or write outside the task workspace.
 - Never log secrets.
 - Never report success without verification.
+- Never run a task from an unauthorized user or repository.
+- Reject or ignore unclear, unsupported, or unsafe requests before cloning or model execution.
+- Enforce per-user, per-repository, and global rate limits before expensive work starts.
+- Run repository commands with allowlisted command templates, timeouts, resource limits, and no unnecessary secrets.
 
 ## Engineering Target
 
@@ -199,6 +226,7 @@ The final project should demonstrate:
 - Tool calling.
 - Repository automation.
 - Async job execution.
+- Multi-language build/test adapter design.
 - Test execution and result capture.
 - Security boundaries around AI actions.
 - Observability and auditability.
