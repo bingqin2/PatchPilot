@@ -1619,3 +1619,18 @@ Changes:
 Validation:
 
 - `npm test -- --run src/App.test.tsx -t "renders operational task dashboard"`: first failed because no `Last refreshed` timestamp existed, then passed after adding the refresh timestamp state and title rendering, 1 test run, 0 failures.
+
+Implemented task detail aggregate API from `docs/plans/076-task-detail-aggregate-api.md`.
+
+Changes:
+
+- Added `GET /api/tasks/{taskId}/detail` to return the selected task audit summary, timeline events, test runs, tool calls, and model calls in one response.
+- Preserved the existing narrower task detail endpoints for direct debugging.
+- Added frontend `FixTaskDetail` typing and `getTaskDetail()`.
+- Switched the dashboard selected-task loader from five detail requests to the aggregate detail endpoint.
+- Documented the aggregate task detail endpoint in README and the frontend design notes.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=TaskControllerTests#should_get_task_detail_by_task_id,TaskControllerTests#should_return_404_for_missing_task_detail test`: first failed because `/api/tasks/{taskId}/detail` did not exist, then passed after adding the response type and controller endpoint, 2 tests run, 0 failures.
+- `npm test -- src/api.test.ts src/App.test.tsx`: first failed because `getTaskDetail()` did not exist and the dashboard still called five detail endpoints, then passed after adding the helper and switching the selected-task loader, 24 tests run, 0 failures.

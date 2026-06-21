@@ -7,6 +7,7 @@ import io.patchpilot.backend.task.domain.vo.FixTaskFailureCauseSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskAuditSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskLatencySummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskMetricsSummaryVo;
+import io.patchpilot.backend.task.domain.vo.FixTaskDetailVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskModelCallVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskModelUsageSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskPageVo;
@@ -94,6 +95,19 @@ public class TaskController {
     public ResponseEntity<ApiResponse<FixTaskAuditSummaryVo>> getTaskAuditSummary(@PathVariable String id) {
         return fixTaskAuditSummaryService.summary(id)
                 .map(summary -> ResponseEntity.ok(ApiResponse.ok(summary)))
+                .orElseGet(() -> ResponseEntity.status(404).body(ApiResponse.fail("Task not found")));
+    }
+
+    @GetMapping("/{id}/detail")
+    public ResponseEntity<ApiResponse<FixTaskDetailVo>> getTaskDetail(@PathVariable String id) {
+        return fixTaskAuditSummaryService.summary(id)
+                .map(summary -> ResponseEntity.ok(ApiResponse.ok(new FixTaskDetailVo(
+                        summary,
+                        fixTaskTimelineService.listEvents(id),
+                        fixTaskTestRunService.listTestRuns(id),
+                        fixTaskToolCallService.listToolCalls(id),
+                        fixTaskModelCallService.listModelCalls(id)
+                ))))
                 .orElseGet(() -> ResponseEntity.status(404).body(ApiResponse.fail("Task not found")));
     }
 

@@ -4,6 +4,7 @@ import {
   getFailureCauseSummary,
   getLatencySummary,
   getModelUsageSummary,
+  getTaskDetail,
   listTasks
 } from './api';
 
@@ -212,6 +213,62 @@ test('loads backend health status from health endpoint', async () => {
     service: 'patchpilot-backend',
     timestamp: '2026-06-21T01:00:00Z'
   });
+});
+
+test('loads aggregate task detail from backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        summary: {
+          task: {
+            id: 'task-1',
+            repositoryOwner: 'bingqin2',
+            repositoryName: 'PatchPilot',
+            issueNumber: 1,
+            installationId: 0,
+            triggerUser: 'bingqin2',
+            triggerComment: '/agent fix',
+            deliveryId: 'delivery-1',
+            commentId: 101,
+            status: 'COMPLETED',
+            failureReason: null,
+            createdAt: '2026-06-20T01:00:00Z',
+            pullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+            completedAt: '2026-06-20T01:01:00Z',
+            updatedAt: '2026-06-20T01:01:00Z',
+            statusCommentId: null,
+            statusCommentUrl: null
+          },
+          timelineEventCount: 1,
+          testRunCount: 0,
+          toolCallCount: 0,
+          modelCallCount: 0,
+          totalModelTokens: 0,
+          latestTimelineEvent: null,
+          latestTestRunExitCode: null,
+          latestTestRunDurationMs: null
+        },
+        timeline: [],
+        testRuns: [],
+        toolCalls: [],
+        modelCalls: []
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const detail = await getTaskDetail('task-1');
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/tasks/task-1/detail');
+  expect(detail.summary.task.id).toBe('task-1');
+  expect(detail.timeline).toEqual([]);
+  expect(detail.testRuns).toEqual([]);
+  expect(detail.toolCalls).toEqual([]);
+  expect(detail.modelCalls).toEqual([]);
 });
 
 test('shows actionable backend guidance when API response is empty', async () => {

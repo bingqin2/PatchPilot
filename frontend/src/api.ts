@@ -6,6 +6,7 @@ import type {
   FixTaskFailureCauseSummary,
   FixTaskLatencySummary,
   FixTaskPage,
+  FixTaskDetail,
   FixTaskAuditSummary,
   FixTaskMetricsSummary,
   FixTaskModelUsageSummary,
@@ -78,6 +79,10 @@ export async function listQueueItems(): Promise<FixTaskQueueItem[]> {
 
 export async function getTaskSummary(taskId: string): Promise<FixTaskAuditSummary> {
   return getApi<FixTaskAuditSummary>(`/api/tasks/${taskId}/summary`);
+}
+
+export async function getTaskDetail(taskId: string): Promise<FixTaskDetail> {
+  return getApi<FixTaskDetail>(`/api/tasks/${taskId}/detail`);
 }
 
 export async function getTimeline(taskId: string): Promise<FixTaskTimelineEvent[]> {

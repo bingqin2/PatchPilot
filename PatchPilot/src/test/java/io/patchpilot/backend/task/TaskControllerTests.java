@@ -393,6 +393,67 @@ class TaskControllerTests {
     }
 
     @Test
+    void should_get_task_detail_by_task_id() throws Exception {
+        FixTaskVo task = createTask("delivery-detail");
+        fixTaskTimelineService.recordEvent(task.id(), FixTaskTimelineEventType.TASK_CREATED, "Task accepted");
+        fixTaskTimelineService.recordEvent(task.id(), FixTaskTimelineEventType.COMPLETED, "Task completed");
+        FixTaskTestRunVo testRun = fixTaskTestRunService.recordTestRun(
+                task.id(),
+                "./mvnw test",
+                0,
+                "tests passed",
+                Instant.parse("2026-06-20T04:00:00Z"),
+                Instant.parse("2026-06-20T04:00:06Z")
+        );
+        FixTaskToolCallVo toolCall = fixTaskToolCallService.recordToolCall(
+                task.id(),
+                "CommitTool",
+                "repositoryDir=/tmp/workspace/repo",
+                "committed",
+                true,
+                Instant.parse("2026-06-20T04:00:07Z"),
+                Instant.parse("2026-06-20T04:00:08Z")
+        );
+        FixTaskModelCallVo modelCall = fixTaskModelCallService.recordModelCall(
+                task.id(),
+                "openai",
+                "gpt-5.5",
+                "Fix issue",
+                "Changed demo file",
+                120,
+                80,
+                true,
+                null,
+                Instant.parse("2026-06-20T04:00:09Z"),
+                Instant.parse("2026-06-20T04:00:13Z")
+        );
+
+        mockMvc.perform(get("/api/tasks/{id}/detail", task.id()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.summary.task.id").value(task.id()))
+                .andExpect(jsonPath("$.data.summary.timelineEventCount").value(2))
+                .andExpect(jsonPath("$.data.summary.testRunCount").value(1))
+                .andExpect(jsonPath("$.data.summary.toolCallCount").value(1))
+                .andExpect(jsonPath("$.data.summary.modelCallCount").value(1))
+                .andExpect(jsonPath("$.data.summary.totalModelTokens").value(200))
+                .andExpect(jsonPath("$.data.timeline.length()").value(2))
+                .andExpect(jsonPath("$.data.timeline[0].message").value("Task accepted"))
+                .andExpect(jsonPath("$.data.timeline[1].message").value("Task completed"))
+                .andExpect(jsonPath("$.data.testRuns[0].id").value(testRun.id()))
+                .andExpect(jsonPath("$.data.toolCalls[0].id").value(toolCall.id()))
+                .andExpect(jsonPath("$.data.modelCalls[0].id").value(modelCall.id()));
+    }
+
+    @Test
+    void should_return_404_for_missing_task_detail() throws Exception {
+        mockMvc.perform(get("/api/tasks/{id}/detail", "missing-task"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("Task not found"));
+    }
+
+    @Test
     void should_return_404_for_missing_task_audit_summary() throws Exception {
         mockMvc.perform(get("/api/tasks/{id}/summary", "missing-task"))
                 .andExpect(status().isNotFound())
