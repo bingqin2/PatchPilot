@@ -4,6 +4,7 @@ import {
   getFailureCauseSummary,
   getLatencySummary,
   getModelUsageSummary,
+  getTaskReport,
   getTaskDetail,
   listTasks
 } from './api';
@@ -307,6 +308,25 @@ test('loads aggregate task detail from backend API', async () => {
   expect(detail.testRuns).toEqual([]);
   expect(detail.toolCalls).toEqual([]);
   expect(detail.modelCalls).toEqual([]);
+});
+
+test('loads markdown task report from backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: '# PatchPilot Task Report\n\n- Task: `task-1`',
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const report = await getTaskReport('task-1');
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/tasks/task-1/report');
+  expect(report).toContain('# PatchPilot Task Report');
+  expect(report).toContain('`task-1`');
 });
 
 test('shows actionable backend guidance when API response is empty', async () => {

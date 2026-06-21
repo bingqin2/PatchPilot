@@ -1666,3 +1666,19 @@ Validation:
 
 - `mvn -pl PatchPilot -Dtest=TaskControllerTests#should_get_task_detail_by_task_id,MyBatisFixTaskQueueQueryServiceTests#should_list_queue_items_by_task_id test`: first failed because `listByTaskId` did not exist, then passed after adding the service method and aggregate detail response field, 2 tests run, 0 failures.
 - `npm test -- src/api.test.ts src/dashboard/components/TaskDetailPanel.test.tsx`: first failed because `Queue History` was not rendered, then passed after adding queue history rendering and scoped assertions, 15 tests run, 0 failures.
+
+Implemented task report copy from `docs/plans/079-task-report-copy.md`.
+
+Changes:
+
+- Added `GET /api/tasks/{taskId}/report` to return a Markdown task diagnostic report.
+- Built the report from aggregate task records: metadata, status, failure reason, queue state, timeline, test runs, tool calls, and model calls.
+- Added frontend `getTaskReport(taskId)`.
+- Added a `Copy report` action to selected task details.
+- Wired the dashboard action through `App` so report content is fetched from the backend and copied to the clipboard.
+- Documented the report endpoint and dashboard copy action in README and frontend design notes.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=TaskControllerTests#should_get_task_report_by_task_id,TaskControllerTests#should_return_404_for_missing_task_report test`: first failed because `/api/tasks/{taskId}/report` did not exist, then passed after adding the endpoint and report generator, 2 tests run, 0 failures.
+- `npm test -- src/api.test.ts src/dashboard/components/TaskDetailPanel.test.tsx src/App.test.tsx`: first failed because `getTaskReport`, the `Copy report` button, and App wiring did not exist, then passed after adding the API helper and UI flow, 33 tests run, 0 failures.

@@ -1,0 +1,114 @@
+package io.patchpilot.backend.task.service;
+
+import io.patchpilot.backend.task.domain.vo.FixTaskDetailVo;
+import io.patchpilot.backend.task.domain.vo.FixTaskModelCallVo;
+import io.patchpilot.backend.task.domain.vo.FixTaskTestRunVo;
+import io.patchpilot.backend.task.domain.vo.FixTaskTimelineEventVo;
+import io.patchpilot.backend.task.domain.vo.FixTaskToolCallVo;
+import io.patchpilot.backend.task.domain.vo.FixTaskVo;
+import org.springframework.stereotype.Component;
+
+import java.util.List;
+
+@Component
+public class FixTaskReportFormatter {
+
+    public String format(FixTaskDetailVo detail) {
+        FixTaskVo task = detail.summary().task();
+        StringBuilder report = new StringBuilder()
+                .append("# PatchPilot Task Report\n\n")
+                .append("- Task: `").append(task.id()).append("`\n")
+                .append("- Repository: `").append(task.repositoryOwner()).append("/").append(task.repositoryName()).append("`\n")
+                .append("- Issue: #").append(task.issueNumber()).append("\n")
+                .append("- Status: `").append(task.status()).append("`\n")
+                .append("- Trigger: ").append(task.triggerComment()).append("\n");
+        if (task.failureReason() != null) {
+            report.append("- Failure: ").append(task.failureReason()).append("\n");
+        }
+        if (task.pullRequestUrl() != null) {
+            report.append("- Pull Request: ").append(task.pullRequestUrl()).append("\n");
+        }
+
+        appendQueue(report, detail);
+        appendTimeline(report, detail.timeline());
+        appendTestRuns(report, detail.testRuns());
+        appendToolCalls(report, detail.toolCalls());
+        appendModelCalls(report, detail.modelCalls());
+        return report.toString();
+    }
+
+    private static void appendQueue(StringBuilder report, FixTaskDetailVo detail) {
+        report.append("\n## Queue\n\n");
+        if (detail.queueItem() == null) {
+            report.append("- Latest: none\n");
+        } else {
+            report.append("- Latest: `")
+                    .append(detail.queueItem().status())
+                    .append("`, attempt ")
+                    .append(detail.queueItem().attemptCount());
+            if (detail.queueItem().lastError() != null) {
+                report.append(", error: ").append(detail.queueItem().lastError());
+            }
+            report.append("\n");
+        }
+        report.append("- History items: ").append(detail.queueItems().size()).append("\n");
+    }
+
+    private static void appendTimeline(StringBuilder report, List<FixTaskTimelineEventVo> timeline) {
+        report.append("\n## Timeline\n\n");
+        if (timeline.isEmpty()) {
+            report.append("- No timeline events recorded.\n");
+            return;
+        }
+        timeline.forEach(event -> report.append("- `")
+                .append(event.eventType())
+                .append("`: ")
+                .append(event.message())
+                .append("\n"));
+    }
+
+    private static void appendTestRuns(StringBuilder report, List<FixTaskTestRunVo> testRuns) {
+        report.append("\n## Test Runs\n\n");
+        if (testRuns.isEmpty()) {
+            report.append("- No test runs recorded.\n");
+            return;
+        }
+        testRuns.forEach(run -> report.append("- `")
+                .append(run.command())
+                .append("` -> exit ")
+                .append(run.exitCode())
+                .append(", ")
+                .append(run.durationMs())
+                .append(" ms\n"));
+    }
+
+    private static void appendToolCalls(StringBuilder report, List<FixTaskToolCallVo> toolCalls) {
+        report.append("\n## Tool Calls\n\n");
+        if (toolCalls.isEmpty()) {
+            report.append("- No tool calls recorded.\n");
+            return;
+        }
+        toolCalls.forEach(call -> report.append("- `")
+                .append(call.toolName())
+                .append("` -> ")
+                .append(call.success() ? "success" : "failed")
+                .append(", ")
+                .append(call.durationMs())
+                .append(" ms\n"));
+    }
+
+    private static void appendModelCalls(StringBuilder report, List<FixTaskModelCallVo> modelCalls) {
+        report.append("\n## Model Calls\n\n");
+        if (modelCalls.isEmpty()) {
+            report.append("- No model calls recorded.\n");
+            return;
+        }
+        modelCalls.forEach(call -> report.append("- `")
+                .append(call.model())
+                .append("` -> ")
+                .append(call.success() ? "success" : "failed")
+                .append(", ")
+                .append(call.totalTokens())
+                .append(" tokens\n"));
+    }
+}
