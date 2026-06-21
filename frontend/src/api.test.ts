@@ -88,12 +88,16 @@ test('builds backend task search sort and pagination query parameters', async ()
   const page = await listTasks({
     status: 'FAILED',
     query: ' search target ',
+    repositoryOwner: ' bingqin2 ',
+    repositoryName: ' PatchPilot ',
     limit: 25,
     offset: 50,
     sort: 'createdAtAsc'
   });
 
-  expect(fetchMock).toHaveBeenCalledWith('/api/tasks?limit=25&offset=50&query=search+target&sort=createdAtAsc&status=FAILED');
+  expect(fetchMock).toHaveBeenCalledWith(
+    '/api/tasks?limit=25&offset=50&query=search+target&repositoryOwner=bingqin2&repositoryName=PatchPilot&sort=createdAtAsc&status=FAILED'
+  );
   expect(page).toEqual({
     items: [],
     limit: 25,

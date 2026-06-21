@@ -24,6 +24,8 @@ import type {
 interface ListTasksOptions {
   status?: TaskStatusFilter;
   query?: string;
+  repositoryOwner?: string;
+  repositoryName?: string;
   limit?: number;
   offset?: number;
   sort?: TaskSort;
@@ -44,6 +46,12 @@ export async function listTasks(options: TaskStatusFilter | ListTasksOptions = '
   }
   if (normalizedOptions.query?.trim()) {
     searchParams.set('query', normalizedOptions.query.trim());
+  }
+  if (normalizedOptions.repositoryOwner?.trim()) {
+    searchParams.set('repositoryOwner', normalizedOptions.repositoryOwner.trim());
+  }
+  if (normalizedOptions.repositoryName?.trim()) {
+    searchParams.set('repositoryName', normalizedOptions.repositoryName.trim());
   }
   if (normalizedOptions.sort && normalizedOptions.sort !== 'createdAtDesc') {
     searchParams.set('sort', normalizedOptions.sort);

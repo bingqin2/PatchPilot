@@ -1773,3 +1773,23 @@ Validation:
 - `mvn -pl PatchPilot test`: passed, 276 tests run, 0 failures.
 - `cd frontend && npm test`: passed, 59 tests run, 0 failures.
 - `cd frontend && npm run build`: passed, production bundle generated successfully.
+
+Implemented dashboard repository filters from `docs/plans/085-dashboard-repository-filters.md`.
+
+Changes:
+
+- Added task-list repository owner and repository name filters to the dashboard.
+- Passed trimmed `repositoryOwner` and `repositoryName` values from the frontend API helper to `GET /api/tasks`.
+- Restored repository filters from the URL and kept them synchronized while preserving selected task routes, existing status/search/sort state, unrelated query parameters, and hash fragments.
+- Included repository filters in `Load more` pagination requests.
+- Updated `Clear filters` to reset status, search, repository owner, and repository name while preserving active sort state.
+- Added a repository-specific empty state for task lists narrowed only by repository filters.
+- Documented repository-filter behavior in README and frontend design notes.
+
+Validation:
+
+- `cd frontend && npm test -- src/api.test.ts src/App.test.tsx -t "repository filter|backend task search sort|offset pagination"`: first failed because `listTasks` omitted `repositoryOwner` and `repositoryName`, the task list had no repository filter controls, and pagination did not carry repository filters; then passed after adding API parameters, URL state, task-list controls, reset behavior, and pagination propagation, 5 tests run, 0 failures.
+- `cd frontend && npm test`: passed, 62 tests run, 0 failures.
+- `cd frontend && npm run build`: passed, production bundle generated successfully.
+- `git diff --check`: passed with no whitespace errors.
+- `mvn -pl PatchPilot test`: passed, 276 tests run, 0 failures.
