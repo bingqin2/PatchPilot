@@ -2,6 +2,7 @@ import { AlertCircle, RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   cancelTask,
+  getBackendHealth,
   getConfigurationSummary,
   getFailureCauseSummary,
   getLatencySummary,
@@ -30,6 +31,7 @@ import { emptyDetail } from './dashboard/types';
 import type { TaskDetailState } from './dashboard/types';
 import type {
   ConfigurationSummary,
+  BackendHealth,
   FixTask,
   FixTaskFailureCauseSummary,
   FixTaskLatencySummary,
@@ -49,6 +51,7 @@ export default function App() {
   const [modelUsage, setModelUsage] = useState<FixTaskModelUsageSummary | null>(null);
   const [latency, setLatency] = useState<FixTaskLatencySummary | null>(null);
   const [configuration, setConfiguration] = useState<ConfigurationSummary | null>(null);
+  const [backendHealth, setBackendHealth] = useState<BackendHealth | null>(null);
   const [queueSummary, setQueueSummary] = useState<FixTaskQueueSummary | null>(null);
   const [queueItems, setQueueItems] = useState<FixTaskQueueItem[]>([]);
   const [statusFilter, setStatusFilter] = useState<TaskStatusFilter>('ALL');
@@ -84,6 +87,7 @@ export default function App() {
         modelUsageSummary,
         latencySummary,
         configurationSummary,
+        healthSummary,
         queueSummaryData,
         queueItemList
       ] = await Promise.all([
@@ -93,6 +97,7 @@ export default function App() {
         getModelUsageSummary(),
         getLatencySummary(),
         getConfigurationSummary(),
+        getBackendHealth(),
         getQueueSummary(),
         listQueueItems()
       ]);
@@ -102,6 +107,7 @@ export default function App() {
       setModelUsage(modelUsageSummary);
       setLatency(latencySummary);
       setConfiguration(configurationSummary);
+      setBackendHealth(healthSummary);
       setQueueSummary(queueSummaryData);
       setQueueItems(queueItemList);
       setCanLoadMoreTasks(taskList.hasMore);
@@ -262,7 +268,7 @@ export default function App() {
         />
       </section>
 
-      <ConfigurationPanel configuration={configuration} />
+      <ConfigurationPanel configuration={configuration} backendHealth={backendHealth} />
 
       <QueuePanel summary={queueSummary} items={queueItems} />
     </main>

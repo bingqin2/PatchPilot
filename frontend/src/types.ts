@@ -100,6 +100,12 @@ export interface ConfigurationSummary {
   modelCostConfigured: boolean;
 }
 
+export interface BackendHealth {
+  status: string;
+  service: string;
+  timestamp: string;
+}
+
 export interface FixTaskQueueSummary {
   totalCount: number;
   pendingCount: number;

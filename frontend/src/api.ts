@@ -1,5 +1,6 @@
 import type {
   ApiResponse,
+  BackendHealth,
   ConfigurationSummary,
   FixTask,
   FixTaskFailureCauseSummary,
@@ -61,6 +62,10 @@ export async function getLatencySummary(): Promise<FixTaskLatencySummary> {
 
 export async function getConfigurationSummary(): Promise<ConfigurationSummary> {
   return getApi<ConfigurationSummary>('/api/configuration/summary');
+}
+
+export async function getBackendHealth(): Promise<BackendHealth> {
+  return getApi<BackendHealth>('/health');
 }
 
 export async function getQueueSummary(): Promise<FixTaskQueueSummary> {

@@ -1,11 +1,12 @@
-import type { ConfigurationSummary } from '../../types';
+import type { BackendHealth, ConfigurationSummary } from '../../types';
 import { duration, number } from '../format';
 
 interface ConfigurationPanelProps {
   configuration: ConfigurationSummary | null;
+  backendHealth: BackendHealth | null;
 }
 
-export function ConfigurationPanel({ configuration }: ConfigurationPanelProps) {
+export function ConfigurationPanel({ configuration, backendHealth }: ConfigurationPanelProps) {
   const health = configurationHealth(configuration);
 
   return (
@@ -19,6 +20,11 @@ export function ConfigurationPanel({ configuration }: ConfigurationPanelProps) {
       <div className={`configuration-health configuration-health-${health.level}`}>
         <strong>{health.title}</strong>
         {health.advisoryTitle ? <span>{health.advisoryTitle}</span> : null}
+      </div>
+      <div className={`backend-health backend-health-${backendHealth ? 'up' : 'unavailable'}`}>
+        <strong>{backendHealth ? `Backend ${backendHealth.status}` : 'Backend unavailable'}</strong>
+        <span>{backendHealth?.service ?? 'Check /health, backend process, and Vite proxy target'}</span>
+        {backendHealth?.timestamp ? <time dateTime={backendHealth.timestamp}>{backendHealth.timestamp}</time> : null}
       </div>
       <div className="configuration-grid">
         <div>
