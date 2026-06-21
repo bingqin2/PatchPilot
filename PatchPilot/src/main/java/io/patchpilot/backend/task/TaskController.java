@@ -21,6 +21,7 @@ import io.patchpilot.backend.task.service.FixTaskControlService;
 import io.patchpilot.backend.task.service.FixTaskMetricsService;
 import io.patchpilot.backend.task.service.FixTaskModelCallService;
 import io.patchpilot.backend.task.service.FixTaskQueueQueryService;
+import io.patchpilot.backend.task.service.FixTaskReportFormatter;
 import io.patchpilot.backend.task.service.FixTaskTestRunService;
 import io.patchpilot.backend.task.service.FixTaskTimelineService;
 import io.patchpilot.backend.task.service.FixTaskService;
@@ -50,6 +51,7 @@ public class TaskController {
     private final FixTaskMetricsService fixTaskMetricsService;
     private final FixTaskAuditSummaryService fixTaskAuditSummaryService;
     private final FixTaskQueueQueryService fixTaskQueueQueryService;
+    private final FixTaskReportFormatter fixTaskReportFormatter;
 
     @GetMapping
     public ResponseEntity<ApiResponse<FixTaskPageVo>> listTasks(
@@ -105,6 +107,13 @@ public class TaskController {
     public ResponseEntity<ApiResponse<FixTaskDetailVo>> getTaskDetail(@PathVariable String id) {
         return fixTaskAuditSummaryService.summary(id)
                 .map(summary -> ResponseEntity.ok(ApiResponse.ok(buildTaskDetail(id, summary))))
+                .orElseGet(() -> ResponseEntity.status(404).body(ApiResponse.fail("Task not found")));
+    }
+
+    @GetMapping("/{id}/report")
+    public ResponseEntity<ApiResponse<String>> getTaskReport(@PathVariable String id) {
+        return fixTaskAuditSummaryService.summary(id)
+                .map(summary -> ResponseEntity.ok(ApiResponse.ok(fixTaskReportFormatter.format(buildTaskDetail(id, summary)))))
                 .orElseGet(() -> ResponseEntity.status(404).body(ApiResponse.fail("Task not found")));
     }
 

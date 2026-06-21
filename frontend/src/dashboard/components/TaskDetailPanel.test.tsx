@@ -94,6 +94,7 @@ test('shows execution evidence summary for selected task', () => {
       actionInFlight={false}
       onCancelTask={vi.fn()}
       onRetryTask={vi.fn()}
+      onCopyReport={vi.fn()}
     />
   );
 
@@ -114,6 +115,7 @@ test('shows selected task queue state in task detail', () => {
       actionInFlight={false}
       onCancelTask={vi.fn()}
       onRetryTask={vi.fn()}
+      onCopyReport={vi.fn()}
     />
   );
 
@@ -135,6 +137,7 @@ test('shows selected task queue history in task detail', () => {
       actionInFlight={false}
       onCancelTask={vi.fn()}
       onRetryTask={vi.fn()}
+      onCopyReport={vi.fn()}
     />
   );
 
@@ -163,6 +166,7 @@ test('shows missing latest test evidence when no test result is recorded', () =>
       actionInFlight={false}
       onCancelTask={vi.fn()}
       onRetryTask={vi.fn()}
+      onCopyReport={vi.fn()}
     />
   );
 
@@ -192,6 +196,7 @@ test('copies the selected task deep link', async () => {
       actionInFlight={false}
       onCancelTask={vi.fn()}
       onRetryTask={vi.fn()}
+      onCopyReport={vi.fn()}
     />
   );
 
@@ -199,4 +204,31 @@ test('copies the selected task deep link', async () => {
 
   expect(writeText).toHaveBeenCalledWith('http://localhost:3000/?status=FAILED&taskId=task-1');
   expect(screen.getByText('Task link copied')).toBeInTheDocument();
+});
+
+test('copies the selected task report', async () => {
+  const writeText = vi.fn().mockResolvedValue(undefined);
+  const onCopyReport = vi.fn().mockResolvedValue('# PatchPilot Task Report\n\n- Task: `task-1`');
+  Object.defineProperty(navigator, 'clipboard', {
+    configurable: true,
+    value: { writeText }
+  });
+
+  render(
+    <TaskDetailPanel
+      task={task}
+      detail={baseDetail}
+      loading={false}
+      actionInFlight={false}
+      onCancelTask={vi.fn()}
+      onRetryTask={vi.fn()}
+      onCopyReport={onCopyReport}
+    />
+  );
+
+  await userEvent.click(screen.getByRole('button', { name: /copy report/i }));
+
+  expect(onCopyReport).toHaveBeenCalledWith('task-1');
+  expect(writeText).toHaveBeenCalledWith('# PatchPilot Task Report\n\n- Task: `task-1`');
+  expect(screen.getByText('Task report copied')).toBeInTheDocument();
 });

@@ -85,6 +85,10 @@ export async function getTaskDetail(taskId: string): Promise<FixTaskDetail> {
   return getApi<FixTaskDetail>(`/api/tasks/${taskId}/detail`);
 }
 
+export async function getTaskReport(taskId: string): Promise<string> {
+  return getApi<string>(`/api/tasks/${taskId}/report`);
+}
+
 export async function getTimeline(taskId: string): Promise<FixTaskTimelineEvent[]> {
   return getApi<FixTaskTimelineEvent[]>(`/api/tasks/${taskId}/timeline`);
 }

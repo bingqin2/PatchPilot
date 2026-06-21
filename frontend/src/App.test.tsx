@@ -335,6 +335,9 @@ beforeEach(() => {
     if (url === '/api/tasks/task-1/detail') {
       return jsonResponse(detail);
     }
+    if (url === '/api/tasks/task-1/report') {
+      return jsonResponse('# PatchPilot Task Report\n\n- Task: `task-1`');
+    }
     if (url === '/api/tasks/task-1/summary') {
       return jsonResponse(summary);
     }
@@ -555,6 +558,24 @@ test('shows tool and model call durations in task detail records', async () => {
   await waitFor(() => expect(screen.getByText('replace')).toBeInTheDocument());
   expect(screen.getByText('success · 1.0s')).toBeInTheDocument();
   expect(screen.getByText('1800 tokens · 2.0s')).toBeInTheDocument();
+});
+
+test('copies selected task report from backend API', async () => {
+  const user = userEvent.setup();
+  const fetchMock = vi.mocked(fetch);
+  const writeText = vi.fn().mockResolvedValue(undefined);
+  Object.defineProperty(navigator, 'clipboard', {
+    configurable: true,
+    value: { writeText }
+  });
+
+  render(<App />);
+
+  await user.click(await screen.findByRole('button', { name: 'Copy report' }));
+
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks/task-1/report'));
+  expect(writeText).toHaveBeenCalledWith('# PatchPilot Task Report\n\n- Task: `task-1`');
+  expect(screen.getByText('Task report copied')).toBeInTheDocument();
 });
 
 test('selects task detail from taskId URL parameter', async () => {

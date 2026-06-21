@@ -13,6 +13,7 @@ interface TaskDetailPanelProps {
   actionInFlight: boolean;
   onCancelTask: (taskId: string) => Promise<void>;
   onRetryTask: (taskId: string) => Promise<void>;
+  onCopyReport: (taskId: string) => Promise<string>;
 }
 
 export function TaskDetailPanel({
@@ -21,7 +22,8 @@ export function TaskDetailPanel({
   loading,
   actionInFlight,
   onCancelTask,
-  onRetryTask
+  onRetryTask,
+  onCopyReport
 }: TaskDetailPanelProps) {
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
 
@@ -51,6 +53,20 @@ export function TaskDetailPanel({
     }
   }
 
+  async function copyTaskReport() {
+    if (!task) {
+      return;
+    }
+
+    try {
+      const report = await onCopyReport(task.id);
+      await navigator.clipboard.writeText(report);
+      setCopyStatus('Task report copied');
+    } catch {
+      setCopyStatus('Copy failed');
+    }
+  }
+
   return (
     <section className="panel detail-panel">
       <div className="panel-header">
@@ -62,6 +78,10 @@ export function TaskDetailPanel({
           <button className="secondary-button" type="button" onClick={() => void copyTaskLink()}>
             <Copy size={14} />
             Copy link
+          </button>
+          <button className="secondary-button" type="button" onClick={() => void copyTaskReport()}>
+            <Copy size={14} />
+            Copy report
           </button>
           {copyStatus ? <span className="copy-status">{copyStatus}</span> : null}
           <a className="external-link" href={issueUrl(task)} target="_blank" rel="noreferrer">

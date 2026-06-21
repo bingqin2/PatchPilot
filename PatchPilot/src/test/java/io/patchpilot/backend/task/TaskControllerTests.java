@@ -496,6 +496,79 @@ class TaskControllerTests {
     }
 
     @Test
+    void should_get_task_report_by_task_id() throws Exception {
+        FixTaskVo task = createTask("delivery-report");
+        fixTaskService.markFailed(task.id(), "maven tests failed");
+        fixTaskTimelineService.recordEvent(task.id(), FixTaskTimelineEventType.TASK_CREATED, "Task accepted");
+        fixTaskTimelineService.recordEvent(task.id(), FixTaskTimelineEventType.FAILED, "Task failed");
+        fixTaskTestRunService.recordTestRun(
+                task.id(),
+                "./mvnw test",
+                1,
+                "tests failed",
+                Instant.parse("2026-06-20T05:00:00Z"),
+                Instant.parse("2026-06-20T05:00:06Z")
+        );
+        fixTaskToolCallService.recordToolCall(
+                task.id(),
+                "CommitTool",
+                "repositoryDir=/tmp/workspace/repo",
+                "commit skipped",
+                false,
+                Instant.parse("2026-06-20T05:00:07Z"),
+                Instant.parse("2026-06-20T05:00:08Z")
+        );
+        fixTaskModelCallService.recordModelCall(
+                task.id(),
+                "openai",
+                "gpt-5.5",
+                "Fix issue",
+                "Plan generated",
+                120,
+                80,
+                true,
+                null,
+                Instant.parse("2026-06-20T05:00:09Z"),
+                Instant.parse("2026-06-20T05:00:13Z")
+        );
+        ((RecordingFixTaskQueueQueryService) fixTaskQueueQueryService).setQueueItems(List.of(new FixTaskQueueItemVo(
+                "queue-report",
+                task.id(),
+                FixTaskQueueItemStatus.FAILED,
+                2,
+                "worker failed",
+                Instant.parse("2026-06-20T05:01:00Z"),
+                Instant.parse("2026-06-20T05:00:30Z"),
+                Instant.parse("2026-06-20T05:00:00Z"),
+                Instant.parse("2026-06-20T05:02:00Z")
+        )));
+
+        mockMvc.perform(get("/api/tasks/{id}/report", task.id()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("# PatchPilot Task Report")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Task: `" + task.id() + "`")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Status: `FAILED`")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Failure: maven tests failed")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("## Queue")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Latest: `FAILED`, attempt 2")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("## Test Runs")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- `./mvnw test` -> exit 1")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("## Tool Calls")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- `CommitTool` -> failed")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("## Model Calls")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- `gpt-5.5` -> success, 200 tokens")));
+    }
+
+    @Test
+    void should_return_404_for_missing_task_report() throws Exception {
+        mockMvc.perform(get("/api/tasks/{id}/report", "missing-task"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("Task not found"));
+    }
+
+    @Test
     void should_return_404_for_missing_task_audit_summary() throws Exception {
         mockMvc.perform(get("/api/tasks/{id}/summary", "missing-task"))
                 .andExpect(status().isNotFound())

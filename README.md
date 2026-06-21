@@ -141,6 +141,7 @@ curl "http://127.0.0.1:8080/api/tasks?status=FAILED&limit=20"
 curl "http://127.0.0.1:8080/api/tasks?repositoryOwner=bingqin2&repositoryName=PatchPilot"
 curl http://127.0.0.1:8080/api/tasks/{taskId}
 curl http://127.0.0.1:8080/api/tasks/{taskId}/detail
+curl http://127.0.0.1:8080/api/tasks/{taskId}/report
 curl http://127.0.0.1:8080/api/tasks/{taskId}/summary
 curl http://127.0.0.1:8080/api/tasks/{taskId}/timeline
 curl http://127.0.0.1:8080/api/tasks/{taskId}/test-runs
@@ -148,7 +149,7 @@ curl http://127.0.0.1:8080/api/tasks/{taskId}/tool-calls
 curl http://127.0.0.1:8080/api/tasks/{taskId}/model-calls
 ```
 
-Use `/detail` for dashboard-style task inspection. It returns the task audit summary, latest queue item, queue history, timeline events, test runs, tool calls, and model calls in one response. The narrower endpoints remain available for focused debugging.
+Use `/detail` for dashboard-style task inspection. It returns the task audit summary, latest queue item, queue history, timeline events, test runs, tool calls, and model calls in one response. Use `/report` to copy a Markdown diagnostic summary for a task. The narrower endpoints remain available for focused debugging.
 
 Runtime configuration summary:
 
@@ -184,7 +185,7 @@ PATCHPILOT_AGENT_COST_COMPLETION_TOKEN_USD=0.000002
 ## Frontend Dashboard
 
 The React dashboard lives in `frontend/` and calls the backend through Vite's `/api` proxy.
-It includes task metrics, refresh progress and last-refresh feedback, failure-cause grouping, model token and estimated-cost summaries, latency summaries, a non-sensitive runtime configuration panel backed by `/api/configuration/summary`, backend `/health` status, configuration health hints for missing secrets and weak queue/cost settings, status filters and full-history search backed by `GET /api/tasks`, total-count and `hasMore`-backed `Load more` task pagination, task creation/update times, GitHub Issue, status comment, and Pull Request links, `?taskId=` deep links and copyable links for selected task details, task detail summaries loaded through `GET /api/tasks/{taskId}/detail`, selected-task queue status and queue history with retry/last-error context, execution evidence summaries, timeline events, test runs, tool calls and model calls with durations, empty states for missing detail records, task control actions for cancel/retry, and a read-only queue panel with health hints backed by `/api/task-queue/*`.
+It includes task metrics, refresh progress and last-refresh feedback, failure-cause grouping, model token and estimated-cost summaries, latency summaries, a non-sensitive runtime configuration panel backed by `/api/configuration/summary`, backend `/health` status, configuration health hints for missing secrets and weak queue/cost settings, status filters and full-history search backed by `GET /api/tasks`, total-count and `hasMore`-backed `Load more` task pagination, task creation/update times, GitHub Issue, status comment, and Pull Request links, `?taskId=` deep links, copyable links and copyable Markdown reports for selected task details, task detail summaries loaded through `GET /api/tasks/{taskId}/detail`, selected-task queue status and queue history with retry/last-error context, execution evidence summaries, timeline events, test runs, tool calls and model calls with durations, empty states for missing detail records, task control actions for cancel/retry, and a read-only queue panel with health hints backed by `/api/task-queue/*`.
 The page coordinator is `frontend/src/App.tsx`; reusable dashboard UI lives under `frontend/src/dashboard/components/`, with shared formatting helpers in `frontend/src/dashboard/format.ts`.
 The dashboard task list requests `query`, `status`, `limit`, and `offset` from the backend and consumes the task page response with `items`, `limit`, `offset`, `hasMore`, and `total`.
 The selected-task panel uses the aggregate detail endpoint so opening a task needs one backend detail request instead of separate summary, timeline, test-run, tool-call, and model-call requests.

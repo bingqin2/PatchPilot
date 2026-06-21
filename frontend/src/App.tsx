@@ -10,6 +10,7 @@ import {
   getModelUsageSummary,
   getQueueSummary,
   getTaskDetail,
+  getTaskReport,
   listQueueItems,
   listTasks,
   retryTask
@@ -200,6 +201,8 @@ export default function App() {
     }
   }, [refresh]);
 
+  const handleCopyReport = useCallback((taskId: string) => getTaskReport(taskId), []);
+
   return (
     <main className="app-shell">
       <header className="top-bar">
@@ -274,6 +277,7 @@ export default function App() {
           actionInFlight={actionTaskId === selectedTask?.id}
           onCancelTask={handleCancelTask}
           onRetryTask={handleRetryTask}
+          onCopyReport={handleCopyReport}
         />
       </section>
 
