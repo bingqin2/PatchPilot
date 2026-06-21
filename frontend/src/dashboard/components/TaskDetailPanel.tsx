@@ -148,6 +148,22 @@ export function TaskDetailPanel({
         </div>
       ) : null}
 
+      {detail.queueItems.length > 0 ? (
+        <section className="detail-section">
+          <h3>Queue History</h3>
+          <div className="queue-history">
+            {detail.queueItems.map((item) => (
+              <RecordLine
+                key={item.id}
+                title={item.id}
+                meta={`${item.status} · attempt ${item.attemptCount}`}
+                body={queueItemDescription(item)}
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
       {loading ? <p className="empty-state">Loading task records...</p> : null}
 
       <section className="detail-section">
@@ -217,6 +233,17 @@ function testStatus(exitCode: number | null | undefined) {
     return 'None';
   }
   return exitCode === 0 ? 'PASS' : 'FAIL';
+}
+
+function queueItemDescription(item: TaskDetailState['queueItems'][number]) {
+  const parts = [`Available ${compactTime(item.availableAt)}`];
+  if (item.lockedAt) {
+    parts.push(`Locked ${compactTime(item.lockedAt)}`);
+  }
+  if (item.lastError) {
+    parts.push(item.lastError);
+  }
+  return parts.join(' · ');
 }
 
 export function taskLinkFor(taskId: string, href = window.location.href) {

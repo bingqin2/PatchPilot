@@ -22,6 +22,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -434,16 +435,29 @@ class TaskControllerTests {
                 Instant.parse("2026-06-20T04:00:09Z"),
                 Instant.parse("2026-06-20T04:00:13Z")
         );
-        ((RecordingFixTaskQueueQueryService) fixTaskQueueQueryService).setQueueItem(new FixTaskQueueItemVo(
-                "queue-detail",
-                task.id(),
-                FixTaskQueueItemStatus.FAILED,
-                3,
-                "maven tests failed",
-                Instant.parse("2026-06-20T04:02:00Z"),
-                Instant.parse("2026-06-20T04:01:00Z"),
-                Instant.parse("2026-06-20T04:00:00Z"),
-                Instant.parse("2026-06-20T04:03:00Z")
+        ((RecordingFixTaskQueueQueryService) fixTaskQueueQueryService).setQueueItems(List.of(
+                new FixTaskQueueItemVo(
+                        "queue-detail-latest",
+                        task.id(),
+                        FixTaskQueueItemStatus.FAILED,
+                        3,
+                        "maven tests failed",
+                        Instant.parse("2026-06-20T04:02:00Z"),
+                        Instant.parse("2026-06-20T04:01:00Z"),
+                        Instant.parse("2026-06-20T04:00:00Z"),
+                        Instant.parse("2026-06-20T04:03:00Z")
+                ),
+                new FixTaskQueueItemVo(
+                        "queue-detail-older",
+                        task.id(),
+                        FixTaskQueueItemStatus.PENDING,
+                        1,
+                        null,
+                        Instant.parse("2026-06-20T04:00:30Z"),
+                        null,
+                        Instant.parse("2026-06-20T04:00:00Z"),
+                        Instant.parse("2026-06-20T04:00:30Z")
+                )
         ));
 
         mockMvc.perform(get("/api/tasks/{id}/detail", task.id()))
@@ -461,11 +475,16 @@ class TaskControllerTests {
                 .andExpect(jsonPath("$.data.testRuns[0].id").value(testRun.id()))
                 .andExpect(jsonPath("$.data.toolCalls[0].id").value(toolCall.id()))
                 .andExpect(jsonPath("$.data.modelCalls[0].id").value(modelCall.id()))
-                .andExpect(jsonPath("$.data.queueItem.id").value("queue-detail"))
+                .andExpect(jsonPath("$.data.queueItem.id").value("queue-detail-latest"))
                 .andExpect(jsonPath("$.data.queueItem.taskId").value(task.id()))
                 .andExpect(jsonPath("$.data.queueItem.status").value("FAILED"))
                 .andExpect(jsonPath("$.data.queueItem.attemptCount").value(3))
-                .andExpect(jsonPath("$.data.queueItem.lastError").value("maven tests failed"));
+                .andExpect(jsonPath("$.data.queueItem.lastError").value("maven tests failed"))
+                .andExpect(jsonPath("$.data.queueItems.length()").value(2))
+                .andExpect(jsonPath("$.data.queueItems[0].id").value("queue-detail-latest"))
+                .andExpect(jsonPath("$.data.queueItems[0].status").value("FAILED"))
+                .andExpect(jsonPath("$.data.queueItems[1].id").value("queue-detail-older"))
+                .andExpect(jsonPath("$.data.queueItems[1].status").value("PENDING"));
     }
 
     @Test
@@ -780,11 +799,18 @@ class TaskControllerTests {
 
     private static final class RecordingFixTaskQueueQueryService implements FixTaskQueueQueryService {
 
-        private FixTaskQueueItemVo queueItem;
+        private List<FixTaskQueueItemVo> queueItems = List.of();
 
         @Override
         public java.util.List<FixTaskQueueItemVo> listItems(FixTaskQueueItemStatus status) {
-            return queueItem == null ? java.util.List.of() : java.util.List.of(queueItem);
+            return queueItems;
+        }
+
+        @Override
+        public java.util.List<FixTaskQueueItemVo> listByTaskId(String taskId) {
+            return queueItems.stream()
+                    .filter(queueItem -> queueItem.taskId().equals(taskId))
+                    .toList();
         }
 
         @Override
@@ -794,14 +820,11 @@ class TaskControllerTests {
 
         @Override
         public Optional<FixTaskQueueItemVo> findByTaskId(String taskId) {
-            if (queueItem == null || !queueItem.taskId().equals(taskId)) {
-                return Optional.empty();
-            }
-            return Optional.of(queueItem);
+            return listByTaskId(taskId).stream().findFirst();
         }
 
-        private void setQueueItem(FixTaskQueueItemVo queueItem) {
-            this.queueItem = queueItem;
+        private void setQueueItems(List<FixTaskQueueItemVo> queueItems) {
+            this.queueItems = queueItems;
         }
     }
 }

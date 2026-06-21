@@ -10,6 +10,7 @@ import type {
 export interface TaskDetailState {
   summary: FixTaskAuditSummary | null;
   queueItem: FixTaskQueueItem | null;
+  queueItems: FixTaskQueueItem[];
   timeline: FixTaskTimelineEvent[];
   testRuns: FixTaskTestRun[];
   toolCalls: FixTaskToolCall[];
@@ -19,6 +20,7 @@ export interface TaskDetailState {
 export const emptyDetail: TaskDetailState = {
   summary: null,
   queueItem: null,
+  queueItems: [],
   timeline: [],
   testRuns: [],
   toolCalls: [],

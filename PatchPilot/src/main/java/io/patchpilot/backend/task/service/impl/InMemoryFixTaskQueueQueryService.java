@@ -20,6 +20,11 @@ public class InMemoryFixTaskQueueQueryService implements FixTaskQueueQueryServic
     }
 
     @Override
+    public List<FixTaskQueueItemVo> listByTaskId(String taskId) {
+        return List.of();
+    }
+
+    @Override
     public Optional<FixTaskQueueItemVo> findByTaskId(String taskId) {
         return Optional.empty();
     }

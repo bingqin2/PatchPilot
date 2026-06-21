@@ -1650,3 +1650,19 @@ Validation:
 
 - `mvn -pl PatchPilot -Dtest=TaskControllerTests#should_get_task_detail_by_task_id test`: first failed at test compilation because `findByTaskId` did not exist, then passed after adding the service method, queue lookup, and detail response field.
 - `npm test -- src/api.test.ts src/dashboard/components/TaskDetailPanel.test.tsx`: first failed because the task detail panel did not render queue state, then passed after adding queue item typing and rendering, 14 tests run, 0 failures.
+
+Implemented task detail queue history from `docs/plans/078-task-detail-queue-history.md`.
+
+Changes:
+
+- Extended `FixTaskQueueQueryService` with `listByTaskId(String taskId)`.
+- Reused the task-scoped queue list to keep `queueItem` as the latest queue record and return `queueItems` as the full selected-task queue history.
+- Included queue history in `GET /api/tasks/{taskId}/detail`.
+- Added frontend task-detail typing for queue history.
+- Rendered a `Queue History` section with queue item id, status, attempt count, available time, locked time, and last error.
+- Documented task-detail queue history in README and frontend design notes.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=TaskControllerTests#should_get_task_detail_by_task_id,MyBatisFixTaskQueueQueryServiceTests#should_list_queue_items_by_task_id test`: first failed because `listByTaskId` did not exist, then passed after adding the service method and aggregate detail response field, 2 tests run, 0 failures.
+- `npm test -- src/api.test.ts src/dashboard/components/TaskDetailPanel.test.tsx`: first failed because `Queue History` was not rendered, then passed after adding queue history rendering and scoped assertions, 15 tests run, 0 failures.

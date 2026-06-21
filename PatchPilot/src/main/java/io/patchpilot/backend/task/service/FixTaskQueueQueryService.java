@@ -11,6 +11,8 @@ public interface FixTaskQueueQueryService {
 
     List<FixTaskQueueItemVo> listItems(FixTaskQueueItemStatus status);
 
+    List<FixTaskQueueItemVo> listByTaskId(String taskId);
+
     Optional<FixTaskQueueItemVo> findByTaskId(String taskId);
 
     FixTaskQueueSummaryVo summary();
