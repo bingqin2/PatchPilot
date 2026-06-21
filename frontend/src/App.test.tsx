@@ -765,6 +765,31 @@ test('selects task detail from task detail route', async () => {
   expect(within(screen.getByRole('heading', { name: 'bingqin2/PatchPilot #2' }).closest('section')!).getByText('task-2')).toBeInTheDocument();
 });
 
+test('restores filter URL state on initial dashboard load', async () => {
+  const fetchMock = vi.mocked(fetch);
+  window.history.replaceState(null, '', '/?status=FAILED&query=broken');
+
+  render(<App />);
+
+  expect(await screen.findByText('/agent fix replace docs/demo.md broken')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'FAILED' })).toHaveAttribute('aria-pressed', 'true');
+  expect(screen.getByRole('searchbox', { name: 'Search tasks' })).toHaveValue('broken');
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks?limit=50&query=broken&status=FAILED'));
+});
+
+test('restores task detail route with filter URL state', async () => {
+  const fetchMock = vi.mocked(fetch);
+  window.history.replaceState(null, '', '/tasks/task-2?status=FAILED&query=broken');
+
+  render(<App />);
+
+  await waitFor(() => expect(screen.getByText('Task failed')).toBeInTheDocument());
+  expect(screen.getByRole('heading', { name: 'bingqin2/PatchPilot #2' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'FAILED' })).toHaveAttribute('aria-pressed', 'true');
+  expect(screen.getByRole('searchbox', { name: 'Search tasks' })).toHaveValue('broken');
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks?limit=50&query=broken&status=FAILED'));
+});
+
 test('updates selected task route when selecting a task', async () => {
   const user = userEvent.setup();
   window.history.replaceState(null, '', '/?status=FAILED&taskId=task-1');
@@ -774,6 +799,36 @@ test('updates selected task route when selecting a task', async () => {
   await user.click(await screen.findByRole('button', { name: /FAILED bingqin2\/PatchPilot #2/ }));
 
   expect(window.location.pathname).toBe('/tasks/task-2');
+  expect(window.location.search).toBe('?status=FAILED');
+});
+
+test('syncs status filter changes into the URL', async () => {
+  const user = userEvent.setup();
+
+  render(<App />);
+
+  await user.click(await screen.findByRole('button', { name: 'FAILED' }));
+
+  expect(window.location.search).toBe('?status=FAILED');
+
+  await user.click(screen.getByRole('button', { name: 'ALL' }));
+
+  expect(window.location.search).toBe('');
+});
+
+test('syncs search query changes into the URL and removes cleared search', async () => {
+  const user = userEvent.setup();
+  window.history.replaceState(null, '', '/tasks/task-1?status=FAILED');
+
+  render(<App />);
+
+  await user.type(await screen.findByRole('searchbox', { name: 'Search tasks' }), 'broken');
+
+  expect(window.location.pathname).toBe('/tasks/task-1');
+  expect(window.location.search).toBe('?status=FAILED&query=broken');
+
+  await user.clear(screen.getByRole('searchbox', { name: 'Search tasks' }));
+
   expect(window.location.search).toBe('?status=FAILED');
 });
 

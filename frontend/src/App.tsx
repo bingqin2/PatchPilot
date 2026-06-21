@@ -43,8 +43,18 @@ import type {
 } from './types';
 
 const TASK_PAGE_SIZE = 50;
+const TASK_STATUS_FILTERS: TaskStatusFilter[] = [
+  'ALL',
+  'PENDING',
+  'RUNNING',
+  'RUNNING_TESTS',
+  'COMPLETED',
+  'FAILED',
+  'CANCELLED'
+];
 
 export default function App() {
+  const initialFilters = useMemo(() => filtersFromUrl(), []);
   const [tasks, setTasks] = useState<FixTask[]>([]);
   const [metrics, setMetrics] = useState<FixTaskMetricsSummary | null>(null);
   const [failureCauses, setFailureCauses] = useState<FixTaskFailureCauseSummary[]>([]);
@@ -54,8 +64,8 @@ export default function App() {
   const [backendHealth, setBackendHealth] = useState<BackendHealth | null>(null);
   const [queueSummary, setQueueSummary] = useState<FixTaskQueueSummary | null>(null);
   const [queueItems, setQueueItems] = useState<FixTaskQueueItem[]>([]);
-  const [statusFilter, setStatusFilter] = useState<TaskStatusFilter>('ALL');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<TaskStatusFilter>(initialFilters.status);
+  const [searchQuery, setSearchQuery] = useState(initialFilters.query);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(() => taskIdFromUrl());
   const [detail, setDetail] = useState<TaskDetailState>(emptyDetail);
   const [loading, setLoading] = useState(true);
@@ -78,6 +88,16 @@ export default function App() {
     setSelectedTaskId(taskId);
     writeTaskIdToUrl(taskId);
   }, []);
+
+  const handleStatusFilterChange = useCallback((status: TaskStatusFilter) => {
+    setStatusFilter(status);
+    writeFiltersToUrl(status, searchQuery);
+  }, [searchQuery]);
+
+  const handleSearchQueryChange = useCallback((query: string) => {
+    setSearchQuery(query);
+    writeFiltersToUrl(statusFilter, query);
+  }, [statusFilter]);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -293,8 +313,8 @@ export default function App() {
           totalCount={taskTotal}
           canLoadMore={canLoadMoreTasks}
           loadingMore={loadingMoreTasks}
-          onStatusFilterChange={setStatusFilter}
-          onSearchQueryChange={setSearchQuery}
+          onStatusFilterChange={handleStatusFilterChange}
+          onSearchQueryChange={handleSearchQueryChange}
           onSelectTask={selectTask}
           onLoadMoreTasks={handleLoadMoreTasks}
         />
@@ -329,6 +349,21 @@ function taskIdFromUrl() {
   return new URLSearchParams(window.location.search).get('taskId');
 }
 
+function filtersFromUrl() {
+  const searchParams = new URLSearchParams(window.location.search);
+  return {
+    status: statusFilterFromUrl(searchParams.get('status')),
+    query: searchParams.get('query') ?? ''
+  };
+}
+
+function statusFilterFromUrl(value: string | null): TaskStatusFilter {
+  if (value && TASK_STATUS_FILTERS.includes(value as TaskStatusFilter)) {
+    return value as TaskStatusFilter;
+  }
+  return 'ALL';
+}
+
 function selectedTaskIdFromList(tasks: FixTask[], currentTaskId: string | null) {
   if (currentTaskId && tasks.some((task) => task.id === currentTaskId)) {
     return currentTaskId;
@@ -340,5 +375,21 @@ function writeTaskIdToUrl(taskId: string) {
   const nextUrl = new URL(window.location.href);
   nextUrl.pathname = `/tasks/${encodeURIComponent(taskId)}`;
   nextUrl.searchParams.delete('taskId');
+  window.history.replaceState(null, '', `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`);
+}
+
+function writeFiltersToUrl(status: TaskStatusFilter, query: string) {
+  const nextUrl = new URL(window.location.href);
+  nextUrl.searchParams.delete('taskId');
+  if (status === 'ALL') {
+    nextUrl.searchParams.delete('status');
+  } else {
+    nextUrl.searchParams.set('status', status);
+  }
+  if (query.trim()) {
+    nextUrl.searchParams.set('query', query.trim());
+  } else {
+    nextUrl.searchParams.delete('query');
+  }
   window.history.replaceState(null, '', `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`);
 }

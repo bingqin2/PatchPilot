@@ -1719,3 +1719,20 @@ Validation:
 - `npm test -- src/App.test.tsx src/dashboard/components/TaskDetailPanel.test.tsx -t "task detail route|taskId URL parameter|selected task route|shareable task link|deep link"`: first failed because the dashboard still only read and wrote `?taskId=...`, then passed after adding path-route parsing, writing, and copy-link generation, 6 tests run, 0 failures.
 - `cd frontend && npm test`: passed, 49 tests run, 0 failures.
 - `cd frontend && npm run build`: passed, production bundle generated successfully.
+
+Implemented dashboard filter URL state from `docs/plans/082-dashboard-filter-url-state.md`.
+
+Changes:
+
+- Initialized dashboard status and search filters from `status` and `query` URL parameters.
+- Treated invalid `status` URL values as `ALL`.
+- Updated status filter changes to write `status` to the URL and remove `status=ALL`.
+- Updated search changes to write `query` to the URL and remove it when cleared.
+- Preserved selected task routes, unrelated query parameters, and hash fragments while syncing filter state.
+- Documented URL-backed filtered investigation views in README and frontend design docs.
+
+Validation:
+
+- `npm test -- src/App.test.tsx -t "filter URL state|task detail route with filters|syncs status filter|syncs search query|removes cleared search"`: first failed because the dashboard ignored URL filter state and did not write filter changes back to the URL, then passed after adding filter parsing and URL sync helpers, 4 tests run, 0 failures.
+- `cd frontend && npm test`: passed, 53 tests run, 0 failures.
+- `cd frontend && npm run build`: passed, production bundle generated successfully.
