@@ -1891,3 +1891,19 @@ Changes:
 Validation:
 
 - `mvn -pl PatchPilot -Dtest=InMemoryRejectedTriggerAuditServiceTests,MyBatisRejectedTriggerAuditServiceTests,RejectedTriggerAuditControllerTests,RejectedTriggerAuditMigrationTests,GitHubWebhookServiceTests#should_reject_dangerous_agent_fix_command_before_task_creation,TaskControllerTests#should_return_bad_request_when_manual_task_trigger_user_is_not_allowed test`: first failed because the rejected trigger audit model, service, controller, mapper, and migration did not exist; then passed after implementation, 9 tests run, 0 failures.
+
+Implemented actionable command classification from `docs/plans/091-actionable-command-classification.md`.
+
+Changes:
+
+- Added deterministic actionability checks to `CommandSafetyGate`.
+- Rejected empty or vague trigger comments before task creation.
+- Kept clear patch operations, likely file references, and concrete failure descriptions actionable.
+- Routed vague webhook and manual API triggers into the existing rejected trigger audit path.
+- Updated trigger examples and safety gate documentation.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=CommandSafetyGateTests,GitHubWebhookServiceTests#should_reject_unactionable_agent_fix_command_before_task_creation,TaskControllerTests#should_return_bad_request_when_manual_task_command_is_not_actionable test`: first failed because vague commands still created tasks; then passed after adding actionability classification, 9 tests run, 0 failures.
+- `mvn -pl PatchPilot -Dtest=CommandSafetyGateTests,GitHubWebhookServiceTests,GitHubWebhookControllerTests,TaskControllerTests#should_return_bad_request_when_manual_task_command_is_not_actionable test`: passed, 27 tests run, 0 failures.
+- `mvn -pl PatchPilot test -q`: passed.

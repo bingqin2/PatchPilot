@@ -8,7 +8,7 @@ PatchPilot is not a chatbot and does not auto-merge code. The current target is 
 
 - GitHub webhook endpoint for `issue_comment.created`.
 - `/agent fix` trigger detection.
-- Safety gate rejection for unsafe `/agent fix` instructions before task creation.
+- Safety gate rejection for vague, unsafe, or non-actionable `/agent fix` instructions before task creation.
 - Optional trigger-user and repository allowlists for webhook and manual task creation.
 - Webhook signature verification.
 - MySQL-backed task, queue, timeline, test-run, tool-call, and model-call records.
@@ -73,6 +73,16 @@ PATCHPILOT_ALLOWED_REPOSITORIES=bingqin2/PatchPilot
 
 Leave either value empty to keep that dimension unrestricted for local development. When configured, both GitHub webhooks and manual dashboard tasks are checked before task creation.
 
+PatchPilot only creates a task when the `/agent fix` comment is actionable. Use a concrete file operation, file path, or failure description:
+
+```text
+/agent fix touch docs/demo.md
+/agent fix replace docs/demo.md PatchPilot smoke test
+/agent fix build fails with NullPointerException in task worker
+```
+
+Vague comments such as `/agent fix`, `/agent fix help`, or `/agent fix make it better` are rejected before task creation and appear in `/api/rejected-triggers`.
+
 For a fine-grained GitHub token, grant these repository permissions:
 
 - `Contents`: Read and write
@@ -135,7 +145,7 @@ The temporary URL changes whenever the tunnel restarts.
 Open a GitHub issue in the test repository and comment:
 
 ```text
-/agent fix
+/agent fix touch docs/demo.md
 ```
 
 For deterministic local smoke tests, use an existing file in the target repository:

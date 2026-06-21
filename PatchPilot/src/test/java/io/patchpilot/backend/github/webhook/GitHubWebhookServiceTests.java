@@ -51,7 +51,7 @@ class GitHubWebhookServiceTests {
         WebhookHandleResult result = webhookService.handle(
                 "issue_comment",
                 "delivery-existing",
-                issueCommentPayload("/agent fix")
+                issueCommentPayload("/agent fix touch docs/demo.md")
         );
 
         assertThat(result.status()).isEqualTo(WebhookHandleStatus.DUPLICATE_DELIVERY);
@@ -78,7 +78,7 @@ class GitHubWebhookServiceTests {
         WebhookHandleResult result = webhookService.handle(
                 "issue_comment",
                 "delivery-existing-active",
-                issueCommentPayload("/agent fix")
+                issueCommentPayload("/agent fix touch docs/demo.md")
         );
 
         assertThat(result.status()).isEqualTo(WebhookHandleStatus.DUPLICATE_DELIVERY);
@@ -105,7 +105,7 @@ class GitHubWebhookServiceTests {
         WebhookHandleResult result = webhookService.handle(
                 "issue_comment",
                 "delivery-created-status-comment",
-                issueCommentPayload("/agent fix")
+                issueCommentPayload("/agent fix touch docs/demo.md")
         );
 
         FixTaskVo task = fixTaskService.findTask(result.taskId()).orElseThrow();
@@ -157,6 +157,39 @@ class GitHubWebhookServiceTests {
         assertThat(auditService.commands().get(0).triggerUser()).isEqualTo("alice");
         assertThat(auditService.commands().get(0).reason())
                 .isEqualTo("Unsafe request rejected: destructive or secret-exfiltration instruction");
+    }
+
+    @Test
+    void should_reject_unactionable_agent_fix_command_before_task_creation() {
+        FixTaskService fixTaskService = new InMemoryFixTaskService();
+        RecordingFixTaskDispatcher fixTaskDispatcher = new RecordingFixTaskDispatcher();
+        RecordingIssueCommentTool issueCommentTool = new RecordingIssueCommentTool();
+        RecordingTimelineService timelineService = new RecordingTimelineService();
+        RecordingRejectedTriggerAuditService auditService = new RecordingRejectedTriggerAuditService();
+        GitHubWebhookService webhookService = new GitHubWebhookService(
+                new ObjectMapper(),
+                fixTaskService,
+                fixTaskDispatcher,
+                issueCommentTool,
+                timelineService,
+                auditService
+        );
+
+        WebhookHandleResult result = webhookService.handle(
+                "issue_comment",
+                "delivery-unactionable-command",
+                issueCommentPayload("/agent fix make it better")
+        );
+
+        assertThat(result.status()).isEqualTo(WebhookHandleStatus.REJECTED);
+        assertThat(result.taskId()).isNull();
+        assertThat(fixTaskService.listTasks()).isEmpty();
+        assertThat(fixTaskDispatcher.dispatchCount()).isZero();
+        assertThat(issueCommentTool.acceptedCount()).isZero();
+        assertThat(timelineService.eventTypes()).isEmpty();
+        assertThat(auditService.commands()).hasSize(1);
+        assertThat(auditService.commands().get(0).reason())
+                .isEqualTo("Unsafe request rejected: instruction is not actionable");
     }
 
     @Test
@@ -264,7 +297,7 @@ class GitHubWebhookServiceTests {
         WebhookHandleResult result = webhookService.handle(
                 "issue_comment",
                 "delivery-comment-create-fails",
-                issueCommentPayload("/agent fix")
+                issueCommentPayload("/agent fix touch docs/demo.md")
         );
 
         FixTaskVo task = fixTaskService.findTask(result.taskId()).orElseThrow();
@@ -287,7 +320,7 @@ class GitHubWebhookServiceTests {
                 42,
                 12345,
                 "alice",
-                "/agent fix",
+                "/agent fix touch docs/demo.md",
                 "delivery-active-original",
                 11111
         ));
