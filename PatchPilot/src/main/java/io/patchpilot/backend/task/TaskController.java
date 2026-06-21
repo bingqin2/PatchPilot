@@ -5,6 +5,7 @@ import io.patchpilot.backend.task.domain.bo.CreateManualFixTaskCommand;
 import io.patchpilot.backend.task.domain.bo.FixTaskListQuery;
 import io.patchpilot.backend.task.domain.dto.CreateFixTaskDto;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
+import io.patchpilot.backend.task.domain.enums.FixTaskSort;
 import io.patchpilot.backend.task.domain.vo.FixTaskFailureCauseSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskAuditSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskLatencySummaryVo;
@@ -79,10 +80,11 @@ public class TaskController {
             @RequestParam(required = false) String repositoryOwner,
             @RequestParam(required = false) String repositoryName,
             @RequestParam(required = false) Integer limit,
-            @RequestParam(required = false) Integer offset
+            @RequestParam(required = false) Integer offset,
+            @RequestParam(required = false) String sort
     ) {
         try {
-            return ResponseEntity.ok(ApiResponse.ok(queryTasks(query, status, repositoryOwner, repositoryName, limit, offset)));
+            return ResponseEntity.ok(ApiResponse.ok(queryTasks(query, status, repositoryOwner, repositoryName, limit, offset, sort)));
         } catch (IllegalArgumentException exception) {
             return ResponseEntity.badRequest().body(ApiResponse.fail(exception.getMessage()));
         }
@@ -196,11 +198,13 @@ public class TaskController {
             String repositoryOwner,
             String repositoryName,
             Integer limit,
-            Integer offset
+            Integer offset,
+            String sort
     ) {
         FixTaskStatus parsedStatus = parseStatus(status);
         int parsedLimit = parseLimit(limit);
         int parsedOffset = parseOffset(offset);
+        FixTaskSort parsedSort = parseSort(sort);
         String parsedQuery = blankToNull(query);
         String parsedRepositoryOwner = blankToNull(repositoryOwner);
         String parsedRepositoryName = blankToNull(repositoryName);
@@ -210,7 +214,8 @@ public class TaskController {
                 parsedRepositoryOwner,
                 parsedRepositoryName,
                 parsedLimit + 1,
-                parsedOffset
+                parsedOffset,
+                parsedSort
         );
         FixTaskListQuery countQuery = new FixTaskListQuery(
                 parsedQuery,
@@ -218,7 +223,8 @@ public class TaskController {
                 parsedRepositoryOwner,
                 parsedRepositoryName,
                 Integer.MAX_VALUE,
-                0
+                0,
+                parsedSort
         );
         List<FixTaskVo> tasks = fixTaskService.listTasks(pageQuery);
         long total = fixTaskService.countTasks(countQuery);
@@ -292,6 +298,13 @@ public class TaskController {
             throw new IllegalArgumentException("offset must be between 0 and 10000");
         }
         return offset;
+    }
+
+    private static FixTaskSort parseSort(String sort) {
+        if (sort == null || sort.isBlank()) {
+            return FixTaskSort.CREATED_AT_DESC;
+        }
+        return FixTaskSort.fromApiValue(sort.trim());
     }
 
     private static String blankToNull(String value) {

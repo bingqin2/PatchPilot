@@ -337,6 +337,12 @@ beforeEach(() => {
     if (url === '/api/tasks?limit=50&query=broken&status=FAILED') {
       return jsonResponse(taskPage([failedTask]));
     }
+    if (url === '/api/tasks?limit=50&sort=createdAtAsc') {
+      return jsonResponse(taskPage([failedTask, completedTask]));
+    }
+    if (url === '/api/tasks?limit=50&query=broken&sort=createdAtAsc&status=FAILED') {
+      return jsonResponse(taskPage([failedTask]));
+    }
     if (url === '/api/tasks?limit=50&status=CANCELLED') {
       return jsonResponse(taskPage([]));
     }
@@ -858,6 +864,60 @@ test('clear filters resets active task filters and preserves the selected task r
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks?limit=50'));
 });
 
+test('restores task sort URL state on initial dashboard load', async () => {
+  const fetchMock = vi.mocked(fetch);
+  window.history.replaceState(null, '', '/?sort=createdAtAsc');
+
+  render(<App />);
+
+  expect(await screen.findByRole('combobox', { name: 'Sort tasks' })).toHaveValue('createdAtAsc');
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks?limit=50&sort=createdAtAsc'));
+});
+
+test('ignores invalid task sort URL state on initial dashboard load', async () => {
+  const fetchMock = vi.mocked(fetch);
+  window.history.replaceState(null, '', '/?sort=updatedAtDesc');
+
+  render(<App />);
+
+  expect(await screen.findByRole('combobox', { name: 'Sort tasks' })).toHaveValue('createdAtDesc');
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks?limit=50'));
+});
+
+test('syncs task sort changes into the URL and backend request', async () => {
+  const user = userEvent.setup();
+  const fetchMock = vi.mocked(fetch);
+  window.history.replaceState(null, '', '/tasks/task-1?status=FAILED&query=broken#timeline');
+
+  render(<App />);
+
+  await user.selectOptions(await screen.findByRole('combobox', { name: 'Sort tasks' }), 'createdAtAsc');
+
+  expect(window.location.pathname).toBe('/tasks/task-1');
+  expect(window.location.search).toBe('?status=FAILED&query=broken&sort=createdAtAsc');
+  expect(window.location.hash).toBe('#timeline');
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks?limit=50&query=broken&sort=createdAtAsc&status=FAILED'));
+
+  await user.selectOptions(screen.getByRole('combobox', { name: 'Sort tasks' }), 'createdAtDesc');
+
+  expect(window.location.search).toBe('?status=FAILED&query=broken');
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks?limit=50&query=broken&status=FAILED'));
+});
+
+test('clear filters preserves active task sort state', async () => {
+  const user = userEvent.setup();
+  const fetchMock = vi.mocked(fetch);
+  window.history.replaceState(null, '', '/tasks/task-2?status=FAILED&query=broken&sort=createdAtAsc');
+
+  render(<App />);
+
+  await user.click(await screen.findByRole('button', { name: 'Clear filters' }));
+
+  expect(screen.getByRole('combobox', { name: 'Sort tasks' })).toHaveValue('createdAtAsc');
+  expect(window.location.search).toBe('?sort=createdAtAsc');
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks?limit=50&sort=createdAtAsc'));
+});
+
 test('loads queue summary and items from backend APIs', async () => {
   const fetchMock = vi.mocked(fetch);
 
@@ -1027,6 +1087,7 @@ test('preserves status filter when searching backend task history', async () => 
 
 test('loads the next backend task page with offset pagination', async () => {
   const user = userEvent.setup();
+  window.history.replaceState(null, '', '/?sort=createdAtAsc');
   const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
     const url = input.toString();
     const firstPage = Array.from({ length: 50 }, (_, index) => ({
@@ -1044,10 +1105,10 @@ test('loads the next backend task page with offset pagination', async () => {
       triggerComment: '/agent fix page 51'
     };
 
-    if (url === '/api/tasks?limit=50') {
+    if (url === '/api/tasks?limit=50&sort=createdAtAsc') {
       return jsonResponse(taskPage(firstPage, 50, 0, true, 51));
     }
-    if (url === '/api/tasks?limit=50&offset=50') {
+    if (url === '/api/tasks?limit=50&offset=50&sort=createdAtAsc') {
       return jsonResponse(taskPage([nextPageTask], 50, 50, false, 51));
     }
     if (url === '/api/tasks/metrics/summary') {
@@ -1149,7 +1210,7 @@ test('loads the next backend task page with offset pagination', async () => {
 
   await user.click(screen.getByRole('button', { name: 'Load more tasks' }));
 
-  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks?limit=50&offset=50'));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks?limit=50&offset=50&sort=createdAtAsc'));
   expect(await screen.findByText('/agent fix page 51')).toBeInTheDocument();
 });
 

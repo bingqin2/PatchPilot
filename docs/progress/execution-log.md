@@ -1752,3 +1752,24 @@ Validation:
 - `npm test -- src/App.test.tsx -t "clear filters"`: first failed because the dashboard did not expose a `Clear filters` button, then passed after adding the reset action and URL cleanup behavior, 2 tests run, 0 failures.
 - `cd frontend && npm test`: passed, 55 tests run, 0 failures.
 - `cd frontend && npm run build`: passed, production bundle generated successfully.
+
+Implemented dashboard sort control from `docs/plans/084-dashboard-sort-control.md`.
+
+Changes:
+
+- Added backend task-list sorting through `GET /api/tasks?sort=createdAtDesc|createdAtAsc`, with newest-first as the default.
+- Added `FixTaskSort` and carried sort direction through `FixTaskListQuery`, in-memory task listing, and MyBatis-backed task listing.
+- Kept sorting before offset/limit pagination so `Load more` continues to page through a stable order.
+- Rejected invalid backend sort values with `sort must be createdAtDesc or createdAtAsc`.
+- Added a dashboard `Sort tasks` control with `Newest first` and `Oldest first` options.
+- Stored non-default sort state as `sort=createdAtAsc` in the URL, restored valid sort state on load, and ignored invalid frontend sort values by falling back to newest-first.
+- Preserved active sort when clearing status/search filters and included sort in load-more requests.
+- Documented task-list sort behavior in README and frontend design notes.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=TaskControllerTests#should_sort_tasks_oldest_first,TaskControllerTests#should_return_bad_request_for_invalid_task_list_sort,InMemoryFixTaskServiceTests#should_list_tasks_oldest_first_when_requested,MyBatisFixTaskServiceTests#should_list_tasks_oldest_first_when_requested test`: first failed because controller ignored `sort` and services always returned newest-first, then passed after parsing and applying sort, 4 tests run, 0 failures.
+- `cd frontend && npm test -- src/api.test.ts src/App.test.tsx -t "sort|offset pagination"`: first failed because the dashboard had no `Sort tasks` control and did not include sort in requests, then passed after adding API sort parameters, URL state, the control, and load-more propagation, 6 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed, 276 tests run, 0 failures.
+- `cd frontend && npm test`: passed, 59 tests run, 0 failures.
+- `cd frontend && npm run build`: passed, production bundle generated successfully.

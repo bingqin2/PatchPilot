@@ -17,6 +17,7 @@ import type {
   FixTaskTestRun,
   FixTaskTimelineEvent,
   FixTaskToolCall,
+  TaskSort,
   TaskStatusFilter
 } from './types';
 
@@ -25,6 +26,7 @@ interface ListTasksOptions {
   query?: string;
   limit?: number;
   offset?: number;
+  sort?: TaskSort;
 }
 
 const backendConnectionError =
@@ -42,6 +44,9 @@ export async function listTasks(options: TaskStatusFilter | ListTasksOptions = '
   }
   if (normalizedOptions.query?.trim()) {
     searchParams.set('query', normalizedOptions.query.trim());
+  }
+  if (normalizedOptions.sort && normalizedOptions.sort !== 'createdAtDesc') {
+    searchParams.set('sort', normalizedOptions.sort);
   }
   const status = normalizedOptions.status ?? 'ALL';
   if (status !== 'ALL') {

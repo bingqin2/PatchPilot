@@ -39,6 +39,7 @@ import type {
   FixTaskModelUsageSummary,
   FixTaskQueueItem,
   FixTaskQueueSummary,
+  TaskSort,
   TaskStatusFilter
 } from './types';
 
@@ -52,6 +53,7 @@ const TASK_STATUS_FILTERS: TaskStatusFilter[] = [
   'FAILED',
   'CANCELLED'
 ];
+const TASK_SORTS: TaskSort[] = ['createdAtDesc', 'createdAtAsc'];
 
 export default function App() {
   const initialFilters = useMemo(() => filtersFromUrl(), []);
@@ -66,6 +68,7 @@ export default function App() {
   const [queueItems, setQueueItems] = useState<FixTaskQueueItem[]>([]);
   const [statusFilter, setStatusFilter] = useState<TaskStatusFilter>(initialFilters.status);
   const [searchQuery, setSearchQuery] = useState(initialFilters.query);
+  const [taskSort, setTaskSort] = useState<TaskSort>(initialFilters.sort);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(() => taskIdFromUrl());
   const [detail, setDetail] = useState<TaskDetailState>(emptyDetail);
   const [loading, setLoading] = useState(true);
@@ -91,19 +94,24 @@ export default function App() {
 
   const handleStatusFilterChange = useCallback((status: TaskStatusFilter) => {
     setStatusFilter(status);
-    writeFiltersToUrl(status, searchQuery);
-  }, [searchQuery]);
+    writeTaskListStateToUrl(status, searchQuery, taskSort);
+  }, [searchQuery, taskSort]);
 
   const handleSearchQueryChange = useCallback((query: string) => {
     setSearchQuery(query);
-    writeFiltersToUrl(statusFilter, query);
-  }, [statusFilter]);
+    writeTaskListStateToUrl(statusFilter, query, taskSort);
+  }, [statusFilter, taskSort]);
+
+  const handleTaskSortChange = useCallback((sort: TaskSort) => {
+    setTaskSort(sort);
+    writeTaskListStateToUrl(statusFilter, searchQuery, sort);
+  }, [searchQuery, statusFilter]);
 
   const handleClearFilters = useCallback(() => {
     setStatusFilter('ALL');
     setSearchQuery('');
-    writeFiltersToUrl('ALL', '');
-  }, []);
+    writeTaskListStateToUrl('ALL', '', taskSort);
+  }, [taskSort]);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -120,7 +128,7 @@ export default function App() {
         queueSummaryData,
         queueItemList
       ] = await Promise.all([
-        listTasks({ status: statusFilter, query: searchQuery, limit: TASK_PAGE_SIZE }),
+        listTasks({ status: statusFilter, query: searchQuery, sort: taskSort, limit: TASK_PAGE_SIZE }),
         getMetricsSummary(),
         getFailureCauseSummary(),
         getModelUsageSummary(),
@@ -148,7 +156,7 @@ export default function App() {
     } finally {
       setLoading(false);
     }
-  }, [searchQuery, statusFilter]);
+  }, [searchQuery, statusFilter, taskSort]);
 
   const handleLoadMoreTasks = useCallback(async () => {
     setLoadingMoreTasks(true);
@@ -157,6 +165,7 @@ export default function App() {
       const nextTaskPage = await listTasks({
         status: statusFilter,
         query: searchQuery,
+        sort: taskSort,
         limit: TASK_PAGE_SIZE,
         offset: tasks.length
       });
@@ -168,7 +177,7 @@ export default function App() {
     } finally {
       setLoadingMoreTasks(false);
     }
-  }, [searchQuery, statusFilter, tasks.length]);
+  }, [searchQuery, statusFilter, taskSort, tasks.length]);
 
   useEffect(() => {
     void refresh();
@@ -315,6 +324,7 @@ export default function App() {
           selectedTask={selectedTask}
           statusFilter={statusFilter}
           searchQuery={searchQuery}
+          taskSort={taskSort}
           loading={loading}
           totalCount={taskTotal}
           canLoadMore={canLoadMoreTasks}
@@ -322,6 +332,7 @@ export default function App() {
           canClearFilters={statusFilter !== 'ALL' || searchQuery.trim().length > 0}
           onStatusFilterChange={handleStatusFilterChange}
           onSearchQueryChange={handleSearchQueryChange}
+          onTaskSortChange={handleTaskSortChange}
           onClearFilters={handleClearFilters}
           onSelectTask={selectTask}
           onLoadMoreTasks={handleLoadMoreTasks}
@@ -361,7 +372,8 @@ function filtersFromUrl() {
   const searchParams = new URLSearchParams(window.location.search);
   return {
     status: statusFilterFromUrl(searchParams.get('status')),
-    query: searchParams.get('query') ?? ''
+    query: searchParams.get('query') ?? '',
+    sort: sortFromUrl(searchParams.get('sort'))
   };
 }
 
@@ -370,6 +382,13 @@ function statusFilterFromUrl(value: string | null): TaskStatusFilter {
     return value as TaskStatusFilter;
   }
   return 'ALL';
+}
+
+function sortFromUrl(value: string | null): TaskSort {
+  if (value && TASK_SORTS.includes(value as TaskSort)) {
+    return value as TaskSort;
+  }
+  return 'createdAtDesc';
 }
 
 function selectedTaskIdFromList(tasks: FixTask[], currentTaskId: string | null) {
@@ -386,7 +405,7 @@ function writeTaskIdToUrl(taskId: string) {
   window.history.replaceState(null, '', `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`);
 }
 
-function writeFiltersToUrl(status: TaskStatusFilter, query: string) {
+function writeTaskListStateToUrl(status: TaskStatusFilter, query: string, sort: TaskSort) {
   const nextUrl = new URL(window.location.href);
   nextUrl.searchParams.delete('taskId');
   if (status === 'ALL') {
@@ -398,6 +417,11 @@ function writeFiltersToUrl(status: TaskStatusFilter, query: string) {
     nextUrl.searchParams.set('query', query.trim());
   } else {
     nextUrl.searchParams.delete('query');
+  }
+  if (sort === 'createdAtDesc') {
+    nextUrl.searchParams.delete('sort');
+  } else {
+    nextUrl.searchParams.set('sort', sort);
   }
   window.history.replaceState(null, '', `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`);
 }

@@ -7,6 +7,7 @@ import io.patchpilot.backend.task.domain.bo.CreateFixTaskCommand;
 import io.patchpilot.backend.task.domain.bo.FixTaskCreationResult;
 import io.patchpilot.backend.task.domain.bo.FixTaskListQuery;
 import io.patchpilot.backend.task.domain.entity.FixTaskEntity;
+import io.patchpilot.backend.task.domain.enums.FixTaskSort;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import io.patchpilot.backend.task.mapper.FixTaskMapper;
@@ -237,6 +238,34 @@ class MyBatisFixTaskServiceTests {
         verify(fixTaskMapper).selectList(wrapperCaptor.capture());
         assertThat(wrapperCaptor.getValue().getSqlSegment())
                 .contains("LIMIT 1, 1");
+    }
+
+    @Test
+    void should_list_tasks_oldest_first_when_requested() {
+        FixTaskEntity olderTask = entity("task-older", "delivery-sort-older", FixTaskStatus.PENDING,
+                null, Instant.parse("2026-06-19T01:00:00Z"));
+        FixTaskEntity newerTask = entity("task-newer", "delivery-sort-newer", FixTaskStatus.COMPLETED,
+                null, Instant.parse("2026-06-19T02:00:00Z"));
+        when(fixTaskMapper.selectList(any())).thenReturn(List.of(newerTask, olderTask));
+
+        List<FixTaskVo> tasks = fixTaskService.listTasks(new FixTaskListQuery(
+                "delivery-sort",
+                null,
+                "octocat",
+                "hello-world",
+                10,
+                0,
+                FixTaskSort.CREATED_AT_ASC
+        ));
+
+        assertThat(tasks)
+                .extracting(FixTaskVo::id)
+                .containsExactly("task-older", "task-newer");
+        ArgumentCaptor<Wrapper<FixTaskEntity>> wrapperCaptor = ArgumentCaptor.forClass(Wrapper.class);
+        verify(fixTaskMapper).selectList(wrapperCaptor.capture());
+        assertThat(wrapperCaptor.getValue().getSqlSegment())
+                .contains("ORDER BY created_at ASC,id ASC")
+                .contains("LIMIT 0, 10");
     }
 
     @Test
