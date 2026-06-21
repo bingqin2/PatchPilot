@@ -1,5 +1,7 @@
 package io.patchpilot.backend.task.service.impl;
 
+import io.patchpilot.backend.safety.CommandSafetyGate;
+import io.patchpilot.backend.safety.domain.SafetyGateDecision;
 import io.patchpilot.backend.task.domain.bo.CreateFixTaskCommand;
 import io.patchpilot.backend.task.domain.bo.CreateManualFixTaskCommand;
 import io.patchpilot.backend.task.domain.enums.FixTaskTimelineEventType;
@@ -8,21 +10,46 @@ import io.patchpilot.backend.task.service.FixTaskDispatcher;
 import io.patchpilot.backend.task.service.FixTaskService;
 import io.patchpilot.backend.task.service.FixTaskTimelineService;
 import io.patchpilot.backend.task.service.ManualFixTaskService;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
 
 @Service
-@RequiredArgsConstructor
 public class DefaultManualFixTaskService implements ManualFixTaskService {
 
     private final FixTaskService fixTaskService;
     private final FixTaskTimelineService fixTaskTimelineService;
     private final FixTaskDispatcher fixTaskDispatcher;
+    private final CommandSafetyGate commandSafetyGate;
+
+    public DefaultManualFixTaskService(
+            FixTaskService fixTaskService,
+            FixTaskTimelineService fixTaskTimelineService,
+            FixTaskDispatcher fixTaskDispatcher
+    ) {
+        this(fixTaskService, fixTaskTimelineService, fixTaskDispatcher, new CommandSafetyGate());
+    }
+
+    @Autowired
+    public DefaultManualFixTaskService(
+            FixTaskService fixTaskService,
+            FixTaskTimelineService fixTaskTimelineService,
+            FixTaskDispatcher fixTaskDispatcher,
+            CommandSafetyGate commandSafetyGate
+    ) {
+        this.fixTaskService = fixTaskService;
+        this.fixTaskTimelineService = fixTaskTimelineService;
+        this.fixTaskDispatcher = fixTaskDispatcher;
+        this.commandSafetyGate = commandSafetyGate;
+    }
 
     @Override
     public FixTaskVo createManualTask(CreateManualFixTaskCommand command) {
+        SafetyGateDecision safetyDecision = commandSafetyGate.evaluate(command.triggerComment());
+        if (!safetyDecision.allowed()) {
+            throw new IllegalArgumentException(safetyDecision.reason());
+        }
         fixTaskService.findActiveTaskForIssue(
                         command.repositoryOwner(),
                         command.repositoryName(),

@@ -1837,3 +1837,25 @@ Validation:
 - `mvn -pl PatchPilot test -q`: passed.
 - `cd frontend && npm test -- --reporter=dot`: passed, 6 test files and 68 tests.
 - `cd frontend && npm run build`: passed, production bundle generated successfully.
+
+Implemented safety gate and language adapter foundation from `docs/plans/088-safety-gate-language-adapter-foundation.md`.
+
+Changes:
+
+- Added a `CommandSafetyGate` that accepts supported `/agent fix` commands and rejects unsafe destructive, secret-exfiltration, or arbitrary shell style instructions before task creation.
+- Added `REJECTED` webhook handling so unsafe GitHub comments return a non-task result instead of creating or dispatching work.
+- Applied the same safety gate to dashboard-created manual tasks so manual API calls cannot bypass webhook command checks.
+- Added a `LanguageAdapter` boundary, `LanguageDetectionResult`, and `JavaMavenLanguageAdapter`.
+- Routed `MavenTestRunner` through the Java/Maven adapter for Maven wrapper and `pom.xml` detection while preserving the existing allowlisted `./mvnw test` and `mvn test` behavior.
+- Documented the safety gate and adapter boundary in README and architecture docs.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=GitHubWebhookServiceTests#should_reject_dangerous_agent_fix_command_before_task_creation,DefaultManualFixTaskServiceTests#should_reject_manual_task_when_command_is_unsafe,JavaMavenLanguageAdapterTests test`: first failed because language adapter types did not exist and `REJECTED` was not a webhook status, then passed after adding the adapter and safety gate wiring, 5 tests run, 0 failures.
+- `mvn -pl PatchPilot -Dtest=MavenTestRunnerTests#should_run_system_maven_when_only_pom_exists test`: first failed because `MavenTestRunner` did not accept the Java/Maven adapter dependency, then passed after routing detection through `JavaMavenLanguageAdapter`.
+- `mvn -pl PatchPilot -Dtest=MavenTestRunnerTests,JavaMavenLanguageAdapterTests test`: passed, 13 tests run, 0 failures.
+- `mvn -pl PatchPilot -Dtest=GitHubWebhookServiceTests#should_reject_dangerous_agent_fix_command_before_task_creation,GitHubWebhookControllerTests#should_reject_dangerous_agent_fix_issue_comment,DefaultManualFixTaskServiceTests#should_reject_manual_task_when_command_is_unsafe,TaskControllerTests#should_return_bad_request_when_manual_task_command_is_unsafe test`: passed, 4 tests run, 0 failures.
+- `mvn -pl PatchPilot test -q`: passed.
+- `cd frontend && npm test -- --reporter=dot`: passed, 6 test files and 68 tests.
+- `cd frontend && npm run build`: passed, production bundle generated successfully.
+- `git diff --check`: passed with no whitespace errors.

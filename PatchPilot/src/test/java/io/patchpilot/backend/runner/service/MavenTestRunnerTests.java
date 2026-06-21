@@ -3,6 +3,7 @@ package io.patchpilot.backend.runner.service;
 import io.patchpilot.backend.runner.domain.vo.TestRunResult;
 import io.patchpilot.backend.task.process.TaskProcessRegistry;
 import io.patchpilot.backend.workspace.config.WorkspaceProperties;
+import io.patchpilot.backend.language.impl.JavaMavenLanguageAdapter;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -179,7 +180,7 @@ class MavenTestRunnerTests {
     private MavenTestRunner runner(Duration timeout, TaskProcessRegistry processRegistry) {
         WorkspaceProperties properties = new WorkspaceProperties();
         properties.setRootDir(tempDir);
-        return new MavenTestRunner(timeout, new CommandExecutionGuard(properties), processRegistry);
+        return new MavenTestRunner(timeout, new CommandExecutionGuard(properties), processRegistry, new JavaMavenLanguageAdapter());
     }
 
     private static final class RecordingMavenTestRunner extends MavenTestRunner {

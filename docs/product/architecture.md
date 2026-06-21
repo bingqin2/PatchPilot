@@ -44,13 +44,15 @@ The frontend should stay work-focused and dense enough for repeated debugging. I
 GitHub issue comment created
   -> WebhookController verifies signature
   -> WebhookEventRouter detects /agent fix
+  -> CommandSafetyGate rejects unsafe or unsupported commands
   -> FixTaskService creates a task
   -> TaskWorker runs asynchronously
   -> WorkspaceService clones the repository
   -> IssueAnalyzer gathers issue and repository context
   -> FixIssueAgent creates a fix plan
   -> Tools search code, read files, write files, and inspect diff
-  -> MavenTestRunner runs verification
+  -> LanguageAdapter selects an allowlisted verification command
+  -> TestRunner runs verification
   -> GitHubClient pushes a branch and opens a Pull Request
   -> GitHubClient comments back on the issue
   -> FixTaskService marks the task completed or failed
@@ -114,6 +116,7 @@ Responsibilities:
 - Verify `X-Hub-Signature-256`.
 - Route supported events.
 - Detect `/agent fix`.
+- Reject unsafe `/agent fix` commands before task creation.
 - Deduplicate delivery ids.
 - Submit work to task services.
 
@@ -205,18 +208,20 @@ Tools are the only way for agent reasoning to affect the external world.
 
 Responsibilities:
 
-- Detect supported build systems.
+- Use language adapters to detect supported build systems.
 - Execute allowed verification commands.
 - Capture test output.
 - Enforce timeouts.
 - Return structured test results.
 
-MVP supported commands:
+The first adapter is `JavaMavenLanguageAdapter`. MVP supported commands:
 
 ```bash
 ./mvnw test
 mvn test
 ```
+
+Future adapters should add their own detection and allowlisted verification commands without allowing arbitrary user-supplied shell.
 
 ## Data Model
 
