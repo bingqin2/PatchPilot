@@ -43,6 +43,7 @@ Formatting helpers live in `frontend/src/dashboard/format.ts`.
 The first screen is the working dashboard:
 
 - Metrics summarize task health.
+- A compact refresh status tells operators when top-level dashboard data is still loading.
 - Operational summaries highlight failure causes, model usage, and latency without requiring terminal inspection.
 - The task list supports status filters, backend-backed search over task history, loaded-versus-total counts, and incremental loading.
 - Selecting a task updates the `?taskId=` URL parameter and reveals a copyable task link, execution evidence summary, timeline events, Maven test output, tool-call records, model-call records, and GitHub links.

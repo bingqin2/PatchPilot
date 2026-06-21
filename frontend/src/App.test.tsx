@@ -529,6 +529,75 @@ test('shows an actionable error when a backend request fails', async () => {
   expect(within(alert).getByText('backend unavailable')).toBeInTheDocument();
 });
 
+test('shows dashboard refresh progress while top-level data is loading', async () => {
+  let resolveTasks: ((value: Response) => void) | undefined;
+  const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+    const url = input.toString();
+    if (url === '/api/tasks?limit=50') {
+      return new Promise<Response>((resolve) => {
+        resolveTasks = resolve;
+      });
+    }
+    if (url === '/api/tasks/metrics/summary') {
+      return jsonResponse({
+        totalCount: 0,
+        pendingCount: 0,
+        runningCount: 0,
+        runningTestsCount: 0,
+        completedCount: 0,
+        failedCount: 0,
+        cancelledCount: 0,
+        completionRate: 0,
+        failureRate: 0,
+        averageCompletionDurationMs: 0,
+        totalModelTokens: 0,
+        averageModelTokensPerCompletedTask: 0,
+        testRunCount: 0,
+        passedTestRunCount: 0,
+        failedTestRunCount: 0,
+        testPassRate: 0
+      });
+    }
+    if (url === '/api/tasks/metrics/failure-causes') {
+      return jsonResponse([]);
+    }
+    if (url === '/api/tasks/metrics/model-usage') {
+      return jsonResponse(modelUsageSummary);
+    }
+    if (url === '/api/tasks/metrics/latency') {
+      return jsonResponse(latencySummary);
+    }
+    if (url === '/api/configuration/summary') {
+      return jsonResponse(configurationSummary);
+    }
+    if (url === '/health') {
+      return jsonResponse({
+        status: 'UP',
+        service: 'patchpilot-backend',
+        timestamp: '2026-06-21T01:00:00Z'
+      });
+    }
+    if (url === '/api/task-queue/summary') {
+      return jsonResponse(queueSummary);
+    }
+    if (url === '/api/task-queue/items') {
+      return jsonResponse([]);
+    }
+    return jsonResponse(null, false, 'not found', 404);
+  });
+  vi.stubGlobal('fetch', fetchMock);
+
+  render(<App />);
+
+  expect(await screen.findByRole('status')).toHaveTextContent('Dashboard refreshing');
+  expect(screen.getByRole('button', { name: 'Refreshing dashboard' })).toBeDisabled();
+
+  resolveTasks?.(await jsonResponse(taskPage([])));
+
+  await waitFor(() => expect(screen.queryByRole('status')).not.toBeInTheDocument());
+  expect(screen.getByRole('button', { name: 'Refresh dashboard' })).toBeEnabled();
+});
+
 test('filters tasks by status with backend query parameters', async () => {
   const user = userEvent.setup();
   const fetchMock = vi.mocked(fetch);
