@@ -268,6 +268,7 @@ function queueItemDescription(item: TaskDetailState['queueItems'][number]) {
 
 export function taskLinkFor(taskId: string, href = window.location.href) {
   const url = new URL(href);
-  url.searchParams.set('taskId', taskId);
+  url.pathname = `/tasks/${encodeURIComponent(taskId)}`;
+  url.searchParams.delete('taskId');
   return url.toString();
 }

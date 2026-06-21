@@ -1703,3 +1703,19 @@ Validation:
 - `mvn -pl PatchPilot test`: passed, 272 tests run, 0 failures.
 - `cd frontend && npm test`: passed, 47 tests run, 0 failures.
 - `cd frontend && npm run build`: passed, production bundle generated successfully.
+
+Implemented dashboard task detail route from `docs/plans/081-dashboard-task-detail-route.md`.
+
+Changes:
+
+- Added `/tasks/{taskId}` as the canonical selected-task dashboard route.
+- Kept legacy `?taskId={taskId}` URLs compatible for previously copied links.
+- Updated task selection to write path-based routes while preserving unrelated query parameters and hash fragments.
+- Updated copyable task links to generate `/tasks/{taskId}` URLs.
+- Documented route-based task deep links in README and frontend design docs.
+
+Validation:
+
+- `npm test -- src/App.test.tsx src/dashboard/components/TaskDetailPanel.test.tsx -t "task detail route|taskId URL parameter|selected task route|shareable task link|deep link"`: first failed because the dashboard still only read and wrote `?taskId=...`, then passed after adding path-route parsing, writing, and copy-link generation, 6 tests run, 0 failures.
+- `cd frontend && npm test`: passed, 49 tests run, 0 failures.
+- `cd frontend && npm run build`: passed, production bundle generated successfully.
