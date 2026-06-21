@@ -41,6 +41,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.net.URI;
+import java.time.Instant;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 
 @RestController
@@ -79,12 +81,24 @@ public class TaskController {
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String repositoryOwner,
             @RequestParam(required = false) String repositoryName,
+            @RequestParam(required = false) String createdAfter,
+            @RequestParam(required = false) String createdBefore,
             @RequestParam(required = false) Integer limit,
             @RequestParam(required = false) Integer offset,
             @RequestParam(required = false) String sort
     ) {
         try {
-            return ResponseEntity.ok(ApiResponse.ok(queryTasks(query, status, repositoryOwner, repositoryName, limit, offset, sort)));
+            return ResponseEntity.ok(ApiResponse.ok(queryTasks(
+                    query,
+                    status,
+                    repositoryOwner,
+                    repositoryName,
+                    createdAfter,
+                    createdBefore,
+                    limit,
+                    offset,
+                    sort
+            )));
         } catch (IllegalArgumentException exception) {
             return ResponseEntity.badRequest().body(ApiResponse.fail(exception.getMessage()));
         }
@@ -197,6 +211,8 @@ public class TaskController {
             String status,
             String repositoryOwner,
             String repositoryName,
+            String createdAfter,
+            String createdBefore,
             Integer limit,
             Integer offset,
             String sort
@@ -208,11 +224,15 @@ public class TaskController {
         String parsedQuery = blankToNull(query);
         String parsedRepositoryOwner = blankToNull(repositoryOwner);
         String parsedRepositoryName = blankToNull(repositoryName);
+        Instant parsedCreatedAfter = parseInstant(createdAfter, "createdAfter");
+        Instant parsedCreatedBefore = parseInstant(createdBefore, "createdBefore");
         FixTaskListQuery pageQuery = new FixTaskListQuery(
                 parsedQuery,
                 parsedStatus,
                 parsedRepositoryOwner,
                 parsedRepositoryName,
+                parsedCreatedAfter,
+                parsedCreatedBefore,
                 parsedLimit + 1,
                 parsedOffset,
                 parsedSort
@@ -222,6 +242,8 @@ public class TaskController {
                 parsedStatus,
                 parsedRepositoryOwner,
                 parsedRepositoryName,
+                parsedCreatedAfter,
+                parsedCreatedBefore,
                 Integer.MAX_VALUE,
                 0,
                 parsedSort
@@ -305,6 +327,17 @@ public class TaskController {
             return FixTaskSort.CREATED_AT_DESC;
         }
         return FixTaskSort.fromApiValue(sort.trim());
+    }
+
+    private static Instant parseInstant(String value, String parameterName) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return Instant.parse(value.trim());
+        } catch (DateTimeParseException exception) {
+            throw new IllegalArgumentException(parameterName + " must be an ISO-8601 instant");
+        }
     }
 
     private static String blankToNull(String value) {

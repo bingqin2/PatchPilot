@@ -26,6 +26,8 @@ interface ListTasksOptions {
   query?: string;
   repositoryOwner?: string;
   repositoryName?: string;
+  createdAfter?: string;
+  createdBefore?: string;
   limit?: number;
   offset?: number;
   sort?: TaskSort;
@@ -52,6 +54,12 @@ export async function listTasks(options: TaskStatusFilter | ListTasksOptions = '
   }
   if (normalizedOptions.repositoryName?.trim()) {
     searchParams.set('repositoryName', normalizedOptions.repositoryName.trim());
+  }
+  if (normalizedOptions.createdAfter?.trim()) {
+    searchParams.set('createdAfter', normalizedOptions.createdAfter.trim());
+  }
+  if (normalizedOptions.createdBefore?.trim()) {
+    searchParams.set('createdBefore', normalizedOptions.createdBefore.trim());
   }
   if (normalizedOptions.sort && normalizedOptions.sort !== 'createdAtDesc') {
     searchParams.set('sort', normalizedOptions.sort);

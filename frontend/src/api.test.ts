@@ -90,13 +90,15 @@ test('builds backend task search sort and pagination query parameters', async ()
     query: ' search target ',
     repositoryOwner: ' bingqin2 ',
     repositoryName: ' PatchPilot ',
+    createdAfter: ' 2026-06-20T01:00:00Z ',
+    createdBefore: ' 2026-06-21T01:00:00Z ',
     limit: 25,
     offset: 50,
     sort: 'createdAtAsc'
   });
 
   expect(fetchMock).toHaveBeenCalledWith(
-    '/api/tasks?limit=25&offset=50&query=search+target&repositoryOwner=bingqin2&repositoryName=PatchPilot&sort=createdAtAsc&status=FAILED'
+    '/api/tasks?limit=25&offset=50&query=search+target&repositoryOwner=bingqin2&repositoryName=PatchPilot&createdAfter=2026-06-20T01%3A00%3A00Z&createdBefore=2026-06-21T01%3A00%3A00Z&sort=createdAtAsc&status=FAILED'
   );
   expect(page).toEqual({
     items: [],

@@ -208,6 +208,31 @@ class TaskControllerTests {
     }
 
     @Test
+    void should_filter_tasks_by_created_time_range() throws Exception {
+        FixTaskVo olderTask = createTask(command("created-range-owner", "created-range-repo", "delivery-created-range-older"));
+        FixTaskVo newerTask = createTask(command("created-range-owner", "created-range-repo", "delivery-created-range-newer"));
+
+        mockMvc.perform(get("/api/tasks")
+                        .param("repositoryOwner", "created-range-owner")
+                        .param("repositoryName", "created-range-repo")
+                        .param("createdAfter", olderTask.createdAt().plusNanos(1).toString())
+                        .param("createdBefore", newerTask.createdAt().plusNanos(1).toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.items.length()").value(1))
+                .andExpect(jsonPath("$.data.items[0].id").value(newerTask.id()))
+                .andExpect(jsonPath("$.data.total").value(1));
+    }
+
+    @Test
+    void should_return_bad_request_for_invalid_created_time_filter() throws Exception {
+        mockMvc.perform(get("/api/tasks").param("createdAfter", "not-an-instant"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("createdAfter must be an ISO-8601 instant"));
+    }
+
+    @Test
     void should_filter_tasks_by_status_repository_and_limit() throws Exception {
         FixTaskVo completedTask = createTask(command("octocat", "hello-world", "delivery-filter-completed"));
         FixTaskVo failedTask = createTask(command("octocat", "hello-world", "delivery-filter-failed"));

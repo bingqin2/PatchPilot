@@ -264,6 +264,8 @@ public class InMemoryFixTaskService implements FixTaskService {
                 .filter(task -> query.status() == null || task.status() == query.status())
                 .filter(task -> query.repositoryOwner() == null || task.repositoryOwner().equals(query.repositoryOwner()))
                 .filter(task -> query.repositoryName() == null || task.repositoryName().equals(query.repositoryName()))
+                .filter(task -> query.createdAfter() == null || !task.createdAt().isBefore(query.createdAfter()))
+                .filter(task -> query.createdBefore() == null || !task.createdAt().isAfter(query.createdBefore()))
                 .filter(task -> matchesQuery(task, query.query()));
     }
 

@@ -70,6 +70,8 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState(initialFilters.query);
   const [repositoryOwnerFilter, setRepositoryOwnerFilter] = useState(initialFilters.repositoryOwner);
   const [repositoryNameFilter, setRepositoryNameFilter] = useState(initialFilters.repositoryName);
+  const [createdAfterFilter, setCreatedAfterFilter] = useState(initialFilters.createdAfter);
+  const [createdBeforeFilter, setCreatedBeforeFilter] = useState(initialFilters.createdBefore);
   const [taskSort, setTaskSort] = useState<TaskSort>(initialFilters.sort);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(() => taskIdFromUrl());
   const [detail, setDetail] = useState<TaskDetailState>(emptyDetail);
@@ -101,9 +103,11 @@ export default function App() {
       query: searchQuery,
       repositoryOwner: repositoryOwnerFilter,
       repositoryName: repositoryNameFilter,
+      createdAfter: createdAfterFilter,
+      createdBefore: createdBeforeFilter,
       sort: taskSort
     });
-  }, [repositoryNameFilter, repositoryOwnerFilter, searchQuery, taskSort]);
+  }, [createdAfterFilter, createdBeforeFilter, repositoryNameFilter, repositoryOwnerFilter, searchQuery, taskSort]);
 
   const handleSearchQueryChange = useCallback((query: string) => {
     setSearchQuery(query);
@@ -112,9 +116,11 @@ export default function App() {
       query,
       repositoryOwner: repositoryOwnerFilter,
       repositoryName: repositoryNameFilter,
+      createdAfter: createdAfterFilter,
+      createdBefore: createdBeforeFilter,
       sort: taskSort
     });
-  }, [repositoryNameFilter, repositoryOwnerFilter, statusFilter, taskSort]);
+  }, [createdAfterFilter, createdBeforeFilter, repositoryNameFilter, repositoryOwnerFilter, statusFilter, taskSort]);
 
   const handleRepositoryOwnerFilterChange = useCallback((repositoryOwner: string) => {
     setRepositoryOwnerFilter(repositoryOwner);
@@ -123,9 +129,11 @@ export default function App() {
       query: searchQuery,
       repositoryOwner,
       repositoryName: repositoryNameFilter,
+      createdAfter: createdAfterFilter,
+      createdBefore: createdBeforeFilter,
       sort: taskSort
     });
-  }, [repositoryNameFilter, searchQuery, statusFilter, taskSort]);
+  }, [createdAfterFilter, createdBeforeFilter, repositoryNameFilter, searchQuery, statusFilter, taskSort]);
 
   const handleRepositoryNameFilterChange = useCallback((repositoryName: string) => {
     setRepositoryNameFilter(repositoryName);
@@ -134,9 +142,37 @@ export default function App() {
       query: searchQuery,
       repositoryOwner: repositoryOwnerFilter,
       repositoryName,
+      createdAfter: createdAfterFilter,
+      createdBefore: createdBeforeFilter,
       sort: taskSort
     });
-  }, [repositoryOwnerFilter, searchQuery, statusFilter, taskSort]);
+  }, [createdAfterFilter, createdBeforeFilter, repositoryOwnerFilter, searchQuery, statusFilter, taskSort]);
+
+  const handleCreatedAfterFilterChange = useCallback((createdAfter: string) => {
+    setCreatedAfterFilter(createdAfter);
+    writeTaskListStateToUrl({
+      status: statusFilter,
+      query: searchQuery,
+      repositoryOwner: repositoryOwnerFilter,
+      repositoryName: repositoryNameFilter,
+      createdAfter,
+      createdBefore: createdBeforeFilter,
+      sort: taskSort
+    });
+  }, [createdBeforeFilter, repositoryNameFilter, repositoryOwnerFilter, searchQuery, statusFilter, taskSort]);
+
+  const handleCreatedBeforeFilterChange = useCallback((createdBefore: string) => {
+    setCreatedBeforeFilter(createdBefore);
+    writeTaskListStateToUrl({
+      status: statusFilter,
+      query: searchQuery,
+      repositoryOwner: repositoryOwnerFilter,
+      repositoryName: repositoryNameFilter,
+      createdAfter: createdAfterFilter,
+      createdBefore,
+      sort: taskSort
+    });
+  }, [createdAfterFilter, repositoryNameFilter, repositoryOwnerFilter, searchQuery, statusFilter, taskSort]);
 
   const handleTaskSortChange = useCallback((sort: TaskSort) => {
     setTaskSort(sort);
@@ -145,20 +181,26 @@ export default function App() {
       query: searchQuery,
       repositoryOwner: repositoryOwnerFilter,
       repositoryName: repositoryNameFilter,
+      createdAfter: createdAfterFilter,
+      createdBefore: createdBeforeFilter,
       sort
     });
-  }, [repositoryNameFilter, repositoryOwnerFilter, searchQuery, statusFilter]);
+  }, [createdAfterFilter, createdBeforeFilter, repositoryNameFilter, repositoryOwnerFilter, searchQuery, statusFilter]);
 
   const handleClearFilters = useCallback(() => {
     setStatusFilter('ALL');
     setSearchQuery('');
     setRepositoryOwnerFilter('');
     setRepositoryNameFilter('');
+    setCreatedAfterFilter('');
+    setCreatedBeforeFilter('');
     writeTaskListStateToUrl({
       status: 'ALL',
       query: '',
       repositoryOwner: '',
       repositoryName: '',
+      createdAfter: '',
+      createdBefore: '',
       sort: taskSort
     });
   }, [taskSort]);
@@ -183,6 +225,8 @@ export default function App() {
           query: searchQuery,
           repositoryOwner: repositoryOwnerFilter,
           repositoryName: repositoryNameFilter,
+          createdAfter: createdAfterFilter,
+          createdBefore: createdBeforeFilter,
           sort: taskSort,
           limit: TASK_PAGE_SIZE
         }),
@@ -213,7 +257,7 @@ export default function App() {
     } finally {
       setLoading(false);
     }
-  }, [repositoryNameFilter, repositoryOwnerFilter, searchQuery, statusFilter, taskSort]);
+  }, [createdAfterFilter, createdBeforeFilter, repositoryNameFilter, repositoryOwnerFilter, searchQuery, statusFilter, taskSort]);
 
   const handleLoadMoreTasks = useCallback(async () => {
     setLoadingMoreTasks(true);
@@ -224,6 +268,8 @@ export default function App() {
         query: searchQuery,
         repositoryOwner: repositoryOwnerFilter,
         repositoryName: repositoryNameFilter,
+        createdAfter: createdAfterFilter,
+        createdBefore: createdBeforeFilter,
         sort: taskSort,
         limit: TASK_PAGE_SIZE,
         offset: tasks.length
@@ -236,7 +282,7 @@ export default function App() {
     } finally {
       setLoadingMoreTasks(false);
     }
-  }, [repositoryNameFilter, repositoryOwnerFilter, searchQuery, statusFilter, taskSort, tasks.length]);
+  }, [createdAfterFilter, createdBeforeFilter, repositoryNameFilter, repositoryOwnerFilter, searchQuery, statusFilter, taskSort, tasks.length]);
 
   useEffect(() => {
     void refresh();
@@ -385,6 +431,8 @@ export default function App() {
           searchQuery={searchQuery}
           repositoryOwnerFilter={repositoryOwnerFilter}
           repositoryNameFilter={repositoryNameFilter}
+          createdAfterFilter={createdAfterFilter}
+          createdBeforeFilter={createdBeforeFilter}
           taskSort={taskSort}
           loading={loading}
           totalCount={taskTotal}
@@ -394,12 +442,16 @@ export default function App() {
             statusFilter !== 'ALL' ||
             searchQuery.trim().length > 0 ||
             repositoryOwnerFilter.trim().length > 0 ||
-            repositoryNameFilter.trim().length > 0
+            repositoryNameFilter.trim().length > 0 ||
+            createdAfterFilter.trim().length > 0 ||
+            createdBeforeFilter.trim().length > 0
           }
           onStatusFilterChange={handleStatusFilterChange}
           onSearchQueryChange={handleSearchQueryChange}
           onRepositoryOwnerFilterChange={handleRepositoryOwnerFilterChange}
           onRepositoryNameFilterChange={handleRepositoryNameFilterChange}
+          onCreatedAfterFilterChange={handleCreatedAfterFilterChange}
+          onCreatedBeforeFilterChange={handleCreatedBeforeFilterChange}
           onTaskSortChange={handleTaskSortChange}
           onClearFilters={handleClearFilters}
           onSelectTask={selectTask}
@@ -443,6 +495,8 @@ function filtersFromUrl() {
     query: searchParams.get('query') ?? '',
     repositoryOwner: searchParams.get('repositoryOwner') ?? '',
     repositoryName: searchParams.get('repositoryName') ?? '',
+    createdAfter: searchParams.get('createdAfter') ?? '',
+    createdBefore: searchParams.get('createdBefore') ?? '',
     sort: sortFromUrl(searchParams.get('sort'))
   };
 }
@@ -480,6 +534,8 @@ interface TaskListUrlState {
   query: string;
   repositoryOwner: string;
   repositoryName: string;
+  createdAfter: string;
+  createdBefore: string;
   sort: TaskSort;
 }
 
@@ -488,6 +544,8 @@ function writeTaskListStateToUrl({
   query,
   repositoryOwner,
   repositoryName,
+  createdAfter,
+  createdBefore,
   sort
 }: TaskListUrlState) {
   const nextUrl = new URL(window.location.href);
@@ -516,6 +574,16 @@ function writeTaskListStateToUrl({
     nextUrl.searchParams.delete('sort');
   } else {
     nextUrl.searchParams.set('sort', sort);
+  }
+  if (createdAfter.trim()) {
+    nextUrl.searchParams.set('createdAfter', createdAfter.trim());
+  } else {
+    nextUrl.searchParams.delete('createdAfter');
+  }
+  if (createdBefore.trim()) {
+    nextUrl.searchParams.set('createdBefore', createdBefore.trim());
+  } else {
+    nextUrl.searchParams.delete('createdBefore');
   }
   window.history.replaceState(null, '', `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`);
 }
