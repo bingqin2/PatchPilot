@@ -27,6 +27,8 @@ class CommandExecutionGuardTests {
         guard.validate(repositoryDir, List.of("pnpm", "test"));
         guard.validate(repositoryDir, List.of("yarn", "test"));
         guard.validate(repositoryDir, List.of("python3", "-m", "pytest"));
+        guard.validate(repositoryDir, List.of("poetry", "run", "pytest"));
+        guard.validate(repositoryDir, List.of("uv", "run", "pytest"));
         guard.validate(repositoryDir, List.of("git", "-C", repositoryDir.toString(), "status", "--short"));
         guard.validate(repositoryDir, List.of("git", "-C", repositoryDir.toString(), "diff", "--"));
         guard.validate(repositoryDir, List.of("git", "-C", repositoryDir.toString(), "checkout", "-b", "patchpilot/task-123"));
@@ -69,6 +71,19 @@ class CommandExecutionGuardTests {
         assertThatThrownBy(() -> guard.validate(repositoryDir, List.of("yarn", "install")))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Command is not allowlisted: yarn install");
+    }
+
+    @Test
+    void should_reject_arbitrary_python_runner_commands() {
+        CommandExecutionGuard guard = new CommandExecutionGuard(properties());
+        Path repositoryDir = tempDir.resolve("task-123").resolve("repo");
+
+        assertThatThrownBy(() -> guard.validate(repositoryDir, List.of("poetry", "install")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Command is not allowlisted: poetry install");
+        assertThatThrownBy(() -> guard.validate(repositoryDir, List.of("uv", "pip", "install", "-r", "requirements.txt")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Command is not allowlisted: uv pip install -r requirements.txt");
     }
 
     @Test

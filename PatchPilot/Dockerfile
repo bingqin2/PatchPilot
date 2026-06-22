@@ -13,8 +13,9 @@ FROM maven:3.9-eclipse-temurin-17
 WORKDIR /app
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends git ca-certificates nodejs npm python3 python3-pytest \
+    && apt-get install -y --no-install-recommends git ca-certificates nodejs npm python3 python3-pip python3-pytest \
     && npm install -g pnpm yarn \
+    && python3 -m pip install --no-cache-dir poetry uv \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=build /workspace/PatchPilot/target/patchpilot-backend-*.jar /app/patchpilot-backend.jar

@@ -136,8 +136,8 @@ The current implementation target is local self-hosted development first. Hosted
 
 ### Test Execution
 
-- The MVP supports Java Maven, Java Gradle, Node/npm, Node/pnpm, Node/yarn, and Python/pytest repositories first.
-- The long-term system supports multiple language adapters, starting with Java/Maven, Java/Gradle, npm, pnpm, yarn, Python/pytest, and additional Python runners.
+- The MVP supports Java Maven, Java Gradle, Node/npm, Node/pnpm, Node/yarn, Python/pytest, Python/Poetry, and Python/uv repositories first.
+- The long-term system supports multiple language adapters, starting with Java/Maven, Java/Gradle, npm, pnpm, yarn, Python/pytest, Poetry, uv, and additional Python runners.
 - Each adapter defines project detection, allowed verification commands, test output capture, timeout policy, and unsupported-repository failure reasons.
 - The adapter registry selects the first adapter that supports the repository and returns a clear unsupported result when none match.
 - The verification runner executes only the selected adapter's allowlisted verification command.
@@ -154,6 +154,10 @@ The current implementation target is local self-hosted development first. Hosted
 - The Node/pnpm adapter runs `pnpm test`.
 - The Node/yarn adapter detects `package.json`, `yarn.lock`, and a non-empty `scripts.test`.
 - The Node/yarn adapter runs `yarn test`.
+- The Python/Poetry adapter detects `[tool.poetry]` in `pyproject.toml` plus pytest configuration or dependency.
+- The Python/Poetry adapter runs `poetry run pytest`.
+- The Python/uv adapter detects `uv.lock` plus pytest configuration or dependency in `pyproject.toml`.
+- The Python/uv adapter runs `uv run pytest`.
 - The Python/pytest adapter detects `pytest.ini`, `[tool.pytest.ini_options]` in `pyproject.toml`, or pytest in `requirements.txt`.
 - The Python/pytest adapter runs `python3 -m pytest`.
 - The system captures exit code, stdout, stderr, duration, and a short test summary.
@@ -195,7 +199,7 @@ The first production-like MVP supports:
 - `/agent fix` issue comment trigger.
 - Java repositories using Maven or Gradle.
 - Node.js repositories using npm, pnpm, or yarn with `scripts.test`.
-- Python repositories using pytest.
+- Python repositories using pytest directly, Poetry, or uv.
 - One repository per task.
 - One generated Pull Request per successful task.
 - Local workspace execution.
@@ -224,7 +228,7 @@ Planned follow-up capabilities:
 - Chrome extension button on GitHub issue pages.
 - Command safety gate for authorization, actionability, unsupported repositories, and unsafe requests.
 - Language adapter foundation.
-- bun, Poetry, tox, and other runner support.
+- bun, tox, nox, and other runner support.
 - Docker sandbox execution.
 - MySQL-backed durable task history.
 - Redis or queue-backed async execution.

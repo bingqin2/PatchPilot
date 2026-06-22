@@ -2097,3 +2097,22 @@ Validation:
 - `mvn -pl PatchPilot -Dtest=NodeNpmLanguageAdapterTests,NodePnpmLanguageAdapterTests,NodeYarnLanguageAdapterTests,CommandExecutionGuardTests,VerificationRunnerTests,PatchPilotApplicationTests,MavenRuntimePackagingTests test`: passed after focused adapter and runner verification, 30 tests run, 0 failures.
 - `mvn -pl PatchPilot test`: passed after full backend verification, 367 tests run, 0 failures.
 - `git diff --check`: passed after whitespace and conflict-marker verification.
+
+Implemented Python/Poetry and Python/uv project-runner adapter support from `docs/plans/102-python-project-runner-adapters.md`.
+
+Changes:
+
+- Added shared Python pytest-signal detection for pytest configuration and dependency checks.
+- Added `PythonPoetryLanguageAdapter` for `[tool.poetry]` projects with pytest configuration or dependency.
+- Added `PythonUvLanguageAdapter` for `uv.lock` projects with pytest configuration or dependency.
+- Preferred Poetry and uv adapters before the broad Python/pytest adapter when project-manager signals are present.
+- Extended `CommandExecutionGuard` to allow only `poetry run pytest` and `uv run pytest`, not install, sync, pip, lock, or arbitrary runner commands.
+- Added Poetry and uv to the backend runtime Docker image so Docker Compose execution can run adapter-selected verification.
+- Updated README, product specification, architecture, target-state, roadmap, backend command standard, decisions, and this execution log.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=PythonPoetryLanguageAdapterTests,PythonUvLanguageAdapterTests,CommandExecutionGuardTests,PatchPilotApplicationTests,MavenRuntimePackagingTests test`: first failed because `PythonPoetryLanguageAdapter` and `PythonUvLanguageAdapter` did not exist; then passed after adding the adapters, command allowlist, Spring registration/order checks, and runtime packaging, 24 tests run, 0 failures.
+- `mvn -pl PatchPilot -Dtest=PythonPytestLanguageAdapterTests,PythonPoetryLanguageAdapterTests,PythonUvLanguageAdapterTests,CommandExecutionGuardTests,VerificationRunnerTests,PatchPilotApplicationTests,MavenRuntimePackagingTests test`: passed after focused Python adapter and runner verification, 33 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed after full backend verification, 378 tests run, 0 failures.
+- `git diff --check`: passed after whitespace and conflict-marker verification.

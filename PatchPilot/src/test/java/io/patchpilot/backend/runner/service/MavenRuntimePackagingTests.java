@@ -36,6 +36,15 @@ class MavenRuntimePackagingTests {
     void should_install_python_and_pytest_for_python_adapter_verification() throws Exception {
         String dockerfile = Files.readString(Path.of("Dockerfile"));
 
-        assertThat(dockerfile).contains("python3 python3-pytest");
+        assertThat(dockerfile).contains("python3");
+        assertThat(dockerfile).contains("python3-pip");
+        assertThat(dockerfile).contains("python3-pytest");
+    }
+
+    @Test
+    void should_install_poetry_and_uv_for_python_project_runner_adapters() throws Exception {
+        String dockerfile = Files.readString(Path.of("Dockerfile"));
+
+        assertThat(dockerfile).contains("python3 -m pip install --no-cache-dir poetry uv");
     }
 }

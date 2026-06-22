@@ -242,6 +242,8 @@ npm test
 pnpm test
 yarn test
 python3 -m pytest
+poetry run pytest
+uv run pytest
 git status
 git diff
 git checkout -b <branch>

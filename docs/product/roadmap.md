@@ -281,7 +281,8 @@ Build:
 - Node.js adapter for npm projects.
 - Node.js adapters for pnpm and yarn projects.
 - Python adapter for pytest projects.
-- Python adapters for Poetry, tox, nox, or uv projects.
+- Python adapters for Poetry and uv projects.
+- Future Python adapters for tox, nox, or hatch projects.
 - Adapter-specific documentation and demo repositories.
 - Adapter-aware dashboard and task detail labels.
 

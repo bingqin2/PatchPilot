@@ -105,3 +105,11 @@ Decision: Add pnpm and yarn as explicit Node.js package-manager adapters instead
 Reason: Many Node repositories use lockfile-specific package managers. Detecting `pnpm-lock.yaml` and `yarn.lock` before npm improves real repository coverage without allowing arbitrary package-manager commands.
 
 Impact: Node.js repositories with matching lockfiles and a non-empty `scripts.test` can pass repository preflight and run `pnpm test` or `yarn test`. The command guard still rejects arbitrary pnpm/yarn scripts and install commands.
+
+## 2026-06-22
+
+Decision: Add Poetry and uv as explicit Python project-runner adapters instead of expanding the plain pytest adapter.
+
+Reason: Poetry and uv are common Python project managers, but allowing their install or dependency-management commands would widen execution risk. Separate adapters can require pytest signals and return fixed verification commands.
+
+Impact: Python repositories with Poetry or uv plus pytest configuration or dependency can pass repository preflight and run `poetry run pytest` or `uv run pytest`. The command guard still rejects install, sync, pip, lock, and arbitrary Python runner commands.
