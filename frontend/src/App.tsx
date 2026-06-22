@@ -60,6 +60,7 @@ const TASK_STATUS_FILTERS: TaskStatusFilter[] = [
   'PENDING',
   'RUNNING',
   'RUNNING_TESTS',
+  'PENDING_REVIEW',
   'COMPLETED',
   'FAILED',
   'CANCELLED'

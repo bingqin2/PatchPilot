@@ -100,6 +100,30 @@ class FixTaskWorkerTests {
     }
 
     @Test
+    void should_mark_pending_review_when_generated_diff_risk_gate_rejects_patch() {
+        FixTaskService fixTaskService = new InMemoryFixTaskService();
+        FailingExecutor executor = new FailingExecutor("Generated diff rejected: sensitive path .github/workflows/deploy.yml");
+        RecordingIssueCommentTool issueCommentTool = new RecordingIssueCommentTool();
+        RecordingTimelineService timelineService = new RecordingTimelineService();
+        FixTaskWorker worker = new FixTaskWorker(fixTaskService, executor, issueCommentTool, timelineService);
+        FixTaskVo task = createTask(fixTaskService, "delivery-worker-risk-review");
+
+        worker.execute(task.id());
+
+        FixTaskVo reviewTask = fixTaskService.findTask(task.id()).orElseThrow();
+        assertThat(reviewTask.status()).isEqualTo(FixTaskStatus.PENDING_REVIEW);
+        assertThat(reviewTask.failureReason()).isEqualTo("Generated diff rejected: sensitive path .github/workflows/deploy.yml");
+        assertThat(issueCommentTool.updatedStatuses())
+                .containsSequence(FixTaskStatus.RUNNING, FixTaskStatus.RUNNING_TESTS, FixTaskStatus.PENDING_REVIEW);
+        assertThat(timelineService.eventTypes())
+                .containsSequence(
+                        FixTaskTimelineEventType.RUNNING,
+                        FixTaskTimelineEventType.RUNNING_TESTS,
+                        FixTaskTimelineEventType.PENDING_REVIEW
+                );
+    }
+
+    @Test
     void should_truncate_long_failure_reason() {
         FixTaskService fixTaskService = new InMemoryFixTaskService();
         FailingExecutor executor = new FailingExecutor("x".repeat(10_000));
@@ -261,6 +285,13 @@ class FixTaskWorkerTests {
 
         @Override
         public Optional<IssueCommentResult> updateFailed(FixTaskVo task) {
+            record(task);
+            failureReasons.add(task.failureReason());
+            return Optional.of(new IssueCommentResult(123, "https://github.com/octocat/hello-world/issues/42#issuecomment-123"));
+        }
+
+        @Override
+        public Optional<IssueCommentResult> updatePendingReview(FixTaskVo task) {
             record(task);
             failureReasons.add(task.failureReason());
             return Optional.of(new IssueCommentResult(123, "https://github.com/octocat/hello-world/issues/42#issuecomment-123"));

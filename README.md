@@ -242,7 +242,7 @@ Unsupported repositories fail before model patch generation, tests, commit, push
 For supported repositories, the language adapter supplies the verification command and the generic verification runner executes that command under the existing allowlist, timeout, process-registration, and environment-sanitization rules.
 After a repository is detected, each task stores the selected `language`, `buildSystem`, `verificationCommand`, and nullable `adapterDetectionReason`. These fields are returned by the task APIs and shown in the dashboard detail view so operators can confirm whether a task used Maven, Gradle, Bun, npm, pnpm, yarn, tox, nox, hatch, Poetry, uv, or pytest, and which repository signal caused that selection, without opening raw tool-call logs.
 
-After patch generation, PatchPilot runs a deterministic generated-diff risk gate before adapter verification or any GitHub write. The gate rejects sensitive files such as `.env`, private keys, and GitHub Actions workflows; secret-like added lines; binary patches; and diffs that exceed the configured file or line thresholds. Rejections are stored as failed `GeneratedDiffRiskGate` tool calls so task reports and the dashboard can explain why execution stopped.
+After patch generation, PatchPilot runs a deterministic generated-diff risk gate before adapter verification or any GitHub write. The gate rejects sensitive files such as `.env`, private keys, and GitHub Actions workflows; secret-like added lines; binary patches; and diffs that exceed the configured file or line thresholds. Rejections move the task to `PENDING_REVIEW`, keep the concrete reason in `failureReason`, and store a failed `GeneratedDiffRiskGate` tool call so task reports and the dashboard can explain why execution stopped.
 
 Adapter detection fixtures live in `docs/demo-repositories/`. Each fixture documents the adapter it should trigger and the fixed verification command PatchPilot will run. Backend tests use these fixtures to prevent supported repository shapes from drifting as adapters evolve.
 
@@ -378,6 +378,7 @@ PatchPilot must not:
 - Report success without verification.
 - Create tasks for unsafe `/agent fix` instructions.
 - Continue to verification, commit, push, or PR creation after a generated diff fails risk checks.
+- Retry a `PENDING_REVIEW` task until a future human approval flow explicitly allows it.
 
 ## Current Limitations
 

@@ -101,6 +101,25 @@ class IssueCommentToolTests {
     }
 
     @Test
+    void should_update_pending_review_status_comment_with_rejection_reason() {
+        RecordingGitHubIssueCommentClient client = new RecordingGitHubIssueCommentClient();
+        IssueCommentTool tool = new IssueCommentTool(client);
+
+        Optional<IssueCommentResult> result = tool.updatePendingReview(task(
+                FixTaskStatus.PENDING_REVIEW,
+                123L,
+                null,
+                "Generated diff rejected: sensitive path .env"
+        ));
+
+        assertThat(result).isPresent();
+        assertThat(client.updateCommand().commentId()).isEqualTo(123);
+        assertThat(client.updateCommand().body()).contains("PatchPilot paused this task for human review.");
+        assertThat(client.updateCommand().body()).contains("Status: PENDING_REVIEW");
+        assertThat(client.updateCommand().body()).contains("Reason: Generated diff rejected: sensitive path .env");
+    }
+
+    @Test
     void should_update_status_comment_when_active_task_already_exists() {
         RecordingGitHubIssueCommentClient client = new RecordingGitHubIssueCommentClient();
         IssueCommentTool tool = new IssueCommentTool(client);

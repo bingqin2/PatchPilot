@@ -1,4 +1,11 @@
-export type TaskStatus = 'PENDING' | 'RUNNING' | 'RUNNING_TESTS' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
+export type TaskStatus =
+  | 'PENDING'
+  | 'RUNNING'
+  | 'RUNNING_TESTS'
+  | 'PENDING_REVIEW'
+  | 'COMPLETED'
+  | 'FAILED'
+  | 'CANCELLED';
 
 export type TaskStatusFilter = 'ALL' | TaskStatus;
 
@@ -49,6 +56,7 @@ export interface FixTaskStatusCounts {
   pendingCount: number;
   runningCount: number;
   runningTestsCount: number;
+  pendingReviewCount: number;
   completedCount: number;
   failedCount: number;
   cancelledCount: number;
@@ -67,6 +75,7 @@ export interface FixTaskMetricsSummary {
   pendingCount: number;
   runningCount: number;
   runningTestsCount: number;
+  pendingReviewCount: number;
   completedCount: number;
   failedCount: number;
   cancelledCount: number;

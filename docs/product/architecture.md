@@ -250,7 +250,7 @@ Future adapters should add their own detection and allowlisted verification comm
 
 Real task records also persist the selected adapter metadata and nullable detection reason. The executor stores the `LanguageDetectionResult.reason()` alongside `language`, `buildSystem`, and `verificationCommand` after workspace preflight. Task list and detail APIs return those fields so operators can explain which repository signal selected the verification path without replaying detection or reading logs.
 
-Generated-diff risk checks run after patch generation and `DiffTool` output, but before adapter verification or any GitHub write. `GeneratedDiffRiskGate` blocks sensitive paths, secret-like added lines, binary patches, and patches that exceed changed-file or changed-line thresholds. The executor records the gate as an audited tool call, so failures are visible in task detail APIs, copied task reports, and the dashboard.
+Generated-diff risk checks run after patch generation and `DiffTool` output, but before adapter verification or any GitHub write. `GeneratedDiffRiskGate` blocks sensitive paths, secret-like added lines, binary patches, and patches that exceed changed-file or changed-line thresholds. The worker maps those deterministic rejections to `PENDING_REVIEW`, records a `PENDING_REVIEW` timeline event, and updates the same GitHub status comment instead of treating the task as an ordinary verification failure. The executor still records the gate as an audited tool call, so the exact rejection is visible in task detail APIs, copied task reports, and the dashboard.
 
 ### Demo Readiness
 

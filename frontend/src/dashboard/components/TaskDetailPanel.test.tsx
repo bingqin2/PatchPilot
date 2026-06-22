@@ -188,7 +188,7 @@ test('surfaces generated diff risk gate failures in task evidence', () => {
     <TaskDetailPanel
       task={{
         ...task,
-        status: 'FAILED',
+        status: 'PENDING_REVIEW',
         failureReason: 'Generated diff rejected: sensitive path .github/workflows/deploy.yml'
       }}
       detail={{
@@ -219,6 +219,8 @@ test('surfaces generated diff risk gate failures in task evidence', () => {
   expect(screen.getByText('GeneratedDiffRiskGate')).toBeInTheDocument();
   expect(screen.getByText('failed · 78 ms')).toBeInTheDocument();
   expect(screen.getByText('Generated diff rejected: sensitive path .github/workflows/deploy.yml')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Cancel task' })).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Retry task' })).not.toBeInTheDocument();
 });
 
 test('builds a shareable task link from the current dashboard URL', () => {

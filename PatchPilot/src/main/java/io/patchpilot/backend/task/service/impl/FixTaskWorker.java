@@ -37,6 +37,12 @@ public class FixTaskWorker {
             return;
         } catch (RuntimeException exception) {
             String failureReason = failureReason(exception);
+            if (isGeneratedDiffRiskRejection(failureReason)) {
+                FixTaskVo reviewTask = fixTaskService.markPendingReview(taskId, failureReason);
+                recordTimelineEvent(taskId, FixTaskTimelineEventType.PENDING_REVIEW, failureReason);
+                updateStatusComment(taskId, () -> issueCommentTool.updatePendingReview(reviewTask));
+                return;
+            }
             FixTaskVo failedTask = fixTaskService.markFailed(taskId, failureReason);
             recordTimelineEvent(taskId, FixTaskTimelineEventType.FAILED, failureReason);
             updateStatusComment(taskId, () -> issueCommentTool.updateFailed(failedTask));
@@ -74,5 +80,9 @@ public class FixTaskWorker {
             return exception.getClass().getSimpleName();
         }
         return LogSummary.truncateFailureReason(exception.getMessage());
+    }
+
+    private static boolean isGeneratedDiffRiskRejection(String failureReason) {
+        return failureReason.startsWith("Generated diff rejected:");
     }
 }

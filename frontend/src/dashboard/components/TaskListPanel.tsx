@@ -7,6 +7,7 @@ const statusFilters: TaskStatusFilter[] = [
   'PENDING',
   'RUNNING',
   'RUNNING_TESTS',
+  'PENDING_REVIEW',
   'COMPLETED',
   'FAILED',
   'CANCELLED'
@@ -281,6 +282,9 @@ function statusCount(statusCounts: FixTaskStatusCounts | null, status: TaskStatu
   if (status === 'RUNNING_TESTS') {
     return statusCounts.runningTestsCount;
   }
+  if (status === 'PENDING_REVIEW') {
+    return statusCounts.pendingReviewCount;
+  }
   if (status === 'COMPLETED') {
     return statusCounts.completedCount;
   }
@@ -294,7 +298,7 @@ function statusIcon(status: TaskStatus) {
   if (status === 'COMPLETED') {
     return <CheckCircle2 size={14} />;
   }
-  if (status === 'FAILED' || status === 'CANCELLED') {
+  if (status === 'FAILED' || status === 'CANCELLED' || status === 'PENDING_REVIEW') {
     return <AlertCircle size={14} />;
   }
   if (status === 'RUNNING_TESTS') {

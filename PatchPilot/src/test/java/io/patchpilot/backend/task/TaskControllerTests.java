@@ -365,9 +365,46 @@ class TaskControllerTests {
                 .andExpect(jsonPath("$.data.pendingCount").value(0))
                 .andExpect(jsonPath("$.data.runningCount").value(0))
                 .andExpect(jsonPath("$.data.runningTestsCount").value(0))
+                .andExpect(jsonPath("$.data.pendingReviewCount").value(0))
                 .andExpect(jsonPath("$.data.completedCount").value(0))
                 .andExpect(jsonPath("$.data.failedCount").value(1))
                 .andExpect(jsonPath("$.data.cancelledCount").value(0));
+    }
+
+    @Test
+    void should_filter_and_count_pending_review_tasks() throws Exception {
+        FixTaskVo reviewTask = createTask(command(
+                "risk-owner",
+                "risk-repo",
+                "delivery-risk-review"
+        ));
+        FixTaskVo failedTask = createTask(command(
+                "risk-owner",
+                "risk-repo",
+                "delivery-risk-failed"
+        ));
+        fixTaskService.markPendingReview(reviewTask.id(), "Generated diff rejected: sensitive path .env");
+        fixTaskService.markFailed(failedTask.id(), "maven failed");
+
+        mockMvc.perform(get("/api/tasks")
+                        .param("status", "PENDING_REVIEW")
+                        .param("repositoryOwner", "risk-owner")
+                        .param("repositoryName", "risk-repo"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.items.length()").value(1))
+                .andExpect(jsonPath("$.data.items[0].id").value(reviewTask.id()))
+                .andExpect(jsonPath("$.data.items[0].status").value("PENDING_REVIEW"))
+                .andExpect(jsonPath("$.data.items[0].failureReason").value("Generated diff rejected: sensitive path .env"));
+
+        mockMvc.perform(get("/api/tasks/status-counts")
+                        .param("repositoryOwner", "risk-owner")
+                        .param("repositoryName", "risk-repo"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.totalCount").value(2))
+                .andExpect(jsonPath("$.data.pendingReviewCount").value(1))
+                .andExpect(jsonPath("$.data.failedCount").value(1));
     }
 
     @Test

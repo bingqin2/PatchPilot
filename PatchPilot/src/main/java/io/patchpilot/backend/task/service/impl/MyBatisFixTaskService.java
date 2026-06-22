@@ -76,6 +76,11 @@ public class MyBatisFixTaskService implements FixTaskService {
     }
 
     @Override
+    public FixTaskVo markPendingReview(String id, String failureReason) {
+        return replaceStatus(id, FixTaskStatus.PENDING_REVIEW, failureReason);
+    }
+
+    @Override
     public FixTaskVo markCancelled(String id, String failureReason) {
         return replaceStatus(id, FixTaskStatus.CANCELLED, failureReason);
     }
@@ -188,7 +193,8 @@ public class MyBatisFixTaskService implements FixTaskService {
         return List.of(
                 FixTaskStatus.PENDING.name(),
                 FixTaskStatus.RUNNING.name(),
-                FixTaskStatus.RUNNING_TESTS.name()
+                FixTaskStatus.RUNNING_TESTS.name(),
+                FixTaskStatus.PENDING_REVIEW.name()
         );
     }
 

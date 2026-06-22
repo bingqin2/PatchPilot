@@ -71,6 +71,19 @@ class DefaultFixTaskControlServiceTests {
     }
 
     @Test
+    void should_cancel_pending_review_task_without_cancelling_queue_item_or_process() {
+        FixTaskVo task = createTask("delivery-control-cancel-pending-review");
+        fixTaskService.markPendingReview(task.id(), "Generated diff rejected: sensitive path .env");
+
+        FixTaskVo cancelledTask = controlService.cancelTask(task.id());
+
+        assertThat(cancelledTask.status()).isEqualTo(FixTaskStatus.CANCELLED);
+        assertThat(fixTaskQueue.cancelledTaskIds()).isEmpty();
+        assertThat(taskProcessRegistry.cancelledTaskIds()).isEmpty();
+        assertThat(fixTaskTimelineService.eventTypes()).containsExactly(FixTaskTimelineEventType.CANCELLED);
+    }
+
+    @Test
     void should_reject_cancelling_terminal_task() {
         FixTaskVo task = createTask("delivery-control-cancel-terminal");
         fixTaskService.markCompleted(task.id(), "https://github.com/octocat/hello-world/pull/7");
@@ -101,6 +114,18 @@ class DefaultFixTaskControlServiceTests {
         assertThatThrownBy(() -> controlService.retryTask(task.id()))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("Only failed or cancelled tasks can be retried");
+
+        assertThat(fixTaskQueue.enqueuedTaskIds()).isEmpty();
+    }
+
+    @Test
+    void should_reject_retrying_pending_review_task_until_human_decision_exists() {
+        FixTaskVo task = createTask("delivery-control-retry-pending-review");
+        fixTaskService.markPendingReview(task.id(), "Generated diff rejected: binary file change");
+
+        assertThatThrownBy(() -> controlService.retryTask(task.id()))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Pending review tasks must be cancelled or approved before retry");
 
         assertThat(fixTaskQueue.enqueuedTaskIds()).isEmpty();
     }
