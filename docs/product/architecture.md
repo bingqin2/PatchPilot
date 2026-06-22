@@ -56,6 +56,7 @@ GitHub issue comment created
   -> FixIssueAgent creates a fix plan
   -> Tools search code, read files, write files, and inspect diff
   -> GeneratedDiffRiskGate rejects unsafe generated diffs before verification or GitHub writes
+  -> PENDING_REVIEW tasks can be cancelled or operator-approved to resume the same workspace after the risk gate
   -> LanguageAdapter supplies an allowlisted verification command
   -> TestRunner runs verification
   -> GitHubClient pushes a branch and opens a Pull Request
@@ -218,6 +219,7 @@ Responsibilities:
 - Use language adapters to detect supported build systems immediately after workspace preparation.
 - Fail unsupported repositories before patch generation, test execution, Git mutation, or Pull Request creation.
 - Run the generated diff through `GeneratedDiffRiskGate` after `DiffTool` and before verification, commit, push, or Pull Request creation.
+- Resume an operator-approved `PENDING_REVIEW` task from the existing task workspace without re-running model patch generation or diff generation.
 - Execute the allowlisted verification command returned by the selected adapter.
 - Capture test output.
 - Enforce timeouts.

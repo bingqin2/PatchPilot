@@ -130,6 +130,34 @@ class DefaultFixTaskControlServiceTests {
         assertThat(fixTaskQueue.enqueuedTaskIds()).isEmpty();
     }
 
+    @Test
+    void should_approve_pending_review_task_and_enqueue_existing_workspace_resume() {
+        FixTaskVo task = createTask("delivery-control-approve-review");
+        fixTaskService.markPendingReview(task.id(), "Generated diff rejected: sensitive path .env");
+
+        FixTaskVo approvedTask = controlService.approveReviewTask(task.id());
+
+        assertThat(approvedTask.status()).isEqualTo(FixTaskStatus.PENDING);
+        assertThat(approvedTask.failureReason()).isNull();
+        assertThat(approvedTask.riskReviewApprovedAt()).isNotNull();
+        assertThat(fixTaskQueue.enqueuedTaskIds()).containsExactly(task.id());
+        assertThat(fixTaskQueue.cancelledTaskIds()).isEmpty();
+        assertThat(taskProcessRegistry.cancelledTaskIds()).isEmpty();
+        assertThat(fixTaskTimelineService.eventTypes()).containsExactly(FixTaskTimelineEventType.REVIEW_APPROVED);
+        assertThat(fixTaskTimelineService.messages()).containsExactly("Pending review approved by operator");
+    }
+
+    @Test
+    void should_reject_approving_non_pending_review_task() {
+        FixTaskVo task = createTask("delivery-control-approve-active");
+
+        assertThatThrownBy(() -> controlService.approveReviewTask(task.id()))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Only pending review tasks can be approved");
+
+        assertThat(fixTaskQueue.enqueuedTaskIds()).isEmpty();
+    }
+
     private FixTaskVo createTask(String deliveryId) {
         return fixTaskService.createFixTask(new CreateFixTaskCommand(
                 "octocat",

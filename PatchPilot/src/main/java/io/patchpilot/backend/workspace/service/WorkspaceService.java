@@ -9,4 +9,8 @@ public interface WorkspaceService {
     WorkspaceCloneResult cloneRepository(CloneWorkspaceCommand command);
 
     PreparedWorkspaceResult prepareRepository(CloneWorkspaceCommand command);
+
+    default PreparedWorkspaceResult resumePreparedRepository(CloneWorkspaceCommand command) {
+        throw new UnsupportedOperationException("Workspace resume is not supported");
+    }
 }

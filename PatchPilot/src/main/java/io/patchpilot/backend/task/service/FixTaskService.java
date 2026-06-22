@@ -40,6 +40,10 @@ public interface FixTaskService extends FixTaskAdapterMetadataRecorder {
         throw new UnsupportedOperationException("Task retry is not supported");
     }
 
+    default FixTaskVo markPendingForReviewApproval(String id) {
+        throw new UnsupportedOperationException("Task review approval is not supported");
+    }
+
     FixTaskVo attachStatusComment(String id, long statusCommentId, String statusCommentUrl);
 
     @Override

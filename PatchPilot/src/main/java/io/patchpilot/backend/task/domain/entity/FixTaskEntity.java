@@ -75,4 +75,7 @@ public class FixTaskEntity {
     @TableField("status_comment_url")
     private String statusCommentUrl;
 
+    @TableField("risk_review_approved_at")
+    private Instant riskReviewApprovedAt;
+
 }

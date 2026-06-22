@@ -292,6 +292,17 @@ public class TaskController {
         }
     }
 
+    @PostMapping("/{id}/approve-review")
+    public ResponseEntity<ApiResponse<FixTaskVo>> approveReviewTask(@PathVariable String id) {
+        try {
+            return ResponseEntity.ok(ApiResponse.ok(fixTaskControlService.approveReviewTask(id)));
+        } catch (IllegalArgumentException exception) {
+            return ResponseEntity.status(404).body(ApiResponse.fail("Task not found"));
+        } catch (IllegalStateException exception) {
+            return ResponseEntity.status(409).body(ApiResponse.fail(exception.getMessage()));
+        }
+    }
+
     private FixTaskPageVo queryTasks(
             String query,
             String status,

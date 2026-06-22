@@ -182,6 +182,10 @@ export async function retryTask(taskId: string): Promise<FixTask> {
   return postApi<FixTask>(`/api/tasks/${taskId}/retry`);
 }
 
+export async function approveTaskReview(taskId: string): Promise<FixTask> {
+  return postApi<FixTask>(`/api/tasks/${taskId}/approve-review`);
+}
+
 async function getApi<T>(path: string): Promise<T> {
   return requestApi<T>(path);
 }

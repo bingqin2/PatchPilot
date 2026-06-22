@@ -1,4 +1,5 @@
 import {
+  approveTaskReview,
   createTask,
   getBackendHealth,
   getConfigurationSummary,
@@ -73,6 +74,49 @@ test('creates manual task through backend API', async () => {
   });
   expect(task.id).toBe('manual-task-1');
   expect(task.status).toBe('PENDING');
+});
+
+test('approves pending review tasks through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        id: 'task-review',
+        repositoryOwner: 'bingqin2',
+        repositoryName: 'PatchPilot',
+        issueNumber: 4,
+        installationId: 0,
+        triggerUser: 'bingqin2',
+        triggerComment: '/agent fix update deployment workflow',
+        deliveryId: 'delivery-review',
+        commentId: 104,
+        status: 'PENDING',
+        failureReason: null,
+        createdAt: '2026-06-20T01:08:00Z',
+        pullRequestUrl: null,
+        completedAt: null,
+        updatedAt: '2026-06-20T01:09:00Z',
+        language: 'node',
+        buildSystem: 'npm',
+        verificationCommand: 'npm test',
+        adapterDetectionReason: 'package.json contains a non-empty scripts.test',
+        statusCommentId: null,
+        statusCommentUrl: null,
+        riskReviewApprovedAt: '2026-06-20T01:09:00Z'
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const task = await approveTaskReview('task-review');
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/tasks/task-review/approve-review', { method: 'POST' });
+  expect(task.status).toBe('PENDING');
+  expect(task.failureReason).toBeNull();
+  expect(task.riskReviewApprovedAt).toBe('2026-06-20T01:09:00Z');
 });
 
 test('builds backend task search sort and pagination query parameters', async () => {

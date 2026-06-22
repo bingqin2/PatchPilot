@@ -64,6 +64,22 @@ public class DefaultFixTaskControlService implements FixTaskControlService {
         return retriedTask;
     }
 
+    @Override
+    public FixTaskVo approveReviewTask(String taskId) {
+        FixTaskVo task = currentTask(taskId);
+        if (task.status() != FixTaskStatus.PENDING_REVIEW) {
+            throw new IllegalStateException("Only pending review tasks can be approved");
+        }
+        FixTaskVo approvedTask = fixTaskService.markPendingForReviewApproval(taskId);
+        fixTaskQueue.enqueue(taskId);
+        fixTaskTimelineService.recordEvent(
+                taskId,
+                FixTaskTimelineEventType.REVIEW_APPROVED,
+                "Pending review approved by operator"
+        );
+        return approvedTask;
+    }
+
     private FixTaskVo currentTask(String taskId) {
         return fixTaskService.findTask(taskId)
                 .orElseThrow(() -> new IllegalArgumentException("Task not found: " + taskId));

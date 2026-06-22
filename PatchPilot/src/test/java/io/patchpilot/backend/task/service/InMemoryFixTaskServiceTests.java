@@ -103,6 +103,38 @@ class InMemoryFixTaskServiceTests {
     }
 
     @Test
+    void should_mark_pending_review_task_pending_for_review_approval() {
+        FixTaskVo task = createTask("delivery-review-approval");
+        fixTaskService.markPendingReview(task.id(), "Generated diff rejected: sensitive path .env");
+
+        FixTaskVo approvedTask = fixTaskService.markPendingForReviewApproval(task.id());
+
+        assertThat(approvedTask.status()).isEqualTo(FixTaskStatus.PENDING);
+        assertThat(approvedTask.failureReason()).isNull();
+        assertThat(approvedTask.pullRequestUrl()).isNull();
+        assertThat(approvedTask.completedAt()).isNull();
+        assertThat(approvedTask.riskReviewApprovedAt()).isNotNull();
+        assertThat(fixTaskService.findTask(task.id()))
+                .get()
+                .satisfies(foundTask -> {
+                    assertThat(foundTask.status()).isEqualTo(FixTaskStatus.PENDING);
+                    assertThat(foundTask.riskReviewApprovedAt()).isEqualTo(approvedTask.riskReviewApprovedAt());
+                });
+    }
+
+    @Test
+    void should_clear_review_approval_when_retrying_from_failed_state() {
+        FixTaskVo task = createTask("delivery-review-approval-retry");
+        FixTaskVo approvedTask = fixTaskService.markPendingForReviewApproval(task.id());
+        fixTaskService.markFailed(approvedTask.id(), "verification failed");
+
+        FixTaskVo retriedTask = fixTaskService.markPendingForRetry(task.id());
+
+        assertThat(retriedTask.status()).isEqualTo(FixTaskStatus.PENDING);
+        assertThat(retriedTask.riskReviewApprovedAt()).isNull();
+    }
+
+    @Test
     void should_attach_status_comment_metadata() {
         FixTaskVo task = createTask("delivery-status-comment");
 
