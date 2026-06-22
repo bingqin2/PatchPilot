@@ -32,6 +32,7 @@ public final class FixTaskConvert {
                 entity.getLanguage(),
                 entity.getBuildSystem(),
                 entity.getVerificationCommand(),
+                entity.getAdapterDetectionReason(),
                 entity.getStatusCommentId(),
                 entity.getStatusCommentUrl()
         );
@@ -57,6 +58,7 @@ public final class FixTaskConvert {
         entity.setLanguage(null);
         entity.setBuildSystem(null);
         entity.setVerificationCommand(null);
+        entity.setAdapterDetectionReason(null);
         entity.setStatusCommentId(null);
         entity.setStatusCommentUrl(null);
         return entity;
@@ -87,6 +89,7 @@ public final class FixTaskConvert {
         entity.setLanguage(current.getLanguage());
         entity.setBuildSystem(current.getBuildSystem());
         entity.setVerificationCommand(current.getVerificationCommand());
+        entity.setAdapterDetectionReason(current.getAdapterDetectionReason());
         entity.setStatusCommentId(current.getStatusCommentId());
         entity.setStatusCommentUrl(current.getStatusCommentUrl());
         return entity;
@@ -129,6 +132,7 @@ public final class FixTaskConvert {
             String language,
             String buildSystem,
             String verificationCommand,
+            String adapterDetectionReason,
             Instant updatedAt
     ) {
         FixTaskEntity entity = replaceStatus(
@@ -140,6 +144,7 @@ public final class FixTaskConvert {
         entity.setLanguage(language);
         entity.setBuildSystem(buildSystem);
         entity.setVerificationCommand(verificationCommand);
+        entity.setAdapterDetectionReason(adapterDetectionReason);
         return entity;
     }
 }

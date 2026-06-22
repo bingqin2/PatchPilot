@@ -21,6 +21,7 @@ const completedTask = {
   language: 'java',
   buildSystem: 'maven',
   verificationCommand: './mvnw test',
+  adapterDetectionReason: 'pom.xml detected with mvnw wrapper',
   statusCommentId: null,
   statusCommentUrl: 'https://github.com/bingqin2/PatchPilot/issues/1#issuecomment-4756084894'
 };
@@ -44,6 +45,7 @@ const failedTask = {
   language: 'node',
   buildSystem: 'npm',
   verificationCommand: 'npm test',
+  adapterDetectionReason: 'package.json contains a non-empty scripts.test',
   statusCommentId: null,
   statusCommentUrl: null
 };
@@ -67,6 +69,7 @@ const runningTask = {
   language: null,
   buildSystem: null,
   verificationCommand: null,
+  adapterDetectionReason: null,
   statusCommentId: null,
   statusCommentUrl: null
 };
@@ -104,6 +107,7 @@ const manuallyCreatedTask = {
   language: null,
   buildSystem: null,
   verificationCommand: null,
+  adapterDetectionReason: null,
   statusCommentId: null,
   statusCommentUrl: null
 };

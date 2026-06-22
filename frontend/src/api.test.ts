@@ -38,11 +38,15 @@ test('creates manual task through backend API', async () => {
         failureReason: null,
         createdAt: '2026-06-21T10:00:00Z',
         pullRequestUrl: null,
-        completedAt: null,
-        updatedAt: '2026-06-21T10:00:00Z',
-        statusCommentId: null,
-        statusCommentUrl: null
-      },
+            completedAt: null,
+            updatedAt: '2026-06-21T10:00:00Z',
+            language: null,
+            buildSystem: null,
+            verificationCommand: null,
+            adapterDetectionReason: null,
+            statusCommentId: null,
+            statusCommentUrl: null
+          },
       message: null
     })
   } as Response));
@@ -489,6 +493,10 @@ test('loads aggregate task detail from backend API', async () => {
             pullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
             completedAt: '2026-06-20T01:01:00Z',
             updatedAt: '2026-06-20T01:01:00Z',
+            language: 'java',
+            buildSystem: 'maven',
+            verificationCommand: './mvnw test',
+            adapterDetectionReason: 'pom.xml detected with mvnw wrapper',
             statusCommentId: null,
             statusCommentUrl: null
           },
@@ -550,6 +558,7 @@ test('loads aggregate task detail from backend API', async () => {
 
   expect(fetchMock).toHaveBeenCalledWith('/api/tasks/task-1/detail');
   expect(detail.summary.task.id).toBe('task-1');
+  expect(detail.summary.task.adapterDetectionReason).toBe('pom.xml detected with mvnw wrapper');
   expect(detail.queueItem?.status).toBe('FAILED');
   expect(detail.queueItem?.attemptCount).toBe(3);
   expect(detail.queueItems.map((item) => item.id)).toEqual(['queue-1', 'queue-older']);

@@ -54,6 +54,7 @@ public class InMemoryFixTaskService implements FixTaskService {
                 null,
                 null,
                 null,
+                null,
                 null
         );
         tasks.put(taskId, task);
@@ -105,7 +106,8 @@ public class InMemoryFixTaskService implements FixTaskService {
             }
             return copyTask(currentTask, currentTask.status(), currentTask.failureReason(), currentTask.pullRequestUrl(),
                     currentTask.completedAt(), Instant.now(), currentTask.language(), currentTask.buildSystem(),
-                    currentTask.verificationCommand(), statusCommentId, statusCommentUrl);
+                    currentTask.verificationCommand(), currentTask.adapterDetectionReason(), statusCommentId,
+                    statusCommentUrl);
         });
         return updatedTask;
     }
@@ -115,7 +117,8 @@ public class InMemoryFixTaskService implements FixTaskService {
             String id,
             String language,
             String buildSystem,
-            String verificationCommand
+            String verificationCommand,
+            String adapterDetectionReason
     ) {
         FixTaskVo updatedTask = tasks.compute(id, (taskId, currentTask) -> {
             if (currentTask == null) {
@@ -123,6 +126,7 @@ public class InMemoryFixTaskService implements FixTaskService {
             }
             return copyTask(currentTask, currentTask.status(), currentTask.failureReason(), currentTask.pullRequestUrl(),
                     currentTask.completedAt(), Instant.now(), language, buildSystem, verificationCommand,
+                    adapterDetectionReason,
                     currentTask.statusCommentId(), currentTask.statusCommentUrl());
         });
         return updatedTask;
@@ -201,7 +205,7 @@ public class InMemoryFixTaskService implements FixTaskService {
     ) {
         return copyTask(currentTask, status, failureReason, pullRequestUrl, completedAt, updatedAt,
                 currentTask.language(), currentTask.buildSystem(), currentTask.verificationCommand(),
-                currentTask.statusCommentId(), currentTask.statusCommentUrl());
+                currentTask.adapterDetectionReason(), currentTask.statusCommentId(), currentTask.statusCommentUrl());
     }
 
     private static FixTaskVo copyTask(
@@ -214,6 +218,7 @@ public class InMemoryFixTaskService implements FixTaskService {
             String language,
             String buildSystem,
             String verificationCommand,
+            String adapterDetectionReason,
             Long statusCommentId,
             String statusCommentUrl
     ) {
@@ -236,6 +241,7 @@ public class InMemoryFixTaskService implements FixTaskService {
                 language,
                 buildSystem,
                 verificationCommand,
+                adapterDetectionReason,
                 statusCommentId,
                 statusCommentUrl
         );
@@ -259,7 +265,8 @@ public class InMemoryFixTaskService implements FixTaskService {
                 task.pullRequestUrl() == null ? "" : task.pullRequestUrl(),
                 task.language() == null ? "" : task.language(),
                 task.buildSystem() == null ? "" : task.buildSystem(),
-                task.verificationCommand() == null ? "" : task.verificationCommand()
+                task.verificationCommand() == null ? "" : task.verificationCommand(),
+                task.adapterDetectionReason() == null ? "" : task.adapterDetectionReason()
         ).toLowerCase();
         return searchable.contains(normalizedQuery);
     }

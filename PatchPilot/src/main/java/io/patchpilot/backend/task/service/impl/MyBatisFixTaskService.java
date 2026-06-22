@@ -108,7 +108,8 @@ public class MyBatisFixTaskService implements FixTaskService {
             String id,
             String language,
             String buildSystem,
-            String verificationCommand
+            String verificationCommand,
+            String adapterDetectionReason
     ) {
         FixTaskEntity currentTask = Optional.ofNullable(fixTaskMapper.selectById(id))
                 .orElseThrow(() -> new IllegalArgumentException("Task not found: " + id));
@@ -117,6 +118,7 @@ public class MyBatisFixTaskService implements FixTaskService {
                 language,
                 buildSystem,
                 verificationCommand,
+                adapterDetectionReason,
                 Instant.now()
         );
         fixTaskMapper.updateById(updatedTask);
@@ -215,7 +217,9 @@ public class MyBatisFixTaskService implements FixTaskService {
                 .or()
                 .like(FixTaskEntity::getBuildSystem, escapedQuery)
                 .or()
-                .like(FixTaskEntity::getVerificationCommand, escapedQuery);
+                .like(FixTaskEntity::getVerificationCommand, escapedQuery)
+                .or()
+                .like(FixTaskEntity::getAdapterDetectionReason, escapedQuery);
     }
 
     private static LambdaQueryWrapper<FixTaskEntity> taskListQueryWrapper(FixTaskListQuery query) {

@@ -169,7 +169,8 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
                 task.id(),
                 detectionResult.language(),
                 detectionResult.buildSystem(),
-                String.join(" ", detectionResult.verificationCommand())
+                String.join(" ", detectionResult.verificationCommand()),
+                detectionResult.reason()
         );
         taskCancellationChecker.throwIfCancelled(task.id());
         auditToolCall(

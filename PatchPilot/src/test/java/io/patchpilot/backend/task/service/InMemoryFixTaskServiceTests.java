@@ -131,18 +131,22 @@ class InMemoryFixTaskServiceTests {
                 task.id(),
                 "node",
                 "npm",
-                "npm test"
+                "npm test",
+                "package.json contains a non-empty scripts.test"
         );
 
         assertThat(updatedTask.status()).isEqualTo(FixTaskStatus.RUNNING);
         assertThat(updatedTask.language()).isEqualTo("node");
         assertThat(updatedTask.buildSystem()).isEqualTo("npm");
         assertThat(updatedTask.verificationCommand()).isEqualTo("npm test");
+        assertThat(updatedTask.adapterDetectionReason()).isEqualTo("package.json contains a non-empty scripts.test");
         assertThat(updatedTask.updatedAt()).isAfterOrEqualTo(task.updatedAt());
         assertThat(fixTaskService.findTask(task.id()))
                 .get()
-                .extracting(FixTaskVo::verificationCommand)
-                .isEqualTo("npm test");
+                .satisfies(foundTask -> {
+                    assertThat(foundTask.verificationCommand()).isEqualTo("npm test");
+                    assertThat(foundTask.adapterDetectionReason()).isEqualTo("package.json contains a non-empty scripts.test");
+                });
     }
 
     @Test

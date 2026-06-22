@@ -43,7 +43,8 @@ public interface FixTaskService extends FixTaskAdapterMetadataRecorder {
             String id,
             String language,
             String buildSystem,
-            String verificationCommand
+            String verificationCommand,
+            String adapterDetectionReason
     ) {
         throw new UnsupportedOperationException("Task adapter metadata is not supported");
     }

@@ -246,6 +246,8 @@ Future adapters should add their own detection and allowlisted verification comm
 
 `GET /api/language-adapters` exposes the supported adapter catalog for operators and demos. `GET /api/language-adapters/fixtures` runs each checked-in demo fixture through the same registry and returns expected versus actual language, build system, command, detection reason, and pass/fail status. Fixture failures are reported as rows, not controller failures, so one missing fixture does not hide the rest of the support matrix.
 
+Real task records also persist the selected adapter metadata and nullable detection reason. The executor stores the `LanguageDetectionResult.reason()` alongside `language`, `buildSystem`, and `verificationCommand` after workspace preflight. Task list and detail APIs return those fields so operators can explain which repository signal selected the verification path without replaying detection or reading logs.
+
 ### Demo Readiness
 
 Responsibilities:

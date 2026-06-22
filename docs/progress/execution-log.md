@@ -2255,3 +2255,20 @@ Validation:
 - `npm test`: passed after full frontend verification, 83 tests run, 0 failures.
 - `npm run build`: passed after production frontend build.
 - `git diff --check`: passed after whitespace and conflict-marker verification.
+
+Implemented adapter detection explainability from `docs/plans/110-adapter-detection-explainability.md`.
+
+Changes:
+
+- Added nullable `adapter_detection_reason` task persistence through a Flyway migration.
+- Stored `LanguageDetectionResult.reason()` when task execution records selected adapter metadata.
+- Returned `adapterDetectionReason` through task list/detail APIs and preserved it across status transitions.
+- Included adapter language, build system, verification command, and detection reason in copied Markdown task reports.
+- Added dashboard task detail evidence for the selected adapter detection reason.
+- Updated README, architecture notes, frontend design notes, and this execution log.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=InMemoryFixTaskServiceTests,MyBatisFixTaskServiceTests,FixTaskConvertTests,TaskControllerTests,WorkspaceFixTaskExecutorTests,FixTaskAdapterMetadataMigrationTests test`: first failed because adapter metadata methods and task records did not expose `adapterDetectionReason`; then passed after adding persistence, conversion, service, controller, and executor support, 102 tests run, 0 failures.
+- `npm test -- --run src/dashboard/components/TaskDetailPanel.test.tsx`: first failed because the task detail evidence strip did not render detection reason; then passed after adding the frontend field and display, 8 tests run, 0 failures.
+- `mvn -pl PatchPilot -Dtest=TaskControllerTests#should_get_task_report_by_task_id test`: first failed because copied task reports did not include adapter evidence; then passed after adding the report adapter section, 1 test run, 0 failures.

@@ -91,6 +91,7 @@ class WorkspaceFixTaskExecutorTests {
         assertThat(fixTaskService.language()).isEqualTo("java");
         assertThat(fixTaskService.buildSystem()).isEqualTo("maven");
         assertThat(fixTaskService.verificationCommand()).isEqualTo("custom-verify test");
+        assertThat(fixTaskService.adapterDetectionReason()).isEqualTo("Detected custom verifier");
         assertThat(commitTool.repositoryDir()).isEqualTo(Path.of("/tmp/workspace/repo"));
         assertThat(commitTool.taskId()).isEqualTo("task-123");
         assertThat(commitTool.message()).isEqualTo("PatchPilot task task-123");
@@ -548,6 +549,7 @@ class WorkspaceFixTaskExecutorTests {
         private String language;
         private String buildSystem;
         private String verificationCommand;
+        private String adapterDetectionReason;
 
         private RecordingFixTaskService(FixTaskVo task) {
             this.task = task;
@@ -558,12 +560,14 @@ class WorkspaceFixTaskExecutorTests {
                 String id,
                 String language,
                 String buildSystem,
-                String verificationCommand
+                String verificationCommand,
+                String adapterDetectionReason
         ) {
             this.language = language;
             this.buildSystem = buildSystem;
             this.verificationCommand = verificationCommand;
-            return task.withAdapterMetadata(language, buildSystem, verificationCommand);
+            this.adapterDetectionReason = adapterDetectionReason;
+            return task.withAdapterMetadata(language, buildSystem, verificationCommand, adapterDetectionReason);
         }
 
         private String language() {
@@ -576,6 +580,10 @@ class WorkspaceFixTaskExecutorTests {
 
         private String verificationCommand() {
             return verificationCommand;
+        }
+
+        private String adapterDetectionReason() {
+            return adapterDetectionReason;
         }
     }
 

@@ -31,6 +31,7 @@ export interface FixTask {
   language: string | null;
   buildSystem: string | null;
   verificationCommand: string | null;
+  adapterDetectionReason: string | null;
   statusCommentId: number | null;
   statusCommentUrl: string | null;
 }
