@@ -14,7 +14,7 @@ PatchPilot is not a chatbot and does not auto-merge code. The current target is 
 - Webhook signature verification.
 - MySQL-backed task, queue, timeline, test-run, tool-call, and model-call records.
 - Local workspace clone, branch, diff, commit, push, and Pull Request creation.
-- Java/Maven, Java/Gradle, Node/Bun, Node/npm, Node/pnpm, Node/yarn, Python/pytest, Python/Poetry, and Python/uv language adapters backed by an adapter-driven verification runner with command allowlists.
+- Java/Maven, Java/Gradle, Node/Bun, Node/npm, Node/pnpm, Node/yarn, Python/tox, Python/nox, Python/hatch, Python/Poetry, Python/uv, and Python/pytest language adapters backed by an adapter-driven verification runner with command allowlists.
 - Unsupported repository preflight that fails before patch generation, test execution, Git mutation, or Pull Request creation.
 - OpenAI-compatible model client and plan-driven patch workflow.
 - Issue comment status updates for accepted, running, verification, success, and failure states.
@@ -218,7 +218,7 @@ If safety allowlists are configured, the manual task `triggerUser` and `reposito
 
 ## Supported Repositories
 
-PatchPilot currently executes fixes for Java repositories with Maven or Gradle build files, Node.js repositories with Bun, npm, pnpm, or yarn test scripts, and Python repositories with pytest, Poetry, or uv test signals. After cloning the task workspace, the backend runs the language adapter preflight:
+PatchPilot currently executes fixes for Java repositories with Maven or Gradle build files, Node.js repositories with Bun, npm, pnpm, or yarn test scripts, and Python repositories with tox, nox, hatch, Poetry, uv, or pytest test signals. After cloning the task workspace, the backend runs the language adapter preflight:
 
 - supported: `pom.xml` with `mvnw`, using `./mvnw test`
 - supported: `pom.xml` without `mvnw`, using `mvn test`
@@ -228,14 +228,17 @@ PatchPilot currently executes fixes for Java repositories with Maven or Gradle b
 - supported: `package.json` with `pnpm-lock.yaml` and non-empty `scripts.test`, using `pnpm test`
 - supported: `package.json` with `yarn.lock` and non-empty `scripts.test`, using `yarn test`
 - supported: `package.json` with non-empty `scripts.test`, using `npm test`
+- supported: `tox.ini` or `pyproject.toml` with `[tool.tox]`, using `tox`
+- supported: `noxfile.py`, using `nox`
+- supported: `pyproject.toml` with a Hatch test script, using `hatch test`
 - supported: `pyproject.toml` with `[tool.poetry]` plus pytest configuration or dependency, using `poetry run pytest`
 - supported: `uv.lock` plus `pyproject.toml` pytest configuration or dependency, using `uv run pytest`
 - supported: `pytest.ini`, `pyproject.toml` with `[tool.pytest.ini_options]`, or `requirements.txt` with pytest, using `python3 -m pytest`
 - unsupported: no registered adapter detects the repository
 
-Unsupported repositories fail before model patch generation, tests, commit, push, or Pull Request creation. This is intentional until additional adapters such as tox, nox, and other Python runners are implemented.
+Unsupported repositories fail before model patch generation, tests, commit, push, or Pull Request creation.
 For supported repositories, the language adapter supplies the verification command and the generic verification runner executes that command under the existing allowlist, timeout, process-registration, and environment-sanitization rules.
-After a repository is detected, each task stores the selected `language`, `buildSystem`, and `verificationCommand`. These fields are returned by the task APIs and shown in the dashboard so operators can confirm whether a task used Maven, Gradle, Bun, npm, pnpm, yarn, pytest, Poetry, or uv without opening raw tool-call logs.
+After a repository is detected, each task stores the selected `language`, `buildSystem`, and `verificationCommand`. These fields are returned by the task APIs and shown in the dashboard so operators can confirm whether a task used Maven, Gradle, Bun, npm, pnpm, yarn, tox, nox, hatch, Poetry, uv, or pytest without opening raw tool-call logs.
 
 Adapter detection fixtures live in `docs/demo-repositories/`. Each fixture documents the adapter it should trigger and the fixed verification command PatchPilot will run. Backend tests use these fixtures to prevent supported repository shapes from drifting as adapters evolve.
 
@@ -357,8 +360,8 @@ PatchPilot must not:
 
 ## Current Limitations
 
-- Java/Maven, Java/Gradle, Node/Bun, Node/npm, Node/pnpm, Node/yarn, Python/pytest, Python/Poetry, and Python/uv repositories are the first supported targets through explicit language adapters.
-- tox, nox, and custom runner adapters are future work.
+- Java/Maven, Java/Gradle, Node/Bun, Node/npm, Node/pnpm, Node/yarn, Python/tox, Python/nox, Python/hatch, Python/Poetry, Python/uv, and Python/pytest repositories are the first supported targets through explicit language adapters.
+- Custom runner adapters are future work.
 - The current runtime is single-process; API and worker separation is future work.
 - The React dashboard can create manual demo tasks, but GitHub issue comments remain the primary production trigger. It does not merge Pull Requests.
 - Temporary Cloudflare URLs are for local testing only.

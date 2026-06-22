@@ -367,6 +367,30 @@ const supportedLanguageAdapters = [
   },
   {
     language: 'python',
+    buildSystem: 'tox',
+    verificationCommand: ['tox'],
+    detectionSignals: ['tox.ini', 'pyproject.toml', '[tool.tox]'],
+    demoFixturePath: 'docs/demo-repositories/python-tox',
+    status: 'SUPPORTED'
+  },
+  {
+    language: 'python',
+    buildSystem: 'nox',
+    verificationCommand: ['nox'],
+    detectionSignals: ['noxfile.py'],
+    demoFixturePath: 'docs/demo-repositories/python-nox',
+    status: 'SUPPORTED'
+  },
+  {
+    language: 'python',
+    buildSystem: 'hatch',
+    verificationCommand: ['hatch', 'test'],
+    detectionSignals: ['pyproject.toml', 'Hatch test script'],
+    demoFixturePath: 'docs/demo-repositories/python-hatch',
+    status: 'SUPPORTED'
+  },
+  {
+    language: 'python',
     buildSystem: 'poetry',
     verificationCommand: ['poetry', 'run', 'pytest'],
     detectionSignals: ['pyproject.toml', '[tool.poetry]', 'pytest configuration or dependency'],
@@ -757,9 +781,11 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(screen.getByText('Webhook secret Configured')).toBeInTheDocument();
   expect(screen.getByText('Queue attempts 3')).toBeInTheDocument();
   expect(screen.getByRole('heading', { name: 'Supported adapters' })).toBeInTheDocument();
-  expect(screen.getByText('9 supported adapters')).toBeInTheDocument();
+  expect(screen.getByText('12 supported adapters')).toBeInTheDocument();
   expect(screen.getByText('docs/demo-repositories/java-maven')).toBeInTheDocument();
   expect(screen.getByText('bun test')).toBeInTheDocument();
+  expect(screen.getByRole('row', { name: /python tox tox/i })).toBeInTheDocument();
+  expect(screen.getByText('hatch test')).toBeInTheDocument();
   expect(screen.getByText('uv run pytest')).toBeInTheDocument();
   expect(screen.getByText('Queue')).toBeInTheDocument();
   expect(screen.getByText('Queue has failures')).toBeInTheDocument();

@@ -7,8 +7,11 @@ import io.patchpilot.backend.language.impl.NodeBunLanguageAdapter;
 import io.patchpilot.backend.language.impl.NodeNpmLanguageAdapter;
 import io.patchpilot.backend.language.impl.NodePnpmLanguageAdapter;
 import io.patchpilot.backend.language.impl.NodeYarnLanguageAdapter;
+import io.patchpilot.backend.language.impl.PythonHatchLanguageAdapter;
+import io.patchpilot.backend.language.impl.PythonNoxLanguageAdapter;
 import io.patchpilot.backend.language.impl.PythonPoetryLanguageAdapter;
 import io.patchpilot.backend.language.impl.PythonPytestLanguageAdapter;
+import io.patchpilot.backend.language.impl.PythonToxLanguageAdapter;
 import io.patchpilot.backend.language.impl.PythonUvLanguageAdapter;
 import org.junit.jupiter.api.Test;
 
@@ -66,6 +69,9 @@ class LanguageAdapterRegistryTests {
                 new NodePnpmLanguageAdapter(),
                 new NodeYarnLanguageAdapter(),
                 new NodeNpmLanguageAdapter(),
+                new PythonToxLanguageAdapter(),
+                new PythonNoxLanguageAdapter(),
+                new PythonHatchLanguageAdapter(),
                 new PythonPoetryLanguageAdapter(),
                 new PythonUvLanguageAdapter(),
                 new PythonPytestLanguageAdapter()
@@ -78,6 +84,9 @@ class LanguageAdapterRegistryTests {
                 fixture("node-npm", "node", "npm", List.of("npm", "test")),
                 fixture("node-pnpm", "node", "pnpm", List.of("pnpm", "test")),
                 fixture("node-yarn", "node", "yarn", List.of("yarn", "test")),
+                fixture("python-tox", "python", "tox", List.of("tox")),
+                fixture("python-nox", "python", "nox", List.of("nox")),
+                fixture("python-hatch", "python", "hatch", List.of("hatch", "test")),
                 fixture("python-pytest", "python", "pytest", List.of("python3", "-m", "pytest")),
                 fixture("python-poetry", "python", "poetry", List.of("poetry", "run", "pytest")),
                 fixture("python-uv", "python", "uv", List.of("uv", "run", "pytest"))

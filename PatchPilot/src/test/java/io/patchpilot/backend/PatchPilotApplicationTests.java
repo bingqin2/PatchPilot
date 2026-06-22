@@ -11,8 +11,11 @@ import io.patchpilot.backend.language.impl.NodeBunLanguageAdapter;
 import io.patchpilot.backend.language.impl.NodeNpmLanguageAdapter;
 import io.patchpilot.backend.language.impl.NodePnpmLanguageAdapter;
 import io.patchpilot.backend.language.impl.NodeYarnLanguageAdapter;
+import io.patchpilot.backend.language.impl.PythonHatchLanguageAdapter;
+import io.patchpilot.backend.language.impl.PythonNoxLanguageAdapter;
 import io.patchpilot.backend.language.impl.PythonPoetryLanguageAdapter;
 import io.patchpilot.backend.language.impl.PythonPytestLanguageAdapter;
+import io.patchpilot.backend.language.impl.PythonToxLanguageAdapter;
 import io.patchpilot.backend.language.impl.PythonUvLanguageAdapter;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -59,6 +62,9 @@ class PatchPilotApplicationTests {
                 .hasAtLeastOneElementOfType(NodeNpmLanguageAdapter.class)
                 .hasAtLeastOneElementOfType(NodePnpmLanguageAdapter.class)
                 .hasAtLeastOneElementOfType(NodeYarnLanguageAdapter.class)
+                .hasAtLeastOneElementOfType(PythonToxLanguageAdapter.class)
+                .hasAtLeastOneElementOfType(PythonNoxLanguageAdapter.class)
+                .hasAtLeastOneElementOfType(PythonHatchLanguageAdapter.class)
                 .hasAtLeastOneElementOfType(PythonPoetryLanguageAdapter.class)
                 .hasAtLeastOneElementOfType(PythonUvLanguageAdapter.class)
                 .hasAtLeastOneElementOfType(PythonPytestLanguageAdapter.class);
@@ -118,5 +124,27 @@ class PatchPilotApplicationTests {
         assertThat(result.supported()).isTrue();
         assertThat(result.buildSystem()).isEqualTo("poetry");
         assertThat(result.verificationCommand()).containsExactly("poetry", "run", "pytest");
+    }
+
+    @Test
+    void should_prefer_explicit_python_runner_adapters_before_pyproject_adapters(@TempDir Path tempDir) throws Exception {
+        Files.writeString(tempDir.resolve("pyproject.toml"), """
+                [tool.poetry]
+                name = "demo"
+
+                [tool.pytest.ini_options]
+                testpaths = ["tests"]
+                """);
+        Files.writeString(tempDir.resolve("tox.ini"), """
+                [tox]
+                env_list = py311
+                """);
+        LanguageAdapterRegistry registry = applicationContext.getBean(LanguageAdapterRegistry.class);
+
+        LanguageDetectionResult result = registry.detect(tempDir);
+
+        assertThat(result.supported()).isTrue();
+        assertThat(result.buildSystem()).isEqualTo("tox");
+        assertThat(result.verificationCommand()).containsExactly("tox");
     }
 }

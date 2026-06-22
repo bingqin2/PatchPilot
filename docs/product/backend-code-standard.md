@@ -242,6 +242,9 @@ bun test
 npm test
 pnpm test
 yarn test
+tox
+nox
+hatch test
 python3 -m pytest
 poetry run pytest
 uv run pytest
