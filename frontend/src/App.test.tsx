@@ -316,6 +316,73 @@ const queueItems = [
   }
 ];
 
+const supportedLanguageAdapters = [
+  {
+    language: 'java',
+    buildSystem: 'maven',
+    verificationCommand: ['mvn', 'test'],
+    detectionSignals: ['pom.xml', 'mvnw'],
+    demoFixturePath: 'docs/demo-repositories/java-maven',
+    status: 'SUPPORTED'
+  },
+  {
+    language: 'java',
+    buildSystem: 'gradle',
+    verificationCommand: ['gradle', 'test'],
+    detectionSignals: ['build.gradle', 'build.gradle.kts', 'gradlew'],
+    demoFixturePath: 'docs/demo-repositories/java-gradle',
+    status: 'SUPPORTED'
+  },
+  {
+    language: 'node',
+    buildSystem: 'pnpm',
+    verificationCommand: ['pnpm', 'test'],
+    detectionSignals: ['package.json', 'pnpm-lock.yaml', 'scripts.test'],
+    demoFixturePath: 'docs/demo-repositories/node-pnpm',
+    status: 'SUPPORTED'
+  },
+  {
+    language: 'node',
+    buildSystem: 'yarn',
+    verificationCommand: ['yarn', 'test'],
+    detectionSignals: ['package.json', 'yarn.lock', 'scripts.test'],
+    demoFixturePath: 'docs/demo-repositories/node-yarn',
+    status: 'SUPPORTED'
+  },
+  {
+    language: 'node',
+    buildSystem: 'npm',
+    verificationCommand: ['npm', 'test'],
+    detectionSignals: ['package.json', 'scripts.test'],
+    demoFixturePath: 'docs/demo-repositories/node-npm',
+    status: 'SUPPORTED'
+  },
+  {
+    language: 'python',
+    buildSystem: 'poetry',
+    verificationCommand: ['poetry', 'run', 'pytest'],
+    detectionSignals: ['pyproject.toml', '[tool.poetry]', 'pytest configuration or dependency'],
+    demoFixturePath: 'docs/demo-repositories/python-poetry',
+    status: 'SUPPORTED'
+  },
+  {
+    language: 'python',
+    buildSystem: 'uv',
+    verificationCommand: ['uv', 'run', 'pytest'],
+    detectionSignals: ['uv.lock', 'pyproject.toml', 'pytest configuration or dependency'],
+    demoFixturePath: 'docs/demo-repositories/python-uv',
+    status: 'SUPPORTED'
+  },
+  {
+    language: 'python',
+    buildSystem: 'pytest',
+    verificationCommand: ['python3', '-m', 'pytest'],
+    detectionSignals: ['pytest.ini', 'requirements.txt', 'pyproject.toml'],
+    demoFixturePath: 'docs/demo-repositories/python-pytest',
+    status: 'SUPPORTED'
+  }
+];
+
 const statusCounts = {
   totalCount: 2,
   pendingCount: 0,
@@ -463,6 +530,9 @@ beforeEach(() => {
         service: 'patchpilot-backend',
         timestamp: '2026-06-21T01:00:00Z'
       });
+    }
+    if (url === '/api/language-adapters') {
+      return jsonResponse(supportedLanguageAdapters);
     }
     if (url === '/api/task-queue/summary') {
       return jsonResponse(queueSummary);
@@ -678,6 +748,10 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(screen.getByText('Agent key Configured')).toBeInTheDocument();
   expect(screen.getByText('Webhook secret Configured')).toBeInTheDocument();
   expect(screen.getByText('Queue attempts 3')).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: 'Supported adapters' })).toBeInTheDocument();
+  expect(screen.getByText('8 supported adapters')).toBeInTheDocument();
+  expect(screen.getByText('docs/demo-repositories/java-maven')).toBeInTheDocument();
+  expect(screen.getByText('uv run pytest')).toBeInTheDocument();
   expect(screen.getByText('Queue')).toBeInTheDocument();
   expect(screen.getByText('Queue has failures')).toBeInTheDocument();
   expect(screen.getByText('1 failed item')).toBeInTheDocument();
@@ -686,6 +760,7 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(screen.getByText('maven test command timed out')).toBeInTheDocument();
 
   await waitFor(() => expect(screen.getByText('Task completed')).toBeInTheDocument());
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/language-adapters'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks/task-1/detail'));
   expect(screen.getByText('Pull request opened')).toBeInTheDocument();
   expect(screen.getByText('Tests run: 247, Failures: 0, Errors: 0')).toBeInTheDocument();
@@ -797,6 +872,9 @@ test('shows manual task creation failures without clearing the form', async () =
         service: 'patchpilot-backend',
         timestamp: '2026-06-21T01:00:00Z'
       });
+    }
+    if (url === '/api/language-adapters') {
+      return jsonResponse(supportedLanguageAdapters);
     }
     if (url === '/api/task-queue/summary') {
       return jsonResponse(queueSummary);
@@ -1333,6 +1411,9 @@ test('shows dashboard refresh progress while top-level data is loading', async (
         service: 'patchpilot-backend',
         timestamp: '2026-06-21T01:00:00Z'
       });
+    }
+    if (url === '/api/language-adapters') {
+      return jsonResponse(supportedLanguageAdapters);
     }
     if (url === '/api/task-queue/summary') {
       return jsonResponse(queueSummary);

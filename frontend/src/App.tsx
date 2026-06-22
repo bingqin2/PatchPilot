@@ -13,6 +13,7 @@ import {
   getTaskDetail,
   getTaskReport,
   getTaskStatusCounts,
+  listLanguageAdapters,
   listQueueItems,
   listTasks,
   retryTask
@@ -24,6 +25,7 @@ import { MetricCard } from './dashboard/components/MetricCard';
 import { ModelUsagePanel } from './dashboard/components/ModelUsagePanel';
 import { ManualTaskForm } from './dashboard/components/ManualTaskForm';
 import { QueuePanel } from './dashboard/components/QueuePanel';
+import { SupportedAdaptersPanel } from './dashboard/components/SupportedAdaptersPanel';
 import { TaskDetailPanel } from './dashboard/components/TaskDetailPanel';
 import { TaskListPanel } from './dashboard/components/TaskListPanel';
 import { compactDateTime, duration, percent } from './dashboard/format';
@@ -41,6 +43,7 @@ import type {
   FixTaskModelUsageSummary,
   FixTaskQueueItem,
   FixTaskQueueSummary,
+  SupportedLanguageAdapter,
   TaskSort,
   TaskStatusFilter
 } from './types';
@@ -67,6 +70,8 @@ export default function App() {
   const [latency, setLatency] = useState<FixTaskLatencySummary | null>(null);
   const [configuration, setConfiguration] = useState<ConfigurationSummary | null>(null);
   const [backendHealth, setBackendHealth] = useState<BackendHealth | null>(null);
+  const [supportedAdapters, setSupportedAdapters] = useState<SupportedLanguageAdapter[]>([]);
+  const [adapterError, setAdapterError] = useState<string | null>(null);
   const [queueSummary, setQueueSummary] = useState<FixTaskQueueSummary | null>(null);
   const [queueItems, setQueueItems] = useState<FixTaskQueueItem[]>([]);
   const [statusFilter, setStatusFilter] = useState<TaskStatusFilter>(initialFilters.status);
@@ -280,6 +285,7 @@ export default function App() {
         latencySummary,
         configurationSummary,
         healthSummary,
+        adapterListResult,
         queueSummaryData,
         queueItemList
       ] = await Promise.all([
@@ -296,6 +302,10 @@ export default function App() {
         getLatencySummary(taskFilters),
         getConfigurationSummary(),
         getBackendHealth(),
+        listLanguageAdapters().then(
+          (adapters) => ({ adapters, error: null as string | null }),
+          (caught) => ({ adapters: null, error: errorMessage(caught) })
+        ),
         getQueueSummary(),
         listQueueItems()
       ]);
@@ -307,6 +317,10 @@ export default function App() {
       setLatency(latencySummary);
       setConfiguration(configurationSummary);
       setBackendHealth(healthSummary);
+      if (adapterListResult.adapters) {
+        setSupportedAdapters(adapterListResult.adapters);
+      }
+      setAdapterError(adapterListResult.error);
       setQueueSummary(queueSummaryData);
       setQueueItems(queueItemList);
       setCanLoadMoreTasks(taskList.hasMore);
@@ -540,6 +554,8 @@ export default function App() {
       </section>
 
       <ConfigurationPanel configuration={configuration} backendHealth={backendHealth} />
+
+      <SupportedAdaptersPanel adapters={supportedAdapters} error={adapterError} />
 
       <QueuePanel summary={queueSummary} items={queueItems} />
     </main>

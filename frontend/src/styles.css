@@ -346,6 +346,100 @@ h3 {
   padding: 9px 10px;
 }
 
+.supported-adapters-panel {
+  margin-bottom: 16px;
+}
+
+.adapter-api-error {
+  align-items: center;
+  background: #fff4f2;
+  border-bottom: 1px solid #f2c3ba;
+  color: #9f2d1f;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 16px;
+}
+
+.adapter-api-error strong,
+.adapter-api-error span {
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.supported-adapters-table {
+  display: grid;
+  overflow-x: auto;
+}
+
+.supported-adapters-head,
+.supported-adapters-row {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(110px, 0.75fr) minmax(150px, 0.9fr) minmax(260px, 1.35fr) minmax(260px, 1.25fr) minmax(110px, 0.6fr);
+  min-width: 980px;
+  padding: 11px 16px;
+}
+
+.supported-adapters-head {
+  background: #f7f9fb;
+  border-bottom: 1px solid #dce3e9;
+  color: #637181;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.supported-adapters-row {
+  align-items: center;
+  border-bottom: 1px solid #edf1f5;
+  color: #384858;
+  font-size: 13px;
+}
+
+.supported-adapters-row:last-child {
+  border-bottom: 0;
+}
+
+.supported-adapters-row strong,
+.supported-adapters-row small {
+  display: block;
+}
+
+.supported-adapters-row strong {
+  color: #17202a;
+  font-size: 14px;
+}
+
+.supported-adapters-row small {
+  color: #637181;
+  font-size: 12px;
+  font-weight: 800;
+  margin-top: 2px;
+}
+
+.supported-adapters-row code {
+  background: #eef3f6;
+  border: 1px solid #d6dee6;
+  border-radius: 6px;
+  color: #17202a;
+  display: inline-block;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 6px 8px;
+  width: fit-content;
+}
+
+.adapter-status {
+  background: #dff6e7;
+  border-radius: 999px;
+  color: #126b35;
+  font-size: 11px;
+  font-weight: 850;
+  justify-self: start;
+  padding: 5px 8px;
+}
+
 .workspace-grid {
   display: grid;
   gap: 16px;

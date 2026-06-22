@@ -135,6 +135,15 @@ export interface BackendHealth {
   timestamp: string;
 }
 
+export interface SupportedLanguageAdapter {
+  language: string;
+  buildSystem: string;
+  verificationCommand: string[];
+  detectionSignals: string[];
+  demoFixturePath: string;
+  status: 'SUPPORTED';
+}
+
 export interface FixTaskQueueSummary {
   totalCount: number;
   pendingCount: number;

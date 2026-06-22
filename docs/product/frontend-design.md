@@ -26,6 +26,7 @@ The current frontend lives in `frontend/` and uses React, Vite, and TypeScript.
 During local development, Vite proxies `/api` and `/health` to `PATCHPILOT_FRONTEND_BACKEND_URL` or `VITE_PATCHPILOT_BACKEND_URL` from the shell environment or repository root `.env`, defaulting to `http://127.0.0.1:8080`.
 
 The page coordinator is `frontend/src/App.tsx`. It loads backend data, owns selected-task state, applies status filters, repository owner/name filters, language/build-system adapter filters, created time range filters, task-list sort, and search state, and coordinates manual creation plus cancel/retry actions.
+It also loads `GET /api/language-adapters` so supported repository shapes, fixed verification commands, detection signals, and demo fixture paths are visible in the dashboard instead of only in source code.
 
 Selected-task detail uses the `/tasks/{taskId}` frontend route and `GET /api/tasks/{taskId}/detail`, an aggregate read-model endpoint that returns the task audit summary, latest queue item, queue history, timeline events, test runs, tool calls, and model calls together. Legacy `?taskId=` links still select the same task. Status, search, repository owner/name filters, adapter filters, created time filters, and non-default sort state are stored as URL query parameters, so `/tasks/{taskId}?status=FAILED&query=maven&repositoryOwner=bingqin2&repositoryName=PatchPilot&language=node&buildSystem=npm&sort=createdAtAsc&createdAfter=2026-06-20T01:00:00Z&createdBefore=2026-06-21T01:00:00Z` restores the selected task and task-list view together. The clear-filter action removes `status`, `query`, `repositoryOwner`, `repositoryName`, `language`, `buildSystem`, `createdAfter`, and `createdBefore`, preserving sort, the selected task route, unrelated query parameters, and hash fragments. Markdown task reports use `GET /api/tasks/{taskId}/report` so operators can copy a compact diagnostic summary without manually assembling API responses. This keeps the dashboard detail panel to one request per selected task while preserving narrower backend endpoints for curl-based debugging.
 
@@ -36,6 +37,7 @@ Reusable dashboard components live under `frontend/src/dashboard/components/`:
 - `ManualTaskForm`: local demo/debug task creation through `POST /api/tasks`, with explicit repository, issue, trigger user, and `/agent fix` command fields.
 - `QueuePanel`: read-only queue health, summary, and queue items.
 - `ConfigurationPanel`: read-only runtime configuration summary with backend health, provider, model, workspace, queue policy, configured/missing secret states, and setup health hints.
+- `SupportedAdaptersPanel`: read-only support matrix for Java/Maven, Java/Gradle, Node/npm, Node/pnpm, Node/yarn, Python/pytest, Python/Poetry, and Python/uv adapters.
 - `FailureCausePanel`, `ModelUsagePanel`, and `LatencyPanel`: operational summary cards for failure grouping, token usage, call counts, estimated model cost, and execution latency.
 - `MetricCard`, `RecordLine`, and `SummaryItem`: small shared presentation units.
 
@@ -55,6 +57,7 @@ The first screen is the working dashboard:
 - Selecting a task updates the `/tasks/{taskId}` route while preserving active filter query parameters, loads aggregate task detail in one request, and reveals a copyable task link, copyable Markdown report, selected language adapter metadata, queue state, queue history, execution evidence summary, timeline events, verification output, tool-call records, model-call records, and GitHub links.
 - Queue visibility shows whether work is pending, delayed, running, failed, or cancelled, with failed/delayed/running health hints before the row list.
 - Configuration visibility shows backend `/health` status, the active provider, model, workspace root, queue policy, whether required secrets are configured, and clear health hints for missing secrets or weak optional settings without exposing secret values.
+- Supported-adapter visibility shows each supported language/build system, verification command, detection signals, and demo fixture path. If the adapter API fails, the panel shows a local warning while the rest of the dashboard can still load.
 - Cancel and retry are available only for task states where those actions make sense.
 
 This keeps the UI focused on operator questions:
@@ -63,6 +66,7 @@ This keeps the UI focused on operator questions:
 - What failed and why?
 - Did tests pass?
 - Which language adapter and verification command ran?
+- Which repository shapes are supported right now?
 - What did the agent call?
 - How many model tokens were used?
 - Where is the GitHub issue or Pull Request?
@@ -81,6 +85,7 @@ Target capabilities:
 - Surface cost, latency, success rate, failure rate, and test pass rate.
 - Link every important UI object back to GitHub.
 - Provide safe operator controls such as cancel, retry, and configuration inspection.
+- Show the supported adapter matrix and fixture paths for demo planning and troubleshooting.
 - Support manual demo task creation that still uses the durable backend queue.
 - Support demo readiness by making a full task lifecycle understandable without reading logs.
 
