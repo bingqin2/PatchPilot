@@ -355,7 +355,7 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
         auditToolCall(
                 task.id(),
                 "GeneratedDiffRiskApproval",
-                "approvedAt=%s".formatted(task.riskReviewApprovedAt()),
+                "approvedBy=%s approvedAt=%s".formatted(task.riskReviewApprovedBy(), task.riskReviewApprovedAt()),
                 () -> "Operator approved the generated diff; resuming after risk gate"
         );
     }

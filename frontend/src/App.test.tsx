@@ -24,7 +24,9 @@ const completedTask = {
   adapterDetectionReason: 'pom.xml detected with mvnw wrapper',
   statusCommentId: null,
   statusCommentUrl: 'https://github.com/bingqin2/PatchPilot/issues/1#issuecomment-4756084894',
-  riskReviewApprovedAt: null
+  riskReviewApprovedAt: null,
+  riskReviewApprovedBy: null,
+  riskReviewApprovalReason: null
 };
 
 const failedTask = {
@@ -49,7 +51,9 @@ const failedTask = {
   adapterDetectionReason: 'package.json contains a non-empty scripts.test',
   statusCommentId: null,
   statusCommentUrl: null,
-  riskReviewApprovedAt: null
+  riskReviewApprovedAt: null,
+  riskReviewApprovedBy: null,
+  riskReviewApprovalReason: null
 };
 
 const reviewTask = {
@@ -74,7 +78,9 @@ const reviewTask = {
   adapterDetectionReason: 'package.json contains a non-empty scripts.test',
   statusCommentId: null,
   statusCommentUrl: null,
-  riskReviewApprovedAt: null
+  riskReviewApprovedAt: null,
+  riskReviewApprovedBy: null,
+  riskReviewApprovalReason: null
 };
 
 const runningTask = {
@@ -99,7 +105,9 @@ const runningTask = {
   adapterDetectionReason: null,
   statusCommentId: null,
   statusCommentUrl: null,
-  riskReviewApprovedAt: null
+  riskReviewApprovedAt: null,
+  riskReviewApprovedBy: null,
+  riskReviewApprovalReason: null
 };
 
 const cancelledTask = {
@@ -121,7 +129,9 @@ const approvedReviewTask = {
   status: 'PENDING',
   failureReason: null,
   updatedAt: '2026-06-20T01:09:00Z',
-  riskReviewApprovedAt: '2026-06-20T01:09:00Z'
+  riskReviewApprovedAt: '2026-06-20T01:09:00Z',
+  riskReviewApprovedBy: 'release-captain',
+  riskReviewApprovalReason: 'Reviewed generated diff and accepted docs-only change'
 };
 
 const manuallyCreatedTask = {
@@ -146,7 +156,9 @@ const manuallyCreatedTask = {
   adapterDetectionReason: null,
   statusCommentId: null,
   statusCommentUrl: null,
-  riskReviewApprovedAt: null
+  riskReviewApprovedAt: null,
+  riskReviewApprovedBy: null,
+  riskReviewApprovalReason: null
 };
 
 const summary = {
@@ -1865,10 +1877,22 @@ test('approves pending review tasks and refreshes dashboard data', async () => {
   await user.click(await screen.findByRole('button', { name: 'PENDING_REVIEW' }));
   expect(await screen.findByText('/agent fix update deployment workflow')).toBeInTheDocument();
 
+  await user.type(await screen.findByLabelText('Approver'), 'release-captain');
+  await user.type(
+    await screen.findByLabelText('Approval reason'),
+    'Reviewed generated diff and accepted docs-only change'
+  );
   await user.click(await screen.findByRole('button', { name: 'Approve review' }));
 
   await waitFor(() =>
-    expect(fetchMock).toHaveBeenCalledWith('/api/tasks/task-review/approve-review', { method: 'POST' })
+    expect(fetchMock).toHaveBeenCalledWith('/api/tasks/task-review/approve-review', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        operator: 'release-captain',
+        reason: 'Reviewed generated diff and accepted docs-only change'
+      })
+    })
   );
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks?limit=50&status=PENDING_REVIEW'));
   expect(screen.queryByRole('button', { name: 'Retry task' })).not.toBeInTheDocument();

@@ -2349,3 +2349,25 @@ Validation:
 - `npm test`: passed after full frontend verification, 88 tests run, 0 failures.
 - `npm run build`: passed after production frontend build.
 - `git diff --check`: passed after whitespace and conflict-marker verification.
+
+Implemented risk review approval audit from `docs/plans/115-risk-review-approval-audit.md`.
+
+Changes:
+
+- Added `ApproveReviewDto` and `ApproveReviewCommand` so `POST /api/tasks/{taskId}/approve-review` requires an approver and approval reason.
+- Added `riskReviewApprovedBy` and `riskReviewApprovalReason` to task VO/entity conversion, in-memory persistence, MyBatis persistence, search fields, and MySQL schema migration.
+- Preserved existing `riskReviewApprovedAt` behavior while clearing all approval metadata on fresh retries and new pending-review states.
+- Recorded approval metadata in the review-approved timeline event, copied task reports, executor resume audit summary, task APIs, and dashboard detail.
+- Replaced one-click dashboard approval with a compact approval form that disables submission until both fields are filled.
+- Updated README, architecture notes, target state, frontend design notes, and this execution log.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=TaskControllerTests,DefaultFixTaskControlServiceTests,InMemoryFixTaskServiceTests,MyBatisFixTaskServiceTests test`: first failed because `ApproveReviewCommand` did not exist.
+- `npm test -- --run src/api.test.ts src/App.test.tsx src/dashboard/components/TaskDetailPanel.test.tsx`: first failed because approve-review still sent no request body and the detail panel had no approval form or metadata display.
+- `mvn -pl PatchPilot -Dtest=TaskControllerTests,DefaultFixTaskControlServiceTests,InMemoryFixTaskServiceTests,MyBatisFixTaskServiceTests,FixTaskConvertTests,FixTaskMigrationTests test`: passed after backend implementation, 112 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts src/App.test.tsx src/dashboard/components/TaskDetailPanel.test.tsx`: passed after frontend implementation, 71 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: first failed because `WorkspaceFixTaskExecutorTests` still expected the old approval tool-call input summary; then passed after updating the resume fixture to include approver metadata, 429 tests run, 0 failures.
+- `npm test`: passed after full frontend verification, 89 tests run, 0 failures.
+- `npm run build`: passed after production frontend build.
+- `git diff --check`: passed after whitespace and conflict-marker verification.

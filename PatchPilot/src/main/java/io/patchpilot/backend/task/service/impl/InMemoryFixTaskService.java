@@ -105,8 +105,8 @@ public class InMemoryFixTaskService implements FixTaskService {
     }
 
     @Override
-    public FixTaskVo markPendingForReviewApproval(String id) {
-        return replaceForReviewApproval(id);
+    public FixTaskVo markPendingForReviewApproval(String id, String approvedBy, String approvalReason) {
+        return replaceForReviewApproval(id, approvedBy, approvalReason);
     }
 
     @Override
@@ -118,7 +118,8 @@ public class InMemoryFixTaskService implements FixTaskService {
             return copyTask(currentTask, currentTask.status(), currentTask.failureReason(), currentTask.pullRequestUrl(),
                     currentTask.completedAt(), Instant.now(), currentTask.language(), currentTask.buildSystem(),
                     currentTask.verificationCommand(), currentTask.adapterDetectionReason(), statusCommentId,
-                    statusCommentUrl, currentTask.riskReviewApprovedAt());
+                    statusCommentUrl, currentTask.riskReviewApprovedAt(), currentTask.riskReviewApprovedBy(),
+                    currentTask.riskReviewApprovalReason());
         });
         return updatedTask;
     }
@@ -138,7 +139,8 @@ public class InMemoryFixTaskService implements FixTaskService {
             return copyTask(currentTask, currentTask.status(), currentTask.failureReason(), currentTask.pullRequestUrl(),
                     currentTask.completedAt(), Instant.now(), language, buildSystem, verificationCommand,
                     adapterDetectionReason,
-                    currentTask.statusCommentId(), currentTask.statusCommentUrl(), currentTask.riskReviewApprovedAt());
+                    currentTask.statusCommentId(), currentTask.statusCommentUrl(), currentTask.riskReviewApprovedAt(),
+                    currentTask.riskReviewApprovedBy(), currentTask.riskReviewApprovalReason());
         });
         return updatedTask;
     }
@@ -189,10 +191,13 @@ public class InMemoryFixTaskService implements FixTaskService {
             if (currentTask == null) {
                 throw new IllegalArgumentException("Task not found: " + taskId);
             }
+            if (status == FixTaskStatus.PENDING_REVIEW) {
+                return copyTask(currentTask, status, failureReason, currentTask.pullRequestUrl(),
+                        currentTask.completedAt(), Instant.now(), null, null, null);
+            }
             return copyTask(currentTask, status, failureReason, currentTask.pullRequestUrl(),
-                    currentTask.completedAt(), Instant.now(), status == FixTaskStatus.PENDING_REVIEW
-                            ? null
-                            : currentTask.riskReviewApprovedAt());
+                    currentTask.completedAt(), Instant.now(), currentTask.riskReviewApprovedAt(),
+                    currentTask.riskReviewApprovedBy(), currentTask.riskReviewApprovalReason());
         });
         return updatedTask;
     }
@@ -203,18 +208,19 @@ public class InMemoryFixTaskService implements FixTaskService {
                 throw new IllegalArgumentException("Task not found: " + taskId);
             }
             Instant updatedAt = Instant.now();
-            return copyTask(currentTask, FixTaskStatus.PENDING, null, null, null, updatedAt, null);
+            return copyTask(currentTask, FixTaskStatus.PENDING, null, null, null, updatedAt, null, null, null);
         });
         return updatedTask;
     }
 
-    private FixTaskVo replaceForReviewApproval(String id) {
+    private FixTaskVo replaceForReviewApproval(String id, String approvedBy, String approvalReason) {
         FixTaskVo updatedTask = tasks.compute(id, (taskId, currentTask) -> {
             if (currentTask == null) {
                 throw new IllegalArgumentException("Task not found: " + taskId);
             }
             Instant updatedAt = Instant.now();
-            return copyTask(currentTask, FixTaskStatus.PENDING, null, null, null, updatedAt, updatedAt);
+            return copyTask(currentTask, FixTaskStatus.PENDING, null, null, null, updatedAt, updatedAt,
+                    approvedBy, approvalReason);
         });
         return updatedTask;
     }
@@ -228,7 +234,8 @@ public class InMemoryFixTaskService implements FixTaskService {
             Instant updatedAt
     ) {
         return copyTask(currentTask, status, failureReason, pullRequestUrl, completedAt, updatedAt,
-                currentTask.riskReviewApprovedAt());
+                currentTask.riskReviewApprovedAt(), currentTask.riskReviewApprovedBy(),
+                currentTask.riskReviewApprovalReason());
     }
 
     private static FixTaskVo copyTask(
@@ -238,12 +245,14 @@ public class InMemoryFixTaskService implements FixTaskService {
             String pullRequestUrl,
             Instant completedAt,
             Instant updatedAt,
-            Instant riskReviewApprovedAt
+            Instant riskReviewApprovedAt,
+            String riskReviewApprovedBy,
+            String riskReviewApprovalReason
     ) {
         return copyTask(currentTask, status, failureReason, pullRequestUrl, completedAt, updatedAt,
                 currentTask.language(), currentTask.buildSystem(), currentTask.verificationCommand(),
                 currentTask.adapterDetectionReason(), currentTask.statusCommentId(), currentTask.statusCommentUrl(),
-                riskReviewApprovedAt);
+                riskReviewApprovedAt, riskReviewApprovedBy, riskReviewApprovalReason);
     }
 
     private static FixTaskVo copyTask(
@@ -259,7 +268,9 @@ public class InMemoryFixTaskService implements FixTaskService {
             String adapterDetectionReason,
             Long statusCommentId,
             String statusCommentUrl,
-            Instant riskReviewApprovedAt
+            Instant riskReviewApprovedAt,
+            String riskReviewApprovedBy,
+            String riskReviewApprovalReason
     ) {
         return new FixTaskVo(
                 currentTask.id(),
@@ -283,7 +294,9 @@ public class InMemoryFixTaskService implements FixTaskService {
                 adapterDetectionReason,
                 statusCommentId,
                 statusCommentUrl,
-                riskReviewApprovedAt
+                riskReviewApprovedAt,
+                riskReviewApprovedBy,
+                riskReviewApprovalReason
         );
     }
 
@@ -306,7 +319,9 @@ public class InMemoryFixTaskService implements FixTaskService {
                 task.language() == null ? "" : task.language(),
                 task.buildSystem() == null ? "" : task.buildSystem(),
                 task.verificationCommand() == null ? "" : task.verificationCommand(),
-                task.adapterDetectionReason() == null ? "" : task.adapterDetectionReason()
+                task.adapterDetectionReason() == null ? "" : task.adapterDetectionReason(),
+                task.riskReviewApprovedBy() == null ? "" : task.riskReviewApprovedBy(),
+                task.riskReviewApprovalReason() == null ? "" : task.riskReviewApprovalReason()
         ).toLowerCase();
         return searchable.contains(normalizedQuery);
     }

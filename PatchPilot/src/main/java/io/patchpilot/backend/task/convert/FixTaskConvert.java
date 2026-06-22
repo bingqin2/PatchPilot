@@ -35,7 +35,9 @@ public final class FixTaskConvert {
                 entity.getAdapterDetectionReason(),
                 entity.getStatusCommentId(),
                 entity.getStatusCommentUrl(),
-                entity.getRiskReviewApprovedAt()
+                entity.getRiskReviewApprovedAt(),
+                entity.getRiskReviewApprovedBy(),
+                entity.getRiskReviewApprovalReason()
         );
     }
 
@@ -63,6 +65,8 @@ public final class FixTaskConvert {
         entity.setStatusCommentId(null);
         entity.setStatusCommentUrl(null);
         entity.setRiskReviewApprovedAt(null);
+        entity.setRiskReviewApprovedBy(null);
+        entity.setRiskReviewApprovalReason(null);
         return entity;
     }
 
@@ -95,8 +99,10 @@ public final class FixTaskConvert {
         entity.setStatusCommentId(current.getStatusCommentId());
         entity.setStatusCommentUrl(current.getStatusCommentUrl());
         entity.setRiskReviewApprovedAt(current.getRiskReviewApprovedAt());
+        entity.setRiskReviewApprovedBy(current.getRiskReviewApprovedBy());
+        entity.setRiskReviewApprovalReason(current.getRiskReviewApprovalReason());
         if (status == FixTaskStatus.PENDING_REVIEW) {
-            entity.setRiskReviewApprovedAt(null);
+            clearRiskReviewApproval(entity);
         }
         return entity;
     }
@@ -113,15 +119,22 @@ public final class FixTaskConvert {
         FixTaskEntity entity = replaceStatus(current, FixTaskStatus.PENDING, null, updatedAt);
         entity.setPullRequestUrl(null);
         entity.setCompletedAt(null);
-        entity.setRiskReviewApprovedAt(null);
+        clearRiskReviewApproval(entity);
         return entity;
     }
 
-    public static FixTaskEntity replacePendingForReviewApproval(FixTaskEntity current, Instant updatedAt) {
+    public static FixTaskEntity replacePendingForReviewApproval(
+            FixTaskEntity current,
+            Instant updatedAt,
+            String approvedBy,
+            String approvalReason
+    ) {
         FixTaskEntity entity = replaceStatus(current, FixTaskStatus.PENDING, null, updatedAt);
         entity.setPullRequestUrl(null);
         entity.setCompletedAt(null);
         entity.setRiskReviewApprovedAt(updatedAt);
+        entity.setRiskReviewApprovedBy(approvedBy);
+        entity.setRiskReviewApprovalReason(approvalReason);
         return entity;
     }
 
@@ -161,5 +174,11 @@ public final class FixTaskConvert {
         entity.setVerificationCommand(verificationCommand);
         entity.setAdapterDetectionReason(adapterDetectionReason);
         return entity;
+    }
+
+    private static void clearRiskReviewApproval(FixTaskEntity entity) {
+        entity.setRiskReviewApprovedAt(null);
+        entity.setRiskReviewApprovedBy(null);
+        entity.setRiskReviewApprovalReason(null);
     }
 }

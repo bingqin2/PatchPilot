@@ -42,6 +42,8 @@ export interface FixTask {
   statusCommentId: number | null;
   statusCommentUrl: string | null;
   riskReviewApprovedAt: string | null;
+  riskReviewApprovedBy: string | null;
+  riskReviewApprovalReason: string | null;
 }
 
 export interface FixTaskPage {
@@ -69,6 +71,11 @@ export interface CreateTaskInput {
   issueNumber: number;
   triggerUser: string;
   triggerComment: string;
+}
+
+export interface ApproveReviewInput {
+  operator: string;
+  reason: string;
 }
 
 export interface FixTaskMetricsSummary {

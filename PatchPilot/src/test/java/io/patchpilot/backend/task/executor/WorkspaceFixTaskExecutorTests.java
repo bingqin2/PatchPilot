@@ -438,7 +438,7 @@ class WorkspaceFixTaskExecutorTests {
                 );
         assertThat(toolCallService.toolCalls())
                 .extracting(FixTaskToolCallVo::inputSummary)
-                .contains("approvedAt=2026-06-18T01:02:03Z");
+                .contains("approvedBy=release-captain approvedAt=2026-06-18T01:02:03Z");
     }
 
     @Test
@@ -613,7 +613,9 @@ class WorkspaceFixTaskExecutorTests {
                 null,
                 null,
                 null,
-                Instant.parse("2026-06-18T01:02:03Z")
+                Instant.parse("2026-06-18T01:02:03Z"),
+                "release-captain",
+                "Reviewed generated diff and accepted docs-only change"
         );
     }
 

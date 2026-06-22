@@ -1,6 +1,6 @@
 import { CheckCircle2, Copy, ExternalLink, RotateCcw, XCircle } from 'lucide-react';
 import { useState } from 'react';
-import type { FixTask } from '../../types';
+import type { ApproveReviewInput, FixTask } from '../../types';
 import { compactTime, duration, issueUrl } from '../format';
 import type { TaskDetailState } from '../types';
 import { RecordLine } from './RecordLine';
@@ -13,7 +13,7 @@ interface TaskDetailPanelProps {
   actionInFlight: boolean;
   onCancelTask: (taskId: string) => Promise<void>;
   onRetryTask: (taskId: string) => Promise<void>;
-  onApproveReview: (taskId: string) => Promise<void>;
+  onApproveReview: (taskId: string, input: ApproveReviewInput) => Promise<void>;
   onCopyReport: (taskId: string) => Promise<string>;
 }
 
@@ -28,6 +28,8 @@ export function TaskDetailPanel({
   onCopyReport
 }: TaskDetailPanelProps) {
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
+  const [approvalOperator, setApprovalOperator] = useState('');
+  const [approvalReason, setApprovalReason] = useState('');
 
   if (!task) {
     return (
@@ -48,6 +50,7 @@ export function TaskDetailPanel({
   const generatedDiffRiskBlocked = detail.toolCalls.some(
     (call) => call.toolName === 'GeneratedDiffRiskGate' && !call.success
   );
+  const approvalInputReady = approvalOperator.trim().length > 0 && approvalReason.trim().length > 0;
 
   async function copyTaskLink() {
     if (!task) {
@@ -74,6 +77,16 @@ export function TaskDetailPanel({
     } catch {
       setCopyStatus('Copy failed');
     }
+  }
+
+  async function approveReview() {
+    if (!task || !approvalInputReady) {
+      return;
+    }
+    await onApproveReview(task.id, {
+      operator: approvalOperator.trim(),
+      reason: approvalReason.trim()
+    });
   }
 
   return (
@@ -125,17 +138,6 @@ export function TaskDetailPanel({
               Retry task
             </button>
           ) : null}
-          {canApproveReview ? (
-            <button
-              className="secondary-button"
-              type="button"
-              disabled={actionInFlight}
-              onClick={() => void onApproveReview(task.id)}
-            >
-              <CheckCircle2 size={14} />
-              Approve review
-            </button>
-          ) : null}
           {task.pullRequestUrl ? (
             <a className="external-link" href={task.pullRequestUrl} target="_blank" rel="noreferrer">
               Open PR
@@ -169,6 +171,23 @@ export function TaskDetailPanel({
         {task.adapterDetectionReason ? <strong>Detection {task.adapterDetectionReason}</strong> : null}
         {task.verificationCommand ? <strong>Verify {task.verificationCommand}</strong> : null}
       </div>
+
+      {task.riskReviewApprovedAt ? (
+        <section className="detail-section review-approval-detail" aria-label="Review approval">
+          <h3>Review approval</h3>
+          <div className="review-approval-grid">
+            <div>
+              <span>Approver</span>
+              <strong>{task.riskReviewApprovedBy ?? 'unknown'}</strong>
+            </div>
+            <div>
+              <span>Approved</span>
+              <time dateTime={task.riskReviewApprovedAt}>{compactTime(task.riskReviewApprovedAt)}</time>
+            </div>
+          </div>
+          {task.riskReviewApprovalReason ? <p>{task.riskReviewApprovalReason}</p> : null}
+        </section>
+      ) : null}
 
       {detail.queueItem ? (
         <div className="queue-detail">
@@ -210,6 +229,39 @@ export function TaskDetailPanel({
             </time>
           </div>
           <pre aria-label="Generated diff preview">{detail.generatedDiff.diff}</pre>
+        </section>
+      ) : null}
+
+      {canApproveReview ? (
+        <section className="detail-section review-approval-form" aria-label="Review approval form">
+          <h3>Review approval</h3>
+          <label>
+            <span>Approver</span>
+            <input
+              type="text"
+              value={approvalOperator}
+              onChange={(event) => setApprovalOperator(event.target.value)}
+              placeholder="release-captain"
+            />
+          </label>
+          <label>
+            <span>Approval reason</span>
+            <textarea
+              value={approvalReason}
+              onChange={(event) => setApprovalReason(event.target.value)}
+              placeholder="Summarize what was reviewed and why the task can continue."
+              rows={3}
+            />
+          </label>
+          <button
+            className="secondary-button"
+            type="button"
+            disabled={actionInFlight || !approvalInputReady}
+            onClick={() => void approveReview()}
+          >
+            <CheckCircle2 size={14} />
+            Approve review
+          </button>
         </section>
       ) : null}
 
