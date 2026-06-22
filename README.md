@@ -25,6 +25,7 @@ PatchPilot is not a chatbot and does not auto-merge code. The current target is 
 .
 ├── PatchPilot/        # Spring Boot backend
 ├── docs/              # Product docs, plans, progress logs, and operator guides
+│   └── demo-repositories/ # Minimal adapter detection fixtures
 ├── frontend/          # React operations dashboard
 ├── docker-compose.yml # Local MySQL + backend runtime
 └── .env.example       # Self-hosted configuration template
@@ -233,6 +234,8 @@ PatchPilot currently executes fixes for Java repositories with Maven or Gradle b
 Unsupported repositories fail before model patch generation, tests, commit, push, or Pull Request creation. This is intentional until additional adapters such as bun, tox, nox, and other Python runners are implemented.
 For supported repositories, the language adapter supplies the verification command and the generic verification runner executes that command under the existing allowlist, timeout, process-registration, and environment-sanitization rules.
 After a repository is detected, each task stores the selected `language`, `buildSystem`, and `verificationCommand`. These fields are returned by the task APIs and shown in the dashboard so operators can confirm whether a task used Maven, Gradle, npm, pnpm, yarn, pytest, Poetry, or uv without opening raw tool-call logs.
+
+Adapter detection fixtures live in `docs/demo-repositories/`. Each fixture documents the adapter it should trigger and the fixed verification command PatchPilot will run. Backend tests use these fixtures to prevent supported repository shapes from drifting as adapters evolve.
 
 Runtime configuration summary:
 

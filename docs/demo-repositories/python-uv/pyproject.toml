@@ -1,0 +1,9 @@
+[project]
+name = "patchpilot-python-uv-demo"
+version = "0.0.1"
+dependencies = [
+    "pytest>=8.2.0"
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
