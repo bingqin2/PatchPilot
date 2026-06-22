@@ -370,6 +370,7 @@ public class TaskController {
                 countTasksWithStatus(parsedQuery, FixTaskStatus.PENDING, parsedRepositoryOwner, parsedRepositoryName, parsedLanguage, parsedBuildSystem, parsedCreatedAfter, parsedCreatedBefore),
                 countTasksWithStatus(parsedQuery, FixTaskStatus.RUNNING, parsedRepositoryOwner, parsedRepositoryName, parsedLanguage, parsedBuildSystem, parsedCreatedAfter, parsedCreatedBefore),
                 countTasksWithStatus(parsedQuery, FixTaskStatus.RUNNING_TESTS, parsedRepositoryOwner, parsedRepositoryName, parsedLanguage, parsedBuildSystem, parsedCreatedAfter, parsedCreatedBefore),
+                countTasksWithStatus(parsedQuery, FixTaskStatus.PENDING_REVIEW, parsedRepositoryOwner, parsedRepositoryName, parsedLanguage, parsedBuildSystem, parsedCreatedAfter, parsedCreatedBefore),
                 countTasksWithStatus(parsedQuery, FixTaskStatus.COMPLETED, parsedRepositoryOwner, parsedRepositoryName, parsedLanguage, parsedBuildSystem, parsedCreatedAfter, parsedCreatedBefore),
                 countTasksWithStatus(parsedQuery, FixTaskStatus.FAILED, parsedRepositoryOwner, parsedRepositoryName, parsedLanguage, parsedBuildSystem, parsedCreatedAfter, parsedCreatedBefore),
                 countTasksWithStatus(parsedQuery, FixTaskStatus.CANCELLED, parsedRepositoryOwner, parsedRepositoryName, parsedLanguage, parsedBuildSystem, parsedCreatedAfter, parsedCreatedBefore)

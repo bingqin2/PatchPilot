@@ -59,6 +59,7 @@ public class DefaultFixTaskMetricsService implements FixTaskMetricsService {
         long pendingCount = countByStatus(tasks, FixTaskStatus.PENDING);
         long runningCount = countByStatus(tasks, FixTaskStatus.RUNNING);
         long runningTestsCount = countByStatus(tasks, FixTaskStatus.RUNNING_TESTS);
+        long pendingReviewCount = countByStatus(tasks, FixTaskStatus.PENDING_REVIEW);
         long completedCount = countByStatus(tasks, FixTaskStatus.COMPLETED);
         long failedCount = countByStatus(tasks, FixTaskStatus.FAILED);
         long cancelledCount = countByStatus(tasks, FixTaskStatus.CANCELLED);
@@ -73,6 +74,7 @@ public class DefaultFixTaskMetricsService implements FixTaskMetricsService {
                 pendingCount,
                 runningCount,
                 runningTestsCount,
+                pendingReviewCount,
                 completedCount,
                 failedCount,
                 cancelledCount,

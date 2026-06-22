@@ -44,6 +44,16 @@ public class IssueCommentTool {
         return update(task, "PatchPilot failed the task.", FixTaskStatus.FAILED, null, task.failureReason());
     }
 
+    public Optional<IssueCommentResult> updatePendingReview(FixTaskVo task) {
+        return update(
+                task,
+                "PatchPilot paused this task for human review.",
+                FixTaskStatus.PENDING_REVIEW,
+                null,
+                task.failureReason()
+        );
+    }
+
     public Optional<IssueCommentResult> updateActiveTaskExists(FixTaskVo task) {
         return update(task, "PatchPilot is already working on this issue.", task.status(), task.pullRequestUrl(),
                 task.failureReason());

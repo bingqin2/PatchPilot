@@ -5,6 +5,7 @@ public record FixTaskStatusCountsVo(
         long pendingCount,
         long runningCount,
         long runningTestsCount,
+        long pendingReviewCount,
         long completedCount,
         long failedCount,
         long cancelledCount

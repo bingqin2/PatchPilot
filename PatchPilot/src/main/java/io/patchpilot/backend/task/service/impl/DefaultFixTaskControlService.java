@@ -52,6 +52,9 @@ public class DefaultFixTaskControlService implements FixTaskControlService {
     @Override
     public FixTaskVo retryTask(String taskId) {
         FixTaskVo task = currentTask(taskId);
+        if (task.status() == FixTaskStatus.PENDING_REVIEW) {
+            throw new IllegalStateException("Pending review tasks must be cancelled or approved before retry");
+        }
         if (task.status() != FixTaskStatus.FAILED && task.status() != FixTaskStatus.CANCELLED) {
             throw new IllegalStateException("Only failed or cancelled tasks can be retried");
         }

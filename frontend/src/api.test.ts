@@ -130,6 +130,7 @@ test('builds backend task status count query parameters without status or pagina
         pendingCount: 1,
         runningCount: 2,
         runningTestsCount: 0,
+        pendingReviewCount: 0,
         completedCount: 4,
         failedCount: 2,
         cancelledCount: 0
@@ -161,6 +162,7 @@ test('builds backend task status count query parameters without status or pagina
     pendingCount: 1,
     runningCount: 2,
     runningTestsCount: 0,
+    pendingReviewCount: 0,
     completedCount: 4,
     failedCount: 2,
     cancelledCount: 0

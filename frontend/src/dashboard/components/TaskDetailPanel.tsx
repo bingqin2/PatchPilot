@@ -36,7 +36,10 @@ export function TaskDetailPanel({
     );
   }
 
-  const canCancel = task.status === 'PENDING' || task.status === 'RUNNING' || task.status === 'RUNNING_TESTS';
+  const canCancel = task.status === 'PENDING'
+    || task.status === 'RUNNING'
+    || task.status === 'RUNNING_TESTS'
+    || task.status === 'PENDING_REVIEW';
   const canRetry = task.status === 'FAILED' || task.status === 'CANCELLED';
   const latestTestStatus = testStatus(detail.summary?.latestTestRunExitCode);
   const generatedDiffRiskBlocked = detail.toolCalls.some(

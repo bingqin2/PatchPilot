@@ -50,6 +50,30 @@ const failedTask = {
   statusCommentUrl: null
 };
 
+const reviewTask = {
+  id: 'task-review',
+  repositoryOwner: 'bingqin2',
+  repositoryName: 'PatchPilot',
+  issueNumber: 4,
+  installationId: 0,
+  triggerUser: 'bingqin2',
+  triggerComment: '/agent fix update deployment workflow',
+  deliveryId: 'delivery-review',
+  commentId: 104,
+  status: 'PENDING_REVIEW',
+  failureReason: 'Generated diff rejected: sensitive path .github/workflows/deploy.yml',
+  createdAt: '2026-06-20T01:08:00Z',
+  pullRequestUrl: null,
+  completedAt: null,
+  updatedAt: '2026-06-20T01:08:30Z',
+  language: 'node',
+  buildSystem: 'npm',
+  verificationCommand: 'npm test',
+  adapterDetectionReason: 'package.json contains a non-empty scripts.test',
+  statusCommentId: null,
+  statusCommentUrl: null
+};
+
 const runningTask = {
   id: 'task-3',
   repositoryOwner: 'bingqin2',
@@ -438,10 +462,11 @@ function fixtureName(fixturePath: string) {
 }
 
 const statusCounts = {
-  totalCount: 2,
+  totalCount: 3,
   pendingCount: 0,
   runningCount: 0,
   runningTestsCount: 0,
+  pendingReviewCount: 1,
   completedCount: 1,
   failedCount: 1,
   cancelledCount: 0
@@ -452,6 +477,7 @@ const narrowedStatusCounts = {
   pendingCount: 0,
   runningCount: 0,
   runningTestsCount: 0,
+  pendingReviewCount: 0,
   completedCount: 0,
   failedCount: 1,
   cancelledCount: 0
@@ -502,7 +528,7 @@ beforeEach(() => {
   vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = input.toString();
     if (url === '/api/tasks/status-counts') {
-      return jsonResponse(manualTaskCreated ? { ...statusCounts, totalCount: 3, pendingCount: 1 } : statusCounts);
+      return jsonResponse(manualTaskCreated ? { ...statusCounts, totalCount: 4, pendingCount: 1 } : statusCounts);
     }
     if (url === '/api/tasks/status-counts?query=broken') {
       return jsonResponse(narrowedStatusCounts);
@@ -522,13 +548,16 @@ beforeEach(() => {
       }
     }
     if (url === '/api/tasks?limit=50') {
-      return jsonResponse(taskPage(manualTaskCreated ? [manuallyCreatedTask, completedTask, failedTask] : [completedTask, failedTask]));
+      return jsonResponse(taskPage(manualTaskCreated ? [manuallyCreatedTask, completedTask, reviewTask, failedTask] : [completedTask, reviewTask, failedTask]));
     }
     if (url === '/api/tasks?limit=50&status=RUNNING') {
       return jsonResponse(taskPage([runningTask]));
     }
     if (url === '/api/tasks?limit=50&status=FAILED') {
       return jsonResponse(taskPage([failedTask]));
+    }
+    if (url === '/api/tasks?limit=50&status=PENDING_REVIEW') {
+      return jsonResponse(taskPage([reviewTask]));
     }
     if (url === '/api/tasks?limit=50&query=broken') {
       return jsonResponse(taskPage([failedTask]));
@@ -556,7 +585,7 @@ beforeEach(() => {
         searchParams.has('createdBefore')
       ) {
         const narrowedToFailed = searchParams.get('query') === 'broken' || searchParams.get('status') === 'FAILED';
-        return jsonResponse(taskPage(narrowedToFailed ? [failedTask] : [completedTask, failedTask]));
+        return jsonResponse(taskPage(narrowedToFailed ? [failedTask] : [completedTask, reviewTask, failedTask]));
       }
     }
     if (url === '/api/tasks' && init?.method === 'POST') {
@@ -565,15 +594,16 @@ beforeEach(() => {
     }
     if (url === '/api/tasks/metrics/summary' || url.startsWith('/api/tasks/metrics/summary?')) {
       return jsonResponse({
-        totalCount: 2,
+        totalCount: 3,
         pendingCount: 0,
         runningCount: 0,
         runningTestsCount: 0,
         completedCount: 1,
         failedCount: 1,
+        pendingReviewCount: 1,
         cancelledCount: 0,
-        completionRate: 0.5,
-        failureRate: 0.5,
+        completionRate: 1 / 3,
+        failureRate: 1 / 3,
         averageCompletionDurationMs: 60000,
         totalModelTokens: 1800,
         averageModelTokensPerCompletedTask: 1800,
@@ -777,8 +807,9 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(await screen.findByRole('heading', { name: 'PatchPilot Operations' })).toBeInTheDocument();
   expect(screen.getByText(/Last refreshed/)).toBeInTheDocument();
   expect(screen.getByText(/Last refreshed/)).toHaveAttribute('datetime', '2026-06-21T08:15:30.000Z');
-  expect(screen.getByText('2 of 2 tasks visible')).toBeInTheDocument();
+  expect(screen.getByText('3 of 3 tasks visible')).toBeInTheDocument();
   expect(screen.getByRole('button', { name: /COMPLETED bingqin2\/PatchPilot #1/ })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: /PENDING_REVIEW bingqin2\/PatchPilot #4/ })).toBeInTheDocument();
   expect(screen.getByRole('button', { name: /FAILED bingqin2\/PatchPilot #2/ })).toBeInTheDocument();
   expect(screen.getByText('maven tests failed')).toBeInTheDocument();
   expect(screen.getByRole('link', { name: 'PR #8' })).toHaveAttribute(
@@ -786,10 +817,11 @@ test('renders operational task dashboard from backend APIs', async () => {
     'https://github.com/bingqin2/PatchPilot/pull/8'
   );
   const issueLinks = screen.getAllByRole('link', { name: 'Open Issue' });
-  expect(issueLinks).toHaveLength(3);
+  expect(issueLinks).toHaveLength(4);
   expect(issueLinks[0]).toHaveAttribute('href', 'https://github.com/bingqin2/PatchPilot/issues/1');
-  expect(issueLinks[1]).toHaveAttribute('href', 'https://github.com/bingqin2/PatchPilot/issues/2');
-  expect(issueLinks[2]).toHaveAttribute('href', 'https://github.com/bingqin2/PatchPilot/issues/1');
+  expect(issueLinks[1]).toHaveAttribute('href', 'https://github.com/bingqin2/PatchPilot/issues/4');
+  expect(issueLinks[2]).toHaveAttribute('href', 'https://github.com/bingqin2/PatchPilot/issues/2');
+  expect(issueLinks[3]).toHaveAttribute('href', 'https://github.com/bingqin2/PatchPilot/issues/1');
   const statusCommentLinks = screen.getAllByRole('link', { name: 'Status Comment' });
   expect(statusCommentLinks).toHaveLength(2);
   expect(statusCommentLinks[0]).toHaveAttribute(
@@ -802,7 +834,7 @@ test('renders operational task dashboard from backend APIs', async () => {
   );
 
   expect(screen.getByText('Completion')).toBeInTheDocument();
-  expect(screen.getByText('50%')).toBeInTheDocument();
+  expect(screen.getByText('33%')).toBeInTheDocument();
   expect(screen.getByText('Test pass')).toBeInTheDocument();
   expect(screen.getByText('100%')).toBeInTheDocument();
   expect(screen.getByText('Failure causes')).toBeInTheDocument();
@@ -931,6 +963,7 @@ test('shows manual task creation failures without clearing the form', async () =
         pendingCount: 0,
         runningCount: 0,
         runningTestsCount: 0,
+        pendingReviewCount: 0,
         completedCount: 1,
         failedCount: 1,
         cancelledCount: 0,
@@ -1074,8 +1107,9 @@ test('shows task status filter counts from backend status count API', async () =
   render(<App />);
 
   expect(await screen.findByRole('button', { name: 'ALL' })).toHaveAttribute('aria-pressed', 'true');
-  expect(within(screen.getByRole('button', { name: 'ALL' })).getByText('2')).toBeInTheDocument();
+  expect(within(screen.getByRole('button', { name: 'ALL' })).getByText('3')).toBeInTheDocument();
   expect(within(screen.getByRole('button', { name: 'COMPLETED' })).getByText('1')).toBeInTheDocument();
+  expect(within(screen.getByRole('button', { name: 'PENDING_REVIEW' })).getByText('1')).toBeInTheDocument();
   expect(within(screen.getByRole('button', { name: 'FAILED' })).getByText('1')).toBeInTheDocument();
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks/status-counts'));
 });
@@ -1459,6 +1493,7 @@ test('shows dashboard refresh progress while top-level data is loading', async (
         pendingCount: 0,
         runningCount: 0,
         runningTestsCount: 0,
+        pendingReviewCount: 0,
         completedCount: 0,
         failedCount: 0,
         cancelledCount: 0
@@ -1470,6 +1505,7 @@ test('shows dashboard refresh progress while top-level data is loading', async (
         pendingCount: 0,
         runningCount: 0,
         runningTestsCount: 0,
+        pendingReviewCount: 0,
         completedCount: 0,
         failedCount: 0,
         cancelledCount: 0,
@@ -1541,6 +1577,13 @@ test('filters tasks by status with backend query parameters', async () => {
   expect(screen.queryByText('/agent fix replace docs/demo.md PatchPilot smoke test')).not.toBeInTheDocument();
   expect(await screen.findByText('/agent fix replace docs/demo.md broken')).toBeInTheDocument();
   expect(await screen.findByText('Task failed')).toBeInTheDocument();
+
+  await user.click(screen.getByRole('button', { name: 'PENDING_REVIEW' }));
+
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks?limit=50&status=PENDING_REVIEW'));
+  expect(screen.queryByText('/agent fix replace docs/demo.md broken')).not.toBeInTheDocument();
+  expect(await screen.findByText('/agent fix update deployment workflow')).toBeInTheDocument();
+  expect(await screen.findByText('Generated diff rejected: sensitive path .github/workflows/deploy.yml')).toBeInTheDocument();
 
   await user.click(screen.getByRole('button', { name: 'CANCELLED' }));
 
@@ -1621,6 +1664,7 @@ test('loads the next backend task page with offset pagination', async () => {
         pendingCount: 0,
         runningCount: 0,
         runningTestsCount: 0,
+        pendingReviewCount: 0,
         completedCount: 50,
         failedCount: 1,
         cancelledCount: 0
@@ -1638,6 +1682,7 @@ test('loads the next backend task page with offset pagination', async () => {
         pendingCount: 0,
         runningCount: 0,
         runningTestsCount: 0,
+        pendingReviewCount: 0,
         completedCount: 50,
         failedCount: 1,
         cancelledCount: 0,

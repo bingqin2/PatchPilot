@@ -44,6 +44,7 @@ class DefaultFixTaskMetricsServiceTests {
         assertThat(summary.pendingCount()).isZero();
         assertThat(summary.runningCount()).isZero();
         assertThat(summary.runningTestsCount()).isZero();
+        assertThat(summary.pendingReviewCount()).isZero();
         assertThat(summary.completedCount()).isZero();
         assertThat(summary.failedCount()).isZero();
         assertThat(summary.cancelledCount()).isZero();
@@ -77,6 +78,9 @@ class DefaultFixTaskMetricsServiceTests {
                         task("running-tests", FixTaskStatus.RUNNING_TESTS,
                                 Instant.parse("2026-06-20T01:04:00Z"),
                                 null),
+                        task("pending-review", FixTaskStatus.PENDING_REVIEW,
+                                Instant.parse("2026-06-20T01:04:30Z"),
+                                null),
                         task("pending", FixTaskStatus.PENDING,
                                 Instant.parse("2026-06-20T01:05:00Z"),
                                 null)
@@ -98,15 +102,16 @@ class DefaultFixTaskMetricsServiceTests {
 
         FixTaskMetricsSummaryVo summary = metricsService.summary();
 
-        assertThat(summary.totalCount()).isEqualTo(6);
+        assertThat(summary.totalCount()).isEqualTo(7);
         assertThat(summary.pendingCount()).isEqualTo(1);
         assertThat(summary.runningCount()).isEqualTo(1);
         assertThat(summary.runningTestsCount()).isEqualTo(1);
+        assertThat(summary.pendingReviewCount()).isEqualTo(1);
         assertThat(summary.completedCount()).isEqualTo(1);
         assertThat(summary.failedCount()).isEqualTo(1);
         assertThat(summary.cancelledCount()).isEqualTo(1);
-        assertThat(summary.completionRate()).isEqualTo(1.0 / 6.0);
-        assertThat(summary.failureRate()).isEqualTo(1.0 / 6.0);
+        assertThat(summary.completionRate()).isEqualTo(1.0 / 7.0);
+        assertThat(summary.failureRate()).isEqualTo(1.0 / 7.0);
         assertThat(summary.averageCompletionDurationMs()).isEqualTo(10000);
         assertThat(summary.totalModelTokens()).isEqualTo(225);
         assertThat(summary.averageModelTokensPerCompletedTask()).isEqualTo(200);

@@ -89,6 +89,11 @@ public class InMemoryFixTaskService implements FixTaskService {
     }
 
     @Override
+    public FixTaskVo markPendingReview(String id, String failureReason) {
+        return replaceStatus(id, FixTaskStatus.PENDING_REVIEW, failureReason);
+    }
+
+    @Override
     public FixTaskVo markCancelled(String id, String failureReason) {
         return replaceStatus(id, FixTaskStatus.CANCELLED, failureReason);
     }

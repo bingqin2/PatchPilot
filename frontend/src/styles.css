@@ -920,6 +920,11 @@ h3 {
   color: #a13724;
 }
 
+.status-pending-review {
+  background: #fff1d6;
+  color: #8a4f08;
+}
+
 .status-running,
 .status-running-tests {
   background: #e0eefb;

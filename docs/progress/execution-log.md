@@ -2293,3 +2293,21 @@ Validation:
 - `npm test`: passed after full frontend verification, 84 tests run, 0 failures.
 - `npm run build`: passed after production frontend build.
 - `git diff --check`: passed after whitespace and conflict-marker verification.
+
+Implemented risk review queue from `docs/plans/112-risk-review-queue.md`.
+
+Changes:
+
+- Added `PENDING_REVIEW` as an explicit active task status for generated-diff risk-gate rejections.
+- Mapped `Generated diff rejected: ...` executor failures to `markPendingReview(...)`, a `PENDING_REVIEW` timeline event, and an edited GitHub status comment.
+- Preserved risk rejection reasons in `failureReason` and kept `GeneratedDiffRiskGate` tool calls as detailed audit evidence.
+- Added pending-review counts to task status-count and metrics APIs.
+- Allowed cancelling pending-review tasks while blocking retry until a future human approval flow exists.
+- Added dashboard `PENDING_REVIEW` status filtering, count badges, task pills, cancel affordance, and risk evidence.
+- Updated README, architecture notes, target state, frontend design notes, and this execution log.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=FixTaskWorkerTests,DefaultFixTaskControlServiceTests,DefaultFixTaskMetricsServiceTests,TaskControllerTests test`: first failed because `PENDING_REVIEW`, `markPendingReview(...)`, pending-review counts, timeline events, and status-comment updates did not exist.
+- `mvn -pl PatchPilot -Dtest=FixTaskWorkerTests,DefaultFixTaskControlServiceTests,DefaultFixTaskMetricsServiceTests,TaskControllerTests,IssueCommentToolTests test`: passed after backend implementation, 81 tests run, 0 failures.
+- `npm test -- --run src/App.test.tsx src/api.test.ts src/dashboard/components/TaskDetailPanel.test.tsx`: first failed because the dashboard still expected two visible tasks after adding a pending-review fixture; then passed after updating the fixture counts and assertions, 66 tests run, 0 failures.

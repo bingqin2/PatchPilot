@@ -5,6 +5,7 @@ public record FixTaskMetricsSummaryVo(
         long pendingCount,
         long runningCount,
         long runningTestsCount,
+        long pendingReviewCount,
         long completedCount,
         long failedCount,
         long cancelledCount,
@@ -20,6 +21,6 @@ public record FixTaskMetricsSummaryVo(
 ) {
 
     public static FixTaskMetricsSummaryVo empty() {
-        return new FixTaskMetricsSummaryVo(0, 0, 0, 0, 0, 0, 0, 0.0, 0.0, 0, 0, 0, 0, 0, 0, 0.0);
+        return new FixTaskMetricsSummaryVo(0, 0, 0, 0, 0, 0, 0, 0, 0.0, 0.0, 0, 0, 0, 0, 0, 0, 0.0);
     }
 }

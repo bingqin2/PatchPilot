@@ -28,6 +28,10 @@ public interface FixTaskService extends FixTaskAdapterMetadataRecorder {
 
     FixTaskVo markFailed(String id, String failureReason);
 
+    default FixTaskVo markPendingReview(String id, String failureReason) {
+        throw new UnsupportedOperationException("Task review queue is not supported");
+    }
+
     default FixTaskVo markCancelled(String id, String failureReason) {
         throw new UnsupportedOperationException("Task cancellation is not supported");
     }
