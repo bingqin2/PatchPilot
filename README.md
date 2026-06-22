@@ -18,6 +18,7 @@ PatchPilot is not a chatbot and does not auto-merge code. The current target is 
 - Unsupported repository preflight that fails before patch generation, test execution, Git mutation, or Pull Request creation.
 - OpenAI-compatible model client and plan-driven patch workflow.
 - Issue comment status updates for accepted, running, verification, success, and failure states.
+- Demo readiness gate that summarizes credentials, adapter fixtures, queue health, and recent PR evidence before a live smoke run.
 
 ## Repository Layout
 
@@ -273,6 +274,14 @@ curl http://127.0.0.1:8080/api/configuration/summary
 
 This endpoint returns only non-sensitive values and configured/missing booleans for secrets. It also returns safety settings such as model trigger classification and trigger rate-limit thresholds. It never returns raw API keys, GitHub tokens, or webhook secrets.
 
+Demo readiness:
+
+```bash
+curl http://127.0.0.1:8080/api/demo/readiness
+```
+
+This endpoint aggregates backend reachability, required credential flags, model cost configuration, adapter fixture verification, queue state, and recent completed Pull Request evidence into one `READY`, `NEEDS_ATTENTION`, or `BLOCKED` result. Use it before a live `/agent fix` demo to see the next operator action without manually checking every panel or curl endpoint.
+
 Queue state:
 
 ```bash
@@ -307,7 +316,7 @@ PATCHPILOT_AGENT_COST_COMPLETION_TOKEN_USD=0.000002
 ## Frontend Dashboard
 
 The React dashboard lives in `frontend/` and calls the backend through Vite's `/api` proxy.
-It includes task metrics, refresh progress and last-refresh feedback, failure-cause grouping, model token and estimated-cost summaries, latency summaries, a non-sensitive runtime configuration panel backed by `/api/configuration/summary`, backend `/health` status, configuration health hints for missing secrets and weak queue/cost/trigger-rate-limit settings, a supported-adapters panel backed by `GET /api/language-adapters`, a fixture verification panel backed by `GET /api/language-adapters/fixtures`, a manual task creation form backed by `POST /api/tasks`, status filters with scoped count badges backed by `GET /api/tasks/status-counts`, repository owner/name filters, language/build-system adapter filters, created time range filters, sort control, and full-history search backed by `GET /api/tasks`, one-click filter reset, total-count and `hasMore`-backed `Load more` task pagination, task creation/update times, GitHub Issue, status comment, and Pull Request links, `/tasks/{taskId}` deep links with legacy `?taskId=` compatibility, copyable links and copyable Markdown reports for selected task details, task detail summaries loaded through `GET /api/tasks/{taskId}/detail`, selected-task queue status and queue history with retry/last-error context, execution evidence summaries, timeline events, test runs, tool calls and model calls with durations, empty states for missing detail records, task control actions for cancel/retry, and a read-only queue panel with health hints backed by `/api/task-queue/*`.
+It includes a demo readiness panel backed by `GET /api/demo/readiness`, task metrics, refresh progress and last-refresh feedback, failure-cause grouping, model token and estimated-cost summaries, latency summaries, a non-sensitive runtime configuration panel backed by `/api/configuration/summary`, backend `/health` status, configuration health hints for missing secrets and weak queue/cost/trigger-rate-limit settings, a supported-adapters panel backed by `GET /api/language-adapters`, a fixture verification panel backed by `GET /api/language-adapters/fixtures`, a manual task creation form backed by `POST /api/tasks`, status filters with scoped count badges backed by `GET /api/tasks/status-counts`, repository owner/name filters, language/build-system adapter filters, created time range filters, sort control, and full-history search backed by `GET /api/tasks`, one-click filter reset, total-count and `hasMore`-backed `Load more` task pagination, task creation/update times, GitHub Issue, status comment, and Pull Request links, `/tasks/{taskId}` deep links with legacy `?taskId=` compatibility, copyable links and copyable Markdown reports for selected task details, task detail summaries loaded through `GET /api/tasks/{taskId}/detail`, selected-task queue status and queue history with retry/last-error context, execution evidence summaries, timeline events, test runs, tool calls and model calls with durations, empty states for missing detail records, task control actions for cancel/retry, and a read-only queue panel with health hints backed by `/api/task-queue/*`.
 The page coordinator is `frontend/src/App.tsx`; reusable dashboard UI lives under `frontend/src/dashboard/components/`, with shared formatting helpers in `frontend/src/dashboard/format.ts`.
 The dashboard task list requests `query`, `status`, `repositoryOwner`, `repositoryName`, `language`, `buildSystem`, `createdAfter`, `createdBefore`, `sort`, `limit`, and `offset` from the backend and consumes the task page response with `items`, `limit`, `offset`, `hasMore`, and `total`.
 Status count badges and metrics use the same search, repository, adapter, and created-time scope as the task list but intentionally ignore the active `status`, `sort`, `limit`, and `offset` values so every status button shows the distribution for the current investigation scope.

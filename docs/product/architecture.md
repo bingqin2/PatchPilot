@@ -246,6 +246,19 @@ Future adapters should add their own detection and allowlisted verification comm
 
 `GET /api/language-adapters` exposes the supported adapter catalog for operators and demos. `GET /api/language-adapters/fixtures` runs each checked-in demo fixture through the same registry and returns expected versus actual language, build system, command, detection reason, and pass/fail status. Fixture failures are reported as rows, not controller failures, so one missing fixture does not hide the rest of the support matrix.
 
+### Demo Readiness
+
+Responsibilities:
+
+- Aggregate non-mutating setup and health evidence before a live issue-to-PR demo.
+- Report a single `READY`, `NEEDS_ATTENTION`, or `BLOCKED` status.
+- Surface required credential gaps without exposing secret values.
+- Treat adapter fixture drift as blocking because repository support may be misdetected.
+- Treat queue failures, delayed work, running work, missing model cost configuration, or missing recent PR evidence as operator attention items.
+- Return concrete next actions for the dashboard and curl users.
+
+This layer must not create tasks, call the model, clone repositories, execute tests, mutate queue state, or weaken safety gates. It is a read model over configuration, fixture verification, queue state, and recent task history.
+
 ## Data Model
 
 The first durable model should include:

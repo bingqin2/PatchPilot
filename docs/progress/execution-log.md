@@ -2235,3 +2235,23 @@ Validation:
 - `npm test`: passed after full frontend verification, 79 tests run, 0 failures.
 - `npm run build`: passed after production frontend build.
 - `git diff --check`: passed after whitespace and conflict-marker verification.
+
+Implemented demo readiness gate from `docs/plans/109-demo-readiness-gate.md`.
+
+Changes:
+
+- Added `GET /api/demo/readiness` to aggregate demo readiness from backend reachability, required credential configuration, optional model cost configuration, adapter fixture verification, queue state, and recent completed Pull Request evidence.
+- Added readiness domain records with `READY`, `NEEDS_ATTENTION`, and `BLOCKED` states plus concrete operator next actions.
+- Extracted `ConfigurationSummaryService` so configuration readiness can be reused by both the configuration API and demo readiness service.
+- Added a dashboard `DemoReadinessPanel` near the top of the operations page, backed by the new API.
+- Kept readiness API failures local to the readiness panel so task, metric, queue, adapter, and configuration data can still load.
+- Updated README, architecture notes, frontend design notes, and this execution log.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=DemoReadinessServiceTests,DemoReadinessControllerTests test`: first failed because the demo readiness service, controller, and domain records did not exist; then passed after adding the backend API, 5 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts src/dashboard/components/DemoReadinessPanel.test.tsx src/App.test.tsx`: first failed because duplicate readiness status labels appeared in both the header and check rows; then passed after keeping the textual status in the header and using row markers with accessible labels, 60 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed after full backend verification, 406 tests run, 0 failures.
+- `npm test`: passed after full frontend verification, 83 tests run, 0 failures.
+- `npm run build`: passed after production frontend build.
+- `git diff --check`: passed after whitespace and conflict-marker verification.

@@ -7,6 +7,7 @@ import {
   getModelUsageSummary,
   listLanguageAdapterFixtures,
   listLanguageAdapters,
+  getDemoReadiness,
   getTaskReport,
   getTaskDetail,
   getTaskStatusCounts,
@@ -420,6 +421,48 @@ test('loads language adapter fixture verifications from backend API', async () =
       status: 'PASS'
     }
   ]);
+});
+
+test('loads demo readiness from backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        status: 'NEEDS_ATTENTION',
+        summary: 'PatchPilot needs attention before a live demo.',
+        checks: [
+          {
+            name: 'Recent Pull Request',
+            status: 'NEEDS_ATTENTION',
+            message: 'No completed task with a Pull Request URL was found.',
+            action: 'Run one controlled issue-to-PR smoke task before a live demo.'
+          }
+        ],
+        nextActions: ['Run one controlled issue-to-PR smoke task before a live demo.']
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const readiness = await getDemoReadiness();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/readiness');
+  expect(readiness).toEqual({
+    status: 'NEEDS_ATTENTION',
+    summary: 'PatchPilot needs attention before a live demo.',
+    checks: [
+      {
+        name: 'Recent Pull Request',
+        status: 'NEEDS_ATTENTION',
+        message: 'No completed task with a Pull Request URL was found.',
+        action: 'Run one controlled issue-to-PR smoke task before a live demo.'
+      }
+    ],
+    nextActions: ['Run one controlled issue-to-PR smoke task before a live demo.']
+  });
 });
 
 test('loads aggregate task detail from backend API', async () => {

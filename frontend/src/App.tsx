@@ -5,6 +5,7 @@ import {
   createTask,
   getBackendHealth,
   getConfigurationSummary,
+  getDemoReadiness,
   getFailureCauseSummary,
   getLatencySummary,
   getMetricsSummary,
@@ -21,6 +22,7 @@ import {
 } from './api';
 import { AdapterFixtureVerificationPanel } from './dashboard/components/AdapterFixtureVerificationPanel';
 import { ConfigurationPanel } from './dashboard/components/ConfigurationPanel';
+import { DemoReadinessPanel } from './dashboard/components/DemoReadinessPanel';
 import { FailureCausePanel } from './dashboard/components/FailureCausePanel';
 import { LatencyPanel } from './dashboard/components/LatencyPanel';
 import { MetricCard } from './dashboard/components/MetricCard';
@@ -37,6 +39,7 @@ import type {
   ConfigurationSummary,
   BackendHealth,
   CreateTaskInput,
+  DemoReadiness,
   FixTask,
   FixTaskFailureCauseSummary,
   FixTaskLatencySummary,
@@ -73,6 +76,8 @@ export default function App() {
   const [latency, setLatency] = useState<FixTaskLatencySummary | null>(null);
   const [configuration, setConfiguration] = useState<ConfigurationSummary | null>(null);
   const [backendHealth, setBackendHealth] = useState<BackendHealth | null>(null);
+  const [demoReadiness, setDemoReadiness] = useState<DemoReadiness | null>(null);
+  const [demoReadinessError, setDemoReadinessError] = useState<string | null>(null);
   const [supportedAdapters, setSupportedAdapters] = useState<SupportedLanguageAdapter[]>([]);
   const [adapterError, setAdapterError] = useState<string | null>(null);
   const [adapterFixtureVerifications, setAdapterFixtureVerifications] = useState<LanguageAdapterFixtureVerification[]>([]);
@@ -290,6 +295,7 @@ export default function App() {
         latencySummary,
         configurationSummary,
         healthSummary,
+        demoReadinessResult,
         adapterListResult,
         adapterFixtureResult,
         queueSummaryData,
@@ -308,6 +314,10 @@ export default function App() {
         getLatencySummary(taskFilters),
         getConfigurationSummary(),
         getBackendHealth(),
+        getDemoReadiness().then(
+          (readiness) => ({ readiness, error: null as string | null }),
+          (caught) => ({ readiness: null, error: errorMessage(caught) })
+        ),
         listLanguageAdapters().then(
           (adapters) => ({ adapters, error: null as string | null }),
           (caught) => ({ adapters: null, error: errorMessage(caught) })
@@ -327,6 +337,10 @@ export default function App() {
       setLatency(latencySummary);
       setConfiguration(configurationSummary);
       setBackendHealth(healthSummary);
+      if (demoReadinessResult.readiness) {
+        setDemoReadiness(demoReadinessResult.readiness);
+      }
+      setDemoReadinessError(demoReadinessResult.error);
       if (adapterListResult.adapters) {
         setSupportedAdapters(adapterListResult.adapters);
       }
@@ -493,6 +507,8 @@ export default function App() {
           <span>{error}</span>
         </section>
       ) : null}
+
+      <DemoReadinessPanel readiness={demoReadiness} error={demoReadinessError} />
 
       <section className="metrics-grid" aria-label="Task metrics">
         <MetricCard label="Tasks" value={metrics?.totalCount ?? 0} detail={`${metrics?.completedCount ?? 0} completed`} />

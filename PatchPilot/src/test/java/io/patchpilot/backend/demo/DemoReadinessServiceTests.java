@@ -1,0 +1,176 @@
+package io.patchpilot.backend.demo;
+
+import io.patchpilot.backend.configuration.ConfigurationSummaryVo;
+import io.patchpilot.backend.demo.domain.DemoReadinessStatus;
+import io.patchpilot.backend.demo.domain.DemoReadinessVo;
+import io.patchpilot.backend.language.domain.LanguageAdapterFixtureVerificationVo;
+import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
+import io.patchpilot.backend.task.domain.vo.FixTaskQueueSummaryVo;
+import io.patchpilot.backend.task.domain.vo.FixTaskVo;
+import org.junit.jupiter.api.Test;
+
+import java.time.Instant;
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+class DemoReadinessServiceTests {
+
+    @Test
+    void should_report_ready_when_configuration_fixtures_queue_and_recent_pr_are_healthy() {
+        DemoReadinessService service = new DemoReadinessService(
+                () -> configuration(true, true, true, true),
+                () -> List.of(fixture("java-maven", "PASS"), fixture("python-hatch", "PASS")),
+                () -> new FixTaskQueueSummaryVo(3, 0, 0, 0, 0, 3, 0, 0),
+                () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/12"))
+        );
+
+        DemoReadinessVo readiness = service.getReadiness();
+
+        assertThat(readiness.status()).isEqualTo(DemoReadinessStatus.READY);
+        assertThat(readiness.summary()).isEqualTo("PatchPilot is ready for a controlled demo.");
+        assertThat(readiness.checks())
+                .extracting("name")
+                .containsExactly(
+                        "Backend",
+                        "Credentials",
+                        "Adapter fixtures",
+                        "Queue",
+                        "Recent Pull Request"
+                );
+        assertThat(readiness.checks())
+                .allSatisfy(check -> assertThat(check.status()).isEqualTo(DemoReadinessStatus.READY));
+        assertThat(readiness.nextActions()).containsExactly("Open a controlled GitHub issue and comment /agent fix with a concrete change request.");
+    }
+
+    @Test
+    void should_report_blocked_when_required_credentials_or_fixtures_are_missing() {
+        DemoReadinessService service = new DemoReadinessService(
+                () -> configuration(false, false, false, false),
+                () -> List.of(fixture("java-maven", "PASS"), fixture("python-hatch", "FAIL")),
+                () -> FixTaskQueueSummaryVo.empty(),
+                List::of
+        );
+
+        DemoReadinessVo readiness = service.getReadiness();
+
+        assertThat(readiness.status()).isEqualTo(DemoReadinessStatus.BLOCKED);
+        assertThat(readiness.summary()).isEqualTo("PatchPilot is blocked for demo use.");
+        assertThat(readiness.checks())
+                .filteredOn(check -> check.name().equals("Credentials"))
+                .singleElement()
+                .satisfies(check -> {
+                    assertThat(check.status()).isEqualTo(DemoReadinessStatus.BLOCKED);
+                    assertThat(check.message()).contains("Agent API key is missing");
+                    assertThat(check.message()).contains("GitHub webhook secret is missing");
+                    assertThat(check.message()).contains("GitHub token is missing");
+                });
+        assertThat(readiness.checks())
+                .filteredOn(check -> check.name().equals("Adapter fixtures"))
+                .singleElement()
+                .satisfies(check -> {
+                    assertThat(check.status()).isEqualTo(DemoReadinessStatus.BLOCKED);
+                    assertThat(check.message()).contains("1 fixture verification failed");
+                });
+        assertThat(readiness.nextActions()).contains("Configure missing credentials in .env and restart the backend.");
+        assertThat(readiness.nextActions()).contains("Run /api/language-adapters/fixtures and fix failing adapter demo fixtures.");
+    }
+
+    @Test
+    void should_report_warning_when_no_recent_successful_pull_request_exists_or_queue_has_failures() {
+        DemoReadinessService service = new DemoReadinessService(
+                () -> configuration(true, true, true, false),
+                () -> List.of(fixture("java-maven", "PASS")),
+                () -> new FixTaskQueueSummaryVo(5, 1, 1, 0, 1, 1, 2, 0),
+                () -> List.of(task("task-2", FixTaskStatus.FAILED, null))
+        );
+
+        DemoReadinessVo readiness = service.getReadiness();
+
+        assertThat(readiness.status()).isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
+        assertThat(readiness.checks())
+                .filteredOn(check -> check.name().equals("Queue"))
+                .singleElement()
+                .satisfies(check -> {
+                    assertThat(check.status()).isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
+                    assertThat(check.message()).contains("2 failed queue items");
+                    assertThat(check.message()).contains("1 running queue item");
+                });
+        assertThat(readiness.checks())
+                .filteredOn(check -> check.name().equals("Recent Pull Request"))
+                .singleElement()
+                .satisfies(check -> {
+                    assertThat(check.status()).isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
+                    assertThat(check.message()).contains("No completed task with a Pull Request URL");
+                });
+        assertThat(readiness.nextActions()).contains("Run one controlled issue-to-PR smoke task before a live demo.");
+        assertThat(readiness.nextActions()).contains("Inspect failed or running queue items before starting a demo.");
+    }
+
+    private static ConfigurationSummaryVo configuration(
+            boolean agentApiKeyConfigured,
+            boolean githubTokenConfigured,
+            boolean githubWebhookSecretConfigured,
+            boolean modelCostConfigured
+    ) {
+        return new ConfigurationSummaryVo(
+                "openai-compatible",
+                "gpt-5.5",
+                "https://api.example.test/v1",
+                agentApiKeyConfigured,
+                githubTokenConfigured,
+                githubWebhookSecretConfigured,
+                "/tmp/patchpilot/workspaces",
+                3,
+                1000,
+                30000,
+                modelCostConfigured,
+                true,
+                true,
+                900000,
+                10,
+                20,
+                5
+        );
+    }
+
+    private static LanguageAdapterFixtureVerificationVo fixture(String name, String status) {
+        return new LanguageAdapterFixtureVerificationVo(
+                name,
+                "docs/demo-repositories/" + name,
+                "java",
+                "maven",
+                List.of("mvn", "test"),
+                "java",
+                "maven",
+                List.of("mvn", "test"),
+                "Detected fixture",
+                status
+        );
+    }
+
+    private static FixTaskVo task(String id, FixTaskStatus status, String pullRequestUrl) {
+        return new FixTaskVo(
+                id,
+                "bingqin2",
+                "PatchPilot",
+                1,
+                0,
+                "bingqin2",
+                "/agent fix touch docs/demo.md",
+                "delivery-" + id,
+                123,
+                status,
+                null,
+                Instant.parse("2026-06-22T08:00:00Z"),
+                pullRequestUrl,
+                Instant.parse("2026-06-22T08:05:00Z"),
+                Instant.parse("2026-06-22T08:05:00Z"),
+                "java",
+                "maven",
+                "mvn test",
+                456L,
+                "https://github.com/bingqin2/PatchPilot/issues/1#issuecomment-456"
+        );
+    }
+}

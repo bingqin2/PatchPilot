@@ -473,6 +473,26 @@ const configurationSummary = {
   triggerRateLimitMaxPerIssue: 20
 };
 
+const demoReadiness = {
+  status: 'NEEDS_ATTENTION',
+  summary: 'PatchPilot needs attention before a live demo.',
+  checks: [
+    {
+      name: 'Backend',
+      status: 'READY',
+      message: 'Backend readiness endpoint is reachable.',
+      action: 'No action needed.'
+    },
+    {
+      name: 'Recent Pull Request',
+      status: 'NEEDS_ATTENTION',
+      message: 'No completed task with a Pull Request URL was found in recent task history.',
+      action: 'Run one controlled issue-to-PR smoke task before a live demo.'
+    }
+  ],
+  nextActions: ['Run one controlled issue-to-PR smoke task before a live demo.']
+};
+
 beforeEach(() => {
   let manualTaskCreated = false;
   vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -573,6 +593,9 @@ beforeEach(() => {
     }
     if (url === '/api/configuration/summary') {
       return jsonResponse(configurationSummary);
+    }
+    if (url === '/api/demo/readiness') {
+      return jsonResponse(demoReadiness);
     }
     if (url === '/health') {
       return jsonResponse({
@@ -801,6 +824,10 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(screen.getByText('Agent key Configured')).toBeInTheDocument();
   expect(screen.getByText('Webhook secret Configured')).toBeInTheDocument();
   expect(screen.getByText('Queue attempts 3')).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: 'Demo readiness' })).toBeInTheDocument();
+  expect(screen.getByText('Needs attention')).toBeInTheDocument();
+  expect(screen.getByText('PatchPilot needs attention before a live demo.')).toBeInTheDocument();
+  expect(screen.getByText('Run one controlled issue-to-PR smoke task before a live demo.')).toBeInTheDocument();
   expect(screen.getByRole('heading', { name: 'Supported adapters' })).toBeInTheDocument();
   expect(screen.getByText('12 supported adapters')).toBeInTheDocument();
   expect(screen.getByRole('heading', { name: 'Fixture verification' })).toBeInTheDocument();
@@ -820,6 +847,7 @@ test('renders operational task dashboard from backend APIs', async () => {
   await waitFor(() => expect(screen.getByText('Task completed')).toBeInTheDocument());
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/language-adapters'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/language-adapters/fixtures'));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/readiness'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks/task-1/detail'));
   expect(screen.getByText('Pull request opened')).toBeInTheDocument();
   expect(screen.getByText('Tests run: 247, Failures: 0, Errors: 0')).toBeInTheDocument();
