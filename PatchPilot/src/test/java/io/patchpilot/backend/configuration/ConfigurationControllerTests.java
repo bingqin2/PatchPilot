@@ -28,6 +28,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "patchpilot.github.token=test-github-token",
         "patchpilot.github.webhook-secret=test-webhook-secret",
         "patchpilot.safety.model-trigger-classification-enabled=true",
+        "patchpilot.safety.trigger-rate-limit-enabled=true",
+        "patchpilot.safety.trigger-rate-limit-window-ms=900000",
+        "patchpilot.safety.trigger-rate-limit-max-per-trigger-user=9",
+        "patchpilot.safety.trigger-rate-limit-max-per-repository=30",
+        "patchpilot.safety.trigger-rate-limit-max-per-issue=4",
         "patchpilot.workspace.root-dir=/tmp/patchpilot/test-workspaces",
         "patchpilot.task.queue.max-attempts=5",
         "patchpilot.task.queue.retry-delay-ms=15000",
@@ -55,6 +60,11 @@ class ConfigurationControllerTests {
                 .andExpect(jsonPath("$.data.queueVisibilityTimeoutMs").value(120000))
                 .andExpect(jsonPath("$.data.modelCostConfigured").value(true))
                 .andExpect(jsonPath("$.data.modelTriggerClassificationEnabled").value(true))
+                .andExpect(jsonPath("$.data.triggerRateLimitEnabled").value(true))
+                .andExpect(jsonPath("$.data.triggerRateLimitWindowMs").value(900000))
+                .andExpect(jsonPath("$.data.triggerRateLimitMaxPerTriggerUser").value(9))
+                .andExpect(jsonPath("$.data.triggerRateLimitMaxPerRepository").value(30))
+                .andExpect(jsonPath("$.data.triggerRateLimitMaxPerIssue").value(4))
                 .andExpect(content().string(not(containsString("test-agent-key"))))
                 .andExpect(content().string(not(containsString("test-github-token"))))
                 .andExpect(content().string(not(containsString("test-webhook-secret"))));

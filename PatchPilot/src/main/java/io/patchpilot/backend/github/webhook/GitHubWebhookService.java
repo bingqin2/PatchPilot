@@ -6,13 +6,17 @@ import io.patchpilot.backend.agent.tool.IssueCommentTool;
 import io.patchpilot.backend.github.client.domain.IssueCommentResult;
 import io.patchpilot.backend.safety.CommandSafetyGate;
 import io.patchpilot.backend.safety.NoOpTriggerIntentClassifier;
+import io.patchpilot.backend.safety.NoOpTriggerRateLimitService;
 import io.patchpilot.backend.safety.domain.RecordRejectedTriggerCommand;
 import io.patchpilot.backend.safety.domain.SafetyGateDecision;
 import io.patchpilot.backend.safety.domain.SafetyGateRequest;
 import io.patchpilot.backend.safety.domain.TriggerIntentClassificationRequest;
 import io.patchpilot.backend.safety.domain.TriggerIntentDecision;
+import io.patchpilot.backend.safety.domain.TriggerRateLimitDecision;
+import io.patchpilot.backend.safety.domain.TriggerRateLimitRequest;
 import io.patchpilot.backend.safety.service.RejectedTriggerAuditService;
 import io.patchpilot.backend.safety.service.TriggerIntentClassifier;
+import io.patchpilot.backend.safety.service.TriggerRateLimitService;
 import io.patchpilot.backend.safety.service.impl.InMemoryRejectedTriggerAuditService;
 import io.patchpilot.backend.task.domain.bo.CreateFixTaskCommand;
 import io.patchpilot.backend.task.domain.bo.FixTaskCreationResult;
@@ -43,6 +47,7 @@ public class GitHubWebhookService {
     private final FixTaskTimelineService fixTaskTimelineService;
     private final CommandSafetyGate commandSafetyGate;
     private final RejectedTriggerAuditService rejectedTriggerAuditService;
+    private final TriggerRateLimitService triggerRateLimitService;
     private final TriggerIntentClassifier triggerIntentClassifier;
     private final ConcurrentMap<String, WebhookHandleResult> deliveryResults = new ConcurrentHashMap<>();
 
@@ -61,6 +66,7 @@ public class GitHubWebhookService {
                 fixTaskTimelineService,
                 new InMemoryRejectedTriggerAuditService(),
                 new CommandSafetyGate(),
+                new NoOpTriggerRateLimitService(),
                 new NoOpTriggerIntentClassifier()
         );
     }
@@ -81,6 +87,7 @@ public class GitHubWebhookService {
                 fixTaskTimelineService,
                 new InMemoryRejectedTriggerAuditService(),
                 commandSafetyGate,
+                new NoOpTriggerRateLimitService(),
                 new NoOpTriggerIntentClassifier()
         );
     }
@@ -101,6 +108,7 @@ public class GitHubWebhookService {
                 fixTaskTimelineService,
                 rejectedTriggerAuditService,
                 new CommandSafetyGate(),
+                new NoOpTriggerRateLimitService(),
                 new NoOpTriggerIntentClassifier()
         );
     }
@@ -122,7 +130,31 @@ public class GitHubWebhookService {
                 fixTaskTimelineService,
                 rejectedTriggerAuditService,
                 commandSafetyGate,
+                new NoOpTriggerRateLimitService(),
                 new NoOpTriggerIntentClassifier()
+        );
+    }
+
+    public GitHubWebhookService(
+            ObjectMapper objectMapper,
+            FixTaskService fixTaskService,
+            FixTaskDispatcher fixTaskDispatcher,
+            IssueCommentTool issueCommentTool,
+            FixTaskTimelineService fixTaskTimelineService,
+            RejectedTriggerAuditService rejectedTriggerAuditService,
+            CommandSafetyGate commandSafetyGate,
+            TriggerIntentClassifier triggerIntentClassifier
+    ) {
+        this(
+                objectMapper,
+                fixTaskService,
+                fixTaskDispatcher,
+                issueCommentTool,
+                fixTaskTimelineService,
+                rejectedTriggerAuditService,
+                commandSafetyGate,
+                new NoOpTriggerRateLimitService(),
+                triggerIntentClassifier
         );
     }
 
@@ -135,6 +167,7 @@ public class GitHubWebhookService {
             FixTaskTimelineService fixTaskTimelineService,
             RejectedTriggerAuditService rejectedTriggerAuditService,
             CommandSafetyGate commandSafetyGate,
+            TriggerRateLimitService triggerRateLimitService,
             TriggerIntentClassifier triggerIntentClassifier
     ) {
         this.objectMapper = objectMapper;
@@ -144,6 +177,7 @@ public class GitHubWebhookService {
         this.fixTaskTimelineService = fixTaskTimelineService;
         this.rejectedTriggerAuditService = rejectedTriggerAuditService;
         this.commandSafetyGate = commandSafetyGate;
+        this.triggerRateLimitService = triggerRateLimitService;
         this.triggerIntentClassifier = triggerIntentClassifier;
     }
 
@@ -210,6 +244,26 @@ public class GitHubWebhookService {
                 .orElse(null);
         if (activeTaskResult != null) {
             return activeTaskResult;
+        }
+        TriggerRateLimitDecision rateLimitDecision = triggerRateLimitService.checkAndRecord(new TriggerRateLimitRequest(
+                "issue_comment",
+                repositoryOwner,
+                repositoryName,
+                issueNumber,
+                triggerUser
+        ));
+        if (!rateLimitDecision.allowed()) {
+            rejectedTriggerAuditService.recordRejectedTrigger(new RecordRejectedTriggerCommand(
+                    "issue_comment",
+                    deliveryId,
+                    repositoryOwner,
+                    repositoryName,
+                    issueNumber,
+                    triggerUser,
+                    commentBody,
+                    rateLimitDecision.reason()
+            ));
+            return WebhookHandleResult.rejected();
         }
         TriggerIntentDecision triggerIntentDecision = triggerIntentClassifier.classify(
                 new TriggerIntentClassificationRequest(

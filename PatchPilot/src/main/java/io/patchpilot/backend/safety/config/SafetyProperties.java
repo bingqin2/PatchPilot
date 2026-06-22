@@ -11,6 +11,11 @@ public class SafetyProperties {
     private List<String> allowedTriggerUsers = new ArrayList<>();
     private List<String> allowedRepositories = new ArrayList<>();
     private boolean modelTriggerClassificationEnabled = false;
+    private boolean triggerRateLimitEnabled = true;
+    private long triggerRateLimitWindowMs = 600_000;
+    private int triggerRateLimitMaxPerTriggerUser = 30;
+    private int triggerRateLimitMaxPerRepository = 60;
+    private int triggerRateLimitMaxPerIssue = 20;
 
     public List<String> getAllowedTriggerUsers() {
         return allowedTriggerUsers;
@@ -34,5 +39,45 @@ public class SafetyProperties {
 
     public void setModelTriggerClassificationEnabled(boolean modelTriggerClassificationEnabled) {
         this.modelTriggerClassificationEnabled = modelTriggerClassificationEnabled;
+    }
+
+    public boolean isTriggerRateLimitEnabled() {
+        return triggerRateLimitEnabled;
+    }
+
+    public void setTriggerRateLimitEnabled(boolean triggerRateLimitEnabled) {
+        this.triggerRateLimitEnabled = triggerRateLimitEnabled;
+    }
+
+    public long getTriggerRateLimitWindowMs() {
+        return triggerRateLimitWindowMs;
+    }
+
+    public void setTriggerRateLimitWindowMs(long triggerRateLimitWindowMs) {
+        this.triggerRateLimitWindowMs = triggerRateLimitWindowMs;
+    }
+
+    public int getTriggerRateLimitMaxPerTriggerUser() {
+        return triggerRateLimitMaxPerTriggerUser;
+    }
+
+    public void setTriggerRateLimitMaxPerTriggerUser(int triggerRateLimitMaxPerTriggerUser) {
+        this.triggerRateLimitMaxPerTriggerUser = triggerRateLimitMaxPerTriggerUser;
+    }
+
+    public int getTriggerRateLimitMaxPerRepository() {
+        return triggerRateLimitMaxPerRepository;
+    }
+
+    public void setTriggerRateLimitMaxPerRepository(int triggerRateLimitMaxPerRepository) {
+        this.triggerRateLimitMaxPerRepository = triggerRateLimitMaxPerRepository;
+    }
+
+    public int getTriggerRateLimitMaxPerIssue() {
+        return triggerRateLimitMaxPerIssue;
+    }
+
+    public void setTriggerRateLimitMaxPerIssue(int triggerRateLimitMaxPerIssue) {
+        this.triggerRateLimitMaxPerIssue = triggerRateLimitMaxPerIssue;
     }
 }

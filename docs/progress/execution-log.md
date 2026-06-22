@@ -1927,3 +1927,24 @@ Validation:
 - `mvn -pl PatchPilot test -q`: passed.
 - `cd frontend && npm test -- --reporter=dot`: passed, 68 tests run, 0 failures.
 - `cd frontend && npm run build`: passed, production bundle generated successfully.
+
+Implemented trigger rate limit abuse guard from `docs/plans/093-trigger-rate-limit-abuse-guard.md`.
+
+Changes:
+
+- Added `TriggerRateLimitService` with an in-memory sliding-window implementation for local self-hosted runs.
+- Added per-trigger-user, per-repository, and per-issue thresholds under `patchpilot.safety`.
+- Applied rate-limit checks to GitHub webhooks and manual dashboard task creation after deterministic safety checks and active-task deduplication, but before model trigger classification and task creation.
+- Routed rate-limited rejections into the rejected trigger audit log.
+- Added `PATCHPILOT_TRIGGER_RATE_LIMIT_*` environment variables to `.env.example`, application configuration, and Docker Compose.
+- Exposed rate-limit state through `/api/configuration/summary` and the dashboard configuration panel.
+- Documented the operator-facing behavior and current in-memory single-instance limitation.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=InMemoryTriggerRateLimitServiceTests,GitHubWebhookServiceTests#should_reject_when_trigger_rate_limit_is_exceeded_before_task_creation,DefaultManualFixTaskServiceTests#should_reject_manual_task_when_trigger_rate_limit_is_exceeded,ConfigurationControllerTests test`: first failed because the trigger rate-limit types and service did not exist; then failed on a record factory/accessor naming conflict; then failed until Spring constructor injection was explicit; passed after implementation, 6 tests run, 0 failures.
+- `cd frontend && npm test -- src/api.test.ts src/dashboard/components/ConfigurationPanel.test.tsx src/App.test.tsx -t "configuration|Configuration"`: passed after surfacing trigger rate-limit settings in the dashboard configuration panel, 3 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed, 325 tests run, 0 failures.
+- `cd frontend && npm test -- --reporter=dot`: passed, 68 tests run, 0 failures.
+- `cd frontend && npm run build`: passed, production bundle generated successfully.
+- `git diff --check`: passed with no whitespace errors.

@@ -13,7 +13,12 @@ const healthyConfiguration = {
   queueRetryDelayMs: 30000,
   queueVisibilityTimeoutMs: 300000,
   modelCostConfigured: true,
-  modelTriggerClassificationEnabled: true
+  modelTriggerClassificationEnabled: true,
+  triggerRateLimitEnabled: true,
+  triggerRateLimitWindowMs: 600000,
+  triggerRateLimitMaxPerTriggerUser: 30,
+  triggerRateLimitMaxPerRepository: 60,
+  triggerRateLimitMaxPerIssue: 20
 };
 
 test('shows healthy configuration status when required and advisory settings are valid', () => {
@@ -32,6 +37,8 @@ test('shows healthy configuration status when required and advisory settings are
   expect(screen.getByText('Backend UP')).toBeInTheDocument();
   expect(screen.getByText('patchpilot-backend')).toBeInTheDocument();
   expect(screen.getByText('Trigger classifier Enabled')).toBeInTheDocument();
+  expect(screen.getByText('Rate limit Enabled')).toBeInTheDocument();
+  expect(screen.getByText('600.0s window')).toBeInTheDocument();
   expect(screen.queryByText('Agent API key is missing')).not.toBeInTheDocument();
   expect(screen.queryByText('Model cost is not configured')).not.toBeInTheDocument();
 });
@@ -47,7 +54,10 @@ test('shows setup issues and advisories for weak configuration', () => {
         queueMaxAttempts: 0,
         queueRetryDelayMs: -1,
         queueVisibilityTimeoutMs: 500,
-        modelCostConfigured: false
+        modelCostConfigured: false,
+        triggerRateLimitEnabled: false,
+        triggerRateLimitWindowMs: 500,
+        triggerRateLimitMaxPerIssue: 0
       }}
       backendHealth={null}
     />
@@ -55,7 +65,7 @@ test('shows setup issues and advisories for weak configuration', () => {
 
   expect(screen.getByText('3 setup issues')).toBeInTheDocument();
   expect(screen.getByText('Backend unavailable')).toBeInTheDocument();
-  expect(screen.getByText('4 advisory items')).toBeInTheDocument();
+  expect(screen.getByText('7 advisory items')).toBeInTheDocument();
   expect(screen.getByText('Agent API key is missing')).toBeInTheDocument();
   expect(screen.getByText('GitHub token is missing')).toBeInTheDocument();
   expect(screen.getByText('Webhook secret is missing')).toBeInTheDocument();
@@ -63,6 +73,9 @@ test('shows setup issues and advisories for weak configuration', () => {
   expect(screen.getByText('Queue attempts must be at least 1')).toBeInTheDocument();
   expect(screen.getByText('Queue retry delay cannot be negative')).toBeInTheDocument();
   expect(screen.getByText('Queue visibility timeout is below 1.0s')).toBeInTheDocument();
+  expect(screen.getByText('Trigger rate limit is disabled')).toBeInTheDocument();
+  expect(screen.getByText('Trigger rate limit window is below 1.0s')).toBeInTheDocument();
+  expect(screen.getByText('Trigger rate limit thresholds must be at least 1')).toBeInTheDocument();
 });
 
 test('shows advisory status when required secrets are configured but optional settings are missing', () => {

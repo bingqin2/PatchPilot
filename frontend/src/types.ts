@@ -119,6 +119,11 @@ export interface ConfigurationSummary {
   queueVisibilityTimeoutMs: number;
   modelCostConfigured: boolean;
   modelTriggerClassificationEnabled: boolean;
+  triggerRateLimitEnabled: boolean;
+  triggerRateLimitWindowMs: number;
+  triggerRateLimitMaxPerTriggerUser: number;
+  triggerRateLimitMaxPerRepository: number;
+  triggerRateLimitMaxPerIssue: number;
 }
 
 export interface BackendHealth {

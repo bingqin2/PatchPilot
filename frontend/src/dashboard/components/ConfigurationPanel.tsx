@@ -54,6 +54,16 @@ export function ConfigurationPanel({ configuration, backendHealth }: Configurati
           <strong>Model cost {configured(configuration?.modelCostConfigured)}</strong>
           <p>Trigger classifier {enabled(configuration?.modelTriggerClassificationEnabled)}</p>
         </div>
+        <div>
+          <span>Trigger guard</span>
+          <strong>Rate limit {enabled(configuration?.triggerRateLimitEnabled)}</strong>
+          <p>{duration(configuration?.triggerRateLimitWindowMs)} window</p>
+          <p>
+            {number(configuration?.triggerRateLimitMaxPerTriggerUser)} user /{' '}
+            {number(configuration?.triggerRateLimitMaxPerRepository)} repo /{' '}
+            {number(configuration?.triggerRateLimitMaxPerIssue)} issue
+          </p>
+        </div>
       </div>
       {health.items.length > 0 ? (
         <div className="configuration-issues" aria-label="Configuration issues">
@@ -101,6 +111,9 @@ function configurationHealth(configuration: ConfigurationSummary | null) {
   if (!configuration.modelCostConfigured) {
     advisoryIssues.push({ kind: 'advisory', message: 'Model cost is not configured' });
   }
+  if (!configuration.triggerRateLimitEnabled) {
+    advisoryIssues.push({ kind: 'advisory', message: 'Trigger rate limit is disabled' });
+  }
   if (configuration.queueMaxAttempts < 1) {
     advisoryIssues.push({ kind: 'advisory', message: 'Queue attempts must be at least 1' });
   }
@@ -109,6 +122,16 @@ function configurationHealth(configuration: ConfigurationSummary | null) {
   }
   if (configuration.queueVisibilityTimeoutMs < 1000) {
     advisoryIssues.push({ kind: 'advisory', message: 'Queue visibility timeout is below 1.0s' });
+  }
+  if (configuration.triggerRateLimitWindowMs < 1000) {
+    advisoryIssues.push({ kind: 'advisory', message: 'Trigger rate limit window is below 1.0s' });
+  }
+  if (
+    configuration.triggerRateLimitMaxPerTriggerUser < 1 ||
+    configuration.triggerRateLimitMaxPerRepository < 1 ||
+    configuration.triggerRateLimitMaxPerIssue < 1
+  ) {
+    advisoryIssues.push({ kind: 'advisory', message: 'Trigger rate limit thresholds must be at least 1' });
   }
 
   if (criticalIssues.length > 0) {

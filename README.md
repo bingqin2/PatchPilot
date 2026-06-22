@@ -10,6 +10,7 @@ PatchPilot is not a chatbot and does not auto-merge code. The current target is 
 - `/agent fix` trigger detection.
 - Safety gate rejection for vague, unsafe, or non-actionable `/agent fix` instructions before task creation.
 - Optional trigger-user and repository allowlists for webhook and manual task creation.
+- Trigger rate limiting by trigger user, repository, and issue before model calls or task creation.
 - Webhook signature verification.
 - MySQL-backed task, queue, timeline, test-run, tool-call, and model-call records.
 - Local workspace clone, branch, diff, commit, push, and Pull Request creation.
@@ -90,6 +91,18 @@ PATCHPILOT_MODEL_TRIGGER_CLASSIFICATION_ENABLED=true
 ```
 
 When enabled, PatchPilot asks the configured OpenAI-compatible model whether a safe `/agent fix` request is concrete enough to execute. The model cannot override deterministic safety rejections for unauthorized users, unauthorized repositories, destructive instructions, secret exfiltration, or unsupported commands. If the model call fails or returns invalid JSON, PatchPilot rejects the trigger conservatively and records the reason in `/api/rejected-triggers`.
+
+Trigger rate limiting is enabled by default to protect the local agent from repeated `/agent fix` attempts before model calls or task creation:
+
+```bash
+PATCHPILOT_TRIGGER_RATE_LIMIT_ENABLED=true
+PATCHPILOT_TRIGGER_RATE_LIMIT_WINDOW_MS=600000
+PATCHPILOT_TRIGGER_RATE_LIMIT_MAX_PER_TRIGGER_USER=30
+PATCHPILOT_TRIGGER_RATE_LIMIT_MAX_PER_REPOSITORY=60
+PATCHPILOT_TRIGGER_RATE_LIMIT_MAX_PER_ISSUE=20
+```
+
+Rate-limited webhook and manual API requests are rejected and recorded in `/api/rejected-triggers`. The current implementation is an in-memory single-instance guard for self-hosted local runs.
 
 For a fine-grained GitHub token, grant these repository permissions:
 
@@ -206,7 +219,7 @@ Runtime configuration summary:
 curl http://127.0.0.1:8080/api/configuration/summary
 ```
 
-This endpoint returns only non-sensitive values and configured/missing booleans for secrets. It never returns raw API keys, GitHub tokens, or webhook secrets.
+This endpoint returns only non-sensitive values and configured/missing booleans for secrets. It also returns safety settings such as model trigger classification and trigger rate-limit thresholds. It never returns raw API keys, GitHub tokens, or webhook secrets.
 
 Queue state:
 
@@ -234,7 +247,7 @@ PATCHPILOT_AGENT_COST_COMPLETION_TOKEN_USD=0.000002
 ## Frontend Dashboard
 
 The React dashboard lives in `frontend/` and calls the backend through Vite's `/api` proxy.
-It includes task metrics, refresh progress and last-refresh feedback, failure-cause grouping, model token and estimated-cost summaries, latency summaries, a non-sensitive runtime configuration panel backed by `/api/configuration/summary`, backend `/health` status, configuration health hints for missing secrets and weak queue/cost settings, a manual task creation form backed by `POST /api/tasks`, status filters with scoped count badges backed by `GET /api/tasks/status-counts`, repository owner/name filters, created time range filters, sort control, and full-history search backed by `GET /api/tasks`, one-click filter reset, total-count and `hasMore`-backed `Load more` task pagination, task creation/update times, GitHub Issue, status comment, and Pull Request links, `/tasks/{taskId}` deep links with legacy `?taskId=` compatibility, copyable links and copyable Markdown reports for selected task details, task detail summaries loaded through `GET /api/tasks/{taskId}/detail`, selected-task queue status and queue history with retry/last-error context, execution evidence summaries, timeline events, test runs, tool calls and model calls with durations, empty states for missing detail records, task control actions for cancel/retry, and a read-only queue panel with health hints backed by `/api/task-queue/*`.
+It includes task metrics, refresh progress and last-refresh feedback, failure-cause grouping, model token and estimated-cost summaries, latency summaries, a non-sensitive runtime configuration panel backed by `/api/configuration/summary`, backend `/health` status, configuration health hints for missing secrets and weak queue/cost/trigger-rate-limit settings, a manual task creation form backed by `POST /api/tasks`, status filters with scoped count badges backed by `GET /api/tasks/status-counts`, repository owner/name filters, created time range filters, sort control, and full-history search backed by `GET /api/tasks`, one-click filter reset, total-count and `hasMore`-backed `Load more` task pagination, task creation/update times, GitHub Issue, status comment, and Pull Request links, `/tasks/{taskId}` deep links with legacy `?taskId=` compatibility, copyable links and copyable Markdown reports for selected task details, task detail summaries loaded through `GET /api/tasks/{taskId}/detail`, selected-task queue status and queue history with retry/last-error context, execution evidence summaries, timeline events, test runs, tool calls and model calls with durations, empty states for missing detail records, task control actions for cancel/retry, and a read-only queue panel with health hints backed by `/api/task-queue/*`.
 The page coordinator is `frontend/src/App.tsx`; reusable dashboard UI lives under `frontend/src/dashboard/components/`, with shared formatting helpers in `frontend/src/dashboard/format.ts`.
 The dashboard task list requests `query`, `status`, `repositoryOwner`, `repositoryName`, `createdAfter`, `createdBefore`, `sort`, `limit`, and `offset` from the backend and consumes the task page response with `items`, `limit`, `offset`, `hasMore`, and `total`.
 Status count badges use the same search, repository, and created-time scope as the task list but intentionally ignore the active `status`, `sort`, `limit`, and `offset` values so every status button shows the distribution for the current investigation scope.
