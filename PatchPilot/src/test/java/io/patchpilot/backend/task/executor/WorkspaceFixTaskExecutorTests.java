@@ -13,7 +13,8 @@ import io.patchpilot.backend.github.config.GitHubProperties;
 import io.patchpilot.backend.language.LanguageAdapterRegistry;
 import io.patchpilot.backend.language.domain.LanguageDetectionResult;
 import io.patchpilot.backend.runner.domain.vo.TestRunResult;
-import io.patchpilot.backend.runner.service.MavenTestRunner;
+import io.patchpilot.backend.runner.service.CommandExecutionGuard;
+import io.patchpilot.backend.runner.service.VerificationRunner;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.vo.FixTaskTestRunVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskToolCallVo;
@@ -27,6 +28,7 @@ import io.patchpilot.backend.workspace.domain.bo.CloneWorkspaceCommand;
 import io.patchpilot.backend.workspace.domain.vo.PreparedWorkspaceResult;
 import io.patchpilot.backend.workspace.domain.vo.WorkspaceCloneResult;
 import io.patchpilot.backend.workspace.service.WorkspaceService;
+import io.patchpilot.backend.workspace.config.WorkspaceProperties;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
@@ -41,17 +43,26 @@ class WorkspaceFixTaskExecutorTests {
     @Test
     void should_prepare_task_repository_and_run_maven_tests() {
         RecordingWorkspaceService workspaceService = new RecordingWorkspaceService();
+        RecordingLanguageAdapterRegistry languageAdapterRegistry = new RecordingLanguageAdapterRegistry(
+                LanguageDetectionResult.supported(
+                        "java",
+                        "maven",
+                        List.of("custom-verify", "test"),
+                        "Detected custom verifier"
+                )
+        );
         RecordingPatchWorkflow patchWorkflow = new RecordingPatchWorkflow();
         RecordingDiffTool diffTool = new RecordingDiffTool();
         RecordingCommitTool commitTool = new RecordingCommitTool(false);
         RecordingPushTool pushTool = new RecordingPushTool(false);
         RecordingPullRequestTool pullRequestTool = new RecordingPullRequestTool();
-        RecordingMavenTestRunner mavenTestRunner = new RecordingMavenTestRunner(0, "tests passed");
+        RecordingVerificationRunner verificationRunner = new RecordingVerificationRunner(0, "tests passed");
         RecordingFixTaskTestRunService testRunService = new RecordingFixTaskTestRunService();
         RecordingFixTaskToolCallService toolCallService = new RecordingFixTaskToolCallService();
         FixTaskExecutor executor = new NoopFixTaskExecutor(
                 workspaceService,
-                mavenTestRunner,
+                languageAdapterRegistry,
+                verificationRunner,
                 patchWorkflow,
                 diffTool,
                 commitTool,
@@ -70,8 +81,9 @@ class WorkspaceFixTaskExecutorTests {
         assertThat(workspaceService.command().repositoryName()).isEqualTo("hello-world");
         assertThat(patchWorkflow.repositoryDir()).isEqualTo(Path.of("/tmp/workspace/repo"));
         assertThat(diffTool.repositoryDir()).isEqualTo(Path.of("/tmp/workspace/repo"));
-        assertThat(mavenTestRunner.repositoryDir()).isEqualTo(Path.of("/tmp/workspace/repo"));
-        assertThat(mavenTestRunner.taskId()).isEqualTo("task-123");
+        assertThat(verificationRunner.repositoryDir()).isEqualTo(Path.of("/tmp/workspace/repo"));
+        assertThat(verificationRunner.taskId()).isEqualTo("task-123");
+        assertThat(verificationRunner.command()).containsExactly("custom-verify", "test");
         assertThat(commitTool.repositoryDir()).isEqualTo(Path.of("/tmp/workspace/repo"));
         assertThat(commitTool.taskId()).isEqualTo("task-123");
         assertThat(commitTool.message()).isEqualTo("PatchPilot task task-123");
@@ -81,12 +93,12 @@ class WorkspaceFixTaskExecutorTests {
         assertThat(pullRequestTool.taskId()).isEqualTo("task-123");
         assertThat(pullRequestTool.branchName()).isEqualTo("patchpilot/task-123");
         assertThat(patchWorkflow.callOrder()).isLessThan(diffTool.callOrder());
-        assertThat(diffTool.callOrder()).isLessThan(mavenTestRunner.callOrder());
-        assertThat(mavenTestRunner.callOrder()).isLessThan(commitTool.callOrder());
+        assertThat(diffTool.callOrder()).isLessThan(verificationRunner.callOrder());
+        assertThat(verificationRunner.callOrder()).isLessThan(commitTool.callOrder());
         assertThat(commitTool.callOrder()).isLessThan(pushTool.callOrder());
         assertThat(pushTool.callOrder()).isLessThan(pullRequestTool.callOrder());
         assertThat(testRunService.taskId()).isEqualTo("task-123");
-        assertThat(testRunService.command()).isEqualTo("./mvnw test");
+        assertThat(testRunService.command()).isEqualTo("custom-verify test");
         assertThat(testRunService.exitCode()).isZero();
         assertThat(testRunService.output()).isEqualTo("tests passed");
         assertThat(testRunService.startedAt()).isBeforeOrEqualTo(testRunService.finishedAt());
@@ -117,12 +129,12 @@ class WorkspaceFixTaskExecutorTests {
         RecordingCommitTool commitTool = new RecordingCommitTool(false);
         RecordingPushTool pushTool = new RecordingPushTool(false);
         RecordingPullRequestTool pullRequestTool = new RecordingPullRequestTool();
-        RecordingMavenTestRunner mavenTestRunner = new RecordingMavenTestRunner(1, "test failed");
+        RecordingVerificationRunner verificationRunner = new RecordingVerificationRunner(1, "test failed");
         RecordingFixTaskTestRunService testRunService = new RecordingFixTaskTestRunService();
         RecordingFixTaskToolCallService toolCallService = new RecordingFixTaskToolCallService();
         FixTaskExecutor executor = new NoopFixTaskExecutor(
                 workspaceService,
-                mavenTestRunner,
+                verificationRunner,
                 patchWorkflow,
                 diffTool,
                 commitTool,
@@ -156,7 +168,7 @@ class WorkspaceFixTaskExecutorTests {
         RecordingCommitTool commitTool = new RecordingCommitTool(false);
         RecordingPushTool pushTool = new RecordingPushTool(false);
         RecordingPullRequestTool pullRequestTool = new RecordingPullRequestTool();
-        RecordingMavenTestRunner mavenTestRunner = new RecordingMavenTestRunner(0, "tests passed");
+        RecordingVerificationRunner verificationRunner = new RecordingVerificationRunner(0, "tests passed");
         RecordingFixTaskTestRunService testRunService = new RecordingFixTaskTestRunService();
         RecordingFixTaskToolCallService toolCallService = new RecordingFixTaskToolCallService();
         RecordingLanguageAdapterRegistry languageAdapterRegistry = new RecordingLanguageAdapterRegistry(
@@ -169,7 +181,7 @@ class WorkspaceFixTaskExecutorTests {
         FixTaskExecutor executor = new NoopFixTaskExecutor(
                 workspaceService,
                 languageAdapterRegistry,
-                mavenTestRunner,
+                verificationRunner,
                 patchWorkflow,
                 diffTool,
                 commitTool,
@@ -187,7 +199,7 @@ class WorkspaceFixTaskExecutorTests {
         assertThat(languageAdapterRegistry.repositoryDir()).isEqualTo(Path.of("/tmp/workspace/repo"));
         assertThat(patchWorkflow.callOrder()).isZero();
         assertThat(diffTool.callOrder()).isZero();
-        assertThat(mavenTestRunner.callOrder()).isZero();
+        assertThat(verificationRunner.callOrder()).isZero();
         assertThat(testRunService.taskId()).isNull();
         assertThat(commitTool.callOrder()).isZero();
         assertThat(pushTool.callOrder()).isZero();
@@ -208,12 +220,12 @@ class WorkspaceFixTaskExecutorTests {
         RecordingCommitTool commitTool = new RecordingCommitTool(true);
         RecordingPushTool pushTool = new RecordingPushTool(false);
         RecordingPullRequestTool pullRequestTool = new RecordingPullRequestTool();
-        RecordingMavenTestRunner mavenTestRunner = new RecordingMavenTestRunner(0, "tests passed");
+        RecordingVerificationRunner verificationRunner = new RecordingVerificationRunner(0, "tests passed");
         RecordingFixTaskTestRunService testRunService = new RecordingFixTaskTestRunService();
         RecordingFixTaskToolCallService toolCallService = new RecordingFixTaskToolCallService();
         FixTaskExecutor executor = new NoopFixTaskExecutor(
                 workspaceService,
-                mavenTestRunner,
+                verificationRunner,
                 patchWorkflow,
                 diffTool,
                 commitTool,
@@ -244,12 +256,12 @@ class WorkspaceFixTaskExecutorTests {
         RecordingCommitTool commitTool = new RecordingCommitTool(false);
         RecordingPushTool pushTool = new RecordingPushTool(true);
         RecordingPullRequestTool pullRequestTool = new RecordingPullRequestTool();
-        RecordingMavenTestRunner mavenTestRunner = new RecordingMavenTestRunner(0, "tests passed");
+        RecordingVerificationRunner verificationRunner = new RecordingVerificationRunner(0, "tests passed");
         RecordingFixTaskTestRunService testRunService = new RecordingFixTaskTestRunService();
         RecordingFixTaskToolCallService toolCallService = new RecordingFixTaskToolCallService();
         FixTaskExecutor executor = new NoopFixTaskExecutor(
                 workspaceService,
-                mavenTestRunner,
+                verificationRunner,
                 patchWorkflow,
                 diffTool,
                 commitTool,
@@ -286,13 +298,13 @@ class WorkspaceFixTaskExecutorTests {
         RecordingCommitTool commitTool = new RecordingCommitTool(false);
         RecordingPushTool pushTool = new RecordingPushTool(false);
         RecordingPullRequestTool pullRequestTool = new RecordingPullRequestTool();
-        RecordingMavenTestRunner mavenTestRunner = new RecordingMavenTestRunner(0, "tests passed");
+        RecordingVerificationRunner verificationRunner = new RecordingVerificationRunner(0, "tests passed");
         RecordingFixTaskTestRunService testRunService = new RecordingFixTaskTestRunService();
         RecordingFixTaskToolCallService toolCallService = new RecordingFixTaskToolCallService();
         StageCancellingChecker cancellationChecker = new StageCancellingChecker(6);
         FixTaskExecutor executor = new NoopFixTaskExecutor(
                 workspaceService,
-                mavenTestRunner,
+                verificationRunner,
                 patchWorkflow,
                 diffTool,
                 commitTool,
@@ -321,13 +333,13 @@ class WorkspaceFixTaskExecutorTests {
         RecordingCommitTool commitTool = new RecordingCommitTool(false);
         RecordingPushTool pushTool = new RecordingPushTool(false);
         RecordingPullRequestTool pullRequestTool = new RecordingPullRequestTool();
-        RecordingMavenTestRunner mavenTestRunner = new RecordingMavenTestRunner(130, "maven test command interrupted");
+        RecordingVerificationRunner verificationRunner = new RecordingVerificationRunner(130, "verification command interrupted");
         RecordingFixTaskTestRunService testRunService = new RecordingFixTaskTestRunService();
         RecordingFixTaskToolCallService toolCallService = new RecordingFixTaskToolCallService();
         StageCancellingChecker cancellationChecker = new StageCancellingChecker(6);
         FixTaskExecutor executor = new NoopFixTaskExecutor(
                 workspaceService,
-                mavenTestRunner,
+                verificationRunner,
                 patchWorkflow,
                 diffTool,
                 commitTool,
@@ -355,13 +367,13 @@ class WorkspaceFixTaskExecutorTests {
         RecordingCommitTool commitTool = new RecordingCommitTool(true);
         RecordingPushTool pushTool = new RecordingPushTool(false);
         RecordingPullRequestTool pullRequestTool = new RecordingPullRequestTool();
-        RecordingMavenTestRunner mavenTestRunner = new RecordingMavenTestRunner(0, "tests passed");
+        RecordingVerificationRunner verificationRunner = new RecordingVerificationRunner(0, "tests passed");
         RecordingFixTaskTestRunService testRunService = new RecordingFixTaskTestRunService();
         RecordingFixTaskToolCallService toolCallService = new RecordingFixTaskToolCallService();
         StageCancellingChecker cancellationChecker = new StageCancellingChecker(7);
         FixTaskExecutor executor = new NoopFixTaskExecutor(
                 workspaceService,
-                mavenTestRunner,
+                verificationRunner,
                 patchWorkflow,
                 diffTool,
                 commitTool,
@@ -387,13 +399,13 @@ class WorkspaceFixTaskExecutorTests {
         RecordingCommitTool commitTool = new RecordingCommitTool(false);
         RecordingPushTool pushTool = new RecordingPushTool(true);
         RecordingPullRequestTool pullRequestTool = new RecordingPullRequestTool();
-        RecordingMavenTestRunner mavenTestRunner = new RecordingMavenTestRunner(0, "tests passed");
+        RecordingVerificationRunner verificationRunner = new RecordingVerificationRunner(0, "tests passed");
         RecordingFixTaskTestRunService testRunService = new RecordingFixTaskTestRunService();
         RecordingFixTaskToolCallService toolCallService = new RecordingFixTaskToolCallService();
         StageCancellingChecker cancellationChecker = new StageCancellingChecker(8);
         FixTaskExecutor executor = new NoopFixTaskExecutor(
                 workspaceService,
-                mavenTestRunner,
+                verificationRunner,
                 patchWorkflow,
                 diffTool,
                 commitTool,
@@ -452,30 +464,31 @@ class WorkspaceFixTaskExecutorTests {
         }
     }
 
-    private static final class RecordingMavenTestRunner extends MavenTestRunner {
+    private static final class RecordingVerificationRunner extends VerificationRunner {
 
         private final int exitCode;
         private final String output;
         private String taskId;
         private Path repositoryDir;
+        private List<String> command;
         private int callOrder;
 
-        private RecordingMavenTestRunner(int exitCode, String output) {
+        private RecordingVerificationRunner(int exitCode, String output) {
+            super(
+                    new CommandExecutionGuard(workspaceProperties()),
+                    new io.patchpilot.backend.task.process.TaskProcessRegistry()
+            );
             this.exitCode = exitCode;
             this.output = output;
         }
 
         @Override
-        public TestRunResult runTests(String taskId, Path repositoryDir) {
+        public TestRunResult runVerification(String taskId, Path repositoryDir, List<String> command) {
             this.taskId = taskId;
-            return runTests(repositoryDir);
-        }
-
-        @Override
-        public TestRunResult runTests(Path repositoryDir) {
             this.repositoryDir = repositoryDir;
+            this.command = List.copyOf(command);
             this.callOrder = CallOrder.next();
-            return new TestRunResult("./mvnw test", exitCode, output);
+            return new TestRunResult(String.join(" ", command), exitCode, output);
         }
 
         private String taskId() {
@@ -488,6 +501,16 @@ class WorkspaceFixTaskExecutorTests {
 
         private int callOrder() {
             return callOrder;
+        }
+
+        private List<String> command() {
+            return command;
+        }
+
+        private static WorkspaceProperties workspaceProperties() {
+            WorkspaceProperties properties = new WorkspaceProperties();
+            properties.setRootDir(Path.of("/tmp/workspace"));
+            return properties;
         }
     }
 

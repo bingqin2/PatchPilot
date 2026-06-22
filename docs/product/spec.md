@@ -140,6 +140,7 @@ The current implementation target is local self-hosted development first. Hosted
 - The long-term system supports multiple language adapters, starting with Java/Maven, Java/Gradle, Node.js, and Python.
 - Each adapter defines project detection, allowed verification commands, test output capture, timeout policy, and unsupported-repository failure reasons.
 - The adapter registry selects the first adapter that supports the repository and returns a clear unsupported result when none match.
+- The verification runner executes only the selected adapter's allowlisted verification command.
 - The Java/Maven adapter detects `mvnw` and `pom.xml`.
 - The Java/Maven adapter runs `./mvnw test` when a Maven wrapper exists.
 - The Java/Maven adapter runs `mvn test` when no wrapper exists.
