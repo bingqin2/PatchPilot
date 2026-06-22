@@ -163,6 +163,12 @@ export function TaskListPanel({
             <span className="task-repo">{task.repositoryOwner}/{task.repositoryName}</span>
             <span className="task-issue">#{task.issueNumber}</span>
             <span className="task-comment">{task.triggerComment}</span>
+            {task.language && task.buildSystem ? (
+              <span className="task-adapter">
+                <strong>{task.language} / {task.buildSystem}</strong>
+                {task.verificationCommand ? <span>{task.verificationCommand}</span> : null}
+              </span>
+            ) : null}
             <span className="task-times">
               <time dateTime={task.createdAt}>Created {compactTime(task.createdAt)}</time>
               <time dateTime={task.updatedAt}>Updated {compactTime(task.updatedAt)}</time>

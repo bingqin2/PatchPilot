@@ -228,6 +228,7 @@ PatchPilot currently executes fixes for Java repositories with Maven or Gradle b
 
 Unsupported repositories fail before model patch generation, tests, commit, push, or Pull Request creation. This is intentional until additional adapters such as pnpm, yarn, Poetry, tox, and other Python runners are implemented.
 For supported repositories, the language adapter supplies the verification command and the generic verification runner executes that command under the existing allowlist, timeout, process-registration, and environment-sanitization rules.
+After a repository is detected, each task stores the selected `language`, `buildSystem`, and `verificationCommand`. These fields are returned by the task APIs and shown in the dashboard so operators can confirm whether a task used Maven, Gradle, npm, or pytest without opening raw tool-call logs.
 
 Runtime configuration summary:
 

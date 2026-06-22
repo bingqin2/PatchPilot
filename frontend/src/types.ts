@@ -28,6 +28,9 @@ export interface FixTask {
   pullRequestUrl: string | null;
   completedAt: string | null;
   updatedAt: string;
+  language: string | null;
+  buildSystem: string | null;
+  verificationCommand: string | null;
   statusCommentId: number | null;
   statusCommentUrl: string | null;
 }

@@ -8,7 +8,7 @@ import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import java.util.List;
 import java.util.Optional;
 
-public interface FixTaskService {
+public interface FixTaskService extends FixTaskAdapterMetadataRecorder {
 
     FixTaskVo createFixTask(CreateFixTaskCommand command);
 
@@ -37,6 +37,16 @@ public interface FixTaskService {
     }
 
     FixTaskVo attachStatusComment(String id, long statusCommentId, String statusCommentUrl);
+
+    @Override
+    default FixTaskVo recordAdapterMetadata(
+            String id,
+            String language,
+            String buildSystem,
+            String verificationCommand
+    ) {
+        throw new UnsupportedOperationException("Task adapter metadata is not supported");
+    }
 
     List<FixTaskVo> listTasks();
 

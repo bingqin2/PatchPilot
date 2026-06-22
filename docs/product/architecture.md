@@ -34,7 +34,7 @@ Recommended first screens:
 - Status timeline.
 - Tool-call trace.
 - Model-call summary.
-- Maven test output.
+- Verification output.
 
 The frontend should stay work-focused and dense enough for repeated debugging. It should not start as a marketing landing page.
 

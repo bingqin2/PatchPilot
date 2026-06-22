@@ -51,7 +51,7 @@ The first screen is the working dashboard:
 - A manual task form can enqueue a local demo/debug task through the same backend task and queue path used by webhook-created tasks.
 - The task list supports URL-backed status filters with scoped count badges, repository owner/name filters, created time range filters, backend-backed search over task history, newest/oldest sorting, one-click filter reset, loaded-versus-total counts, and incremental loading.
 - Status count badges come from `GET /api/tasks/status-counts`. They follow search, repository, and created-time filters, but ignore the active status, sort, limit, and offset so operators can see the distribution before switching status tabs.
-- Selecting a task updates the `/tasks/{taskId}` route while preserving active filter query parameters, loads aggregate task detail in one request, and reveals a copyable task link, copyable Markdown report, queue state, queue history, execution evidence summary, timeline events, Maven test output, tool-call records, model-call records, and GitHub links.
+- Selecting a task updates the `/tasks/{taskId}` route while preserving active filter query parameters, loads aggregate task detail in one request, and reveals a copyable task link, copyable Markdown report, selected language adapter metadata, queue state, queue history, execution evidence summary, timeline events, verification output, tool-call records, model-call records, and GitHub links.
 - Queue visibility shows whether work is pending, delayed, running, failed, or cancelled, with failed/delayed/running health hints before the row list.
 - Configuration visibility shows backend `/health` status, the active provider, model, workspace root, queue policy, whether required secrets are configured, and clear health hints for missing secrets or weak optional settings without exposing secret values.
 - Cancel and retry are available only for task states where those actions make sense.
@@ -61,6 +61,7 @@ This keeps the UI focused on operator questions:
 - What is running right now?
 - What failed and why?
 - Did tests pass?
+- Which language adapter and verification command ran?
 - What did the agent call?
 - How many model tokens were used?
 - Where is the GitHub issue or Pull Request?

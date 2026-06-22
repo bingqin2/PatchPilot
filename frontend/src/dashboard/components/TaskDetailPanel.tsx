@@ -142,6 +142,10 @@ export function TaskDetailPanel({
         <strong className={`evidence-test evidence-test-${latestTestStatus.toLowerCase()}`}>
           Latest test {latestTestStatus}
         </strong>
+        {task.language && task.buildSystem ? (
+          <strong>Adapter {task.language} / {task.buildSystem}</strong>
+        ) : null}
+        {task.verificationCommand ? <strong>Verify {task.verificationCommand}</strong> : null}
       </div>
 
       {detail.queueItem ? (
@@ -204,7 +208,7 @@ export function TaskDetailPanel({
       </section>
 
       <section className="detail-section">
-        <h3>Maven Test Output</h3>
+        <h3>Verification Output</h3>
         {detail.testRuns.map((run) => (
           <div className="test-run" key={run.id}>
             <div className="test-run-header">
@@ -215,7 +219,7 @@ export function TaskDetailPanel({
             <pre>{run.output}</pre>
           </div>
         ))}
-        {!loading && detail.testRuns.length === 0 ? <p className="empty-state">No Maven test runs recorded.</p> : null}
+        {!loading && detail.testRuns.length === 0 ? <p className="empty-state">No verification runs recorded.</p> : null}
       </section>
 
       <section className="detail-section split-section">

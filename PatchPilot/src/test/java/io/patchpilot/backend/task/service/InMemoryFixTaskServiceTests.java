@@ -123,6 +123,29 @@ class InMemoryFixTaskServiceTests {
     }
 
     @Test
+    void should_record_adapter_metadata() {
+        FixTaskVo task = createTask("delivery-adapter");
+        fixTaskService.markRunning(task.id());
+
+        FixTaskVo updatedTask = fixTaskService.recordAdapterMetadata(
+                task.id(),
+                "node",
+                "npm",
+                "npm test"
+        );
+
+        assertThat(updatedTask.status()).isEqualTo(FixTaskStatus.RUNNING);
+        assertThat(updatedTask.language()).isEqualTo("node");
+        assertThat(updatedTask.buildSystem()).isEqualTo("npm");
+        assertThat(updatedTask.verificationCommand()).isEqualTo("npm test");
+        assertThat(updatedTask.updatedAt()).isAfterOrEqualTo(task.updatedAt());
+        assertThat(fixTaskService.findTask(task.id()))
+                .get()
+                .extracting(FixTaskVo::verificationCommand)
+                .isEqualTo("npm test");
+    }
+
+    @Test
     void should_find_active_task_for_issue() {
         FixTaskVo task = createTask("delivery-active");
 

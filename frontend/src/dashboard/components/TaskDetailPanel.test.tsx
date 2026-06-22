@@ -20,6 +20,9 @@ const task: FixTask = {
   pullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
   completedAt: '2026-06-20T01:01:00Z',
   updatedAt: '2026-06-20T01:01:00Z',
+  language: 'python',
+  buildSystem: 'pytest',
+  verificationCommand: 'python3 -m pytest',
   statusCommentId: null,
   statusCommentUrl: null
 };
@@ -104,6 +107,8 @@ test('shows execution evidence summary for selected task', () => {
   expect(screen.getByText('Tools 3')).toBeInTheDocument();
   expect(screen.getByText('Model calls 2')).toBeInTheDocument();
   expect(screen.getByText('Latest test PASS')).toBeInTheDocument();
+  expect(screen.getByText('Adapter python / pytest')).toBeInTheDocument();
+  expect(screen.getByText('Verify python3 -m pytest')).toBeInTheDocument();
 });
 
 test('shows selected task queue state in task detail', () => {

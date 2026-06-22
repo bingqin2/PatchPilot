@@ -655,6 +655,7 @@ h3 {
 }
 
 .task-comment,
+.task-adapter,
 .task-failure,
 .task-times,
 .task-link {
@@ -665,6 +666,29 @@ h3 {
 .task-comment {
   color: #51606f;
   overflow-wrap: anywhere;
+}
+
+.task-adapter {
+  align-items: center;
+  color: #4e5e6d;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.task-adapter strong {
+  color: #17202a;
+  font-size: 12px;
+}
+
+.task-adapter span {
+  background: #f5f7f9;
+  border: 1px solid #dfe7ee;
+  border-radius: 999px;
+  color: #52606e;
+  font-size: 12px;
+  font-weight: 750;
+  padding: 3px 8px;
 }
 
 .task-failure {

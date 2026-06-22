@@ -51,6 +51,9 @@ public class InMemoryFixTaskService implements FixTaskService {
                 null,
                 createdAt,
                 null,
+                null,
+                null,
+                null,
                 null
         );
         tasks.put(taskId, task);
@@ -74,25 +77,7 @@ public class InMemoryFixTaskService implements FixTaskService {
             if (currentTask == null) {
                 throw new IllegalArgumentException("Task not found: " + taskId);
             }
-            return new FixTaskVo(
-                    currentTask.id(),
-                    currentTask.repositoryOwner(),
-                    currentTask.repositoryName(),
-                    currentTask.issueNumber(),
-                    currentTask.installationId(),
-                    currentTask.triggerUser(),
-                    currentTask.triggerComment(),
-                    currentTask.deliveryId(),
-                    currentTask.commentId(),
-                    FixTaskStatus.COMPLETED,
-                    null,
-                    currentTask.createdAt(),
-                    pullRequestUrl,
-                    completedAt,
-                    completedAt,
-                    currentTask.statusCommentId(),
-                    currentTask.statusCommentUrl()
-            );
+            return copyTask(currentTask, FixTaskStatus.COMPLETED, null, pullRequestUrl, completedAt, completedAt);
         });
         return updatedTask;
     }
@@ -118,25 +103,27 @@ public class InMemoryFixTaskService implements FixTaskService {
             if (currentTask == null) {
                 throw new IllegalArgumentException("Task not found: " + taskId);
             }
-            return new FixTaskVo(
-                    currentTask.id(),
-                    currentTask.repositoryOwner(),
-                    currentTask.repositoryName(),
-                    currentTask.issueNumber(),
-                    currentTask.installationId(),
-                    currentTask.triggerUser(),
-                    currentTask.triggerComment(),
-                    currentTask.deliveryId(),
-                    currentTask.commentId(),
-                    currentTask.status(),
-                    currentTask.failureReason(),
-                    currentTask.createdAt(),
-                    currentTask.pullRequestUrl(),
-                    currentTask.completedAt(),
-                    Instant.now(),
-                    statusCommentId,
-                    statusCommentUrl
-            );
+            return copyTask(currentTask, currentTask.status(), currentTask.failureReason(), currentTask.pullRequestUrl(),
+                    currentTask.completedAt(), Instant.now(), currentTask.language(), currentTask.buildSystem(),
+                    currentTask.verificationCommand(), statusCommentId, statusCommentUrl);
+        });
+        return updatedTask;
+    }
+
+    @Override
+    public FixTaskVo recordAdapterMetadata(
+            String id,
+            String language,
+            String buildSystem,
+            String verificationCommand
+    ) {
+        FixTaskVo updatedTask = tasks.compute(id, (taskId, currentTask) -> {
+            if (currentTask == null) {
+                throw new IllegalArgumentException("Task not found: " + taskId);
+            }
+            return copyTask(currentTask, currentTask.status(), currentTask.failureReason(), currentTask.pullRequestUrl(),
+                    currentTask.completedAt(), Instant.now(), language, buildSystem, verificationCommand,
+                    currentTask.statusCommentId(), currentTask.statusCommentUrl());
         });
         return updatedTask;
     }
@@ -187,25 +174,8 @@ public class InMemoryFixTaskService implements FixTaskService {
             if (currentTask == null) {
                 throw new IllegalArgumentException("Task not found: " + taskId);
             }
-            return new FixTaskVo(
-                    currentTask.id(),
-                    currentTask.repositoryOwner(),
-                    currentTask.repositoryName(),
-                    currentTask.issueNumber(),
-                    currentTask.installationId(),
-                    currentTask.triggerUser(),
-                    currentTask.triggerComment(),
-                    currentTask.deliveryId(),
-                    currentTask.commentId(),
-                    status,
-                    failureReason,
-                    currentTask.createdAt(),
-                    currentTask.pullRequestUrl(),
-                    currentTask.completedAt(),
-                    Instant.now(),
-                    currentTask.statusCommentId(),
-                    currentTask.statusCommentUrl()
-            );
+            return copyTask(currentTask, status, failureReason, currentTask.pullRequestUrl(),
+                    currentTask.completedAt(), Instant.now());
         });
         return updatedTask;
     }
@@ -216,27 +186,59 @@ public class InMemoryFixTaskService implements FixTaskService {
                 throw new IllegalArgumentException("Task not found: " + taskId);
             }
             Instant updatedAt = Instant.now();
-            return new FixTaskVo(
-                    currentTask.id(),
-                    currentTask.repositoryOwner(),
-                    currentTask.repositoryName(),
-                    currentTask.issueNumber(),
-                    currentTask.installationId(),
-                    currentTask.triggerUser(),
-                    currentTask.triggerComment(),
-                    currentTask.deliveryId(),
-                    currentTask.commentId(),
-                    FixTaskStatus.PENDING,
-                    null,
-                    currentTask.createdAt(),
-                    null,
-                    null,
-                    updatedAt,
-                    currentTask.statusCommentId(),
-                    currentTask.statusCommentUrl()
-            );
+            return copyTask(currentTask, FixTaskStatus.PENDING, null, null, null, updatedAt);
         });
         return updatedTask;
+    }
+
+    private static FixTaskVo copyTask(
+            FixTaskVo currentTask,
+            FixTaskStatus status,
+            String failureReason,
+            String pullRequestUrl,
+            Instant completedAt,
+            Instant updatedAt
+    ) {
+        return copyTask(currentTask, status, failureReason, pullRequestUrl, completedAt, updatedAt,
+                currentTask.language(), currentTask.buildSystem(), currentTask.verificationCommand(),
+                currentTask.statusCommentId(), currentTask.statusCommentUrl());
+    }
+
+    private static FixTaskVo copyTask(
+            FixTaskVo currentTask,
+            FixTaskStatus status,
+            String failureReason,
+            String pullRequestUrl,
+            Instant completedAt,
+            Instant updatedAt,
+            String language,
+            String buildSystem,
+            String verificationCommand,
+            Long statusCommentId,
+            String statusCommentUrl
+    ) {
+        return new FixTaskVo(
+                currentTask.id(),
+                currentTask.repositoryOwner(),
+                currentTask.repositoryName(),
+                currentTask.issueNumber(),
+                currentTask.installationId(),
+                currentTask.triggerUser(),
+                currentTask.triggerComment(),
+                currentTask.deliveryId(),
+                currentTask.commentId(),
+                status,
+                failureReason,
+                currentTask.createdAt(),
+                pullRequestUrl,
+                completedAt,
+                updatedAt,
+                language,
+                buildSystem,
+                verificationCommand,
+                statusCommentId,
+                statusCommentUrl
+        );
     }
 
     private static boolean matchesQuery(FixTaskVo task, String query) {

@@ -18,6 +18,9 @@ const completedTask = {
   pullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
   completedAt: '2026-06-20T01:01:00Z',
   updatedAt: '2026-06-20T01:01:00Z',
+  language: 'java',
+  buildSystem: 'maven',
+  verificationCommand: './mvnw test',
   statusCommentId: null,
   statusCommentUrl: 'https://github.com/bingqin2/PatchPilot/issues/1#issuecomment-4756084894'
 };
@@ -38,6 +41,9 @@ const failedTask = {
   pullRequestUrl: null,
   completedAt: null,
   updatedAt: '2026-06-20T01:06:00Z',
+  language: 'node',
+  buildSystem: 'npm',
+  verificationCommand: 'npm test',
   statusCommentId: null,
   statusCommentUrl: null
 };
@@ -58,6 +64,9 @@ const runningTask = {
   pullRequestUrl: null,
   completedAt: null,
   updatedAt: '2026-06-20T01:10:30Z',
+  language: null,
+  buildSystem: null,
+  verificationCommand: null,
   statusCommentId: null,
   statusCommentUrl: null
 };
@@ -92,6 +101,9 @@ const manuallyCreatedTask = {
   pullRequestUrl: null,
   completedAt: null,
   updatedAt: '2026-06-21T10:00:00Z',
+  language: null,
+  buildSystem: null,
+  verificationCommand: null,
   statusCommentId: null,
   statusCommentUrl: null
 };
@@ -1155,6 +1167,19 @@ test('shows task creation and update times in task rows', async () => {
   expect(failedTimes[1]).toHaveAttribute('datetime', failedTask.updatedAt);
 });
 
+test('shows selected language adapter metadata in task rows and detail', async () => {
+  render(<App />);
+
+  const completedTaskRow = await screen.findByRole('button', { name: /COMPLETED bingqin2\/PatchPilot #1/ });
+  expect(within(completedTaskRow).getByText('java / maven')).toBeInTheDocument();
+  expect(within(completedTaskRow).getByText('./mvnw test')).toBeInTheDocument();
+
+  await userEvent.click(completedTaskRow);
+
+  expect(screen.getByText('Adapter java / maven')).toBeInTheDocument();
+  expect(screen.getByText('Verify ./mvnw test')).toBeInTheDocument();
+});
+
 test('shows an actionable error when a backend request fails', async () => {
   vi.stubGlobal('fetch', vi.fn(async () => jsonResponse(null, false, 'backend unavailable', 500)));
 
@@ -1464,7 +1489,7 @@ test('shows empty states for missing task detail records', async () => {
   await user.click(await screen.findByRole('button', { name: 'FAILED' }));
 
   expect(await screen.findByText('No timeline events recorded.')).toBeInTheDocument();
-  expect(screen.getByText('No Maven test runs recorded.')).toBeInTheDocument();
+  expect(screen.getByText('No verification runs recorded.')).toBeInTheDocument();
   expect(screen.getByText('No tool calls recorded.')).toBeInTheDocument();
   expect(screen.getByText('No model calls recorded.')).toBeInTheDocument();
 });

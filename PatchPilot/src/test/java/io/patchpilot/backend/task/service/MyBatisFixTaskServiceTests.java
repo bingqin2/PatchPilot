@@ -200,6 +200,34 @@ class MyBatisFixTaskServiceTests {
     }
 
     @Test
+    void should_record_adapter_metadata() {
+        FixTaskEntity current = entity("task-123", "delivery-123", FixTaskStatus.RUNNING,
+                null, Instant.parse("2026-06-19T01:02:03Z"));
+        when(fixTaskMapper.selectById("task-123")).thenReturn(current);
+        when(fixTaskMapper.updateById(any(FixTaskEntity.class))).thenReturn(1);
+        ArgumentCaptor<FixTaskEntity> entityCaptor = ArgumentCaptor.forClass(FixTaskEntity.class);
+
+        FixTaskVo updatedTask = fixTaskService.recordAdapterMetadata(
+                "task-123",
+                "java",
+                "gradle",
+                "./gradlew test"
+        );
+
+        verify(fixTaskMapper).updateById(entityCaptor.capture());
+        FixTaskEntity updatedEntity = entityCaptor.getValue();
+        assertThat(updatedEntity.getId()).isEqualTo("task-123");
+        assertThat(updatedEntity.getStatus()).isEqualTo(FixTaskStatus.RUNNING.name());
+        assertThat(updatedEntity.getLanguage()).isEqualTo("java");
+        assertThat(updatedEntity.getBuildSystem()).isEqualTo("gradle");
+        assertThat(updatedEntity.getVerificationCommand()).isEqualTo("./gradlew test");
+        assertThat(updatedEntity.getUpdatedAt()).isAfter(current.getUpdatedAt());
+        assertThat(updatedTask.language()).isEqualTo("java");
+        assertThat(updatedTask.buildSystem()).isEqualTo("gradle");
+        assertThat(updatedTask.verificationCommand()).isEqualTo("./gradlew test");
+    }
+
+    @Test
     void should_list_tasks_newest_first() {
         FixTaskEntity olderTask = entity("task-older", "delivery-older", FixTaskStatus.PENDING,
                 null, Instant.parse("2026-06-19T01:00:00Z"));
@@ -405,6 +433,9 @@ class MyBatisFixTaskServiceTests {
         entity.setPullRequestUrl(null);
         entity.setCompletedAt(null);
         entity.setUpdatedAt(createdAt);
+        entity.setLanguage(null);
+        entity.setBuildSystem(null);
+        entity.setVerificationCommand(null);
         entity.setStatusCommentId(null);
         entity.setStatusCommentUrl(null);
         return entity;

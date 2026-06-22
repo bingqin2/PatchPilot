@@ -12,6 +12,7 @@ import io.patchpilot.backend.runner.domain.vo.TestRunResult;
 import io.patchpilot.backend.runner.service.VerificationRunner;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import io.patchpilot.backend.task.executor.domain.FixTaskExecutionResult;
+import io.patchpilot.backend.task.service.FixTaskAdapterMetadataRecorder;
 import io.patchpilot.backend.task.service.FixTaskTestRunService;
 import io.patchpilot.backend.task.service.FixTaskToolCallService;
 import io.patchpilot.backend.workspace.domain.bo.CloneWorkspaceCommand;
@@ -34,6 +35,7 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
     private final CommitTool commitTool;
     private final PushTool pushTool;
     private final PullRequestTool pullRequestTool;
+    private final FixTaskAdapterMetadataRecorder adapterMetadataRecorder;
     private final FixTaskTestRunService fixTaskTestRunService;
     private final FixTaskToolCallService fixTaskToolCallService;
     private final TaskCancellationChecker taskCancellationChecker;
@@ -59,6 +61,36 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
                 commitTool,
                 pushTool,
                 pullRequestTool,
+                FixTaskAdapterMetadataRecorder.NOOP,
+                fixTaskTestRunService,
+                fixTaskToolCallService,
+                taskCancellationChecker
+        );
+    }
+
+    public NoopFixTaskExecutor(
+            WorkspaceService workspaceService,
+            LanguageAdapterRegistry languageAdapterRegistry,
+            VerificationRunner verificationRunner,
+            PatchWorkflow patchWorkflow,
+            DiffTool diffTool,
+            CommitTool commitTool,
+            PushTool pushTool,
+            PullRequestTool pullRequestTool,
+            FixTaskTestRunService fixTaskTestRunService,
+            FixTaskToolCallService fixTaskToolCallService,
+            TaskCancellationChecker taskCancellationChecker
+    ) {
+        this(
+                workspaceService,
+                languageAdapterRegistry,
+                verificationRunner,
+                patchWorkflow,
+                diffTool,
+                commitTool,
+                pushTool,
+                pullRequestTool,
+                FixTaskAdapterMetadataRecorder.NOOP,
                 fixTaskTestRunService,
                 fixTaskToolCallService,
                 taskCancellationChecker
@@ -75,6 +107,7 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
             CommitTool commitTool,
             PushTool pushTool,
             PullRequestTool pullRequestTool,
+            FixTaskAdapterMetadataRecorder adapterMetadataRecorder,
             FixTaskTestRunService fixTaskTestRunService,
             FixTaskToolCallService fixTaskToolCallService,
             TaskCancellationChecker taskCancellationChecker
@@ -87,6 +120,7 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
         this.commitTool = commitTool;
         this.pushTool = pushTool;
         this.pullRequestTool = pullRequestTool;
+        this.adapterMetadataRecorder = adapterMetadataRecorder;
         this.fixTaskTestRunService = fixTaskTestRunService;
         this.fixTaskToolCallService = fixTaskToolCallService;
         this.taskCancellationChecker = taskCancellationChecker;
@@ -131,6 +165,12 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
                         result.reason()
                 )
         );
+        adapterMetadataRecorder.recordAdapterMetadata(
+                task.id(),
+                detectionResult.language(),
+                detectionResult.buildSystem(),
+                String.join(" ", detectionResult.verificationCommand())
+        );
         taskCancellationChecker.throwIfCancelled(task.id());
         auditToolCall(
                 task.id(),
@@ -166,7 +206,7 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
         );
         taskCancellationChecker.throwIfCancelled(task.id());
         if (testRunResult.exitCode() != 0) {
-            throw new IllegalStateException("maven tests failed: " + testRunResult.output());
+            throw new IllegalStateException("verification failed: " + testRunResult.output());
         }
         auditToolCall(
                 task.id(),
@@ -263,4 +303,5 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
 
         String summary(T output);
     }
+
 }

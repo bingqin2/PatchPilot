@@ -20,8 +20,10 @@ import io.patchpilot.backend.task.domain.vo.FixTaskTestRunVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskToolCallVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import io.patchpilot.backend.task.executor.domain.FixTaskExecutionResult;
+import io.patchpilot.backend.task.service.FixTaskService;
 import io.patchpilot.backend.task.service.FixTaskTestRunService;
 import io.patchpilot.backend.task.service.FixTaskToolCallService;
+import io.patchpilot.backend.task.service.impl.InMemoryFixTaskService;
 import io.patchpilot.backend.workspace.runner.GitCommandResult;
 import io.patchpilot.backend.workspace.runner.GitCommandRunner;
 import io.patchpilot.backend.workspace.domain.bo.CloneWorkspaceCommand;
@@ -59,6 +61,7 @@ class WorkspaceFixTaskExecutorTests {
         RecordingVerificationRunner verificationRunner = new RecordingVerificationRunner(0, "tests passed");
         RecordingFixTaskTestRunService testRunService = new RecordingFixTaskTestRunService();
         RecordingFixTaskToolCallService toolCallService = new RecordingFixTaskToolCallService();
+        RecordingFixTaskService fixTaskService = new RecordingFixTaskService(task());
         FixTaskExecutor executor = new NoopFixTaskExecutor(
                 workspaceService,
                 languageAdapterRegistry,
@@ -68,6 +71,7 @@ class WorkspaceFixTaskExecutorTests {
                 commitTool,
                 pushTool,
                 pullRequestTool,
+                fixTaskService,
                 testRunService,
                 toolCallService,
                 taskId -> { }
@@ -84,6 +88,9 @@ class WorkspaceFixTaskExecutorTests {
         assertThat(verificationRunner.repositoryDir()).isEqualTo(Path.of("/tmp/workspace/repo"));
         assertThat(verificationRunner.taskId()).isEqualTo("task-123");
         assertThat(verificationRunner.command()).containsExactly("custom-verify", "test");
+        assertThat(fixTaskService.language()).isEqualTo("java");
+        assertThat(fixTaskService.buildSystem()).isEqualTo("maven");
+        assertThat(fixTaskService.verificationCommand()).isEqualTo("custom-verify test");
         assertThat(commitTool.repositoryDir()).isEqualTo(Path.of("/tmp/workspace/repo"));
         assertThat(commitTool.taskId()).isEqualTo("task-123");
         assertThat(commitTool.message()).isEqualTo("PatchPilot task task-123");
@@ -147,7 +154,7 @@ class WorkspaceFixTaskExecutorTests {
 
         assertThatThrownBy(() -> executor.execute(task()))
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessage("maven tests failed: test failed");
+                .hasMessage("verification failed: test failed");
         assertThat(testRunService.taskId()).isEqualTo("task-123");
         assertThat(testRunService.command()).isEqualTo("./mvnw test");
         assertThat(testRunService.exitCode()).isEqualTo(1);
@@ -532,6 +539,43 @@ class WorkspaceFixTaskExecutorTests {
 
         private Path repositoryDir() {
             return repositoryDir;
+        }
+    }
+
+    private static final class RecordingFixTaskService extends InMemoryFixTaskService {
+
+        private final FixTaskVo task;
+        private String language;
+        private String buildSystem;
+        private String verificationCommand;
+
+        private RecordingFixTaskService(FixTaskVo task) {
+            this.task = task;
+        }
+
+        @Override
+        public FixTaskVo recordAdapterMetadata(
+                String id,
+                String language,
+                String buildSystem,
+                String verificationCommand
+        ) {
+            this.language = language;
+            this.buildSystem = buildSystem;
+            this.verificationCommand = verificationCommand;
+            return task.withAdapterMetadata(language, buildSystem, verificationCommand);
+        }
+
+        private String language() {
+            return language;
+        }
+
+        private String buildSystem() {
+            return buildSystem;
+        }
+
+        private String verificationCommand() {
+            return verificationCommand;
         }
     }
 
