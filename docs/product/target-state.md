@@ -201,6 +201,7 @@ PatchPilot must:
 - Reject or ignore unclear, unsupported, or unsafe requests before cloning or model execution.
 - Enforce per-user, per-repository, and global rate limits before expensive work starts.
 - Run repository commands with allowlisted command templates, timeouts, resource limits, and no unnecessary secrets.
+- Re-check generated diffs before verification or GitHub writes, and block sensitive files, secret-like additions, binary patches, or overly broad changes.
 
 ## Engineering Target
 

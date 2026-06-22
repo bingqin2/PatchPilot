@@ -55,6 +55,7 @@ GitHub issue comment created
   -> IssueAnalyzer gathers issue and repository context
   -> FixIssueAgent creates a fix plan
   -> Tools search code, read files, write files, and inspect diff
+  -> GeneratedDiffRiskGate rejects unsafe generated diffs before verification or GitHub writes
   -> LanguageAdapter supplies an allowlisted verification command
   -> TestRunner runs verification
   -> GitHubClient pushes a branch and opens a Pull Request
@@ -216,6 +217,7 @@ Responsibilities:
 
 - Use language adapters to detect supported build systems immediately after workspace preparation.
 - Fail unsupported repositories before patch generation, test execution, Git mutation, or Pull Request creation.
+- Run the generated diff through `GeneratedDiffRiskGate` after `DiffTool` and before verification, commit, push, or Pull Request creation.
 - Execute the allowlisted verification command returned by the selected adapter.
 - Capture test output.
 - Enforce timeouts.
@@ -247,6 +249,8 @@ Future adapters should add their own detection and allowlisted verification comm
 `GET /api/language-adapters` exposes the supported adapter catalog for operators and demos. `GET /api/language-adapters/fixtures` runs each checked-in demo fixture through the same registry and returns expected versus actual language, build system, command, detection reason, and pass/fail status. Fixture failures are reported as rows, not controller failures, so one missing fixture does not hide the rest of the support matrix.
 
 Real task records also persist the selected adapter metadata and nullable detection reason. The executor stores the `LanguageDetectionResult.reason()` alongside `language`, `buildSystem`, and `verificationCommand` after workspace preflight. Task list and detail APIs return those fields so operators can explain which repository signal selected the verification path without replaying detection or reading logs.
+
+Generated-diff risk checks run after patch generation and `DiffTool` output, but before adapter verification or any GitHub write. `GeneratedDiffRiskGate` blocks sensitive paths, secret-like added lines, binary patches, and patches that exceed changed-file or changed-line thresholds. The executor records the gate as an audited tool call, so failures are visible in task detail APIs, copied task reports, and the dashboard.
 
 ### Demo Readiness
 

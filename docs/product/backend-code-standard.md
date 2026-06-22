@@ -147,6 +147,8 @@ Rules:
 - High-risk tools must enforce allowlists.
 - Tools must not call the model.
 
+Generated patch output must also pass a deterministic risk gate before any verification command, commit, push, or Pull Request creation. The gate should reject sensitive paths, secret-like added lines, binary patches, and broad diffs, and it should record an auditable tool-call failure instead of silently stopping execution.
+
 ## Domain Objects
 
 Use domain subpackages to make object intent explicit:

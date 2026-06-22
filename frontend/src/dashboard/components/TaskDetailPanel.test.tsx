@@ -183,6 +183,44 @@ test('shows missing latest test evidence when no test result is recorded', () =>
   expect(screen.getByText('Latest test None')).toBeInTheDocument();
 });
 
+test('surfaces generated diff risk gate failures in task evidence', () => {
+  render(
+    <TaskDetailPanel
+      task={{
+        ...task,
+        status: 'FAILED',
+        failureReason: 'Generated diff rejected: sensitive path .github/workflows/deploy.yml'
+      }}
+      detail={{
+        ...baseDetail,
+        toolCalls: [
+          {
+            id: 'tool-risk',
+            taskId: 'task-1',
+            toolName: 'GeneratedDiffRiskGate',
+            inputSummary: 'changedBytes=480',
+            outputSummary: 'Generated diff rejected: sensitive path .github/workflows/deploy.yml',
+            success: false,
+            startedAt: '2026-06-20T01:00:12Z',
+            finishedAt: '2026-06-20T01:00:13Z',
+            durationMs: 78
+          }
+        ]
+      }}
+      loading={false}
+      actionInFlight={false}
+      onCancelTask={vi.fn()}
+      onRetryTask={vi.fn()}
+      onCopyReport={vi.fn()}
+    />
+  );
+
+  expect(screen.getByText('Risk gate BLOCKED')).toBeInTheDocument();
+  expect(screen.getByText('GeneratedDiffRiskGate')).toBeInTheDocument();
+  expect(screen.getByText('failed · 78 ms')).toBeInTheDocument();
+  expect(screen.getByText('Generated diff rejected: sensitive path .github/workflows/deploy.yml')).toBeInTheDocument();
+});
+
 test('builds a shareable task link from the current dashboard URL', () => {
   expect(taskLinkFor('task-1', 'http://127.0.0.1:5173/?status=FAILED')).toBe(
     'http://127.0.0.1:5173/tasks/task-1?status=FAILED'

@@ -1076,6 +1076,11 @@ h3 {
   color: #a13724;
 }
 
+.evidence-summary .evidence-risk-blocked {
+  background: #fde5df;
+  color: #a13724;
+}
+
 .evidence-summary .evidence-test-none {
   background: #eef0f2;
   color: #52606e;

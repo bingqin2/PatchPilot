@@ -2272,3 +2272,24 @@ Validation:
 - `mvn -pl PatchPilot -Dtest=InMemoryFixTaskServiceTests,MyBatisFixTaskServiceTests,FixTaskConvertTests,TaskControllerTests,WorkspaceFixTaskExecutorTests,FixTaskAdapterMetadataMigrationTests test`: first failed because adapter metadata methods and task records did not expose `adapterDetectionReason`; then passed after adding persistence, conversion, service, controller, and executor support, 102 tests run, 0 failures.
 - `npm test -- --run src/dashboard/components/TaskDetailPanel.test.tsx`: first failed because the task detail evidence strip did not render detection reason; then passed after adding the frontend field and display, 8 tests run, 0 failures.
 - `mvn -pl PatchPilot -Dtest=TaskControllerTests#should_get_task_report_by_task_id test`: first failed because copied task reports did not include adapter evidence; then passed after adding the report adapter section, 1 test run, 0 failures.
+
+Implemented generated diff risk gate from `docs/plans/111-generated-diff-risk-gate.md`.
+
+Changes:
+
+- Added `GeneratedDiffRiskGate` to inspect generated workspace diffs after `DiffTool` and before adapter verification, test-run recording, commit, push, or Pull Request creation.
+- Blocked sensitive file changes, secret-like added lines, binary patches, too many changed files, and too many changed lines with deterministic reasons.
+- Recorded the risk gate as an audited `GeneratedDiffRiskGate` tool call so task detail APIs, copied reports, and dashboard records can explain why execution stopped.
+- Added dashboard task detail evidence for generated-diff risk-gate blocks.
+- Updated README, architecture notes, target state, backend code standard, frontend design notes, and this execution log.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=GeneratedDiffRiskGateTests test`: first failed because binary generated diffs were still accepted; then passed after adding binary diff detection, 5 tests run, 0 failures.
+- `npm test -- --run src/dashboard/components/TaskDetailPanel.test.tsx`: first failed because task detail evidence did not surface risk-gate blocks; then passed after rendering the blocked marker, 9 tests run, 0 failures.
+- `mvn -pl PatchPilot -Dtest=GeneratedDiffRiskGateTests,WorkspaceFixTaskExecutorTests test`: passed after executor integration, 15 tests run, 0 failures.
+- `npm test -- --run src/dashboard/components/TaskDetailPanel.test.tsx src/App.test.tsx src/api.test.ts`: passed after dashboard/API focused verification, 66 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed after full backend verification, 413 tests run, 0 failures.
+- `npm test`: passed after full frontend verification, 84 tests run, 0 failures.
+- `npm run build`: passed after production frontend build.
+- `git diff --check`: passed after whitespace and conflict-marker verification.

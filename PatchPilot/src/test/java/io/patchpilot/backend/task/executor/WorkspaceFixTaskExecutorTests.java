@@ -15,6 +15,7 @@ import io.patchpilot.backend.language.domain.LanguageDetectionResult;
 import io.patchpilot.backend.runner.domain.vo.TestRunResult;
 import io.patchpilot.backend.runner.service.CommandExecutionGuard;
 import io.patchpilot.backend.runner.service.VerificationRunner;
+import io.patchpilot.backend.safety.GeneratedDiffRiskGate;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.vo.FixTaskTestRunVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskToolCallVo;
@@ -117,6 +118,7 @@ class WorkspaceFixTaskExecutorTests {
                         "LanguageAdapterRegistry",
                         "PatchWorkflow",
                         "DiffTool",
+                        "GeneratedDiffRiskGate",
                         "CommitTool",
                         "PushTool",
                         "PullRequestTool"
@@ -165,7 +167,13 @@ class WorkspaceFixTaskExecutorTests {
         assertThat(pullRequestTool.callOrder()).isZero();
         assertThat(toolCallService.toolCalls())
                 .extracting(FixTaskToolCallVo::toolName)
-                .containsExactly("WorkspaceService", "LanguageAdapterRegistry", "PatchWorkflow", "DiffTool");
+                .containsExactly(
+                        "WorkspaceService",
+                        "LanguageAdapterRegistry",
+                        "PatchWorkflow",
+                        "DiffTool",
+                        "GeneratedDiffRiskGate"
+                );
     }
 
     @Test
@@ -251,7 +259,14 @@ class WorkspaceFixTaskExecutorTests {
         assertThat(pullRequestTool.callOrder()).isZero();
         assertThat(toolCallService.toolCalls())
                 .extracting(FixTaskToolCallVo::toolName)
-                .containsExactly("WorkspaceService", "LanguageAdapterRegistry", "PatchWorkflow", "DiffTool", "CommitTool");
+                .containsExactly(
+                        "WorkspaceService",
+                        "LanguageAdapterRegistry",
+                        "PatchWorkflow",
+                        "DiffTool",
+                        "GeneratedDiffRiskGate",
+                        "CommitTool"
+                );
         assertThat(toolCallService.lastToolCall().success()).isFalse();
         assertThat(toolCallService.lastToolCall().outputSummary()).isEqualTo("git commit failed: nothing to commit");
     }
@@ -291,11 +306,75 @@ class WorkspaceFixTaskExecutorTests {
                         "LanguageAdapterRegistry",
                         "PatchWorkflow",
                         "DiffTool",
+                        "GeneratedDiffRiskGate",
                         "CommitTool",
                         "PushTool"
                 );
         assertThat(toolCallService.lastToolCall().success()).isFalse();
         assertThat(toolCallService.lastToolCall().outputSummary()).isEqualTo("git push failed: permission denied");
+    }
+
+    @Test
+    void should_stop_before_verification_when_generated_diff_is_high_risk() {
+        RecordingWorkspaceService workspaceService = new RecordingWorkspaceService();
+        RecordingPatchWorkflow patchWorkflow = new RecordingPatchWorkflow();
+        RecordingDiffTool diffTool = new RecordingDiffTool("""
+                diff --git a/.github/workflows/deploy.yml b/.github/workflows/deploy.yml
+                index 1111111..2222222 100644
+                --- a/.github/workflows/deploy.yml
+                +++ b/.github/workflows/deploy.yml
+                @@ -1,2 +1,2 @@
+                -name: deploy
+                +name: deploy changed
+                """);
+        RecordingCommitTool commitTool = new RecordingCommitTool(false);
+        RecordingPushTool pushTool = new RecordingPushTool(false);
+        RecordingPullRequestTool pullRequestTool = new RecordingPullRequestTool();
+        RecordingVerificationRunner verificationRunner = new RecordingVerificationRunner(0, "tests passed");
+        RecordingFixTaskTestRunService testRunService = new RecordingFixTaskTestRunService();
+        RecordingFixTaskToolCallService toolCallService = new RecordingFixTaskToolCallService();
+        FixTaskExecutor executor = new NoopFixTaskExecutor(
+                workspaceService,
+                new RecordingLanguageAdapterRegistry(LanguageDetectionResult.supported(
+                        "java",
+                        "maven",
+                        List.of("./mvnw", "test"),
+                        "pom.xml detected"
+                )),
+                verificationRunner,
+                patchWorkflow,
+                diffTool,
+                commitTool,
+                pushTool,
+                pullRequestTool,
+                new RecordingFixTaskService(task()),
+                testRunService,
+                toolCallService,
+                taskId -> { },
+                new GeneratedDiffRiskGate()
+        );
+
+        assertThatThrownBy(() -> executor.execute(task()))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Generated diff rejected");
+        assertThat(diffTool.repositoryDir()).isEqualTo(Path.of("/tmp/workspace/repo"));
+        assertThat(verificationRunner.callOrder()).isZero();
+        assertThat(testRunService.taskId()).isNull();
+        assertThat(commitTool.callOrder()).isZero();
+        assertThat(pushTool.callOrder()).isZero();
+        assertThat(pullRequestTool.callOrder()).isZero();
+        assertThat(toolCallService.toolCalls())
+                .extracting(FixTaskToolCallVo::toolName)
+                .containsExactly(
+                        "WorkspaceService",
+                        "LanguageAdapterRegistry",
+                        "PatchWorkflow",
+                        "DiffTool",
+                        "GeneratedDiffRiskGate"
+                );
+        assertThat(toolCallService.lastToolCall().success()).isFalse();
+        assertThat(toolCallService.lastToolCall().outputSummary())
+                .contains("sensitive path .github/workflows/deploy.yml");
     }
 
     @Test
@@ -309,7 +388,7 @@ class WorkspaceFixTaskExecutorTests {
         RecordingVerificationRunner verificationRunner = new RecordingVerificationRunner(0, "tests passed");
         RecordingFixTaskTestRunService testRunService = new RecordingFixTaskTestRunService();
         RecordingFixTaskToolCallService toolCallService = new RecordingFixTaskToolCallService();
-        StageCancellingChecker cancellationChecker = new StageCancellingChecker(6);
+        StageCancellingChecker cancellationChecker = new StageCancellingChecker(7);
         FixTaskExecutor executor = new NoopFixTaskExecutor(
                 workspaceService,
                 verificationRunner,
@@ -344,7 +423,7 @@ class WorkspaceFixTaskExecutorTests {
         RecordingVerificationRunner verificationRunner = new RecordingVerificationRunner(130, "verification command interrupted");
         RecordingFixTaskTestRunService testRunService = new RecordingFixTaskTestRunService();
         RecordingFixTaskToolCallService toolCallService = new RecordingFixTaskToolCallService();
-        StageCancellingChecker cancellationChecker = new StageCancellingChecker(6);
+        StageCancellingChecker cancellationChecker = new StageCancellingChecker(7);
         FixTaskExecutor executor = new NoopFixTaskExecutor(
                 workspaceService,
                 verificationRunner,
@@ -378,7 +457,7 @@ class WorkspaceFixTaskExecutorTests {
         RecordingVerificationRunner verificationRunner = new RecordingVerificationRunner(0, "tests passed");
         RecordingFixTaskTestRunService testRunService = new RecordingFixTaskTestRunService();
         RecordingFixTaskToolCallService toolCallService = new RecordingFixTaskToolCallService();
-        StageCancellingChecker cancellationChecker = new StageCancellingChecker(7);
+        StageCancellingChecker cancellationChecker = new StageCancellingChecker(8);
         FixTaskExecutor executor = new NoopFixTaskExecutor(
                 workspaceService,
                 verificationRunner,
@@ -410,7 +489,7 @@ class WorkspaceFixTaskExecutorTests {
         RecordingVerificationRunner verificationRunner = new RecordingVerificationRunner(0, "tests passed");
         RecordingFixTaskTestRunService testRunService = new RecordingFixTaskTestRunService();
         RecordingFixTaskToolCallService toolCallService = new RecordingFixTaskToolCallService();
-        StageCancellingChecker cancellationChecker = new StageCancellingChecker(8);
+        StageCancellingChecker cancellationChecker = new StageCancellingChecker(9);
         FixTaskExecutor executor = new NoopFixTaskExecutor(
                 workspaceService,
                 verificationRunner,
@@ -724,20 +803,27 @@ class WorkspaceFixTaskExecutorTests {
         private Path repositoryDir;
         private int callOrder;
 
+        private final String diff;
+
         private RecordingDiffTool() {
+            this("diff");
+        }
+
+        private RecordingDiffTool(String diff) {
             super(new GitCommandRunner() {
                 @Override
                 public GitCommandResult diff(Path repositoryDir) {
                     return new GitCommandResult(0, "diff");
                 }
             });
+            this.diff = diff;
         }
 
         @Override
         public String diff(Path repositoryDir) {
             this.repositoryDir = repositoryDir;
             this.callOrder = CallOrder.next();
-            return "diff";
+            return diff;
         }
 
         private Path repositoryDir() {
