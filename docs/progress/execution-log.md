@@ -2152,3 +2152,22 @@ Validation:
 - `bash scripts/adapter-smoke.sh --backend`: passed and ran the wider adapter and command-guard smoke, 39 tests run, 0 failures.
 - `mvn -pl PatchPilot test`: passed after full backend verification, 380 tests run, 0 failures.
 - `git diff --check`: passed after whitespace and conflict-marker verification.
+
+Implemented supported adapters API and dashboard panel from `docs/plans/105-supported-adapters-dashboard.md`.
+
+Changes:
+
+- Added `GET /api/language-adapters` with a read-only catalog for Java/Maven, Java/Gradle, Node/npm, Node/pnpm, Node/yarn, Python/pytest, Python/Poetry, and Python/uv.
+- Returned each adapter's language, build system, fixed verification command, detection signals, demo fixture path, and `SUPPORTED` status.
+- Added a dashboard `SupportedAdaptersPanel` backed by the new API.
+- Kept adapter API failures local to the supported-adapters panel so task, queue, configuration, and health data can still load.
+- Updated README, frontend design notes, and this execution log.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=LanguageAdapterCatalogServiceTests,LanguageAdapterControllerTests test`: first failed because the catalog service, controller, and VO did not exist; then passed after adding the backend API, 2 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts src/dashboard/components/SupportedAdaptersPanel.test.tsx src/App.test.tsx`: first failed because the API helper and component did not exist; then failed because the panel error used the same status role as the global refresh indicator; then passed after adding the API helper, panel, App integration, and isolated panel error state, 57 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed after full backend verification, 382 tests run, 0 failures.
+- `npm test`: passed after full frontend verification, 76 tests run, 0 failures.
+- `npm run build`: passed after fixing the supported-adapter test fixture type for the `SUPPORTED` literal status.
+- `git diff --check`: passed after whitespace and conflict-marker verification.

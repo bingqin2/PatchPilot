@@ -5,6 +5,7 @@ import {
   getFailureCauseSummary,
   getLatencySummary,
   getModelUsageSummary,
+  listLanguageAdapters,
   getTaskReport,
   getTaskDetail,
   getTaskStatusCounts,
@@ -338,6 +339,42 @@ test('loads backend health status from health endpoint', async () => {
     service: 'patchpilot-backend',
     timestamp: '2026-06-21T01:00:00Z'
   });
+});
+
+test('loads supported language adapters from backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: [
+        {
+          language: 'java',
+          buildSystem: 'maven',
+          verificationCommand: ['mvn', 'test'],
+          detectionSignals: ['pom.xml', 'mvnw'],
+          demoFixturePath: 'docs/demo-repositories/java-maven',
+          status: 'SUPPORTED'
+        }
+      ],
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const adapters = await listLanguageAdapters();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/language-adapters');
+  expect(adapters).toEqual([
+    {
+      language: 'java',
+      buildSystem: 'maven',
+      verificationCommand: ['mvn', 'test'],
+      detectionSignals: ['pom.xml', 'mvnw'],
+      demoFixturePath: 'docs/demo-repositories/java-maven',
+      status: 'SUPPORTED'
+    }
+  ]);
 });
 
 test('loads aggregate task detail from backend API', async () => {
