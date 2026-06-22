@@ -18,9 +18,9 @@ PatchPilot should not pretend to solve every repository through one generic work
 - How test results are summarized.
 - Which failure states mean the repository is unsupported.
 
-The first stable adapters are Java/Maven and Java/Gradle. Follow-up adapters should prioritize common interview- and demo-friendly stacks:
+The first stable adapters are Java/Maven, Java/Gradle, and Node/npm. Follow-up adapters should prioritize common interview- and demo-friendly stacks:
 
-- Node.js with npm, pnpm, or yarn.
+- Node.js with pnpm or yarn.
 - Python with pytest.
 
 Adding a new language is only complete when PatchPilot can detect the repository, generate a focused patch, run the adapter's allowed tests, record the evidence, and create a reviewable Pull Request.

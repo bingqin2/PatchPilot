@@ -17,4 +17,11 @@ class MavenRuntimePackagingTests {
         assertThat(dockerfile).contains("FROM maven:3.9-eclipse-temurin-17\n\nWORKDIR /app");
         assertThat(dockerfile).doesNotContain("git ca-certificates maven");
     }
+
+    @Test
+    void should_install_nodejs_and_npm_for_node_adapter_verification() throws Exception {
+        String dockerfile = Files.readString(Path.of("Dockerfile"));
+
+        assertThat(dockerfile).contains("apt-get install -y --no-install-recommends git ca-certificates nodejs npm");
+    }
 }

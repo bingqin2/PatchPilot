@@ -5,6 +5,7 @@ import io.patchpilot.backend.agent.workflow.PlanDrivenPatchWorkflow;
 import io.patchpilot.backend.language.LanguageAdapter;
 import io.patchpilot.backend.language.impl.JavaGradleLanguageAdapter;
 import io.patchpilot.backend.language.impl.JavaMavenLanguageAdapter;
+import io.patchpilot.backend.language.impl.NodeNpmLanguageAdapter;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
@@ -42,6 +43,7 @@ class PatchPilotApplicationTests {
 
         assertThat(adapters.values())
                 .hasAtLeastOneElementOfType(JavaMavenLanguageAdapter.class)
-                .hasAtLeastOneElementOfType(JavaGradleLanguageAdapter.class);
+                .hasAtLeastOneElementOfType(JavaGradleLanguageAdapter.class)
+                .hasAtLeastOneElementOfType(NodeNpmLanguageAdapter.class);
     }
 }

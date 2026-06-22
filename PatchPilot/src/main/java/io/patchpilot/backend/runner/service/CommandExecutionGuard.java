@@ -36,7 +36,8 @@ public class CommandExecutionGuard {
         if (command.equals(List.of("./mvnw", "test"))
                 || command.equals(List.of("mvn", "test"))
                 || command.equals(List.of("./gradlew", "test"))
-                || command.equals(List.of("gradle", "test"))) {
+                || command.equals(List.of("gradle", "test"))
+                || command.equals(List.of("npm", "test"))) {
             return true;
         }
         if (command.size() < 2 || !"git".equals(command.get(0))) {

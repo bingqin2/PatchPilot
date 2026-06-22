@@ -13,7 +13,7 @@ FROM maven:3.9-eclipse-temurin-17
 WORKDIR /app
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends git ca-certificates \
+    && apt-get install -y --no-install-recommends git ca-certificates nodejs npm \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=build /workspace/PatchPilot/target/patchpilot-backend-*.jar /app/patchpilot-backend.jar

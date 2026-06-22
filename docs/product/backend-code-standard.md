@@ -238,6 +238,7 @@ MVP allowed commands:
 mvn test
 ./gradlew test
 gradle test
+npm test
 git status
 git diff
 git checkout -b <branch>

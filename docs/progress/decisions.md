@@ -81,3 +81,11 @@ Decision: Add Java/Gradle as the second supported repository adapter after Java/
 Reason: Gradle support moves PatchPilot toward multi-build-system Java coverage while keeping execution behind explicit language adapters and fixed verification command allowlists.
 
 Impact: Java repositories using `gradlew`, `build.gradle`, or `build.gradle.kts` can pass repository preflight and run `./gradlew test` or `gradle test`. Node.js and Python remain future adapter work.
+
+## 2026-06-22
+
+Decision: Add Node/npm as the first supported JavaScript repository adapter.
+
+Reason: npm is the simplest controlled Node.js path and moves PatchPilot toward multi-language support without allowing arbitrary package-manager commands.
+
+Impact: Node.js repositories with `package.json` and a non-empty `scripts.test` can pass repository preflight and run `npm test`. pnpm, yarn, and Python remain future adapter work.
