@@ -256,7 +256,10 @@ public class InMemoryFixTaskService implements FixTaskService {
                 task.triggerComment(),
                 task.deliveryId(),
                 task.failureReason() == null ? "" : task.failureReason(),
-                task.pullRequestUrl() == null ? "" : task.pullRequestUrl()
+                task.pullRequestUrl() == null ? "" : task.pullRequestUrl(),
+                task.language() == null ? "" : task.language(),
+                task.buildSystem() == null ? "" : task.buildSystem(),
+                task.verificationCommand() == null ? "" : task.verificationCommand()
         ).toLowerCase();
         return searchable.contains(normalizedQuery);
     }
@@ -266,6 +269,8 @@ public class InMemoryFixTaskService implements FixTaskService {
                 .filter(task -> query.status() == null || task.status() == query.status())
                 .filter(task -> query.repositoryOwner() == null || task.repositoryOwner().equals(query.repositoryOwner()))
                 .filter(task -> query.repositoryName() == null || task.repositoryName().equals(query.repositoryName()))
+                .filter(task -> query.language() == null || query.language().equals(task.language()))
+                .filter(task -> query.buildSystem() == null || query.buildSystem().equals(task.buildSystem()))
                 .filter(task -> query.createdAfter() == null || !task.createdAt().isBefore(query.createdAfter()))
                 .filter(task -> query.createdBefore() == null || !task.createdAt().isAfter(query.createdBefore()))
                 .filter(task -> matchesQuery(task, query.query()));

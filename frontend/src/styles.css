@@ -472,9 +472,11 @@ h3 {
   border-bottom: 1px solid #edf1f5;
   display: grid;
   grid-template-columns:
-    minmax(160px, 1.25fr)
-    minmax(115px, 0.8fr)
-    minmax(115px, 0.8fr)
+    minmax(170px, 1.35fr)
+    minmax(115px, 0.85fr)
+    minmax(115px, 0.85fr)
+    minmax(95px, 0.7fr)
+    minmax(105px, 0.75fr)
     minmax(145px, 1fr)
     minmax(145px, 1fr)
     minmax(135px, auto)
@@ -494,7 +496,7 @@ h3 {
 }
 
 .task-sort-label {
-  grid-column: 6 / 7;
+  grid-column: 8 / 9;
 }
 
 .task-repository-owner-label {
@@ -506,10 +508,18 @@ h3 {
 }
 
 .task-created-after-label {
-  grid-column: 4 / 5;
+  grid-column: 6 / 7;
 }
 
 .task-created-before-label {
+  grid-column: 7 / 8;
+}
+
+.task-language-label {
+  grid-column: 4 / 5;
+}
+
+.task-build-system-label {
   grid-column: 5 / 6;
 }
 
@@ -537,10 +547,18 @@ h3 {
 }
 
 .task-created-after-input {
-  grid-column: 4 / 5;
+  grid-column: 6 / 7;
 }
 
 .task-created-before-input {
+  grid-column: 7 / 8;
+}
+
+.task-language-input {
+  grid-column: 4 / 5;
+}
+
+.task-build-system-input {
   grid-column: 5 / 6;
 }
 
@@ -555,7 +573,7 @@ h3 {
 }
 
 .task-sort-select {
-  grid-column: 6 / 7;
+  grid-column: 8 / 9;
 }
 
 .task-search input:focus,
@@ -566,7 +584,7 @@ h3 {
 
 .task-clear-filters-button {
   align-self: end;
-  grid-column: 7 / 8;
+  grid-column: 9 / 10;
   justify-self: start;
 }
 

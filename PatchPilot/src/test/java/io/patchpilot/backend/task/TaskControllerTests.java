@@ -371,6 +371,47 @@ class TaskControllerTests {
     }
 
     @Test
+    void should_filter_tasks_and_status_counts_by_adapter_metadata() throws Exception {
+        FixTaskVo mavenTask = createTask(command(
+                "adapter-owner",
+                "adapter-repo",
+                "delivery-adapter-maven"
+        ));
+        FixTaskVo npmTask = createTask(command(
+                "adapter-owner",
+                "adapter-repo",
+                "delivery-adapter-npm"
+        ));
+        fixTaskService.recordAdapterMetadata(mavenTask.id(), "java", "maven", "./mvnw test");
+        fixTaskService.recordAdapterMetadata(npmTask.id(), "node", "npm", "npm test");
+        fixTaskService.markFailed(npmTask.id(), "npm test failed");
+
+        mockMvc.perform(get("/api/tasks")
+                        .param("repositoryOwner", "adapter-owner")
+                        .param("repositoryName", "adapter-repo")
+                        .param("language", "node")
+                        .param("buildSystem", "npm"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.items.length()").value(1))
+                .andExpect(jsonPath("$.data.items[0].id").value(npmTask.id()))
+                .andExpect(jsonPath("$.data.items[0].language").value("node"))
+                .andExpect(jsonPath("$.data.items[0].buildSystem").value("npm"))
+                .andExpect(jsonPath("$.data.total").value(1));
+
+        mockMvc.perform(get("/api/tasks/status-counts")
+                        .param("repositoryOwner", "adapter-owner")
+                        .param("repositoryName", "adapter-repo")
+                        .param("language", "node")
+                        .param("buildSystem", "npm"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.totalCount").value(1))
+                .andExpect(jsonPath("$.data.failedCount").value(1))
+                .andExpect(jsonPath("$.data.pendingCount").value(0));
+    }
+
+    @Test
     void should_return_bad_request_for_invalid_status_count_created_time_filter() throws Exception {
         mockMvc.perform(get("/api/tasks/status-counts").param("createdBefore", "not-an-instant"))
                 .andExpect(status().isBadRequest())
@@ -1004,6 +1045,41 @@ class TaskControllerTests {
                 .andExpect(jsonPath("$.data.passedTestRunCount").value(greaterThanOrEqualTo(1)))
                 .andExpect(jsonPath("$.data.failedTestRunCount").value(greaterThanOrEqualTo(1)))
                 .andExpect(jsonPath("$.data.testPassRate").value(greaterThanOrEqualTo(0.0)));
+    }
+
+    @Test
+    void should_get_task_metrics_summary_for_adapter_scope() throws Exception {
+        FixTaskVo mavenTask = createTask("delivery-metrics-adapter-maven");
+        FixTaskVo npmTask = createTask("delivery-metrics-adapter-npm");
+        fixTaskService.recordAdapterMetadata(mavenTask.id(), "java", "maven", "./mvnw test");
+        fixTaskService.recordAdapterMetadata(npmTask.id(), "node", "npm", "npm test");
+        fixTaskService.markCompleted(mavenTask.id(), "https://github.com/octocat/hello-world/pull/7");
+        fixTaskService.markFailed(npmTask.id(), "npm failed");
+        fixTaskModelCallService.recordModelCall(
+                npmTask.id(),
+                "openai",
+                "gpt-5.5",
+                "Fix issue",
+                "Changed package",
+                30,
+                20,
+                true,
+                null,
+                Instant.parse("2026-06-20T02:00:00Z"),
+                Instant.parse("2026-06-20T02:00:04Z")
+        );
+
+        mockMvc.perform(get("/api/tasks/metrics/summary")
+                        .param("repositoryOwner", "octocat")
+                        .param("repositoryName", "hello-world")
+                        .param("language", "node")
+                        .param("buildSystem", "npm"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.totalCount").value(1))
+                .andExpect(jsonPath("$.data.completedCount").value(0))
+                .andExpect(jsonPath("$.data.failedCount").value(1))
+                .andExpect(jsonPath("$.data.totalModelTokens").value(50));
     }
 
     @Test

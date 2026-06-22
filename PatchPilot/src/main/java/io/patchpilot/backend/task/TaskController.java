@@ -82,6 +82,8 @@ public class TaskController {
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String repositoryOwner,
             @RequestParam(required = false) String repositoryName,
+            @RequestParam(required = false) String language,
+            @RequestParam(required = false) String buildSystem,
             @RequestParam(required = false) String createdAfter,
             @RequestParam(required = false) String createdBefore,
             @RequestParam(required = false) Integer limit,
@@ -94,6 +96,8 @@ public class TaskController {
                     status,
                     repositoryOwner,
                     repositoryName,
+                    language,
+                    buildSystem,
                     createdAfter,
                     createdBefore,
                     limit,
@@ -110,6 +114,8 @@ public class TaskController {
             @RequestParam(required = false) String query,
             @RequestParam(required = false) String repositoryOwner,
             @RequestParam(required = false) String repositoryName,
+            @RequestParam(required = false) String language,
+            @RequestParam(required = false) String buildSystem,
             @RequestParam(required = false) String createdAfter,
             @RequestParam(required = false) String createdBefore
     ) {
@@ -118,6 +124,8 @@ public class TaskController {
                     query,
                     repositoryOwner,
                     repositoryName,
+                    language,
+                    buildSystem,
                     createdAfter,
                     createdBefore
             )));
@@ -127,23 +135,79 @@ public class TaskController {
     }
 
     @GetMapping("/metrics/summary")
-    public ApiResponse<FixTaskMetricsSummaryVo> getTaskMetricsSummary() {
-        return ApiResponse.ok(fixTaskMetricsService.summary());
+    public ResponseEntity<ApiResponse<FixTaskMetricsSummaryVo>> getTaskMetricsSummary(
+            @RequestParam(required = false) String query,
+            @RequestParam(required = false) String repositoryOwner,
+            @RequestParam(required = false) String repositoryName,
+            @RequestParam(required = false) String language,
+            @RequestParam(required = false) String buildSystem,
+            @RequestParam(required = false) String createdAfter,
+            @RequestParam(required = false) String createdBefore
+    ) {
+        try {
+            return ResponseEntity.ok(ApiResponse.ok(fixTaskMetricsService.summary(metricsQuery(
+                    query, repositoryOwner, repositoryName, language, buildSystem, createdAfter, createdBefore
+            ))));
+        } catch (IllegalArgumentException exception) {
+            return ResponseEntity.badRequest().body(ApiResponse.fail(exception.getMessage()));
+        }
     }
 
     @GetMapping("/metrics/failure-causes")
-    public ApiResponse<List<FixTaskFailureCauseSummaryVo>> getTaskFailureCauseSummary() {
-        return ApiResponse.ok(fixTaskMetricsService.failureCauses());
+    public ResponseEntity<ApiResponse<List<FixTaskFailureCauseSummaryVo>>> getTaskFailureCauseSummary(
+            @RequestParam(required = false) String query,
+            @RequestParam(required = false) String repositoryOwner,
+            @RequestParam(required = false) String repositoryName,
+            @RequestParam(required = false) String language,
+            @RequestParam(required = false) String buildSystem,
+            @RequestParam(required = false) String createdAfter,
+            @RequestParam(required = false) String createdBefore
+    ) {
+        try {
+            return ResponseEntity.ok(ApiResponse.ok(fixTaskMetricsService.failureCauses(metricsQuery(
+                    query, repositoryOwner, repositoryName, language, buildSystem, createdAfter, createdBefore
+            ))));
+        } catch (IllegalArgumentException exception) {
+            return ResponseEntity.badRequest().body(ApiResponse.fail(exception.getMessage()));
+        }
     }
 
     @GetMapping("/metrics/model-usage")
-    public ApiResponse<FixTaskModelUsageSummaryVo> getTaskModelUsageSummary() {
-        return ApiResponse.ok(fixTaskMetricsService.modelUsage());
+    public ResponseEntity<ApiResponse<FixTaskModelUsageSummaryVo>> getTaskModelUsageSummary(
+            @RequestParam(required = false) String query,
+            @RequestParam(required = false) String repositoryOwner,
+            @RequestParam(required = false) String repositoryName,
+            @RequestParam(required = false) String language,
+            @RequestParam(required = false) String buildSystem,
+            @RequestParam(required = false) String createdAfter,
+            @RequestParam(required = false) String createdBefore
+    ) {
+        try {
+            return ResponseEntity.ok(ApiResponse.ok(fixTaskMetricsService.modelUsage(metricsQuery(
+                    query, repositoryOwner, repositoryName, language, buildSystem, createdAfter, createdBefore
+            ))));
+        } catch (IllegalArgumentException exception) {
+            return ResponseEntity.badRequest().body(ApiResponse.fail(exception.getMessage()));
+        }
     }
 
     @GetMapping("/metrics/latency")
-    public ApiResponse<FixTaskLatencySummaryVo> getTaskLatencySummary() {
-        return ApiResponse.ok(fixTaskMetricsService.latency());
+    public ResponseEntity<ApiResponse<FixTaskLatencySummaryVo>> getTaskLatencySummary(
+            @RequestParam(required = false) String query,
+            @RequestParam(required = false) String repositoryOwner,
+            @RequestParam(required = false) String repositoryName,
+            @RequestParam(required = false) String language,
+            @RequestParam(required = false) String buildSystem,
+            @RequestParam(required = false) String createdAfter,
+            @RequestParam(required = false) String createdBefore
+    ) {
+        try {
+            return ResponseEntity.ok(ApiResponse.ok(fixTaskMetricsService.latency(metricsQuery(
+                    query, repositoryOwner, repositoryName, language, buildSystem, createdAfter, createdBefore
+            ))));
+        } catch (IllegalArgumentException exception) {
+            return ResponseEntity.badRequest().body(ApiResponse.fail(exception.getMessage()));
+        }
     }
 
     @GetMapping("/{id}")
@@ -233,6 +297,8 @@ public class TaskController {
             String status,
             String repositoryOwner,
             String repositoryName,
+            String language,
+            String buildSystem,
             String createdAfter,
             String createdBefore,
             Integer limit,
@@ -246,6 +312,8 @@ public class TaskController {
         String parsedQuery = blankToNull(query);
         String parsedRepositoryOwner = blankToNull(repositoryOwner);
         String parsedRepositoryName = blankToNull(repositoryName);
+        String parsedLanguage = blankToNull(language);
+        String parsedBuildSystem = blankToNull(buildSystem);
         Instant parsedCreatedAfter = parseInstant(createdAfter, "createdAfter");
         Instant parsedCreatedBefore = parseInstant(createdBefore, "createdBefore");
         FixTaskListQuery pageQuery = taskListQuery(
@@ -253,6 +321,8 @@ public class TaskController {
                 parsedStatus,
                 parsedRepositoryOwner,
                 parsedRepositoryName,
+                parsedLanguage,
+                parsedBuildSystem,
                 parsedCreatedAfter,
                 parsedCreatedBefore,
                 parsedLimit + 1,
@@ -264,6 +334,8 @@ public class TaskController {
                 parsedStatus,
                 parsedRepositoryOwner,
                 parsedRepositoryName,
+                parsedLanguage,
+                parsedBuildSystem,
                 parsedCreatedAfter,
                 parsedCreatedBefore,
                 Integer.MAX_VALUE,
@@ -281,22 +353,26 @@ public class TaskController {
             String query,
             String repositoryOwner,
             String repositoryName,
+            String language,
+            String buildSystem,
             String createdAfter,
             String createdBefore
     ) {
         String parsedQuery = blankToNull(query);
         String parsedRepositoryOwner = blankToNull(repositoryOwner);
         String parsedRepositoryName = blankToNull(repositoryName);
+        String parsedLanguage = blankToNull(language);
+        String parsedBuildSystem = blankToNull(buildSystem);
         Instant parsedCreatedAfter = parseInstant(createdAfter, "createdAfter");
         Instant parsedCreatedBefore = parseInstant(createdBefore, "createdBefore");
         return new FixTaskStatusCountsVo(
-                countTasksWithStatus(parsedQuery, null, parsedRepositoryOwner, parsedRepositoryName, parsedCreatedAfter, parsedCreatedBefore),
-                countTasksWithStatus(parsedQuery, FixTaskStatus.PENDING, parsedRepositoryOwner, parsedRepositoryName, parsedCreatedAfter, parsedCreatedBefore),
-                countTasksWithStatus(parsedQuery, FixTaskStatus.RUNNING, parsedRepositoryOwner, parsedRepositoryName, parsedCreatedAfter, parsedCreatedBefore),
-                countTasksWithStatus(parsedQuery, FixTaskStatus.RUNNING_TESTS, parsedRepositoryOwner, parsedRepositoryName, parsedCreatedAfter, parsedCreatedBefore),
-                countTasksWithStatus(parsedQuery, FixTaskStatus.COMPLETED, parsedRepositoryOwner, parsedRepositoryName, parsedCreatedAfter, parsedCreatedBefore),
-                countTasksWithStatus(parsedQuery, FixTaskStatus.FAILED, parsedRepositoryOwner, parsedRepositoryName, parsedCreatedAfter, parsedCreatedBefore),
-                countTasksWithStatus(parsedQuery, FixTaskStatus.CANCELLED, parsedRepositoryOwner, parsedRepositoryName, parsedCreatedAfter, parsedCreatedBefore)
+                countTasksWithStatus(parsedQuery, null, parsedRepositoryOwner, parsedRepositoryName, parsedLanguage, parsedBuildSystem, parsedCreatedAfter, parsedCreatedBefore),
+                countTasksWithStatus(parsedQuery, FixTaskStatus.PENDING, parsedRepositoryOwner, parsedRepositoryName, parsedLanguage, parsedBuildSystem, parsedCreatedAfter, parsedCreatedBefore),
+                countTasksWithStatus(parsedQuery, FixTaskStatus.RUNNING, parsedRepositoryOwner, parsedRepositoryName, parsedLanguage, parsedBuildSystem, parsedCreatedAfter, parsedCreatedBefore),
+                countTasksWithStatus(parsedQuery, FixTaskStatus.RUNNING_TESTS, parsedRepositoryOwner, parsedRepositoryName, parsedLanguage, parsedBuildSystem, parsedCreatedAfter, parsedCreatedBefore),
+                countTasksWithStatus(parsedQuery, FixTaskStatus.COMPLETED, parsedRepositoryOwner, parsedRepositoryName, parsedLanguage, parsedBuildSystem, parsedCreatedAfter, parsedCreatedBefore),
+                countTasksWithStatus(parsedQuery, FixTaskStatus.FAILED, parsedRepositoryOwner, parsedRepositoryName, parsedLanguage, parsedBuildSystem, parsedCreatedAfter, parsedCreatedBefore),
+                countTasksWithStatus(parsedQuery, FixTaskStatus.CANCELLED, parsedRepositoryOwner, parsedRepositoryName, parsedLanguage, parsedBuildSystem, parsedCreatedAfter, parsedCreatedBefore)
         );
     }
 
@@ -305,6 +381,8 @@ public class TaskController {
             FixTaskStatus status,
             String repositoryOwner,
             String repositoryName,
+            String language,
+            String buildSystem,
             Instant createdAfter,
             Instant createdBefore
     ) {
@@ -313,6 +391,8 @@ public class TaskController {
                 status,
                 repositoryOwner,
                 repositoryName,
+                language,
+                buildSystem,
                 createdAfter,
                 createdBefore,
                 Integer.MAX_VALUE,
@@ -321,11 +401,37 @@ public class TaskController {
         ));
     }
 
+    private static FixTaskListQuery metricsQuery(
+            String query,
+            String repositoryOwner,
+            String repositoryName,
+            String language,
+            String buildSystem,
+            String createdAfter,
+            String createdBefore
+    ) {
+        return taskListQuery(
+                blankToNull(query),
+                null,
+                blankToNull(repositoryOwner),
+                blankToNull(repositoryName),
+                blankToNull(language),
+                blankToNull(buildSystem),
+                parseInstant(createdAfter, "createdAfter"),
+                parseInstant(createdBefore, "createdBefore"),
+                Integer.MAX_VALUE,
+                0,
+                FixTaskSort.CREATED_AT_DESC
+        );
+    }
+
     private static FixTaskListQuery taskListQuery(
             String query,
             FixTaskStatus status,
             String repositoryOwner,
             String repositoryName,
+            String language,
+            String buildSystem,
             Instant createdAfter,
             Instant createdBefore,
             int limit,
@@ -337,6 +443,8 @@ public class TaskController {
                 status,
                 repositoryOwner,
                 repositoryName,
+                language,
+                buildSystem,
                 createdAfter,
                 createdBefore,
                 limit,

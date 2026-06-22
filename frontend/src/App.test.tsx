@@ -374,6 +374,12 @@ beforeEach(() => {
     ) {
       return jsonResponse(narrowedStatusCounts);
     }
+    if (url.startsWith('/api/tasks/status-counts?')) {
+      const searchParams = new URLSearchParams(url.slice('/api/tasks/status-counts?'.length));
+      if (searchParams.has('language') || searchParams.has('buildSystem')) {
+        return jsonResponse(narrowedStatusCounts);
+      }
+    }
     if (url === '/api/tasks?limit=50') {
       return jsonResponse(taskPage(manualTaskCreated ? [manuallyCreatedTask, completedTask, failedTask] : [completedTask, failedTask]));
     }
@@ -403,6 +409,8 @@ beforeEach(() => {
       if (
         searchParams.has('repositoryOwner') ||
         searchParams.has('repositoryName') ||
+        searchParams.has('language') ||
+        searchParams.has('buildSystem') ||
         searchParams.has('createdAfter') ||
         searchParams.has('createdBefore')
       ) {
@@ -414,7 +422,7 @@ beforeEach(() => {
       manualTaskCreated = true;
       return jsonResponse(manuallyCreatedTask, true, null, 201);
     }
-    if (url === '/api/tasks/metrics/summary') {
+    if (url === '/api/tasks/metrics/summary' || url.startsWith('/api/tasks/metrics/summary?')) {
       return jsonResponse({
         totalCount: 2,
         pendingCount: 0,
@@ -434,16 +442,16 @@ beforeEach(() => {
         testPassRate: 1
       });
     }
-    if (url === '/api/tasks/metrics/failure-causes') {
+    if (url === '/api/tasks/metrics/failure-causes' || url.startsWith('/api/tasks/metrics/failure-causes?')) {
       return jsonResponse([
         { cause: 'MAVEN_TESTS', count: 1 },
         { cause: 'GITHUB_AUTH', count: 1 }
       ]);
     }
-    if (url === '/api/tasks/metrics/model-usage') {
+    if (url === '/api/tasks/metrics/model-usage' || url.startsWith('/api/tasks/metrics/model-usage?')) {
       return jsonResponse(modelUsageSummary);
     }
-    if (url === '/api/tasks/metrics/latency') {
+    if (url === '/api/tasks/metrics/latency' || url.startsWith('/api/tasks/metrics/latency?')) {
       return jsonResponse(latencySummary);
     }
     if (url === '/api/configuration/summary') {
@@ -751,7 +759,7 @@ test('shows manual task creation failures without clearing the form', async () =
     if (url === '/api/tasks?limit=50') {
       return jsonResponse(taskPage([completedTask, failedTask]));
     }
-    if (url === '/api/tasks/metrics/summary') {
+    if (url === '/api/tasks/metrics/summary' || url.startsWith('/api/tasks/metrics/summary?')) {
       return jsonResponse({
         totalCount: 2,
         pendingCount: 0,
@@ -771,13 +779,13 @@ test('shows manual task creation failures without clearing the form', async () =
         testPassRate: 1
       });
     }
-    if (url === '/api/tasks/metrics/failure-causes') {
+    if (url === '/api/tasks/metrics/failure-causes' || url.startsWith('/api/tasks/metrics/failure-causes?')) {
       return jsonResponse([]);
     }
-    if (url === '/api/tasks/metrics/model-usage') {
+    if (url === '/api/tasks/metrics/model-usage' || url.startsWith('/api/tasks/metrics/model-usage?')) {
       return jsonResponse(modelUsageSummary);
     }
-    if (url === '/api/tasks/metrics/latency') {
+    if (url === '/api/tasks/metrics/latency' || url.startsWith('/api/tasks/metrics/latency?')) {
       return jsonResponse(latencySummary);
     }
     if (url === '/api/configuration/summary') {
@@ -861,6 +869,20 @@ test('restores repository filter URL state on initial dashboard load', async () 
   );
 });
 
+test('restores adapter filter URL state on initial dashboard load', async () => {
+  const fetchMock = vi.mocked(fetch);
+  window.history.replaceState(null, '', '/?language=node&buildSystem=npm');
+
+  render(<App />);
+
+  expect(await screen.findByText('/agent fix replace docs/demo.md broken')).toBeInTheDocument();
+  expect(screen.getByRole('textbox', { name: 'Filter language' })).toHaveValue('node');
+  expect(screen.getByRole('textbox', { name: 'Filter build system' })).toHaveValue('npm');
+  await waitFor(() =>
+    expect(fetchMock).toHaveBeenCalledWith('/api/tasks?limit=50&language=node&buildSystem=npm')
+  );
+});
+
 test('restores created time filter URL state on initial dashboard load', async () => {
   const fetchMock = vi.mocked(fetch);
   window.history.replaceState(null, '', '/?createdAfter=2026-06-20T01:00:00Z&createdBefore=2026-06-21T01:00:00Z');
@@ -914,6 +936,28 @@ test('loads status filter counts for the current search repository and time scop
   );
 });
 
+test('loads status filter counts for the current adapter scope without status', async () => {
+  const user = userEvent.setup();
+  const fetchMock = vi.mocked(fetch);
+  window.history.replaceState(null, '', '/tasks/task-1?status=FAILED&query=broken#timeline');
+
+  render(<App />);
+
+  await user.type(await screen.findByRole('textbox', { name: 'Filter language' }), 'node');
+  await user.type(screen.getByRole('textbox', { name: 'Filter build system' }), 'npm');
+
+  expect(within(await screen.findByRole('button', { name: 'ALL' })).getByText('1')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'FAILED' })).toHaveAttribute('aria-pressed', 'true');
+  await waitFor(() =>
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/tasks/status-counts?query=broken&language=node&buildSystem=npm'
+    )
+  );
+  expect(fetchMock).not.toHaveBeenCalledWith(
+    '/api/tasks/status-counts?query=broken&language=node&buildSystem=npm&status=FAILED'
+  );
+});
+
 test('restores task detail route with filter URL state', async () => {
   const fetchMock = vi.mocked(fetch);
   window.history.replaceState(null, '', '/tasks/task-2?status=FAILED&query=broken');
@@ -957,6 +1001,28 @@ test('syncs repository filter changes into the URL and backend request', async (
   await waitFor(() =>
     expect(fetchMock).toHaveBeenCalledWith(
       '/api/tasks?limit=50&query=broken&repositoryOwner=bingqin2&repositoryName=PatchPilot&sort=createdAtAsc&status=FAILED'
+    )
+  );
+});
+
+test('syncs adapter filter changes into the URL and backend request', async () => {
+  const user = userEvent.setup();
+  const fetchMock = vi.mocked(fetch);
+  window.history.replaceState(null, '', '/tasks/task-1?status=FAILED&query=broken&sort=createdAtAsc#timeline');
+
+  render(<App />);
+
+  await user.type(await screen.findByRole('textbox', { name: 'Filter language' }), 'node');
+  await user.type(screen.getByRole('textbox', { name: 'Filter build system' }), 'npm');
+
+  expect(window.location.pathname).toBe('/tasks/task-1');
+  expect(window.location.search).toBe(
+    '?status=FAILED&query=broken&sort=createdAtAsc&language=node&buildSystem=npm'
+  );
+  expect(window.location.hash).toBe('#timeline');
+  await waitFor(() =>
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/tasks?limit=50&query=broken&language=node&buildSystem=npm&sort=createdAtAsc&status=FAILED'
     )
   );
 });
@@ -1113,6 +1179,26 @@ test('clear filters resets repository filters and preserves active sort state', 
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks?limit=50&sort=createdAtAsc'));
 });
 
+test('clear filters resets adapter filters and preserves active sort state', async () => {
+  const user = userEvent.setup();
+  const fetchMock = vi.mocked(fetch);
+  window.history.replaceState(
+    null,
+    '',
+    '/tasks/task-2?status=FAILED&query=broken&sort=createdAtAsc&language=node&buildSystem=npm'
+  );
+
+  render(<App />);
+
+  await user.click(await screen.findByRole('button', { name: 'Clear filters' }));
+
+  expect(screen.getByRole('textbox', { name: 'Filter language' })).toHaveValue('');
+  expect(screen.getByRole('textbox', { name: 'Filter build system' })).toHaveValue('');
+  expect(screen.getByRole('combobox', { name: 'Sort tasks' })).toHaveValue('createdAtAsc');
+  expect(window.location.search).toBe('?sort=createdAtAsc');
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks?limit=50&sort=createdAtAsc'));
+});
+
 test('clear filters resets created time filters and preserves active sort state', async () => {
   const user = userEvent.setup();
   const fetchMock = vi.mocked(fetch);
@@ -1209,7 +1295,7 @@ test('shows dashboard refresh progress while top-level data is loading', async (
         cancelledCount: 0
       });
     }
-    if (url === '/api/tasks/metrics/summary') {
+    if (url === '/api/tasks/metrics/summary' || url.startsWith('/api/tasks/metrics/summary?')) {
       return jsonResponse({
         totalCount: 0,
         pendingCount: 0,
@@ -1229,13 +1315,13 @@ test('shows dashboard refresh progress while top-level data is loading', async (
         testPassRate: 0
       });
     }
-    if (url === '/api/tasks/metrics/failure-causes') {
+    if (url === '/api/tasks/metrics/failure-causes' || url.startsWith('/api/tasks/metrics/failure-causes?')) {
       return jsonResponse([]);
     }
-    if (url === '/api/tasks/metrics/model-usage') {
+    if (url === '/api/tasks/metrics/model-usage' || url.startsWith('/api/tasks/metrics/model-usage?')) {
       return jsonResponse(modelUsageSummary);
     }
-    if (url === '/api/tasks/metrics/latency') {
+    if (url === '/api/tasks/metrics/latency' || url.startsWith('/api/tasks/metrics/latency?')) {
       return jsonResponse(latencySummary);
     }
     if (url === '/api/configuration/summary') {
@@ -1374,7 +1460,7 @@ test('loads the next backend task page with offset pagination', async () => {
     ) {
       return jsonResponse(taskPage([nextPageTask], 50, 50, false, 51));
     }
-    if (url === '/api/tasks/metrics/summary') {
+    if (url === '/api/tasks/metrics/summary' || url.startsWith('/api/tasks/metrics/summary?')) {
       return jsonResponse({
         totalCount: 51,
         pendingCount: 0,
@@ -1394,13 +1480,13 @@ test('loads the next backend task page with offset pagination', async () => {
         testPassRate: 1
       });
     }
-    if (url === '/api/tasks/metrics/failure-causes') {
+    if (url === '/api/tasks/metrics/failure-causes' || url.startsWith('/api/tasks/metrics/failure-causes?')) {
       return jsonResponse([{ cause: 'MAVEN_TESTS', count: 1 }]);
     }
-    if (url === '/api/tasks/metrics/model-usage') {
+    if (url === '/api/tasks/metrics/model-usage' || url.startsWith('/api/tasks/metrics/model-usage?')) {
       return jsonResponse(modelUsageSummary);
     }
-    if (url === '/api/tasks/metrics/latency') {
+    if (url === '/api/tasks/metrics/latency' || url.startsWith('/api/tasks/metrics/latency?')) {
       return jsonResponse(latencySummary);
     }
     if (url === '/api/configuration/summary') {

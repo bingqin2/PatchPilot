@@ -2,6 +2,7 @@ package io.patchpilot.backend.task.service;
 
 import io.patchpilot.backend.agent.config.AgentProperties;
 import io.patchpilot.backend.task.domain.bo.CreateFixTaskCommand;
+import io.patchpilot.backend.task.domain.bo.FixTaskListQuery;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.vo.FixTaskMetricsSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskModelUsageSummaryVo;
@@ -113,6 +114,50 @@ class DefaultFixTaskMetricsServiceTests {
         assertThat(summary.passedTestRunCount()).isEqualTo(2);
         assertThat(summary.failedTestRunCount()).isEqualTo(1);
         assertThat(summary.testPassRate()).isEqualTo(2.0 / 3.0);
+    }
+
+    @Test
+    void should_summarize_only_tasks_matching_query_scope() {
+        FixTaskMetricsService metricsService = new DefaultFixTaskMetricsService(
+                new StaticFixTaskService(List.of(
+                        task("maven", FixTaskStatus.COMPLETED,
+                                Instant.parse("2026-06-20T01:00:00Z"),
+                                Instant.parse("2026-06-20T01:00:10Z"))
+                                .withAdapterMetadata("java", "maven", "./mvnw test"),
+                        task("npm", FixTaskStatus.FAILED,
+                                Instant.parse("2026-06-20T01:01:00Z"),
+                                null)
+                                .withAdapterMetadata("node", "npm", "npm test")
+                )),
+                new StaticFixTaskModelCallService(Map.of(
+                        "maven", List.of(modelCall("maven", 100, 50)),
+                        "npm", List.of(modelCall("npm", 20, 5))
+                )),
+                new StaticFixTaskTestRunService(Map.of(
+                        "maven", List.of(testRun("maven", 0)),
+                        "npm", List.of(testRun("npm", 1))
+                )),
+                new StaticFixTaskToolCallService(Map.of()),
+                new AgentProperties()
+        );
+
+        FixTaskMetricsSummaryVo summary = metricsService.summary(new FixTaskListQuery(
+                null,
+                null,
+                "octocat",
+                "hello-world",
+                "node",
+                "npm",
+                100,
+                0
+        ));
+
+        assertThat(summary.totalCount()).isEqualTo(1);
+        assertThat(summary.completedCount()).isZero();
+        assertThat(summary.failedCount()).isEqualTo(1);
+        assertThat(summary.totalModelTokens()).isEqualTo(25);
+        assertThat(summary.testRunCount()).isEqualTo(1);
+        assertThat(summary.failedTestRunCount()).isEqualTo(1);
     }
 
     @Test
@@ -392,6 +437,17 @@ class DefaultFixTaskMetricsServiceTests {
         @Override
         public List<FixTaskVo> listTasks() {
             return tasks;
+        }
+
+        @Override
+        public List<FixTaskVo> listTasks(FixTaskListQuery query) {
+            return tasks.stream()
+                    .filter(task -> query.status() == null || task.status() == query.status())
+                    .filter(task -> query.repositoryOwner() == null || task.repositoryOwner().equals(query.repositoryOwner()))
+                    .filter(task -> query.repositoryName() == null || task.repositoryName().equals(query.repositoryName()))
+                    .filter(task -> query.language() == null || query.language().equals(task.language()))
+                    .filter(task -> query.buildSystem() == null || query.buildSystem().equals(task.buildSystem()))
+                    .toList();
         }
 
         @Override
