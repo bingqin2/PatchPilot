@@ -223,7 +223,7 @@ Responsibilities:
 - Remove PatchPilot secrets from the child-process environment.
 - Return structured test results.
 
-The adapter registry selects the first supported adapter and returns a clear unsupported result when none match. `VerificationRunner` executes the selected adapter command. The first adapters are `JavaMavenLanguageAdapter`, `JavaGradleLanguageAdapter`, `NodePnpmLanguageAdapter`, `NodeYarnLanguageAdapter`, `NodeNpmLanguageAdapter`, and `PythonPytestLanguageAdapter`. MVP supported commands:
+The adapter registry selects the first supported adapter and returns a clear unsupported result when none match. `VerificationRunner` executes the selected adapter command. The first adapters are `JavaMavenLanguageAdapter`, `JavaGradleLanguageAdapter`, `NodePnpmLanguageAdapter`, `NodeYarnLanguageAdapter`, `NodeNpmLanguageAdapter`, `PythonPoetryLanguageAdapter`, `PythonUvLanguageAdapter`, and `PythonPytestLanguageAdapter`. MVP supported commands:
 
 ```bash
 ./mvnw test
@@ -234,6 +234,8 @@ npm test
 pnpm test
 yarn test
 python3 -m pytest
+poetry run pytest
+uv run pytest
 ```
 
 Future adapters should add their own detection and allowlisted verification commands without allowing arbitrary user-supplied shell.

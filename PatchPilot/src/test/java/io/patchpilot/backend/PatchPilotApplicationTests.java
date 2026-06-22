@@ -10,7 +10,9 @@ import io.patchpilot.backend.language.impl.JavaMavenLanguageAdapter;
 import io.patchpilot.backend.language.impl.NodeNpmLanguageAdapter;
 import io.patchpilot.backend.language.impl.NodePnpmLanguageAdapter;
 import io.patchpilot.backend.language.impl.NodeYarnLanguageAdapter;
+import io.patchpilot.backend.language.impl.PythonPoetryLanguageAdapter;
 import io.patchpilot.backend.language.impl.PythonPytestLanguageAdapter;
+import io.patchpilot.backend.language.impl.PythonUvLanguageAdapter;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -55,6 +57,8 @@ class PatchPilotApplicationTests {
                 .hasAtLeastOneElementOfType(NodeNpmLanguageAdapter.class)
                 .hasAtLeastOneElementOfType(NodePnpmLanguageAdapter.class)
                 .hasAtLeastOneElementOfType(NodeYarnLanguageAdapter.class)
+                .hasAtLeastOneElementOfType(PythonPoetryLanguageAdapter.class)
+                .hasAtLeastOneElementOfType(PythonUvLanguageAdapter.class)
                 .hasAtLeastOneElementOfType(PythonPytestLanguageAdapter.class);
     }
 
@@ -75,5 +79,23 @@ class PatchPilotApplicationTests {
         assertThat(result.supported()).isTrue();
         assertThat(result.buildSystem()).isEqualTo("pnpm");
         assertThat(result.verificationCommand()).containsExactly("pnpm", "test");
+    }
+
+    @Test
+    void should_prefer_specific_python_project_runner_adapters_before_plain_pytest(@TempDir Path tempDir) throws Exception {
+        Files.writeString(tempDir.resolve("pyproject.toml"), """
+                [tool.poetry]
+                name = "demo"
+
+                [tool.pytest.ini_options]
+                testpaths = ["tests"]
+                """);
+        LanguageAdapterRegistry registry = applicationContext.getBean(LanguageAdapterRegistry.class);
+
+        LanguageDetectionResult result = registry.detect(tempDir);
+
+        assertThat(result.supported()).isTrue();
+        assertThat(result.buildSystem()).isEqualTo("poetry");
+        assertThat(result.verificationCommand()).containsExactly("poetry", "run", "pytest");
     }
 }

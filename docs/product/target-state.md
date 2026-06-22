@@ -18,10 +18,10 @@ PatchPilot should not pretend to solve every repository through one generic work
 - How test results are summarized.
 - Which failure states mean the repository is unsupported.
 
-The first stable adapters are Java/Maven, Java/Gradle, Node/npm, Node/pnpm, Node/yarn, and Python/pytest. Follow-up adapters should prioritize common interview- and demo-friendly stacks:
+The first stable adapters are Java/Maven, Java/Gradle, Node/npm, Node/pnpm, Node/yarn, Python/pytest, Python/Poetry, and Python/uv. Follow-up adapters should prioritize common interview- and demo-friendly stacks:
 
 - Node.js with bun.
-- Python with Poetry, tox, nox, or uv.
+- Python with tox, nox, or hatch.
 
 Adding a new language is only complete when PatchPilot can detect the repository, generate a focused patch, run the adapter's allowed tests, record the evidence, and create a reviewable Pull Request.
 
