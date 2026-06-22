@@ -350,7 +350,8 @@ test('loads non-sensitive configuration summary from backend API', async () => {
         triggerRateLimitWindowMs: 600000,
         triggerRateLimitMaxPerTriggerUser: 30,
         triggerRateLimitMaxPerRepository: 60,
-        triggerRateLimitMaxPerIssue: 20
+        triggerRateLimitMaxPerIssue: 20,
+        reviewApprovalAllowedOperators: ['release-captain', 'local-operator']
       },
       message: null
     })
@@ -377,7 +378,8 @@ test('loads non-sensitive configuration summary from backend API', async () => {
     triggerRateLimitWindowMs: 600000,
     triggerRateLimitMaxPerTriggerUser: 30,
     triggerRateLimitMaxPerRepository: 60,
-    triggerRateLimitMaxPerIssue: 20
+    triggerRateLimitMaxPerIssue: 20,
+    reviewApprovalAllowedOperators: ['release-captain', 'local-operator']
   });
 });
 

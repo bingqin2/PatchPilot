@@ -33,6 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "patchpilot.safety.trigger-rate-limit-max-per-trigger-user=9",
         "patchpilot.safety.trigger-rate-limit-max-per-repository=30",
         "patchpilot.safety.trigger-rate-limit-max-per-issue=4",
+        "patchpilot.review-approval.allowed-operators=release-captain,local-operator",
         "patchpilot.workspace.root-dir=/tmp/patchpilot/test-workspaces",
         "patchpilot.task.queue.max-attempts=5",
         "patchpilot.task.queue.retry-delay-ms=15000",
@@ -65,6 +66,8 @@ class ConfigurationControllerTests {
                 .andExpect(jsonPath("$.data.triggerRateLimitMaxPerTriggerUser").value(9))
                 .andExpect(jsonPath("$.data.triggerRateLimitMaxPerRepository").value(30))
                 .andExpect(jsonPath("$.data.triggerRateLimitMaxPerIssue").value(4))
+                .andExpect(jsonPath("$.data.reviewApprovalAllowedOperators[0]").value("release-captain"))
+                .andExpect(jsonPath("$.data.reviewApprovalAllowedOperators[1]").value("local-operator"))
                 .andExpect(content().string(not(containsString("test-agent-key"))))
                 .andExpect(content().string(not(containsString("test-github-token"))))
                 .andExpect(content().string(not(containsString("test-webhook-secret"))));

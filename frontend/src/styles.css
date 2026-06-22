@@ -1221,7 +1221,7 @@ h3 {
   overflow-wrap: anywhere;
 }
 
-.review-approval-form input,
+.review-approval-form select,
 .review-approval-form textarea {
   background: #ffffff;
   border: 1px solid #cfd8e3;
@@ -1229,6 +1229,15 @@ h3 {
   color: #1d2733;
   font: inherit;
   min-width: 0;
+  padding: 8px 9px;
+}
+
+.review-approval-warning {
+  background: #fff7ed;
+  border: 1px solid #fdba74;
+  border-radius: 6px;
+  color: #9a3412;
+  margin: 0;
   padding: 8px 9px;
 }
 

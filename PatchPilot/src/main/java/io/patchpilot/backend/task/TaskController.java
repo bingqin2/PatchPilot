@@ -308,6 +308,8 @@ public class TaskController {
         }
         try {
             return ResponseEntity.ok(ApiResponse.ok(fixTaskControlService.approveReviewTask(id, command)));
+        } catch (SecurityException exception) {
+            return ResponseEntity.status(403).body(ApiResponse.fail(exception.getMessage()));
         } catch (IllegalArgumentException exception) {
             return ResponseEntity.status(404).body(ApiResponse.fail("Task not found"));
         } catch (IllegalStateException exception) {

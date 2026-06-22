@@ -130,7 +130,8 @@ class DemoReadinessServiceTests {
                 900000,
                 10,
                 20,
-                5
+                5,
+                List.of("release-captain")
         );
     }
 

@@ -18,7 +18,8 @@ const healthyConfiguration = {
   triggerRateLimitWindowMs: 600000,
   triggerRateLimitMaxPerTriggerUser: 30,
   triggerRateLimitMaxPerRepository: 60,
-  triggerRateLimitMaxPerIssue: 20
+  triggerRateLimitMaxPerIssue: 20,
+  reviewApprovalAllowedOperators: ['release-captain', 'local-operator']
 };
 
 test('shows healthy configuration status when required and advisory settings are valid', () => {
@@ -38,6 +39,8 @@ test('shows healthy configuration status when required and advisory settings are
   expect(screen.getByText('patchpilot-backend')).toBeInTheDocument();
   expect(screen.getByText('Trigger classifier Enabled')).toBeInTheDocument();
   expect(screen.getByText('Rate limit Enabled')).toBeInTheDocument();
+  expect(screen.getByText('Review approvers')).toBeInTheDocument();
+  expect(screen.getByText('release-captain, local-operator')).toBeInTheDocument();
   expect(screen.getByText('600.0s window')).toBeInTheDocument();
   expect(screen.queryByText('Agent API key is missing')).not.toBeInTheDocument();
   expect(screen.queryByText('Model cost is not configured')).not.toBeInTheDocument();
@@ -57,7 +60,8 @@ test('shows setup issues and advisories for weak configuration', () => {
         modelCostConfigured: false,
         triggerRateLimitEnabled: false,
         triggerRateLimitWindowMs: 500,
-        triggerRateLimitMaxPerIssue: 0
+        triggerRateLimitMaxPerIssue: 0,
+        reviewApprovalAllowedOperators: []
       }}
       backendHealth={null}
     />
@@ -65,7 +69,7 @@ test('shows setup issues and advisories for weak configuration', () => {
 
   expect(screen.getByText('3 setup issues')).toBeInTheDocument();
   expect(screen.getByText('Backend unavailable')).toBeInTheDocument();
-  expect(screen.getByText('7 advisory items')).toBeInTheDocument();
+  expect(screen.getByText('8 advisory items')).toBeInTheDocument();
   expect(screen.getByText('Agent API key is missing')).toBeInTheDocument();
   expect(screen.getByText('GitHub token is missing')).toBeInTheDocument();
   expect(screen.getByText('Webhook secret is missing')).toBeInTheDocument();
@@ -76,6 +80,7 @@ test('shows setup issues and advisories for weak configuration', () => {
   expect(screen.getByText('Trigger rate limit is disabled')).toBeInTheDocument();
   expect(screen.getByText('Trigger rate limit window is below 1.0s')).toBeInTheDocument();
   expect(screen.getByText('Trigger rate limit thresholds must be at least 1')).toBeInTheDocument();
+  expect(screen.getByText('Review approval operators are not configured')).toBeInTheDocument();
 });
 
 test('shows advisory status when required secrets are configured but optional settings are missing', () => {

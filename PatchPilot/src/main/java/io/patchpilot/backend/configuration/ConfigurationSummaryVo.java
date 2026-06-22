@@ -1,5 +1,7 @@
 package io.patchpilot.backend.configuration;
 
+import java.util.List;
+
 public record ConfigurationSummaryVo(
         String agentProvider,
         String agentModel,
@@ -17,6 +19,7 @@ public record ConfigurationSummaryVo(
         long triggerRateLimitWindowMs,
         int triggerRateLimitMaxPerTriggerUser,
         int triggerRateLimitMaxPerRepository,
-        int triggerRateLimitMaxPerIssue
+        int triggerRateLimitMaxPerIssue,
+        List<String> reviewApprovalAllowedOperators
 ) {
 }

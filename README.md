@@ -76,9 +76,11 @@ Optional safety allowlists can restrict who and what repository may create tasks
 ```bash
 PATCHPILOT_ALLOWED_TRIGGER_USERS=bingqin2,local-operator
 PATCHPILOT_ALLOWED_REPOSITORIES=bingqin2/PatchPilot
+PATCHPILOT_REVIEW_APPROVAL_ALLOWED_OPERATORS=release-captain,local-operator
 ```
 
-Leave either value empty to keep that dimension unrestricted for local development. When configured, both GitHub webhooks and manual dashboard tasks are checked before task creation.
+Leave either trigger value empty to keep that task-creation dimension unrestricted for local development. When configured, both GitHub webhooks and manual dashboard tasks are checked before task creation.
+Review approval is stricter: leave `PATCHPILOT_REVIEW_APPROVAL_ALLOWED_OPERATORS` empty to disable `PENDING_REVIEW` approvals until an explicit approver allowlist is configured.
 
 PatchPilot only creates a task when the `/agent fix` comment is actionable. Use a concrete file operation, file path, or failure description:
 
@@ -201,7 +203,7 @@ curl "http://127.0.0.1:8080/api/rejected-triggers?limit=20"
 Use `/detail` for dashboard-style task inspection. It returns the task audit summary, latest queue item, queue history, latest generated diff, timeline events, test runs, tool calls, and model calls in one response. Use `/report` to copy a Markdown diagnostic summary for a task, including the generated diff when one was captured. The narrower endpoints remain available for focused debugging.
 Use `/api/rejected-triggers` to inspect rejected `/agent fix` attempts that did not create tasks, including unsafe command text, unauthorized users, unauthorized repositories, and the rejection reason.
 
-If a generated diff is blocked by the risk gate, the task moves to `PENDING_REVIEW` instead of `FAILED`. Inspect the generated diff in the task detail or copied report first, then check the `GeneratedDiffRiskGate` tool-call output for the concrete rejection reason. If the diff is intentionally allowed, approve it through the dashboard or API with an approver and reason:
+If a generated diff is blocked by the risk gate, the task moves to `PENDING_REVIEW` instead of `FAILED`. Inspect the generated diff in the task detail or copied report first, then check the `GeneratedDiffRiskGate` tool-call output for the concrete rejection reason. If the diff is intentionally allowed, approve it through the dashboard or API with an approver from `PATCHPILOT_REVIEW_APPROVAL_ALLOWED_OPERATORS` and a reason:
 
 ```bash
 curl -X POST http://127.0.0.1:8080/api/tasks/{taskId}/approve-review \

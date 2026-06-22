@@ -145,6 +145,7 @@ export interface ConfigurationSummary {
   triggerRateLimitMaxPerTriggerUser: number;
   triggerRateLimitMaxPerRepository: number;
   triggerRateLimitMaxPerIssue: number;
+  reviewApprovalAllowedOperators: string[];
 }
 
 export type DemoReadinessStatus = 'READY' | 'NEEDS_ATTENTION' | 'BLOCKED';

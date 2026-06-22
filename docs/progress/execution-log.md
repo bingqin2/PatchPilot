@@ -2371,3 +2371,19 @@ Validation:
 - `npm test`: passed after full frontend verification, 89 tests run, 0 failures.
 - `npm run build`: passed after production frontend build.
 - `git diff --check`: passed after whitespace and conflict-marker verification.
+
+Implemented risk review approval authorization from `docs/plans/116-risk-review-approval-authorization.md`.
+
+Changes:
+
+- Added `patchpilot.review-approval.allowed-operators` / `PATCHPILOT_REVIEW_APPROVAL_ALLOWED_OPERATORS` for explicit risk-review approver authorization.
+- Exposed normalized review approvers in `GET /api/configuration/summary`.
+- Rejected unauthorized `POST /api/tasks/{taskId}/approve-review` calls with `403` before task mutation, queue enqueue, or timeline recording.
+- Updated the dashboard configuration panel to show review approvers and warn when none are configured.
+- Replaced free-text approval operator entry with a configured approver selector, and disabled approval when the allowlist is empty.
+- Updated README, architecture notes, frontend design notes, and this execution log.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=DefaultFixTaskControlServiceTests,TaskControllerTests,ConfigurationSummaryServiceTests test`: first failed because `ReviewApprovalProperties` did not exist; then passed after backend implementation, 69 tests run, 0 failures.
+- `npm test -- src/dashboard/components/ConfigurationPanel.test.tsx src/dashboard/components/TaskDetailPanel.test.tsx`: first failed because review approvers were not rendered and the approval form still used free text; then passed after frontend implementation, 16 tests run, 0 failures.
