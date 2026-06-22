@@ -10,32 +10,37 @@ import java.nio.file.Path;
 import java.util.List;
 
 @Component
-@Order(100)
-public class JavaMavenLanguageAdapter implements LanguageAdapter {
+@Order(200)
+public class JavaGradleLanguageAdapter implements LanguageAdapter {
 
     @Override
     public LanguageDetectionResult detect(Path repositoryDir) {
         Path repositoryRoot = repositoryDir.toAbsolutePath().normalize();
-        if (Files.isRegularFile(repositoryRoot.resolve("mvnw"))) {
+        if (Files.isRegularFile(repositoryRoot.resolve("gradlew"))) {
             return LanguageDetectionResult.supported(
                     "java",
-                    "maven",
-                    List.of("./mvnw", "test"),
-                    "Detected Maven wrapper"
+                    "gradle",
+                    List.of("./gradlew", "test"),
+                    "Detected Gradle wrapper"
             );
         }
-        if (Files.isRegularFile(repositoryRoot.resolve("pom.xml"))) {
+        if (hasGradleBuildFile(repositoryRoot)) {
             return LanguageDetectionResult.supported(
                     "java",
-                    "maven",
-                    List.of("mvn", "test"),
-                    "Detected Maven project"
+                    "gradle",
+                    List.of("gradle", "test"),
+                    "Detected Gradle project"
             );
         }
         return LanguageDetectionResult.unsupported(
                 "java",
-                "maven",
-                "Unsupported repository: no mvnw or pom.xml found"
+                "gradle",
+                "Unsupported repository: no gradlew, build.gradle, or build.gradle.kts found"
         );
+    }
+
+    private static boolean hasGradleBuildFile(Path repositoryRoot) {
+        return Files.isRegularFile(repositoryRoot.resolve("build.gradle"))
+                || Files.isRegularFile(repositoryRoot.resolve("build.gradle.kts"));
     }
 }

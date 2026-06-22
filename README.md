@@ -1,6 +1,6 @@
 # PatchPilot
 
-PatchPilot is an AI GitHub issue-to-PR agent backend. It receives a GitHub issue comment, creates a durable fix task, inspects the repository through controlled tools, applies a focused patch, runs Maven tests, and opens a Pull Request for human review.
+PatchPilot is an AI GitHub issue-to-PR agent backend. It receives a GitHub issue comment, creates a durable fix task, inspects the repository through controlled tools, applies a focused patch, runs adapter-selected verification, and opens a Pull Request for human review.
 
 PatchPilot is not a chatbot and does not auto-merge code. The current target is local self-hosted development and private demos.
 
@@ -14,7 +14,7 @@ PatchPilot is not a chatbot and does not auto-merge code. The current target is 
 - Webhook signature verification.
 - MySQL-backed task, queue, timeline, test-run, tool-call, and model-call records.
 - Local workspace clone, branch, diff, commit, push, and Pull Request creation.
-- Java/Maven language adapter backed by an adapter-driven verification runner with command allowlists.
+- Java/Maven and Java/Gradle language adapters backed by an adapter-driven verification runner with command allowlists.
 - Unsupported repository preflight that fails before patch generation, test execution, Git mutation, or Pull Request creation.
 - OpenAI-compatible model client and plan-driven patch workflow.
 - Issue comment status updates for accepted, running, verification, success, and failure states.
@@ -216,13 +216,15 @@ If safety allowlists are configured, the manual task `triggerUser` and `reposito
 
 ## Supported Repositories
 
-PatchPilot currently executes fixes only for Java/Maven repositories. After cloning the task workspace, the backend runs the language adapter preflight:
+PatchPilot currently executes fixes only for Java repositories with Maven or Gradle build files. After cloning the task workspace, the backend runs the language adapter preflight:
 
 - supported: `pom.xml` with `mvnw`, using `./mvnw test`
 - supported: `pom.xml` without `mvnw`, using `mvn test`
+- supported: `build.gradle` or `build.gradle.kts` with `gradlew`, using `./gradlew test`
+- supported: `build.gradle` or `build.gradle.kts` without `gradlew`, using `gradle test`
 - unsupported: no registered adapter detects the repository
 
-Unsupported repositories fail before model patch generation, tests, commit, push, or Pull Request creation. This is intentional until additional adapters such as Gradle, Node.js, and Python are implemented.
+Unsupported repositories fail before model patch generation, tests, commit, push, or Pull Request creation. This is intentional until additional adapters such as Node.js and Python are implemented.
 For supported repositories, the language adapter supplies the verification command and the generic verification runner executes that command under the existing allowlist, timeout, process-registration, and environment-sanitization rules.
 
 Runtime configuration summary:
@@ -320,8 +322,8 @@ PatchPilot must not:
 
 ## Current Limitations
 
-- Java/Maven repositories are the first supported target through the `JavaMavenLanguageAdapter`.
-- Node.js, Python, and Gradle adapters are future work.
+- Java/Maven and Java/Gradle repositories are the first supported targets through `JavaMavenLanguageAdapter` and `JavaGradleLanguageAdapter`.
+- Node.js and Python adapters are future work.
 - The current runtime is single-process; API and worker separation is future work.
 - The React dashboard can create manual demo tasks, but GitHub issue comments remain the primary production trigger. It does not merge Pull Requests.
 - Temporary Cloudflare URLs are for local testing only.

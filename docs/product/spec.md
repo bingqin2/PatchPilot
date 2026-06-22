@@ -136,7 +136,7 @@ The current implementation target is local self-hosted development first. Hosted
 
 ### Test Execution
 
-- The MVP supports Java Maven repositories first.
+- The MVP supports Java Maven and Java Gradle repositories first.
 - The long-term system supports multiple language adapters, starting with Java/Maven, Java/Gradle, Node.js, and Python.
 - Each adapter defines project detection, allowed verification commands, test output capture, timeout policy, and unsupported-repository failure reasons.
 - The adapter registry selects the first adapter that supports the repository and returns a clear unsupported result when none match.
@@ -144,6 +144,9 @@ The current implementation target is local self-hosted development first. Hosted
 - The Java/Maven adapter detects `mvnw` and `pom.xml`.
 - The Java/Maven adapter runs `./mvnw test` when a Maven wrapper exists.
 - The Java/Maven adapter runs `mvn test` when no wrapper exists.
+- The Java/Gradle adapter detects `gradlew`, `build.gradle`, and `build.gradle.kts`.
+- The Java/Gradle adapter runs `./gradlew test` when a Gradle wrapper exists.
+- The Java/Gradle adapter runs `gradle test` when no wrapper exists.
 - The system captures exit code, stdout, stderr, duration, and a short test summary.
 - Test failure must not be reported as a successful fix.
 
@@ -181,11 +184,11 @@ The first production-like MVP supports:
 
 - GitHub App webhook integration.
 - `/agent fix` issue comment trigger.
-- Java Maven repositories.
+- Java repositories using Maven or Gradle.
 - One repository per task.
 - One generated Pull Request per successful task.
 - Local workspace execution.
-- Maven test verification.
+- Adapter-selected test verification.
 - Audited model calls and tool calls.
 
 ## Frontend Requirements
@@ -198,7 +201,7 @@ MVP frontend scope:
 - View task status and failure reason.
 - Open linked GitHub issue and Pull Request.
 - Inspect tool-call summaries.
-- Inspect Maven test output.
+- Inspect verification output.
 
 The frontend does not need to trigger the first backend workflow. GitHub issue comments remain the first trigger.
 
@@ -210,7 +213,7 @@ Planned follow-up capabilities:
 - Chrome extension button on GitHub issue pages.
 - Command safety gate for authorization, actionability, unsupported repositories, and unsafe requests.
 - Language adapter foundation.
-- Gradle, Node.js, and Python support.
+- Node.js and Python support.
 - Docker sandbox execution.
 - MySQL-backed durable task history.
 - Redis or queue-backed async execution.
@@ -226,8 +229,8 @@ PatchPilot MVP is successful when:
 - A user can comment `/agent fix` on an open issue.
 - PatchPilot creates and executes a fix task asynchronously.
 - PatchPilot clones the repository and creates a branch.
-- PatchPilot generates a patch for a simple Java/Maven bug.
-- Maven tests run and the result is recorded.
+- PatchPilot generates a patch for a simple supported Java bug.
+- Adapter-selected verification runs and the result is recorded.
 - A successful task creates a Pull Request.
 - A failed task records and reports a clear failure reason.
 
