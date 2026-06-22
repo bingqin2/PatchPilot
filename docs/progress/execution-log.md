@@ -2133,3 +2133,22 @@ Validation:
 - `mvn -pl PatchPilot -Dtest=LanguageAdapterRegistryTests test`: passed after full registry verification, 3 tests run, 0 failures.
 - `mvn -pl PatchPilot test`: passed after full backend verification, 379 tests run, 0 failures.
 - `git diff --check`: passed after whitespace and conflict-marker verification.
+
+Implemented adapter smoke script from `docs/plans/104-adapter-smoke-script.md`.
+
+Changes:
+
+- Added `scripts/adapter-smoke.sh` as a safe local adapter detection smoke command.
+- Added default detection mode that prints the fixture matrix and runs `LanguageAdapterRegistryTests#should_detect_adapter_demo_fixtures`.
+- Added `--backend` mode for wider adapter and command-guard coverage.
+- Added `docs/agent/adapter-smoke-checklist.md` with scope, commands, expected results, and non-goals.
+- Added `AdapterSmokeScriptTests` to keep the script pointed at adapter tests and away from GitHub, model, Docker, push, and webhook operations.
+- Updated README and this execution log.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=AdapterSmokeScriptTests test`: first failed because `scripts/adapter-smoke.sh` did not exist; then passed after adding the script and checklist, 1 test run, 0 failures.
+- `bash scripts/adapter-smoke.sh`: passed and ran the fixture detection smoke, 1 test run, 0 failures.
+- `bash scripts/adapter-smoke.sh --backend`: passed and ran the wider adapter and command-guard smoke, 39 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed after full backend verification, 380 tests run, 0 failures.
+- `git diff --check`: passed after whitespace and conflict-marker verification.
