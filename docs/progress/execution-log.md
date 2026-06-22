@@ -2054,3 +2054,27 @@ Validation:
 
 - `mvn -pl PatchPilot -Dtest=FixTaskConvertTests,InMemoryFixTaskServiceTests,MyBatisFixTaskServiceTests,WorkspaceFixTaskExecutorTests,FixTaskAdapterMetadataMigrationTests test`: first failed because the entity, VO, conversion method, service method, executor injection, and migration did not exist; then passed after implementation, 48 tests run, 0 failures.
 - `npm test -- --run App.test.tsx TaskDetailPanel.test.tsx`: first failed because the dashboard did not render adapter metadata; then passed after adding the task row/detail display and generic verification labels, 46 tests run, 0 failures.
+
+Implemented adapter filtering and metrics from `docs/plans/100-adapter-filtering-and-metrics.md`.
+
+Changes:
+
+- Added optional `language` and `buildSystem` fields to `FixTaskListQuery` while preserving existing constructors.
+- Applied adapter filters in in-memory and MyBatis task list/count queries.
+- Included adapter metadata in broad task search text.
+- Accepted adapter filters in `GET /api/tasks` and `GET /api/tasks/status-counts`.
+- Added scoped metrics overloads so summary, failure causes, model usage, and latency can use the same investigation scope as the task list.
+- Accepted search, repository, adapter, and created-time filters in task metrics endpoints.
+- Added dashboard language and build-system filters with URL restore/sync, count and metrics propagation, clear-filter support, and load-more propagation.
+- Updated README, frontend design notes, and this execution log.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=InMemoryFixTaskServiceTests#should_list_tasks_with_adapter_metadata_filters,MyBatisFixTaskServiceTests#should_list_tasks_with_adapter_metadata_filters,TaskControllerTests#should_filter_tasks_and_status_counts_by_adapter_metadata test`: first failed because `FixTaskListQuery` did not support adapter fields; then passed after adding query fields and service/controller filters, 3 tests run, 0 failures.
+- `mvn -pl PatchPilot -Dtest=DefaultFixTaskMetricsServiceTests#should_summarize_only_tasks_matching_query_scope,TaskControllerTests#should_get_task_metrics_summary_for_adapter_scope test`: first failed because metrics had only global no-argument methods; then passed after adding query-scoped metrics, 2 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts src/App.test.tsx -t "adapter filter|builds backend task search|builds backend task status count|current adapter scope"`: first failed because frontend API requests omitted `language` and `buildSystem` and the dashboard had no adapter controls; then passed after adding API parameters, URL state, task-list controls, metrics propagation, and clear-filter behavior, 6 tests run, 0 failures.
+- `mvn -pl PatchPilot -Dtest=InMemoryFixTaskServiceTests,MyBatisFixTaskServiceTests,DefaultFixTaskMetricsServiceTests,TaskControllerTests test`: passed after focused backend verification, 92 tests run, 0 failures.
+- `npm test`: passed after frontend verification, 73 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed after full backend verification, 356 tests run, 0 failures.
+- `npm run build`: passed after production frontend build.
+- `git diff --check`: passed after whitespace and conflict-marker verification.

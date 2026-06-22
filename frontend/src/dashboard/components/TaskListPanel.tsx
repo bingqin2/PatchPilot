@@ -19,6 +19,8 @@ interface TaskListPanelProps {
   searchQuery: string;
   repositoryOwnerFilter: string;
   repositoryNameFilter: string;
+  languageFilter: string;
+  buildSystemFilter: string;
   createdAfterFilter: string;
   createdBeforeFilter: string;
   statusCounts: FixTaskStatusCounts | null;
@@ -32,6 +34,8 @@ interface TaskListPanelProps {
   onSearchQueryChange: (query: string) => void;
   onRepositoryOwnerFilterChange: (repositoryOwner: string) => void;
   onRepositoryNameFilterChange: (repositoryName: string) => void;
+  onLanguageFilterChange: (language: string) => void;
+  onBuildSystemFilterChange: (buildSystem: string) => void;
   onCreatedAfterFilterChange: (createdAfter: string) => void;
   onCreatedBeforeFilterChange: (createdBefore: string) => void;
   onTaskSortChange: (sort: TaskSort) => void;
@@ -47,6 +51,8 @@ export function TaskListPanel({
   searchQuery,
   repositoryOwnerFilter,
   repositoryNameFilter,
+  languageFilter,
+  buildSystemFilter,
   createdAfterFilter,
   createdBeforeFilter,
   statusCounts,
@@ -60,6 +66,8 @@ export function TaskListPanel({
   onSearchQueryChange,
   onRepositoryOwnerFilterChange,
   onRepositoryNameFilterChange,
+  onLanguageFilterChange,
+  onBuildSystemFilterChange,
   onCreatedAfterFilterChange,
   onCreatedBeforeFilterChange,
   onTaskSortChange,
@@ -115,6 +123,22 @@ export function TaskListPanel({
           value={repositoryNameFilter}
           onChange={(event) => onRepositoryNameFilterChange(event.target.value)}
           placeholder="PatchPilot"
+        />
+        <label className="task-language-label" htmlFor="task-language-input">Filter language</label>
+        <input
+          className="task-language-input"
+          id="task-language-input"
+          value={languageFilter}
+          onChange={(event) => onLanguageFilterChange(event.target.value)}
+          placeholder="node"
+        />
+        <label className="task-build-system-label" htmlFor="task-build-system-input">Filter build system</label>
+        <input
+          className="task-build-system-input"
+          id="task-build-system-input"
+          value={buildSystemFilter}
+          onChange={(event) => onBuildSystemFilterChange(event.target.value)}
+          placeholder="npm"
         />
         <label className="task-created-after-label" htmlFor="task-created-after-input">Filter created after</label>
         <input
@@ -199,6 +223,8 @@ export function TaskListPanel({
               searchQuery,
               repositoryOwnerFilter,
               repositoryNameFilter,
+              languageFilter,
+              buildSystemFilter,
               createdAfterFilter,
               createdBeforeFilter
             )}
@@ -219,6 +245,8 @@ function emptyTaskListMessage(
   searchQuery: string,
   repositoryOwnerFilter: string,
   repositoryNameFilter: string,
+  languageFilter: string,
+  buildSystemFilter: string,
   createdAfterFilter: string,
   createdBeforeFilter: string
 ) {
@@ -227,6 +255,9 @@ function emptyTaskListMessage(
   }
   if (repositoryOwnerFilter.trim() || repositoryNameFilter.trim()) {
     return 'No tasks match selected repository filters.';
+  }
+  if (languageFilter.trim() || buildSystemFilter.trim()) {
+    return 'No tasks match selected adapter filters.';
   }
   if (createdAfterFilter.trim() || createdBeforeFilter.trim()) {
     return 'No tasks match selected created time filters.';

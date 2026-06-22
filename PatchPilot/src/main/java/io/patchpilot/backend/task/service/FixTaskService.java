@@ -60,6 +60,8 @@ public interface FixTaskService extends FixTaskAdapterMetadataRecorder {
                 query.status(),
                 query.repositoryOwner(),
                 query.repositoryName(),
+                query.language(),
+                query.buildSystem(),
                 Integer.MAX_VALUE,
                 0
         )).size();

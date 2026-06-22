@@ -1,6 +1,7 @@
 package io.patchpilot.backend.task.service.impl;
 
 import io.patchpilot.backend.agent.config.AgentProperties;
+import io.patchpilot.backend.task.domain.bo.FixTaskListQuery;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.vo.FixTaskFailureCauseSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskLatencySummaryVo;
@@ -44,7 +45,12 @@ public class DefaultFixTaskMetricsService implements FixTaskMetricsService {
 
     @Override
     public FixTaskMetricsSummaryVo summary() {
-        List<FixTaskVo> tasks = fixTaskService.listTasks();
+        return summary(FixTaskListQuery.all());
+    }
+
+    @Override
+    public FixTaskMetricsSummaryVo summary(FixTaskListQuery query) {
+        List<FixTaskVo> tasks = fixTaskService.listTasks(query);
         long totalCount = tasks.size();
         if (totalCount == 0) {
             return FixTaskMetricsSummaryVo.empty();
@@ -84,8 +90,13 @@ public class DefaultFixTaskMetricsService implements FixTaskMetricsService {
 
     @Override
     public List<FixTaskFailureCauseSummaryVo> failureCauses() {
+        return failureCauses(FixTaskListQuery.all());
+    }
+
+    @Override
+    public List<FixTaskFailureCauseSummaryVo> failureCauses(FixTaskListQuery query) {
         Map<String, Long> counts = new LinkedHashMap<>();
-        fixTaskService.listTasks().stream()
+        fixTaskService.listTasks(query).stream()
                 .filter(task -> task.status() == FixTaskStatus.FAILED)
                 .map(task -> classifyFailureCause(task.failureReason()))
                 .forEach(cause -> counts.merge(cause, 1L, Long::sum));
@@ -97,7 +108,12 @@ public class DefaultFixTaskMetricsService implements FixTaskMetricsService {
 
     @Override
     public FixTaskModelUsageSummaryVo modelUsage() {
-        List<FixTaskModelCallVo> modelCalls = fixTaskService.listTasks().stream()
+        return modelUsage(FixTaskListQuery.all());
+    }
+
+    @Override
+    public FixTaskModelUsageSummaryVo modelUsage(FixTaskListQuery query) {
+        List<FixTaskModelCallVo> modelCalls = fixTaskService.listTasks(query).stream()
                 .flatMap(task -> fixTaskModelCallService.listModelCalls(task.id()).stream())
                 .toList();
         if (modelCalls.isEmpty()) {
@@ -129,7 +145,12 @@ public class DefaultFixTaskMetricsService implements FixTaskMetricsService {
 
     @Override
     public FixTaskLatencySummaryVo latency() {
-        List<FixTaskVo> tasks = fixTaskService.listTasks();
+        return latency(FixTaskListQuery.all());
+    }
+
+    @Override
+    public FixTaskLatencySummaryVo latency(FixTaskListQuery query) {
+        List<FixTaskVo> tasks = fixTaskService.listTasks(query);
         if (tasks.isEmpty()) {
             return FixTaskLatencySummaryVo.empty();
         }

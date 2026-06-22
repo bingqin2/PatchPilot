@@ -231,6 +231,33 @@ class InMemoryFixTaskServiceTests {
     }
 
     @Test
+    void should_list_tasks_with_adapter_metadata_filters() {
+        FixTaskVo mavenTask = createTask("delivery-adapter-maven");
+        FixTaskVo npmTask = createTask("delivery-adapter-npm");
+        FixTaskVo unknownTask = createTask("delivery-adapter-unknown");
+        fixTaskService.recordAdapterMetadata(mavenTask.id(), "java", "maven", "./mvnw test");
+        fixTaskService.recordAdapterMetadata(npmTask.id(), "node", "npm", "npm test");
+
+        List<FixTaskVo> tasks = fixTaskService.listTasks(new FixTaskListQuery(
+                null,
+                null,
+                "octocat",
+                "hello-world",
+                "node",
+                "npm",
+                10,
+                0
+        ));
+
+        assertThat(tasks)
+                .extracting(FixTaskVo::id)
+                .containsExactly(npmTask.id());
+        assertThat(tasks)
+                .extracting(FixTaskVo::id)
+                .doesNotContain(mavenTask.id(), unknownTask.id());
+    }
+
+    @Test
     void should_count_tasks_before_limit_and_offset() {
         createTask("delivery-count-older");
         createTask("delivery-count-newer");

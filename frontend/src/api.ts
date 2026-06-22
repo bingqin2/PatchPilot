@@ -27,6 +27,8 @@ interface ListTasksOptions {
   query?: string;
   repositoryOwner?: string;
   repositoryName?: string;
+  language?: string;
+  buildSystem?: string;
   createdAfter?: string;
   createdBefore?: string;
   limit?: number;
@@ -76,6 +78,12 @@ function appendTaskFilterSearchParams(searchParams: URLSearchParams, normalizedO
   if (normalizedOptions.repositoryName?.trim()) {
     searchParams.set('repositoryName', normalizedOptions.repositoryName.trim());
   }
+  if (normalizedOptions.language?.trim()) {
+    searchParams.set('language', normalizedOptions.language.trim());
+  }
+  if (normalizedOptions.buildSystem?.trim()) {
+    searchParams.set('buildSystem', normalizedOptions.buildSystem.trim());
+  }
   if (normalizedOptions.createdAfter?.trim()) {
     searchParams.set('createdAfter', normalizedOptions.createdAfter.trim());
   }
@@ -84,20 +92,27 @@ function appendTaskFilterSearchParams(searchParams: URLSearchParams, normalizedO
   }
 }
 
-export async function getMetricsSummary(): Promise<FixTaskMetricsSummary> {
-  return getApi<FixTaskMetricsSummary>('/api/tasks/metrics/summary');
+export async function getMetricsSummary(options: ListTasksOptions = {}): Promise<FixTaskMetricsSummary> {
+  return getFilteredMetricsApi<FixTaskMetricsSummary>('/api/tasks/metrics/summary', options);
 }
 
-export async function getFailureCauseSummary(): Promise<FixTaskFailureCauseSummary[]> {
-  return getApi<FixTaskFailureCauseSummary[]>('/api/tasks/metrics/failure-causes');
+export async function getFailureCauseSummary(options: ListTasksOptions = {}): Promise<FixTaskFailureCauseSummary[]> {
+  return getFilteredMetricsApi<FixTaskFailureCauseSummary[]>('/api/tasks/metrics/failure-causes', options);
 }
 
-export async function getModelUsageSummary(): Promise<FixTaskModelUsageSummary> {
-  return getApi<FixTaskModelUsageSummary>('/api/tasks/metrics/model-usage');
+export async function getModelUsageSummary(options: ListTasksOptions = {}): Promise<FixTaskModelUsageSummary> {
+  return getFilteredMetricsApi<FixTaskModelUsageSummary>('/api/tasks/metrics/model-usage', options);
 }
 
-export async function getLatencySummary(): Promise<FixTaskLatencySummary> {
-  return getApi<FixTaskLatencySummary>('/api/tasks/metrics/latency');
+export async function getLatencySummary(options: ListTasksOptions = {}): Promise<FixTaskLatencySummary> {
+  return getFilteredMetricsApi<FixTaskLatencySummary>('/api/tasks/metrics/latency', options);
+}
+
+function getFilteredMetricsApi<T>(path: string, options: ListTasksOptions): Promise<T> {
+  const searchParams = new URLSearchParams();
+  appendTaskFilterSearchParams(searchParams, options);
+  const queryString = searchParams.toString();
+  return getApi<T>(queryString ? `${path}?${queryString}` : path);
 }
 
 export async function getConfigurationSummary(): Promise<ConfigurationSummary> {

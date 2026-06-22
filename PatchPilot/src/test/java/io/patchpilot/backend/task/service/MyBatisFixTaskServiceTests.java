@@ -325,6 +325,34 @@ class MyBatisFixTaskServiceTests {
     }
 
     @Test
+    void should_list_tasks_with_adapter_metadata_filters() {
+        FixTaskEntity npmTask = entity("task-npm", "delivery-adapter-npm", FixTaskStatus.COMPLETED,
+                null, Instant.parse("2026-06-19T02:00:00Z"));
+        when(fixTaskMapper.selectList(any())).thenReturn(List.of(npmTask));
+
+        List<FixTaskVo> tasks = fixTaskService.listTasks(new FixTaskListQuery(
+                null,
+                null,
+                "octocat",
+                "hello-world",
+                "node",
+                "npm",
+                10,
+                0
+        ));
+
+        assertThat(tasks)
+                .extracting(FixTaskVo::id)
+                .containsExactly("task-npm");
+        ArgumentCaptor<Wrapper<FixTaskEntity>> wrapperCaptor = ArgumentCaptor.forClass(Wrapper.class);
+        verify(fixTaskMapper).selectList(wrapperCaptor.capture());
+        assertThat(wrapperCaptor.getValue().getSqlSegment())
+                .contains("language")
+                .contains("build_system")
+                .contains("LIMIT 0, 10");
+    }
+
+    @Test
     void should_count_tasks_with_query_filters_without_limit_or_offset() {
         when(fixTaskMapper.selectCount(any())).thenReturn(2L);
 

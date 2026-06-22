@@ -91,6 +91,8 @@ test('builds backend task search sort and pagination query parameters', async ()
     query: ' search target ',
     repositoryOwner: ' bingqin2 ',
     repositoryName: ' PatchPilot ',
+    language: ' node ',
+    buildSystem: ' npm ',
     createdAfter: ' 2026-06-20T01:00:00Z ',
     createdBefore: ' 2026-06-21T01:00:00Z ',
     limit: 25,
@@ -99,7 +101,7 @@ test('builds backend task search sort and pagination query parameters', async ()
   });
 
   expect(fetchMock).toHaveBeenCalledWith(
-    '/api/tasks?limit=25&offset=50&query=search+target&repositoryOwner=bingqin2&repositoryName=PatchPilot&createdAfter=2026-06-20T01%3A00%3A00Z&createdBefore=2026-06-21T01%3A00%3A00Z&sort=createdAtAsc&status=FAILED'
+    '/api/tasks?limit=25&offset=50&query=search+target&repositoryOwner=bingqin2&repositoryName=PatchPilot&language=node&buildSystem=npm&createdAfter=2026-06-20T01%3A00%3A00Z&createdBefore=2026-06-21T01%3A00%3A00Z&sort=createdAtAsc&status=FAILED'
   );
   expect(page).toEqual({
     items: [],
@@ -135,6 +137,8 @@ test('builds backend task status count query parameters without status or pagina
     query: ' search target ',
     repositoryOwner: ' bingqin2 ',
     repositoryName: ' PatchPilot ',
+    language: ' node ',
+    buildSystem: ' npm ',
     createdAfter: ' 2026-06-20T01:00:00Z ',
     createdBefore: ' 2026-06-21T01:00:00Z ',
     limit: 25,
@@ -143,7 +147,7 @@ test('builds backend task status count query parameters without status or pagina
   });
 
   expect(fetchMock).toHaveBeenCalledWith(
-    '/api/tasks/status-counts?query=search+target&repositoryOwner=bingqin2&repositoryName=PatchPilot&createdAfter=2026-06-20T01%3A00%3A00Z&createdBefore=2026-06-21T01%3A00%3A00Z'
+    '/api/tasks/status-counts?query=search+target&repositoryOwner=bingqin2&repositoryName=PatchPilot&language=node&buildSystem=npm&createdAfter=2026-06-20T01%3A00%3A00Z&createdBefore=2026-06-21T01%3A00%3A00Z'
   );
   expect(counts).toEqual({
     totalCount: 9,
