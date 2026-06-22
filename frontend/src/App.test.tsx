@@ -336,7 +336,12 @@ const configurationSummary = {
   queueRetryDelayMs: 30000,
   queueVisibilityTimeoutMs: 300000,
   modelCostConfigured: true,
-  modelTriggerClassificationEnabled: true
+  modelTriggerClassificationEnabled: true,
+  triggerRateLimitEnabled: true,
+  triggerRateLimitWindowMs: 600000,
+  triggerRateLimitMaxPerTriggerUser: 30,
+  triggerRateLimitMaxPerRepository: 60,
+  triggerRateLimitMaxPerIssue: 20
 };
 
 beforeEach(() => {

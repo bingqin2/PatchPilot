@@ -13,8 +13,11 @@ import io.patchpilot.backend.safety.domain.RecordRejectedTriggerCommand;
 import io.patchpilot.backend.safety.domain.RejectedTriggerAuditVo;
 import io.patchpilot.backend.safety.domain.TriggerIntentClassificationRequest;
 import io.patchpilot.backend.safety.domain.TriggerIntentDecision;
+import io.patchpilot.backend.safety.domain.TriggerRateLimitDecision;
+import io.patchpilot.backend.safety.domain.TriggerRateLimitRequest;
 import io.patchpilot.backend.safety.service.TriggerIntentClassifier;
 import io.patchpilot.backend.safety.service.RejectedTriggerAuditService;
+import io.patchpilot.backend.safety.service.TriggerRateLimitService;
 import io.patchpilot.backend.task.domain.bo.CreateFixTaskCommand;
 import io.patchpilot.backend.task.domain.bo.FixTaskCreationResult;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
@@ -358,6 +361,54 @@ class GitHubWebhookServiceTests {
         assertThat(issueCommentTool.acceptedCount()).isEqualTo(1);
         assertThat(timelineService.eventTypes())
                 .containsExactly(FixTaskTimelineEventType.TASK_CREATED, FixTaskTimelineEventType.STATUS_COMMENT_CREATED);
+    }
+
+    @Test
+    void should_reject_when_trigger_rate_limit_is_exceeded_before_task_creation() {
+        FixTaskService fixTaskService = new InMemoryFixTaskService();
+        RecordingFixTaskDispatcher fixTaskDispatcher = new RecordingFixTaskDispatcher();
+        RecordingIssueCommentTool issueCommentTool = new RecordingIssueCommentTool();
+        RecordingTimelineService timelineService = new RecordingTimelineService();
+        RecordingRejectedTriggerAuditService auditService = new RecordingRejectedTriggerAuditService();
+        RecordingTriggerRateLimitService rateLimitService = new RecordingTriggerRateLimitService(
+                TriggerRateLimitDecision.rejected("Unsafe request rejected: trigger rate limit exceeded for issue")
+        );
+        RecordingTriggerIntentClassifier triggerIntentClassifier = new RecordingTriggerIntentClassifier(
+                TriggerIntentDecision.shouldExecute("should not be called")
+        );
+        GitHubWebhookService webhookService = new GitHubWebhookService(
+                new ObjectMapper(),
+                fixTaskService,
+                fixTaskDispatcher,
+                issueCommentTool,
+                timelineService,
+                auditService,
+                new CommandSafetyGate(),
+                rateLimitService,
+                triggerIntentClassifier
+        );
+
+        WebhookHandleResult result = webhookService.handle(
+                "issue_comment",
+                "delivery-rate-limited",
+                issueCommentPayload("/agent fix touch docs/demo.md")
+        );
+
+        assertThat(result.status()).isEqualTo(WebhookHandleStatus.REJECTED);
+        assertThat(result.taskId()).isNull();
+        assertThat(fixTaskService.listTasks()).isEmpty();
+        assertThat(fixTaskDispatcher.dispatchCount()).isZero();
+        assertThat(issueCommentTool.acceptedCount()).isZero();
+        assertThat(timelineService.eventTypes()).isEmpty();
+        assertThat(rateLimitService.request().source()).isEqualTo("issue_comment");
+        assertThat(rateLimitService.request().repositoryOwner()).isEqualTo("octocat");
+        assertThat(rateLimitService.request().repositoryName()).isEqualTo("hello-world");
+        assertThat(rateLimitService.request().issueNumber()).isEqualTo(42L);
+        assertThat(rateLimitService.request().triggerUser()).isEqualTo("alice");
+        assertThat(triggerIntentClassifier.request()).isNull();
+        assertThat(auditService.commands()).hasSize(1);
+        assertThat(auditService.commands().get(0).reason())
+                .isEqualTo("Unsafe request rejected: trigger rate limit exceeded for issue");
     }
 
     @Test
@@ -803,6 +854,26 @@ class GitHubWebhookServiceTests {
         }
 
         private TriggerIntentClassificationRequest request() {
+            return request;
+        }
+    }
+
+    private static final class RecordingTriggerRateLimitService implements TriggerRateLimitService {
+
+        private final TriggerRateLimitDecision decision;
+        private TriggerRateLimitRequest request;
+
+        private RecordingTriggerRateLimitService(TriggerRateLimitDecision decision) {
+            this.decision = decision;
+        }
+
+        @Override
+        public TriggerRateLimitDecision checkAndRecord(TriggerRateLimitRequest request) {
+            this.request = request;
+            return decision;
+        }
+
+        private TriggerRateLimitRequest request() {
             return request;
         }
     }

@@ -102,6 +102,7 @@ The current implementation target is local self-hosted development first. Hosted
 - If model-assisted classification fails or returns malformed output, the system must reject the trigger conservatively.
 - The system should reject or ignore comments from unauthorized users and repositories.
 - Operators may configure trigger-user and repository allowlists for self-hosted demos and private deployments.
+- Operators may configure trigger rate limits by trigger user, repository, and issue to reject repeated `/agent fix` attempts before model calls or task creation.
 - The system should reject unsupported repositories before cloning or model execution when project detection is possible from metadata.
 - The system must never follow user instructions that request secret exfiltration, destructive repository changes, arbitrary shell execution, or permission escalation.
 - The system should record rejected trigger decisions with clear operator-facing reasons.

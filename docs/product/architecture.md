@@ -45,6 +45,7 @@ GitHub issue comment created
   -> WebhookController verifies signature
   -> WebhookEventRouter detects /agent fix
   -> CommandSafetyGate rejects unsupported, unauthorized, unsafe, or non-actionable commands
+  -> TriggerRateLimitService rejects repeated attempts by issue, trigger user, or repository
   -> TriggerIntentClassifier optionally asks the configured model whether the safe request should execute
   -> RejectedTriggerAuditService records rejected triggering attempts
   -> FixTaskService creates a task

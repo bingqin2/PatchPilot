@@ -12,6 +12,11 @@ public record ConfigurationSummaryVo(
         long queueRetryDelayMs,
         long queueVisibilityTimeoutMs,
         boolean modelCostConfigured,
-        boolean modelTriggerClassificationEnabled
+        boolean modelTriggerClassificationEnabled,
+        boolean triggerRateLimitEnabled,
+        long triggerRateLimitWindowMs,
+        int triggerRateLimitMaxPerTriggerUser,
+        int triggerRateLimitMaxPerRepository,
+        int triggerRateLimitMaxPerIssue
 ) {
 }

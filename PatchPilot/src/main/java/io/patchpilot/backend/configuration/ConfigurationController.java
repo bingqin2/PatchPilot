@@ -41,7 +41,12 @@ public class ConfigurationController {
                 taskQueueProperties.getRetryDelayMs(),
                 taskQueueProperties.getVisibilityTimeoutMs(),
                 modelCostConfigured(),
-                safetyProperties.isModelTriggerClassificationEnabled()
+                safetyProperties.isModelTriggerClassificationEnabled(),
+                safetyProperties.isTriggerRateLimitEnabled(),
+                safetyProperties.getTriggerRateLimitWindowMs(),
+                safetyProperties.getTriggerRateLimitMaxPerTriggerUser(),
+                safetyProperties.getTriggerRateLimitMaxPerRepository(),
+                safetyProperties.getTriggerRateLimitMaxPerIssue()
         ));
     }
 
