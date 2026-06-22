@@ -144,6 +144,19 @@ export interface SupportedLanguageAdapter {
   status: 'SUPPORTED';
 }
 
+export interface LanguageAdapterFixtureVerification {
+  fixtureName: string;
+  fixturePath: string;
+  expectedLanguage: string;
+  expectedBuildSystem: string;
+  expectedVerificationCommand: string[];
+  actualLanguage: string;
+  actualBuildSystem: string;
+  actualVerificationCommand: string[];
+  reason: string;
+  status: 'PASS' | 'FAIL';
+}
+
 export interface FixTaskQueueSummary {
   totalCount: number;
   pendingCount: number;

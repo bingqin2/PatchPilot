@@ -65,4 +65,11 @@ class MavenRuntimePackagingTests {
 
         assertThat(dockerfile).contains("python3 -m pip install --no-cache-dir poetry uv tox nox hatch");
     }
+
+    @Test
+    void should_copy_adapter_demo_fixtures_for_runtime_fixture_verification_api() throws Exception {
+        String dockerfile = Files.readString(Path.of("Dockerfile"));
+
+        assertThat(dockerfile).contains("COPY docs/demo-repositories /app/docs/demo-repositories");
+    }
 }

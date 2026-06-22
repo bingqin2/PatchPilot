@@ -22,6 +22,7 @@ RUN apt-get update \
 ENV PATH="/usr/local/bun/bin:${PATH}"
 
 COPY --from=build /workspace/PatchPilot/target/patchpilot-backend-*.jar /app/patchpilot-backend.jar
+COPY docs/demo-repositories /app/docs/demo-repositories
 
 EXPOSE 8080
 

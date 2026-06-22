@@ -18,6 +18,7 @@ import type {
   FixTaskTestRun,
   FixTaskTimelineEvent,
   FixTaskToolCall,
+  LanguageAdapterFixtureVerification,
   SupportedLanguageAdapter,
   TaskSort,
   TaskStatusFilter
@@ -126,6 +127,10 @@ export async function getBackendHealth(): Promise<BackendHealth> {
 
 export async function listLanguageAdapters(): Promise<SupportedLanguageAdapter[]> {
   return getApi<SupportedLanguageAdapter[]>('/api/language-adapters');
+}
+
+export async function listLanguageAdapterFixtures(): Promise<LanguageAdapterFixtureVerification[]> {
+  return getApi<LanguageAdapterFixtureVerification[]>('/api/language-adapters/fixtures');
 }
 
 export async function getQueueSummary(): Promise<FixTaskQueueSummary> {

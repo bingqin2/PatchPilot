@@ -4,6 +4,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import java.util.List;
+
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -12,7 +14,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class LanguageAdapterControllerTests {
 
     private final MockMvc mockMvc = MockMvcBuilders
-            .standaloneSetup(new LanguageAdapterController(new LanguageAdapterCatalogService()))
+            .standaloneSetup(new LanguageAdapterController(
+                    new LanguageAdapterCatalogService(),
+                    new LanguageAdapterFixtureVerificationService(
+                            new LanguageAdapterCatalogService(),
+                            new LanguageAdapterRegistry(List.of())
+                    )
+            ))
             .build();
 
     @Test
@@ -44,5 +52,32 @@ class LanguageAdapterControllerTests {
                 .andExpect(jsonPath("$.data[8].verificationCommand[1]").value("test"))
                 .andExpect(jsonPath("$.data[11].language").value("python"))
                 .andExpect(jsonPath("$.data[11].buildSystem").value("pytest"));
+    }
+
+    @Test
+    void should_return_adapter_fixture_verification_results() throws Exception {
+        MockMvc fixtureMockMvc = MockMvcBuilders
+                .standaloneSetup(new LanguageAdapterController(
+                        new LanguageAdapterCatalogService(),
+                        LanguageAdapterFixtureVerificationServiceTests.fixtureService()
+                ))
+                .build();
+
+        fixtureMockMvc.perform(get("/api/language-adapters/fixtures"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data", hasSize(12)))
+                .andExpect(jsonPath("$.data[0].fixtureName").value("java-maven"))
+                .andExpect(jsonPath("$.data[0].fixturePath").value("docs/demo-repositories/java-maven"))
+                .andExpect(jsonPath("$.data[0].expectedLanguage").value("java"))
+                .andExpect(jsonPath("$.data[0].actualLanguage").value("java"))
+                .andExpect(jsonPath("$.data[0].expectedBuildSystem").value("maven"))
+                .andExpect(jsonPath("$.data[0].actualBuildSystem").value("maven"))
+                .andExpect(jsonPath("$.data[0].expectedVerificationCommand[0]").value("mvn"))
+                .andExpect(jsonPath("$.data[0].actualVerificationCommand[0]").value("mvn"))
+                .andExpect(jsonPath("$.data[0].status").value("PASS"))
+                .andExpect(jsonPath("$.data[8].fixtureName").value("python-hatch"))
+                .andExpect(jsonPath("$.data[8].expectedVerificationCommand[0]").value("hatch"))
+                .andExpect(jsonPath("$.data[8].expectedVerificationCommand[1]").value("test"));
     }
 }

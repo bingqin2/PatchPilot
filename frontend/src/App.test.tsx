@@ -415,6 +415,24 @@ const supportedLanguageAdapters = [
   }
 ];
 
+const adapterFixtureVerifications = supportedLanguageAdapters.map((adapter) => ({
+  fixtureName: fixtureName(adapter.demoFixturePath),
+  fixturePath: adapter.demoFixturePath,
+  expectedLanguage: adapter.language,
+  expectedBuildSystem: adapter.buildSystem,
+  expectedVerificationCommand: adapter.verificationCommand,
+  actualLanguage: adapter.language,
+  actualBuildSystem: adapter.buildSystem,
+  actualVerificationCommand: adapter.verificationCommand,
+  reason: `Detected ${adapter.buildSystem} fixture`,
+  status: 'PASS'
+}));
+
+function fixtureName(fixturePath: string) {
+  const segments = fixturePath.split('/');
+  return segments[segments.length - 1] ?? fixturePath;
+}
+
 const statusCounts = {
   totalCount: 2,
   pendingCount: 0,
@@ -565,6 +583,9 @@ beforeEach(() => {
     }
     if (url === '/api/language-adapters') {
       return jsonResponse(supportedLanguageAdapters);
+    }
+    if (url === '/api/language-adapters/fixtures') {
+      return jsonResponse(adapterFixtureVerifications);
     }
     if (url === '/api/task-queue/summary') {
       return jsonResponse(queueSummary);
@@ -782,11 +803,13 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(screen.getByText('Queue attempts 3')).toBeInTheDocument();
   expect(screen.getByRole('heading', { name: 'Supported adapters' })).toBeInTheDocument();
   expect(screen.getByText('12 supported adapters')).toBeInTheDocument();
-  expect(screen.getByText('docs/demo-repositories/java-maven')).toBeInTheDocument();
-  expect(screen.getByText('bun test')).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: 'Fixture verification' })).toBeInTheDocument();
+  expect(screen.getByText('12/12 fixtures passing')).toBeInTheDocument();
+  expect(screen.getByRole('row', { name: /java maven mvn test/i })).toBeInTheDocument();
+  expect(screen.getByRole('row', { name: /node bun bun test/i })).toBeInTheDocument();
   expect(screen.getByRole('row', { name: /python tox tox/i })).toBeInTheDocument();
-  expect(screen.getByText('hatch test')).toBeInTheDocument();
-  expect(screen.getByText('uv run pytest')).toBeInTheDocument();
+  expect(screen.getByRole('row', { name: /python-hatch python hatch python hatch pass/i })).toBeInTheDocument();
+  expect(screen.getByRole('row', { name: /python-uv python uv python uv pass/i })).toBeInTheDocument();
   expect(screen.getByText('Queue')).toBeInTheDocument();
   expect(screen.getByText('Queue has failures')).toBeInTheDocument();
   expect(screen.getByText('1 failed item')).toBeInTheDocument();
@@ -796,6 +819,7 @@ test('renders operational task dashboard from backend APIs', async () => {
 
   await waitFor(() => expect(screen.getByText('Task completed')).toBeInTheDocument());
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/language-adapters'));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/language-adapters/fixtures'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks/task-1/detail'));
   expect(screen.getByText('Pull request opened')).toBeInTheDocument();
   expect(screen.getByText('Tests run: 247, Failures: 0, Errors: 0')).toBeInTheDocument();

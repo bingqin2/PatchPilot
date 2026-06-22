@@ -13,11 +13,13 @@ import {
   getTaskDetail,
   getTaskReport,
   getTaskStatusCounts,
+  listLanguageAdapterFixtures,
   listLanguageAdapters,
   listQueueItems,
   listTasks,
   retryTask
 } from './api';
+import { AdapterFixtureVerificationPanel } from './dashboard/components/AdapterFixtureVerificationPanel';
 import { ConfigurationPanel } from './dashboard/components/ConfigurationPanel';
 import { FailureCausePanel } from './dashboard/components/FailureCausePanel';
 import { LatencyPanel } from './dashboard/components/LatencyPanel';
@@ -43,6 +45,7 @@ import type {
   FixTaskModelUsageSummary,
   FixTaskQueueItem,
   FixTaskQueueSummary,
+  LanguageAdapterFixtureVerification,
   SupportedLanguageAdapter,
   TaskSort,
   TaskStatusFilter
@@ -72,6 +75,8 @@ export default function App() {
   const [backendHealth, setBackendHealth] = useState<BackendHealth | null>(null);
   const [supportedAdapters, setSupportedAdapters] = useState<SupportedLanguageAdapter[]>([]);
   const [adapterError, setAdapterError] = useState<string | null>(null);
+  const [adapterFixtureVerifications, setAdapterFixtureVerifications] = useState<LanguageAdapterFixtureVerification[]>([]);
+  const [adapterFixtureError, setAdapterFixtureError] = useState<string | null>(null);
   const [queueSummary, setQueueSummary] = useState<FixTaskQueueSummary | null>(null);
   const [queueItems, setQueueItems] = useState<FixTaskQueueItem[]>([]);
   const [statusFilter, setStatusFilter] = useState<TaskStatusFilter>(initialFilters.status);
@@ -286,6 +291,7 @@ export default function App() {
         configurationSummary,
         healthSummary,
         adapterListResult,
+        adapterFixtureResult,
         queueSummaryData,
         queueItemList
       ] = await Promise.all([
@@ -306,6 +312,10 @@ export default function App() {
           (adapters) => ({ adapters, error: null as string | null }),
           (caught) => ({ adapters: null, error: errorMessage(caught) })
         ),
+        listLanguageAdapterFixtures().then(
+          (verifications) => ({ verifications, error: null as string | null }),
+          (caught) => ({ verifications: null, error: errorMessage(caught) })
+        ),
         getQueueSummary(),
         listQueueItems()
       ]);
@@ -321,6 +331,10 @@ export default function App() {
         setSupportedAdapters(adapterListResult.adapters);
       }
       setAdapterError(adapterListResult.error);
+      if (adapterFixtureResult.verifications) {
+        setAdapterFixtureVerifications(adapterFixtureResult.verifications);
+      }
+      setAdapterFixtureError(adapterFixtureResult.error);
       setQueueSummary(queueSummaryData);
       setQueueItems(queueItemList);
       setCanLoadMoreTasks(taskList.hasMore);
@@ -556,6 +570,8 @@ export default function App() {
       <ConfigurationPanel configuration={configuration} backendHealth={backendHealth} />
 
       <SupportedAdaptersPanel adapters={supportedAdapters} error={adapterError} />
+
+      <AdapterFixtureVerificationPanel verifications={adapterFixtureVerifications} error={adapterFixtureError} />
 
       <QueuePanel summary={queueSummary} items={queueItems} />
     </main>

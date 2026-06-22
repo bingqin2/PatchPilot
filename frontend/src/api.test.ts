@@ -5,6 +5,7 @@ import {
   getFailureCauseSummary,
   getLatencySummary,
   getModelUsageSummary,
+  listLanguageAdapterFixtures,
   listLanguageAdapters,
   getTaskReport,
   getTaskDetail,
@@ -373,6 +374,50 @@ test('loads supported language adapters from backend API', async () => {
       detectionSignals: ['pom.xml', 'mvnw'],
       demoFixturePath: 'docs/demo-repositories/java-maven',
       status: 'SUPPORTED'
+    }
+  ]);
+});
+
+test('loads language adapter fixture verifications from backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: [
+        {
+          fixtureName: 'python-hatch',
+          fixturePath: 'docs/demo-repositories/python-hatch',
+          expectedLanguage: 'python',
+          expectedBuildSystem: 'hatch',
+          expectedVerificationCommand: ['hatch', 'test'],
+          actualLanguage: 'python',
+          actualBuildSystem: 'hatch',
+          actualVerificationCommand: ['hatch', 'test'],
+          reason: 'Detected Hatch test script',
+          status: 'PASS'
+        }
+      ],
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const fixtures = await listLanguageAdapterFixtures();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/language-adapters/fixtures');
+  expect(fixtures).toEqual([
+    {
+      fixtureName: 'python-hatch',
+      fixturePath: 'docs/demo-repositories/python-hatch',
+      expectedLanguage: 'python',
+      expectedBuildSystem: 'hatch',
+      expectedVerificationCommand: ['hatch', 'test'],
+      actualLanguage: 'python',
+      actualBuildSystem: 'hatch',
+      actualVerificationCommand: ['hatch', 'test'],
+      reason: 'Detected Hatch test script',
+      status: 'PASS'
     }
   ]);
 });
