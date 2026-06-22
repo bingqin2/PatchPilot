@@ -378,6 +378,70 @@ class WorkspaceFixTaskExecutorTests {
     }
 
     @Test
+    void should_resume_approved_pending_review_task_without_regenerating_diff() {
+        RecordingWorkspaceService workspaceService = new RecordingWorkspaceService();
+        RecordingLanguageAdapterRegistry languageAdapterRegistry = new RecordingLanguageAdapterRegistry(
+                LanguageDetectionResult.supported(
+                        "node",
+                        "npm",
+                        List.of("npm", "test"),
+                        "package.json contains a non-empty scripts.test"
+                )
+        );
+        RecordingPatchWorkflow patchWorkflow = new RecordingPatchWorkflow();
+        RecordingDiffTool diffTool = new RecordingDiffTool();
+        RecordingCommitTool commitTool = new RecordingCommitTool(false);
+        RecordingPushTool pushTool = new RecordingPushTool(false);
+        RecordingPullRequestTool pullRequestTool = new RecordingPullRequestTool();
+        RecordingVerificationRunner verificationRunner = new RecordingVerificationRunner(0, "tests passed");
+        RecordingFixTaskTestRunService testRunService = new RecordingFixTaskTestRunService();
+        RecordingFixTaskToolCallService toolCallService = new RecordingFixTaskToolCallService();
+        RecordingFixTaskService fixTaskService = new RecordingFixTaskService(approvedReviewTask());
+        FixTaskExecutor executor = new NoopFixTaskExecutor(
+                workspaceService,
+                languageAdapterRegistry,
+                verificationRunner,
+                patchWorkflow,
+                diffTool,
+                commitTool,
+                pushTool,
+                pullRequestTool,
+                fixTaskService,
+                testRunService,
+                toolCallService,
+                taskId -> { }
+        );
+
+        FixTaskExecutionResult result = executor.execute(approvedReviewTask());
+
+        assertThat(result.pullRequestUrl()).isEqualTo("https://github.com/octocat/hello-world/pull/7");
+        assertThat(workspaceService.command().taskId()).isEqualTo("task-123");
+        assertThat(workspaceService.prepared()).isFalse();
+        assertThat(workspaceService.resumed()).isTrue();
+        assertThat(languageAdapterRegistry.repositoryDir()).isEqualTo(Path.of("/tmp/workspace/repo"));
+        assertThat(patchWorkflow.callOrder()).isZero();
+        assertThat(diffTool.callOrder()).isZero();
+        assertThat(verificationRunner.repositoryDir()).isEqualTo(Path.of("/tmp/workspace/repo"));
+        assertThat(verificationRunner.command()).containsExactly("npm", "test");
+        assertThat(commitTool.repositoryDir()).isEqualTo(Path.of("/tmp/workspace/repo"));
+        assertThat(pushTool.branchName()).isEqualTo("patchpilot/task-123");
+        assertThat(pullRequestTool.branchName()).isEqualTo("patchpilot/task-123");
+        assertThat(toolCallService.toolCalls())
+                .extracting(FixTaskToolCallVo::toolName)
+                .containsExactly(
+                        "WorkspaceService",
+                        "LanguageAdapterRegistry",
+                        "GeneratedDiffRiskApproval",
+                        "CommitTool",
+                        "PushTool",
+                        "PullRequestTool"
+                );
+        assertThat(toolCallService.toolCalls())
+                .extracting(FixTaskToolCallVo::inputSummary)
+                .contains("approvedAt=2026-06-18T01:02:03Z");
+    }
+
+    @Test
     void should_stop_before_commit_when_task_is_cancelled_after_tests() {
         RecordingWorkspaceService workspaceService = new RecordingWorkspaceService();
         RecordingPatchWorkflow patchWorkflow = new RecordingPatchWorkflow();
@@ -526,9 +590,38 @@ class WorkspaceFixTaskExecutorTests {
         );
     }
 
+    private static FixTaskVo approvedReviewTask() {
+        return new FixTaskVo(
+                "task-123",
+                "octocat",
+                "hello-world",
+                42,
+                0,
+                "alice",
+                "/agent fix",
+                "delivery-123",
+                98765,
+                FixTaskStatus.RUNNING_TESTS,
+                null,
+                Instant.parse("2026-06-18T00:00:00Z"),
+                null,
+                null,
+                Instant.parse("2026-06-18T01:02:04Z"),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                Instant.parse("2026-06-18T01:02:03Z")
+        );
+    }
+
     private static final class RecordingWorkspaceService implements WorkspaceService {
 
         private CloneWorkspaceCommand command;
+        private boolean prepared;
+        private boolean resumed;
 
         @Override
         public WorkspaceCloneResult cloneRepository(CloneWorkspaceCommand command) {
@@ -538,6 +631,19 @@ class WorkspaceFixTaskExecutorTests {
         @Override
         public PreparedWorkspaceResult prepareRepository(CloneWorkspaceCommand command) {
             this.command = command;
+            this.prepared = true;
+            return new PreparedWorkspaceResult(
+                    command.taskId(),
+                    Path.of("/tmp/workspace"),
+                    Path.of("/tmp/workspace/repo"),
+                    "patchpilot/" + command.taskId()
+            );
+        }
+
+        @Override
+        public PreparedWorkspaceResult resumePreparedRepository(CloneWorkspaceCommand command) {
+            this.command = command;
+            this.resumed = true;
             return new PreparedWorkspaceResult(
                     command.taskId(),
                     Path.of("/tmp/workspace"),
@@ -548,6 +654,14 @@ class WorkspaceFixTaskExecutorTests {
 
         private CloneWorkspaceCommand command() {
             return command;
+        }
+
+        private boolean prepared() {
+            return prepared;
+        }
+
+        private boolean resumed() {
+            return resumed;
         }
     }
 

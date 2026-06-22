@@ -1,4 +1,4 @@
-import { Copy, ExternalLink, RotateCcw, XCircle } from 'lucide-react';
+import { CheckCircle2, Copy, ExternalLink, RotateCcw, XCircle } from 'lucide-react';
 import { useState } from 'react';
 import type { FixTask } from '../../types';
 import { compactTime, duration, issueUrl } from '../format';
@@ -13,6 +13,7 @@ interface TaskDetailPanelProps {
   actionInFlight: boolean;
   onCancelTask: (taskId: string) => Promise<void>;
   onRetryTask: (taskId: string) => Promise<void>;
+  onApproveReview: (taskId: string) => Promise<void>;
   onCopyReport: (taskId: string) => Promise<string>;
 }
 
@@ -23,6 +24,7 @@ export function TaskDetailPanel({
   actionInFlight,
   onCancelTask,
   onRetryTask,
+  onApproveReview,
   onCopyReport
 }: TaskDetailPanelProps) {
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
@@ -41,6 +43,7 @@ export function TaskDetailPanel({
     || task.status === 'RUNNING_TESTS'
     || task.status === 'PENDING_REVIEW';
   const canRetry = task.status === 'FAILED' || task.status === 'CANCELLED';
+  const canApproveReview = task.status === 'PENDING_REVIEW';
   const latestTestStatus = testStatus(detail.summary?.latestTestRunExitCode);
   const generatedDiffRiskBlocked = detail.toolCalls.some(
     (call) => call.toolName === 'GeneratedDiffRiskGate' && !call.success
@@ -120,6 +123,17 @@ export function TaskDetailPanel({
             >
               <RotateCcw size={14} />
               Retry task
+            </button>
+          ) : null}
+          {canApproveReview ? (
+            <button
+              className="secondary-button"
+              type="button"
+              disabled={actionInFlight}
+              onClick={() => void onApproveReview(task.id)}
+            >
+              <CheckCircle2 size={14} />
+              Approve review
             </button>
           ) : null}
           {task.pullRequestUrl ? (

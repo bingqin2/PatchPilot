@@ -2311,3 +2311,20 @@ Validation:
 - `mvn -pl PatchPilot -Dtest=FixTaskWorkerTests,DefaultFixTaskControlServiceTests,DefaultFixTaskMetricsServiceTests,TaskControllerTests test`: first failed because `PENDING_REVIEW`, `markPendingReview(...)`, pending-review counts, timeline events, and status-comment updates did not exist.
 - `mvn -pl PatchPilot -Dtest=FixTaskWorkerTests,DefaultFixTaskControlServiceTests,DefaultFixTaskMetricsServiceTests,TaskControllerTests,IssueCommentToolTests test`: passed after backend implementation, 81 tests run, 0 failures.
 - `npm test -- --run src/App.test.tsx src/api.test.ts src/dashboard/components/TaskDetailPanel.test.tsx`: first failed because the dashboard still expected two visible tasks after adding a pending-review fixture; then passed after updating the fixture counts and assertions, 66 tests run, 0 failures.
+
+Implemented risk review approval from `docs/plans/113-risk-review-approval.md`.
+
+Changes:
+
+- Added `riskReviewApprovedAt` task persistence through a Flyway migration.
+- Added `POST /api/tasks/{id}/approve-review` and `FixTaskControlService.approveReviewTask(...)`.
+- Restricted approval to `PENDING_REVIEW` tasks, then changed approved tasks back to `PENDING`, cleared the risk failure reason, enqueued the task, and recorded a `REVIEW_APPROVED` timeline event.
+- Added workspace resume support so an approved task continues from the existing task workspace instead of re-running model patch generation, diff generation, or the generated-diff risk gate.
+- Kept adapter detection, verification, commit, push, Pull Request creation, queue records, and GitHub human review in the resumed path.
+- Added dashboard `Approve review` action for pending-review tasks and kept retry hidden for pending-review states.
+- Updated README, architecture notes, target state, frontend design notes, and this execution log.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=DefaultFixTaskControlServiceTests,TaskControllerTests,WorkspaceFixTaskExecutorTests,InMemoryFixTaskServiceTests,MyBatisFixTaskServiceTests test`: first failed because the approval API, review approval field, timeline event, service transition, and workspace resume method did not exist; then passed after backend implementation, 113 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts src/dashboard/components/TaskDetailPanel.test.tsx src/App.test.tsx`: first failed because the approve-review API and detail action did not exist; then passed after frontend implementation, 69 tests run, 0 failures.

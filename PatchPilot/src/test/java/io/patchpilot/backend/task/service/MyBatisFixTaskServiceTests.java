@@ -134,6 +134,7 @@ class MyBatisFixTaskServiceTests {
     void should_mark_terminal_task_pending_for_retry() {
         FixTaskEntity current = entity("task-123", "delivery-123", FixTaskStatus.FAILED,
                 "executor failed", Instant.parse("2026-06-19T01:02:03Z"));
+        current.setRiskReviewApprovedAt(Instant.parse("2026-06-19T01:03:03Z"));
         when(fixTaskMapper.selectById("task-123")).thenReturn(current);
         when(fixTaskMapper.updateById(any(FixTaskEntity.class))).thenReturn(1);
         ArgumentCaptor<FixTaskEntity> entityCaptor = ArgumentCaptor.forClass(FixTaskEntity.class);
@@ -146,8 +147,31 @@ class MyBatisFixTaskServiceTests {
         assertThat(updatedEntity.getFailureReason()).isNull();
         assertThat(updatedEntity.getPullRequestUrl()).isNull();
         assertThat(updatedEntity.getCompletedAt()).isNull();
+        assertThat(updatedEntity.getRiskReviewApprovedAt()).isNull();
         assertThat(updatedEntity.getUpdatedAt()).isAfter(current.getUpdatedAt());
         assertThat(retriedTask.status()).isEqualTo(FixTaskStatus.PENDING);
+    }
+
+    @Test
+    void should_mark_pending_review_task_pending_for_review_approval() {
+        FixTaskEntity current = entity("task-123", "delivery-123", FixTaskStatus.PENDING_REVIEW,
+                "Generated diff rejected: sensitive path .env", Instant.parse("2026-06-19T01:02:03Z"));
+        when(fixTaskMapper.selectById("task-123")).thenReturn(current);
+        when(fixTaskMapper.updateById(any(FixTaskEntity.class))).thenReturn(1);
+        ArgumentCaptor<FixTaskEntity> entityCaptor = ArgumentCaptor.forClass(FixTaskEntity.class);
+
+        FixTaskVo approvedTask = fixTaskService.markPendingForReviewApproval("task-123");
+
+        verify(fixTaskMapper).updateById(entityCaptor.capture());
+        FixTaskEntity updatedEntity = entityCaptor.getValue();
+        assertThat(updatedEntity.getStatus()).isEqualTo(FixTaskStatus.PENDING.name());
+        assertThat(updatedEntity.getFailureReason()).isNull();
+        assertThat(updatedEntity.getPullRequestUrl()).isNull();
+        assertThat(updatedEntity.getCompletedAt()).isNull();
+        assertThat(updatedEntity.getRiskReviewApprovedAt()).isNotNull();
+        assertThat(updatedEntity.getUpdatedAt()).isAfter(current.getUpdatedAt());
+        assertThat(approvedTask.status()).isEqualTo(FixTaskStatus.PENDING);
+        assertThat(approvedTask.riskReviewApprovedAt()).isEqualTo(updatedEntity.getRiskReviewApprovedAt());
     }
 
     @Test

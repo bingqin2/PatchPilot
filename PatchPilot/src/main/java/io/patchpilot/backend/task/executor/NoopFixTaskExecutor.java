@@ -212,65 +212,14 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
     @Override
     public FixTaskExecutionResult execute(FixTaskVo task) {
         taskCancellationChecker.throwIfCancelled(task.id());
-        PreparedWorkspaceResult preparedWorkspace = auditToolCall(
-                task.id(),
-                "WorkspaceService",
-                "repository=%s/%s".formatted(task.repositoryOwner(), task.repositoryName()),
-                () -> workspaceService.prepareRepository(new CloneWorkspaceCommand(
-                        task.id(),
-                        task.repositoryOwner(),
-                        task.repositoryName()
-                )),
-                result -> "workspaceDir=%s, repositoryDir=%s, branchName=%s".formatted(
-                        result.workspaceDir(),
-                        result.repositoryDir(),
-                        result.branchName()
-                )
-        );
+        PreparedWorkspaceResult preparedWorkspace = prepareWorkspace(task);
         taskCancellationChecker.throwIfCancelled(task.id());
-        LanguageDetectionResult detectionResult = auditToolCall(
-                task.id(),
-                "LanguageAdapterRegistry",
-                "repositoryDir=%s".formatted(preparedWorkspace.repositoryDir()),
-                () -> detectSupportedRepository(preparedWorkspace.repositoryDir()),
-                result -> "%s/%s: %s".formatted(
-                        result.language(),
-                        result.buildSystem(),
-                        result.reason()
-                )
-        );
-        adapterMetadataRecorder.recordAdapterMetadata(
-                task.id(),
-                detectionResult.language(),
-                detectionResult.buildSystem(),
-                String.join(" ", detectionResult.verificationCommand()),
-                detectionResult.reason()
-        );
-        taskCancellationChecker.throwIfCancelled(task.id());
-        auditToolCall(
-                task.id(),
-                "PatchWorkflow",
-                "repositoryDir=%s, triggerComment=%s".formatted(
-                        preparedWorkspace.repositoryDir(),
-                        task.triggerComment()
-                ),
-                () -> patchWorkflow.apply(task, preparedWorkspace.repositoryDir()).summary()
-        );
-        taskCancellationChecker.throwIfCancelled(task.id());
-        String diff = auditToolCall(
-                task.id(),
-                "DiffTool",
-                "repositoryDir=%s".formatted(preparedWorkspace.repositoryDir()),
-                () -> diffTool.diff(preparedWorkspace.repositoryDir())
-        );
-        taskCancellationChecker.throwIfCancelled(task.id());
-        auditToolCall(
-                task.id(),
-                "GeneratedDiffRiskGate",
-                "changedBytes=%d".formatted(diff.length()),
-                () -> evaluateGeneratedDiffRisk(diff),
-                GeneratedDiffRiskDecision::reason
-        );
+        LanguageDetectionResult detectionResult = detectAndRecordAdapter(task, preparedWorkspace);
+        if (task.riskReviewApprovedAt() == null) {
+            generateAndRiskCheckDiff(task, preparedWorkspace);
+        } else {
+            recordApprovedRiskReview(task);
+        }
         taskCancellationChecker.throwIfCancelled(task.id());
         Instant testStartedAt = Instant.now();
         TestRunResult testRunResult = verificationRunner.runVerification(
@@ -324,6 +273,91 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
                 PullRequestResult::url
         );
         return new FixTaskExecutionResult(pullRequestResult.url());
+    }
+
+    private PreparedWorkspaceResult prepareWorkspace(FixTaskVo task) {
+        CloneWorkspaceCommand command = new CloneWorkspaceCommand(
+                task.id(),
+                task.repositoryOwner(),
+                task.repositoryName()
+        );
+        boolean approvedReviewResume = task.riskReviewApprovedAt() != null;
+        return auditToolCall(
+                task.id(),
+                "WorkspaceService",
+                "repository=%s/%s, mode=%s".formatted(
+                        task.repositoryOwner(),
+                        task.repositoryName(),
+                        approvedReviewResume ? "resume-approved-review" : "prepare"
+                ),
+                () -> approvedReviewResume
+                        ? workspaceService.resumePreparedRepository(command)
+                        : workspaceService.prepareRepository(command),
+                result -> "workspaceDir=%s, repositoryDir=%s, branchName=%s".formatted(
+                        result.workspaceDir(),
+                        result.repositoryDir(),
+                        result.branchName()
+                )
+        );
+    }
+
+    private LanguageDetectionResult detectAndRecordAdapter(FixTaskVo task, PreparedWorkspaceResult preparedWorkspace) {
+        LanguageDetectionResult detectionResult = auditToolCall(
+                task.id(),
+                "LanguageAdapterRegistry",
+                "repositoryDir=%s".formatted(preparedWorkspace.repositoryDir()),
+                () -> detectSupportedRepository(preparedWorkspace.repositoryDir()),
+                result -> "%s/%s: %s".formatted(
+                        result.language(),
+                        result.buildSystem(),
+                        result.reason()
+                )
+        );
+        adapterMetadataRecorder.recordAdapterMetadata(
+                task.id(),
+                detectionResult.language(),
+                detectionResult.buildSystem(),
+                String.join(" ", detectionResult.verificationCommand()),
+                detectionResult.reason()
+        );
+        taskCancellationChecker.throwIfCancelled(task.id());
+        return detectionResult;
+    }
+
+    private void generateAndRiskCheckDiff(FixTaskVo task, PreparedWorkspaceResult preparedWorkspace) {
+        auditToolCall(
+                task.id(),
+                "PatchWorkflow",
+                "repositoryDir=%s, triggerComment=%s".formatted(
+                        preparedWorkspace.repositoryDir(),
+                        task.triggerComment()
+                ),
+                () -> patchWorkflow.apply(task, preparedWorkspace.repositoryDir()).summary()
+        );
+        taskCancellationChecker.throwIfCancelled(task.id());
+        String diff = auditToolCall(
+                task.id(),
+                "DiffTool",
+                "repositoryDir=%s".formatted(preparedWorkspace.repositoryDir()),
+                () -> diffTool.diff(preparedWorkspace.repositoryDir())
+        );
+        taskCancellationChecker.throwIfCancelled(task.id());
+        auditToolCall(
+                task.id(),
+                "GeneratedDiffRiskGate",
+                "changedBytes=%d".formatted(diff.length()),
+                () -> evaluateGeneratedDiffRisk(diff),
+                GeneratedDiffRiskDecision::reason
+        );
+    }
+
+    private void recordApprovedRiskReview(FixTaskVo task) {
+        auditToolCall(
+                task.id(),
+                "GeneratedDiffRiskApproval",
+                "approvedAt=%s".formatted(task.riskReviewApprovedAt()),
+                () -> "Operator approved the generated diff; resuming after risk gate"
+        );
     }
 
     private LanguageDetectionResult detectSupportedRepository(java.nio.file.Path repositoryDir) {

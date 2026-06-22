@@ -25,8 +25,38 @@ public record FixTaskVo(
         String verificationCommand,
         String adapterDetectionReason,
         Long statusCommentId,
-        String statusCommentUrl
+        String statusCommentUrl,
+        Instant riskReviewApprovedAt
 ) {
+
+    public FixTaskVo(
+            String id,
+            String repositoryOwner,
+            String repositoryName,
+            long issueNumber,
+            long installationId,
+            String triggerUser,
+            String triggerComment,
+            String deliveryId,
+            long commentId,
+            FixTaskStatus status,
+            String failureReason,
+            Instant createdAt,
+            String pullRequestUrl,
+            Instant completedAt,
+            Instant updatedAt,
+            String language,
+            String buildSystem,
+            String verificationCommand,
+            String adapterDetectionReason,
+            Long statusCommentId,
+            String statusCommentUrl
+    ) {
+        this(id, repositoryOwner, repositoryName, issueNumber, installationId, triggerUser, triggerComment,
+                deliveryId, commentId, status, failureReason, createdAt, pullRequestUrl, completedAt, updatedAt,
+                language, buildSystem, verificationCommand, adapterDetectionReason, statusCommentId, statusCommentUrl,
+                null);
+    }
 
     public FixTaskVo(
             String id,
@@ -129,7 +159,35 @@ public record FixTaskVo(
                 verificationCommand,
                 adapterDetectionReason,
                 statusCommentId,
-                statusCommentUrl
+                statusCommentUrl,
+                riskReviewApprovedAt
+        );
+    }
+
+    public FixTaskVo withRiskReviewApprovedAt(Instant riskReviewApprovedAt) {
+        return new FixTaskVo(
+                id,
+                repositoryOwner,
+                repositoryName,
+                issueNumber,
+                installationId,
+                triggerUser,
+                triggerComment,
+                deliveryId,
+                commentId,
+                status,
+                failureReason,
+                createdAt,
+                pullRequestUrl,
+                completedAt,
+                updatedAt,
+                language,
+                buildSystem,
+                verificationCommand,
+                adapterDetectionReason,
+                statusCommentId,
+                statusCommentUrl,
+                riskReviewApprovedAt
         );
     }
 }

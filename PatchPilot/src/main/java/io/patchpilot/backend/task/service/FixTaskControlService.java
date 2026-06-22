@@ -7,4 +7,6 @@ public interface FixTaskControlService {
     FixTaskVo cancelTask(String taskId);
 
     FixTaskVo retryTask(String taskId);
+
+    FixTaskVo approveReviewTask(String taskId);
 }

@@ -202,7 +202,7 @@ PatchPilot must:
 - Enforce per-user, per-repository, and global rate limits before expensive work starts.
 - Run repository commands with allowlisted command templates, timeouts, resource limits, and no unnecessary secrets.
 - Re-check generated diffs before verification or GitHub writes, and block sensitive files, secret-like additions, binary patches, or overly broad changes.
-- Park generated-diff risk rejections in an explicit `PENDING_REVIEW` state until an operator cancels them or a future approval workflow resumes them.
+- Park generated-diff risk rejections in an explicit `PENDING_REVIEW` state until an operator cancels them or approves the already-generated diff to resume the same workspace after the risk gate.
 
 ## Engineering Target
 

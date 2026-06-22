@@ -1,6 +1,7 @@
 import { AlertCircle, RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  approveTaskReview,
   cancelTask,
   createTask,
   getBackendHealth,
@@ -452,6 +453,19 @@ export default function App() {
     }
   }, [refresh]);
 
+  const handleApproveReview = useCallback(async (taskId: string) => {
+    setActionTaskId(taskId);
+    setError(null);
+    try {
+      await approveTaskReview(taskId);
+      await refresh();
+    } catch (caught) {
+      setError(errorMessage(caught));
+    } finally {
+      setActionTaskId(null);
+    }
+  }, [refresh]);
+
   const handleCopyReport = useCallback((taskId: string) => getTaskReport(taskId), []);
 
   const handleCreateTask = useCallback(async (input: CreateTaskInput) => {
@@ -580,6 +594,7 @@ export default function App() {
           actionInFlight={actionTaskId === selectedTask?.id}
           onCancelTask={handleCancelTask}
           onRetryTask={handleRetryTask}
+          onApproveReview={handleApproveReview}
           onCopyReport={handleCopyReport}
         />
       </section>

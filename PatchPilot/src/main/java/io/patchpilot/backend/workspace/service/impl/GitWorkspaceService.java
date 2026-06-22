@@ -73,6 +73,23 @@ public class GitWorkspaceService implements WorkspaceService {
         );
     }
 
+    @Override
+    public PreparedWorkspaceResult resumePreparedRepository(CloneWorkspaceCommand command) {
+        Path rootDir = workspaceProperties.getRootDir().toAbsolutePath().normalize();
+        Path workspaceDir = rootDir.resolve(command.taskId()).normalize();
+        if (!workspaceDir.startsWith(rootDir)) {
+            throw new IllegalArgumentException("Invalid task id: " + command.taskId());
+        }
+        Path repositoryDir = workspaceDir.resolve(REPOSITORY_DIR_NAME);
+        if (!Files.isDirectory(repositoryDir)) {
+            throw new IllegalStateException(
+                    "Approved review workspace is missing: " + repositoryDir
+                            + ". Retry the task to regenerate a fresh patch instead."
+            );
+        }
+        return new PreparedWorkspaceResult(command.taskId(), workspaceDir, repositoryDir, branchName(command));
+    }
+
     private static void createDirectory(Path workspaceDir) {
         try {
             Files.createDirectories(workspaceDir);

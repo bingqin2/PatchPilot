@@ -408,6 +408,42 @@ class TaskControllerTests {
     }
 
     @Test
+    void should_approve_pending_review_task() throws Exception {
+        FixTaskVo reviewTask = createTask(command(
+                "approve-owner",
+                "approve-repo",
+                "delivery-approve-review"
+        ));
+        fixTaskService.markPendingReview(reviewTask.id(), "Generated diff rejected: sensitive path .env");
+
+        mockMvc.perform(post("/api/tasks/{id}/approve-review", reviewTask.id()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value(reviewTask.id()))
+                .andExpect(jsonPath("$.data.status").value("PENDING"))
+                .andExpect(jsonPath("$.data.failureReason").value(nullValue()))
+                .andExpect(jsonPath("$.data.riskReviewApprovedAt").value(not(nullValue())));
+
+        assertThat(fixTaskTimelineService.listEvents(reviewTask.id()))
+                .extracting(event -> event.eventType())
+                .contains(FixTaskTimelineEventType.REVIEW_APPROVED);
+    }
+
+    @Test
+    void should_return_conflict_when_approving_non_pending_review_task() throws Exception {
+        FixTaskVo task = createTask(command(
+                "approve-owner",
+                "approve-repo",
+                "delivery-approve-conflict"
+        ));
+
+        mockMvc.perform(post("/api/tasks/{id}/approve-review", task.id()))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("Only pending review tasks can be approved"));
+    }
+
+    @Test
     void should_filter_tasks_and_status_counts_by_adapter_metadata() throws Exception {
         FixTaskVo mavenTask = createTask(command(
                 "adapter-owner",

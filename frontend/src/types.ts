@@ -41,6 +41,7 @@ export interface FixTask {
   adapterDetectionReason: string | null;
   statusCommentId: number | null;
   statusCommentUrl: string | null;
+  riskReviewApprovedAt: string | null;
 }
 
 export interface FixTaskPage {

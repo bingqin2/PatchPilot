@@ -23,7 +23,8 @@ const completedTask = {
   verificationCommand: './mvnw test',
   adapterDetectionReason: 'pom.xml detected with mvnw wrapper',
   statusCommentId: null,
-  statusCommentUrl: 'https://github.com/bingqin2/PatchPilot/issues/1#issuecomment-4756084894'
+  statusCommentUrl: 'https://github.com/bingqin2/PatchPilot/issues/1#issuecomment-4756084894',
+  riskReviewApprovedAt: null
 };
 
 const failedTask = {
@@ -47,7 +48,8 @@ const failedTask = {
   verificationCommand: 'npm test',
   adapterDetectionReason: 'package.json contains a non-empty scripts.test',
   statusCommentId: null,
-  statusCommentUrl: null
+  statusCommentUrl: null,
+  riskReviewApprovedAt: null
 };
 
 const reviewTask = {
@@ -71,7 +73,8 @@ const reviewTask = {
   verificationCommand: 'npm test',
   adapterDetectionReason: 'package.json contains a non-empty scripts.test',
   statusCommentId: null,
-  statusCommentUrl: null
+  statusCommentUrl: null,
+  riskReviewApprovedAt: null
 };
 
 const runningTask = {
@@ -95,7 +98,8 @@ const runningTask = {
   verificationCommand: null,
   adapterDetectionReason: null,
   statusCommentId: null,
-  statusCommentUrl: null
+  statusCommentUrl: null,
+  riskReviewApprovedAt: null
 };
 
 const cancelledTask = {
@@ -110,6 +114,14 @@ const retriedTask = {
   status: 'PENDING',
   failureReason: null,
   updatedAt: '2026-06-20T01:07:00Z'
+};
+
+const approvedReviewTask = {
+  ...reviewTask,
+  status: 'PENDING',
+  failureReason: null,
+  updatedAt: '2026-06-20T01:09:00Z',
+  riskReviewApprovedAt: '2026-06-20T01:09:00Z'
 };
 
 const manuallyCreatedTask = {
@@ -133,7 +145,8 @@ const manuallyCreatedTask = {
   verificationCommand: null,
   adapterDetectionReason: null,
   statusCommentId: null,
-  statusCommentUrl: null
+  statusCommentUrl: null,
+  riskReviewApprovedAt: null
 };
 
 const summary = {
@@ -787,6 +800,9 @@ beforeEach(() => {
     }
     if (url === '/api/tasks/task-2/retry') {
       return jsonResponse(retriedTask);
+    }
+    if (url === '/api/tasks/task-review/approve-review') {
+      return jsonResponse(approvedReviewTask);
     }
     return jsonResponse(null, false, 'not found', 404);
   }));
@@ -1827,6 +1843,24 @@ test('retries failed tasks and refreshes dashboard data', async () => {
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks/task-2/retry', { method: 'POST' }));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks?limit=50&status=FAILED'));
   expect(screen.queryByRole('button', { name: 'Cancel task' })).not.toBeInTheDocument();
+});
+
+test('approves pending review tasks and refreshes dashboard data', async () => {
+  const user = userEvent.setup();
+  const fetchMock = vi.mocked(fetch);
+
+  render(<App />);
+
+  await user.click(await screen.findByRole('button', { name: 'PENDING_REVIEW' }));
+  expect(await screen.findByText('/agent fix update deployment workflow')).toBeInTheDocument();
+
+  await user.click(await screen.findByRole('button', { name: 'Approve review' }));
+
+  await waitFor(() =>
+    expect(fetchMock).toHaveBeenCalledWith('/api/tasks/task-review/approve-review', { method: 'POST' })
+  );
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks?limit=50&status=PENDING_REVIEW'));
+  expect(screen.queryByRole('button', { name: 'Retry task' })).not.toBeInTheDocument();
 });
 
 function jsonResponse(data: unknown, success = true, message: string | null = null, status = 200) {

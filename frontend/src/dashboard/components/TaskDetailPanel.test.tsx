@@ -25,7 +25,8 @@ const task: FixTask = {
   verificationCommand: 'python3 -m pytest',
   adapterDetectionReason: 'pyproject.toml declares pytest as the verification command',
   statusCommentId: null,
-  statusCommentUrl: null
+  statusCommentUrl: null,
+  riskReviewApprovedAt: null
 };
 
 const baseSummary: FixTaskAuditSummary = {
@@ -98,6 +99,7 @@ test('shows execution evidence summary for selected task', () => {
       actionInFlight={false}
       onCancelTask={vi.fn()}
       onRetryTask={vi.fn()}
+      onApproveReview={vi.fn()}
       onCopyReport={vi.fn()}
     />
   );
@@ -124,6 +126,7 @@ test('shows selected task queue state in task detail', () => {
       actionInFlight={false}
       onCancelTask={vi.fn()}
       onRetryTask={vi.fn()}
+      onApproveReview={vi.fn()}
       onCopyReport={vi.fn()}
     />
   );
@@ -146,6 +149,7 @@ test('shows selected task queue history in task detail', () => {
       actionInFlight={false}
       onCancelTask={vi.fn()}
       onRetryTask={vi.fn()}
+      onApproveReview={vi.fn()}
       onCopyReport={vi.fn()}
     />
   );
@@ -175,6 +179,7 @@ test('shows missing latest test evidence when no test result is recorded', () =>
       actionInFlight={false}
       onCancelTask={vi.fn()}
       onRetryTask={vi.fn()}
+      onApproveReview={vi.fn()}
       onCopyReport={vi.fn()}
     />
   );
@@ -211,6 +216,7 @@ test('surfaces generated diff risk gate failures in task evidence', () => {
       actionInFlight={false}
       onCancelTask={vi.fn()}
       onRetryTask={vi.fn()}
+      onApproveReview={vi.fn()}
       onCopyReport={vi.fn()}
     />
   );
@@ -220,7 +226,32 @@ test('surfaces generated diff risk gate failures in task evidence', () => {
   expect(screen.getByText('failed · 78 ms')).toBeInTheDocument();
   expect(screen.getByText('Generated diff rejected: sensitive path .github/workflows/deploy.yml')).toBeInTheDocument();
   expect(screen.getByRole('button', { name: 'Cancel task' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Approve review' })).toBeInTheDocument();
   expect(screen.queryByRole('button', { name: 'Retry task' })).not.toBeInTheDocument();
+});
+
+test('approves pending review tasks from the detail panel', async () => {
+  const onApproveReview = vi.fn().mockResolvedValue(undefined);
+  render(
+    <TaskDetailPanel
+      task={{
+        ...task,
+        status: 'PENDING_REVIEW',
+        failureReason: 'Generated diff rejected: sensitive path .github/workflows/deploy.yml'
+      }}
+      detail={baseDetail}
+      loading={false}
+      actionInFlight={false}
+      onCancelTask={vi.fn()}
+      onRetryTask={vi.fn()}
+      onApproveReview={onApproveReview}
+      onCopyReport={vi.fn()}
+    />
+  );
+
+  await userEvent.click(screen.getByRole('button', { name: 'Approve review' }));
+
+  expect(onApproveReview).toHaveBeenCalledWith('task-1');
 });
 
 test('builds a shareable task link from the current dashboard URL', () => {
@@ -251,6 +282,7 @@ test('copies the selected task deep link', async () => {
       actionInFlight={false}
       onCancelTask={vi.fn()}
       onRetryTask={vi.fn()}
+      onApproveReview={vi.fn()}
       onCopyReport={vi.fn()}
     />
   );
@@ -277,6 +309,7 @@ test('copies the selected task report', async () => {
       actionInFlight={false}
       onCancelTask={vi.fn()}
       onRetryTask={vi.fn()}
+      onApproveReview={vi.fn()}
       onCopyReport={onCopyReport}
     />
   );
