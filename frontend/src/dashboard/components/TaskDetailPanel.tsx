@@ -1,5 +1,5 @@
 import { CheckCircle2, Copy, ExternalLink, RotateCcw, XCircle } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { ApproveReviewInput, FixTask } from '../../types';
 import { compactTime, duration, issueUrl } from '../format';
 import type { TaskDetailState } from '../types';
@@ -11,6 +11,7 @@ interface TaskDetailPanelProps {
   detail: TaskDetailState;
   loading: boolean;
   actionInFlight: boolean;
+  reviewApprovalAllowedOperators: string[];
   onCancelTask: (taskId: string) => Promise<void>;
   onRetryTask: (taskId: string) => Promise<void>;
   onApproveReview: (taskId: string, input: ApproveReviewInput) => Promise<void>;
@@ -22,6 +23,7 @@ export function TaskDetailPanel({
   detail,
   loading,
   actionInFlight,
+  reviewApprovalAllowedOperators,
   onCancelTask,
   onRetryTask,
   onApproveReview,
@@ -30,6 +32,12 @@ export function TaskDetailPanel({
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
   const [approvalOperator, setApprovalOperator] = useState('');
   const [approvalReason, setApprovalReason] = useState('');
+
+  useEffect(() => {
+    if (approvalOperator && !reviewApprovalAllowedOperators.includes(approvalOperator)) {
+      setApprovalOperator('');
+    }
+  }, [approvalOperator, reviewApprovalAllowedOperators]);
 
   if (!task) {
     return (
@@ -46,11 +54,14 @@ export function TaskDetailPanel({
     || task.status === 'PENDING_REVIEW';
   const canRetry = task.status === 'FAILED' || task.status === 'CANCELLED';
   const canApproveReview = task.status === 'PENDING_REVIEW';
+  const reviewApprovalConfigured = reviewApprovalAllowedOperators.length > 0;
   const latestTestStatus = testStatus(detail.summary?.latestTestRunExitCode);
   const generatedDiffRiskBlocked = detail.toolCalls.some(
     (call) => call.toolName === 'GeneratedDiffRiskGate' && !call.success
   );
-  const approvalInputReady = approvalOperator.trim().length > 0 && approvalReason.trim().length > 0;
+  const approvalInputReady = reviewApprovalConfigured
+    && approvalOperator.trim().length > 0
+    && approvalReason.trim().length > 0;
 
   async function copyTaskLink() {
     if (!task) {
@@ -235,14 +246,23 @@ export function TaskDetailPanel({
       {canApproveReview ? (
         <section className="detail-section review-approval-form" aria-label="Review approval form">
           <h3>Review approval</h3>
+          {!reviewApprovalConfigured ? (
+            <p className="review-approval-warning">
+              Configure review approval operators before approving this task.
+            </p>
+          ) : null}
           <label>
             <span>Approver</span>
-            <input
-              type="text"
+            <select
               value={approvalOperator}
               onChange={(event) => setApprovalOperator(event.target.value)}
-              placeholder="release-captain"
-            />
+              disabled={!reviewApprovalConfigured}
+            >
+              <option value="">Select an approver</option>
+              {reviewApprovalAllowedOperators.map((operator) => (
+                <option value={operator} key={operator}>{operator}</option>
+              ))}
+            </select>
           </label>
           <label>
             <span>Approval reason</span>

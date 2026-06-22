@@ -593,6 +593,7 @@ export default function App() {
           detail={detail}
           loading={detailLoading}
           actionInFlight={actionTaskId === selectedTask?.id}
+          reviewApprovalAllowedOperators={configuration?.reviewApprovalAllowedOperators ?? []}
           onCancelTask={handleCancelTask}
           onRetryTask={handleRetryTask}
           onApproveReview={handleApproveReview}

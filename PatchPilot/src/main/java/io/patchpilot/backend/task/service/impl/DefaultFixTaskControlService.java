@@ -1,5 +1,6 @@
 package io.patchpilot.backend.task.service.impl;
 
+import io.patchpilot.backend.task.config.ReviewApprovalProperties;
 import io.patchpilot.backend.task.domain.bo.ApproveReviewCommand;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.enums.FixTaskTimelineEventType;
@@ -20,17 +21,20 @@ public class DefaultFixTaskControlService implements FixTaskControlService {
     private final FixTaskQueue fixTaskQueue;
     private final FixTaskTimelineService fixTaskTimelineService;
     private final TaskProcessRegistry taskProcessRegistry;
+    private final ReviewApprovalProperties reviewApprovalProperties;
 
     public DefaultFixTaskControlService(
             FixTaskService fixTaskService,
             FixTaskQueue fixTaskQueue,
             FixTaskTimelineService fixTaskTimelineService,
-            TaskProcessRegistry taskProcessRegistry
+            TaskProcessRegistry taskProcessRegistry,
+            ReviewApprovalProperties reviewApprovalProperties
     ) {
         this.fixTaskService = fixTaskService;
         this.fixTaskQueue = fixTaskQueue;
         this.fixTaskTimelineService = fixTaskTimelineService;
         this.taskProcessRegistry = taskProcessRegistry;
+        this.reviewApprovalProperties = reviewApprovalProperties;
     }
 
     @Override
@@ -71,6 +75,7 @@ public class DefaultFixTaskControlService implements FixTaskControlService {
         if (task.status() != FixTaskStatus.PENDING_REVIEW) {
             throw new IllegalStateException("Only pending review tasks can be approved");
         }
+        requireAllowedReviewOperator(command.operator());
         FixTaskVo approvedTask = fixTaskService.markPendingForReviewApproval(
                 taskId,
                 command.operator(),
@@ -83,6 +88,14 @@ public class DefaultFixTaskControlService implements FixTaskControlService {
                 "Pending review approved by " + command.operator() + ": " + command.reason()
         );
         return approvedTask;
+    }
+
+    private void requireAllowedReviewOperator(String operator) {
+        boolean allowed = reviewApprovalProperties.normalizedAllowedOperators().stream()
+                .anyMatch(allowedOperator -> allowedOperator.equalsIgnoreCase(operator));
+        if (!allowed) {
+            throw new SecurityException("operator is not allowed to approve risk reviews");
+        }
     }
 
     private FixTaskVo currentTask(String taskId) {

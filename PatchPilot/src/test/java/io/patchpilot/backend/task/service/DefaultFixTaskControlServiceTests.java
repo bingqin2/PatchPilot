@@ -6,6 +6,7 @@ import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.enums.FixTaskTimelineEventType;
 import io.patchpilot.backend.task.domain.vo.FixTaskTimelineEventVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
+import io.patchpilot.backend.task.config.ReviewApprovalProperties;
 import io.patchpilot.backend.task.process.TaskProcessRegistry;
 import io.patchpilot.backend.task.service.impl.DefaultFixTaskControlService;
 import io.patchpilot.backend.task.service.impl.InMemoryFixTaskService;
@@ -28,7 +29,8 @@ class DefaultFixTaskControlServiceTests {
             fixTaskService,
             fixTaskQueue,
             fixTaskTimelineService,
-            taskProcessRegistry
+            taskProcessRegistry,
+            reviewApprovalProperties(List.of("release-captain"))
     );
 
     @Test
@@ -157,6 +159,27 @@ class DefaultFixTaskControlServiceTests {
     }
 
     @Test
+    void should_reject_pending_review_approval_from_operator_outside_allowlist() {
+        FixTaskVo task = createTask("delivery-control-approve-review-denied");
+        fixTaskService.markPendingReview(task.id(), "Generated diff rejected: sensitive path .env");
+
+        assertThatThrownBy(() -> controlService.approveReviewTask(
+                task.id(),
+                new ApproveReviewCommand("unknown-operator", "Reviewed generated diff")
+        ))
+                .isInstanceOf(SecurityException.class)
+                .hasMessage("operator is not allowed to approve risk reviews");
+
+        assertThat(fixTaskService.findTask(task.id())).hasValueSatisfying(storedTask -> {
+            assertThat(storedTask.status()).isEqualTo(FixTaskStatus.PENDING_REVIEW);
+            assertThat(storedTask.riskReviewApprovedBy()).isNull();
+            assertThat(storedTask.riskReviewApprovalReason()).isNull();
+        });
+        assertThat(fixTaskQueue.enqueuedTaskIds()).isEmpty();
+        assertThat(fixTaskTimelineService.eventTypes()).isEmpty();
+    }
+
+    @Test
     void should_reject_approving_non_pending_review_task() {
         FixTaskVo task = createTask("delivery-control-approve-active");
 
@@ -181,6 +204,12 @@ class DefaultFixTaskControlServiceTests {
                 deliveryId,
                 98765
         ));
+    }
+
+    private static ReviewApprovalProperties reviewApprovalProperties(List<String> allowedOperators) {
+        ReviewApprovalProperties properties = new ReviewApprovalProperties();
+        properties.setAllowedOperators(allowedOperators);
+        return properties;
     }
 
     private static final class RecordingFixTaskQueue implements FixTaskQueue {

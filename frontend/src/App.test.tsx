@@ -531,7 +531,8 @@ const configurationSummary = {
   triggerRateLimitWindowMs: 600000,
   triggerRateLimitMaxPerTriggerUser: 30,
   triggerRateLimitMaxPerRepository: 60,
-  triggerRateLimitMaxPerIssue: 20
+  triggerRateLimitMaxPerIssue: 20,
+  reviewApprovalAllowedOperators: ['release-captain', 'local-operator']
 };
 
 const demoReadiness = {
@@ -1877,7 +1878,7 @@ test('approves pending review tasks and refreshes dashboard data', async () => {
   await user.click(await screen.findByRole('button', { name: 'PENDING_REVIEW' }));
   expect(await screen.findByText('/agent fix update deployment workflow')).toBeInTheDocument();
 
-  await user.type(await screen.findByLabelText('Approver'), 'release-captain');
+  await user.selectOptions(await screen.findByLabelText('Approver'), 'release-captain');
   await user.type(
     await screen.findByLabelText('Approval reason'),
     'Reviewed generated diff and accepted docs-only change'

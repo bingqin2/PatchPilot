@@ -64,6 +64,11 @@ export function ConfigurationPanel({ configuration, backendHealth }: Configurati
             {number(configuration?.triggerRateLimitMaxPerIssue)} issue
           </p>
         </div>
+        <div>
+          <span>Review approvers</span>
+          <strong>{reviewApproverSummary(configuration)}</strong>
+          <p>Risk review approval allowlist</p>
+        </div>
       </div>
       {health.items.length > 0 ? (
         <div className="configuration-issues" aria-label="Configuration issues">
@@ -133,6 +138,9 @@ function configurationHealth(configuration: ConfigurationSummary | null) {
   ) {
     advisoryIssues.push({ kind: 'advisory', message: 'Trigger rate limit thresholds must be at least 1' });
   }
+  if (configuration.reviewApprovalAllowedOperators.length === 0) {
+    advisoryIssues.push({ kind: 'advisory', message: 'Review approval operators are not configured' });
+  }
 
   if (criticalIssues.length > 0) {
     return {
@@ -157,4 +165,14 @@ function configurationHealth(configuration: ConfigurationSummary | null) {
 
 function issueCount(count: number, label: string) {
   return `${count} ${label}${count === 1 ? '' : 's'}`;
+}
+
+function reviewApproverSummary(configuration: ConfigurationSummary | null) {
+  if (!configuration) {
+    return '-';
+  }
+  if (configuration.reviewApprovalAllowedOperators.length === 0) {
+    return 'Not configured';
+  }
+  return configuration.reviewApprovalAllowedOperators.join(', ');
 }

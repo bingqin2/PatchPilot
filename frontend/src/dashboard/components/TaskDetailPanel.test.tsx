@@ -100,6 +100,7 @@ test('shows execution evidence summary for selected task', () => {
       detail={baseDetail}
       loading={false}
       actionInFlight={false}
+      reviewApprovalAllowedOperators={['release-captain']}
       onCancelTask={vi.fn()}
       onRetryTask={vi.fn()}
       onApproveReview={vi.fn()}
@@ -127,6 +128,7 @@ test('shows selected task queue state in task detail', () => {
       detail={baseDetail}
       loading={false}
       actionInFlight={false}
+      reviewApprovalAllowedOperators={["release-captain"]}
       onCancelTask={vi.fn()}
       onRetryTask={vi.fn()}
       onApproveReview={vi.fn()}
@@ -150,6 +152,7 @@ test('shows selected task queue history in task detail', () => {
       detail={baseDetail}
       loading={false}
       actionInFlight={false}
+      reviewApprovalAllowedOperators={["release-captain"]}
       onCancelTask={vi.fn()}
       onRetryTask={vi.fn()}
       onApproveReview={vi.fn()}
@@ -180,6 +183,7 @@ test('shows missing latest test evidence when no test result is recorded', () =>
       }}
       loading={false}
       actionInFlight={false}
+      reviewApprovalAllowedOperators={["release-captain"]}
       onCancelTask={vi.fn()}
       onRetryTask={vi.fn()}
       onApproveReview={vi.fn()}
@@ -217,6 +221,7 @@ test('surfaces generated diff risk gate failures in task evidence', () => {
       }}
       loading={false}
       actionInFlight={false}
+      reviewApprovalAllowedOperators={["release-captain"]}
       onCancelTask={vi.fn()}
       onRetryTask={vi.fn()}
       onApproveReview={vi.fn()}
@@ -251,6 +256,7 @@ test('shows generated diff preview before approving review tasks', () => {
       }}
       loading={false}
       actionInFlight={false}
+      reviewApprovalAllowedOperators={["release-captain"]}
       onCancelTask={vi.fn()}
       onRetryTask={vi.fn()}
       onApproveReview={vi.fn()}
@@ -281,6 +287,7 @@ test('approves pending review tasks from the detail panel', async () => {
       detail={baseDetail}
       loading={false}
       actionInFlight={false}
+      reviewApprovalAllowedOperators={['release-captain']}
       onCancelTask={vi.fn()}
       onRetryTask={vi.fn()}
       onApproveReview={onApproveReview}
@@ -288,7 +295,7 @@ test('approves pending review tasks from the detail panel', async () => {
     />
   );
 
-  await user.type(screen.getByLabelText('Approver'), 'release-captain');
+  await user.selectOptions(screen.getByLabelText('Approver'), 'release-captain');
   await user.type(
     screen.getByLabelText('Approval reason'),
     'Reviewed generated diff and accepted docs-only change'
@@ -299,6 +306,29 @@ test('approves pending review tasks from the detail panel', async () => {
     operator: 'release-captain',
     reason: 'Reviewed generated diff and accepted docs-only change'
   });
+});
+
+test('disables pending review approval when no configured approvers exist', () => {
+  render(
+    <TaskDetailPanel
+      task={{
+        ...task,
+        status: 'PENDING_REVIEW',
+        failureReason: 'Generated diff rejected: sensitive path .github/workflows/deploy.yml'
+      }}
+      detail={baseDetail}
+      loading={false}
+      actionInFlight={false}
+      reviewApprovalAllowedOperators={[]}
+      onCancelTask={vi.fn()}
+      onRetryTask={vi.fn()}
+      onApproveReview={vi.fn()}
+      onCopyReport={vi.fn()}
+    />
+  );
+
+  expect(screen.getByText('Configure review approval operators before approving this task.')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Approve review' })).toBeDisabled();
 });
 
 test('shows review approval audit metadata after a task is approved', () => {
@@ -314,6 +344,7 @@ test('shows review approval audit metadata after a task is approved', () => {
       detail={baseDetail}
       loading={false}
       actionInFlight={false}
+      reviewApprovalAllowedOperators={['release-captain']}
       onCancelTask={vi.fn()}
       onRetryTask={vi.fn()}
       onApproveReview={vi.fn()}
@@ -352,6 +383,7 @@ test('copies the selected task deep link', async () => {
       detail={baseDetail}
       loading={false}
       actionInFlight={false}
+      reviewApprovalAllowedOperators={["release-captain"]}
       onCancelTask={vi.fn()}
       onRetryTask={vi.fn()}
       onApproveReview={vi.fn()}
@@ -379,6 +411,7 @@ test('copies the selected task report', async () => {
       detail={baseDetail}
       loading={false}
       actionInFlight={false}
+      reviewApprovalAllowedOperators={["release-captain"]}
       onCancelTask={vi.fn()}
       onRetryTask={vi.fn()}
       onApproveReview={vi.fn()}

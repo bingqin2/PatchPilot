@@ -48,7 +48,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("default")
 @TestPropertySource(properties = {
         "patchpilot.safety.allowed-trigger-users=local-operator,alice",
-        "patchpilot.safety.allowed-repositories=bingqin2/PatchPilot,octocat/hello-world"
+        "patchpilot.safety.allowed-repositories=bingqin2/PatchPilot,octocat/hello-world",
+        "patchpilot.review-approval.allowed-operators=release-captain"
 })
 class TaskControllerTests {
 
@@ -467,6 +468,33 @@ class TaskControllerTests {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.message").value("reason must not be blank"));
+    }
+
+    @Test
+    void should_forbid_review_approval_from_operator_outside_allowlist() throws Exception {
+        FixTaskVo reviewTask = createTask(command(
+                "approve-owner",
+                "approve-repo",
+                "delivery-approve-review-forbidden"
+        ));
+        fixTaskService.markPendingReview(reviewTask.id(), "Generated diff rejected: sensitive path .env");
+
+        mockMvc.perform(post("/api/tasks/{id}/approve-review", reviewTask.id())
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "operator": "unknown-operator",
+                                  "reason": "Reviewed generated diff"
+                                }
+                                """))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("operator is not allowed to approve risk reviews"));
+
+        assertThat(fixTaskService.findTask(reviewTask.id())).hasValueSatisfying(storedTask -> {
+            assertThat(storedTask.status().name()).isEqualTo("PENDING_REVIEW");
+            assertThat(storedTask.riskReviewApprovedBy()).isNull();
+        });
     }
 
     @Test
