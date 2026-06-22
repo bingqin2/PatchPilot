@@ -89,3 +89,11 @@ Decision: Add Node/npm as the first supported JavaScript repository adapter.
 Reason: npm is the simplest controlled Node.js path and moves PatchPilot toward multi-language support without allowing arbitrary package-manager commands.
 
 Impact: Node.js repositories with `package.json` and a non-empty `scripts.test` can pass repository preflight and run `npm test`. pnpm, yarn, and Python remain future adapter work.
+
+## 2026-06-22
+
+Decision: Add Python/pytest as the first supported Python repository adapter.
+
+Reason: pytest is the simplest controlled Python verification path and expands PatchPilot beyond JavaScript while keeping execution behind explicit adapter detection and a fixed command allowlist.
+
+Impact: Python repositories with pytest configuration or a pytest dependency can pass repository preflight and run `python3 -m pytest`. Poetry, tox, nox, uv, and custom Python runners remain future adapter work.

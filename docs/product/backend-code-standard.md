@@ -239,6 +239,7 @@ mvn test
 ./gradlew test
 gradle test
 npm test
+python3 -m pytest
 git status
 git diff
 git checkout -b <branch>

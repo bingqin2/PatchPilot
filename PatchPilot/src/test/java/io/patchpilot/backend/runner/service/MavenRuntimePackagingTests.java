@@ -24,4 +24,11 @@ class MavenRuntimePackagingTests {
 
         assertThat(dockerfile).contains("apt-get install -y --no-install-recommends git ca-certificates nodejs npm");
     }
+
+    @Test
+    void should_install_python_and_pytest_for_python_adapter_verification() throws Exception {
+        String dockerfile = Files.readString(Path.of("Dockerfile"));
+
+        assertThat(dockerfile).contains("python3 python3-pytest");
+    }
 }
