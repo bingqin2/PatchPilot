@@ -90,7 +90,7 @@ class MavenTestRunnerTests {
 
         assertThat(result.command()).isEqualTo("./mvnw test");
         assertThat(result.exitCode()).isEqualTo(124);
-        assertThat(result.output()).isEqualTo("maven test command timed out");
+        assertThat(result.output()).isEqualTo("verification command timed out");
     }
 
     @Test

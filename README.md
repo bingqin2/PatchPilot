@@ -14,7 +14,7 @@ PatchPilot is not a chatbot and does not auto-merge code. The current target is 
 - Webhook signature verification.
 - MySQL-backed task, queue, timeline, test-run, tool-call, and model-call records.
 - Local workspace clone, branch, diff, commit, push, and Pull Request creation.
-- Java/Maven language adapter backed by Maven test execution with command allowlists.
+- Java/Maven language adapter backed by an adapter-driven verification runner with command allowlists.
 - Unsupported repository preflight that fails before patch generation, test execution, Git mutation, or Pull Request creation.
 - OpenAI-compatible model client and plan-driven patch workflow.
 - Issue comment status updates for accepted, running, verification, success, and failure states.
@@ -223,6 +223,7 @@ PatchPilot currently executes fixes only for Java/Maven repositories. After clon
 - unsupported: no registered adapter detects the repository
 
 Unsupported repositories fail before model patch generation, tests, commit, push, or Pull Request creation. This is intentional until additional adapters such as Gradle, Node.js, and Python are implemented.
+For supported repositories, the language adapter supplies the verification command and the generic verification runner executes that command under the existing allowlist, timeout, process-registration, and environment-sanitization rules.
 
 Runtime configuration summary:
 

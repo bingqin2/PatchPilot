@@ -9,7 +9,7 @@ import io.patchpilot.backend.github.client.domain.PullRequestResult;
 import io.patchpilot.backend.language.LanguageAdapterRegistry;
 import io.patchpilot.backend.language.domain.LanguageDetectionResult;
 import io.patchpilot.backend.runner.domain.vo.TestRunResult;
-import io.patchpilot.backend.runner.service.MavenTestRunner;
+import io.patchpilot.backend.runner.service.VerificationRunner;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import io.patchpilot.backend.task.executor.domain.FixTaskExecutionResult;
 import io.patchpilot.backend.task.service.FixTaskTestRunService;
@@ -28,7 +28,7 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
 
     private final WorkspaceService workspaceService;
     private final LanguageAdapterRegistry languageAdapterRegistry;
-    private final MavenTestRunner mavenTestRunner;
+    private final VerificationRunner verificationRunner;
     private final PatchWorkflow patchWorkflow;
     private final DiffTool diffTool;
     private final CommitTool commitTool;
@@ -40,7 +40,7 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
 
     public NoopFixTaskExecutor(
             WorkspaceService workspaceService,
-            MavenTestRunner mavenTestRunner,
+            VerificationRunner verificationRunner,
             PatchWorkflow patchWorkflow,
             DiffTool diffTool,
             CommitTool commitTool,
@@ -53,7 +53,7 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
         this(
                 workspaceService,
                 directConstructionRegistry(),
-                mavenTestRunner,
+                verificationRunner,
                 patchWorkflow,
                 diffTool,
                 commitTool,
@@ -69,7 +69,7 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
     public NoopFixTaskExecutor(
             WorkspaceService workspaceService,
             LanguageAdapterRegistry languageAdapterRegistry,
-            MavenTestRunner mavenTestRunner,
+            VerificationRunner verificationRunner,
             PatchWorkflow patchWorkflow,
             DiffTool diffTool,
             CommitTool commitTool,
@@ -81,7 +81,7 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
     ) {
         this.workspaceService = workspaceService;
         this.languageAdapterRegistry = languageAdapterRegistry;
-        this.mavenTestRunner = mavenTestRunner;
+        this.verificationRunner = verificationRunner;
         this.patchWorkflow = patchWorkflow;
         this.diffTool = diffTool;
         this.commitTool = commitTool;
@@ -120,15 +120,15 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
                 )
         );
         taskCancellationChecker.throwIfCancelled(task.id());
-        auditToolCall(
+        LanguageDetectionResult detectionResult = auditToolCall(
                 task.id(),
                 "LanguageAdapterRegistry",
                 "repositoryDir=%s".formatted(preparedWorkspace.repositoryDir()),
                 () -> detectSupportedRepository(preparedWorkspace.repositoryDir()),
-                detectionResult -> "%s/%s: %s".formatted(
-                        detectionResult.language(),
-                        detectionResult.buildSystem(),
-                        detectionResult.reason()
+                result -> "%s/%s: %s".formatted(
+                        result.language(),
+                        result.buildSystem(),
+                        result.reason()
                 )
         );
         taskCancellationChecker.throwIfCancelled(task.id());
@@ -150,7 +150,11 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
         );
         taskCancellationChecker.throwIfCancelled(task.id());
         Instant testStartedAt = Instant.now();
-        TestRunResult testRunResult = mavenTestRunner.runTests(task.id(), preparedWorkspace.repositoryDir());
+        TestRunResult testRunResult = verificationRunner.runVerification(
+                task.id(),
+                preparedWorkspace.repositoryDir(),
+                detectionResult.verificationCommand()
+        );
         Instant testFinishedAt = Instant.now();
         fixTaskTestRunService.recordTestRun(
                 task.id(),

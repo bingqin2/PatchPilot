@@ -27,11 +27,13 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import io.patchpilot.backend.runner.domain.vo.TestRunResult;
-import io.patchpilot.backend.runner.service.MavenTestRunner;
+import io.patchpilot.backend.runner.service.CommandExecutionGuard;
+import io.patchpilot.backend.runner.service.VerificationRunner;
 import io.patchpilot.backend.workspace.domain.bo.CloneWorkspaceCommand;
 import io.patchpilot.backend.workspace.domain.vo.PreparedWorkspaceResult;
 import io.patchpilot.backend.workspace.domain.vo.WorkspaceCloneResult;
 import io.patchpilot.backend.workspace.runner.GitCommandRunner;
+import io.patchpilot.backend.workspace.config.WorkspaceProperties;
 import io.patchpilot.backend.workspace.service.WorkspaceService;
 
 import javax.crypto.Mac;
@@ -345,16 +347,13 @@ class GitHubWebhookControllerTests {
 
         @Bean
         @Primary
-        MavenTestRunner mavenTestRunner() {
-            return new MavenTestRunner() {
+        VerificationRunner verificationRunner() {
+            WorkspaceProperties properties = new WorkspaceProperties();
+            properties.setRootDir(Path.of("/tmp/patchpilot-test"));
+            return new VerificationRunner(new CommandExecutionGuard(properties), new io.patchpilot.backend.task.process.TaskProcessRegistry()) {
                 @Override
-                public TestRunResult runTests(Path repositoryDir) {
-                    return new TestRunResult("./mvnw test", 0, "tests passed");
-                }
-
-                @Override
-                public TestRunResult runTests(String taskId, Path repositoryDir) {
-                    return runTests(repositoryDir);
+                public TestRunResult runVerification(String taskId, Path repositoryDir, java.util.List<String> command) {
+                    return new TestRunResult(String.join(" ", command), 0, "tests passed");
                 }
             };
         }

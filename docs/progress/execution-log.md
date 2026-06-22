@@ -1966,3 +1966,21 @@ Validation:
 - `mvn -pl PatchPilot -Dtest=LanguageAdapterRegistryTests,JavaMavenLanguageAdapterTests,WorkspaceFixTaskExecutorTests test`: first failed because existing executor tests expected the old tool-call sequence and cancellation checkpoint numbers; then passed after updating expectations for the new preflight step, 14 tests run, 0 failures.
 - `mvn -pl PatchPilot test`: first failed because the webhook completion fixture did not create a Maven marker file, so the new preflight correctly failed it as unsupported; then passed after creating `pom.xml` in the test repository fixture, 328 tests run, 0 failures.
 - `git diff --check`: passed with no whitespace errors.
+
+Implemented adapter-driven verification runner from `docs/plans/095-adapter-driven-verification-runner.md`.
+
+Changes:
+
+- Added `VerificationRunner` for controlled execution of adapter-provided verification commands.
+- Kept `MavenTestRunner` as a Java/Maven compatibility wrapper while delegating process execution to `VerificationRunner`.
+- Changed task execution to use the `LanguageDetectionResult.verificationCommand()` selected during language preflight instead of re-running Maven detection inside the runner.
+- Preserved command allowlist validation, timeout behavior, task process registration, and PatchPilot environment sanitization.
+- Updated runner tests, executor tests, webhook integration test wiring, README, architecture docs, product spec, and this execution log.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=VerificationRunnerTests,WorkspaceFixTaskExecutorTests#should_prepare_task_repository_and_run_maven_tests test`: first failed because `VerificationRunner` did not exist; then passed after adding the runner and switching executor verification to the adapter command, 3 tests run, 0 failures.
+- `mvn -pl PatchPilot -Dtest=VerificationRunnerTests,WorkspaceFixTaskExecutorTests,GitHubWebhookControllerTests#should_dispatch_created_task_to_completion test`: passed after replacing executor/webhook test doubles with `VerificationRunner`, 12 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: first failed because the Maven compatibility test still expected `maven test command timed out`; then passed after updating the timeout wording to the generic verification runner message, 330 tests run, 0 failures.
+- `mvn -pl PatchPilot -Dtest=WorkspaceFixTaskExecutorTests,MavenTestRunnerTests,VerificationRunnerTests test`: passed after generic interruption wording cleanup, 21 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed after final verification, 330 tests run, 0 failures.

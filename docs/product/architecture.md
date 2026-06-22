@@ -216,12 +216,14 @@ Responsibilities:
 
 - Use language adapters to detect supported build systems immediately after workspace preparation.
 - Fail unsupported repositories before patch generation, test execution, Git mutation, or Pull Request creation.
-- Execute allowed verification commands.
+- Execute the allowlisted verification command returned by the selected adapter.
 - Capture test output.
 - Enforce timeouts.
+- Register running verification processes for cancellation.
+- Remove PatchPilot secrets from the child-process environment.
 - Return structured test results.
 
-The adapter registry selects the first supported adapter and returns a clear unsupported result when none match. The first adapter is `JavaMavenLanguageAdapter`. MVP supported commands:
+The adapter registry selects the first supported adapter and returns a clear unsupported result when none match. `VerificationRunner` executes the selected adapter command. The first adapter is `JavaMavenLanguageAdapter`. MVP supported commands:
 
 ```bash
 ./mvnw test
