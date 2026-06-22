@@ -36,6 +36,7 @@ Useful docs:
 - `docs/agent/temporary-url-webhook.md` - Cloudflare Tunnel webhook setup.
 - `docs/agent/idea-local-run.md` - IntelliJ IDEA local run notes.
 - `docs/agent/smoke-test-checklist.md` - End-to-end validation checklist.
+- `docs/agent/adapter-smoke-checklist.md` - Local adapter fixture smoke checklist.
 - `docs/product/spec.md` - Product scope and non-goals.
 - `docs/product/architecture.md` - Backend architecture.
 
@@ -236,6 +237,13 @@ For supported repositories, the language adapter supplies the verification comma
 After a repository is detected, each task stores the selected `language`, `buildSystem`, and `verificationCommand`. These fields are returned by the task APIs and shown in the dashboard so operators can confirm whether a task used Maven, Gradle, npm, pnpm, yarn, pytest, Poetry, or uv without opening raw tool-call logs.
 
 Adapter detection fixtures live in `docs/demo-repositories/`. Each fixture documents the adapter it should trigger and the fixed verification command PatchPilot will run. Backend tests use these fixtures to prevent supported repository shapes from drifting as adapters evolve.
+
+Run the safe local adapter smoke when you want to demonstrate supported repository detection without GitHub, model credentials, Docker, or PR creation:
+
+```bash
+scripts/adapter-smoke.sh
+scripts/adapter-smoke.sh --backend
+```
 
 Runtime configuration summary:
 
