@@ -95,10 +95,15 @@ public class MyBatisFixTaskService implements FixTaskService {
     }
 
     @Override
-    public FixTaskVo markPendingForReviewApproval(String id) {
+    public FixTaskVo markPendingForReviewApproval(String id, String approvedBy, String approvalReason) {
         FixTaskEntity currentTask = Optional.ofNullable(fixTaskMapper.selectById(id))
                 .orElseThrow(() -> new IllegalArgumentException("Task not found: " + id));
-        FixTaskEntity updatedTask = FixTaskConvert.replacePendingForReviewApproval(currentTask, Instant.now());
+        FixTaskEntity updatedTask = FixTaskConvert.replacePendingForReviewApproval(
+                currentTask,
+                Instant.now(),
+                approvedBy,
+                approvalReason
+        );
         fixTaskMapper.updateById(updatedTask);
         return FixTaskConvert.toVo(updatedTask);
     }
@@ -235,6 +240,10 @@ public class MyBatisFixTaskService implements FixTaskService {
                 .like(FixTaskEntity::getVerificationCommand, escapedQuery)
                 .or()
                 .like(FixTaskEntity::getAdapterDetectionReason, escapedQuery);
+        wrapper.or()
+                .like(FixTaskEntity::getRiskReviewApprovedBy, escapedQuery)
+                .or()
+                .like(FixTaskEntity::getRiskReviewApprovalReason, escapedQuery);
     }
 
     private static LambdaQueryWrapper<FixTaskEntity> taskListQueryWrapper(FixTaskListQuery query) {

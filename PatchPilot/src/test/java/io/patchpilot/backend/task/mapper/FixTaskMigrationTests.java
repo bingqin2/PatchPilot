@@ -46,4 +46,14 @@ class FixTaskMigrationTests {
         assertThat(sql).contains("issue_number");
         assertThat(sql).contains("status");
     }
+
+    @Test
+    void should_add_review_approval_audit_columns() throws IOException {
+        String sql = Files.readString(Path.of("src/main/resources/db/migration/V15__add_fix_task_review_approval_audit.sql"))
+                .toLowerCase(Locale.ROOT);
+
+        assertThat(sql).contains("alter table fix_task");
+        assertThat(sql).contains("risk_review_approved_by varchar(255) null");
+        assertThat(sql).contains("risk_review_approval_reason text null");
+    }
 }

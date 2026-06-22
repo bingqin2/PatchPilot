@@ -410,7 +410,7 @@ class TaskControllerTests {
     }
 
     @Test
-    void should_approve_pending_review_task() throws Exception {
+    void should_approve_pending_review_task_with_audit_metadata() throws Exception {
         FixTaskVo reviewTask = createTask(command(
                 "approve-owner",
                 "approve-repo",
@@ -418,17 +418,55 @@ class TaskControllerTests {
         ));
         fixTaskService.markPendingReview(reviewTask.id(), "Generated diff rejected: sensitive path .env");
 
-        mockMvc.perform(post("/api/tasks/{id}/approve-review", reviewTask.id()))
+        mockMvc.perform(post("/api/tasks/{id}/approve-review", reviewTask.id())
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "operator": "release-captain",
+                                  "reason": "Reviewed generated diff and accepted docs-only change"
+                                }
+                                """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.id").value(reviewTask.id()))
                 .andExpect(jsonPath("$.data.status").value("PENDING"))
                 .andExpect(jsonPath("$.data.failureReason").value(nullValue()))
-                .andExpect(jsonPath("$.data.riskReviewApprovedAt").value(not(nullValue())));
+                .andExpect(jsonPath("$.data.riskReviewApprovedAt").value(not(nullValue())))
+                .andExpect(jsonPath("$.data.riskReviewApprovedBy").value("release-captain"))
+                .andExpect(jsonPath("$.data.riskReviewApprovalReason")
+                        .value("Reviewed generated diff and accepted docs-only change"));
 
-        assertThat(fixTaskTimelineService.listEvents(reviewTask.id()))
-                .extracting(event -> event.eventType())
-                .contains(FixTaskTimelineEventType.REVIEW_APPROVED);
+        assertThat(fixTaskTimelineService.listEvents(reviewTask.id()).stream()
+                .filter(event -> event.eventType() == FixTaskTimelineEventType.REVIEW_APPROVED)
+                .toList())
+                .satisfiesExactly(event -> {
+                    assertThat(event.eventType()).isEqualTo(FixTaskTimelineEventType.REVIEW_APPROVED);
+                    assertThat(event.message()).isEqualTo(
+                            "Pending review approved by release-captain: Reviewed generated diff and accepted docs-only change"
+                    );
+                });
+    }
+
+    @Test
+    void should_reject_review_approval_without_reason() throws Exception {
+        FixTaskVo reviewTask = createTask(command(
+                "approve-owner",
+                "approve-repo",
+                "delivery-approve-review-invalid"
+        ));
+        fixTaskService.markPendingReview(reviewTask.id(), "Generated diff rejected: sensitive path .env");
+
+        mockMvc.perform(post("/api/tasks/{id}/approve-review", reviewTask.id())
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "operator": "release-captain",
+                                  "reason": " "
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("reason must not be blank"));
     }
 
     @Test
@@ -439,7 +477,14 @@ class TaskControllerTests {
                 "delivery-approve-conflict"
         ));
 
-        mockMvc.perform(post("/api/tasks/{id}/approve-review", task.id()))
+        mockMvc.perform(post("/api/tasks/{id}/approve-review", task.id())
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "operator": "release-captain",
+                                  "reason": "Reviewed generated diff"
+                                }
+                                """))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.message").value("Only pending review tasks can be approved"));

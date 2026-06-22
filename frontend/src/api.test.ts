@@ -104,19 +104,33 @@ test('approves pending review tasks through backend API', async () => {
         adapterDetectionReason: 'package.json contains a non-empty scripts.test',
         statusCommentId: null,
         statusCommentUrl: null,
-        riskReviewApprovedAt: '2026-06-20T01:09:00Z'
+        riskReviewApprovedAt: '2026-06-20T01:09:00Z',
+        riskReviewApprovedBy: 'release-captain',
+        riskReviewApprovalReason: 'Reviewed generated diff and accepted docs-only change'
       },
       message: null
     })
   } as Response));
   vi.stubGlobal('fetch', fetchMock);
 
-  const task = await approveTaskReview('task-review');
+  const task = await approveTaskReview('task-review', {
+    operator: 'release-captain',
+    reason: 'Reviewed generated diff and accepted docs-only change'
+  });
 
-  expect(fetchMock).toHaveBeenCalledWith('/api/tasks/task-review/approve-review', { method: 'POST' });
+  expect(fetchMock).toHaveBeenCalledWith('/api/tasks/task-review/approve-review', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      operator: 'release-captain',
+      reason: 'Reviewed generated diff and accepted docs-only change'
+    })
+  });
   expect(task.status).toBe('PENDING');
   expect(task.failureReason).toBeNull();
   expect(task.riskReviewApprovedAt).toBe('2026-06-20T01:09:00Z');
+  expect(task.riskReviewApprovedBy).toBe('release-captain');
+  expect(task.riskReviewApprovalReason).toBe('Reviewed generated diff and accepted docs-only change');
 });
 
 test('builds backend task search sort and pagination query parameters', async () => {

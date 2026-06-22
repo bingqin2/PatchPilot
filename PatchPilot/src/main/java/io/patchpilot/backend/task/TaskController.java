@@ -1,8 +1,10 @@
 package io.patchpilot.backend.task;
 
 import io.patchpilot.backend.common.response.ApiResponse;
+import io.patchpilot.backend.task.domain.bo.ApproveReviewCommand;
 import io.patchpilot.backend.task.domain.bo.CreateManualFixTaskCommand;
 import io.patchpilot.backend.task.domain.bo.FixTaskListQuery;
+import io.patchpilot.backend.task.domain.dto.ApproveReviewDto;
 import io.patchpilot.backend.task.domain.dto.CreateFixTaskDto;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.enums.FixTaskSort;
@@ -294,9 +296,18 @@ public class TaskController {
     }
 
     @PostMapping("/{id}/approve-review")
-    public ResponseEntity<ApiResponse<FixTaskVo>> approveReviewTask(@PathVariable String id) {
+    public ResponseEntity<ApiResponse<FixTaskVo>> approveReviewTask(
+            @PathVariable String id,
+            @RequestBody(required = false) ApproveReviewDto request
+    ) {
+        ApproveReviewCommand command;
         try {
-            return ResponseEntity.ok(ApiResponse.ok(fixTaskControlService.approveReviewTask(id)));
+            command = approveReviewCommand(request);
+        } catch (IllegalArgumentException exception) {
+            return ResponseEntity.badRequest().body(ApiResponse.fail(exception.getMessage()));
+        }
+        try {
+            return ResponseEntity.ok(ApiResponse.ok(fixTaskControlService.approveReviewTask(id, command)));
         } catch (IllegalArgumentException exception) {
             return ResponseEntity.status(404).body(ApiResponse.fail("Task not found"));
         } catch (IllegalStateException exception) {
@@ -487,6 +498,15 @@ public class TaskController {
                 triggerUser,
                 triggerComment
         );
+    }
+
+    private static ApproveReviewCommand approveReviewCommand(ApproveReviewDto request) {
+        if (request == null) {
+            throw new IllegalArgumentException("request body is required");
+        }
+        String operator = requiredText(request.operator(), "operator must not be blank");
+        String reason = requiredText(request.reason(), "reason must not be blank");
+        return new ApproveReviewCommand(operator, reason);
     }
 
     private FixTaskDetailVo buildTaskDetail(String taskId, FixTaskAuditSummaryVo summary) {

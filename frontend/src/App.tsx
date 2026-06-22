@@ -37,6 +37,7 @@ import { compactDateTime, duration, percent } from './dashboard/format';
 import { emptyDetail } from './dashboard/types';
 import type { TaskDetailState } from './dashboard/types';
 import type {
+  ApproveReviewInput,
   ConfigurationSummary,
   BackendHealth,
   CreateTaskInput,
@@ -453,11 +454,11 @@ export default function App() {
     }
   }, [refresh]);
 
-  const handleApproveReview = useCallback(async (taskId: string) => {
+  const handleApproveReview = useCallback(async (taskId: string, input: ApproveReviewInput) => {
     setActionTaskId(taskId);
     setError(null);
     try {
-      await approveTaskReview(taskId);
+      await approveTaskReview(taskId, input);
       await refresh();
     } catch (caught) {
       setError(errorMessage(caught));

@@ -201,13 +201,18 @@ curl "http://127.0.0.1:8080/api/rejected-triggers?limit=20"
 Use `/detail` for dashboard-style task inspection. It returns the task audit summary, latest queue item, queue history, latest generated diff, timeline events, test runs, tool calls, and model calls in one response. Use `/report` to copy a Markdown diagnostic summary for a task, including the generated diff when one was captured. The narrower endpoints remain available for focused debugging.
 Use `/api/rejected-triggers` to inspect rejected `/agent fix` attempts that did not create tasks, including unsafe command text, unauthorized users, unauthorized repositories, and the rejection reason.
 
-If a generated diff is blocked by the risk gate, the task moves to `PENDING_REVIEW` instead of `FAILED`. Inspect the generated diff in the task detail or copied report first, then check the `GeneratedDiffRiskGate` tool-call output for the concrete rejection reason. If the diff is intentionally allowed, approve it through the dashboard or API:
+If a generated diff is blocked by the risk gate, the task moves to `PENDING_REVIEW` instead of `FAILED`. Inspect the generated diff in the task detail or copied report first, then check the `GeneratedDiffRiskGate` tool-call output for the concrete rejection reason. If the diff is intentionally allowed, approve it through the dashboard or API with an approver and reason:
 
 ```bash
-curl -X POST http://127.0.0.1:8080/api/tasks/{taskId}/approve-review
+curl -X POST http://127.0.0.1:8080/api/tasks/{taskId}/approve-review \
+  -H "Content-Type: application/json" \
+  -d '{
+    "operator": "release-captain",
+    "reason": "Reviewed generated diff and accepted docs-only change"
+  }'
 ```
 
-Approval does not ask the model to regenerate a patch. It requeues the same task, resumes the existing task workspace, skips only the already-reviewed generated-diff risk gate, and continues with adapter verification, commit, push, and Pull Request creation. If the workspace has been deleted, cancel or retry the task to start a fresh run instead.
+Approval stores `riskReviewApprovedAt`, `riskReviewApprovedBy`, and `riskReviewApprovalReason` on the task. It does not ask the model to regenerate a patch. It requeues the same task, resumes the existing task workspace, skips only the already-reviewed generated-diff risk gate, and continues with adapter verification, commit, push, and Pull Request creation. If the workspace has been deleted, cancel or retry the task to start a fresh run instead.
 
 For local demos or debugging, you can create the same queued task from the backend API without posting a GitHub comment:
 
@@ -251,7 +256,7 @@ Unsupported repositories fail before model patch generation, tests, commit, push
 For supported repositories, the language adapter supplies the verification command and the generic verification runner executes that command under the existing allowlist, timeout, process-registration, and environment-sanitization rules.
 After a repository is detected, each task stores the selected `language`, `buildSystem`, `verificationCommand`, and nullable `adapterDetectionReason`. These fields are returned by the task APIs and shown in the dashboard detail view so operators can confirm whether a task used Maven, Gradle, Bun, npm, pnpm, yarn, tox, nox, hatch, Poetry, uv, or pytest, and which repository signal caused that selection, without opening raw tool-call logs.
 
-After patch generation, PatchPilot runs a deterministic generated-diff risk gate before adapter verification or any GitHub write. The gate rejects sensitive files such as `.env`, private keys, and GitHub Actions workflows; secret-like added lines; binary patches; and diffs that exceed the configured file or line thresholds. Rejections move the task to `PENDING_REVIEW`, keep the concrete reason in `failureReason`, and store a failed `GeneratedDiffRiskGate` tool call so task reports and the dashboard can explain why execution stopped.
+After patch generation, PatchPilot runs a deterministic generated-diff risk gate before adapter verification or any GitHub write. The gate rejects sensitive files such as `.env`, private keys, and GitHub Actions workflows; secret-like added lines; binary patches; and diffs that exceed the configured file or line thresholds. Rejections move the task to `PENDING_REVIEW`, keep the concrete reason in `failureReason`, and store a failed `GeneratedDiffRiskGate` tool call so task reports and the dashboard can explain why execution stopped. Approval requires an operator and reason, and the task keeps that approval audit metadata when it resumes.
 
 Adapter detection fixtures live in `docs/demo-repositories/`. Each fixture documents the adapter it should trigger and the fixed verification command PatchPilot will run. Backend tests use these fixtures to prevent supported repository shapes from drifting as adapters evolve.
 
@@ -387,7 +392,7 @@ PatchPilot must not:
 - Report success without verification.
 - Create tasks for unsafe `/agent fix` instructions.
 - Continue to verification, commit, push, or PR creation after a generated diff fails risk checks.
-- Retry a `PENDING_REVIEW` task until a future human approval flow explicitly allows it.
+- Retry a `PENDING_REVIEW` task without cancelling or recording an explicit approval with operator and reason.
 
 ## Current Limitations
 

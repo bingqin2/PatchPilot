@@ -1,6 +1,7 @@
 package io.patchpilot.backend.task.service;
 
 import io.patchpilot.backend.task.domain.bo.CreateFixTaskCommand;
+import io.patchpilot.backend.task.domain.bo.ApproveReviewCommand;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.enums.FixTaskTimelineEventType;
 import io.patchpilot.backend.task.domain.vo.FixTaskTimelineEventVo;
@@ -135,23 +136,34 @@ class DefaultFixTaskControlServiceTests {
         FixTaskVo task = createTask("delivery-control-approve-review");
         fixTaskService.markPendingReview(task.id(), "Generated diff rejected: sensitive path .env");
 
-        FixTaskVo approvedTask = controlService.approveReviewTask(task.id());
+        FixTaskVo approvedTask = controlService.approveReviewTask(
+                task.id(),
+                new ApproveReviewCommand("release-captain", "Reviewed generated diff and accepted docs-only change")
+        );
 
         assertThat(approvedTask.status()).isEqualTo(FixTaskStatus.PENDING);
         assertThat(approvedTask.failureReason()).isNull();
         assertThat(approvedTask.riskReviewApprovedAt()).isNotNull();
+        assertThat(approvedTask.riskReviewApprovedBy()).isEqualTo("release-captain");
+        assertThat(approvedTask.riskReviewApprovalReason())
+                .isEqualTo("Reviewed generated diff and accepted docs-only change");
         assertThat(fixTaskQueue.enqueuedTaskIds()).containsExactly(task.id());
         assertThat(fixTaskQueue.cancelledTaskIds()).isEmpty();
         assertThat(taskProcessRegistry.cancelledTaskIds()).isEmpty();
         assertThat(fixTaskTimelineService.eventTypes()).containsExactly(FixTaskTimelineEventType.REVIEW_APPROVED);
-        assertThat(fixTaskTimelineService.messages()).containsExactly("Pending review approved by operator");
+        assertThat(fixTaskTimelineService.messages()).containsExactly(
+                "Pending review approved by release-captain: Reviewed generated diff and accepted docs-only change"
+        );
     }
 
     @Test
     void should_reject_approving_non_pending_review_task() {
         FixTaskVo task = createTask("delivery-control-approve-active");
 
-        assertThatThrownBy(() -> controlService.approveReviewTask(task.id()))
+        assertThatThrownBy(() -> controlService.approveReviewTask(
+                task.id(),
+                new ApproveReviewCommand("release-captain", "Reviewed generated diff")
+        ))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("Only pending review tasks can be approved");
 

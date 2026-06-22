@@ -160,7 +160,11 @@ class MyBatisFixTaskServiceTests {
         when(fixTaskMapper.updateById(any(FixTaskEntity.class))).thenReturn(1);
         ArgumentCaptor<FixTaskEntity> entityCaptor = ArgumentCaptor.forClass(FixTaskEntity.class);
 
-        FixTaskVo approvedTask = fixTaskService.markPendingForReviewApproval("task-123");
+        FixTaskVo approvedTask = fixTaskService.markPendingForReviewApproval(
+                "task-123",
+                "release-captain",
+                "Reviewed generated diff and accepted docs-only change"
+        );
 
         verify(fixTaskMapper).updateById(entityCaptor.capture());
         FixTaskEntity updatedEntity = entityCaptor.getValue();
@@ -169,9 +173,15 @@ class MyBatisFixTaskServiceTests {
         assertThat(updatedEntity.getPullRequestUrl()).isNull();
         assertThat(updatedEntity.getCompletedAt()).isNull();
         assertThat(updatedEntity.getRiskReviewApprovedAt()).isNotNull();
+        assertThat(updatedEntity.getRiskReviewApprovedBy()).isEqualTo("release-captain");
+        assertThat(updatedEntity.getRiskReviewApprovalReason())
+                .isEqualTo("Reviewed generated diff and accepted docs-only change");
         assertThat(updatedEntity.getUpdatedAt()).isAfter(current.getUpdatedAt());
         assertThat(approvedTask.status()).isEqualTo(FixTaskStatus.PENDING);
         assertThat(approvedTask.riskReviewApprovedAt()).isEqualTo(updatedEntity.getRiskReviewApprovedAt());
+        assertThat(approvedTask.riskReviewApprovedBy()).isEqualTo("release-captain");
+        assertThat(approvedTask.riskReviewApprovalReason())
+                .isEqualTo("Reviewed generated diff and accepted docs-only change");
     }
 
     @Test

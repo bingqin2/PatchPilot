@@ -1,4 +1,5 @@
 import type {
+  ApproveReviewInput,
   ApiResponse,
   BackendHealth,
   ConfigurationSummary,
@@ -182,8 +183,8 @@ export async function retryTask(taskId: string): Promise<FixTask> {
   return postApi<FixTask>(`/api/tasks/${taskId}/retry`);
 }
 
-export async function approveTaskReview(taskId: string): Promise<FixTask> {
-  return postApi<FixTask>(`/api/tasks/${taskId}/approve-review`);
+export async function approveTaskReview(taskId: string, input: ApproveReviewInput): Promise<FixTask> {
+  return postApi<FixTask>(`/api/tasks/${taskId}/approve-review`, input);
 }
 
 async function getApi<T>(path: string): Promise<T> {

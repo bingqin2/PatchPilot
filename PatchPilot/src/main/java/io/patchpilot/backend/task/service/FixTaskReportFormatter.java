@@ -28,6 +28,16 @@ public class FixTaskReportFormatter {
         if (task.pullRequestUrl() != null) {
             report.append("- Pull Request: ").append(task.pullRequestUrl()).append("\n");
         }
+        if (task.riskReviewApprovedAt() != null) {
+            report.append("- Review approved by: `")
+                    .append(valueOrUnknown(task.riskReviewApprovedBy()))
+                    .append("` at `")
+                    .append(task.riskReviewApprovedAt())
+                    .append("`\n");
+            if (task.riskReviewApprovalReason() != null) {
+                report.append("- Review approval reason: ").append(task.riskReviewApprovalReason()).append("\n");
+            }
+        }
 
         appendAdapter(report, task);
         appendQueue(report, detail);
@@ -150,5 +160,9 @@ public class FixTaskReportFormatter {
                 .append(", ")
                 .append(call.totalTokens())
                 .append(" tokens\n"));
+    }
+
+    private static String valueOrUnknown(String value) {
+        return value == null || value.isBlank() ? "unknown" : value;
     }
 }

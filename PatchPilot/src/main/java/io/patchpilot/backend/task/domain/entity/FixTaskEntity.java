@@ -78,4 +78,10 @@ public class FixTaskEntity {
     @TableField("risk_review_approved_at")
     private Instant riskReviewApprovedAt;
 
+    @TableField("risk_review_approved_by")
+    private String riskReviewApprovedBy;
+
+    @TableField("risk_review_approval_reason")
+    private String riskReviewApprovalReason;
+
 }

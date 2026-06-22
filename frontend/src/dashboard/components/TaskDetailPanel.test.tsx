@@ -26,7 +26,9 @@ const task: FixTask = {
   adapterDetectionReason: 'pyproject.toml declares pytest as the verification command',
   statusCommentId: null,
   statusCommentUrl: null,
-  riskReviewApprovedAt: null
+  riskReviewApprovedAt: null,
+  riskReviewApprovedBy: null,
+  riskReviewApprovalReason: null
 };
 
 const baseSummary: FixTaskAuditSummary = {
@@ -268,6 +270,7 @@ test('shows generated diff preview before approving review tasks', () => {
 
 test('approves pending review tasks from the detail panel', async () => {
   const onApproveReview = vi.fn().mockResolvedValue(undefined);
+  const user = userEvent.setup();
   render(
     <TaskDetailPanel
       task={{
@@ -285,9 +288,42 @@ test('approves pending review tasks from the detail panel', async () => {
     />
   );
 
-  await userEvent.click(screen.getByRole('button', { name: 'Approve review' }));
+  await user.type(screen.getByLabelText('Approver'), 'release-captain');
+  await user.type(
+    screen.getByLabelText('Approval reason'),
+    'Reviewed generated diff and accepted docs-only change'
+  );
+  await user.click(screen.getByRole('button', { name: 'Approve review' }));
 
-  expect(onApproveReview).toHaveBeenCalledWith('task-1');
+  expect(onApproveReview).toHaveBeenCalledWith('task-1', {
+    operator: 'release-captain',
+    reason: 'Reviewed generated diff and accepted docs-only change'
+  });
+});
+
+test('shows review approval audit metadata after a task is approved', () => {
+  render(
+    <TaskDetailPanel
+      task={{
+        ...task,
+        status: 'PENDING',
+        riskReviewApprovedAt: '2026-06-20T01:09:00Z',
+        riskReviewApprovedBy: 'release-captain',
+        riskReviewApprovalReason: 'Reviewed generated diff and accepted docs-only change'
+      }}
+      detail={baseDetail}
+      loading={false}
+      actionInFlight={false}
+      onCancelTask={vi.fn()}
+      onRetryTask={vi.fn()}
+      onApproveReview={vi.fn()}
+      onCopyReport={vi.fn()}
+    />
+  );
+
+  expect(screen.getByText('Review approval')).toBeInTheDocument();
+  expect(screen.getByText('release-captain')).toBeInTheDocument();
+  expect(screen.getByText('Reviewed generated diff and accepted docs-only change')).toBeInTheDocument();
 });
 
 test('builds a shareable task link from the current dashboard URL', () => {

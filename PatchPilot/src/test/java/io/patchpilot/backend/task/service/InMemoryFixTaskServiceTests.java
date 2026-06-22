@@ -107,31 +107,47 @@ class InMemoryFixTaskServiceTests {
         FixTaskVo task = createTask("delivery-review-approval");
         fixTaskService.markPendingReview(task.id(), "Generated diff rejected: sensitive path .env");
 
-        FixTaskVo approvedTask = fixTaskService.markPendingForReviewApproval(task.id());
+        FixTaskVo approvedTask = fixTaskService.markPendingForReviewApproval(
+                task.id(),
+                "release-captain",
+                "Reviewed generated diff and accepted docs-only change"
+        );
 
         assertThat(approvedTask.status()).isEqualTo(FixTaskStatus.PENDING);
         assertThat(approvedTask.failureReason()).isNull();
         assertThat(approvedTask.pullRequestUrl()).isNull();
         assertThat(approvedTask.completedAt()).isNull();
         assertThat(approvedTask.riskReviewApprovedAt()).isNotNull();
+        assertThat(approvedTask.riskReviewApprovedBy()).isEqualTo("release-captain");
+        assertThat(approvedTask.riskReviewApprovalReason())
+                .isEqualTo("Reviewed generated diff and accepted docs-only change");
         assertThat(fixTaskService.findTask(task.id()))
                 .get()
                 .satisfies(foundTask -> {
                     assertThat(foundTask.status()).isEqualTo(FixTaskStatus.PENDING);
                     assertThat(foundTask.riskReviewApprovedAt()).isEqualTo(approvedTask.riskReviewApprovedAt());
+                    assertThat(foundTask.riskReviewApprovedBy()).isEqualTo("release-captain");
+                    assertThat(foundTask.riskReviewApprovalReason())
+                            .isEqualTo("Reviewed generated diff and accepted docs-only change");
                 });
     }
 
     @Test
     void should_clear_review_approval_when_retrying_from_failed_state() {
         FixTaskVo task = createTask("delivery-review-approval-retry");
-        FixTaskVo approvedTask = fixTaskService.markPendingForReviewApproval(task.id());
+        FixTaskVo approvedTask = fixTaskService.markPendingForReviewApproval(
+                task.id(),
+                "release-captain",
+                "Reviewed generated diff"
+        );
         fixTaskService.markFailed(approvedTask.id(), "verification failed");
 
         FixTaskVo retriedTask = fixTaskService.markPendingForRetry(task.id());
 
         assertThat(retriedTask.status()).isEqualTo(FixTaskStatus.PENDING);
         assertThat(retriedTask.riskReviewApprovedAt()).isNull();
+        assertThat(retriedTask.riskReviewApprovedBy()).isNull();
+        assertThat(retriedTask.riskReviewApprovalReason()).isNull();
     }
 
     @Test

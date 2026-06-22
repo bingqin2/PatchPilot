@@ -1,5 +1,6 @@
 package io.patchpilot.backend.task.service.impl;
 
+import io.patchpilot.backend.task.domain.bo.ApproveReviewCommand;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.enums.FixTaskTimelineEventType;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
@@ -65,17 +66,21 @@ public class DefaultFixTaskControlService implements FixTaskControlService {
     }
 
     @Override
-    public FixTaskVo approveReviewTask(String taskId) {
+    public FixTaskVo approveReviewTask(String taskId, ApproveReviewCommand command) {
         FixTaskVo task = currentTask(taskId);
         if (task.status() != FixTaskStatus.PENDING_REVIEW) {
             throw new IllegalStateException("Only pending review tasks can be approved");
         }
-        FixTaskVo approvedTask = fixTaskService.markPendingForReviewApproval(taskId);
+        FixTaskVo approvedTask = fixTaskService.markPendingForReviewApproval(
+                taskId,
+                command.operator(),
+                command.reason()
+        );
         fixTaskQueue.enqueue(taskId);
         fixTaskTimelineService.recordEvent(
                 taskId,
                 FixTaskTimelineEventType.REVIEW_APPROVED,
-                "Pending review approved by operator"
+                "Pending review approved by " + command.operator() + ": " + command.reason()
         );
         return approvedTask;
     }
