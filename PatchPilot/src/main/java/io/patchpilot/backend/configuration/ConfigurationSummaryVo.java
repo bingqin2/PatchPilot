@@ -20,6 +20,11 @@ public record ConfigurationSummaryVo(
         int triggerRateLimitMaxPerTriggerUser,
         int triggerRateLimitMaxPerRepository,
         int triggerRateLimitMaxPerIssue,
+        boolean triggerUserAllowlistConfigured,
+        boolean repositoryAllowlistConfigured,
+        boolean reviewApprovalAllowlistConfigured,
+        List<String> allowedTriggerUsers,
+        List<String> allowedRepositories,
         List<String> reviewApprovalAllowedOperators
 ) {
 }

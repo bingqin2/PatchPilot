@@ -258,7 +258,7 @@ Unsupported repositories fail before model patch generation, tests, commit, push
 For supported repositories, the language adapter supplies the verification command and the generic verification runner executes that command under the existing allowlist, timeout, process-registration, and environment-sanitization rules.
 After a repository is detected, each task stores the selected `language`, `buildSystem`, `verificationCommand`, and nullable `adapterDetectionReason`. These fields are returned by the task APIs and shown in the dashboard detail view so operators can confirm whether a task used Maven, Gradle, Bun, npm, pnpm, yarn, tox, nox, hatch, Poetry, uv, or pytest, and which repository signal caused that selection, without opening raw tool-call logs.
 
-After patch generation, PatchPilot runs a deterministic generated-diff risk gate before adapter verification or any GitHub write. The gate rejects sensitive files such as `.env`, private keys, and GitHub Actions workflows; secret-like added lines; binary patches; and diffs that exceed the configured file or line thresholds. Rejections move the task to `PENDING_REVIEW`, keep the concrete reason in `failureReason`, and store a failed `GeneratedDiffRiskGate` tool call so task reports and the dashboard can explain why execution stopped. Approval requires an operator and reason, and the task keeps that approval audit metadata when it resumes.
+After patch generation, PatchPilot runs a deterministic generated-diff risk gate before adapter verification or any GitHub write. The gate rejects sensitive files such as `.env`, private keys, and GitHub Actions workflows; secret-like added lines; binary patches; and diffs that exceed the configured file or line thresholds. Rejections move the task to `PENDING_REVIEW`, keep the concrete reason in `failureReason`, and store a failed `GeneratedDiffRiskGate` tool call so task reports and the dashboard can explain why execution stopped. Approval requires an operator from `PATCHPILOT_REVIEW_APPROVAL_ALLOWED_OPERATORS` and a reason, and the task keeps that approval audit metadata when it resumes.
 
 Adapter detection fixtures live in `docs/demo-repositories/`. Each fixture documents the adapter it should trigger and the fixed verification command PatchPilot will run. Backend tests use these fixtures to prevent supported repository shapes from drifting as adapters evolve.
 
@@ -291,7 +291,7 @@ Runtime configuration summary:
 curl http://127.0.0.1:8080/api/configuration/summary
 ```
 
-This endpoint returns only non-sensitive values and configured/missing booleans for secrets. It also returns safety settings such as model trigger classification and trigger rate-limit thresholds. It never returns raw API keys, GitHub tokens, or webhook secrets.
+This endpoint returns only non-sensitive values and configured/missing booleans for secrets. It also returns safety policy state such as trigger-user allowlists, repository allowlists, review-approval operators, model trigger classification, and trigger rate-limit thresholds. It never returns raw API keys, GitHub tokens, or webhook secrets.
 
 Demo readiness:
 
@@ -299,7 +299,7 @@ Demo readiness:
 curl http://127.0.0.1:8080/api/demo/readiness
 ```
 
-This endpoint aggregates backend reachability, required credential flags, model cost configuration, adapter fixture verification, queue state, and recent completed Pull Request evidence into one `READY`, `NEEDS_ATTENTION`, or `BLOCKED` result. Use it before a live `/agent fix` demo to see the next operator action without manually checking every panel or curl endpoint.
+This endpoint aggregates backend reachability, required credential flags, safety policy state, model cost configuration, adapter fixture verification, queue state, and recent completed Pull Request evidence into one `READY`, `NEEDS_ATTENTION`, or `BLOCKED` result. Use it before a live `/agent fix` demo to see the next operator action without manually checking every panel or curl endpoint.
 
 Queue state:
 

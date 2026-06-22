@@ -261,6 +261,7 @@ Responsibilities:
 - Aggregate non-mutating setup and health evidence before a live issue-to-PR demo.
 - Report a single `READY`, `NEEDS_ATTENTION`, or `BLOCKED` status.
 - Surface required credential gaps without exposing secret values.
+- Surface safety policy gaps for trigger-user allowlists, repository allowlists, and review-approval approvers.
 - Treat adapter fixture drift as blocking because repository support may be misdetected.
 - Treat queue failures, delayed work, running work, missing model cost configuration, or missing recent PR evidence as operator attention items.
 - Return concrete next actions for the dashboard and curl users.

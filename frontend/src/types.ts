@@ -145,6 +145,11 @@ export interface ConfigurationSummary {
   triggerRateLimitMaxPerTriggerUser: number;
   triggerRateLimitMaxPerRepository: number;
   triggerRateLimitMaxPerIssue: number;
+  triggerUserAllowlistConfigured: boolean;
+  repositoryAllowlistConfigured: boolean;
+  reviewApprovalAllowlistConfigured: boolean;
+  allowedTriggerUsers: string[];
+  allowedRepositories: string[];
   reviewApprovalAllowedOperators: string[];
 }
 

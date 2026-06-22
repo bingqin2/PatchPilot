@@ -19,6 +19,11 @@ const healthyConfiguration = {
   triggerRateLimitMaxPerTriggerUser: 30,
   triggerRateLimitMaxPerRepository: 60,
   triggerRateLimitMaxPerIssue: 20,
+  triggerUserAllowlistConfigured: true,
+  repositoryAllowlistConfigured: true,
+  reviewApprovalAllowlistConfigured: true,
+  allowedTriggerUsers: ['bingqin2', 'local-operator'],
+  allowedRepositories: ['bingqin2/PatchPilot'],
   reviewApprovalAllowedOperators: ['release-captain', 'local-operator']
 };
 
@@ -39,6 +44,10 @@ test('shows healthy configuration status when required and advisory settings are
   expect(screen.getByText('patchpilot-backend')).toBeInTheDocument();
   expect(screen.getByText('Trigger classifier Enabled')).toBeInTheDocument();
   expect(screen.getByText('Rate limit Enabled')).toBeInTheDocument();
+  expect(screen.getByText('Trigger users')).toBeInTheDocument();
+  expect(screen.getByText('bingqin2, local-operator')).toBeInTheDocument();
+  expect(screen.getByText('Repositories')).toBeInTheDocument();
+  expect(screen.getByText('bingqin2/PatchPilot')).toBeInTheDocument();
   expect(screen.getByText('Review approvers')).toBeInTheDocument();
   expect(screen.getByText('release-captain, local-operator')).toBeInTheDocument();
   expect(screen.getByText('600.0s window')).toBeInTheDocument();
@@ -61,6 +70,11 @@ test('shows setup issues and advisories for weak configuration', () => {
         triggerRateLimitEnabled: false,
         triggerRateLimitWindowMs: 500,
         triggerRateLimitMaxPerIssue: 0,
+        triggerUserAllowlistConfigured: false,
+        repositoryAllowlistConfigured: false,
+        reviewApprovalAllowlistConfigured: false,
+        allowedTriggerUsers: [],
+        allowedRepositories: [],
         reviewApprovalAllowedOperators: []
       }}
       backendHealth={null}
@@ -69,7 +83,7 @@ test('shows setup issues and advisories for weak configuration', () => {
 
   expect(screen.getByText('3 setup issues')).toBeInTheDocument();
   expect(screen.getByText('Backend unavailable')).toBeInTheDocument();
-  expect(screen.getByText('8 advisory items')).toBeInTheDocument();
+  expect(screen.getByText('10 advisory items')).toBeInTheDocument();
   expect(screen.getByText('Agent API key is missing')).toBeInTheDocument();
   expect(screen.getByText('GitHub token is missing')).toBeInTheDocument();
   expect(screen.getByText('Webhook secret is missing')).toBeInTheDocument();
@@ -80,6 +94,8 @@ test('shows setup issues and advisories for weak configuration', () => {
   expect(screen.getByText('Trigger rate limit is disabled')).toBeInTheDocument();
   expect(screen.getByText('Trigger rate limit window is below 1.0s')).toBeInTheDocument();
   expect(screen.getByText('Trigger rate limit thresholds must be at least 1')).toBeInTheDocument();
+  expect(screen.getByText('Trigger user allowlist is open')).toBeInTheDocument();
+  expect(screen.getByText('Repository allowlist is open')).toBeInTheDocument();
   expect(screen.getByText('Review approval operators are not configured')).toBeInTheDocument();
 });
 

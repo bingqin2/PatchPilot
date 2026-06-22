@@ -49,7 +49,7 @@ Formatting helpers live in `frontend/src/dashboard/format.ts`.
 
 The first screen is the working dashboard:
 
-- Demo readiness summarizes credentials, adapter fixture verification, queue health, and recent Pull Request evidence before an operator starts a live smoke run.
+- Demo readiness summarizes credentials, safety policy state, adapter fixture verification, queue health, and recent Pull Request evidence before an operator starts a live smoke run.
 - Metrics summarize task health.
 - A compact refresh status tells operators when top-level dashboard data is still loading, and the title area shows when the dashboard last refreshed successfully.
 - Operational summaries highlight failure causes, model usage, and latency without requiring terminal inspection.

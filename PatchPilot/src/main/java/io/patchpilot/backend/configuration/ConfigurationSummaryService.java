@@ -11,6 +11,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
 @Service
 @RequiredArgsConstructor
 public class ConfigurationSummaryService {
@@ -26,6 +30,9 @@ public class ConfigurationSummaryService {
     private String webhookSecret;
 
     public ConfigurationSummaryVo getConfigurationSummary() {
+        List<String> allowedTriggerUsers = normalizedValues(safetyProperties.getAllowedTriggerUsers());
+        List<String> allowedRepositories = normalizedValues(safetyProperties.getAllowedRepositories());
+        List<String> reviewApprovalAllowedOperators = reviewApprovalProperties.normalizedAllowedOperators();
         return new ConfigurationSummaryVo(
                 valueOrEmpty(agentProperties.getProvider()),
                 valueOrEmpty(agentProperties.getModel()),
@@ -44,7 +51,12 @@ public class ConfigurationSummaryService {
                 safetyProperties.getTriggerRateLimitMaxPerTriggerUser(),
                 safetyProperties.getTriggerRateLimitMaxPerRepository(),
                 safetyProperties.getTriggerRateLimitMaxPerIssue(),
-                reviewApprovalProperties.normalizedAllowedOperators()
+                !allowedTriggerUsers.isEmpty(),
+                !allowedRepositories.isEmpty(),
+                !reviewApprovalAllowedOperators.isEmpty(),
+                allowedTriggerUsers,
+                allowedRepositories,
+                reviewApprovalAllowedOperators
         );
     }
 
@@ -59,5 +71,20 @@ public class ConfigurationSummaryService {
 
     private static String valueOrEmpty(String value) {
         return value == null ? "" : value;
+    }
+
+    private static List<String> normalizedValues(List<String> values) {
+        Map<String, String> normalizedValues = new LinkedHashMap<>();
+        if (values == null) {
+            return List.of();
+        }
+        for (String value : values) {
+            if (!StringUtils.hasText(value)) {
+                continue;
+            }
+            String trimmedValue = value.trim();
+            normalizedValues.putIfAbsent(trimmedValue.toLowerCase(), trimmedValue);
+        }
+        return List.copyOf(normalizedValues.values());
     }
 }
