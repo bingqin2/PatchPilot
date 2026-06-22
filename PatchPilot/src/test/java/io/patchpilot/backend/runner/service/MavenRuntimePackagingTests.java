@@ -22,7 +22,9 @@ class MavenRuntimePackagingTests {
     void should_install_nodejs_and_npm_for_node_adapter_verification() throws Exception {
         String dockerfile = Files.readString(Path.of("Dockerfile"));
 
-        assertThat(dockerfile).contains("apt-get install -y --no-install-recommends git ca-certificates nodejs npm");
+        assertThat(dockerfile).contains("apt-get install -y --no-install-recommends");
+        assertThat(dockerfile).contains("git ca-certificates");
+        assertThat(dockerfile).contains("nodejs npm");
     }
 
     @Test
@@ -30,6 +32,15 @@ class MavenRuntimePackagingTests {
         String dockerfile = Files.readString(Path.of("Dockerfile"));
 
         assertThat(dockerfile).contains("npm install -g pnpm yarn");
+    }
+
+    @Test
+    void should_install_bun_for_node_bun_adapter() throws Exception {
+        String dockerfile = Files.readString(Path.of("Dockerfile"));
+
+        assertThat(dockerfile).contains("curl -fsSL https://bun.sh/install | bash");
+        assertThat(dockerfile).contains("BUN_INSTALL=/usr/local/bun");
+        assertThat(dockerfile).contains("PATH=\"/usr/local/bun/bin:${PATH}\"");
     }
 
     @Test

@@ -278,6 +278,7 @@ Goal: extend PatchPilot from Java/Maven to a small set of well-supported reposit
 Build:
 
 - Java/Gradle adapter.
+- Node.js adapter for Bun projects.
 - Node.js adapter for npm projects.
 - Node.js adapters for pnpm and yarn projects.
 - Python adapter for pytest projects.

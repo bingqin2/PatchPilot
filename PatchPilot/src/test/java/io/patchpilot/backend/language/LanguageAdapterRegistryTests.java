@@ -3,6 +3,7 @@ package io.patchpilot.backend.language;
 import io.patchpilot.backend.language.domain.LanguageDetectionResult;
 import io.patchpilot.backend.language.impl.JavaGradleLanguageAdapter;
 import io.patchpilot.backend.language.impl.JavaMavenLanguageAdapter;
+import io.patchpilot.backend.language.impl.NodeBunLanguageAdapter;
 import io.patchpilot.backend.language.impl.NodeNpmLanguageAdapter;
 import io.patchpilot.backend.language.impl.NodePnpmLanguageAdapter;
 import io.patchpilot.backend.language.impl.NodeYarnLanguageAdapter;
@@ -61,6 +62,7 @@ class LanguageAdapterRegistryTests {
         LanguageAdapterRegistry registry = new LanguageAdapterRegistry(List.of(
                 new JavaMavenLanguageAdapter(),
                 new JavaGradleLanguageAdapter(),
+                new NodeBunLanguageAdapter(),
                 new NodePnpmLanguageAdapter(),
                 new NodeYarnLanguageAdapter(),
                 new NodeNpmLanguageAdapter(),
@@ -72,6 +74,7 @@ class LanguageAdapterRegistryTests {
         Stream.of(
                 fixture("java-maven", "java", "maven", List.of("mvn", "test")),
                 fixture("java-gradle", "java", "gradle", List.of("gradle", "test")),
+                fixture("node-bun", "node", "bun", List.of("bun", "test")),
                 fixture("node-npm", "node", "npm", List.of("npm", "test")),
                 fixture("node-pnpm", "node", "pnpm", List.of("pnpm", "test")),
                 fixture("node-yarn", "node", "yarn", List.of("yarn", "test")),

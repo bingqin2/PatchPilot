@@ -12,7 +12,7 @@ public class NodeNpmLanguageAdapter extends NodePackageManagerLanguageAdapter {
     public NodeNpmLanguageAdapter() {
         super(
                 "npm",
-                null,
+                List.of(),
                 List.of("npm", "test"),
                 "Detected npm project with test script"
         );

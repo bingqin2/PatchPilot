@@ -238,6 +238,7 @@ MVP allowed commands:
 mvn test
 ./gradlew test
 gradle test
+bun test
 npm test
 pnpm test
 yarn test

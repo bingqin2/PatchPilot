@@ -7,6 +7,7 @@ import io.patchpilot.backend.language.LanguageAdapterRegistry;
 import io.patchpilot.backend.language.domain.LanguageDetectionResult;
 import io.patchpilot.backend.language.impl.JavaGradleLanguageAdapter;
 import io.patchpilot.backend.language.impl.JavaMavenLanguageAdapter;
+import io.patchpilot.backend.language.impl.NodeBunLanguageAdapter;
 import io.patchpilot.backend.language.impl.NodeNpmLanguageAdapter;
 import io.patchpilot.backend.language.impl.NodePnpmLanguageAdapter;
 import io.patchpilot.backend.language.impl.NodeYarnLanguageAdapter;
@@ -54,6 +55,7 @@ class PatchPilotApplicationTests {
         assertThat(adapters.values())
                 .hasAtLeastOneElementOfType(JavaMavenLanguageAdapter.class)
                 .hasAtLeastOneElementOfType(JavaGradleLanguageAdapter.class)
+                .hasAtLeastOneElementOfType(NodeBunLanguageAdapter.class)
                 .hasAtLeastOneElementOfType(NodeNpmLanguageAdapter.class)
                 .hasAtLeastOneElementOfType(NodePnpmLanguageAdapter.class)
                 .hasAtLeastOneElementOfType(NodeYarnLanguageAdapter.class)
@@ -79,6 +81,25 @@ class PatchPilotApplicationTests {
         assertThat(result.supported()).isTrue();
         assertThat(result.buildSystem()).isEqualTo("pnpm");
         assertThat(result.verificationCommand()).containsExactly("pnpm", "test");
+    }
+
+    @Test
+    void should_prefer_bun_adapter_before_broad_npm(@TempDir Path tempDir) throws Exception {
+        Files.writeString(tempDir.resolve("package.json"), """
+                {
+                  "scripts": {
+                    "test": "bun test"
+                  }
+                }
+                """);
+        Files.writeString(tempDir.resolve("bun.lockb"), "bun binary lock placeholder\n");
+        LanguageAdapterRegistry registry = applicationContext.getBean(LanguageAdapterRegistry.class);
+
+        LanguageDetectionResult result = registry.detect(tempDir);
+
+        assertThat(result.supported()).isTrue();
+        assertThat(result.buildSystem()).isEqualTo("bun");
+        assertThat(result.verificationCommand()).containsExactly("bun", "test");
     }
 
     @Test

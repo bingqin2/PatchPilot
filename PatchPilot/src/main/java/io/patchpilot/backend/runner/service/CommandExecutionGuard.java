@@ -40,6 +40,7 @@ public class CommandExecutionGuard {
                 || command.equals(List.of("npm", "test"))
                 || command.equals(List.of("pnpm", "test"))
                 || command.equals(List.of("yarn", "test"))
+                || command.equals(List.of("bun", "test"))
                 || command.equals(List.of("python3", "-m", "pytest"))
                 || command.equals(List.of("poetry", "run", "pytest"))
                 || command.equals(List.of("uv", "run", "pytest"))) {

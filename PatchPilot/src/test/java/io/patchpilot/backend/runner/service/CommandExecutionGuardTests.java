@@ -26,6 +26,7 @@ class CommandExecutionGuardTests {
         guard.validate(repositoryDir, List.of("npm", "test"));
         guard.validate(repositoryDir, List.of("pnpm", "test"));
         guard.validate(repositoryDir, List.of("yarn", "test"));
+        guard.validate(repositoryDir, List.of("bun", "test"));
         guard.validate(repositoryDir, List.of("python3", "-m", "pytest"));
         guard.validate(repositoryDir, List.of("poetry", "run", "pytest"));
         guard.validate(repositoryDir, List.of("uv", "run", "pytest"));
@@ -71,6 +72,9 @@ class CommandExecutionGuardTests {
         assertThatThrownBy(() -> guard.validate(repositoryDir, List.of("yarn", "install")))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Command is not allowlisted: yarn install");
+        assertThatThrownBy(() -> guard.validate(repositoryDir, List.of("bun", "install")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Command is not allowlisted: bun install");
     }
 
     @Test
