@@ -57,6 +57,15 @@ public class FixTaskEntity {
     @TableField("updated_at")
     private Instant updatedAt;
 
+    @TableField("language")
+    private String language;
+
+    @TableField("build_system")
+    private String buildSystem;
+
+    @TableField("verification_command")
+    private String verificationCommand;
+
     @TableField("status_comment_id")
     private Long statusCommentId;
 

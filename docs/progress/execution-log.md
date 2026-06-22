@@ -2037,3 +2037,20 @@ Validation:
 
 - `mvn -pl PatchPilot -Dtest=PythonPytestLanguageAdapterTests,CommandExecutionGuardTests,VerificationRunnerTests,PatchPilotApplicationTests,MavenRuntimePackagingTests test`: first failed because `PythonPytestLanguageAdapter` did not exist; then failed because local `python3` lacked pytest; then passed after using a local module fixture for command-path verification and adding the adapter, command allowlist, Spring registration, and runtime packaging, 19 tests run, 0 failures.
 - `mvn -pl PatchPilot test`: passed after full backend verification, 347 tests run, 0 failures.
+
+Implemented adapter-aware task metadata from `docs/plans/099-adapter-aware-task-metadata.md`.
+
+Changes:
+
+- Added nullable task metadata fields for selected `language`, `buildSystem`, and `verificationCommand`.
+- Added a database migration for adapter metadata on `fix_task`.
+- Recorded adapter metadata immediately after successful language-adapter detection.
+- Exposed adapter metadata through task API responses by extending `FixTaskVo`.
+- Showed adapter metadata in dashboard task rows and selected task detail.
+- Renamed task detail test output labels from Maven-specific wording to generic verification wording.
+- Updated README, product specification, frontend design notes, and this execution log.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=FixTaskConvertTests,InMemoryFixTaskServiceTests,MyBatisFixTaskServiceTests,WorkspaceFixTaskExecutorTests,FixTaskAdapterMetadataMigrationTests test`: first failed because the entity, VO, conversion method, service method, executor injection, and migration did not exist; then passed after implementation, 48 tests run, 0 failures.
+- `npm test -- --run App.test.tsx TaskDetailPanel.test.tsx`: first failed because the dashboard did not render adapter metadata; then passed after adding the task row/detail display and generic verification labels, 46 tests run, 0 failures.

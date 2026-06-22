@@ -29,6 +29,9 @@ public final class FixTaskConvert {
                 entity.getPullRequestUrl(),
                 entity.getCompletedAt(),
                 entity.getUpdatedAt(),
+                entity.getLanguage(),
+                entity.getBuildSystem(),
+                entity.getVerificationCommand(),
                 entity.getStatusCommentId(),
                 entity.getStatusCommentUrl()
         );
@@ -51,6 +54,9 @@ public final class FixTaskConvert {
         entity.setPullRequestUrl(null);
         entity.setCompletedAt(null);
         entity.setUpdatedAt(createdAt);
+        entity.setLanguage(null);
+        entity.setBuildSystem(null);
+        entity.setVerificationCommand(null);
         entity.setStatusCommentId(null);
         entity.setStatusCommentUrl(null);
         return entity;
@@ -78,6 +84,9 @@ public final class FixTaskConvert {
         entity.setPullRequestUrl(current.getPullRequestUrl());
         entity.setCompletedAt(current.getCompletedAt());
         entity.setUpdatedAt(updatedAt);
+        entity.setLanguage(current.getLanguage());
+        entity.setBuildSystem(current.getBuildSystem());
+        entity.setVerificationCommand(current.getVerificationCommand());
         entity.setStatusCommentId(current.getStatusCommentId());
         entity.setStatusCommentUrl(current.getStatusCommentUrl());
         return entity;
@@ -112,6 +121,25 @@ public final class FixTaskConvert {
         );
         entity.setStatusCommentId(statusCommentId);
         entity.setStatusCommentUrl(statusCommentUrl);
+        return entity;
+    }
+
+    public static FixTaskEntity attachAdapterMetadata(
+            FixTaskEntity current,
+            String language,
+            String buildSystem,
+            String verificationCommand,
+            Instant updatedAt
+    ) {
+        FixTaskEntity entity = replaceStatus(
+                current,
+                FixTaskStatus.valueOf(current.getStatus()),
+                current.getFailureReason(),
+                updatedAt
+        );
+        entity.setLanguage(language);
+        entity.setBuildSystem(buildSystem);
+        entity.setVerificationCommand(verificationCommand);
         return entity;
     }
 }

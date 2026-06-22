@@ -35,6 +35,9 @@ class FixTaskConvertTests {
         assertThat(entity.getPullRequestUrl()).isNull();
         assertThat(entity.getCompletedAt()).isNull();
         assertThat(entity.getUpdatedAt()).isEqualTo(createdAt);
+        assertThat(entity.getLanguage()).isNull();
+        assertThat(entity.getBuildSystem()).isNull();
+        assertThat(entity.getVerificationCommand()).isNull();
         assertThat(entity.getStatusCommentId()).isNull();
         assertThat(entity.getStatusCommentUrl()).isNull();
 
@@ -53,6 +56,9 @@ class FixTaskConvertTests {
         assertThat(vo.pullRequestUrl()).isNull();
         assertThat(vo.completedAt()).isNull();
         assertThat(vo.updatedAt()).isEqualTo(createdAt);
+        assertThat(vo.language()).isNull();
+        assertThat(vo.buildSystem()).isNull();
+        assertThat(vo.verificationCommand()).isNull();
         assertThat(vo.statusCommentId()).isNull();
         assertThat(vo.statusCommentUrl()).isNull();
     }
@@ -84,10 +90,40 @@ class FixTaskConvertTests {
         assertThat(updated.getPullRequestUrl()).isEqualTo(current.getPullRequestUrl());
         assertThat(updated.getCompletedAt()).isEqualTo(current.getCompletedAt());
         assertThat(updated.getUpdatedAt()).isEqualTo(updatedAt);
+        assertThat(updated.getLanguage()).isEqualTo(current.getLanguage());
+        assertThat(updated.getBuildSystem()).isEqualTo(current.getBuildSystem());
+        assertThat(updated.getVerificationCommand()).isEqualTo(current.getVerificationCommand());
         assertThat(updated.getStatusCommentId()).isEqualTo(123L);
         assertThat(updated.getStatusCommentUrl()).isEqualTo("https://github.com/octocat/hello-world/issues/42#issuecomment-123");
         assertThat(updated.getStatus()).isEqualTo(FixTaskStatus.FAILED.name());
         assertThat(updated.getFailureReason()).isEqualTo("tests failed");
+    }
+
+    @Test
+    void should_attach_adapter_metadata_without_changing_task_status() {
+        Instant createdAt = Instant.parse("2026-06-19T01:02:03Z");
+        Instant updatedAt = Instant.parse("2026-06-19T01:03:00Z");
+        FixTaskEntity current = FixTaskConvert.newEntity("task-123", command("delivery-123"), createdAt);
+        current.setStatus(FixTaskStatus.RUNNING.name());
+
+        FixTaskEntity updated = FixTaskConvert.attachAdapterMetadata(
+                current,
+                "python",
+                "pytest",
+                "python3 -m pytest",
+                updatedAt
+        );
+        FixTaskVo vo = FixTaskConvert.toVo(updated);
+
+        assertThat(updated.getId()).isEqualTo("task-123");
+        assertThat(updated.getStatus()).isEqualTo(FixTaskStatus.RUNNING.name());
+        assertThat(updated.getLanguage()).isEqualTo("python");
+        assertThat(updated.getBuildSystem()).isEqualTo("pytest");
+        assertThat(updated.getVerificationCommand()).isEqualTo("python3 -m pytest");
+        assertThat(updated.getUpdatedAt()).isEqualTo(updatedAt);
+        assertThat(vo.language()).isEqualTo("python");
+        assertThat(vo.buildSystem()).isEqualTo("pytest");
+        assertThat(vo.verificationCommand()).isEqualTo("python3 -m pytest");
     }
 
     @Test
