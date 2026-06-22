@@ -68,6 +68,22 @@ class VerificationRunnerTests {
     }
 
     @Test
+    void should_run_adapter_supplied_pytest_command() throws Exception {
+        Path repositoryDir = tempDir.resolve("python-repo");
+        Files.createDirectories(repositoryDir);
+        Files.writeString(repositoryDir.resolve("pytest.py"), """
+                print("pytest-command")
+                """);
+        VerificationRunner runner = runner();
+
+        TestRunResult result = runner.runVerification("task-123", repositoryDir, List.of("python3", "-m", "pytest"));
+
+        assertThat(result.command()).isEqualTo("python3 -m pytest");
+        assertThat(result.exitCode()).isZero();
+        assertThat(result.output()).contains("pytest-command");
+    }
+
+    @Test
     void should_register_and_unregister_process_for_task() throws Exception {
         Path repositoryDir = tempDir.resolve("registered-repo");
         Files.createDirectories(repositoryDir);

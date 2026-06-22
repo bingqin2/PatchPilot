@@ -2020,3 +2020,20 @@ Validation:
 - `mvn -pl PatchPilot -Dtest=MavenRuntimePackagingTests test`: first failed because the runtime Dockerfile did not install `nodejs npm`; then passed after adding them to the runtime image.
 - `mvn -pl PatchPilot -Dtest=NodeNpmLanguageAdapterTests,CommandExecutionGuardTests,VerificationRunnerTests,PatchPilotApplicationTests,MavenRuntimePackagingTests test`: passed after runtime packaging verification, 17 tests run, 0 failures.
 - `mvn -pl PatchPilot test`: passed after full backend verification, 341 tests run, 0 failures.
+
+Implemented Python/pytest language adapter support from `docs/plans/098-python-pytest-language-adapter.md`.
+
+Changes:
+
+- Added `PythonPytestLanguageAdapter` for Python repositories with `pytest.ini`, `[tool.pytest.ini_options]` in `pyproject.toml`, or pytest in `requirements.txt`.
+- Selected the fixed verification command `python3 -m pytest` for supported Python/pytest repositories.
+- Rejected Python repositories without pytest configuration or dependency before patch generation or Git mutation.
+- Registered the Python/pytest adapter after Java/Maven, Java/Gradle, and Node/npm adapters.
+- Extended `CommandExecutionGuard` to allow only `python3 -m pytest`, not arbitrary Python commands or pytest arguments.
+- Added Python and pytest to the backend runtime Docker image so Docker Compose can execute Python verification.
+- Updated README, product specification, architecture, target-state, roadmap, decisions, and backend command-execution standard.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=PythonPytestLanguageAdapterTests,CommandExecutionGuardTests,VerificationRunnerTests,PatchPilotApplicationTests,MavenRuntimePackagingTests test`: first failed because `PythonPytestLanguageAdapter` did not exist; then failed because local `python3` lacked pytest; then passed after using a local module fixture for command-path verification and adding the adapter, command allowlist, Spring registration, and runtime packaging, 19 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed after full backend verification, 347 tests run, 0 failures.

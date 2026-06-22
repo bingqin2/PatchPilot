@@ -24,6 +24,7 @@ class CommandExecutionGuardTests {
         guard.validate(repositoryDir, List.of("./gradlew", "test"));
         guard.validate(repositoryDir, List.of("gradle", "test"));
         guard.validate(repositoryDir, List.of("npm", "test"));
+        guard.validate(repositoryDir, List.of("python3", "-m", "pytest"));
         guard.validate(repositoryDir, List.of("git", "-C", repositoryDir.toString(), "status", "--short"));
         guard.validate(repositoryDir, List.of("git", "-C", repositoryDir.toString(), "diff", "--"));
         guard.validate(repositoryDir, List.of("git", "-C", repositoryDir.toString(), "checkout", "-b", "patchpilot/task-123"));
