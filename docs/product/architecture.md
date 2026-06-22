@@ -51,10 +51,11 @@ GitHub issue comment created
   -> FixTaskService creates a task
   -> TaskWorker runs asynchronously
   -> WorkspaceService clones the repository
+  -> LanguageAdapterRegistry rejects unsupported repositories before model patching
   -> IssueAnalyzer gathers issue and repository context
   -> FixIssueAgent creates a fix plan
   -> Tools search code, read files, write files, and inspect diff
-  -> LanguageAdapter selects an allowlisted verification command
+  -> LanguageAdapter supplies an allowlisted verification command
   -> TestRunner runs verification
   -> GitHubClient pushes a branch and opens a Pull Request
   -> GitHubClient comments back on the issue
@@ -213,13 +214,14 @@ Tools are the only way for agent reasoning to affect the external world.
 
 Responsibilities:
 
-- Use language adapters to detect supported build systems.
+- Use language adapters to detect supported build systems immediately after workspace preparation.
+- Fail unsupported repositories before patch generation, test execution, Git mutation, or Pull Request creation.
 - Execute allowed verification commands.
 - Capture test output.
 - Enforce timeouts.
 - Return structured test results.
 
-The first adapter is `JavaMavenLanguageAdapter`. MVP supported commands:
+The adapter registry selects the first supported adapter and returns a clear unsupported result when none match. The first adapter is `JavaMavenLanguageAdapter`. MVP supported commands:
 
 ```bash
 ./mvnw test

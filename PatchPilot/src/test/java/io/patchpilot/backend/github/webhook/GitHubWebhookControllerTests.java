@@ -36,6 +36,8 @@ import io.patchpilot.backend.workspace.service.WorkspaceService;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
@@ -313,6 +315,7 @@ class GitHubWebhookControllerTests {
                 @Override
                 public PreparedWorkspaceResult prepareRepository(CloneWorkspaceCommand command) {
                     WorkspaceCloneResult result = cloneResult(command);
+                    createSupportedMavenFixture(result.repositoryDir());
                     return new PreparedWorkspaceResult(
                             result.taskId(),
                             result.workspaceDir(),
@@ -327,6 +330,15 @@ class GitHubWebhookControllerTests {
                             Path.of("/tmp/patchpilot-test", command.taskId()),
                             Path.of("/tmp/patchpilot-test", command.taskId(), "repo")
                     );
+                }
+
+                private void createSupportedMavenFixture(Path repositoryDir) {
+                    try {
+                        Files.createDirectories(repositoryDir);
+                        Files.writeString(repositoryDir.resolve("pom.xml"), "<project></project>");
+                    } catch (IOException exception) {
+                        throw new IllegalStateException("Failed to create test Maven fixture", exception);
+                    }
                 }
             };
         }

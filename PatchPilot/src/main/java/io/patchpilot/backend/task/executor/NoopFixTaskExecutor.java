@@ -6,6 +6,8 @@ import io.patchpilot.backend.agent.tool.PullRequestTool;
 import io.patchpilot.backend.agent.tool.PushTool;
 import io.patchpilot.backend.agent.workflow.PatchWorkflow;
 import io.patchpilot.backend.github.client.domain.PullRequestResult;
+import io.patchpilot.backend.language.LanguageAdapterRegistry;
+import io.patchpilot.backend.language.domain.LanguageDetectionResult;
 import io.patchpilot.backend.runner.domain.vo.TestRunResult;
 import io.patchpilot.backend.runner.service.MavenTestRunner;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
@@ -15,16 +17,17 @@ import io.patchpilot.backend.task.service.FixTaskToolCallService;
 import io.patchpilot.backend.workspace.domain.bo.CloneWorkspaceCommand;
 import io.patchpilot.backend.workspace.domain.vo.PreparedWorkspaceResult;
 import io.patchpilot.backend.workspace.service.WorkspaceService;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.List;
 
 @Service
-@RequiredArgsConstructor
 public class NoopFixTaskExecutor implements FixTaskExecutor {
 
     private final WorkspaceService workspaceService;
+    private final LanguageAdapterRegistry languageAdapterRegistry;
     private final MavenTestRunner mavenTestRunner;
     private final PatchWorkflow patchWorkflow;
     private final DiffTool diffTool;
@@ -34,6 +37,69 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
     private final FixTaskTestRunService fixTaskTestRunService;
     private final FixTaskToolCallService fixTaskToolCallService;
     private final TaskCancellationChecker taskCancellationChecker;
+
+    public NoopFixTaskExecutor(
+            WorkspaceService workspaceService,
+            MavenTestRunner mavenTestRunner,
+            PatchWorkflow patchWorkflow,
+            DiffTool diffTool,
+            CommitTool commitTool,
+            PushTool pushTool,
+            PullRequestTool pullRequestTool,
+            FixTaskTestRunService fixTaskTestRunService,
+            FixTaskToolCallService fixTaskToolCallService,
+            TaskCancellationChecker taskCancellationChecker
+    ) {
+        this(
+                workspaceService,
+                directConstructionRegistry(),
+                mavenTestRunner,
+                patchWorkflow,
+                diffTool,
+                commitTool,
+                pushTool,
+                pullRequestTool,
+                fixTaskTestRunService,
+                fixTaskToolCallService,
+                taskCancellationChecker
+        );
+    }
+
+    @Autowired
+    public NoopFixTaskExecutor(
+            WorkspaceService workspaceService,
+            LanguageAdapterRegistry languageAdapterRegistry,
+            MavenTestRunner mavenTestRunner,
+            PatchWorkflow patchWorkflow,
+            DiffTool diffTool,
+            CommitTool commitTool,
+            PushTool pushTool,
+            PullRequestTool pullRequestTool,
+            FixTaskTestRunService fixTaskTestRunService,
+            FixTaskToolCallService fixTaskToolCallService,
+            TaskCancellationChecker taskCancellationChecker
+    ) {
+        this.workspaceService = workspaceService;
+        this.languageAdapterRegistry = languageAdapterRegistry;
+        this.mavenTestRunner = mavenTestRunner;
+        this.patchWorkflow = patchWorkflow;
+        this.diffTool = diffTool;
+        this.commitTool = commitTool;
+        this.pushTool = pushTool;
+        this.pullRequestTool = pullRequestTool;
+        this.fixTaskTestRunService = fixTaskTestRunService;
+        this.fixTaskToolCallService = fixTaskToolCallService;
+        this.taskCancellationChecker = taskCancellationChecker;
+    }
+
+    private static LanguageAdapterRegistry directConstructionRegistry() {
+        return new LanguageAdapterRegistry(List.of(repositoryDir -> LanguageDetectionResult.supported(
+                "java",
+                "maven",
+                List.of("./mvnw", "test"),
+                "Assumed Java/Maven project for direct executor construction"
+        )));
+    }
 
     @Override
     public FixTaskExecutionResult execute(FixTaskVo task) {
@@ -51,6 +117,18 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
                         result.workspaceDir(),
                         result.repositoryDir(),
                         result.branchName()
+                )
+        );
+        taskCancellationChecker.throwIfCancelled(task.id());
+        auditToolCall(
+                task.id(),
+                "LanguageAdapterRegistry",
+                "repositoryDir=%s".formatted(preparedWorkspace.repositoryDir()),
+                () -> detectSupportedRepository(preparedWorkspace.repositoryDir()),
+                detectionResult -> "%s/%s: %s".formatted(
+                        detectionResult.language(),
+                        detectionResult.buildSystem(),
+                        detectionResult.reason()
                 )
         );
         taskCancellationChecker.throwIfCancelled(task.id());
@@ -119,6 +197,14 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
                 PullRequestResult::url
         );
         return new FixTaskExecutionResult(pullRequestResult.url());
+    }
+
+    private LanguageDetectionResult detectSupportedRepository(java.nio.file.Path repositoryDir) {
+        LanguageDetectionResult detectionResult = languageAdapterRegistry.detect(repositoryDir);
+        if (!detectionResult.supported()) {
+            throw new IllegalStateException(detectionResult.reason());
+        }
+        return detectionResult;
     }
 
     private String auditToolCall(String taskId, String toolName, String inputSummary, ToolCall<String> toolCall) {

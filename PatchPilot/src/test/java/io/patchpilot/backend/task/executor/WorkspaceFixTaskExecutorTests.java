@@ -10,6 +10,8 @@ import io.patchpilot.backend.github.client.GitHubPullRequestClient;
 import io.patchpilot.backend.github.client.domain.CreatePullRequestCommand;
 import io.patchpilot.backend.github.client.domain.PullRequestResult;
 import io.patchpilot.backend.github.config.GitHubProperties;
+import io.patchpilot.backend.language.LanguageAdapterRegistry;
+import io.patchpilot.backend.language.domain.LanguageDetectionResult;
 import io.patchpilot.backend.runner.domain.vo.TestRunResult;
 import io.patchpilot.backend.runner.service.MavenTestRunner;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
@@ -90,7 +92,15 @@ class WorkspaceFixTaskExecutorTests {
         assertThat(testRunService.startedAt()).isBeforeOrEqualTo(testRunService.finishedAt());
         assertThat(toolCallService.toolCalls())
                 .extracting(FixTaskToolCallVo::toolName)
-                .containsExactly("WorkspaceService", "PatchWorkflow", "DiffTool", "CommitTool", "PushTool", "PullRequestTool");
+                .containsExactly(
+                        "WorkspaceService",
+                        "LanguageAdapterRegistry",
+                        "PatchWorkflow",
+                        "DiffTool",
+                        "CommitTool",
+                        "PushTool",
+                        "PullRequestTool"
+                );
         assertThat(toolCallService.toolCalls())
                 .allSatisfy(toolCall -> {
                     assertThat(toolCall.taskId()).isEqualTo("task-123");
@@ -135,7 +145,59 @@ class WorkspaceFixTaskExecutorTests {
         assertThat(pullRequestTool.callOrder()).isZero();
         assertThat(toolCallService.toolCalls())
                 .extracting(FixTaskToolCallVo::toolName)
-                .containsExactly("WorkspaceService", "PatchWorkflow", "DiffTool");
+                .containsExactly("WorkspaceService", "LanguageAdapterRegistry", "PatchWorkflow", "DiffTool");
+    }
+
+    @Test
+    void should_fail_unsupported_repository_before_patch_workflow_or_tests() {
+        RecordingWorkspaceService workspaceService = new RecordingWorkspaceService();
+        RecordingPatchWorkflow patchWorkflow = new RecordingPatchWorkflow();
+        RecordingDiffTool diffTool = new RecordingDiffTool();
+        RecordingCommitTool commitTool = new RecordingCommitTool(false);
+        RecordingPushTool pushTool = new RecordingPushTool(false);
+        RecordingPullRequestTool pullRequestTool = new RecordingPullRequestTool();
+        RecordingMavenTestRunner mavenTestRunner = new RecordingMavenTestRunner(0, "tests passed");
+        RecordingFixTaskTestRunService testRunService = new RecordingFixTaskTestRunService();
+        RecordingFixTaskToolCallService toolCallService = new RecordingFixTaskToolCallService();
+        RecordingLanguageAdapterRegistry languageAdapterRegistry = new RecordingLanguageAdapterRegistry(
+                LanguageDetectionResult.unsupported(
+                        "unknown",
+                        "unknown",
+                        "Unsupported repository: no supported language adapter detected"
+                )
+        );
+        FixTaskExecutor executor = new NoopFixTaskExecutor(
+                workspaceService,
+                languageAdapterRegistry,
+                mavenTestRunner,
+                patchWorkflow,
+                diffTool,
+                commitTool,
+                pushTool,
+                pullRequestTool,
+                testRunService,
+                toolCallService,
+                taskId -> { }
+        );
+
+        assertThatThrownBy(() -> executor.execute(task()))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Unsupported repository: no supported language adapter detected");
+
+        assertThat(languageAdapterRegistry.repositoryDir()).isEqualTo(Path.of("/tmp/workspace/repo"));
+        assertThat(patchWorkflow.callOrder()).isZero();
+        assertThat(diffTool.callOrder()).isZero();
+        assertThat(mavenTestRunner.callOrder()).isZero();
+        assertThat(testRunService.taskId()).isNull();
+        assertThat(commitTool.callOrder()).isZero();
+        assertThat(pushTool.callOrder()).isZero();
+        assertThat(pullRequestTool.callOrder()).isZero();
+        assertThat(toolCallService.toolCalls())
+                .extracting(FixTaskToolCallVo::toolName)
+                .containsExactly("WorkspaceService", "LanguageAdapterRegistry");
+        assertThat(toolCallService.lastToolCall().success()).isFalse();
+        assertThat(toolCallService.lastToolCall().outputSummary())
+                .isEqualTo("Unsupported repository: no supported language adapter detected");
     }
 
     @Test
@@ -169,7 +231,7 @@ class WorkspaceFixTaskExecutorTests {
         assertThat(pullRequestTool.callOrder()).isZero();
         assertThat(toolCallService.toolCalls())
                 .extracting(FixTaskToolCallVo::toolName)
-                .containsExactly("WorkspaceService", "PatchWorkflow", "DiffTool", "CommitTool");
+                .containsExactly("WorkspaceService", "LanguageAdapterRegistry", "PatchWorkflow", "DiffTool", "CommitTool");
         assertThat(toolCallService.lastToolCall().success()).isFalse();
         assertThat(toolCallService.lastToolCall().outputSummary()).isEqualTo("git commit failed: nothing to commit");
     }
@@ -204,7 +266,14 @@ class WorkspaceFixTaskExecutorTests {
         assertThat(pullRequestTool.callOrder()).isZero();
         assertThat(toolCallService.toolCalls())
                 .extracting(FixTaskToolCallVo::toolName)
-                .containsExactly("WorkspaceService", "PatchWorkflow", "DiffTool", "CommitTool", "PushTool");
+                .containsExactly(
+                        "WorkspaceService",
+                        "LanguageAdapterRegistry",
+                        "PatchWorkflow",
+                        "DiffTool",
+                        "CommitTool",
+                        "PushTool"
+                );
         assertThat(toolCallService.lastToolCall().success()).isFalse();
         assertThat(toolCallService.lastToolCall().outputSummary()).isEqualTo("git push failed: permission denied");
     }
@@ -220,7 +289,7 @@ class WorkspaceFixTaskExecutorTests {
         RecordingMavenTestRunner mavenTestRunner = new RecordingMavenTestRunner(0, "tests passed");
         RecordingFixTaskTestRunService testRunService = new RecordingFixTaskTestRunService();
         RecordingFixTaskToolCallService toolCallService = new RecordingFixTaskToolCallService();
-        StageCancellingChecker cancellationChecker = new StageCancellingChecker(5);
+        StageCancellingChecker cancellationChecker = new StageCancellingChecker(6);
         FixTaskExecutor executor = new NoopFixTaskExecutor(
                 workspaceService,
                 mavenTestRunner,
@@ -255,7 +324,7 @@ class WorkspaceFixTaskExecutorTests {
         RecordingMavenTestRunner mavenTestRunner = new RecordingMavenTestRunner(130, "maven test command interrupted");
         RecordingFixTaskTestRunService testRunService = new RecordingFixTaskTestRunService();
         RecordingFixTaskToolCallService toolCallService = new RecordingFixTaskToolCallService();
-        StageCancellingChecker cancellationChecker = new StageCancellingChecker(5);
+        StageCancellingChecker cancellationChecker = new StageCancellingChecker(6);
         FixTaskExecutor executor = new NoopFixTaskExecutor(
                 workspaceService,
                 mavenTestRunner,
@@ -289,7 +358,7 @@ class WorkspaceFixTaskExecutorTests {
         RecordingMavenTestRunner mavenTestRunner = new RecordingMavenTestRunner(0, "tests passed");
         RecordingFixTaskTestRunService testRunService = new RecordingFixTaskTestRunService();
         RecordingFixTaskToolCallService toolCallService = new RecordingFixTaskToolCallService();
-        StageCancellingChecker cancellationChecker = new StageCancellingChecker(6);
+        StageCancellingChecker cancellationChecker = new StageCancellingChecker(7);
         FixTaskExecutor executor = new NoopFixTaskExecutor(
                 workspaceService,
                 mavenTestRunner,
@@ -321,7 +390,7 @@ class WorkspaceFixTaskExecutorTests {
         RecordingMavenTestRunner mavenTestRunner = new RecordingMavenTestRunner(0, "tests passed");
         RecordingFixTaskTestRunService testRunService = new RecordingFixTaskTestRunService();
         RecordingFixTaskToolCallService toolCallService = new RecordingFixTaskToolCallService();
-        StageCancellingChecker cancellationChecker = new StageCancellingChecker(7);
+        StageCancellingChecker cancellationChecker = new StageCancellingChecker(8);
         FixTaskExecutor executor = new NoopFixTaskExecutor(
                 workspaceService,
                 mavenTestRunner,
@@ -419,6 +488,27 @@ class WorkspaceFixTaskExecutorTests {
 
         private int callOrder() {
             return callOrder;
+        }
+    }
+
+    private static final class RecordingLanguageAdapterRegistry extends LanguageAdapterRegistry {
+
+        private final LanguageDetectionResult detectionResult;
+        private Path repositoryDir;
+
+        private RecordingLanguageAdapterRegistry(LanguageDetectionResult detectionResult) {
+            super(List.of());
+            this.detectionResult = detectionResult;
+        }
+
+        @Override
+        public LanguageDetectionResult detect(Path repositoryDir) {
+            this.repositoryDir = repositoryDir;
+            return detectionResult;
+        }
+
+        private Path repositoryDir() {
+            return repositoryDir;
         }
     }
 

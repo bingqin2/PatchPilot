@@ -91,7 +91,8 @@ The current implementation target is local self-hosted development first. Hosted
 - A task records repository owner, repository name, issue number, installation id, trigger user, trigger comment, status, timestamps, and failure reason.
 - Task creation must return quickly and must not run repository analysis or model calls inline with webhook handling.
 - A task can be queried by id for status and result.
-- Task creation must pass authorization, command parsing, actionability, language support, and rate-limit checks before expensive execution begins.
+- Task creation must pass authorization, command parsing, actionability, and rate-limit checks before expensive execution begins.
+- Task execution must pass a repository language-adapter preflight after workspace preparation and before model patch generation.
 
 ### Safety Gate
 
@@ -103,7 +104,8 @@ The current implementation target is local self-hosted development first. Hosted
 - The system should reject or ignore comments from unauthorized users and repositories.
 - Operators may configure trigger-user and repository allowlists for self-hosted demos and private deployments.
 - Operators may configure trigger rate limits by trigger user, repository, and issue to reject repeated `/agent fix` attempts before model calls or task creation.
-- The system should reject unsupported repositories before cloning or model execution when project detection is possible from metadata.
+- The system should reject unsupported repositories before model execution, patch generation, test execution, Git mutation, or Pull Request creation.
+- If project detection is possible from webhook or repository metadata before cloning, the system may reject even earlier.
 - The system must never follow user instructions that request secret exfiltration, destructive repository changes, arbitrary shell execution, or permission escalation.
 - The system should record rejected trigger decisions with clear operator-facing reasons.
 - Non-triggering comments may be ignored without creating task or rejection audit records.
@@ -121,6 +123,8 @@ The current implementation target is local self-hosted development first. Hosted
 - Each task gets an isolated workspace.
 - The system clones the target repository into the task workspace.
 - The system checks out the base branch and creates a patch branch.
+- The system runs language-adapter detection immediately after workspace preparation.
+- Unsupported repositories must fail at this preflight and must not reach agent patching or Git mutation.
 - File reads and writes are restricted to the task workspace.
 - The system records changed files and the final diff.
 
@@ -135,6 +139,7 @@ The current implementation target is local self-hosted development first. Hosted
 - The MVP supports Java Maven repositories first.
 - The long-term system supports multiple language adapters, starting with Java/Maven, Java/Gradle, Node.js, and Python.
 - Each adapter defines project detection, allowed verification commands, test output capture, timeout policy, and unsupported-repository failure reasons.
+- The adapter registry selects the first adapter that supports the repository and returns a clear unsupported result when none match.
 - The Java/Maven adapter detects `mvnw` and `pom.xml`.
 - The Java/Maven adapter runs `./mvnw test` when a Maven wrapper exists.
 - The Java/Maven adapter runs `mvn test` when no wrapper exists.
