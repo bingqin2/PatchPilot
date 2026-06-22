@@ -2001,3 +2001,22 @@ Validation:
 - `mvn -pl PatchPilot -Dtest=JavaGradleLanguageAdapterTests,CommandExecutionGuardTests,VerificationRunnerTests test`: first failed because `JavaGradleLanguageAdapter` did not exist; then passed after adding the adapter and Gradle command allowlist, 10 tests run, 0 failures.
 - `mvn -pl PatchPilot -Dtest=JavaGradleLanguageAdapterTests,JavaMavenLanguageAdapterTests,LanguageAdapterRegistryTests,CommandExecutionGuardTests,VerificationRunnerTests,PatchPilotApplicationTests test`: passed after Spring adapter registration checks, 18 tests run, 0 failures.
 - `mvn -pl PatchPilot test`: passed after full backend verification, 335 tests run, 0 failures.
+
+Implemented Node/npm language adapter support from `docs/plans/097-node-npm-language-adapter.md`.
+
+Changes:
+
+- Added `NodeNpmLanguageAdapter` for Node.js repositories with `package.json` and a non-empty `scripts.test`.
+- Selected the fixed verification command `npm test` for supported Node/npm repositories.
+- Rejected missing, invalid, or no-test-script `package.json` files before patch generation or Git mutation.
+- Registered the Node/npm adapter after the Java/Maven and Java/Gradle adapters.
+- Extended `CommandExecutionGuard` to allow only `npm test`, not arbitrary npm scripts.
+- Added Node/npm to the backend runtime Docker image so Docker Compose can execute Node verification.
+- Updated README, product specification, architecture, target-state, roadmap, decisions, and backend command-execution standard.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=NodeNpmLanguageAdapterTests,CommandExecutionGuardTests,VerificationRunnerTests,PatchPilotApplicationTests test`: first failed because `NodeNpmLanguageAdapter` did not exist; then passed after adding the adapter, npm command allowlist, and Spring registration, 15 tests run, 0 failures.
+- `mvn -pl PatchPilot -Dtest=MavenRuntimePackagingTests test`: first failed because the runtime Dockerfile did not install `nodejs npm`; then passed after adding them to the runtime image.
+- `mvn -pl PatchPilot -Dtest=NodeNpmLanguageAdapterTests,CommandExecutionGuardTests,VerificationRunnerTests,PatchPilotApplicationTests,MavenRuntimePackagingTests test`: passed after runtime packaging verification, 17 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed after full backend verification, 341 tests run, 0 failures.

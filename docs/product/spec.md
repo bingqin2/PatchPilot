@@ -136,8 +136,8 @@ The current implementation target is local self-hosted development first. Hosted
 
 ### Test Execution
 
-- The MVP supports Java Maven and Java Gradle repositories first.
-- The long-term system supports multiple language adapters, starting with Java/Maven, Java/Gradle, Node.js, and Python.
+- The MVP supports Java Maven, Java Gradle, and Node/npm repositories first.
+- The long-term system supports multiple language adapters, starting with Java/Maven, Java/Gradle, Node/npm, pnpm/yarn, and Python.
 - Each adapter defines project detection, allowed verification commands, test output capture, timeout policy, and unsupported-repository failure reasons.
 - The adapter registry selects the first adapter that supports the repository and returns a clear unsupported result when none match.
 - The verification runner executes only the selected adapter's allowlisted verification command.
@@ -147,6 +147,8 @@ The current implementation target is local self-hosted development first. Hosted
 - The Java/Gradle adapter detects `gradlew`, `build.gradle`, and `build.gradle.kts`.
 - The Java/Gradle adapter runs `./gradlew test` when a Gradle wrapper exists.
 - The Java/Gradle adapter runs `gradle test` when no wrapper exists.
+- The Node/npm adapter detects `package.json` files with a non-empty `scripts.test`.
+- The Node/npm adapter runs `npm test`.
 - The system captures exit code, stdout, stderr, duration, and a short test summary.
 - Test failure must not be reported as a successful fix.
 
@@ -185,6 +187,7 @@ The first production-like MVP supports:
 - GitHub App webhook integration.
 - `/agent fix` issue comment trigger.
 - Java repositories using Maven or Gradle.
+- Node.js repositories using npm with `scripts.test`.
 - One repository per task.
 - One generated Pull Request per successful task.
 - Local workspace execution.
@@ -213,7 +216,7 @@ Planned follow-up capabilities:
 - Chrome extension button on GitHub issue pages.
 - Command safety gate for authorization, actionability, unsupported repositories, and unsafe requests.
 - Language adapter foundation.
-- Node.js and Python support.
+- pnpm, yarn, and Python support.
 - Docker sandbox execution.
 - MySQL-backed durable task history.
 - Redis or queue-backed async execution.
@@ -229,7 +232,7 @@ PatchPilot MVP is successful when:
 - A user can comment `/agent fix` on an open issue.
 - PatchPilot creates and executes a fix task asynchronously.
 - PatchPilot clones the repository and creates a branch.
-- PatchPilot generates a patch for a simple supported Java bug.
+- PatchPilot generates a patch for a simple supported Java or Node.js bug.
 - Adapter-selected verification runs and the result is recorded.
 - A successful task creates a Pull Request.
 - A failed task records and reports a clear failure reason.

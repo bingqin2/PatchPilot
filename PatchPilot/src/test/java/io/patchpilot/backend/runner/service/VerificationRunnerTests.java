@@ -48,6 +48,26 @@ class VerificationRunnerTests {
     }
 
     @Test
+    void should_run_adapter_supplied_npm_test_command() throws Exception {
+        Path repositoryDir = tempDir.resolve("npm-repo");
+        Files.createDirectories(repositoryDir);
+        Files.writeString(repositoryDir.resolve("package.json"), """
+                {
+                  "scripts": {
+                    "test": "echo npm-command"
+                  }
+                }
+                """);
+        VerificationRunner runner = runner();
+
+        TestRunResult result = runner.runVerification("task-123", repositoryDir, List.of("npm", "test"));
+
+        assertThat(result.command()).isEqualTo("npm test");
+        assertThat(result.exitCode()).isZero();
+        assertThat(result.output()).contains("npm-command");
+    }
+
+    @Test
     void should_register_and_unregister_process_for_task() throws Exception {
         Path repositoryDir = tempDir.resolve("registered-repo");
         Files.createDirectories(repositoryDir);
