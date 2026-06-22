@@ -593,7 +593,12 @@ test('loads aggregate task detail from backend API', async () => {
         timeline: [],
         testRuns: [],
         toolCalls: [],
-        modelCalls: []
+        modelCalls: [],
+        generatedDiff: {
+          toolCallId: 'tool-diff',
+          diff: 'diff --git a/docs/demo.md b/docs/demo.md\n+PatchPilot smoke test',
+          generatedAt: '2026-06-20T01:00:13Z'
+        }
       },
       message: null
     })
@@ -612,6 +617,7 @@ test('loads aggregate task detail from backend API', async () => {
   expect(detail.testRuns).toEqual([]);
   expect(detail.toolCalls).toEqual([]);
   expect(detail.modelCalls).toEqual([]);
+  expect(detail.generatedDiff?.diff).toContain('+PatchPilot smoke test');
 });
 
 test('loads markdown task report from backend API', async () => {

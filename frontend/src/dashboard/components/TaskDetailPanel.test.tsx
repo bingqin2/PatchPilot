@@ -87,7 +87,8 @@ const baseDetail: TaskDetailState = {
   timeline: [],
   testRuns: [],
   toolCalls: [],
-  modelCalls: []
+  modelCalls: [],
+  generatedDiff: null
 };
 
 test('shows execution evidence summary for selected task', () => {
@@ -228,6 +229,41 @@ test('surfaces generated diff risk gate failures in task evidence', () => {
   expect(screen.getByRole('button', { name: 'Cancel task' })).toBeInTheDocument();
   expect(screen.getByRole('button', { name: 'Approve review' })).toBeInTheDocument();
   expect(screen.queryByRole('button', { name: 'Retry task' })).not.toBeInTheDocument();
+});
+
+test('shows generated diff preview before approving review tasks', () => {
+  render(
+    <TaskDetailPanel
+      task={{
+        ...task,
+        status: 'PENDING_REVIEW',
+        failureReason: 'Generated diff rejected: sensitive path .github/workflows/deploy.yml'
+      }}
+      detail={{
+        ...baseDetail,
+        generatedDiff: {
+          toolCallId: 'tool-diff',
+          diff: 'diff --git a/docs/demo.md b/docs/demo.md\n+PatchPilot smoke test',
+          generatedAt: '2026-06-20T01:00:13Z'
+        }
+      }}
+      loading={false}
+      actionInFlight={false}
+      onCancelTask={vi.fn()}
+      onRetryTask={vi.fn()}
+      onApproveReview={vi.fn()}
+      onCopyReport={vi.fn()}
+    />
+  );
+
+  const diffPreview = screen.getByLabelText('Generated diff preview');
+  const diffSection = diffPreview.closest('.generated-diff-section') as HTMLElement;
+  expect(within(diffSection).getByText('Generated diff')).toBeInTheDocument();
+  expect(within(diffSection).getByText('Review these changes before approving the task.')).toBeInTheDocument();
+  expect(within(diffSection).getByText((_, element) => (
+    element?.tagName.toLowerCase() === 'time' && element.textContent?.startsWith('Generated ')
+  ))).toBeInTheDocument();
+  expect(diffPreview).toHaveTextContent('+PatchPilot smoke test');
 });
 
 test('approves pending review tasks from the detail panel', async () => {

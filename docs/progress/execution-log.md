@@ -2328,3 +2328,24 @@ Validation:
 
 - `mvn -pl PatchPilot -Dtest=DefaultFixTaskControlServiceTests,TaskControllerTests,WorkspaceFixTaskExecutorTests,InMemoryFixTaskServiceTests,MyBatisFixTaskServiceTests test`: first failed because the approval API, review approval field, timeline event, service transition, and workspace resume method did not exist; then passed after backend implementation, 113 tests run, 0 failures.
 - `npm test -- --run src/api.test.ts src/dashboard/components/TaskDetailPanel.test.tsx src/App.test.tsx`: first failed because the approve-review API and detail action did not exist; then passed after frontend implementation, 69 tests run, 0 failures.
+
+Implemented risk review diff inspection from `docs/plans/114-risk-review-diff-inspection.md`.
+
+Changes:
+
+- Added `FixTaskGeneratedDiffVo` and populated it from the latest successful `DiffTool` tool-call output in `GET /api/tasks/{taskId}/detail`.
+- Added a generated-diff section to copied Markdown task reports.
+- Added a dashboard generated-diff preview in selected task detail so `PENDING_REVIEW` approvals can inspect the exact patch before resuming.
+- Updated README, target state, frontend design notes, and this execution log.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=TaskControllerTests#should_include_latest_generated_diff_in_task_detail test`: first failed because `/detail` did not expose `generatedDiff`; then passed after backend projection, 1 test run, 0 failures.
+- `npm test -- TaskDetailPanel.test.tsx`: first failed because the generated-diff preview did not exist; then passed after adding the panel, 11 tests run, 0 failures.
+- `npm test -- api.test.ts`: passed after API fixture coverage, 16 tests run, 0 failures.
+- `npm test -- App.test.tsx`: passed after dashboard integration coverage, 43 tests run, 0 failures.
+- `mvn -pl PatchPilot -Dtest=TaskControllerTests#should_get_task_report_by_task_id test`: passed after report coverage, 1 test run, 0 failures.
+- `mvn -pl PatchPilot test`: first failed because existing controller tests compared JSONPath decimal values as `Double` against `BigDecimal`; then passed after using a numeric test matcher for decimal JSON values, 427 tests run, 0 failures.
+- `npm test`: passed after full frontend verification, 88 tests run, 0 failures.
+- `npm run build`: passed after production frontend build.
+- `git diff --check`: passed after whitespace and conflict-marker verification.

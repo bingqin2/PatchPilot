@@ -1154,6 +1154,35 @@ h3 {
   padding: 16px;
 }
 
+.generated-diff-section {
+  display: grid;
+  gap: 12px;
+}
+
+.generated-diff-header {
+  align-items: start;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.generated-diff-header p {
+  color: #52606e;
+  font-size: 13px;
+  margin-top: 3px;
+}
+
+.generated-diff-header time {
+  background: #f5f7f9;
+  border: 1px solid #dfe6ec;
+  border-radius: 999px;
+  color: #52606e;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 5px 9px;
+  white-space: nowrap;
+}
+
 .queue-history {
   display: grid;
   gap: 10px;

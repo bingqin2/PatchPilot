@@ -259,7 +259,12 @@ const detail = {
   timeline,
   testRuns,
   toolCalls,
-  modelCalls
+  modelCalls,
+  generatedDiff: {
+    toolCallId: 'tool-diff-1',
+    diff: 'diff --git a/docs/demo.md b/docs/demo.md\n+PatchPilot smoke test',
+    generatedAt: '2026-06-20T01:00:21Z'
+  }
 };
 
 const manualTaskDetail = {
@@ -294,7 +299,8 @@ const manualTaskDetail = {
   ],
   testRuns: [],
   toolCalls: [],
-  modelCalls: []
+  modelCalls: [],
+  generatedDiff: null
 };
 
 const modelUsageSummary = {
@@ -718,7 +724,8 @@ beforeEach(() => {
         timeline: [],
         testRuns: [],
         toolCalls: [],
-        modelCalls: []
+        modelCalls: [],
+        generatedDiff: null
       });
     }
     if (url === '/api/tasks/task-2/timeline') {
@@ -772,7 +779,8 @@ beforeEach(() => {
         ],
         testRuns: [],
         toolCalls: [],
-        modelCalls: []
+        modelCalls: [],
+        generatedDiff: null
       });
     }
     if (url === '/api/tasks/task-3/timeline') {
@@ -905,6 +913,8 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(screen.getByText('Tests run: 247, Failures: 0, Errors: 0')).toBeInTheDocument();
   expect(screen.getByText('replace')).toBeInTheDocument();
   expect(screen.getAllByText('gpt-5.5')).toHaveLength(2);
+  expect(screen.getByText('Generated diff')).toBeInTheDocument();
+  expect(screen.getByLabelText('Generated diff preview')).toHaveTextContent('+PatchPilot smoke test');
 });
 
 test('shows tool and model call durations in task detail records', async () => {
@@ -1757,7 +1767,8 @@ test('loads the next backend task page with offset pagination', async () => {
         timeline: [],
         testRuns: [],
         toolCalls: [],
-        modelCalls: []
+        modelCalls: [],
+        generatedDiff: null
       });
     }
     if (url === '/api/tasks/page-task-1/summary') {

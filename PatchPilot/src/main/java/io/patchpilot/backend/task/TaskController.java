@@ -8,6 +8,7 @@ import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.enums.FixTaskSort;
 import io.patchpilot.backend.task.domain.vo.FixTaskFailureCauseSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskAuditSummaryVo;
+import io.patchpilot.backend.task.domain.vo.FixTaskGeneratedDiffVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskLatencySummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskMetricsSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskDetailVo;
@@ -490,15 +491,27 @@ public class TaskController {
 
     private FixTaskDetailVo buildTaskDetail(String taskId, FixTaskAuditSummaryVo summary) {
         List<FixTaskQueueItemVo> queueItems = fixTaskQueueQueryService.listByTaskId(taskId);
+        List<FixTaskToolCallVo> toolCalls = fixTaskToolCallService.listToolCalls(taskId);
         return new FixTaskDetailVo(
                 summary,
                 fixTaskTimelineService.listEvents(taskId),
                 fixTaskTestRunService.listTestRuns(taskId),
-                fixTaskToolCallService.listToolCalls(taskId),
+                toolCalls,
                 fixTaskModelCallService.listModelCalls(taskId),
+                latestGeneratedDiff(toolCalls),
                 queueItems.stream().findFirst().orElse(null),
                 queueItems
         );
+    }
+
+    private static FixTaskGeneratedDiffVo latestGeneratedDiff(List<FixTaskToolCallVo> toolCalls) {
+        return toolCalls.stream()
+                .filter(call -> "DiffTool".equals(call.toolName()))
+                .filter(FixTaskToolCallVo::success)
+                .filter(call -> call.outputSummary() != null && !call.outputSummary().isBlank())
+                .max((left, right) -> left.finishedAt().compareTo(right.finishedAt()))
+                .map(call -> new FixTaskGeneratedDiffVo(call.id(), call.outputSummary(), call.finishedAt()))
+                .orElse(null);
     }
 
     private static FixTaskStatus parseStatus(String status) {

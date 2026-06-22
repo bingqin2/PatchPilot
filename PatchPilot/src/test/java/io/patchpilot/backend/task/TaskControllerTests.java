@@ -1,5 +1,6 @@
 package io.patchpilot.backend.task;
 
+import com.jayway.jsonpath.JsonPath;
 import io.patchpilot.backend.task.domain.bo.CreateFixTaskCommand;
 import io.patchpilot.backend.task.domain.enums.FixTaskQueueItemStatus;
 import io.patchpilot.backend.task.domain.enums.FixTaskTimelineEventType;
@@ -25,6 +26,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultMatcher;
 
 import java.time.Instant;
 import java.util.List;
@@ -894,6 +896,45 @@ class TaskControllerTests {
     }
 
     @Test
+    void should_include_latest_generated_diff_in_task_detail() throws Exception {
+        FixTaskVo task = createTask("delivery-generated-diff");
+        fixTaskToolCallService.recordToolCall(
+                task.id(),
+                "DiffTool",
+                "repositoryDir=/tmp/workspace/older",
+                "diff --git a/docs/old.md b/docs/old.md\n+old",
+                true,
+                Instant.parse("2026-06-20T04:00:00Z"),
+                Instant.parse("2026-06-20T04:00:01Z")
+        );
+        fixTaskToolCallService.recordToolCall(
+                task.id(),
+                "DiffTool",
+                "repositoryDir=/tmp/workspace/newer",
+                "diff --git a/docs/demo.md b/docs/demo.md\n+PatchPilot smoke test",
+                true,
+                Instant.parse("2026-06-20T04:00:02Z"),
+                Instant.parse("2026-06-20T04:00:03Z")
+        );
+        fixTaskToolCallService.recordToolCall(
+                task.id(),
+                "DiffTool",
+                "repositoryDir=/tmp/workspace/failed",
+                "git diff failed",
+                false,
+                Instant.parse("2026-06-20T04:00:04Z"),
+                Instant.parse("2026-06-20T04:00:05Z")
+        );
+
+        mockMvc.perform(get("/api/tasks/{id}/detail", task.id()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.generatedDiff.toolCallId").exists())
+                .andExpect(jsonPath("$.data.generatedDiff.diff").value("diff --git a/docs/demo.md b/docs/demo.md\n+PatchPilot smoke test"))
+                .andExpect(jsonPath("$.data.generatedDiff.generatedAt").value("2026-06-20T04:00:03Z"));
+    }
+
+    @Test
     void should_return_404_for_missing_task_detail() throws Exception {
         mockMvc.perform(get("/api/tasks/{id}/detail", "missing-task"))
                 .andExpect(status().isNotFound())
@@ -930,6 +971,15 @@ class TaskControllerTests {
                 false,
                 Instant.parse("2026-06-20T05:00:07Z"),
                 Instant.parse("2026-06-20T05:00:08Z")
+        );
+        fixTaskToolCallService.recordToolCall(
+                task.id(),
+                "DiffTool",
+                "repositoryDir=/tmp/workspace/repo",
+                "diff --git a/docs/demo.md b/docs/demo.md\n+PatchPilot report diff",
+                true,
+                Instant.parse("2026-06-20T05:00:08Z"),
+                Instant.parse("2026-06-20T05:00:09Z")
         );
         fixTaskModelCallService.recordModelCall(
                 task.id(),
@@ -974,6 +1024,9 @@ class TaskControllerTests {
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- `./mvnw test` -> exit 1")))
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("## Tool Calls")))
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- `CommitTool` -> failed")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("## Generated Diff")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("```diff\n")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("+PatchPilot report diff")))
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("## Model Calls")))
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- `gpt-5.5` -> success, 200 tokens")));
     }
@@ -1132,15 +1185,15 @@ class TaskControllerTests {
                 .andExpect(jsonPath("$.data.totalCount").value(greaterThanOrEqualTo(2)))
                 .andExpect(jsonPath("$.data.completedCount").value(greaterThanOrEqualTo(1)))
                 .andExpect(jsonPath("$.data.failedCount").value(greaterThanOrEqualTo(1)))
-                .andExpect(jsonPath("$.data.completionRate").value(greaterThanOrEqualTo(0.0)))
-                .andExpect(jsonPath("$.data.failureRate").value(greaterThanOrEqualTo(0.0)))
+                .andExpect(jsonNumberAtLeast("$.data.completionRate", 0.0))
+                .andExpect(jsonNumberAtLeast("$.data.failureRate", 0.0))
                 .andExpect(jsonPath("$.data.averageCompletionDurationMs").value(greaterThanOrEqualTo(0)))
                 .andExpect(jsonPath("$.data.totalModelTokens").value(greaterThanOrEqualTo(200)))
                 .andExpect(jsonPath("$.data.averageModelTokensPerCompletedTask").value(greaterThanOrEqualTo(0)))
                 .andExpect(jsonPath("$.data.testRunCount").value(greaterThanOrEqualTo(2)))
                 .andExpect(jsonPath("$.data.passedTestRunCount").value(greaterThanOrEqualTo(1)))
                 .andExpect(jsonPath("$.data.failedTestRunCount").value(greaterThanOrEqualTo(1)))
-                .andExpect(jsonPath("$.data.testPassRate").value(greaterThanOrEqualTo(0.0)));
+                .andExpect(jsonNumberAtLeast("$.data.testPassRate", 0.0));
     }
 
     @Test
@@ -1235,7 +1288,7 @@ class TaskControllerTests {
                 .andExpect(jsonPath("$.data.totalTokens").value(greaterThanOrEqualTo(260)))
                 .andExpect(jsonPath("$.data.successfulCalls").value(greaterThanOrEqualTo(1)))
                 .andExpect(jsonPath("$.data.failedCalls").value(greaterThanOrEqualTo(1)))
-                .andExpect(jsonPath("$.data.estimatedCostUsd").value(greaterThanOrEqualTo(0.0)));
+                .andExpect(jsonNumberAtLeast("$.data.estimatedCostUsd", 0.0));
     }
 
     @Test
@@ -1290,6 +1343,14 @@ class TaskControllerTests {
                 .andExpect(jsonPath("$.data.testRunCount").value(greaterThanOrEqualTo(1)))
                 .andExpect(jsonPath("$.data.averageTestRunDurationMs").value(greaterThanOrEqualTo(4000)))
                 .andExpect(jsonPath("$.data.maxTestRunDurationMs").value(greaterThanOrEqualTo(4000)));
+    }
+
+    private static ResultMatcher jsonNumberAtLeast(String expression, double minimum) {
+        return result -> {
+            Object value = JsonPath.read(result.getResponse().getContentAsString(), expression);
+            assertThat(value).isInstanceOf(Number.class);
+            assertThat(((Number) value).doubleValue()).isGreaterThanOrEqualTo(minimum);
+        };
     }
 
     private FixTaskVo createTask(String deliveryId) {

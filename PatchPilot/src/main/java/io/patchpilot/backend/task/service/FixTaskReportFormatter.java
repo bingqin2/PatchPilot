@@ -31,6 +31,7 @@ public class FixTaskReportFormatter {
 
         appendAdapter(report, task);
         appendQueue(report, detail);
+        appendGeneratedDiff(report, detail);
         appendTimeline(report, detail.timeline());
         appendTestRuns(report, detail.testRuns());
         appendToolCalls(report, detail.toolCalls());
@@ -78,6 +79,19 @@ public class FixTaskReportFormatter {
             report.append("\n");
         }
         report.append("- History items: ").append(detail.queueItems().size()).append("\n");
+    }
+
+    private static void appendGeneratedDiff(StringBuilder report, FixTaskDetailVo detail) {
+        if (detail.generatedDiff() == null) {
+            return;
+        }
+
+        report.append("\n## Generated Diff\n\n")
+                .append("- Tool call: `").append(detail.generatedDiff().toolCallId()).append("`\n")
+                .append("- Generated at: `").append(detail.generatedDiff().generatedAt()).append("`\n\n")
+                .append("```diff\n")
+                .append(detail.generatedDiff().diff())
+                .append("\n```\n");
     }
 
     private static void appendTimeline(StringBuilder report, List<FixTaskTimelineEventVo> timeline) {
