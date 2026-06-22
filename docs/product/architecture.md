@@ -244,6 +244,8 @@ uv run pytest
 
 Future adapters should add their own detection and allowlisted verification commands without allowing arbitrary user-supplied shell.
 
+`GET /api/language-adapters` exposes the supported adapter catalog for operators and demos. `GET /api/language-adapters/fixtures` runs each checked-in demo fixture through the same registry and returns expected versus actual language, build system, command, detection reason, and pass/fail status. Fixture failures are reported as rows, not controller failures, so one missing fixture does not hide the rest of the support matrix.
+
 ## Data Model
 
 The first durable model should include:

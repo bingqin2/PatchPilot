@@ -346,7 +346,8 @@ h3 {
   padding: 9px 10px;
 }
 
-.supported-adapters-panel {
+.supported-adapters-panel,
+.fixture-verification-panel {
   margin-bottom: 16px;
 }
 
@@ -438,6 +439,80 @@ h3 {
   font-weight: 850;
   justify-self: start;
   padding: 5px 8px;
+}
+
+.adapter-status-fail {
+  background: #fde5df;
+  color: #a13724;
+}
+
+.fixture-verification-table {
+  display: grid;
+  overflow-x: auto;
+}
+
+.fixture-verification-head,
+.fixture-verification-row {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(180px, 1fr) minmax(115px, 0.6fr) minmax(115px, 0.6fr) minmax(170px, 0.8fr) minmax(170px, 0.8fr) minmax(280px, 1.25fr) minmax(90px, 0.45fr);
+  min-width: 1230px;
+  padding: 11px 16px;
+}
+
+.fixture-verification-head {
+  background: #f7f9fb;
+  border-bottom: 1px solid #dce3e9;
+  color: #637181;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.fixture-verification-row {
+  align-items: center;
+  border-bottom: 1px solid #edf1f5;
+  color: #384858;
+  font-size: 13px;
+}
+
+.fixture-verification-row:last-child {
+  border-bottom: 0;
+}
+
+.fixture-verification-row strong,
+.fixture-verification-row small {
+  display: block;
+}
+
+.fixture-verification-row strong {
+  color: #17202a;
+  font-size: 14px;
+}
+
+.fixture-verification-row small {
+  color: #637181;
+  font-size: 12px;
+  font-weight: 800;
+  margin-top: 2px;
+  overflow-wrap: anywhere;
+}
+
+.fixture-verification-row code {
+  background: #eef3f6;
+  border: 1px solid #d6dee6;
+  border-radius: 6px;
+  color: #17202a;
+  display: inline-block;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 6px 8px;
+  width: fit-content;
+}
+
+.fixture-command-stack {
+  display: grid;
+  gap: 5px;
 }
 
 .workspace-grid {

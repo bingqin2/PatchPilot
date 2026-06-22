@@ -2214,3 +2214,24 @@ Validation:
 - `npm test`: passed after full frontend verification, 76 tests run, 0 failures.
 - `npm run build`: passed after production frontend build.
 - `git diff --check`: passed after whitespace and conflict-marker verification.
+
+Implemented adapter fixture verification dashboard from `docs/plans/108-adapter-fixture-verification-dashboard.md`.
+
+Changes:
+
+- Added `GET /api/language-adapters/fixtures` to verify each supported demo fixture with the real `LanguageAdapterRegistry`.
+- Returned fixture name/path, expected and actual language/build system/command, detection reason, and `PASS` or `FAIL` status.
+- Kept missing or drifting fixtures visible as failed rows instead of failing the whole endpoint.
+- Copied `docs/demo-repositories` into the backend Docker runtime image so Docker Compose can serve the fixture verification API.
+- Added a dashboard `AdapterFixtureVerificationPanel` backed by the new API, with fixture API failures isolated to that panel.
+- Updated README, architecture notes, frontend design notes, adapter smoke checklist, and this execution log.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=LanguageAdapterFixtureVerificationServiceTests,LanguageAdapterControllerTests test`: first failed because the fixture verification service and VO did not exist; then passed after adding the backend API, 4 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts src/dashboard/components/AdapterFixtureVerificationPanel.test.tsx src/App.test.tsx`: first failed because the API helper, type, and panel did not exist; then failed because the dashboard intentionally rendered the same fixture path in both adapter catalog and fixture verification panels; then passed after adding the API helper, panel, App integration, and row-scoped dashboard assertions, 58 tests run, 0 failures.
+- `mvn -pl PatchPilot -Dtest=LanguageAdapterFixtureVerificationServiceTests,LanguageAdapterControllerTests,MavenRuntimePackagingTests test`: passed after adding the Docker runtime fixture copy assertion and implementation, 12 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: first failed because the fixture verification service had multiple constructors without an explicit Spring injection constructor; then passed after marking the production constructor for injection, 402 tests run, 0 failures.
+- `npm test`: passed after full frontend verification, 79 tests run, 0 failures.
+- `npm run build`: passed after production frontend build.
+- `git diff --check`: passed after whitespace and conflict-marker verification.

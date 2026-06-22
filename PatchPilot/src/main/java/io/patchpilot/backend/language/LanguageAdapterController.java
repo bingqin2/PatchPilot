@@ -1,6 +1,7 @@
 package io.patchpilot.backend.language;
 
 import io.patchpilot.backend.common.response.ApiResponse;
+import io.patchpilot.backend.language.domain.LanguageAdapterFixtureVerificationVo;
 import io.patchpilot.backend.language.domain.SupportedLanguageAdapterVo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,9 +16,15 @@ import java.util.List;
 public class LanguageAdapterController {
 
     private final LanguageAdapterCatalogService languageAdapterCatalogService;
+    private final LanguageAdapterFixtureVerificationService languageAdapterFixtureVerificationService;
 
     @GetMapping
     public ApiResponse<List<SupportedLanguageAdapterVo>> listSupportedAdapters() {
         return ApiResponse.ok(languageAdapterCatalogService.listSupportedAdapters());
+    }
+
+    @GetMapping("/fixtures")
+    public ApiResponse<List<LanguageAdapterFixtureVerificationVo>> listFixtureVerifications() {
+        return ApiResponse.ok(languageAdapterFixtureVerificationService.listFixtureVerifications());
     }
 }

@@ -7,6 +7,7 @@ Use this checklist when you want a quick local demonstration that PatchPilot's s
 - The demo fixtures under `docs/demo-repositories/` are present.
 - `LanguageAdapterRegistry` selects the expected adapter for each fixture.
 - Each fixture maps to the expected `language`, `buildSystem`, and allowlisted verification command.
+- The backend fixture verification API can expose pass/fail fixture drift to the dashboard.
 - The wider backend mode also checks individual adapter tests and command-guard rules.
 
 ## What This Does Not Check
@@ -40,9 +41,15 @@ Show usage:
 scripts/adapter-smoke.sh --help
 ```
 
+Check the same fixture verification data through a running backend:
+
+```bash
+curl http://127.0.0.1:8080/api/language-adapters/fixtures
+```
+
 ## Expected Result
 
-The script prints the supported fixture matrix and Maven reports `BUILD SUCCESS`. A passing smoke means adapter detection has not drifted from the documented supported repository shapes.
+The script prints the supported fixture matrix and Maven reports `BUILD SUCCESS`. The backend API should return `PASS` for each fixture. A passing smoke means adapter detection has not drifted from the documented supported repository shapes.
 
 If the smoke fails, check:
 
