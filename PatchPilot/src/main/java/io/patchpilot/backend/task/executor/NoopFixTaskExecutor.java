@@ -9,6 +9,8 @@ import io.patchpilot.backend.github.client.domain.PullRequestResult;
 import io.patchpilot.backend.language.LanguageAdapterRegistry;
 import io.patchpilot.backend.language.domain.LanguageDetectionResult;
 import io.patchpilot.backend.runner.domain.vo.TestRunResult;
+import io.patchpilot.backend.safety.GeneratedDiffRiskGate;
+import io.patchpilot.backend.safety.domain.GeneratedDiffRiskDecision;
 import io.patchpilot.backend.runner.service.VerificationRunner;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import io.patchpilot.backend.task.executor.domain.FixTaskExecutionResult;
@@ -35,6 +37,7 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
     private final CommitTool commitTool;
     private final PushTool pushTool;
     private final PullRequestTool pullRequestTool;
+    private final GeneratedDiffRiskGate generatedDiffRiskGate;
     private final FixTaskAdapterMetadataRecorder adapterMetadataRecorder;
     private final FixTaskTestRunService fixTaskTestRunService;
     private final FixTaskToolCallService fixTaskToolCallService;
@@ -61,6 +64,7 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
                 commitTool,
                 pushTool,
                 pullRequestTool,
+                new GeneratedDiffRiskGate(),
                 FixTaskAdapterMetadataRecorder.NOOP,
                 fixTaskTestRunService,
                 fixTaskToolCallService,
@@ -90,7 +94,71 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
                 commitTool,
                 pushTool,
                 pullRequestTool,
+                new GeneratedDiffRiskGate(),
                 FixTaskAdapterMetadataRecorder.NOOP,
+                fixTaskTestRunService,
+                fixTaskToolCallService,
+                taskCancellationChecker
+        );
+    }
+
+    public NoopFixTaskExecutor(
+            WorkspaceService workspaceService,
+            LanguageAdapterRegistry languageAdapterRegistry,
+            VerificationRunner verificationRunner,
+            PatchWorkflow patchWorkflow,
+            DiffTool diffTool,
+            CommitTool commitTool,
+            PushTool pushTool,
+            PullRequestTool pullRequestTool,
+            FixTaskAdapterMetadataRecorder adapterMetadataRecorder,
+            FixTaskTestRunService fixTaskTestRunService,
+            FixTaskToolCallService fixTaskToolCallService,
+            TaskCancellationChecker taskCancellationChecker
+    ) {
+        this(
+                workspaceService,
+                languageAdapterRegistry,
+                verificationRunner,
+                patchWorkflow,
+                diffTool,
+                commitTool,
+                pushTool,
+                pullRequestTool,
+                generatedDiffRiskGate(),
+                adapterMetadataRecorder,
+                fixTaskTestRunService,
+                fixTaskToolCallService,
+                taskCancellationChecker
+        );
+    }
+
+    public NoopFixTaskExecutor(
+            WorkspaceService workspaceService,
+            LanguageAdapterRegistry languageAdapterRegistry,
+            VerificationRunner verificationRunner,
+            PatchWorkflow patchWorkflow,
+            DiffTool diffTool,
+            CommitTool commitTool,
+            PushTool pushTool,
+            PullRequestTool pullRequestTool,
+            FixTaskAdapterMetadataRecorder adapterMetadataRecorder,
+            FixTaskTestRunService fixTaskTestRunService,
+            FixTaskToolCallService fixTaskToolCallService,
+            TaskCancellationChecker taskCancellationChecker,
+            GeneratedDiffRiskGate generatedDiffRiskGate
+    ) {
+        this(
+                workspaceService,
+                languageAdapterRegistry,
+                verificationRunner,
+                patchWorkflow,
+                diffTool,
+                commitTool,
+                pushTool,
+                pullRequestTool,
+                generatedDiffRiskGate,
+                adapterMetadataRecorder,
                 fixTaskTestRunService,
                 fixTaskToolCallService,
                 taskCancellationChecker
@@ -107,6 +175,7 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
             CommitTool commitTool,
             PushTool pushTool,
             PullRequestTool pullRequestTool,
+            GeneratedDiffRiskGate generatedDiffRiskGate,
             FixTaskAdapterMetadataRecorder adapterMetadataRecorder,
             FixTaskTestRunService fixTaskTestRunService,
             FixTaskToolCallService fixTaskToolCallService,
@@ -120,10 +189,15 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
         this.commitTool = commitTool;
         this.pushTool = pushTool;
         this.pullRequestTool = pullRequestTool;
+        this.generatedDiffRiskGate = generatedDiffRiskGate;
         this.adapterMetadataRecorder = adapterMetadataRecorder;
         this.fixTaskTestRunService = fixTaskTestRunService;
         this.fixTaskToolCallService = fixTaskToolCallService;
         this.taskCancellationChecker = taskCancellationChecker;
+    }
+
+    private static GeneratedDiffRiskGate generatedDiffRiskGate() {
+        return new GeneratedDiffRiskGate();
     }
 
     private static LanguageAdapterRegistry directConstructionRegistry() {
@@ -183,11 +257,19 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
                 () -> patchWorkflow.apply(task, preparedWorkspace.repositoryDir()).summary()
         );
         taskCancellationChecker.throwIfCancelled(task.id());
-        auditToolCall(
+        String diff = auditToolCall(
                 task.id(),
                 "DiffTool",
                 "repositoryDir=%s".formatted(preparedWorkspace.repositoryDir()),
                 () -> diffTool.diff(preparedWorkspace.repositoryDir())
+        );
+        taskCancellationChecker.throwIfCancelled(task.id());
+        auditToolCall(
+                task.id(),
+                "GeneratedDiffRiskGate",
+                "changedBytes=%d".formatted(diff.length()),
+                () -> evaluateGeneratedDiffRisk(diff),
+                GeneratedDiffRiskDecision::reason
         );
         taskCancellationChecker.throwIfCancelled(task.id());
         Instant testStartedAt = Instant.now();
@@ -250,6 +332,14 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
             throw new IllegalStateException(detectionResult.reason());
         }
         return detectionResult;
+    }
+
+    private GeneratedDiffRiskDecision evaluateGeneratedDiffRisk(String diff) {
+        GeneratedDiffRiskDecision decision = generatedDiffRiskGate.evaluate(diff);
+        if (!decision.allowed()) {
+            throw new IllegalStateException(decision.reason());
+        }
+        return decision;
     }
 
     private String auditToolCall(String taskId, String toolName, String inputSummary, ToolCall<String> toolCall) {
