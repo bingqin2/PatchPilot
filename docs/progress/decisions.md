@@ -97,3 +97,11 @@ Decision: Add Python/pytest as the first supported Python repository adapter.
 Reason: pytest is the simplest controlled Python verification path and expands PatchPilot beyond JavaScript while keeping execution behind explicit adapter detection and a fixed command allowlist.
 
 Impact: Python repositories with pytest configuration or a pytest dependency can pass repository preflight and run `python3 -m pytest`. Poetry, tox, nox, uv, and custom Python runners remain future adapter work.
+
+## 2026-06-22
+
+Decision: Add pnpm and yarn as explicit Node.js package-manager adapters instead of treating every Node project as npm.
+
+Reason: Many Node repositories use lockfile-specific package managers. Detecting `pnpm-lock.yaml` and `yarn.lock` before npm improves real repository coverage without allowing arbitrary package-manager commands.
+
+Impact: Node.js repositories with matching lockfiles and a non-empty `scripts.test` can pass repository preflight and run `pnpm test` or `yarn test`. The command guard still rejects arbitrary pnpm/yarn scripts and install commands.

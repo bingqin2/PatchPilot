@@ -24,6 +24,8 @@ class CommandExecutionGuardTests {
         guard.validate(repositoryDir, List.of("./gradlew", "test"));
         guard.validate(repositoryDir, List.of("gradle", "test"));
         guard.validate(repositoryDir, List.of("npm", "test"));
+        guard.validate(repositoryDir, List.of("pnpm", "test"));
+        guard.validate(repositoryDir, List.of("yarn", "test"));
         guard.validate(repositoryDir, List.of("python3", "-m", "pytest"));
         guard.validate(repositoryDir, List.of("git", "-C", repositoryDir.toString(), "status", "--short"));
         guard.validate(repositoryDir, List.of("git", "-C", repositoryDir.toString(), "diff", "--"));
@@ -54,6 +56,19 @@ class CommandExecutionGuardTests {
         assertThatThrownBy(() -> guard.validate(repositoryDir, List.of("rm", "-rf", repositoryDir.toString())))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Command is not allowlisted: rm -rf " + repositoryDir);
+    }
+
+    @Test
+    void should_reject_arbitrary_node_package_scripts() {
+        CommandExecutionGuard guard = new CommandExecutionGuard(properties());
+        Path repositoryDir = tempDir.resolve("task-123").resolve("repo");
+
+        assertThatThrownBy(() -> guard.validate(repositoryDir, List.of("pnpm", "run", "build")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Command is not allowlisted: pnpm run build");
+        assertThatThrownBy(() -> guard.validate(repositoryDir, List.of("yarn", "install")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Command is not allowlisted: yarn install");
     }
 
     @Test

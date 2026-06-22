@@ -14,6 +14,7 @@ WORKDIR /app
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends git ca-certificates nodejs npm python3 python3-pytest \
+    && npm install -g pnpm yarn \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=build /workspace/PatchPilot/target/patchpilot-backend-*.jar /app/patchpilot-backend.jar
