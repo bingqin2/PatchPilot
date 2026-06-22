@@ -15,6 +15,7 @@ PatchPilot is not a chatbot and does not auto-merge code. The current target is 
 - MySQL-backed task, queue, timeline, test-run, tool-call, and model-call records.
 - Local workspace clone, branch, diff, commit, push, and Pull Request creation.
 - Java/Maven language adapter backed by Maven test execution with command allowlists.
+- Unsupported repository preflight that fails before patch generation, test execution, Git mutation, or Pull Request creation.
 - OpenAI-compatible model client and plan-driven patch workflow.
 - Issue comment status updates for accepted, running, verification, success, and failure states.
 
@@ -212,6 +213,16 @@ curl -X POST http://127.0.0.1:8080/api/tasks \
 Manual task creation still records a normal task, writes a timeline event, and dispatches work through the queue. It rejects duplicate active work for the same issue.
 The manual API uses the same command safety gate as GitHub webhooks. Unsafe requests such as secret exfiltration, destructive repository changes, or arbitrary shell execution are rejected before task creation.
 If safety allowlists are configured, the manual task `triggerUser` and `repositoryOwner/repositoryName` must also match those allowlists.
+
+## Supported Repositories
+
+PatchPilot currently executes fixes only for Java/Maven repositories. After cloning the task workspace, the backend runs the language adapter preflight:
+
+- supported: `pom.xml` with `mvnw`, using `./mvnw test`
+- supported: `pom.xml` without `mvnw`, using `mvn test`
+- unsupported: no registered adapter detects the repository
+
+Unsupported repositories fail before model patch generation, tests, commit, push, or Pull Request creation. This is intentional until additional adapters such as Gradle, Node.js, and Python are implemented.
 
 Runtime configuration summary:
 

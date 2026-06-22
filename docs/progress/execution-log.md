@@ -1948,3 +1948,21 @@ Validation:
 - `cd frontend && npm test -- --reporter=dot`: passed, 68 tests run, 0 failures.
 - `cd frontend && npm run build`: passed, production bundle generated successfully.
 - `git diff --check`: passed with no whitespace errors.
+
+Implemented unsupported repository preflight from `docs/plans/094-unsupported-repository-preflight.md`.
+
+Changes:
+
+- Added `LanguageAdapterRegistry` to select the first supported repository language adapter.
+- Ran language-adapter detection immediately after workspace preparation and before patch workflow, diff, tests, commit, push, or Pull Request creation.
+- Recorded the preflight as an audited `LanguageAdapterRegistry` tool call.
+- Failed unsupported repositories with `Unsupported repository: no supported language adapter detected`.
+- Kept Java/Maven as the only supported execution adapter for now and documented the boundary for future Gradle, Node.js, and Python adapters.
+- Updated executor tests, product specification, architecture docs, README supported-repository notes, and this execution log.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=WorkspaceFixTaskExecutorTests#should_fail_unsupported_repository_before_patch_workflow_or_tests test`: first failed because `LanguageAdapterRegistry` did not exist; then passed after adding the registry and executor preflight.
+- `mvn -pl PatchPilot -Dtest=LanguageAdapterRegistryTests,JavaMavenLanguageAdapterTests,WorkspaceFixTaskExecutorTests test`: first failed because existing executor tests expected the old tool-call sequence and cancellation checkpoint numbers; then passed after updating expectations for the new preflight step, 14 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: first failed because the webhook completion fixture did not create a Maven marker file, so the new preflight correctly failed it as unsupported; then passed after creating `pom.xml` in the test repository fixture, 328 tests run, 0 failures.
+- `git diff --check`: passed with no whitespace errors.
