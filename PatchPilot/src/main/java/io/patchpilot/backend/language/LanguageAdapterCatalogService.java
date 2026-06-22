@@ -54,6 +54,27 @@ public class LanguageAdapterCatalogService {
             ),
             adapter(
                     "python",
+                    "tox",
+                    List.of("tox"),
+                    List.of("tox.ini", "pyproject.toml", "[tool.tox]"),
+                    "docs/demo-repositories/python-tox"
+            ),
+            adapter(
+                    "python",
+                    "nox",
+                    List.of("nox"),
+                    List.of("noxfile.py"),
+                    "docs/demo-repositories/python-nox"
+            ),
+            adapter(
+                    "python",
+                    "hatch",
+                    List.of("hatch", "test"),
+                    List.of("pyproject.toml", "Hatch test script"),
+                    "docs/demo-repositories/python-hatch"
+            ),
+            adapter(
+                    "python",
                     "poetry",
                     List.of("poetry", "run", "pytest"),
                     List.of("pyproject.toml", "[tool.poetry]", "pytest configuration or dependency"),

@@ -136,8 +136,8 @@ The current implementation target is local self-hosted development first. Hosted
 
 ### Test Execution
 
-- The MVP supports Java Maven, Java Gradle, Node/Bun, Node/npm, Node/pnpm, Node/yarn, Python/pytest, Python/Poetry, and Python/uv repositories first.
-- The long-term system supports multiple language adapters, starting with Java/Maven, Java/Gradle, Bun, npm, pnpm, yarn, Python/pytest, Poetry, uv, and additional Python runners.
+- The MVP supports Java Maven, Java Gradle, Node/Bun, Node/npm, Node/pnpm, Node/yarn, Python/tox, Python/nox, Python/hatch, Python/Poetry, Python/uv, and Python/pytest repositories first.
+- The long-term system supports multiple language adapters, starting with Java/Maven, Java/Gradle, Bun, npm, pnpm, yarn, Python/tox, nox, hatch, Poetry, uv, pytest, and additional explicit runners.
 - Each adapter defines project detection, allowed verification commands, test output capture, timeout policy, and unsupported-repository failure reasons.
 - The adapter registry selects the first adapter that supports the repository and returns a clear unsupported result when none match.
 - The verification runner executes only the selected adapter's allowlisted verification command.
@@ -156,6 +156,12 @@ The current implementation target is local self-hosted development first. Hosted
 - The Node/pnpm adapter runs `pnpm test`.
 - The Node/yarn adapter detects `package.json`, `yarn.lock`, and a non-empty `scripts.test`.
 - The Node/yarn adapter runs `yarn test`.
+- The Python/tox adapter detects `tox.ini` or `[tool.tox]` in `pyproject.toml`.
+- The Python/tox adapter runs `tox`.
+- The Python/nox adapter detects `noxfile.py`.
+- The Python/nox adapter runs `nox`.
+- The Python/hatch adapter detects a Hatch test script in `pyproject.toml`.
+- The Python/hatch adapter runs `hatch test`.
 - The Python/Poetry adapter detects `[tool.poetry]` in `pyproject.toml` plus pytest configuration or dependency.
 - The Python/Poetry adapter runs `poetry run pytest`.
 - The Python/uv adapter detects `uv.lock` plus pytest configuration or dependency in `pyproject.toml`.
@@ -201,7 +207,7 @@ The first production-like MVP supports:
 - `/agent fix` issue comment trigger.
 - Java repositories using Maven or Gradle.
 - Node.js repositories using Bun, npm, pnpm, or yarn with `scripts.test`.
-- Python repositories using pytest directly, Poetry, or uv.
+- Python repositories using tox, nox, hatch, Poetry, uv, or pytest directly.
 - One repository per task.
 - One generated Pull Request per successful task.
 - Local workspace execution.
@@ -230,7 +236,7 @@ Planned follow-up capabilities:
 - Chrome extension button on GitHub issue pages.
 - Command safety gate for authorization, actionability, unsupported repositories, and unsafe requests.
 - Language adapter foundation.
-- tox, nox, and other runner support.
+- Additional custom runner support.
 - Docker sandbox execution.
 - MySQL-backed durable task history.
 - Redis or queue-backed async execution.

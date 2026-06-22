@@ -21,6 +21,30 @@ const adapters: SupportedLanguageAdapter[] = [
   },
   {
     language: 'python',
+    buildSystem: 'tox',
+    verificationCommand: ['tox'],
+    detectionSignals: ['tox.ini', 'pyproject.toml', '[tool.tox]'],
+    demoFixturePath: 'docs/demo-repositories/python-tox',
+    status: 'SUPPORTED'
+  },
+  {
+    language: 'python',
+    buildSystem: 'nox',
+    verificationCommand: ['nox'],
+    detectionSignals: ['noxfile.py'],
+    demoFixturePath: 'docs/demo-repositories/python-nox',
+    status: 'SUPPORTED'
+  },
+  {
+    language: 'python',
+    buildSystem: 'hatch',
+    verificationCommand: ['hatch', 'test'],
+    detectionSignals: ['pyproject.toml', 'Hatch test script'],
+    demoFixturePath: 'docs/demo-repositories/python-hatch',
+    status: 'SUPPORTED'
+  },
+  {
+    language: 'python',
     buildSystem: 'uv',
     verificationCommand: ['uv', 'run', 'pytest'],
     detectionSignals: ['uv.lock', 'pyproject.toml', 'pytest configuration or dependency'],
@@ -33,7 +57,7 @@ test('shows supported adapters with commands and demo fixtures', () => {
   render(<SupportedAdaptersPanel adapters={adapters} error={null} />);
 
   expect(screen.getByRole('heading', { name: 'Supported adapters' })).toBeInTheDocument();
-  expect(screen.getByText('3 supported adapters')).toBeInTheDocument();
+  expect(screen.getByText('6 supported adapters')).toBeInTheDocument();
 
   const mavenRow = screen.getByRole('row', { name: /java maven mvn test/i });
   expect(within(mavenRow).getByText('docs/demo-repositories/java-maven')).toBeInTheDocument();
@@ -41,6 +65,12 @@ test('shows supported adapters with commands and demo fixtures', () => {
 
   const bunRow = screen.getByRole('row', { name: /node bun bun test/i });
   expect(within(bunRow).getByText('docs/demo-repositories/node-bun')).toBeInTheDocument();
+
+  const toxRow = screen.getByRole('row', { name: /python tox tox/i });
+  expect(within(toxRow).getByText('docs/demo-repositories/python-tox')).toBeInTheDocument();
+
+  const hatchRow = screen.getByRole('row', { name: /python hatch hatch test/i });
+  expect(within(hatchRow).getByText('pyproject.toml, Hatch test script')).toBeInTheDocument();
 
   const uvRow = screen.getByRole('row', { name: /python uv uv run pytest/i });
   expect(within(uvRow).getByText('SUPPORTED')).toBeInTheDocument();

@@ -20,7 +20,7 @@ class LanguageAdapterControllerTests {
         mockMvc.perform(get("/api/language-adapters"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data", hasSize(9)))
+                .andExpect(jsonPath("$.data", hasSize(12)))
                 .andExpect(jsonPath("$.data[0].language").value("java"))
                 .andExpect(jsonPath("$.data[0].buildSystem").value("maven"))
                 .andExpect(jsonPath("$.data[0].verificationCommand[0]").value("mvn"))
@@ -35,7 +35,14 @@ class LanguageAdapterControllerTests {
                 .andExpect(jsonPath("$.data[2].detectionSignals[1]").value("bun.lockb"))
                 .andExpect(jsonPath("$.data[2].detectionSignals[2]").value("bun.lock"))
                 .andExpect(jsonPath("$.data[2].demoFixturePath").value("docs/demo-repositories/node-bun"))
+                .andExpect(jsonPath("$.data[6].language").value("python"))
+                .andExpect(jsonPath("$.data[6].buildSystem").value("tox"))
+                .andExpect(jsonPath("$.data[6].verificationCommand[0]").value("tox"))
                 .andExpect(jsonPath("$.data[8].language").value("python"))
-                .andExpect(jsonPath("$.data[8].buildSystem").value("pytest"));
+                .andExpect(jsonPath("$.data[8].buildSystem").value("hatch"))
+                .andExpect(jsonPath("$.data[8].verificationCommand[0]").value("hatch"))
+                .andExpect(jsonPath("$.data[8].verificationCommand[1]").value("test"))
+                .andExpect(jsonPath("$.data[11].language").value("python"))
+                .andExpect(jsonPath("$.data[11].buildSystem").value("pytest"));
     }
 }

@@ -16,7 +16,7 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends git ca-certificates curl unzip nodejs npm python3 python3-pip python3-pytest \
     && npm install -g pnpm yarn \
     && BUN_INSTALL=/usr/local/bun bash -c 'curl -fsSL https://bun.sh/install | bash' \
-    && python3 -m pip install --no-cache-dir poetry uv \
+    && python3 -m pip install --no-cache-dir poetry uv tox nox hatch \
     && rm -rf /var/lib/apt/lists/*
 
 ENV PATH="/usr/local/bun/bin:${PATH}"

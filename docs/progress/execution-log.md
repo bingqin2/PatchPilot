@@ -2191,3 +2191,26 @@ Validation:
 - `npm run build`: passed after production frontend build.
 - `npm test`: passed after full frontend verification, 76 tests run, 0 failures.
 - `mvn -pl PatchPilot test`: first failed because `LanguageAdapterControllerTests` still expected 8 supported adapters; then passed after updating the controller response assertions for Bun, 388 tests run, 0 failures.
+
+Implemented Python advanced runner adapters from `docs/plans/107-python-advanced-runner-adapters.md`.
+
+Changes:
+
+- Added `PythonToxLanguageAdapter` for repositories with `tox.ini` or `[tool.tox]` in `pyproject.toml`.
+- Added `PythonNoxLanguageAdapter` for repositories with `noxfile.py`.
+- Added `PythonHatchLanguageAdapter` for repositories with a Hatch test script in `pyproject.toml`.
+- Preferred tox, nox, and hatch before Poetry, uv, and plain pytest when explicit runner signals are present.
+- Extended `CommandExecutionGuard` to allow only `tox`, `nox`, and `hatch test`, not arbitrary runner environments, sessions, or scripts.
+- Added tox, nox, and hatch to the backend runtime Docker image so Docker Compose execution can run adapter-selected verification.
+- Added `docs/demo-repositories/python-tox`, `python-nox`, and `python-hatch` fixtures.
+- Added tox, nox, and hatch to the supported-adapter API catalog and dashboard test data.
+- Updated README, product specification, architecture, target state, roadmap, backend command standard, frontend design notes, and this execution log.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=PythonToxLanguageAdapterTests,PythonNoxLanguageAdapterTests,PythonHatchLanguageAdapterTests,CommandExecutionGuardTests,MavenRuntimePackagingTests,PatchPilotApplicationTests,LanguageAdapterRegistryTests,LanguageAdapterCatalogServiceTests,LanguageAdapterControllerTests test`: first failed because `PythonToxLanguageAdapter`, `PythonNoxLanguageAdapter`, and `PythonHatchLanguageAdapter` did not exist; then passed after adding the adapters, command allowlist, runtime packaging, Spring registration/order checks, catalog entries, and fixtures, 33 tests run, 0 failures.
+- `npm test -- --run src/dashboard/components/SupportedAdaptersPanel.test.tsx src/App.test.tsx`: first failed because the test queried partial table text too broadly after adding tox and hatch rows; then passed after narrowing assertions to adapter rows and exact rendered cell text, 44 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed after full backend verification, 398 tests run, 0 failures.
+- `npm test`: passed after full frontend verification, 76 tests run, 0 failures.
+- `npm run build`: passed after production frontend build.
+- `git diff --check`: passed after whitespace and conflict-marker verification.

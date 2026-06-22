@@ -24,6 +24,9 @@ class LanguageAdapterCatalogServiceTests {
                         "node/pnpm",
                         "node/yarn",
                         "node/npm",
+                        "python/tox",
+                        "python/nox",
+                        "python/hatch",
                         "python/poetry",
                         "python/uv",
                         "python/pytest"
@@ -32,6 +35,9 @@ class LanguageAdapterCatalogServiceTests {
         assertThat(find(adapters, "java", "maven").verificationCommand()).containsExactly("mvn", "test");
         assertThat(find(adapters, "node", "bun").demoFixturePath()).isEqualTo("docs/demo-repositories/node-bun");
         assertThat(find(adapters, "node", "pnpm").detectionSignals()).contains("package.json", "pnpm-lock.yaml", "scripts.test");
+        assertThat(find(adapters, "python", "tox").verificationCommand()).containsExactly("tox");
+        assertThat(find(adapters, "python", "nox").demoFixturePath()).isEqualTo("docs/demo-repositories/python-nox");
+        assertThat(find(adapters, "python", "hatch").detectionSignals()).contains("pyproject.toml", "Hatch test script");
         assertThat(find(adapters, "python", "uv").demoFixturePath()).isEqualTo("docs/demo-repositories/python-uv");
     }
 

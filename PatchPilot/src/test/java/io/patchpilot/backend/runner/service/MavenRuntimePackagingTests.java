@@ -58,4 +58,11 @@ class MavenRuntimePackagingTests {
 
         assertThat(dockerfile).contains("python3 -m pip install --no-cache-dir poetry uv");
     }
+
+    @Test
+    void should_install_tox_nox_and_hatch_for_python_runner_adapters() throws Exception {
+        String dockerfile = Files.readString(Path.of("Dockerfile"));
+
+        assertThat(dockerfile).contains("python3 -m pip install --no-cache-dir poetry uv tox nox hatch");
+    }
 }

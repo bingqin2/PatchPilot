@@ -37,7 +37,7 @@ Reusable dashboard components live under `frontend/src/dashboard/components/`:
 - `ManualTaskForm`: local demo/debug task creation through `POST /api/tasks`, with explicit repository, issue, trigger user, and `/agent fix` command fields.
 - `QueuePanel`: read-only queue health, summary, and queue items.
 - `ConfigurationPanel`: read-only runtime configuration summary with backend health, provider, model, workspace, queue policy, configured/missing secret states, and setup health hints.
-- `SupportedAdaptersPanel`: read-only support matrix for Java/Maven, Java/Gradle, Node/Bun, Node/npm, Node/pnpm, Node/yarn, Python/pytest, Python/Poetry, and Python/uv adapters.
+- `SupportedAdaptersPanel`: read-only support matrix for Java/Maven, Java/Gradle, Node/Bun, Node/npm, Node/pnpm, Node/yarn, Python/tox, Python/nox, Python/hatch, Python/Poetry, Python/uv, and Python/pytest adapters.
 - `FailureCausePanel`, `ModelUsagePanel`, and `LatencyPanel`: operational summary cards for failure grouping, token usage, call counts, estimated model cost, and execution latency.
 - `MetricCard`, `RecordLine`, and `SummaryItem`: small shared presentation units.
 

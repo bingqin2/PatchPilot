@@ -28,6 +28,9 @@ class CommandExecutionGuardTests {
         guard.validate(repositoryDir, List.of("yarn", "test"));
         guard.validate(repositoryDir, List.of("bun", "test"));
         guard.validate(repositoryDir, List.of("python3", "-m", "pytest"));
+        guard.validate(repositoryDir, List.of("tox"));
+        guard.validate(repositoryDir, List.of("nox"));
+        guard.validate(repositoryDir, List.of("hatch", "test"));
         guard.validate(repositoryDir, List.of("poetry", "run", "pytest"));
         guard.validate(repositoryDir, List.of("uv", "run", "pytest"));
         guard.validate(repositoryDir, List.of("git", "-C", repositoryDir.toString(), "status", "--short"));
@@ -88,6 +91,15 @@ class CommandExecutionGuardTests {
         assertThatThrownBy(() -> guard.validate(repositoryDir, List.of("uv", "pip", "install", "-r", "requirements.txt")))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Command is not allowlisted: uv pip install -r requirements.txt");
+        assertThatThrownBy(() -> guard.validate(repositoryDir, List.of("tox", "-e", "lint")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Command is not allowlisted: tox -e lint");
+        assertThatThrownBy(() -> guard.validate(repositoryDir, List.of("nox", "-s", "lint")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Command is not allowlisted: nox -s lint");
+        assertThatThrownBy(() -> guard.validate(repositoryDir, List.of("hatch", "run", "test")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Command is not allowlisted: hatch run test");
     }
 
     @Test
