@@ -16,7 +16,7 @@ PatchPilot is not a chatbot and does not auto-merge code. The current target is 
 - Local workspace clone, branch, diff, commit, push, and Pull Request creation.
 - Java/Maven, Java/Gradle, Node/Bun, Node/npm, Node/pnpm, Node/yarn, Python/tox, Python/nox, Python/hatch, Python/Poetry, Python/uv, and Python/pytest language adapters backed by an adapter-driven verification runner with command allowlists.
 - Generated diff risk gate that blocks sensitive files, secret-like added lines, binary patches, and overly broad patches before tests, commits, pushes, or Pull Request creation.
-- Human approval flow for generated-diff risk rejections: `PENDING_REVIEW` tasks can be cancelled or explicitly approved to resume from the already-generated workspace and continue verification, commit, push, and Pull Request creation.
+- Human approval flow for generated-diff risk rejections: `PENDING_REVIEW` tasks expose the generated diff for inspection, then can be cancelled or explicitly approved to resume from the already-generated workspace and continue verification, commit, push, and Pull Request creation.
 - Unsupported repository preflight that fails before patch generation, test execution, Git mutation, or Pull Request creation.
 - OpenAI-compatible model client and plan-driven patch workflow.
 - Issue comment status updates for accepted, running, verification, success, and failure states.
@@ -198,10 +198,10 @@ curl http://127.0.0.1:8080/api/tasks/{taskId}/model-calls
 curl "http://127.0.0.1:8080/api/rejected-triggers?limit=20"
 ```
 
-Use `/detail` for dashboard-style task inspection. It returns the task audit summary, latest queue item, queue history, timeline events, test runs, tool calls, and model calls in one response. Use `/report` to copy a Markdown diagnostic summary for a task. The narrower endpoints remain available for focused debugging.
+Use `/detail` for dashboard-style task inspection. It returns the task audit summary, latest queue item, queue history, latest generated diff, timeline events, test runs, tool calls, and model calls in one response. Use `/report` to copy a Markdown diagnostic summary for a task, including the generated diff when one was captured. The narrower endpoints remain available for focused debugging.
 Use `/api/rejected-triggers` to inspect rejected `/agent fix` attempts that did not create tasks, including unsafe command text, unauthorized users, unauthorized repositories, and the rejection reason.
 
-If a generated diff is blocked by the risk gate, the task moves to `PENDING_REVIEW` instead of `FAILED`. Inspect the task detail and tool-call output first. If the diff is intentionally allowed, approve it through the dashboard or API:
+If a generated diff is blocked by the risk gate, the task moves to `PENDING_REVIEW` instead of `FAILED`. Inspect the generated diff in the task detail or copied report first, then check the `GeneratedDiffRiskGate` tool-call output for the concrete rejection reason. If the diff is intentionally allowed, approve it through the dashboard or API:
 
 ```bash
 curl -X POST http://127.0.0.1:8080/api/tasks/{taskId}/approve-review

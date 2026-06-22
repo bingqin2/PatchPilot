@@ -194,6 +194,25 @@ export function TaskDetailPanel({
         </div>
       ) : null}
 
+      {detail.generatedDiff ? (
+        <section className="detail-section generated-diff-section">
+          <div className="generated-diff-header">
+            <div>
+              <h3>Generated diff</h3>
+              <p>
+                {canApproveReview
+                  ? 'Review these changes before approving the task.'
+                  : 'Latest generated patch captured before commit or review.'}
+              </p>
+            </div>
+            <time dateTime={detail.generatedDiff.generatedAt}>
+              Generated {compactTime(detail.generatedDiff.generatedAt)}
+            </time>
+          </div>
+          <pre aria-label="Generated diff preview">{detail.generatedDiff.diff}</pre>
+        </section>
+      ) : null}
+
       {detail.queueItems.length > 0 ? (
         <section className="detail-section">
           <h3>Queue History</h3>

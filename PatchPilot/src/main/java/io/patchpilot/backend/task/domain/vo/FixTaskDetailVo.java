@@ -8,6 +8,7 @@ public record FixTaskDetailVo(
         List<FixTaskTestRunVo> testRuns,
         List<FixTaskToolCallVo> toolCalls,
         List<FixTaskModelCallVo> modelCalls,
+        FixTaskGeneratedDiffVo generatedDiff,
         FixTaskQueueItemVo queueItem,
         List<FixTaskQueueItemVo> queueItems
 ) {

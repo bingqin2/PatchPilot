@@ -227,6 +227,13 @@ export interface FixTaskDetail {
   testRuns: FixTaskTestRun[];
   toolCalls: FixTaskToolCall[];
   modelCalls: FixTaskModelCall[];
+  generatedDiff: FixTaskGeneratedDiff | null;
+}
+
+export interface FixTaskGeneratedDiff {
+  toolCallId: string;
+  diff: string;
+  generatedAt: string;
 }
 
 export interface FixTaskTimelineEvent {
