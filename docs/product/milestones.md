@@ -57,11 +57,11 @@ Evidence:
 
 Outcome:
 
-- PatchPilot can open a tested Pull Request for a simple Java/Maven issue.
+- PatchPilot can open a tested Pull Request for a simple supported Java issue.
 
 Evidence:
 
-- Maven tests run.
+- Adapter-selected verification runs.
 - Test results are recorded.
 - PR is created.
 - Issue is updated with the PR link.

@@ -236,6 +236,8 @@ MVP allowed commands:
 ```bash
 ./mvnw test
 mvn test
+./gradlew test
+gradle test
 git status
 git diff
 git checkout -b <branch>

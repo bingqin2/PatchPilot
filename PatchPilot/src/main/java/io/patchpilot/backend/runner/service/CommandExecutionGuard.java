@@ -33,7 +33,10 @@ public class CommandExecutionGuard {
     }
 
     private static boolean isAllowlisted(List<String> command) {
-        if (command.equals(List.of("./mvnw", "test")) || command.equals(List.of("mvn", "test"))) {
+        if (command.equals(List.of("./mvnw", "test"))
+                || command.equals(List.of("mvn", "test"))
+                || command.equals(List.of("./gradlew", "test"))
+                || command.equals(List.of("gradle", "test"))) {
             return true;
         }
         if (command.size() < 2 || !"git".equals(command.get(0))) {

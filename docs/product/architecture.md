@@ -223,11 +223,13 @@ Responsibilities:
 - Remove PatchPilot secrets from the child-process environment.
 - Return structured test results.
 
-The adapter registry selects the first supported adapter and returns a clear unsupported result when none match. `VerificationRunner` executes the selected adapter command. The first adapter is `JavaMavenLanguageAdapter`. MVP supported commands:
+The adapter registry selects the first supported adapter and returns a clear unsupported result when none match. `VerificationRunner` executes the selected adapter command. The first adapters are `JavaMavenLanguageAdapter` and `JavaGradleLanguageAdapter`. MVP supported commands:
 
 ```bash
 ./mvnw test
 mvn test
+./gradlew test
+gradle test
 ```
 
 Future adapters should add their own detection and allowlisted verification commands without allowing arbitrary user-supplied shell.

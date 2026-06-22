@@ -108,6 +108,6 @@ The frontend is successful when a maintainer can open it during a live demo or l
 - What is its current status?
 - What did the agent do?
 - Which tools and model calls ran?
-- Did Maven tests pass?
+- Did verification pass?
 - If it failed, what was the failure reason?
 - If it succeeded, where is the Pull Request?

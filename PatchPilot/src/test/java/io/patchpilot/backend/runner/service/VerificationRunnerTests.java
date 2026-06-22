@@ -34,6 +34,20 @@ class VerificationRunnerTests {
     }
 
     @Test
+    void should_run_adapter_supplied_gradle_wrapper_command() throws Exception {
+        Path repositoryDir = tempDir.resolve("gradle-repo");
+        Files.createDirectories(repositoryDir);
+        createExecutable(repositoryDir.resolve("gradlew"), "echo gradle-command \"$@\"\nexit 0\n");
+        VerificationRunner runner = runner();
+
+        TestRunResult result = runner.runVerification("task-123", repositoryDir, List.of("./gradlew", "test"));
+
+        assertThat(result.command()).isEqualTo("./gradlew test");
+        assertThat(result.exitCode()).isZero();
+        assertThat(result.output()).contains("gradle-command test");
+    }
+
+    @Test
     void should_register_and_unregister_process_for_task() throws Exception {
         Path repositoryDir = tempDir.resolve("registered-repo");
         Files.createDirectories(repositoryDir);

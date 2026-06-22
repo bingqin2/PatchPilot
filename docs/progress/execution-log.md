@@ -1984,3 +1984,20 @@ Validation:
 - `mvn -pl PatchPilot test`: first failed because the Maven compatibility test still expected `maven test command timed out`; then passed after updating the timeout wording to the generic verification runner message, 330 tests run, 0 failures.
 - `mvn -pl PatchPilot -Dtest=WorkspaceFixTaskExecutorTests,MavenTestRunnerTests,VerificationRunnerTests test`: passed after generic interruption wording cleanup, 21 tests run, 0 failures.
 - `mvn -pl PatchPilot test`: passed after final verification, 330 tests run, 0 failures.
+
+Implemented Gradle language adapter support from `docs/plans/096-gradle-language-adapter.md`.
+
+Changes:
+
+- Added `JavaGradleLanguageAdapter` for Java/Gradle repositories with `gradlew`, `build.gradle`, or `build.gradle.kts`.
+- Selected `./gradlew test` when the Gradle wrapper exists and `gradle test` when only Gradle build files exist.
+- Registered Maven and Gradle adapters with deterministic Spring ordering.
+- Extended `CommandExecutionGuard` to allow only the fixed Gradle verification commands, not arbitrary Gradle tasks.
+- Verified the generic `VerificationRunner` can execute an adapter-provided Gradle wrapper command.
+- Updated README, product specification, architecture, and backend command-execution standard to describe Maven and Gradle support.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=JavaGradleLanguageAdapterTests,CommandExecutionGuardTests,VerificationRunnerTests test`: first failed because `JavaGradleLanguageAdapter` did not exist; then passed after adding the adapter and Gradle command allowlist, 10 tests run, 0 failures.
+- `mvn -pl PatchPilot -Dtest=JavaGradleLanguageAdapterTests,JavaMavenLanguageAdapterTests,LanguageAdapterRegistryTests,CommandExecutionGuardTests,VerificationRunnerTests,PatchPilotApplicationTests test`: passed after Spring adapter registration checks, 18 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed after full backend verification, 335 tests run, 0 failures.

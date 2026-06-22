@@ -73,3 +73,11 @@ Decision: Use local self-hosted deployment first and defer public hosted usage.
 Reason: The project should prove the issue-to-PR workflow on personal repositories before exposing a hosted GitHub App to external users.
 
 Impact: Current implementation plans should optimize for local Docker Compose, personal GitHub App setup, and tunnel-based webhook testing. Public hosted service requirements remain in the target state and roadmap as a later maturity phase.
+
+## 2026-06-22
+
+Decision: Add Java/Gradle as the second supported repository adapter after Java/Maven.
+
+Reason: Gradle support moves PatchPilot toward multi-build-system Java coverage while keeping execution behind explicit language adapters and fixed verification command allowlists.
+
+Impact: Java repositories using `gradlew`, `build.gradle`, or `build.gradle.kts` can pass repository preflight and run `./gradlew test` or `gradle test`. Node.js and Python remain future adapter work.
