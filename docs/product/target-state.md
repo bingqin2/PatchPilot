@@ -25,6 +25,8 @@ The first stable adapters are Java/Maven, Java/Gradle, Node/npm, Node/pnpm, Node
 
 Adding a new language is only complete when PatchPilot can detect the repository, generate a focused patch, run the adapter's allowed tests, record the evidence, and create a reviewable Pull Request.
 
+Adapter support should stay demonstrable through small checked-in fixtures under `docs/demo-repositories/`. These fixtures document supported repository shapes and give backend tests stable examples for adapter detection.
+
 ## Deployment Target
 
 PatchPilot should support two deployment modes:

@@ -1,0 +1,14 @@
+[tool.poetry]
+name = "patchpilot-python-poetry-demo"
+version = "0.0.1"
+description = "PatchPilot Poetry adapter fixture"
+authors = ["PatchPilot <patchpilot@example.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.2.0"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

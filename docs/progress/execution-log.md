@@ -2116,3 +2116,20 @@ Validation:
 - `mvn -pl PatchPilot -Dtest=PythonPytestLanguageAdapterTests,PythonPoetryLanguageAdapterTests,PythonUvLanguageAdapterTests,CommandExecutionGuardTests,VerificationRunnerTests,PatchPilotApplicationTests,MavenRuntimePackagingTests test`: passed after focused Python adapter and runner verification, 33 tests run, 0 failures.
 - `mvn -pl PatchPilot test`: passed after full backend verification, 378 tests run, 0 failures.
 - `git diff --check`: passed after whitespace and conflict-marker verification.
+
+Implemented adapter demo fixtures from `docs/plans/103-adapter-demo-fixtures.md`.
+
+Changes:
+
+- Added minimal fixtures under `docs/demo-repositories/` for Java/Maven, Java/Gradle, Node/npm, Node/pnpm, Node/yarn, Python/pytest, Python/Poetry, and Python/uv.
+- Added per-fixture README files that document the expected adapter and verification command.
+- Added source and test files to each fixture so the examples are understandable as small repositories instead of bare manifests.
+- Added a registry-level backend test that verifies each fixture is detected with the expected `language`, `buildSystem`, and verification command.
+- Updated README, roadmap, target-state, and this execution log to make the fixtures a documented demo-readiness asset.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=LanguageAdapterRegistryTests#should_detect_adapter_demo_fixtures test`: first failed because `docs/demo-repositories/java-maven` did not exist; then failed because Maven module test execution needed a repository-root-aware fixture path; then passed after adding fixtures and root-relative path resolution, 1 test run, 0 failures.
+- `mvn -pl PatchPilot -Dtest=LanguageAdapterRegistryTests test`: passed after full registry verification, 3 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed after full backend verification, 379 tests run, 0 failures.
+- `git diff --check`: passed after whitespace and conflict-marker verification.
