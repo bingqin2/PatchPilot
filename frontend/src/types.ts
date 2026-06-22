@@ -129,6 +129,22 @@ export interface ConfigurationSummary {
   triggerRateLimitMaxPerIssue: number;
 }
 
+export type DemoReadinessStatus = 'READY' | 'NEEDS_ATTENTION' | 'BLOCKED';
+
+export interface DemoReadinessCheck {
+  name: string;
+  status: DemoReadinessStatus;
+  message: string;
+  action: string;
+}
+
+export interface DemoReadiness {
+  status: DemoReadinessStatus;
+  summary: string;
+  checks: DemoReadinessCheck[];
+  nextActions: string[];
+}
+
 export interface BackendHealth {
   status: string;
   service: string;

@@ -3,6 +3,7 @@ import type {
   BackendHealth,
   ConfigurationSummary,
   CreateTaskInput,
+  DemoReadiness,
   FixTask,
   FixTaskFailureCauseSummary,
   FixTaskLatencySummary,
@@ -119,6 +120,10 @@ function getFilteredMetricsApi<T>(path: string, options: ListTasksOptions): Prom
 
 export async function getConfigurationSummary(): Promise<ConfigurationSummary> {
   return getApi<ConfigurationSummary>('/api/configuration/summary');
+}
+
+export async function getDemoReadiness(): Promise<DemoReadiness> {
+  return getApi<DemoReadiness>('/api/demo/readiness');
 }
 
 export async function getBackendHealth(): Promise<BackendHealth> {
