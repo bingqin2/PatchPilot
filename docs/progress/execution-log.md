@@ -2078,3 +2078,22 @@ Validation:
 - `mvn -pl PatchPilot test`: passed after full backend verification, 356 tests run, 0 failures.
 - `npm run build`: passed after production frontend build.
 - `git diff --check`: passed after whitespace and conflict-marker verification.
+
+Implemented Node/pnpm and Node/yarn package-manager adapter support from `docs/plans/101-node-package-manager-adapters.md`.
+
+Changes:
+
+- Added shared Node package-manager detection for `package.json` parsing and `scripts.test` validation.
+- Added `NodePnpmLanguageAdapter` for repositories with `package.json`, `pnpm-lock.yaml`, and a non-empty `scripts.test`.
+- Added `NodeYarnLanguageAdapter` for repositories with `package.json`, `yarn.lock`, and a non-empty `scripts.test`.
+- Preferred pnpm and yarn adapters before the broader npm adapter when package-manager lockfiles are present.
+- Extended `CommandExecutionGuard` to allow only `pnpm test` and `yarn test`, not arbitrary package-manager scripts or install commands.
+- Added pnpm and yarn to the backend runtime Docker image so Docker Compose execution can run adapter-selected verification.
+- Updated README, product specification, architecture, target-state, backend command standard, decisions, and this execution log.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=NodePnpmLanguageAdapterTests,NodeYarnLanguageAdapterTests,CommandExecutionGuardTests,PatchPilotApplicationTests,MavenRuntimePackagingTests test`: first failed because `NodePnpmLanguageAdapter` and `NodeYarnLanguageAdapter` did not exist; then passed after adding the adapters, command allowlist, Spring registration/order checks, and runtime packaging, 21 tests run, 0 failures.
+- `mvn -pl PatchPilot -Dtest=NodeNpmLanguageAdapterTests,NodePnpmLanguageAdapterTests,NodeYarnLanguageAdapterTests,CommandExecutionGuardTests,VerificationRunnerTests,PatchPilotApplicationTests,MavenRuntimePackagingTests test`: passed after focused adapter and runner verification, 30 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed after full backend verification, 367 tests run, 0 failures.
+- `git diff --check`: passed after whitespace and conflict-marker verification.

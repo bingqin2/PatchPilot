@@ -38,6 +38,8 @@ public class CommandExecutionGuard {
                 || command.equals(List.of("./gradlew", "test"))
                 || command.equals(List.of("gradle", "test"))
                 || command.equals(List.of("npm", "test"))
+                || command.equals(List.of("pnpm", "test"))
+                || command.equals(List.of("yarn", "test"))
                 || command.equals(List.of("python3", "-m", "pytest"))) {
             return true;
         }

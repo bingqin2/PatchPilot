@@ -26,6 +26,13 @@ class MavenRuntimePackagingTests {
     }
 
     @Test
+    void should_install_pnpm_and_yarn_for_node_package_manager_adapters() throws Exception {
+        String dockerfile = Files.readString(Path.of("Dockerfile"));
+
+        assertThat(dockerfile).contains("npm install -g pnpm yarn");
+    }
+
+    @Test
     void should_install_python_and_pytest_for_python_adapter_verification() throws Exception {
         String dockerfile = Files.readString(Path.of("Dockerfile"));
 

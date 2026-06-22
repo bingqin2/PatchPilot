@@ -3,15 +3,22 @@ package io.patchpilot.backend;
 import io.patchpilot.backend.agent.workflow.PatchWorkflow;
 import io.patchpilot.backend.agent.workflow.PlanDrivenPatchWorkflow;
 import io.patchpilot.backend.language.LanguageAdapter;
+import io.patchpilot.backend.language.LanguageAdapterRegistry;
+import io.patchpilot.backend.language.domain.LanguageDetectionResult;
 import io.patchpilot.backend.language.impl.JavaGradleLanguageAdapter;
 import io.patchpilot.backend.language.impl.JavaMavenLanguageAdapter;
 import io.patchpilot.backend.language.impl.NodeNpmLanguageAdapter;
+import io.patchpilot.backend.language.impl.NodePnpmLanguageAdapter;
+import io.patchpilot.backend.language.impl.NodeYarnLanguageAdapter;
 import io.patchpilot.backend.language.impl.PythonPytestLanguageAdapter;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -46,6 +53,27 @@ class PatchPilotApplicationTests {
                 .hasAtLeastOneElementOfType(JavaMavenLanguageAdapter.class)
                 .hasAtLeastOneElementOfType(JavaGradleLanguageAdapter.class)
                 .hasAtLeastOneElementOfType(NodeNpmLanguageAdapter.class)
+                .hasAtLeastOneElementOfType(NodePnpmLanguageAdapter.class)
+                .hasAtLeastOneElementOfType(NodeYarnLanguageAdapter.class)
                 .hasAtLeastOneElementOfType(PythonPytestLanguageAdapter.class);
+    }
+
+    @Test
+    void should_prefer_specific_node_package_manager_adapters_before_npm(@TempDir Path tempDir) throws Exception {
+        Files.writeString(tempDir.resolve("package.json"), """
+                {
+                  "scripts": {
+                    "test": "vitest run"
+                  }
+                }
+                """);
+        Files.writeString(tempDir.resolve("pnpm-lock.yaml"), "lockfileVersion: '9.0'\n");
+        LanguageAdapterRegistry registry = applicationContext.getBean(LanguageAdapterRegistry.class);
+
+        LanguageDetectionResult result = registry.detect(tempDir);
+
+        assertThat(result.supported()).isTrue();
+        assertThat(result.buildSystem()).isEqualTo("pnpm");
+        assertThat(result.verificationCommand()).containsExactly("pnpm", "test");
     }
 }

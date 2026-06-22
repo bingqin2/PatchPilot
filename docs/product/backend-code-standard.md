@@ -239,6 +239,8 @@ mvn test
 ./gradlew test
 gradle test
 npm test
+pnpm test
+yarn test
 python3 -m pytest
 git status
 git diff
