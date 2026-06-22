@@ -145,6 +145,7 @@ export function TaskDetailPanel({
         {task.language && task.buildSystem ? (
           <strong>Adapter {task.language} / {task.buildSystem}</strong>
         ) : null}
+        {task.adapterDetectionReason ? <strong>Detection {task.adapterDetectionReason}</strong> : null}
         {task.verificationCommand ? <strong>Verify {task.verificationCommand}</strong> : null}
       </div>
 

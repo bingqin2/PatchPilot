@@ -38,6 +38,7 @@ class FixTaskConvertTests {
         assertThat(entity.getLanguage()).isNull();
         assertThat(entity.getBuildSystem()).isNull();
         assertThat(entity.getVerificationCommand()).isNull();
+        assertThat(entity.getAdapterDetectionReason()).isNull();
         assertThat(entity.getStatusCommentId()).isNull();
         assertThat(entity.getStatusCommentUrl()).isNull();
 
@@ -59,6 +60,7 @@ class FixTaskConvertTests {
         assertThat(vo.language()).isNull();
         assertThat(vo.buildSystem()).isNull();
         assertThat(vo.verificationCommand()).isNull();
+        assertThat(vo.adapterDetectionReason()).isNull();
         assertThat(vo.statusCommentId()).isNull();
         assertThat(vo.statusCommentUrl()).isNull();
     }
@@ -93,6 +95,7 @@ class FixTaskConvertTests {
         assertThat(updated.getLanguage()).isEqualTo(current.getLanguage());
         assertThat(updated.getBuildSystem()).isEqualTo(current.getBuildSystem());
         assertThat(updated.getVerificationCommand()).isEqualTo(current.getVerificationCommand());
+        assertThat(updated.getAdapterDetectionReason()).isEqualTo(current.getAdapterDetectionReason());
         assertThat(updated.getStatusCommentId()).isEqualTo(123L);
         assertThat(updated.getStatusCommentUrl()).isEqualTo("https://github.com/octocat/hello-world/issues/42#issuecomment-123");
         assertThat(updated.getStatus()).isEqualTo(FixTaskStatus.FAILED.name());
@@ -111,6 +114,7 @@ class FixTaskConvertTests {
                 "python",
                 "pytest",
                 "python3 -m pytest",
+                "pytest.ini detected",
                 updatedAt
         );
         FixTaskVo vo = FixTaskConvert.toVo(updated);
@@ -120,10 +124,12 @@ class FixTaskConvertTests {
         assertThat(updated.getLanguage()).isEqualTo("python");
         assertThat(updated.getBuildSystem()).isEqualTo("pytest");
         assertThat(updated.getVerificationCommand()).isEqualTo("python3 -m pytest");
+        assertThat(updated.getAdapterDetectionReason()).isEqualTo("pytest.ini detected");
         assertThat(updated.getUpdatedAt()).isEqualTo(updatedAt);
         assertThat(vo.language()).isEqualTo("python");
         assertThat(vo.buildSystem()).isEqualTo("pytest");
         assertThat(vo.verificationCommand()).isEqualTo("python3 -m pytest");
+        assertThat(vo.adapterDetectionReason()).isEqualTo("pytest.ini detected");
     }
 
     @Test

@@ -66,6 +66,9 @@ public class FixTaskEntity {
     @TableField("verification_command")
     private String verificationCommand;
 
+    @TableField("adapter_detection_reason")
+    private String adapterDetectionReason;
+
     @TableField("status_comment_id")
     private Long statusCommentId;
 

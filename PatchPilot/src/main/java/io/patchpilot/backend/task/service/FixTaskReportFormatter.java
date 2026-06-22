@@ -29,12 +29,38 @@ public class FixTaskReportFormatter {
             report.append("- Pull Request: ").append(task.pullRequestUrl()).append("\n");
         }
 
+        appendAdapter(report, task);
         appendQueue(report, detail);
         appendTimeline(report, detail.timeline());
         appendTestRuns(report, detail.testRuns());
         appendToolCalls(report, detail.toolCalls());
         appendModelCalls(report, detail.modelCalls());
         return report.toString();
+    }
+
+    private static void appendAdapter(StringBuilder report, FixTaskVo task) {
+        if (
+                task.language() == null &&
+                task.buildSystem() == null &&
+                task.verificationCommand() == null &&
+                task.adapterDetectionReason() == null
+        ) {
+            return;
+        }
+
+        report.append("\n## Adapter\n\n");
+        if (task.language() != null) {
+            report.append("- Language: `").append(task.language()).append("`\n");
+        }
+        if (task.buildSystem() != null) {
+            report.append("- Build system: `").append(task.buildSystem()).append("`\n");
+        }
+        if (task.verificationCommand() != null) {
+            report.append("- Verification: `").append(task.verificationCommand()).append("`\n");
+        }
+        if (task.adapterDetectionReason() != null) {
+            report.append("- Detection reason: ").append(task.adapterDetectionReason()).append("\n");
+        }
     }
 
     private static void appendQueue(StringBuilder report, FixTaskDetailVo detail) {

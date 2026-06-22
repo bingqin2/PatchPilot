@@ -725,6 +725,13 @@ class TaskControllerTests {
     @Test
     void should_get_task_detail_by_task_id() throws Exception {
         FixTaskVo task = createTask("delivery-detail");
+        fixTaskService.recordAdapterMetadata(
+                task.id(),
+                "java",
+                "maven",
+                "./mvnw test",
+                "pom.xml detected with mvnw wrapper"
+        );
         fixTaskTimelineService.recordEvent(task.id(), FixTaskTimelineEventType.TASK_CREATED, "Task accepted");
         fixTaskTimelineService.recordEvent(task.id(), FixTaskTimelineEventType.COMPLETED, "Task completed");
         FixTaskTestRunVo testRun = fixTaskTestRunService.recordTestRun(
@@ -786,6 +793,10 @@ class TaskControllerTests {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.summary.task.id").value(task.id()))
+                .andExpect(jsonPath("$.data.summary.task.language").value("java"))
+                .andExpect(jsonPath("$.data.summary.task.buildSystem").value("maven"))
+                .andExpect(jsonPath("$.data.summary.task.verificationCommand").value("./mvnw test"))
+                .andExpect(jsonPath("$.data.summary.task.adapterDetectionReason").value("pom.xml detected with mvnw wrapper"))
                 .andExpect(jsonPath("$.data.summary.timelineEventCount").value(2))
                 .andExpect(jsonPath("$.data.summary.testRunCount").value(1))
                 .andExpect(jsonPath("$.data.summary.toolCallCount").value(1))
@@ -820,6 +831,13 @@ class TaskControllerTests {
     @Test
     void should_get_task_report_by_task_id() throws Exception {
         FixTaskVo task = createTask("delivery-report");
+        fixTaskService.recordAdapterMetadata(
+                task.id(),
+                "java",
+                "maven",
+                "./mvnw test",
+                "pom.xml detected with mvnw wrapper"
+        );
         fixTaskService.markFailed(task.id(), "maven tests failed");
         fixTaskTimelineService.recordEvent(task.id(), FixTaskTimelineEventType.TASK_CREATED, "Task accepted");
         fixTaskTimelineService.recordEvent(task.id(), FixTaskTimelineEventType.FAILED, "Task failed");
@@ -872,6 +890,11 @@ class TaskControllerTests {
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Task: `" + task.id() + "`")))
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Status: `FAILED`")))
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Failure: maven tests failed")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("## Adapter")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Language: `java`")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Build system: `maven`")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Verification: `./mvnw test`")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Detection reason: pom.xml detected with mvnw wrapper")))
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("## Queue")))
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Latest: `FAILED`, attempt 2")))
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("## Test Runs")))

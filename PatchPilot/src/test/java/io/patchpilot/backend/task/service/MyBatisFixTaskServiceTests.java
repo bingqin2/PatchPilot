@@ -211,7 +211,8 @@ class MyBatisFixTaskServiceTests {
                 "task-123",
                 "java",
                 "gradle",
-                "./gradlew test"
+                "./gradlew test",
+                "build.gradle detected with gradlew wrapper"
         );
 
         verify(fixTaskMapper).updateById(entityCaptor.capture());
@@ -221,10 +222,12 @@ class MyBatisFixTaskServiceTests {
         assertThat(updatedEntity.getLanguage()).isEqualTo("java");
         assertThat(updatedEntity.getBuildSystem()).isEqualTo("gradle");
         assertThat(updatedEntity.getVerificationCommand()).isEqualTo("./gradlew test");
+        assertThat(updatedEntity.getAdapterDetectionReason()).isEqualTo("build.gradle detected with gradlew wrapper");
         assertThat(updatedEntity.getUpdatedAt()).isAfter(current.getUpdatedAt());
         assertThat(updatedTask.language()).isEqualTo("java");
         assertThat(updatedTask.buildSystem()).isEqualTo("gradle");
         assertThat(updatedTask.verificationCommand()).isEqualTo("./gradlew test");
+        assertThat(updatedTask.adapterDetectionReason()).isEqualTo("build.gradle detected with gradlew wrapper");
     }
 
     @Test
