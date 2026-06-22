@@ -20,6 +20,7 @@ class LanguageAdapterCatalogServiceTests {
                 .containsExactly(
                         "java/maven",
                         "java/gradle",
+                        "node/bun",
                         "node/pnpm",
                         "node/yarn",
                         "node/npm",
@@ -29,6 +30,7 @@ class LanguageAdapterCatalogServiceTests {
                 );
         assertThat(adapters).allSatisfy(adapter -> assertThat(adapter.status()).isEqualTo("SUPPORTED"));
         assertThat(find(adapters, "java", "maven").verificationCommand()).containsExactly("mvn", "test");
+        assertThat(find(adapters, "node", "bun").demoFixturePath()).isEqualTo("docs/demo-repositories/node-bun");
         assertThat(find(adapters, "node", "pnpm").detectionSignals()).contains("package.json", "pnpm-lock.yaml", "scripts.test");
         assertThat(find(adapters, "python", "uv").demoFixturePath()).isEqualTo("docs/demo-repositories/python-uv");
     }

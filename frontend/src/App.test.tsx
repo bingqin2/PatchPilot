@@ -335,6 +335,14 @@ const supportedLanguageAdapters = [
   },
   {
     language: 'node',
+    buildSystem: 'bun',
+    verificationCommand: ['bun', 'test'],
+    detectionSignals: ['package.json', 'bun.lockb', 'bun.lock', 'scripts.test'],
+    demoFixturePath: 'docs/demo-repositories/node-bun',
+    status: 'SUPPORTED'
+  },
+  {
+    language: 'node',
     buildSystem: 'pnpm',
     verificationCommand: ['pnpm', 'test'],
     detectionSignals: ['package.json', 'pnpm-lock.yaml', 'scripts.test'],
@@ -749,8 +757,9 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(screen.getByText('Webhook secret Configured')).toBeInTheDocument();
   expect(screen.getByText('Queue attempts 3')).toBeInTheDocument();
   expect(screen.getByRole('heading', { name: 'Supported adapters' })).toBeInTheDocument();
-  expect(screen.getByText('8 supported adapters')).toBeInTheDocument();
+  expect(screen.getByText('9 supported adapters')).toBeInTheDocument();
   expect(screen.getByText('docs/demo-repositories/java-maven')).toBeInTheDocument();
+  expect(screen.getByText('bun test')).toBeInTheDocument();
   expect(screen.getByText('uv run pytest')).toBeInTheDocument();
   expect(screen.getByText('Queue')).toBeInTheDocument();
   expect(screen.getByText('Queue has failures')).toBeInTheDocument();

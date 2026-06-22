@@ -136,8 +136,8 @@ The current implementation target is local self-hosted development first. Hosted
 
 ### Test Execution
 
-- The MVP supports Java Maven, Java Gradle, Node/npm, Node/pnpm, Node/yarn, Python/pytest, Python/Poetry, and Python/uv repositories first.
-- The long-term system supports multiple language adapters, starting with Java/Maven, Java/Gradle, npm, pnpm, yarn, Python/pytest, Poetry, uv, and additional Python runners.
+- The MVP supports Java Maven, Java Gradle, Node/Bun, Node/npm, Node/pnpm, Node/yarn, Python/pytest, Python/Poetry, and Python/uv repositories first.
+- The long-term system supports multiple language adapters, starting with Java/Maven, Java/Gradle, Bun, npm, pnpm, yarn, Python/pytest, Poetry, uv, and additional Python runners.
 - Each adapter defines project detection, allowed verification commands, test output capture, timeout policy, and unsupported-repository failure reasons.
 - The adapter registry selects the first adapter that supports the repository and returns a clear unsupported result when none match.
 - The verification runner executes only the selected adapter's allowlisted verification command.
@@ -148,6 +148,8 @@ The current implementation target is local self-hosted development first. Hosted
 - The Java/Gradle adapter detects `gradlew`, `build.gradle`, and `build.gradle.kts`.
 - The Java/Gradle adapter runs `./gradlew test` when a Gradle wrapper exists.
 - The Java/Gradle adapter runs `gradle test` when no wrapper exists.
+- The Node/Bun adapter detects `package.json`, `bun.lockb` or `bun.lock`, and a non-empty `scripts.test`.
+- The Node/Bun adapter runs `bun test`.
 - The Node/npm adapter detects `package.json` files with a non-empty `scripts.test`.
 - The Node/npm adapter runs `npm test`.
 - The Node/pnpm adapter detects `package.json`, `pnpm-lock.yaml`, and a non-empty `scripts.test`.
@@ -198,7 +200,7 @@ The first production-like MVP supports:
 - GitHub App webhook integration.
 - `/agent fix` issue comment trigger.
 - Java repositories using Maven or Gradle.
-- Node.js repositories using npm, pnpm, or yarn with `scripts.test`.
+- Node.js repositories using Bun, npm, pnpm, or yarn with `scripts.test`.
 - Python repositories using pytest directly, Poetry, or uv.
 - One repository per task.
 - One generated Pull Request per successful task.
@@ -228,7 +230,7 @@ Planned follow-up capabilities:
 - Chrome extension button on GitHub issue pages.
 - Command safety gate for authorization, actionability, unsupported repositories, and unsafe requests.
 - Language adapter foundation.
-- bun, tox, nox, and other runner support.
+- tox, nox, and other runner support.
 - Docker sandbox execution.
 - MySQL-backed durable task history.
 - Redis or queue-backed async execution.

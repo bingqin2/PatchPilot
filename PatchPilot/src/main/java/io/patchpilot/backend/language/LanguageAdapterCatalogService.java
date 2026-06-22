@@ -26,6 +26,13 @@ public class LanguageAdapterCatalogService {
             ),
             adapter(
                     "node",
+                    "bun",
+                    List.of("bun", "test"),
+                    List.of("package.json", "bun.lockb", "bun.lock", "scripts.test"),
+                    "docs/demo-repositories/node-bun"
+            ),
+            adapter(
+                    "node",
                     "pnpm",
                     List.of("pnpm", "test"),
                     List.of("package.json", "pnpm-lock.yaml", "scripts.test"),

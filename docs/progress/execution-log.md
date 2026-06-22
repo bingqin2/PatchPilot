@@ -2171,3 +2171,23 @@ Validation:
 - `npm test`: passed after full frontend verification, 76 tests run, 0 failures.
 - `npm run build`: passed after fixing the supported-adapter test fixture type for the `SUPPORTED` literal status.
 - `git diff --check`: passed after whitespace and conflict-marker verification.
+
+Implemented Node/Bun adapter support from `docs/plans/106-node-bun-language-adapter.md`.
+
+Changes:
+
+- Added `NodeBunLanguageAdapter` for repositories with `package.json`, `bun.lockb` or `bun.lock`, and a non-empty `scripts.test`.
+- Preferred Bun before the broad npm adapter when a Bun lockfile is present.
+- Extended the command allowlist to permit only `bun test`, not Bun install or arbitrary package scripts.
+- Installed Bun in the backend runtime Docker image.
+- Added a `docs/demo-repositories/node-bun` fixture with a Bun-compatible test file.
+- Added Bun to the supported-adapter API catalog and dashboard test data.
+- Updated README, product specification, architecture, target state, roadmap, backend command standard, frontend design notes, and this execution log.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=NodeBunLanguageAdapterTests,CommandExecutionGuardTests,MavenRuntimePackagingTests,PatchPilotApplicationTests,LanguageAdapterRegistryTests,LanguageAdapterCatalogServiceTests test`: first failed because `NodeBunLanguageAdapter` did not exist; then failed because the npm adapter constructor became ambiguous after multi-lockfile support; then failed because the Dockerfile packaging assertion was too order-specific; then passed after adding the adapter, multi-lockfile detection, command allowlist, runtime packaging, Spring registration, catalog entry, and fixture, 26 tests run, 0 failures.
+- `npm test -- --run src/dashboard/components/SupportedAdaptersPanel.test.tsx src/App.test.tsx`: passed after updating dashboard supported-adapter fixtures for Bun, 44 tests run, 0 failures.
+- `npm run build`: passed after production frontend build.
+- `npm test`: passed after full frontend verification, 76 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: first failed because `LanguageAdapterControllerTests` still expected 8 supported adapters; then passed after updating the controller response assertions for Bun, 388 tests run, 0 failures.

@@ -1,0 +1,12 @@
+{
+  "name": "patchpilot-node-bun-demo",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "bun test"
+  },
+  "devDependencies": {
+    "bun-types": "latest"
+  }
+}

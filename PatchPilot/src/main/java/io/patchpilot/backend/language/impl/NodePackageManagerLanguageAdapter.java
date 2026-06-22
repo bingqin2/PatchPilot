@@ -15,7 +15,7 @@ abstract class NodePackageManagerLanguageAdapter implements LanguageAdapter {
 
     private final ObjectMapper objectMapper;
     private final String buildSystem;
-    private final String lockfileName;
+    private final List<String> lockfileNames;
     private final List<String> verificationCommand;
     private final String supportedReason;
 
@@ -25,7 +25,16 @@ abstract class NodePackageManagerLanguageAdapter implements LanguageAdapter {
             List<String> verificationCommand,
             String supportedReason
     ) {
-        this(new ObjectMapper(), buildSystem, lockfileName, verificationCommand, supportedReason);
+        this(new ObjectMapper(), buildSystem, lockfileName == null ? List.of() : List.of(lockfileName), verificationCommand, supportedReason);
+    }
+
+    protected NodePackageManagerLanguageAdapter(
+            String buildSystem,
+            List<String> lockfileNames,
+            List<String> verificationCommand,
+            String supportedReason
+    ) {
+        this(new ObjectMapper(), buildSystem, lockfileNames, verificationCommand, supportedReason);
     }
 
     NodePackageManagerLanguageAdapter(
@@ -35,9 +44,19 @@ abstract class NodePackageManagerLanguageAdapter implements LanguageAdapter {
             List<String> verificationCommand,
             String supportedReason
     ) {
+        this(objectMapper, buildSystem, lockfileName == null ? List.of() : List.of(lockfileName), verificationCommand, supportedReason);
+    }
+
+    NodePackageManagerLanguageAdapter(
+            ObjectMapper objectMapper,
+            String buildSystem,
+            List<String> lockfileNames,
+            List<String> verificationCommand,
+            String supportedReason
+    ) {
         this.objectMapper = objectMapper;
         this.buildSystem = buildSystem;
-        this.lockfileName = lockfileName;
+        this.lockfileNames = lockfileNames == null ? List.of() : List.copyOf(lockfileNames);
         this.verificationCommand = List.copyOf(verificationCommand);
         this.supportedReason = supportedReason;
     }
@@ -49,8 +68,8 @@ abstract class NodePackageManagerLanguageAdapter implements LanguageAdapter {
         if (!Files.isRegularFile(packageJson)) {
             return unsupported("Unsupported repository: no package.json found");
         }
-        if (StringUtils.hasText(lockfileName) && !Files.isRegularFile(repositoryRoot.resolve(lockfileName))) {
-            return unsupported("Unsupported repository: no " + lockfileName + " found");
+        if (!lockfileNames.isEmpty() && lockfileNames.stream().noneMatch(lockfileName -> Files.isRegularFile(repositoryRoot.resolve(lockfileName)))) {
+            return unsupported("Unsupported repository: no " + String.join(" or ", lockfileNames) + " found");
         }
         JsonNode rootNode;
         try {
