@@ -69,6 +69,16 @@ export function ConfigurationPanel({ configuration, backendHealth }: Configurati
           <strong>{reviewApproverSummary(configuration)}</strong>
           <p>Risk review approval allowlist</p>
         </div>
+        <div>
+          <span>Trigger users</span>
+          <strong>{allowlistSummary(configuration?.allowedTriggerUsers)}</strong>
+          <p>Task creation user allowlist</p>
+        </div>
+        <div>
+          <span>Repositories</span>
+          <strong>{allowlistSummary(configuration?.allowedRepositories)}</strong>
+          <p>Task creation repository allowlist</p>
+        </div>
       </div>
       {health.items.length > 0 ? (
         <div className="configuration-issues" aria-label="Configuration issues">
@@ -138,6 +148,12 @@ function configurationHealth(configuration: ConfigurationSummary | null) {
   ) {
     advisoryIssues.push({ kind: 'advisory', message: 'Trigger rate limit thresholds must be at least 1' });
   }
+  if (!configuration.triggerUserAllowlistConfigured) {
+    advisoryIssues.push({ kind: 'advisory', message: 'Trigger user allowlist is open' });
+  }
+  if (!configuration.repositoryAllowlistConfigured) {
+    advisoryIssues.push({ kind: 'advisory', message: 'Repository allowlist is open' });
+  }
   if (configuration.reviewApprovalAllowedOperators.length === 0) {
     advisoryIssues.push({ kind: 'advisory', message: 'Review approval operators are not configured' });
   }
@@ -175,4 +191,14 @@ function reviewApproverSummary(configuration: ConfigurationSummary | null) {
     return 'Not configured';
   }
   return configuration.reviewApprovalAllowedOperators.join(', ');
+}
+
+function allowlistSummary(values?: string[]) {
+  if (!values) {
+    return '-';
+  }
+  if (values.length === 0) {
+    return 'Open';
+  }
+  return values.join(', ');
 }

@@ -34,6 +34,7 @@ class DemoReadinessServiceTests {
                 .containsExactly(
                         "Backend",
                         "Credentials",
+                        "Safety policy",
                         "Adapter fixtures",
                         "Queue",
                         "Recent Pull Request"
@@ -41,6 +42,40 @@ class DemoReadinessServiceTests {
         assertThat(readiness.checks())
                 .allSatisfy(check -> assertThat(check.status()).isEqualTo(DemoReadinessStatus.READY));
         assertThat(readiness.nextActions()).containsExactly("Open a controlled GitHub issue and comment /agent fix with a concrete change request.");
+    }
+
+    @Test
+    void should_report_safety_policy_attention_when_allowlists_are_incomplete() {
+        DemoReadinessService service = new DemoReadinessService(
+                () -> configuration(
+                        true,
+                        true,
+                        true,
+                        true,
+                        List.of(),
+                        List.of("bingqin2/PatchPilot"),
+                        List.of()
+                ),
+                () -> List.of(fixture("java-maven", "PASS")),
+                () -> FixTaskQueueSummaryVo.empty(),
+                () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/12"))
+        );
+
+        DemoReadinessVo readiness = service.getReadiness();
+
+        assertThat(readiness.status()).isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
+        assertThat(readiness.checks())
+                .filteredOn(check -> check.name().equals("Safety policy"))
+                .singleElement()
+                .satisfies(check -> {
+                    assertThat(check.status()).isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
+                    assertThat(check.message()).contains("Trigger user allowlist is open");
+                    assertThat(check.message()).contains("Review approval allowlist is missing");
+                    assertThat(check.message()).doesNotContain("Repository allowlist is open");
+                });
+        assertThat(readiness.nextActions()).contains(
+                "Configure PATCHPILOT_ALLOWED_TRIGGER_USERS and PATCHPILOT_REVIEW_APPROVAL_ALLOWED_OPERATORS before a live demo."
+        );
     }
 
     @Test
@@ -131,7 +166,48 @@ class DemoReadinessServiceTests {
                 10,
                 20,
                 5,
+                true,
+                true,
+                true,
+                List.of("bingqin2"),
+                List.of("bingqin2/PatchPilot"),
                 List.of("release-captain")
+        );
+    }
+
+    private static ConfigurationSummaryVo configuration(
+            boolean agentApiKeyConfigured,
+            boolean githubTokenConfigured,
+            boolean githubWebhookSecretConfigured,
+            boolean modelCostConfigured,
+            List<String> allowedTriggerUsers,
+            List<String> allowedRepositories,
+            List<String> reviewApprovalAllowedOperators
+    ) {
+        return new ConfigurationSummaryVo(
+                "openai-compatible",
+                "gpt-5.5",
+                "https://api.example.test/v1",
+                agentApiKeyConfigured,
+                githubTokenConfigured,
+                githubWebhookSecretConfigured,
+                "/tmp/patchpilot/workspaces",
+                3,
+                1000,
+                30000,
+                modelCostConfigured,
+                true,
+                true,
+                900000,
+                10,
+                20,
+                5,
+                !allowedTriggerUsers.isEmpty(),
+                !allowedRepositories.isEmpty(),
+                !reviewApprovalAllowedOperators.isEmpty(),
+                allowedTriggerUsers,
+                allowedRepositories,
+                reviewApprovalAllowedOperators
         );
     }
 

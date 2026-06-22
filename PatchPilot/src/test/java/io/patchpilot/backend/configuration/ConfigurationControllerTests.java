@@ -27,6 +27,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "patchpilot.agent.cost.completion-token-usd=0.000002",
         "patchpilot.github.token=test-github-token",
         "patchpilot.github.webhook-secret=test-webhook-secret",
+        "patchpilot.safety.allowed-trigger-users=bingqin2,local-operator",
+        "patchpilot.safety.allowed-repositories=bingqin2/PatchPilot,octocat/hello-world",
         "patchpilot.safety.model-trigger-classification-enabled=true",
         "patchpilot.safety.trigger-rate-limit-enabled=true",
         "patchpilot.safety.trigger-rate-limit-window-ms=900000",
@@ -66,6 +68,13 @@ class ConfigurationControllerTests {
                 .andExpect(jsonPath("$.data.triggerRateLimitMaxPerTriggerUser").value(9))
                 .andExpect(jsonPath("$.data.triggerRateLimitMaxPerRepository").value(30))
                 .andExpect(jsonPath("$.data.triggerRateLimitMaxPerIssue").value(4))
+                .andExpect(jsonPath("$.data.triggerUserAllowlistConfigured").value(true))
+                .andExpect(jsonPath("$.data.repositoryAllowlistConfigured").value(true))
+                .andExpect(jsonPath("$.data.reviewApprovalAllowlistConfigured").value(true))
+                .andExpect(jsonPath("$.data.allowedTriggerUsers[0]").value("bingqin2"))
+                .andExpect(jsonPath("$.data.allowedTriggerUsers[1]").value("local-operator"))
+                .andExpect(jsonPath("$.data.allowedRepositories[0]").value("bingqin2/PatchPilot"))
+                .andExpect(jsonPath("$.data.allowedRepositories[1]").value("octocat/hello-world"))
                 .andExpect(jsonPath("$.data.reviewApprovalAllowedOperators[0]").value("release-captain"))
                 .andExpect(jsonPath("$.data.reviewApprovalAllowedOperators[1]").value("local-operator"))
                 .andExpect(content().string(not(containsString("test-agent-key"))))

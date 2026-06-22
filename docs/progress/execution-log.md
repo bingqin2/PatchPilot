@@ -2387,3 +2387,18 @@ Validation:
 
 - `mvn -pl PatchPilot -Dtest=DefaultFixTaskControlServiceTests,TaskControllerTests,ConfigurationSummaryServiceTests test`: first failed because `ReviewApprovalProperties` did not exist; then passed after backend implementation, 69 tests run, 0 failures.
 - `npm test -- src/dashboard/components/ConfigurationPanel.test.tsx src/dashboard/components/TaskDetailPanel.test.tsx`: first failed because review approvers were not rendered and the approval form still used free text; then passed after frontend implementation, 16 tests run, 0 failures.
+
+Implemented safety policy readiness summary from `docs/plans/117-safety-policy-readiness-summary.md`.
+
+Changes:
+
+- Extended `GET /api/configuration/summary` with non-sensitive safety policy fields for trigger-user allowlists, repository allowlists, and review-approval approvers.
+- Added a `Safety policy` check to `GET /api/demo/readiness`, marking open trigger/repository allowlists and missing review approvers as operator attention items.
+- Rendered trigger-user and repository allowlist state in the dashboard configuration panel.
+- Updated dashboard readiness fixtures so the existing demo readiness panel shows safety policy checks alongside credentials, queue, adapters, and recent PR evidence.
+- Updated README, architecture notes, frontend design notes, and this execution log.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=ConfigurationSummaryServiceTests,ConfigurationControllerTests,DemoReadinessServiceTests test`: first failed because `ConfigurationSummaryVo` did not expose safety policy fields; then passed after backend implementation, 6 tests run, 0 failures.
+- `npm test -- src/dashboard/components/ConfigurationPanel.test.tsx src/dashboard/components/DemoReadinessPanel.test.tsx src/api.test.ts src/App.test.tsx`: first failed because the configuration panel did not render trigger-user and repository allowlist state; then passed after frontend implementation, 65 tests run, 0 failures.

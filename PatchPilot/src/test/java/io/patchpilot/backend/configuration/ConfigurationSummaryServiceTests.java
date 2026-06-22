@@ -26,6 +26,8 @@ class ConfigurationSummaryServiceTests {
         workspaceProperties.setRootDir(Path.of("/tmp/patchpilot/workspaces"));
         TaskQueueProperties taskQueueProperties = new TaskQueueProperties();
         SafetyProperties safetyProperties = new SafetyProperties();
+        safetyProperties.setAllowedTriggerUsers(List.of(" bingqin2 ", "BINGQIN2", "local-operator", ""));
+        safetyProperties.setAllowedRepositories(List.of(" bingqin2/PatchPilot ", "BINGQIN2/PATCHPILOT", "octocat/hello-world"));
         ReviewApprovalProperties reviewApprovalProperties = new ReviewApprovalProperties();
         reviewApprovalProperties.setAllowedOperators(List.of(" release-captain ", "RELEASE-CAPTAIN", "local-operator", ""));
 
@@ -39,5 +41,10 @@ class ConfigurationSummaryServiceTests {
         ).getConfigurationSummary();
 
         assertThat(summary.reviewApprovalAllowedOperators()).containsExactly("release-captain", "local-operator");
+        assertThat(summary.allowedTriggerUsers()).containsExactly("bingqin2", "local-operator");
+        assertThat(summary.allowedRepositories()).containsExactly("bingqin2/PatchPilot", "octocat/hello-world");
+        assertThat(summary.triggerUserAllowlistConfigured()).isTrue();
+        assertThat(summary.repositoryAllowlistConfigured()).isTrue();
+        assertThat(summary.reviewApprovalAllowlistConfigured()).isTrue();
     }
 }

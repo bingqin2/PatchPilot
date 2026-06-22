@@ -532,6 +532,11 @@ const configurationSummary = {
   triggerRateLimitMaxPerTriggerUser: 30,
   triggerRateLimitMaxPerRepository: 60,
   triggerRateLimitMaxPerIssue: 20,
+  triggerUserAllowlistConfigured: true,
+  repositoryAllowlistConfigured: true,
+  reviewApprovalAllowlistConfigured: true,
+  allowedTriggerUsers: ['bingqin2', 'local-operator'],
+  allowedRepositories: ['bingqin2/PatchPilot'],
   reviewApprovalAllowedOperators: ['release-captain', 'local-operator']
 };
 

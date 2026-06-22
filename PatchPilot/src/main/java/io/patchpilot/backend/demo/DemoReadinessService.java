@@ -73,6 +73,7 @@ public class DemoReadinessService {
         List<DemoReadinessCheckVo> checks = List.of(
                 backendCheck(),
                 credentialsCheck(configuration),
+                safetyPolicyCheck(configuration),
                 adapterFixtureCheck(fixtures),
                 queueCheck(queueSummary),
                 recentPullRequestCheck(recentTasks)
@@ -121,6 +122,37 @@ public class DemoReadinessService {
                 "Credentials",
                 DemoReadinessStatus.READY,
                 "Required credentials are configured.",
+                "No action needed."
+        );
+    }
+
+    private static DemoReadinessCheckVo safetyPolicyCheck(ConfigurationSummaryVo configuration) {
+        List<String> gaps = new ArrayList<>();
+        List<String> envNames = new ArrayList<>();
+        if (!configuration.triggerUserAllowlistConfigured()) {
+            gaps.add("Trigger user allowlist is open");
+            envNames.add("PATCHPILOT_ALLOWED_TRIGGER_USERS");
+        }
+        if (!configuration.repositoryAllowlistConfigured()) {
+            gaps.add("Repository allowlist is open");
+            envNames.add("PATCHPILOT_ALLOWED_REPOSITORIES");
+        }
+        if (!configuration.reviewApprovalAllowlistConfigured()) {
+            gaps.add("Review approval allowlist is missing");
+            envNames.add("PATCHPILOT_REVIEW_APPROVAL_ALLOWED_OPERATORS");
+        }
+        if (!gaps.isEmpty()) {
+            return new DemoReadinessCheckVo(
+                    "Safety policy",
+                    DemoReadinessStatus.NEEDS_ATTENTION,
+                    String.join("; ", gaps) + ".",
+                    "Configure " + String.join(" and ", envNames) + " before a live demo."
+            );
+        }
+        return new DemoReadinessCheckVo(
+                "Safety policy",
+                DemoReadinessStatus.READY,
+                "Trigger users, repositories, review approvers, command safety, and rate limits are configured.",
                 "No action needed."
         );
     }
