@@ -172,6 +172,7 @@ class DefaultFixTaskMetricsServiceTests {
                         failedTask("maven-tests", "maven tests failed: compilation error"),
                         failedTask("github-auth", "GitHub issue comment creation failed: HTTP 403"),
                         failedTask("model-error", "OpenAI-compatible model call failed: invalid API key"),
+                        failedTask("patch-review", "Model patch review rejected generated edits: unrelated authentication change"),
                         failedTask("sandbox", "Command rejected by allowlist: rm -rf /tmp/repo"),
                         failedTask("unknown", "unexpected executor failure"),
                         task("completed", FixTaskStatus.COMPLETED,
@@ -190,6 +191,7 @@ class DefaultFixTaskMetricsServiceTests {
                         org.assertj.core.groups.Tuple.tuple("MAVEN_TESTS", 1L),
                         org.assertj.core.groups.Tuple.tuple("GITHUB_AUTH", 1L),
                         org.assertj.core.groups.Tuple.tuple("MODEL_ERROR", 1L),
+                        org.assertj.core.groups.Tuple.tuple("PATCH_REVIEW_REJECTION", 1L),
                         org.assertj.core.groups.Tuple.tuple("SANDBOX_REJECTION", 1L),
                         org.assertj.core.groups.Tuple.tuple("UNKNOWN", 1L)
                 );

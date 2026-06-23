@@ -1705,6 +1705,16 @@ h3 {
   margin: 3px 0 0;
 }
 
+.patch-review-section > .patch-review-recovery {
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 6px;
+  color: #9a3412;
+  font-weight: 800;
+  margin: 0;
+  padding: 10px 12px;
+}
+
 .patch-review-badges,
 .patch-review-files {
   align-items: center;

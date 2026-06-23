@@ -6,6 +6,7 @@ import io.patchpilot.backend.github.client.domain.IssueCommentResult;
 import io.patchpilot.backend.github.client.domain.UpdateIssueCommentCommand;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
+import io.patchpilot.backend.task.service.PatchReviewFailureClassifier;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -41,7 +42,7 @@ public class IssueCommentTool {
     }
 
     public Optional<IssueCommentResult> updateFailed(FixTaskVo task) {
-        return update(task, "PatchPilot failed the task.", FixTaskStatus.FAILED, null, task.failureReason());
+        return update(task, failedHeadline(task.failureReason()), FixTaskStatus.FAILED, null, task.failureReason());
     }
 
     public Optional<IssueCommentResult> updatePendingReview(FixTaskVo task) {
@@ -87,7 +88,7 @@ public class IssueCommentTool {
 
     public IssueCommentResult commentFailed(FixTaskVo task, String failureReason) {
         return updateFailed(task).orElseGet(() -> gitHubIssueCommentClient.createIssueComment(command(task, body(
-                "PatchPilot failed the task.",
+                failedHeadline(failureReason),
                 task,
                 FixTaskStatus.FAILED,
                 null,
@@ -139,10 +140,21 @@ public class IssueCommentTool {
         if (StringUtils.hasText(pullRequestUrl)) {
             body.append("PR: ").append(pullRequestUrl).append("\n");
         }
+        if (PatchReviewFailureClassifier.isPatchReviewRejection(failureReason)) {
+            body.append("Review gate: ").append(PatchReviewFailureClassifier.REVIEW_GATE).append("\n");
+            body.append(PatchReviewFailureClassifier.STATUS_COMMENT_RECOVERY).append("\n");
+        }
         if (StringUtils.hasText(failureReason)) {
             body.append("Reason: ").append(failureReason).append("\n");
         }
         return body.toString();
+    }
+
+    private static String failedHeadline(String failureReason) {
+        if (PatchReviewFailureClassifier.isPatchReviewRejection(failureReason)) {
+            return "PatchPilot blocked the generated patch during review.";
+        }
+        return "PatchPilot failed the task.";
     }
 
     private static String rejectionBody(

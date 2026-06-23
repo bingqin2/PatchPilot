@@ -170,6 +170,14 @@ public class FixTaskReportFormatter {
                 .append("- Decision: `").append(patchReview.decision()).append("`\n")
                 .append("- Reason: ").append(patchReview.reason()).append("\n")
                 .append("- Confidence: `").append(patchReview.confidence()).append("`\n");
+        if ("REJECT".equals(patchReview.decision())) {
+            report.append("- Review gate: `")
+                    .append(PatchReviewFailureClassifier.REVIEW_GATE)
+                    .append("`\n")
+                    .append("- Recovery: ")
+                    .append(PatchReviewFailureClassifier.REPORT_RECOVERY)
+                    .append("\n");
+        }
         if (patchReview.requiredFollowUp() != null && !patchReview.requiredFollowUp().isBlank()) {
             report.append("- Required follow-up: ").append(patchReview.requiredFollowUp()).append("\n");
         }

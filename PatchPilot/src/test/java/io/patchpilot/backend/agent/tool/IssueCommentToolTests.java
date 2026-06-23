@@ -101,6 +101,27 @@ class IssueCommentToolTests {
     }
 
     @Test
+    void should_update_failed_status_comment_with_patch_review_recovery_guidance() {
+        RecordingGitHubIssueCommentClient client = new RecordingGitHubIssueCommentClient();
+        IssueCommentTool tool = new IssueCommentTool(client);
+
+        Optional<IssueCommentResult> result = tool.updateFailed(task(
+                FixTaskStatus.FAILED,
+                123L,
+                null,
+                "Model patch review rejected generated edits: The proposed edit changed an unrelated file."
+        ));
+
+        assertThat(result).isPresent();
+        assertThat(client.updateCommand().commentId()).isEqualTo(123);
+        assertThat(client.updateCommand().body()).contains("PatchPilot blocked the generated patch during review.");
+        assertThat(client.updateCommand().body()).contains("Status: FAILED");
+        assertThat(client.updateCommand().body()).contains("Review gate: PATCH_REVIEW_REJECTED");
+        assertThat(client.updateCommand().body()).contains("Retrying this task will ask the model to generate a new patch.");
+        assertThat(client.updateCommand().body()).contains("Reason: Model patch review rejected generated edits: The proposed edit changed an unrelated file.");
+    }
+
+    @Test
     void should_update_pending_review_status_comment_with_rejection_reason() {
         RecordingGitHubIssueCommentClient client = new RecordingGitHubIssueCommentClient();
         IssueCommentTool tool = new IssueCommentTool(client);

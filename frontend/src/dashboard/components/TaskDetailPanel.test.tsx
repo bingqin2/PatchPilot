@@ -206,6 +206,8 @@ test('marks rejected patch reviews as review gate blocks', () => {
   const patchReview = screen.getByLabelText('Patch review');
   expect(within(patchReview).getByText('Review gate BLOCKED')).toBeInTheDocument();
   expect(within(patchReview).getByText('The patch changes an unrelated authentication file.')).toBeInTheDocument();
+  expect(within(patchReview).getByText('Retry regenerates the patch instead of reusing this rejected edit.')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Retry task' })).toBeInTheDocument();
 });
 
 test('shows issue context for selected task', () => {
