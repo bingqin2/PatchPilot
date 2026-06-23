@@ -84,4 +84,16 @@ public class FixTaskEntity {
     @TableField("risk_review_approval_reason")
     private String riskReviewApprovalReason;
 
+    @TableField("retry_source_task_id")
+    private String retrySourceTaskId;
+
+    @TableField("retry_source_status")
+    private String retrySourceStatus;
+
+    @TableField("retry_source_failure_reason")
+    private String retrySourceFailureReason;
+
+    @TableField("retried_at")
+    private Instant retriedAt;
+
 }

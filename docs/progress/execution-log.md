@@ -2756,3 +2756,22 @@ Validation:
 - `npm test`: passed after full frontend verification, 110 tests run, 0 failures.
 - `npm run build`: passed after production frontend build verification.
 - `git diff --check`: passed after whitespace verification.
+
+Implemented review retry lineage from `docs/plans/137-review-retry-lineage.md`.
+
+Changes:
+
+- Added task retry lineage fields for source task id, source status, source failure reason, and retry timestamp.
+- Persisted retry lineage in both in-memory and MySQL-backed task services.
+- Added a Flyway migration for durable retry lineage columns.
+- Included retry lineage in task API responses and markdown task reports.
+- Rendered retry lineage in the dashboard task detail panel so operators can inspect recovery context for retried review rejections and other terminal failures.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=DefaultFixTaskControlServiceTests,TaskControllerTests,FixTaskConvertTests,MyBatisFixTaskServiceTests,FixTaskMigrationTests test`: first failed because retry lineage fields and persistence did not exist; then passed after backend implementation, 102 tests run, 0 failures.
+- `npm test -- --run src/dashboard/components/TaskDetailPanel.test.tsx src/api.test.ts`: first failed because the dashboard did not render retry lineage; then passed after frontend implementation, 39 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed after full backend verification, 498 tests run, 0 failures.
+- `npm test`: passed after full frontend verification, 111 tests run, 0 failures.
+- `npm run build`: passed after production frontend build verification.
+- `git diff --check`: passed after whitespace verification.

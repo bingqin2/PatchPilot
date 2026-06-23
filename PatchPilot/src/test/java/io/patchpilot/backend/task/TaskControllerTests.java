@@ -1263,7 +1263,29 @@ class TaskControllerTests {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.id").value(task.id()))
                 .andExpect(jsonPath("$.data.status").value("PENDING"))
-                .andExpect(jsonPath("$.data.failureReason").value(nullValue()));
+                .andExpect(jsonPath("$.data.failureReason").value(nullValue()))
+                .andExpect(jsonPath("$.data.retrySourceTaskId").value(task.id()))
+                .andExpect(jsonPath("$.data.retrySourceStatus").value("FAILED"))
+                .andExpect(jsonPath("$.data.retrySourceFailureReason").value("executor failed"))
+                .andExpect(jsonPath("$.data.retriedAt").value(not(nullValue())));
+    }
+
+    @Test
+    void should_include_retry_lineage_in_task_report() throws Exception {
+        FixTaskVo task = createTask("delivery-retry-lineage-report");
+        String failureReason = "Model patch review rejected generated edits: unrelated authentication change";
+        fixTaskService.markFailed(task.id(), failureReason);
+        mockMvc.perform(post("/api/tasks/{id}/retry", task.id()))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/tasks/{id}/report", task.id()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("## Retry Lineage")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Source task: `" + task.id() + "`")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Source status: `FAILED`")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Source failure: " + failureReason)))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Retried at: `")));
     }
 
     @Test

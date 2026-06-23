@@ -1766,9 +1766,49 @@ h3 {
 }
 
 .review-approval-detail,
-.review-approval-form {
+.review-approval-form,
+.retry-lineage-section {
   display: grid;
   gap: 12px;
+}
+
+.retry-lineage-header {
+  align-items: start;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+}
+
+.retry-lineage-header p,
+.retry-lineage-section > p {
+  color: #52606e;
+  font-size: 13px;
+  margin: 3px 0 0;
+}
+
+.retry-lineage-header time,
+.retry-lineage-source code {
+  background: #f5f7f9;
+  border: 1px solid #dfe6ec;
+  border-radius: 999px;
+  color: #52606e;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 5px 9px;
+  white-space: nowrap;
+}
+
+.retry-lineage-source {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.retry-lineage-source span {
+  color: #637181;
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .review-approval-grid {

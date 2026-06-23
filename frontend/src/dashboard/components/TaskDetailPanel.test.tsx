@@ -28,7 +28,11 @@ const task: FixTask = {
   statusCommentUrl: null,
   riskReviewApprovedAt: null,
   riskReviewApprovedBy: null,
-  riskReviewApprovalReason: null
+  riskReviewApprovalReason: null,
+  retrySourceTaskId: null,
+  retrySourceStatus: null,
+  retrySourceFailureReason: null,
+  retriedAt: null
 };
 
 const baseSummary: FixTaskAuditSummary = {
@@ -208,6 +212,36 @@ test('marks rejected patch reviews as review gate blocks', () => {
   expect(within(patchReview).getByText('The patch changes an unrelated authentication file.')).toBeInTheDocument();
   expect(within(patchReview).getByText('Retry regenerates the patch instead of reusing this rejected edit.')).toBeInTheDocument();
   expect(screen.getByRole('button', { name: 'Retry task' })).toBeInTheDocument();
+});
+
+test('shows retry lineage for tasks recovered from patch review rejection', () => {
+  render(
+    <TaskDetailPanel
+      task={{
+        ...task,
+        status: 'PENDING',
+        retrySourceTaskId: 'task-1',
+        retrySourceStatus: 'FAILED',
+        retrySourceFailureReason: 'Model patch review rejected generated edits: unrelated authentication change',
+        retriedAt: '2026-06-20T01:05:00Z'
+      }}
+      detail={baseDetail}
+      loading={false}
+      actionInFlight={false}
+      reviewApprovalAllowedOperators={['release-captain']}
+      onCancelTask={vi.fn()}
+      onRetryTask={vi.fn()}
+      onApproveReview={vi.fn()}
+      onCopyReport={vi.fn()}
+    />
+  );
+
+  const retryLineage = screen.getByLabelText('Retry lineage');
+  expect(within(retryLineage).getByText('Retry lineage')).toBeInTheDocument();
+  expect(within(retryLineage).getByText('Recovered from FAILED')).toBeInTheDocument();
+  expect(
+    within(retryLineage).getByText('Model patch review rejected generated edits: unrelated authentication change')
+  ).toBeInTheDocument();
 });
 
 test('shows issue context for selected task', () => {
@@ -522,7 +556,11 @@ test('shows review approval audit metadata after a task is approved', () => {
         status: 'PENDING',
         riskReviewApprovedAt: '2026-06-20T01:09:00Z',
         riskReviewApprovedBy: 'release-captain',
-        riskReviewApprovalReason: 'Reviewed generated diff and accepted docs-only change'
+        riskReviewApprovalReason: 'Reviewed generated diff and accepted docs-only change',
+        retrySourceTaskId: null,
+        retrySourceStatus: null,
+        retrySourceFailureReason: null,
+        retriedAt: null
       }}
       detail={baseDetail}
       loading={false}

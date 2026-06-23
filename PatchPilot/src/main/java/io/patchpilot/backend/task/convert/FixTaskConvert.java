@@ -37,7 +37,11 @@ public final class FixTaskConvert {
                 entity.getStatusCommentUrl(),
                 entity.getRiskReviewApprovedAt(),
                 entity.getRiskReviewApprovedBy(),
-                entity.getRiskReviewApprovalReason()
+                entity.getRiskReviewApprovalReason(),
+                entity.getRetrySourceTaskId(),
+                entity.getRetrySourceStatus(),
+                entity.getRetrySourceFailureReason(),
+                entity.getRetriedAt()
         );
     }
 
@@ -67,6 +71,10 @@ public final class FixTaskConvert {
         entity.setRiskReviewApprovedAt(null);
         entity.setRiskReviewApprovedBy(null);
         entity.setRiskReviewApprovalReason(null);
+        entity.setRetrySourceTaskId(null);
+        entity.setRetrySourceStatus(null);
+        entity.setRetrySourceFailureReason(null);
+        entity.setRetriedAt(null);
         return entity;
     }
 
@@ -101,6 +109,10 @@ public final class FixTaskConvert {
         entity.setRiskReviewApprovedAt(current.getRiskReviewApprovedAt());
         entity.setRiskReviewApprovedBy(current.getRiskReviewApprovedBy());
         entity.setRiskReviewApprovalReason(current.getRiskReviewApprovalReason());
+        entity.setRetrySourceTaskId(current.getRetrySourceTaskId());
+        entity.setRetrySourceStatus(current.getRetrySourceStatus());
+        entity.setRetrySourceFailureReason(current.getRetrySourceFailureReason());
+        entity.setRetriedAt(current.getRetriedAt());
         if (status == FixTaskStatus.PENDING_REVIEW) {
             clearRiskReviewApproval(entity);
         }
@@ -119,6 +131,10 @@ public final class FixTaskConvert {
         FixTaskEntity entity = replaceStatus(current, FixTaskStatus.PENDING, null, updatedAt);
         entity.setPullRequestUrl(null);
         entity.setCompletedAt(null);
+        entity.setRetrySourceTaskId(current.getId());
+        entity.setRetrySourceStatus(current.getStatus());
+        entity.setRetrySourceFailureReason(current.getFailureReason());
+        entity.setRetriedAt(updatedAt);
         clearRiskReviewApproval(entity);
         return entity;
     }

@@ -148,8 +148,16 @@ class MyBatisFixTaskServiceTests {
         assertThat(updatedEntity.getPullRequestUrl()).isNull();
         assertThat(updatedEntity.getCompletedAt()).isNull();
         assertThat(updatedEntity.getRiskReviewApprovedAt()).isNull();
+        assertThat(updatedEntity.getRetrySourceTaskId()).isEqualTo("task-123");
+        assertThat(updatedEntity.getRetrySourceStatus()).isEqualTo(FixTaskStatus.FAILED.name());
+        assertThat(updatedEntity.getRetrySourceFailureReason()).isEqualTo("executor failed");
+        assertThat(updatedEntity.getRetriedAt()).isNotNull();
         assertThat(updatedEntity.getUpdatedAt()).isAfter(current.getUpdatedAt());
         assertThat(retriedTask.status()).isEqualTo(FixTaskStatus.PENDING);
+        assertThat(retriedTask.retrySourceTaskId()).isEqualTo("task-123");
+        assertThat(retriedTask.retrySourceStatus()).isEqualTo(FixTaskStatus.FAILED.name());
+        assertThat(retriedTask.retrySourceFailureReason()).isEqualTo("executor failed");
+        assertThat(retriedTask.retriedAt()).isEqualTo(updatedEntity.getRetriedAt());
     }
 
     @Test

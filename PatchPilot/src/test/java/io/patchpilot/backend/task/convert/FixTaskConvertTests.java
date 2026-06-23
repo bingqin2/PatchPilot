@@ -41,6 +41,10 @@ class FixTaskConvertTests {
         assertThat(entity.getAdapterDetectionReason()).isNull();
         assertThat(entity.getStatusCommentId()).isNull();
         assertThat(entity.getStatusCommentUrl()).isNull();
+        assertThat(entity.getRetrySourceTaskId()).isNull();
+        assertThat(entity.getRetrySourceStatus()).isNull();
+        assertThat(entity.getRetrySourceFailureReason()).isNull();
+        assertThat(entity.getRetriedAt()).isNull();
 
         assertThat(vo.id()).isEqualTo("task-123");
         assertThat(vo.repositoryOwner()).isEqualTo("octocat");
@@ -63,6 +67,10 @@ class FixTaskConvertTests {
         assertThat(vo.adapterDetectionReason()).isNull();
         assertThat(vo.statusCommentId()).isNull();
         assertThat(vo.statusCommentUrl()).isNull();
+        assertThat(vo.retrySourceTaskId()).isNull();
+        assertThat(vo.retrySourceStatus()).isNull();
+        assertThat(vo.retrySourceFailureReason()).isNull();
+        assertThat(vo.retriedAt()).isNull();
     }
 
     @Test
@@ -100,6 +108,37 @@ class FixTaskConvertTests {
         assertThat(updated.getStatusCommentUrl()).isEqualTo("https://github.com/octocat/hello-world/issues/42#issuecomment-123");
         assertThat(updated.getStatus()).isEqualTo(FixTaskStatus.FAILED.name());
         assertThat(updated.getFailureReason()).isEqualTo("tests failed");
+    }
+
+    @Test
+    void should_replace_pending_for_retry_with_lineage_metadata() {
+        Instant createdAt = Instant.parse("2026-06-19T01:02:03Z");
+        Instant updatedAt = Instant.parse("2026-06-19T01:05:00Z");
+        FixTaskEntity current = FixTaskConvert.newEntity("task-123", command("delivery-123"), createdAt);
+        current.setStatus(FixTaskStatus.FAILED.name());
+        current.setFailureReason("Model patch review rejected generated edits: unrelated auth change");
+        current.setPullRequestUrl("https://github.com/octocat/hello-world/pull/7");
+        current.setCompletedAt(Instant.parse("2026-06-19T01:04:00Z"));
+        current.setRiskReviewApprovedAt(Instant.parse("2026-06-19T01:04:30Z"));
+
+        FixTaskEntity retried = FixTaskConvert.replacePendingForRetry(current, updatedAt);
+        FixTaskVo vo = FixTaskConvert.toVo(retried);
+
+        assertThat(retried.getStatus()).isEqualTo(FixTaskStatus.PENDING.name());
+        assertThat(retried.getFailureReason()).isNull();
+        assertThat(retried.getPullRequestUrl()).isNull();
+        assertThat(retried.getCompletedAt()).isNull();
+        assertThat(retried.getRiskReviewApprovedAt()).isNull();
+        assertThat(retried.getRetrySourceTaskId()).isEqualTo("task-123");
+        assertThat(retried.getRetrySourceStatus()).isEqualTo(FixTaskStatus.FAILED.name());
+        assertThat(retried.getRetrySourceFailureReason())
+                .isEqualTo("Model patch review rejected generated edits: unrelated auth change");
+        assertThat(retried.getRetriedAt()).isEqualTo(updatedAt);
+        assertThat(vo.retrySourceTaskId()).isEqualTo("task-123");
+        assertThat(vo.retrySourceStatus()).isEqualTo(FixTaskStatus.FAILED.name());
+        assertThat(vo.retrySourceFailureReason())
+                .isEqualTo("Model patch review rejected generated edits: unrelated auth change");
+        assertThat(vo.retriedAt()).isEqualTo(updatedAt);
     }
 
     @Test

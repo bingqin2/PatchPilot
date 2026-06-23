@@ -205,6 +205,23 @@ export function TaskDetailPanel({
         </section>
       ) : null}
 
+      {task.retrySourceTaskId ? (
+        <section className="detail-section retry-lineage-section" aria-label="Retry lineage">
+          <div className="retry-lineage-header">
+            <div>
+              <h3>Retry lineage</h3>
+              <p>Recovered from {task.retrySourceStatus ?? 'unknown'}</p>
+            </div>
+            {task.retriedAt ? <time dateTime={task.retriedAt}>{compactTime(task.retriedAt)}</time> : null}
+          </div>
+          <div className="retry-lineage-source">
+            <span>Source task</span>
+            <code>{task.retrySourceTaskId}</code>
+          </div>
+          {task.retrySourceFailureReason ? <p>{task.retrySourceFailureReason}</p> : null}
+        </section>
+      ) : null}
+
       {detail.issueContext ? (
         <section className="detail-section issue-context-section" aria-label="Issue context">
           <div className="issue-context-header">
