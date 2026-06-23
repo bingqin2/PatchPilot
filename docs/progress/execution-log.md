@@ -2,6 +2,26 @@
 
 This file records dated implementation progress, validation commands, and important outcomes.
 
+## 2026-06-23
+
+Implemented model-generated file edits from `docs/plans/133-model-generated-file-edits.md`.
+
+Changes:
+
+- Added a `FileEditPlanGenerator` that asks the configured model for JSON-only full-file edits.
+- Added file edit domain records for edit context, proposed edits, edit plans, and edit generation failures.
+- Extended `PlannedPatchWorkflow` so `/agent fix` can apply model-generated edits when no manual `replace` instruction is present.
+- Preserved the existing `/agent fix replace <path> <content>` workflow for smoke tests and demos.
+- Added workflow guards so generated edits can only touch fix-plan target files and cannot modify sensitive paths such as `.env`, `.git`, GitHub workflows, or private key files.
+- Added tests for edit-plan parsing, manual replace compatibility, generated edit application, unauthorized paths, sensitive paths, and blank generated content.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=FileEditPlanGeneratorTests,PlannedPatchWorkflowTests,PlanDrivenPatchWorkflowTests test`: first failed because the new edit generator/domain objects did not exist, then passed after implementation, 13 tests run, 0 failures.
+- `mvn -pl PatchPilot -Dtest=FileEditPlanGeneratorTests,PlannedPatchWorkflowTests,PlanDrivenPatchWorkflowTests,PatchPilotApplicationTests test`: passed after Spring bean wiring updates, 20 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed after full backend verification, 484 tests run, 0 failures.
+- `git diff --check`: passed after whitespace verification.
+
 ## 2026-06-18
 
 Initialized the PatchPilot documentation baseline.

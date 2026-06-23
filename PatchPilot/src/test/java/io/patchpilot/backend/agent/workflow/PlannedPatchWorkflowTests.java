@@ -1,8 +1,12 @@
 package io.patchpilot.backend.agent.workflow;
 
 import io.patchpilot.backend.agent.tool.FileWriteTool;
+import io.patchpilot.backend.agent.tool.FileReadTool;
+import io.patchpilot.backend.agent.workflow.domain.FileEditContext;
+import io.patchpilot.backend.agent.workflow.domain.FileEditPlan;
 import io.patchpilot.backend.agent.workflow.domain.FixPlan;
 import io.patchpilot.backend.agent.workflow.domain.PatchWorkflowResult;
+import io.patchpilot.backend.agent.workflow.domain.ProposedFileEdit;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import io.patchpilot.backend.workspace.WorkspacePathResolver;
@@ -25,7 +29,8 @@ class PlannedPatchWorkflowTests {
 
     @Test
     void should_replace_file_when_target_is_authorized_by_fix_plan() throws Exception {
-        PlannedPatchWorkflow workflow = workflow();
+        RecordingFileEditPlanGenerator editPlanGenerator = new RecordingFileEditPlanGenerator(FileEditPlan.empty());
+        PlannedPatchWorkflow workflow = workflow(editPlanGenerator);
 
         PatchWorkflowResult result = workflow.apply(
                 task("/agent fix replace src/main/App.java class App {}"),
@@ -36,21 +41,37 @@ class PlannedPatchWorkflowTests {
         assertThat(result.patchApplied()).isTrue();
         assertThat(result.summary()).isEqualTo("Replaced src/main/App.java from planned instruction");
         assertThat(Files.readString(repositoryDir.resolve("src/main/App.java"))).isEqualTo("class App {}");
+        assertThat(editPlanGenerator.called()).isFalse();
     }
 
     @Test
-    void should_skip_when_comment_has_no_replace_instruction() {
-        PlannedPatchWorkflow workflow = workflow();
+    void should_apply_model_generated_file_edit_when_comment_has_no_replace_instruction() throws Exception {
+        Files.createDirectories(repositoryDir.resolve("src/main"));
+        Files.writeString(repositoryDir.resolve("src/main/App.java"), "class App { int add(int a, int b) { return 0; } }\n");
+        RecordingFileEditPlanGenerator editPlanGenerator = new RecordingFileEditPlanGenerator(new FileEditPlan(List.of(
+                new ProposedFileEdit(
+                        "src/main/App.java",
+                        "class App { int add(int a, int b) { return a + b; } }\n",
+                        "Use the operands from the issue."
+                )
+        )));
+        PlannedPatchWorkflow workflow = workflow(editPlanGenerator);
 
         PatchWorkflowResult result = workflow.apply(task("/agent fix"), repositoryDir, plan("src/main/App.java"));
 
-        assertThat(result.patchApplied()).isFalse();
-        assertThat(result.summary()).isEqualTo("No planned replace instruction found");
+        assertThat(result.patchApplied()).isTrue();
+        assertThat(result.summary()).isEqualTo("Applied 1 model-generated file edit: src/main/App.java");
+        assertThat(Files.readString(repositoryDir.resolve("src/main/App.java"))).contains("return a + b");
+        assertThat(editPlanGenerator.called()).isTrue();
+        assertThat(editPlanGenerator.fileContexts()).containsExactly(new FileEditContext(
+                "src/main/App.java",
+                "class App { int add(int a, int b) { return 0; } }\n"
+        ));
     }
 
     @Test
     void should_reject_replacement_for_file_not_in_fix_plan() {
-        PlannedPatchWorkflow workflow = workflow();
+        PlannedPatchWorkflow workflow = workflow(new RecordingFileEditPlanGenerator(FileEditPlan.empty()));
 
         assertThatThrownBy(() -> workflow.apply(
                 task("/agent fix replace src/main/App.java class App {}"),
@@ -63,7 +84,7 @@ class PlannedPatchWorkflowTests {
 
     @Test
     void should_reject_unsafe_paths_through_workspace_guard() {
-        PlannedPatchWorkflow workflow = workflow();
+        PlannedPatchWorkflow workflow = workflow(new RecordingFileEditPlanGenerator(FileEditPlan.empty()));
 
         assertThatThrownBy(() -> workflow.apply(
                 task("/agent fix replace ../outside.md bad"),
@@ -74,10 +95,52 @@ class PlannedPatchWorkflowTests {
                 .hasMessage("Repository path escapes workspace: ../outside.md");
     }
 
-    private PlannedPatchWorkflow workflow() {
+    @Test
+    void should_reject_model_edit_for_file_not_in_fix_plan() throws Exception {
+        Files.createDirectories(repositoryDir.resolve("src/main"));
+        Files.writeString(repositoryDir.resolve("src/main/Other.java"), "class Other {}\n");
+        RecordingFileEditPlanGenerator editPlanGenerator = new RecordingFileEditPlanGenerator(new FileEditPlan(List.of(
+                new ProposedFileEdit("src/main/App.java", "class App {}", "Change an unapproved file.")
+        )));
+        PlannedPatchWorkflow workflow = workflow(editPlanGenerator);
+
+        assertThatThrownBy(() -> workflow.apply(task("/agent fix"), repositoryDir, plan("src/main/Other.java")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Model edit target is not listed in fix plan: src/main/App.java");
+    }
+
+    @Test
+    void should_reject_sensitive_fix_plan_target_before_model_editing() {
+        PlannedPatchWorkflow workflow = workflow(new RecordingFileEditPlanGenerator(FileEditPlan.empty()));
+
+        assertThatThrownBy(() -> workflow.apply(task("/agent fix"), repositoryDir, plan(".env")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Fix plan target is sensitive and cannot be modified: .env");
+    }
+
+    @Test
+    void should_reject_model_edit_with_blank_content() throws Exception {
+        Files.createDirectories(repositoryDir.resolve("src/main"));
+        Files.writeString(repositoryDir.resolve("src/main/App.java"), "class App {}\n");
+        RecordingFileEditPlanGenerator editPlanGenerator = new RecordingFileEditPlanGenerator(new FileEditPlan(List.of(
+                new ProposedFileEdit("src/main/App.java", "  ", "Empty rewrite would be destructive.")
+        )));
+        PlannedPatchWorkflow workflow = workflow(editPlanGenerator);
+
+        assertThatThrownBy(() -> workflow.apply(task("/agent fix"), repositoryDir, plan("src/main/App.java")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Model edit content must not be blank: src/main/App.java");
+    }
+
+    private PlannedPatchWorkflow workflow(RecordingFileEditPlanGenerator editPlanGenerator) {
         WorkspaceProperties properties = new WorkspaceProperties();
         properties.setRootDir(repositoryDir);
-        return new PlannedPatchWorkflow(new FileWriteTool(new WorkspacePathResolver(properties)));
+        WorkspacePathResolver pathResolver = new WorkspacePathResolver(properties);
+        return new PlannedPatchWorkflow(
+                new FileWriteTool(pathResolver),
+                new FileReadTool(pathResolver),
+                editPlanGenerator
+        );
     }
 
     private static FixPlan plan(String targetFile) {
@@ -104,5 +167,34 @@ class PlannedPatchWorkflowTests {
                 null,
                 Instant.parse("2026-06-18T00:00:00Z")
         );
+    }
+
+    private static final class RecordingFileEditPlanGenerator extends FileEditPlanGenerator {
+
+        private final FileEditPlan fileEditPlan;
+        private boolean called;
+        private List<FileEditContext> fileContexts;
+
+        private RecordingFileEditPlanGenerator(FileEditPlan fileEditPlan) {
+            super(request -> {
+                throw new AssertionError("Model client should not be called by this test double");
+            });
+            this.fileEditPlan = fileEditPlan;
+        }
+
+        @Override
+        public FileEditPlan generateEdits(FixTaskVo task, FixPlan fixPlan, List<FileEditContext> fileContexts) {
+            this.called = true;
+            this.fileContexts = fileContexts;
+            return fileEditPlan;
+        }
+
+        private boolean called() {
+            return called;
+        }
+
+        private List<FileEditContext> fileContexts() {
+            return fileContexts;
+        }
     }
 }
