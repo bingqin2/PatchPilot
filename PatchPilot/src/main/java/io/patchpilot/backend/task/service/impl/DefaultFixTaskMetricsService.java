@@ -16,6 +16,7 @@ import io.patchpilot.backend.task.service.FixTaskModelCallService;
 import io.patchpilot.backend.task.service.FixTaskService;
 import io.patchpilot.backend.task.service.FixTaskTestRunService;
 import io.patchpilot.backend.task.service.FixTaskToolCallService;
+import io.patchpilot.backend.task.service.PatchReviewFailureClassifier;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -33,6 +34,7 @@ public class DefaultFixTaskMetricsService implements FixTaskMetricsService {
             "MAVEN_TESTS",
             "GITHUB_AUTH",
             "MODEL_ERROR",
+            "PATCH_REVIEW_REJECTION",
             "SANDBOX_REJECTION",
             "UNKNOWN"
     );
@@ -203,6 +205,9 @@ public class DefaultFixTaskMetricsService implements FixTaskMetricsService {
             return "UNKNOWN";
         }
         String normalizedReason = failureReason.toLowerCase(Locale.ROOT);
+        if (PatchReviewFailureClassifier.isPatchReviewRejection(failureReason)) {
+            return "PATCH_REVIEW_REJECTION";
+        }
         if (normalizedReason.contains("maven") || normalizedReason.contains("test command") || normalizedReason.contains("tests failed")) {
             return "MAVEN_TESTS";
         }

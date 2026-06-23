@@ -2734,3 +2734,25 @@ Validation:
 - `npm test`: passed after full frontend verification, 110 tests run, 0 failures.
 - `npm run build`: passed after production frontend build verification.
 - `git diff --check`: passed after whitespace verification.
+
+Implemented review rejection recovery from `docs/plans/136-review-rejection-recovery.md`.
+
+Changes:
+
+- Added a shared patch review rejection classifier so comments, reports, and metrics use one durable definition for model patch review blocks.
+- Updated failed task status comments to call out `PATCH_REVIEW_REJECTED` and explain that retry asks the model for a fresh patch.
+- Classified model patch review blocks as `PATCH_REVIEW_REJECTION` in failure-cause metrics instead of generic auth or model failures.
+- Added review gate and recovery guidance to markdown task reports.
+- Added dashboard recovery guidance for rejected patch reviews while preserving the existing retry action for failed tasks.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=IssueCommentToolTests#should_update_failed_status_comment_with_patch_review_recovery_guidance test`: first failed because failed comments used generic failure copy.
+- `mvn -pl PatchPilot -Dtest=DefaultFixTaskMetricsServiceTests#should_summarize_failed_tasks_by_failure_cause test`: first failed because patch review rejection was counted under GitHub auth due the word authentication.
+- `npm test -- --run src/dashboard/components/TaskDetailPanel.test.tsx -t "marks rejected patch reviews as review gate blocks"`: first failed because the dashboard lacked retry regeneration guidance.
+- `mvn -pl PatchPilot -Dtest=IssueCommentToolTests,DefaultFixTaskMetricsServiceTests,TaskControllerTests test`: passed after backend implementation, 75 tests run, 0 failures.
+- `npm test -- --run src/dashboard/components/TaskDetailPanel.test.tsx`: passed after dashboard implementation, 17 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed after full backend verification, 494 tests run, 0 failures.
+- `npm test`: passed after full frontend verification, 110 tests run, 0 failures.
+- `npm run build`: passed after production frontend build verification.
+- `git diff --check`: passed after whitespace verification.

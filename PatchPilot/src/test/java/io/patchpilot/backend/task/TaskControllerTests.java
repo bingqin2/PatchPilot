@@ -1170,6 +1170,8 @@ class TaskControllerTests {
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Decision: `REJECT`")))
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Reason: The proposed patch does not address the failing behavior.")))
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Confidence: `MEDIUM`")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Review gate: `PATCH_REVIEW_REJECTED`")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Recovery: Retry the task to regenerate a new patch; the rejected edit will not be reused.")))
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Required follow-up: Regenerate a focused edit before writing files.")))
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Edited files: `docs/demo.md`, `src/main/App.java`")))
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("## Model Calls")))

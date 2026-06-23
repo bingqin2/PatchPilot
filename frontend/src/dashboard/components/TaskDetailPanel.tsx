@@ -303,6 +303,11 @@ export function TaskDetailPanel({
             </div>
           </div>
           <p>{detail.patchReview.reason}</p>
+          {detail.patchReview.decision === 'REJECT' ? (
+            <p className="patch-review-recovery">
+              Retry regenerates the patch instead of reusing this rejected edit.
+            </p>
+          ) : null}
           {detail.patchReview.requiredFollowUp ? (
             <div className="patch-review-follow-up">
               <span>Required follow-up</span>
