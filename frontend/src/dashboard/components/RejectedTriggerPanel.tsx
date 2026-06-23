@@ -37,6 +37,7 @@ export function RejectedTriggerPanel({
           <article className="rejected-trigger-row" key={trigger.id}>
             <div className="rejected-trigger-main">
               <span className="status-pill status-failed">{trigger.source}</span>
+              <span className="status-pill status-warning">{categoryLabel(trigger.category)}</span>
               <div>
                 <strong>{trigger.triggerComment ?? 'missing trigger comment'}</strong>
                 <span>{repositoryLabel(trigger)}</span>
@@ -76,6 +77,18 @@ function repositoryLabel(trigger: RejectedTriggerAudit) {
   }
   const issue = trigger.issueNumber === null ? '' : ` #${trigger.issueNumber}`;
   return `${trigger.repositoryOwner}/${trigger.repositoryName}${issue}`;
+}
+
+function categoryLabel(category: string | null) {
+  if (!category) {
+    return 'Unknown';
+  }
+  return category
+    .toLowerCase()
+    .split('_')
+    .filter(Boolean)
+    .join(' ')
+    .replace(/^./, (character) => character.toUpperCase());
 }
 
 function taskLink(taskId: string) {

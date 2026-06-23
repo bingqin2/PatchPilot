@@ -2790,3 +2790,25 @@ Validation:
 
 - `mvn -pl PatchPilot -Dtest=GeneratedDiffRiskGateTests,PlannedPatchWorkflowTests,PlanDrivenPatchWorkflowTests,ConfigurationSummaryServiceTests,ConfigurationControllerTests,DemoReadinessServiceTests test`: first failed because the configuration summary and planned workflow tests did not yet share the new policy fields; then passed after backend implementation, 27 tests run, 0 failures.
 - `npm test -- --run src/dashboard/components/ConfigurationPanel.test.tsx src/api.test.ts src/App.test.tsx`: first failed because the configuration panel did not render generated-diff policy state and later because the advisory count changed; then passed after frontend implementation, 75 tests run, 0 failures.
+
+Implemented rejected trigger categories from `docs/plans/139-rejected-trigger-categories.md`.
+
+Changes:
+
+- Added stable rejected-trigger categories for empty or unsupported commands, non-actionable requests, dangerous instructions, user/repository allowlist failures, rate limits, and model-classifier refusals.
+- Extended safety gate, rate-limit, and model trigger decisions to carry a category next to the existing operator-facing reason.
+- Persisted rejected-trigger categories in in-memory and MySQL-backed audit records.
+- Added a Flyway migration for `rejected_trigger_audit.category` plus a category/created index.
+- Included `category` in rejected-trigger API responses.
+- Rendered rejected-trigger category badges in the dashboard so operators can diagnose vague, malicious, unauthorized, blocked, rate-limited, or model-rejected attempts without parsing reason text.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=CommandSafetyGateTests,InMemoryRejectedTriggerAuditServiceTests,MyBatisRejectedTriggerAuditServiceTests test`: first failed because rejected-trigger category fields and constructors did not exist.
+- `npm test -- --run src/dashboard/components/RejectedTriggerPanel.test.tsx src/api.test.ts`: first failed because the API response lacked `category` and the dashboard did not render category badges.
+- `mvn -pl PatchPilot -Dtest=CommandSafetyGateTests,InMemoryRejectedTriggerAuditServiceTests,MyBatisRejectedTriggerAuditServiceTests,RejectedTriggerAuditControllerTests,RejectedTriggerAuditMigrationTests,GitHubWebhookServiceTests,DefaultManualFixTaskServiceTests test`: passed after backend implementation, 46 tests run, 0 failures.
+- `npm test -- --run src/dashboard/components/RejectedTriggerPanel.test.tsx src/api.test.ts`: passed after frontend implementation, 24 tests run, 0 failures.
+- `JAVA_HOME=/Library/Java/JavaVirtualMachines/openjdk-17.jdk/Contents/Home mvn -pl PatchPilot test`: passed after full Java 17 backend verification, 505 tests run, 0 failures.
+- `npm test`: passed after full frontend verification, 111 tests run, 0 failures.
+- `npm run build`: passed after production frontend build verification.
+- `git diff --check`: passed after whitespace verification.

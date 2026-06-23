@@ -30,4 +30,17 @@ public record TriggerIntentDecision(
         }
         return reason;
     }
+
+    public String rejectionCategory() {
+        if (status == TriggerIntentDecisionStatus.NEEDS_CLARIFICATION) {
+            return RejectedTriggerCategory.MODEL_NEEDS_CLARIFICATION;
+        }
+        if (status == TriggerIntentDecisionStatus.REJECTED && reason != null && reason.startsWith("Model trigger classification failed:")) {
+            return RejectedTriggerCategory.MODEL_CLASSIFICATION_FAILED;
+        }
+        if (status == TriggerIntentDecisionStatus.REJECTED) {
+            return RejectedTriggerCategory.MODEL_REJECTED;
+        }
+        return RejectedTriggerCategory.UNKNOWN;
+    }
 }

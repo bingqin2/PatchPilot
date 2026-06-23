@@ -198,7 +198,7 @@ PatchPilot must:
 - Never log secrets.
 - Never report success without verification.
 - Never run a task from an unauthorized user or repository.
-- Reject or ignore unclear, unsupported, or unsafe requests before cloning or model execution.
+- Reject or ignore unclear, unsupported, or unsafe requests before cloning or model execution, and record stable refusal categories for operator diagnosis.
 - Enforce per-user, per-repository, and global rate limits before expensive work starts.
 - Run repository commands with allowlisted command templates, timeouts, resource limits, and no unnecessary secrets.
 - Re-check generated diffs before verification or GitHub writes, and block sensitive files, secret-like additions, binary patches, or overly broad changes.

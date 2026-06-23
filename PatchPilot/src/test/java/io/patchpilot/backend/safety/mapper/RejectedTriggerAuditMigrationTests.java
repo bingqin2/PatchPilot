@@ -51,4 +51,14 @@ class RejectedTriggerAuditMigrationTests {
         assertThat(sql).contains("add column retried_at timestamp(6) null");
         assertThat(sql).contains("idx_rejected_trigger_audit_retried_task");
     }
+
+    @Test
+    void should_add_rejected_trigger_category() throws IOException {
+        String sql = Files.readString(Path.of("src/main/resources/db/migration/V21__add_rejected_trigger_category.sql"))
+                .toLowerCase(Locale.ROOT);
+
+        assertThat(sql).contains("alter table rejected_trigger_audit");
+        assertThat(sql).contains("add column category varchar(64) not null default 'unknown'");
+        assertThat(sql).contains("idx_rejected_trigger_audit_category_created");
+    }
 }

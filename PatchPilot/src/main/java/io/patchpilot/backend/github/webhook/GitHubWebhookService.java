@@ -366,7 +366,8 @@ public class GitHubWebhookService {
                     issueNumber,
                     triggerUser,
                     commentBody,
-                    safetyDecision.reason()
+                    safetyDecision.reason(),
+                    safetyDecision.category()
             );
             recordDelivery(
                     deliveryId,
@@ -436,7 +437,8 @@ public class GitHubWebhookService {
                     issueNumber,
                     triggerUser,
                     commentBody,
-                    rateLimitDecision.reason()
+                    rateLimitDecision.reason(),
+                    rateLimitDecision.category()
             );
             recordDelivery(
                     deliveryId,
@@ -471,7 +473,8 @@ public class GitHubWebhookService {
                     issueNumber,
                     triggerUser,
                     commentBody,
-                    triggerIntentDecision.rejectionReason()
+                    triggerIntentDecision.rejectionReason(),
+                    triggerIntentDecision.rejectionCategory()
             );
             recordDelivery(
                     deliveryId,
@@ -569,7 +572,8 @@ public class GitHubWebhookService {
             long issueNumber,
             String triggerUser,
             String triggerComment,
-            String reason
+            String reason,
+            String category
     ) {
         IssueCommentResult refusalComment = createRefusalComment(
                 repositoryOwner,
@@ -588,6 +592,7 @@ public class GitHubWebhookService {
                 triggerUser,
                 triggerComment,
                 reason,
+                category,
                 refusalComment == null ? null : refusalComment.id(),
                 refusalComment == null ? null : refusalComment.url()
         ));

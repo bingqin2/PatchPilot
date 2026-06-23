@@ -1,6 +1,7 @@
 package io.patchpilot.backend.safety;
 
 import io.patchpilot.backend.safety.config.SafetyProperties;
+import io.patchpilot.backend.safety.domain.RejectedTriggerCategory;
 import io.patchpilot.backend.safety.domain.SafetyGateDecision;
 import io.patchpilot.backend.safety.domain.SafetyGateRequest;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,17 +40,26 @@ public class CommandSafetyGate {
 
     public SafetyGateDecision evaluate(String triggerComment) {
         if (!StringUtils.hasText(triggerComment)) {
-            return SafetyGateDecision.rejected("Unsafe request rejected: empty command");
+            return SafetyGateDecision.rejected(
+                    "Unsafe request rejected: empty command",
+                    RejectedTriggerCategory.EMPTY_COMMAND
+            );
         }
         String normalized = normalize(triggerComment);
         if (!isAgentFixCommand(normalized)) {
-            return SafetyGateDecision.rejected("Unsafe request rejected: unsupported command");
+            return SafetyGateDecision.rejected(
+                    "Unsafe request rejected: unsupported command",
+                    RejectedTriggerCategory.UNSUPPORTED_COMMAND
+            );
         }
         if (containsDangerousInstruction(normalized)) {
-            return SafetyGateDecision.rejected("Unsafe request rejected: destructive or secret-exfiltration instruction");
+            return SafetyGateDecision.rejected(
+                    "Unsafe request rejected: destructive or secret-exfiltration instruction",
+                    RejectedTriggerCategory.DANGEROUS_INSTRUCTION
+            );
         }
         if (!isActionableInstruction(normalized)) {
-            return SafetyGateDecision.rejected(NOT_ACTIONABLE_REASON);
+            return SafetyGateDecision.rejected(NOT_ACTIONABLE_REASON, RejectedTriggerCategory.NOT_ACTIONABLE);
         }
         return SafetyGateDecision.accepted();
     }
@@ -60,10 +70,16 @@ public class CommandSafetyGate {
             return commandDecision;
         }
         if (!isTriggerUserAllowed(request.triggerUser())) {
-            return SafetyGateDecision.rejected("Unsafe request rejected: trigger user is not allowed");
+            return SafetyGateDecision.rejected(
+                    "Unsafe request rejected: trigger user is not allowed",
+                    RejectedTriggerCategory.TRIGGER_USER_NOT_ALLOWED
+            );
         }
         if (!isRepositoryAllowed(request.repositoryOwner(), request.repositoryName())) {
-            return SafetyGateDecision.rejected("Unsafe request rejected: repository is not allowed");
+            return SafetyGateDecision.rejected(
+                    "Unsafe request rejected: repository is not allowed",
+                    RejectedTriggerCategory.REPOSITORY_NOT_ALLOWED
+            );
         }
         return SafetyGateDecision.accepted();
     }

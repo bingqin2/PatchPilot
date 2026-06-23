@@ -47,6 +47,7 @@ class InMemoryRejectedTriggerAuditServiceTests {
                 .extracting(RejectedTriggerAuditVo::deliveryId)
                 .containsExactly("manual-newer", "delivery-older");
         assertThat(audits.get(0).reason()).isEqualTo("Unsafe request rejected: trigger user is not allowed");
+        assertThat(audits.get(0).category()).isEqualTo("TRIGGER_USER_NOT_ALLOWED");
     }
 
     @Test
@@ -122,6 +123,9 @@ class InMemoryRejectedTriggerAuditServiceTests {
                 triggerUser,
                 triggerComment,
                 reason,
+                "Unsafe request rejected: trigger user is not allowed".equals(reason)
+                        ? "TRIGGER_USER_NOT_ALLOWED"
+                        : "DANGEROUS_INSTRUCTION",
                 "manual".equals(source) ? 456L : null,
                 "manual".equals(source) ? "https://github.com/bingqin2/PatchPilot/issues/7#issuecomment-456" : null
         );

@@ -144,7 +144,8 @@ public class DefaultManualFixTaskService implements ManualFixTaskService {
                     command.issueNumber(),
                     command.triggerUser(),
                     command.triggerComment(),
-                    safetyDecision.reason()
+                    safetyDecision.reason(),
+                    safetyDecision.category()
             ));
             throw new IllegalArgumentException(safetyDecision.reason());
         }
@@ -173,7 +174,8 @@ public class DefaultManualFixTaskService implements ManualFixTaskService {
                     command.issueNumber(),
                     command.triggerUser(),
                     command.triggerComment(),
-                    rateLimitDecision.reason()
+                    rateLimitDecision.reason(),
+                    rateLimitDecision.category()
             ));
             throw new IllegalArgumentException(rateLimitDecision.reason());
         }
@@ -197,7 +199,8 @@ public class DefaultManualFixTaskService implements ManualFixTaskService {
                     command.issueNumber(),
                     command.triggerUser(),
                     command.triggerComment(),
-                    triggerIntentDecision.rejectionReason()
+                    triggerIntentDecision.rejectionReason(),
+                    triggerIntentDecision.rejectionCategory()
             ));
             throw new IllegalArgumentException(triggerIntentDecision.rejectionReason());
         }

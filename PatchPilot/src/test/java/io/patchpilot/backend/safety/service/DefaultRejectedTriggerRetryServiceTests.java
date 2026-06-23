@@ -118,6 +118,7 @@ class DefaultRejectedTriggerRetryServiceTests {
                     command.triggerUser(),
                     command.triggerComment(),
                     command.reason(),
+                    command.category(),
                     command.commentId(),
                     command.commentUrl(),
                     Instant.parse("2026-06-21T01:00:00Z").plusSeconds(audits.size())
@@ -151,6 +152,7 @@ class DefaultRejectedTriggerRetryServiceTests {
                             audit.triggerUser(),
                             audit.triggerComment(),
                             audit.reason(),
+                            audit.category(),
                             audit.commentId(),
                             audit.commentUrl(),
                             taskId,

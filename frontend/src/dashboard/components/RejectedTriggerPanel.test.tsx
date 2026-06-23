@@ -23,6 +23,7 @@ test('renders rejected trigger audit rows and retries a rejected trigger', async
           issueNumber: 1,
           triggerUser: 'drive-by-user',
           triggerComment: '/agent fix make it better',
+          category: 'NOT_ACTIONABLE',
           reason: 'Unsafe request rejected: instruction is not actionable',
           commentId: 456,
           commentUrl: 'https://github.com/bingqin2/PatchPilot/issues/1#issuecomment-456',
@@ -41,6 +42,7 @@ test('renders rejected trigger audit rows and retries a rejected trigger', async
   expect(within(panel).getByText('drive-by-user')).toBeInTheDocument();
   expect(within(panel).getByText('delivery-rejected')).toBeInTheDocument();
   expect(within(panel).getByText('Unsafe request rejected: instruction is not actionable')).toBeInTheDocument();
+  expect(within(panel).getByText('Not actionable')).toBeInTheDocument();
   expect(within(panel).getByRole('link', { name: 'Refusal comment' })).toHaveAttribute(
     'href',
     'https://github.com/bingqin2/PatchPilot/issues/1#issuecomment-456'
@@ -103,6 +105,7 @@ test('disables the retry action while retrying a rejected trigger', () => {
           issueNumber: 1,
           triggerUser: 'drive-by-user',
           triggerComment: '/agent fix make it better',
+          category: 'NOT_ACTIONABLE',
           reason: 'Unsafe request rejected: instruction is not actionable',
           commentId: null,
           commentUrl: null,
