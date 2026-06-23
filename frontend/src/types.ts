@@ -311,7 +311,23 @@ export interface FixTaskDetail {
   toolCalls: FixTaskToolCall[];
   modelCalls: FixTaskModelCall[];
   generatedDiff: FixTaskGeneratedDiff | null;
+  issueContext: IssueContext | null;
   repositorySupportGuidance: RepositorySupportGuidance | null;
+}
+
+export interface IssueContext {
+  title: string;
+  body: string;
+  url: string;
+  comments: IssueContextComment[];
+}
+
+export interface IssueContextComment {
+  id: number;
+  author: string;
+  body: string;
+  createdAt: string;
+  url: string;
 }
 
 export interface FixTaskGeneratedDiff {

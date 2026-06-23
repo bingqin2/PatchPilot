@@ -9,6 +9,7 @@ public record FixTaskDetailVo(
         List<FixTaskToolCallVo> toolCalls,
         List<FixTaskModelCallVo> modelCalls,
         FixTaskGeneratedDiffVo generatedDiff,
+        IssueContextVo issueContext,
         FixTaskQueueItemVo queueItem,
         List<FixTaskQueueItemVo> queueItems,
         RepositorySupportGuidanceVo repositorySupportGuidance

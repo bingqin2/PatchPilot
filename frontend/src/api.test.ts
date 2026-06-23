@@ -832,7 +832,22 @@ test('loads aggregate task detail from backend API', async () => {
           toolCallId: 'tool-diff',
           diff: 'diff --git a/docs/demo.md b/docs/demo.md\n+PatchPilot smoke test',
           generatedAt: '2026-06-20T01:00:13Z'
-        }
+        },
+        issueContext: {
+          title: 'PatchPilot issue context',
+          body: 'Use GitHub issue context for the task.',
+          url: 'https://github.com/bingqin2/PatchPilot/issues/1',
+          comments: [
+            {
+              id: 1001,
+              author: 'bingqin2',
+              body: 'This comment should be available in task detail.',
+              createdAt: '2026-06-20T01:00:10Z',
+              url: 'https://github.com/bingqin2/PatchPilot/issues/1#issuecomment-1001'
+            }
+          ]
+        },
+        repositorySupportGuidance: null
       },
       message: null
     })
@@ -852,6 +867,8 @@ test('loads aggregate task detail from backend API', async () => {
   expect(detail.toolCalls).toEqual([]);
   expect(detail.modelCalls).toEqual([]);
   expect(detail.generatedDiff?.diff).toContain('+PatchPilot smoke test');
+  expect(detail.issueContext?.title).toBe('PatchPilot issue context');
+  expect(detail.issueContext?.comments[0].author).toBe('bingqin2');
 });
 
 test('loads markdown task report from backend API', async () => {

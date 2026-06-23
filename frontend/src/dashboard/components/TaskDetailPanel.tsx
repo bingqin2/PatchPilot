@@ -200,6 +200,39 @@ export function TaskDetailPanel({
         </section>
       ) : null}
 
+      {detail.issueContext ? (
+        <section className="detail-section issue-context-section" aria-label="Issue context">
+          <div className="issue-context-header">
+            <div>
+              <h3>Issue context</h3>
+              <p>{detail.issueContext.title}</p>
+            </div>
+            {detail.issueContext.url ? (
+              <a className="external-link" href={detail.issueContext.url} target="_blank" rel="noreferrer">
+                View source
+                <ExternalLink size={14} />
+              </a>
+            ) : null}
+          </div>
+          {detail.issueContext.body ? <p>{shortText(detail.issueContext.body, 280)}</p> : null}
+          <div className="issue-context-comments">
+            <span>{detail.issueContext.comments.length} recent comments</span>
+            {detail.issueContext.comments.slice(0, 3).map((comment) => (
+              <div className="issue-context-comment" key={comment.id}>
+                <strong>{comment.author || 'unknown'}</strong>
+                <p>{shortText(comment.body, 180)}</p>
+                {comment.url ? (
+                  <a href={comment.url} target="_blank" rel="noreferrer">
+                    Comment
+                    <ExternalLink size={12} />
+                  </a>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
       {detail.queueItem ? (
         <div className="queue-detail">
           <div>
@@ -409,6 +442,14 @@ function queueItemDescription(item: TaskDetailState['queueItems'][number]) {
     parts.push(item.lastError);
   }
   return parts.join(' · ');
+}
+
+function shortText(value: string, maxLength: number) {
+  const normalized = value.replace(/\s+/g, ' ').trim();
+  if (normalized.length <= maxLength) {
+    return normalized;
+  }
+  return `${normalized.slice(0, maxLength)}...`;
 }
 
 export function taskLinkFor(taskId: string, href = window.location.href) {

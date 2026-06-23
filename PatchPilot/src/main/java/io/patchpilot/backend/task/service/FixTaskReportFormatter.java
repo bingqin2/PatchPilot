@@ -6,6 +6,8 @@ import io.patchpilot.backend.task.domain.vo.FixTaskTestRunVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskTimelineEventVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskToolCallVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
+import io.patchpilot.backend.task.domain.vo.IssueContextCommentVo;
+import io.patchpilot.backend.task.domain.vo.IssueContextVo;
 import io.patchpilot.backend.task.domain.vo.RepositorySupportGuidanceVo;
 import org.springframework.stereotype.Component;
 
@@ -41,6 +43,7 @@ public class FixTaskReportFormatter {
         }
 
         appendAdapter(report, task);
+        appendIssueContext(report, detail.issueContext());
         appendRepositorySupportGuidance(report, detail.repositorySupportGuidance());
         appendQueue(report, detail);
         appendGeneratedDiff(report, detail);
@@ -49,6 +52,31 @@ public class FixTaskReportFormatter {
         appendToolCalls(report, detail.toolCalls());
         appendModelCalls(report, detail.modelCalls());
         return report.toString();
+    }
+
+    private static void appendIssueContext(StringBuilder report, IssueContextVo issueContext) {
+        if (issueContext == null) {
+            return;
+        }
+
+        report.append("\n## Issue Context\n\n")
+                .append("- Title: ").append(valueOrUnknown(issueContext.title())).append("\n")
+                .append("- URL: ").append(valueOrUnknown(issueContext.url())).append("\n");
+        if (issueContext.body() != null && !issueContext.body().isBlank()) {
+            report.append("- Body: ").append(truncate(issueContext.body(), 300)).append("\n");
+        }
+        report.append("- Recent comments: ").append(issueContext.comments().size()).append("\n");
+        issueContext.comments().stream()
+                .limit(3)
+                .forEach(comment -> appendIssueComment(report, comment));
+    }
+
+    private static void appendIssueComment(StringBuilder report, IssueContextCommentVo comment) {
+        report.append("  - `")
+                .append(valueOrUnknown(comment.author()))
+                .append("`: ")
+                .append(truncate(comment.body(), 180))
+                .append("\n");
     }
 
     private static void appendAdapter(StringBuilder report, FixTaskVo task) {
@@ -191,5 +219,16 @@ public class FixTaskReportFormatter {
 
     private static String valueOrUnknown(String value) {
         return value == null || value.isBlank() ? "unknown" : value;
+    }
+
+    private static String truncate(String value, int maxLength) {
+        if (value == null) {
+            return "";
+        }
+        String normalized = value.replace('\n', ' ').trim();
+        if (normalized.length() <= maxLength) {
+            return normalized;
+        }
+        return normalized.substring(0, maxLength) + "...";
     }
 }

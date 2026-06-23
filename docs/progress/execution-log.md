@@ -2656,3 +2656,22 @@ Validation:
 - `mvn -pl PatchPilot test`: passed after full backend verification, 472 tests run, 0 failures.
 - `npm test`: passed after full frontend verification, 107 tests run, 0 failures.
 - `git diff --check`: passed after whitespace verification.
+
+Implemented issue context ingestion from `docs/plans/132-issue-context-ingestion.md`.
+
+Changes:
+
+- Added a GitHub issue context client/service that reads issue title, body, URL, and recent comments through the configured GitHub token.
+- Loaded issue context during task execution before patch planning and recorded that read as an audited tool call.
+- Passed issue context into the fix-plan prompt so model planning can use the issue body and discussion, not only the `/agent fix` trigger comment.
+- Added issue context to task detail and markdown report responses, with safe fallback when GitHub context cannot be loaded for dashboard inspection.
+- Rendered issue title, source link, body summary, and recent comments in the dashboard task detail panel.
+- Explicitly enabled Maven compiler annotation processing so Lombok-generated methods work under newer JDKs.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=GitHubIssueContextClientTests,IssueContextServiceTests,FixPlanGeneratorTests,PlanDrivenPatchWorkflowTests,WorkspaceFixTaskExecutorTests test`: passed after backend workflow implementation, 22 tests run, 0 failures.
+- `mvn -pl PatchPilot -Dtest=TaskControllerTests test`: passed after task detail/report issue context API implementation, 59 tests run, 0 failures.
+- `npm test -- TaskDetailPanel.test.tsx App.test.tsx api.test.ts`: passed after dashboard issue context rendering, 87 tests run, 0 failures.
+- `npm run build`: passed after frontend type and fixture updates.
+- `mvn -pl PatchPilot test`: passed after webhook test fake issue context service was added, 478 tests run, 0 failures.

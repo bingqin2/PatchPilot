@@ -1,6 +1,9 @@
 package io.patchpilot.backend.task;
 
 import io.patchpilot.backend.common.response.ApiResponse;
+import io.patchpilot.backend.github.IssueContextService;
+import io.patchpilot.backend.github.client.domain.GitHubIssueContext;
+import io.patchpilot.backend.github.client.domain.GitHubIssueContextComment;
 import io.patchpilot.backend.task.domain.bo.ApproveReviewCommand;
 import io.patchpilot.backend.task.domain.bo.CreateManualFixTaskCommand;
 import io.patchpilot.backend.task.domain.bo.FixTaskListQuery;
@@ -23,6 +26,8 @@ import io.patchpilot.backend.task.domain.vo.FixTaskTestRunVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskTimelineEventVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskToolCallVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
+import io.patchpilot.backend.task.domain.vo.IssueContextCommentVo;
+import io.patchpilot.backend.task.domain.vo.IssueContextVo;
 import io.patchpilot.backend.task.service.FixTaskAuditSummaryService;
 import io.patchpilot.backend.task.service.FixTaskControlService;
 import io.patchpilot.backend.task.service.FixTaskMetricsService;
@@ -67,6 +72,7 @@ public class TaskController {
     private final FixTaskReportFormatter fixTaskReportFormatter;
     private final ManualFixTaskService manualFixTaskService;
     private final RepositorySupportGuidanceService repositorySupportGuidanceService;
+    private final IssueContextService issueContextService;
 
     @PostMapping
     public ResponseEntity<ApiResponse<FixTaskVo>> createTask(@RequestBody CreateFixTaskDto request) {
@@ -523,9 +529,39 @@ public class TaskController {
                 toolCalls,
                 fixTaskModelCallService.listModelCalls(taskId),
                 latestGeneratedDiff(toolCalls),
+                issueContext(summary.task()),
                 queueItems.stream().findFirst().orElse(null),
                 queueItems,
                 repositorySupportGuidanceService.guidanceFor(summary.task()).orElse(null)
+        );
+    }
+
+    private IssueContextVo issueContext(FixTaskVo task) {
+        try {
+            return toIssueContextVo(issueContextService.loadIssueContext(task));
+        } catch (RuntimeException exception) {
+            return null;
+        }
+    }
+
+    private static IssueContextVo toIssueContextVo(GitHubIssueContext context) {
+        return new IssueContextVo(
+                context.title(),
+                context.body(),
+                context.url(),
+                context.comments().stream()
+                        .map(TaskController::toIssueContextCommentVo)
+                        .toList()
+        );
+    }
+
+    private static IssueContextCommentVo toIssueContextCommentVo(GitHubIssueContextComment comment) {
+        return new IssueContextCommentVo(
+                comment.id(),
+                comment.author(),
+                comment.body(),
+                comment.createdAt(),
+                comment.url()
         );
     }
 

@@ -1,6 +1,12 @@
 package io.patchpilot.backend.task;
 
 import com.jayway.jsonpath.JsonPath;
+import io.patchpilot.backend.github.IssueContextService;
+import io.patchpilot.backend.github.client.GitHubIssueContextClient;
+import io.patchpilot.backend.github.client.domain.GetIssueContextCommand;
+import io.patchpilot.backend.github.client.domain.GitHubIssueContext;
+import io.patchpilot.backend.github.client.domain.GitHubIssueContextComment;
+import io.patchpilot.backend.github.config.GitHubProperties;
 import io.patchpilot.backend.task.domain.bo.CreateFixTaskCommand;
 import io.patchpilot.backend.task.domain.enums.FixTaskQueueItemStatus;
 import io.patchpilot.backend.task.domain.enums.FixTaskTimelineEventType;
@@ -956,6 +962,12 @@ class TaskControllerTests {
                 .andExpect(jsonPath("$.data.testRuns[0].id").value(testRun.id()))
                 .andExpect(jsonPath("$.data.toolCalls[0].id").value(toolCall.id()))
                 .andExpect(jsonPath("$.data.modelCalls[0].id").value(modelCall.id()))
+                .andExpect(jsonPath("$.data.issueContext.title").value("Issue context fixture title"))
+                .andExpect(jsonPath("$.data.issueContext.url").value("https://github.com/octocat/hello-world/issues/42"))
+                .andExpect(jsonPath("$.data.issueContext.body").value("Issue context fixture body"))
+                .andExpect(jsonPath("$.data.issueContext.comments.length()").value(1))
+                .andExpect(jsonPath("$.data.issueContext.comments[0].author").value("alice"))
+                .andExpect(jsonPath("$.data.issueContext.comments[0].body").value("Please verify the failing path."))
                 .andExpect(jsonPath("$.data.queueItem.id").value("queue-detail-latest"))
                 .andExpect(jsonPath("$.data.queueItem.taskId").value(task.id()))
                 .andExpect(jsonPath("$.data.queueItem.status").value("FAILED"))
@@ -1112,6 +1124,10 @@ class TaskControllerTests {
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Build system: `maven`")))
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Verification: `./mvnw test`")))
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Detection reason: pom.xml detected with mvnw wrapper")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("## Issue Context")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Title: Issue context fixture title")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- URL: https://github.com/octocat/hello-world/issues/42")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Recent comments: 1")))
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("## Queue")))
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Latest: `FAILED`, attempt 2")))
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("## Test Runs")))
@@ -1498,6 +1514,36 @@ class TaskControllerTests {
         FixTaskDispatcher recordingFixTaskDispatcher() {
             return taskId -> {
             };
+        }
+
+        @org.springframework.context.annotation.Bean
+        @org.springframework.context.annotation.Primary
+        IssueContextService recordingIssueContextService() {
+            return new IssueContextService(new GitHubIssueContextClient(new GitHubProperties()) {
+                @Override
+                public GitHubIssueContext getIssueContext(GetIssueContextCommand command) {
+                    return new GitHubIssueContext(
+                            "Issue context fixture title",
+                            "Issue context fixture body",
+                            "https://github.com/%s/%s/issues/%d".formatted(
+                                    command.owner(),
+                                    command.repository(),
+                                    command.issueNumber()
+                            ),
+                            List.of(new GitHubIssueContextComment(
+                                    1001,
+                                    "alice",
+                                    "Please verify the failing path.",
+                                    "2026-06-20T06:00:00Z",
+                                    "https://github.com/%s/%s/issues/%d#issuecomment-1001".formatted(
+                                            command.owner(),
+                                            command.repository(),
+                                            command.issueNumber()
+                                    )
+                            ))
+                    );
+                }
+            });
         }
     }
 

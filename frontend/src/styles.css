@@ -1502,6 +1502,72 @@ h3 {
   font-size: 13px;
 }
 
+.issue-context-section {
+  display: grid;
+  gap: 12px;
+}
+
+.issue-context-section > p {
+  color: #52606e;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.issue-context-header {
+  align-items: start;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+}
+
+.issue-context-header p {
+  color: #202b36;
+  font-size: 14px;
+  font-weight: 800;
+  margin-top: 3px;
+}
+
+.issue-context-comments {
+  display: grid;
+  gap: 8px;
+}
+
+.issue-context-comments > span {
+  color: #637181;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.issue-context-comment {
+  background: #f8fafb;
+  border: 1px solid #dfe6ec;
+  border-radius: 6px;
+  display: grid;
+  gap: 5px;
+  padding: 10px;
+}
+
+.issue-context-comment strong {
+  color: #202b36;
+  font-size: 13px;
+}
+
+.issue-context-comment p {
+  color: #52606e;
+  font-size: 13px;
+}
+
+.issue-context-comment a {
+  align-items: center;
+  color: #2563eb;
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 800;
+  gap: 4px;
+  text-decoration: none;
+}
+
 .repository-support-guidance {
   background: #fffaf5;
   display: grid;

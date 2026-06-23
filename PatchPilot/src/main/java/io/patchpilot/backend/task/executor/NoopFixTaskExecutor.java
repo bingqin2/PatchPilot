@@ -5,7 +5,12 @@ import io.patchpilot.backend.agent.tool.DiffTool;
 import io.patchpilot.backend.agent.tool.PullRequestTool;
 import io.patchpilot.backend.agent.tool.PushTool;
 import io.patchpilot.backend.agent.workflow.PatchWorkflow;
+import io.patchpilot.backend.github.IssueContextService;
+import io.patchpilot.backend.github.client.GitHubIssueContextClient;
+import io.patchpilot.backend.github.client.domain.GetIssueContextCommand;
+import io.patchpilot.backend.github.client.domain.GitHubIssueContext;
 import io.patchpilot.backend.github.client.domain.PullRequestResult;
+import io.patchpilot.backend.github.config.GitHubProperties;
 import io.patchpilot.backend.language.LanguageAdapterRegistry;
 import io.patchpilot.backend.language.domain.LanguageDetectionResult;
 import io.patchpilot.backend.runner.domain.vo.TestRunResult;
@@ -37,6 +42,7 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
     private final CommitTool commitTool;
     private final PushTool pushTool;
     private final PullRequestTool pullRequestTool;
+    private final IssueContextService issueContextService;
     private final GeneratedDiffRiskGate generatedDiffRiskGate;
     private final FixTaskAdapterMetadataRecorder adapterMetadataRecorder;
     private final FixTaskTestRunService fixTaskTestRunService;
@@ -65,6 +71,7 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
                 pushTool,
                 pullRequestTool,
                 new GeneratedDiffRiskGate(),
+                defaultIssueContextService(),
                 FixTaskAdapterMetadataRecorder.NOOP,
                 fixTaskTestRunService,
                 fixTaskToolCallService,
@@ -95,7 +102,41 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
                 pushTool,
                 pullRequestTool,
                 new GeneratedDiffRiskGate(),
+                defaultIssueContextService(),
                 FixTaskAdapterMetadataRecorder.NOOP,
+                fixTaskTestRunService,
+                fixTaskToolCallService,
+                taskCancellationChecker
+        );
+    }
+
+    public NoopFixTaskExecutor(
+            WorkspaceService workspaceService,
+            LanguageAdapterRegistry languageAdapterRegistry,
+            VerificationRunner verificationRunner,
+            PatchWorkflow patchWorkflow,
+            DiffTool diffTool,
+            CommitTool commitTool,
+            PushTool pushTool,
+            PullRequestTool pullRequestTool,
+            IssueContextService issueContextService,
+            FixTaskAdapterMetadataRecorder adapterMetadataRecorder,
+            FixTaskTestRunService fixTaskTestRunService,
+            FixTaskToolCallService fixTaskToolCallService,
+            TaskCancellationChecker taskCancellationChecker
+    ) {
+        this(
+                workspaceService,
+                languageAdapterRegistry,
+                verificationRunner,
+                patchWorkflow,
+                diffTool,
+                commitTool,
+                pushTool,
+                pullRequestTool,
+                generatedDiffRiskGate(),
+                issueContextService,
+                adapterMetadataRecorder,
                 fixTaskTestRunService,
                 fixTaskToolCallService,
                 taskCancellationChecker
@@ -126,6 +167,7 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
                 pushTool,
                 pullRequestTool,
                 generatedDiffRiskGate(),
+                defaultIssueContextService(),
                 adapterMetadataRecorder,
                 fixTaskTestRunService,
                 fixTaskToolCallService,
@@ -158,6 +200,7 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
                 pushTool,
                 pullRequestTool,
                 generatedDiffRiskGate,
+                defaultIssueContextService(),
                 adapterMetadataRecorder,
                 fixTaskTestRunService,
                 fixTaskToolCallService,
@@ -176,6 +219,7 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
             PushTool pushTool,
             PullRequestTool pullRequestTool,
             GeneratedDiffRiskGate generatedDiffRiskGate,
+            IssueContextService issueContextService,
             FixTaskAdapterMetadataRecorder adapterMetadataRecorder,
             FixTaskTestRunService fixTaskTestRunService,
             FixTaskToolCallService fixTaskToolCallService,
@@ -189,6 +233,7 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
         this.commitTool = commitTool;
         this.pushTool = pushTool;
         this.pullRequestTool = pullRequestTool;
+        this.issueContextService = issueContextService;
         this.generatedDiffRiskGate = generatedDiffRiskGate;
         this.adapterMetadataRecorder = adapterMetadataRecorder;
         this.fixTaskTestRunService = fixTaskTestRunService;
@@ -207,6 +252,15 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
                 List.of("./mvnw", "test"),
                 "Assumed Java/Maven project for direct executor construction"
         )));
+    }
+
+    private static IssueContextService defaultIssueContextService() {
+        return new IssueContextService(new GitHubIssueContextClient(new GitHubProperties()) {
+            @Override
+            public GitHubIssueContext getIssueContext(GetIssueContextCommand command) {
+                return new GitHubIssueContext("", "", "", List.of());
+            }
+        });
     }
 
     @Override
@@ -325,6 +379,17 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
     }
 
     private void generateAndRiskCheckDiff(FixTaskVo task, PreparedWorkspaceResult preparedWorkspace) {
+        GitHubIssueContext issueContext = auditToolCall(
+                task.id(),
+                "IssueContextService",
+                "repository=%s/%s, issueNumber=%d".formatted(
+                        task.repositoryOwner(),
+                        task.repositoryName(),
+                        task.issueNumber()
+                ),
+                () -> issueContextService.loadIssueContext(task),
+                context -> "title=%s, comments=%d".formatted(context.title(), context.comments().size())
+        );
         auditToolCall(
                 task.id(),
                 "PatchWorkflow",
@@ -332,7 +397,7 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
                         preparedWorkspace.repositoryDir(),
                         task.triggerComment()
                 ),
-                () -> patchWorkflow.apply(task, preparedWorkspace.repositoryDir()).summary()
+                () -> patchWorkflow.apply(task, preparedWorkspace.repositoryDir(), issueContext).summary()
         );
         taskCancellationChecker.throwIfCancelled(task.id());
         String diff = auditToolCall(
