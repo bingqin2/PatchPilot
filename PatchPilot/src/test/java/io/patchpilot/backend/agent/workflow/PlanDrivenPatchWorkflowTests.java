@@ -1,6 +1,8 @@
 package io.patchpilot.backend.agent.workflow;
 
 import io.patchpilot.backend.agent.tool.FileWriteTool;
+import io.patchpilot.backend.agent.tool.FileReadTool;
+import io.patchpilot.backend.agent.workflow.domain.FileEditPlan;
 import io.patchpilot.backend.agent.workflow.domain.FixPlan;
 import io.patchpilot.backend.agent.workflow.domain.PatchWorkflowResult;
 import io.patchpilot.backend.github.client.domain.GitHubIssueContext;
@@ -82,7 +84,12 @@ class PlanDrivenPatchWorkflowTests {
     private PlannedPatchWorkflow plannedPatchWorkflow() {
         WorkspaceProperties properties = new WorkspaceProperties();
         properties.setRootDir(repositoryDir);
-        return new PlannedPatchWorkflow(new FileWriteTool(new WorkspacePathResolver(properties)));
+        WorkspacePathResolver pathResolver = new WorkspacePathResolver(properties);
+        return new PlannedPatchWorkflow(
+                new FileWriteTool(pathResolver),
+                new FileReadTool(pathResolver),
+                new RecordingFileEditPlanGenerator(FileEditPlan.empty())
+        );
     }
 
     private static FixPlan plan(String targetFile) {
@@ -166,7 +173,7 @@ class PlanDrivenPatchWorkflowTests {
         private int callOrder;
 
         private RecordingPlannedPatchWorkflow(PatchWorkflowResult result) {
-            super(null);
+            super(null, null, null);
             this.result = result;
         }
 
@@ -203,6 +210,15 @@ class PlanDrivenPatchWorkflowTests {
         private static int next() {
             next += 1;
             return next;
+        }
+    }
+
+    private static final class RecordingFileEditPlanGenerator extends FileEditPlanGenerator {
+
+        private RecordingFileEditPlanGenerator(FileEditPlan fileEditPlan) {
+            super(request -> {
+                throw new AssertionError("Model client should not be called by this test double");
+            });
         }
     }
 }
