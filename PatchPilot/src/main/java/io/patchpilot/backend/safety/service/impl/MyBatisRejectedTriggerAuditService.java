@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -42,5 +43,11 @@ public class MyBatisRejectedTriggerAuditService implements RejectedTriggerAuditS
                 .sorted(Comparator.comparing(RejectedTriggerAuditEntity::getCreatedAt).reversed())
                 .map(RejectedTriggerAuditConvert::toVo)
                 .toList();
+    }
+
+    @Override
+    public Optional<RejectedTriggerAuditVo> findRejectedTrigger(String id) {
+        RejectedTriggerAuditEntity entity = auditMapper.selectById(id);
+        return Optional.ofNullable(entity).map(RejectedTriggerAuditConvert::toVo);
     }
 }

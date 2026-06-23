@@ -11,6 +11,7 @@ import {
   listLanguageAdapterFixtures,
   listLanguageAdapters,
   listRejectedTriggers,
+  retryRejectedTrigger,
   getDemoReadiness,
   getTaskReport,
   getTaskDetail,
@@ -252,6 +253,46 @@ test('lists recent rejected triggers through backend API', async () => {
   expect(rejectedTriggers[0].reason).toBe('Unsafe request rejected: instruction is not actionable');
   expect(rejectedTriggers[0].triggerComment).toBe('/agent fix make it better');
   expect(rejectedTriggers[0].commentUrl).toBe('https://github.com/bingqin2/PatchPilot/issues/1#issuecomment-456');
+});
+
+test('retries a rejected trigger through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 201,
+    json: async () => ({
+      success: true,
+      data: {
+        id: 'task-from-rejected-1',
+        repositoryOwner: 'bingqin2',
+        repositoryName: 'PatchPilot',
+        issueNumber: 1,
+        installationId: 0,
+        triggerUser: 'drive-by-user',
+        triggerComment: '/agent fix touch docs/retry.md',
+        deliveryId: 'manual-retry-1',
+        commentId: 0,
+        status: 'PENDING',
+        failureReason: null,
+        createdAt: '2026-06-23T01:06:00Z',
+        pullRequestUrl: null,
+        completedAt: null,
+        updatedAt: '2026-06-23T01:06:00Z',
+        language: null,
+        buildSystem: null,
+        verificationCommand: null,
+        adapterDetectionReason: null,
+        statusCommentId: null,
+        statusCommentUrl: null
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const task = await retryRejectedTrigger('rejected-1');
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/rejected-triggers/rejected-1/retry', { method: 'POST' });
+  expect(task.id).toBe('task-from-rejected-1');
 });
 
 test('builds backend task status count query parameters without status or pagination', async () => {

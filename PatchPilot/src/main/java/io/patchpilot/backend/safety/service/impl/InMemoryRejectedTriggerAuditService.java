@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -44,5 +45,12 @@ public class InMemoryRejectedTriggerAuditService implements RejectedTriggerAudit
                 .sorted(Comparator.comparing(RejectedTriggerAuditVo::createdAt).reversed())
                 .limit(limit)
                 .toList();
+    }
+
+    @Override
+    public Optional<RejectedTriggerAuditVo> findRejectedTrigger(String id) {
+        return audits.stream()
+                .filter(audit -> audit.id().equals(id))
+                .findFirst();
     }
 }

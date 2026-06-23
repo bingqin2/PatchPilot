@@ -23,6 +23,7 @@ import {
   listRejectedTriggers,
   listWebhookDeliveries,
   listTasks,
+  retryRejectedTrigger,
   retryTask
 } from './api';
 import { AdapterFixtureVerificationPanel } from './dashboard/components/AdapterFixtureVerificationPanel';
@@ -121,6 +122,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
   const [actionTaskId, setActionTaskId] = useState<string | null>(null);
+  const [retryingRejectedTriggerId, setRetryingRejectedTriggerId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [adminTokenInput, setAdminTokenInput] = useState('');
   const [dashboardAdminTokenInput, setDashboardAdminTokenInput] = useState(initialStoredAdminToken);
@@ -503,6 +505,21 @@ export default function App() {
     }
   }, [refresh]);
 
+  const handleRetryRejectedTrigger = useCallback(async (rejectedTriggerId: string) => {
+    setRetryingRejectedTriggerId(rejectedTriggerId);
+    setError(null);
+    try {
+      const task = await retryRejectedTrigger(rejectedTriggerId);
+      setSelectedTaskId(task.id);
+      writeTaskIdToUrl(task.id);
+      await refresh();
+    } catch (caught) {
+      setError(errorMessage(caught));
+    } finally {
+      setRetryingRejectedTriggerId(null);
+    }
+  }, [refresh]);
+
   const handleApproveReview = useCallback(async (taskId: string, input: ApproveReviewInput) => {
     setActionTaskId(taskId);
     setError(null);
@@ -763,7 +780,12 @@ export default function App() {
 
       <WebhookDeliveryPanel deliveries={webhookDeliveries} error={webhookDeliveryError} />
 
-      <RejectedTriggerPanel rejectedTriggers={rejectedTriggers} error={rejectedTriggerError} />
+      <RejectedTriggerPanel
+        rejectedTriggers={rejectedTriggers}
+        error={rejectedTriggerError}
+        retryingRejectedTriggerId={retryingRejectedTriggerId}
+        onRetryRejectedTrigger={handleRetryRejectedTrigger}
+      />
     </main>
   );
 }

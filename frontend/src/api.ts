@@ -164,6 +164,10 @@ export async function listRejectedTriggers(limit = 20): Promise<RejectedTriggerA
   return getApi<RejectedTriggerAudit[]>(`/api/rejected-triggers?limit=${limit}`);
 }
 
+export async function retryRejectedTrigger(rejectedTriggerId: string): Promise<FixTask> {
+  return postApi<FixTask>(`/api/rejected-triggers/${encodeURIComponent(rejectedTriggerId)}/retry`);
+}
+
 export async function getTaskSummary(taskId: string): Promise<FixTaskAuditSummary> {
   return getApi<FixTaskAuditSummary>(`/api/tasks/${taskId}/summary`);
 }

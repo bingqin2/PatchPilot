@@ -2,6 +2,9 @@ package io.patchpilot.backend.safety;
 
 import io.patchpilot.backend.safety.domain.RejectedTriggerAuditVo;
 import io.patchpilot.backend.safety.service.RejectedTriggerAuditService;
+import io.patchpilot.backend.safety.service.RejectedTriggerRetryService;
+import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
+import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -13,6 +16,7 @@ import java.util.List;
 
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -24,6 +28,9 @@ class RejectedTriggerAuditControllerTests {
 
     @MockitoBean
     private RejectedTriggerAuditService auditService;
+
+    @MockitoBean
+    private RejectedTriggerRetryService retryService;
 
     @Test
     void should_list_rejected_trigger_audits() throws Exception {
@@ -66,5 +73,52 @@ class RejectedTriggerAuditControllerTests {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.message").value("limit must be between 1 and 100"));
+    }
+
+    @Test
+    void should_retry_rejected_trigger_as_manual_task() throws Exception {
+        when(retryService.retryRejectedTrigger("audit-123")).thenReturn(new FixTaskVo(
+                "task-123",
+                "octocat",
+                "hello-world",
+                42,
+                0,
+                "alice",
+                "/agent fix touch docs/retry.md",
+                "manual-retry-audit-123",
+                0,
+                FixTaskStatus.PENDING,
+                null,
+                Instant.parse("2026-06-21T02:00:00Z"),
+                null,
+                null,
+                Instant.parse("2026-06-21T02:00:00Z"),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+        ));
+
+        mockMvc.perform(post("/api/rejected-triggers/audit-123/retry"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value("task-123"))
+                .andExpect(jsonPath("$.data.repositoryOwner").value("octocat"))
+                .andExpect(jsonPath("$.data.repositoryName").value("hello-world"))
+                .andExpect(jsonPath("$.data.issueNumber").value(42))
+                .andExpect(jsonPath("$.data.triggerComment").value("/agent fix touch docs/retry.md"));
+    }
+
+    @Test
+    void should_return_not_found_when_retrying_unknown_rejected_trigger() throws Exception {
+        when(retryService.retryRejectedTrigger("missing-audit"))
+                .thenThrow(new RejectedTriggerRetryService.RejectedTriggerNotFoundException("Rejected trigger not found"));
+
+        mockMvc.perform(post("/api/rejected-triggers/missing-audit/retry"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("Rejected trigger not found"));
     }
 }
