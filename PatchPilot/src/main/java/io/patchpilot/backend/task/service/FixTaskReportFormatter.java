@@ -6,6 +6,7 @@ import io.patchpilot.backend.task.domain.vo.FixTaskTestRunVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskTimelineEventVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskToolCallVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
+import io.patchpilot.backend.task.domain.vo.RepositorySupportGuidanceVo;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -40,6 +41,7 @@ public class FixTaskReportFormatter {
         }
 
         appendAdapter(report, task);
+        appendRepositorySupportGuidance(report, detail.repositorySupportGuidance());
         appendQueue(report, detail);
         appendGeneratedDiff(report, detail);
         appendTimeline(report, detail.timeline());
@@ -72,6 +74,31 @@ public class FixTaskReportFormatter {
         if (task.adapterDetectionReason() != null) {
             report.append("- Detection reason: ").append(task.adapterDetectionReason()).append("\n");
         }
+    }
+
+    private static void appendRepositorySupportGuidance(StringBuilder report, RepositorySupportGuidanceVo guidance) {
+        if (guidance == null) {
+            return;
+        }
+
+        report.append("\n## Repository Support Guidance\n\n")
+                .append("- Status: `").append(guidance.status()).append("`\n")
+                .append("- Reason: ").append(guidance.reason()).append("\n")
+                .append("- Action: ").append(guidance.operatorAction()).append("\n")
+                .append("- Supported adapters:\n");
+        guidance.supportedAdapters().forEach(adapter -> report.append("  - `")
+                .append(adapter.language())
+                .append("/")
+                .append(adapter.buildSystem())
+                .append("`: verify `")
+                .append(String.join(" ", adapter.verificationCommand()))
+                .append("`, signals ")
+                .append(formatSignals(adapter.detectionSignals()))
+                .append("\n"));
+    }
+
+    private static String formatSignals(List<String> signals) {
+        return "`" + String.join("`, `", signals) + "`";
     }
 
     private static void appendQueue(StringBuilder report, FixTaskDetailVo detail) {

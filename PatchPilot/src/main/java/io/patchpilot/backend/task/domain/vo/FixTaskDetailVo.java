@@ -10,6 +10,7 @@ public record FixTaskDetailVo(
         List<FixTaskModelCallVo> modelCalls,
         FixTaskGeneratedDiffVo generatedDiff,
         FixTaskQueueItemVo queueItem,
-        List<FixTaskQueueItemVo> queueItems
+        List<FixTaskQueueItemVo> queueItems,
+        RepositorySupportGuidanceVo repositorySupportGuidance
 ) {
 }

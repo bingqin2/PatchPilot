@@ -216,6 +216,34 @@ export function TaskDetailPanel({
         </div>
       ) : null}
 
+      {detail.repositorySupportGuidance ? (
+        <section
+          className="detail-section repository-support-guidance"
+          aria-label="Repository support guidance"
+        >
+          <div className="repository-support-header">
+            <div>
+              <h3>Repository support guidance</h3>
+              <p>{detail.repositorySupportGuidance.reason}</p>
+            </div>
+            <strong>{detail.repositorySupportGuidance.status}</strong>
+          </div>
+          <p>{detail.repositorySupportGuidance.operatorAction}</p>
+          <div className="repository-support-adapters">
+            {detail.repositorySupportGuidance.supportedAdapters.map((adapter) => (
+              <div
+                className="repository-support-adapter"
+                key={`${adapter.language}-${adapter.buildSystem}`}
+              >
+                <strong>{adapter.language} / {adapter.buildSystem}</strong>
+                <span>{adapter.verificationCommand.join(' ')}</span>
+                <p>{adapter.detectionSignals.join(', ')}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
       {detail.summary?.latestTimelineEvent ? (
         <div className="latest-event">
           <span>Latest event</span>

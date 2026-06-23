@@ -1016,6 +1016,27 @@ class TaskControllerTests {
     }
 
     @Test
+    void should_include_repository_support_guidance_for_unsupported_task_detail() throws Exception {
+        FixTaskVo task = createTask("delivery-unsupported-detail");
+        fixTaskService.markFailed(task.id(), "Unsupported repository: no supported language adapter detected");
+
+        mockMvc.perform(get("/api/tasks/{id}/detail", task.id()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.repositorySupportGuidance.status").value("UNSUPPORTED"))
+                .andExpect(jsonPath("$.data.repositorySupportGuidance.reason")
+                        .value("Unsupported repository: no supported language adapter detected"))
+                .andExpect(jsonPath("$.data.repositorySupportGuidance.operatorAction")
+                        .value("Add one supported project marker and deterministic test command, then trigger /agent fix again. PatchPilot will not run arbitrary commands for unsupported repositories."))
+                .andExpect(jsonPath("$.data.repositorySupportGuidance.supportedAdapters.length()")
+                        .value(greaterThanOrEqualTo(10)))
+                .andExpect(jsonPath("$.data.repositorySupportGuidance.supportedAdapters[0].language").value("java"))
+                .andExpect(jsonPath("$.data.repositorySupportGuidance.supportedAdapters[0].buildSystem").value("maven"))
+                .andExpect(jsonPath("$.data.repositorySupportGuidance.supportedAdapters[0].verificationCommand[0]").value("mvn"))
+                .andExpect(jsonPath("$.data.repositorySupportGuidance.supportedAdapters[0].detectionSignals[0]").value("pom.xml"));
+    }
+
+    @Test
     void should_get_task_report_by_task_id() throws Exception {
         FixTaskVo task = createTask("delivery-report");
         fixTaskService.recordAdapterMetadata(
@@ -1102,6 +1123,22 @@ class TaskControllerTests {
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("+PatchPilot report diff")))
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("## Model Calls")))
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- `gpt-5.5` -> success, 200 tokens")));
+    }
+
+    @Test
+    void should_include_repository_support_guidance_in_task_report() throws Exception {
+        FixTaskVo task = createTask("delivery-unsupported-report");
+        fixTaskService.markFailed(task.id(), "Unsupported repository: no supported language adapter detected");
+
+        mockMvc.perform(get("/api/tasks/{id}/report", task.id()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("## Repository Support Guidance")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Status: `UNSUPPORTED`")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Reason: Unsupported repository: no supported language adapter detected")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Action: Add one supported project marker and deterministic test command, then trigger /agent fix again. PatchPilot will not run arbitrary commands for unsupported repositories.")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- `java/maven`: verify `mvn test`, signals `pom.xml`, `mvnw`")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- `go/go`: verify `go test ./...`, signals `go.mod`, `*_test.go`")));
     }
 
     @Test

@@ -2587,3 +2587,17 @@ Validation:
 - `npm run build`: passed after production frontend build.
 - `git diff --check`: passed after whitespace verification.
 - Conflict-marker scan over README, product docs, plan, progress log, demo fixtures, backend sources, backend tests, and frontend sources: no conflict markers found.
+
+Implemented unsupported repository guidance from `docs/plans/128-unsupported-repository-guidance.md`.
+
+Changes:
+
+- Added structured `repositorySupportGuidance` to task detail responses when a task fails with an unsupported repository reason.
+- Reused the existing supported adapter catalog so guidance automatically lists current languages, build systems, verification commands, and detection signals.
+- Added a `Repository Support Guidance` section to copied task reports for unsupported repository failures.
+- Added a dashboard task detail guidance panel that explains why PatchPilot refused to execute and which supported project markers/tests to add before retrying.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=TaskControllerTests test`: first failed because task detail and report did not expose repository support guidance; then passed after backend implementation, 59 tests run, 0 failures.
+- `npm test -- TaskDetailPanel.test.tsx`: first failed because no accessible repository support guidance panel existed; then passed after frontend implementation, 14 tests run, 0 failures.
