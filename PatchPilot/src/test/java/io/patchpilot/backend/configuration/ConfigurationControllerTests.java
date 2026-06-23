@@ -74,6 +74,8 @@ class ConfigurationControllerTests {
                 .andExpect(jsonPath("$.data.triggerUserAllowlistConfigured").value(true))
                 .andExpect(jsonPath("$.data.repositoryAllowlistConfigured").value(true))
                 .andExpect(jsonPath("$.data.reviewApprovalAllowlistConfigured").value(true))
+                .andExpect(jsonPath("$.data.generatedDiffRiskGateEnabled").value(true))
+                .andExpect(jsonPath("$.data.generatedDiffProtectedPathCount").value(15))
                 .andExpect(jsonPath("$.data.allowedTriggerUsers[0]").value("bingqin2"))
                 .andExpect(jsonPath("$.data.allowedTriggerUsers[1]").value("local-operator"))
                 .andExpect(jsonPath("$.data.allowedRepositories[0]").value("bingqin2/PatchPilot"))

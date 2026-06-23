@@ -655,6 +655,8 @@ const configurationSummary = {
   triggerUserAllowlistConfigured: true,
   repositoryAllowlistConfigured: true,
   reviewApprovalAllowlistConfigured: true,
+  generatedDiffRiskGateEnabled: true,
+  generatedDiffProtectedPathCount: 15,
   allowedTriggerUsers: ['bingqin2', 'local-operator'],
   allowedRepositories: ['bingqin2/PatchPilot'],
   reviewApprovalAllowedOperators: ['release-captain', 'local-operator']

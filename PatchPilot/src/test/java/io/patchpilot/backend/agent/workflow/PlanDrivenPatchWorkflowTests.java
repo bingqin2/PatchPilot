@@ -8,6 +8,7 @@ import io.patchpilot.backend.agent.workflow.domain.PatchWorkflowResult;
 import io.patchpilot.backend.agent.workflow.domain.PatchReview;
 import io.patchpilot.backend.agent.workflow.domain.PatchReviewDecision;
 import io.patchpilot.backend.github.client.domain.GitHubIssueContext;
+import io.patchpilot.backend.safety.GeneratedDiffSafetyPolicy;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.vo.FixTaskPatchReviewVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
@@ -95,7 +96,8 @@ class PlanDrivenPatchWorkflowTests {
                 new FileReadTool(pathResolver),
                 new RecordingFileEditPlanGenerator(FileEditPlan.empty()),
                 new RecordingPatchReviewGenerator(),
-                new NoOpFixTaskPatchReviewService()
+                new NoOpFixTaskPatchReviewService(),
+                new GeneratedDiffSafetyPolicy()
         );
     }
 
@@ -180,7 +182,7 @@ class PlanDrivenPatchWorkflowTests {
         private int callOrder;
 
         private RecordingPlannedPatchWorkflow(PatchWorkflowResult result) {
-            super(null, null, null, null, new NoOpFixTaskPatchReviewService());
+            super(null, null, null, null, new NoOpFixTaskPatchReviewService(), new GeneratedDiffSafetyPolicy());
             this.result = result;
         }
 

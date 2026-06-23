@@ -46,6 +46,42 @@ class GeneratedDiffRiskGateTests {
     }
 
     @Test
+    void should_block_package_manager_credential_files() {
+        String diff = """
+                diff --git a/.npmrc b/.npmrc
+                index 1111111..2222222 100644
+                --- a/.npmrc
+                +++ b/.npmrc
+                @@ -1,2 +1,2 @@
+                -registry=https://registry.npmjs.org/
+                +registry=https://npm.pkg.github.com/
+                """;
+
+        GeneratedDiffRiskDecision decision = riskGate.evaluate(diff);
+
+        assertThat(decision.allowed()).isFalse();
+        assertThat(decision.reason()).contains("sensitive path .npmrc");
+    }
+
+    @Test
+    void should_block_git_metadata_changes() {
+        String diff = """
+                diff --git a/.git/config b/.git/config
+                index 1111111..2222222 100644
+                --- a/.git/config
+                +++ b/.git/config
+                @@ -1,2 +1,2 @@
+                -[core]
+                +[credential]
+                """;
+
+        GeneratedDiffRiskDecision decision = riskGate.evaluate(diff);
+
+        assertThat(decision.allowed()).isFalse();
+        assertThat(decision.reason()).contains("sensitive path .git/config");
+    }
+
+    @Test
     void should_block_secret_like_added_lines() {
         String diff = """
                 diff --git a/config/example.properties b/config/example.properties

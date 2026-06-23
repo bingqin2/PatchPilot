@@ -23,6 +23,8 @@ const healthyConfiguration = {
   triggerUserAllowlistConfigured: true,
   repositoryAllowlistConfigured: true,
   reviewApprovalAllowlistConfigured: true,
+  generatedDiffRiskGateEnabled: true,
+  generatedDiffProtectedPathCount: 15,
   allowedTriggerUsers: ['bingqin2', 'local-operator'],
   allowedRepositories: ['bingqin2/PatchPilot'],
   reviewApprovalAllowedOperators: ['release-captain', 'local-operator']
@@ -51,6 +53,9 @@ test('shows healthy configuration status when required and advisory settings are
   expect(screen.getByText('bingqin2/PatchPilot')).toBeInTheDocument();
   expect(screen.getByText('Review approvers')).toBeInTheDocument();
   expect(screen.getByText('release-captain, local-operator')).toBeInTheDocument();
+  expect(screen.getByText('Generated diff policy')).toBeInTheDocument();
+  expect(screen.getByText('Risk gate Enabled')).toBeInTheDocument();
+  expect(screen.getByText('15 protected path patterns')).toBeInTheDocument();
   expect(screen.getByText('Admin API token Configured')).toBeInTheDocument();
   expect(screen.getByText('600.0s window')).toBeInTheDocument();
   expect(screen.queryByText('Agent API key is missing')).not.toBeInTheDocument();
@@ -76,6 +81,8 @@ test('shows setup issues and advisories for weak configuration', () => {
         triggerUserAllowlistConfigured: false,
         repositoryAllowlistConfigured: false,
         reviewApprovalAllowlistConfigured: false,
+        generatedDiffRiskGateEnabled: false,
+        generatedDiffProtectedPathCount: 0,
         allowedTriggerUsers: [],
         allowedRepositories: [],
         reviewApprovalAllowedOperators: []
@@ -86,7 +93,7 @@ test('shows setup issues and advisories for weak configuration', () => {
 
   expect(screen.getByText('3 setup issues')).toBeInTheDocument();
   expect(screen.getByText('Backend unavailable')).toBeInTheDocument();
-  expect(screen.getByText('11 advisory items')).toBeInTheDocument();
+  expect(screen.getByText('13 advisory items')).toBeInTheDocument();
   expect(screen.getByText('Agent API key is missing')).toBeInTheDocument();
   expect(screen.getByText('GitHub token is missing')).toBeInTheDocument();
   expect(screen.getByText('Webhook secret is missing')).toBeInTheDocument();
@@ -101,6 +108,8 @@ test('shows setup issues and advisories for weak configuration', () => {
   expect(screen.getByText('Trigger user allowlist is open')).toBeInTheDocument();
   expect(screen.getByText('Repository allowlist is open')).toBeInTheDocument();
   expect(screen.getByText('Review approval operators are not configured')).toBeInTheDocument();
+  expect(screen.getByText('Generated diff risk gate is disabled')).toBeInTheDocument();
+  expect(screen.getByText('Generated diff protected path policy is empty')).toBeInTheDocument();
 });
 
 test('shows advisory status when required secrets are configured but optional settings are missing', () => {
