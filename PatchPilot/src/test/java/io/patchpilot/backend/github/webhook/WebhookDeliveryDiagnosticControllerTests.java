@@ -40,6 +40,8 @@ class WebhookDeliveryDiagnosticControllerTests {
                 "alice",
                 "/agent fix touch docs/demo.md",
                 "Task created from /agent fix",
+                false,
+                "Task was created. Do not redeliver this webhook unless you intentionally want GitHub to report a duplicate delivery.",
                 Instant.parse("2026-06-22T01:00:00Z")
         )));
 
@@ -58,6 +60,8 @@ class WebhookDeliveryDiagnosticControllerTests {
                 .andExpect(jsonPath("$.data[0].triggerUser").value("alice"))
                 .andExpect(jsonPath("$.data[0].triggerComment").value("/agent fix touch docs/demo.md"))
                 .andExpect(jsonPath("$.data[0].message").value("Task created from /agent fix"))
+                .andExpect(jsonPath("$.data[0].redeliveryRecommended").value(false))
+                .andExpect(jsonPath("$.data[0].operatorAction").value("Task was created. Do not redeliver this webhook unless you intentionally want GitHub to report a duplicate delivery."))
                 .andExpect(jsonPath("$.data[0].createdAt").value("2026-06-22T01:00:00Z"));
     }
 

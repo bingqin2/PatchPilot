@@ -58,6 +58,9 @@ class MyBatisWebhookDeliveryDiagnosticServiceTests {
         assertThat(entity.getMessage()).isEqualTo("Task created from /agent fix");
         assertThat(entity.getCreatedAt()).isNotNull();
         assertThat(diagnostic.id()).isEqualTo(entity.getId());
+        assertThat(diagnostic.redeliveryRecommended()).isFalse();
+        assertThat(diagnostic.operatorAction())
+                .isEqualTo("Task was created. Do not redeliver this webhook unless you intentionally want GitHub to report a duplicate delivery.");
     }
 
     @Test
@@ -71,6 +74,25 @@ class MyBatisWebhookDeliveryDiagnosticServiceTests {
         assertThat(diagnostics)
                 .extracting(WebhookDeliveryDiagnosticVo::id)
                 .containsExactly("diagnostic-newer", "diagnostic-older");
+    }
+
+    @Test
+    void should_derive_redelivery_guidance_from_persisted_status() {
+        WebhookDeliveryDiagnosticEntity entity = entity(
+                "diagnostic-invalid-signature",
+                Instant.parse("2026-06-23T02:00:00Z")
+        );
+        entity.setStatus(WebhookDeliveryDiagnosticStatus.INVALID_SIGNATURE);
+        entity.setTaskId(null);
+        entity.setMessage("Invalid GitHub webhook signature");
+        when(diagnosticMapper.selectList(any())).thenReturn(List.of(entity));
+
+        List<WebhookDeliveryDiagnosticVo> diagnostics = diagnosticService.listRecent(50);
+
+        assertThat(diagnostics).hasSize(1);
+        assertThat(diagnostics.get(0).redeliveryRecommended()).isTrue();
+        assertThat(diagnostics.get(0).operatorAction())
+                .isEqualTo("Fix the webhook secret or payload URL first, then use GitHub's Redeliver action for this delivery.");
     }
 
     private static WebhookDeliveryDiagnosticEntity entity(String id, Instant createdAt) {

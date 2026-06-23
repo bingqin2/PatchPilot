@@ -1722,6 +1722,26 @@ pre {
   line-height: 1.35;
 }
 
+.webhook-delivery-action {
+  background: #f7fafc;
+  border: 1px solid #dce4ec;
+  border-radius: 6px;
+  display: grid;
+  gap: 4px;
+  padding: 8px 10px;
+}
+
+.webhook-delivery-action span {
+  color: #a13724;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.webhook-delivery-action p {
+  color: #465563;
+  margin: 0;
+}
+
 .panel-error {
   background: #fff4f2;
   border-bottom: 1px solid #ef8a7b;

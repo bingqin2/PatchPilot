@@ -2510,3 +2510,23 @@ Validation:
 - `npm run build`: passed after production frontend build.
 - `mvn -pl PatchPilot -Dtest=MyBatisWebhookDeliveryDiagnosticServiceTests,WebhookDeliveryDiagnosticControllerTests test`: passed after the final diagnostic list-ordering adjustment, 4 tests run, 0 failures.
 - `git diff --check`: passed after whitespace verification.
+
+Implemented webhook redelivery guidance from `docs/plans/124-webhook-redelivery-guidance.md`.
+
+Changes:
+
+- Added derived `redeliveryRecommended` and `operatorAction` fields to webhook delivery diagnostics without changing the persisted diagnostic table.
+- Classified invalid signatures, malformed requests, and backend processing failures as fix-then-redeliver cases.
+- Classified ignored, rejected, duplicate, active-task, and task-created outcomes as non-redelivery cases with safer next actions.
+- Rendered redelivery guidance in the dashboard webhook delivery panel so operators know when to use GitHub's `Redeliver` button.
+- Updated README, frontend design notes, and this execution log.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=WebhookDeliveryDiagnosticControllerTests,InMemoryWebhookDeliveryDiagnosticServiceTests test`: first failed because `WebhookDeliveryDiagnosticVo` did not expose redelivery guidance fields; then passed after backend implementation, 5 tests run, 0 failures.
+- `npm test -- App.test.tsx api.test.ts`: first failed because the dashboard did not render `Redeliver after fix`; then passed after frontend implementation, 67 tests run, 0 failures.
+- `mvn -pl PatchPilot -Dtest=WebhookDeliveryDiagnosticControllerTests,InMemoryWebhookDeliveryDiagnosticServiceTests,MyBatisWebhookDeliveryDiagnosticServiceTests test`: passed after MyBatis guidance coverage, 8 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed after full backend verification, 449 tests run, 0 failures.
+- `npm test`: passed after full frontend verification, 98 tests run, 0 failures.
+- `npm run build`: passed after production frontend build.
+- `git diff --check`: passed after whitespace verification.

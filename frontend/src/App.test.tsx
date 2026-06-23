@@ -388,6 +388,8 @@ const webhookDeliveries = [
     triggerUser: 'bingqin2',
     triggerComment: '/agent fix replace docs/demo.md PatchPilot smoke test',
     message: 'Task created from /agent fix',
+    redeliveryRecommended: false,
+    operatorAction: 'Task was created. Do not redeliver this webhook unless you intentionally want GitHub to report a duplicate delivery.',
     createdAt: '2026-06-20T01:00:05Z'
   },
   {
@@ -402,6 +404,8 @@ const webhookDeliveries = [
     triggerUser: null,
     triggerComment: null,
     message: 'Invalid GitHub webhook signature',
+    redeliveryRecommended: true,
+    operatorAction: "Fix the webhook secret or payload URL first, then use GitHub's Redeliver action for this delivery.",
     createdAt: '2026-06-20T01:02:05Z'
   }
 ];
@@ -963,6 +967,8 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(within(webhookDeliveryPanel).getByText('delivery-created-status-comment')).toBeInTheDocument();
   expect(within(webhookDeliveryPanel).getByText('bingqin2/PatchPilot #1')).toBeInTheDocument();
   expect(within(webhookDeliveryPanel).getByText('Invalid GitHub webhook signature')).toBeInTheDocument();
+  expect(within(webhookDeliveryPanel).getByText('Redeliver after fix')).toBeInTheDocument();
+  expect(within(webhookDeliveryPanel).getByText("Fix the webhook secret or payload URL first, then use GitHub's Redeliver action for this delivery.")).toBeInTheDocument();
 
   await waitFor(() => expect(screen.getByText('Task completed')).toBeInTheDocument());
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/language-adapters'));
