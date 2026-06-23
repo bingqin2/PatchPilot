@@ -7,6 +7,10 @@ import io.patchpilot.backend.agent.tool.PullRequestTool;
 import io.patchpilot.backend.agent.tool.PushTool;
 import io.patchpilot.backend.agent.workflow.PatchWorkflow;
 import io.patchpilot.backend.agent.workflow.domain.PatchWorkflowResult;
+import io.patchpilot.backend.github.IssueContextService;
+import io.patchpilot.backend.github.client.GitHubIssueContextClient;
+import io.patchpilot.backend.github.client.domain.GetIssueContextCommand;
+import io.patchpilot.backend.github.client.domain.GitHubIssueContext;
 import io.patchpilot.backend.github.client.GitHubIssueCommentClient;
 import io.patchpilot.backend.github.client.GitHubPullRequestClient;
 import io.patchpilot.backend.github.client.domain.CreateIssueCommentCommand;
@@ -437,6 +441,26 @@ class GitHubWebhookControllerTests {
                 @Override
                 public PullRequestResult createPullRequest(CreatePullRequestCommand command) {
                     return new PullRequestResult("https://github.com/octocat/hello-world/pull/7");
+                }
+            });
+        }
+
+        @Bean
+        @Primary
+        IssueContextService issueContextService() {
+            return new IssueContextService(new GitHubIssueContextClient(new GitHubProperties()) {
+                @Override
+                public GitHubIssueContext getIssueContext(GetIssueContextCommand command) {
+                    return new GitHubIssueContext(
+                            "Test issue",
+                            "Webhook dispatch fixture issue body",
+                            "https://github.com/%s/%s/issues/%d".formatted(
+                                    command.owner(),
+                                    command.repository(),
+                                    command.issueNumber()
+                            ),
+                            List.of()
+                    );
                 }
             });
         }

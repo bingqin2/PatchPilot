@@ -91,6 +91,20 @@ const baseDetail: TaskDetailState = {
   toolCalls: [],
   modelCalls: [],
   generatedDiff: null,
+  issueContext: {
+    title: 'Dashboard should show issue context',
+    body: 'The issue body explains why the dashboard needs to surface context before operators inspect evidence.',
+    url: 'https://github.com/bingqin2/PatchPilot/issues/1',
+    comments: [
+      {
+        id: 1001,
+        author: 'alice',
+        body: 'The latest reproduction is in the failing smoke test.',
+        createdAt: '2026-06-20T01:00:30Z',
+        url: 'https://github.com/bingqin2/PatchPilot/issues/1#issuecomment-1001'
+      }
+    ]
+  },
   repositorySupportGuidance: null
 };
 
@@ -120,6 +134,39 @@ test('shows execution evidence summary for selected task', () => {
     screen.getByText('Detection pyproject.toml declares pytest as the verification command')
   ).toBeInTheDocument();
   expect(screen.getByText('Verify python3 -m pytest')).toBeInTheDocument();
+});
+
+test('shows issue context for selected task', () => {
+  render(
+    <TaskDetailPanel
+      task={task}
+      detail={baseDetail}
+      loading={false}
+      actionInFlight={false}
+      reviewApprovalAllowedOperators={['release-captain']}
+      onCancelTask={vi.fn()}
+      onRetryTask={vi.fn()}
+      onApproveReview={vi.fn()}
+      onCopyReport={vi.fn()}
+    />
+  );
+
+  const issueContext = screen.getByLabelText('Issue context');
+  expect(within(issueContext).getByText('Dashboard should show issue context')).toBeInTheDocument();
+  expect(
+    within(issueContext).getByText('The issue body explains why the dashboard needs to surface context before operators inspect evidence.')
+  ).toBeInTheDocument();
+  expect(within(issueContext).getByText('1 recent comments')).toBeInTheDocument();
+  expect(within(issueContext).getByText('alice')).toBeInTheDocument();
+  expect(within(issueContext).getByText('The latest reproduction is in the failing smoke test.')).toBeInTheDocument();
+  expect(within(issueContext).getByRole('link', { name: /View source/ })).toHaveAttribute(
+    'href',
+    'https://github.com/bingqin2/PatchPilot/issues/1'
+  );
+  expect(within(issueContext).getByRole('link', { name: /Comment/ })).toHaveAttribute(
+    'href',
+    'https://github.com/bingqin2/PatchPilot/issues/1#issuecomment-1001'
+  );
 });
 
 test('shows selected task queue state in task detail', () => {

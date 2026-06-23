@@ -3,6 +3,7 @@ package io.patchpilot.backend.agent.workflow;
 import io.patchpilot.backend.agent.tool.FileWriteTool;
 import io.patchpilot.backend.agent.workflow.domain.FixPlan;
 import io.patchpilot.backend.agent.workflow.domain.PatchWorkflowResult;
+import io.patchpilot.backend.github.client.domain.GitHubIssueContext;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import io.patchpilot.backend.workspace.WorkspacePathResolver;
@@ -41,6 +42,25 @@ class PlanDrivenPatchWorkflowTests {
         assertThat(plannedPatchWorkflow.repositoryDir()).isEqualTo(repositoryDir);
         assertThat(plannedPatchWorkflow.fixPlan()).isEqualTo(fixPlanGenerator.fixPlan());
         assertThat(fixPlanGenerator.callOrder()).isLessThan(plannedPatchWorkflow.callOrder());
+    }
+
+    @Test
+    void should_pass_issue_context_to_fix_plan_generator() {
+        RecordingFixPlanGenerator fixPlanGenerator = new RecordingFixPlanGenerator(plan("src/main/App.java"));
+        RecordingPlannedPatchWorkflow plannedPatchWorkflow = new RecordingPlannedPatchWorkflow(
+                new PatchWorkflowResult(true, "Replaced src/main/App.java from planned instruction")
+        );
+        PlanDrivenPatchWorkflow workflow = new PlanDrivenPatchWorkflow(fixPlanGenerator, plannedPatchWorkflow);
+        GitHubIssueContext issueContext = new GitHubIssueContext(
+                "Calculator add returns wrong value",
+                "The issue body explains the failing expectation.",
+                "https://github.com/octocat/hello-world/issues/42",
+                List.of()
+        );
+
+        workflow.apply(task("/agent fix failing add test"), Path.of("/tmp/repo"), issueContext);
+
+        assertThat(fixPlanGenerator.issueContext()).isEqualTo(issueContext);
     }
 
     @Test
@@ -95,6 +115,7 @@ class PlanDrivenPatchWorkflowTests {
 
         private final FixPlan fixPlan;
         private FixTaskVo task;
+        private GitHubIssueContext issueContext;
         private int callOrder;
 
         private RecordingFixPlanGenerator(FixPlan fixPlan) {
@@ -111,12 +132,24 @@ class PlanDrivenPatchWorkflowTests {
             return fixPlan;
         }
 
+        @Override
+        public FixPlan generatePlan(FixTaskVo task, GitHubIssueContext issueContext) {
+            this.task = task;
+            this.issueContext = issueContext;
+            this.callOrder = CallOrder.next();
+            return fixPlan;
+        }
+
         private FixTaskVo task() {
             return task;
         }
 
         private FixPlan fixPlan() {
             return fixPlan;
+        }
+
+        private GitHubIssueContext issueContext() {
+            return issueContext;
         }
 
         private int callOrder() {

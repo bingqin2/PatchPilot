@@ -6,6 +6,11 @@ import io.patchpilot.backend.agent.tool.PullRequestTool;
 import io.patchpilot.backend.agent.tool.PushTool;
 import io.patchpilot.backend.agent.workflow.PatchWorkflow;
 import io.patchpilot.backend.agent.workflow.domain.PatchWorkflowResult;
+import io.patchpilot.backend.github.IssueContextService;
+import io.patchpilot.backend.github.client.GitHubIssueContextClient;
+import io.patchpilot.backend.github.client.domain.GetIssueContextCommand;
+import io.patchpilot.backend.github.client.domain.GitHubIssueContext;
+import io.patchpilot.backend.github.client.domain.GitHubIssueContextComment;
 import io.patchpilot.backend.github.client.GitHubPullRequestClient;
 import io.patchpilot.backend.github.client.domain.CreatePullRequestCommand;
 import io.patchpilot.backend.github.client.domain.PullRequestResult;
@@ -72,6 +77,7 @@ class WorkspaceFixTaskExecutorTests {
                 commitTool,
                 pushTool,
                 pullRequestTool,
+                new RecordingIssueContextService(),
                 fixTaskService,
                 testRunService,
                 toolCallService,
@@ -85,6 +91,7 @@ class WorkspaceFixTaskExecutorTests {
         assertThat(workspaceService.command().repositoryOwner()).isEqualTo("octocat");
         assertThat(workspaceService.command().repositoryName()).isEqualTo("hello-world");
         assertThat(patchWorkflow.repositoryDir()).isEqualTo(Path.of("/tmp/workspace/repo"));
+        assertThat(patchWorkflow.issueContext().title()).isEqualTo("Calculator add returns wrong value");
         assertThat(diffTool.repositoryDir()).isEqualTo(Path.of("/tmp/workspace/repo"));
         assertThat(verificationRunner.repositoryDir()).isEqualTo(Path.of("/tmp/workspace/repo"));
         assertThat(verificationRunner.taskId()).isEqualTo("task-123");
@@ -116,6 +123,7 @@ class WorkspaceFixTaskExecutorTests {
                 .containsExactly(
                         "WorkspaceService",
                         "LanguageAdapterRegistry",
+                        "IssueContextService",
                         "PatchWorkflow",
                         "DiffTool",
                         "GeneratedDiffRiskGate",
@@ -170,6 +178,7 @@ class WorkspaceFixTaskExecutorTests {
                 .containsExactly(
                         "WorkspaceService",
                         "LanguageAdapterRegistry",
+                        "IssueContextService",
                         "PatchWorkflow",
                         "DiffTool",
                         "GeneratedDiffRiskGate"
@@ -262,6 +271,7 @@ class WorkspaceFixTaskExecutorTests {
                 .containsExactly(
                         "WorkspaceService",
                         "LanguageAdapterRegistry",
+                        "IssueContextService",
                         "PatchWorkflow",
                         "DiffTool",
                         "GeneratedDiffRiskGate",
@@ -304,6 +314,7 @@ class WorkspaceFixTaskExecutorTests {
                 .containsExactly(
                         "WorkspaceService",
                         "LanguageAdapterRegistry",
+                        "IssueContextService",
                         "PatchWorkflow",
                         "DiffTool",
                         "GeneratedDiffRiskGate",
@@ -368,6 +379,7 @@ class WorkspaceFixTaskExecutorTests {
                 .containsExactly(
                         "WorkspaceService",
                         "LanguageAdapterRegistry",
+                        "IssueContextService",
                         "PatchWorkflow",
                         "DiffTool",
                         "GeneratedDiffRiskGate"
@@ -896,6 +908,7 @@ class WorkspaceFixTaskExecutorTests {
     private static final class RecordingPatchWorkflow implements PatchWorkflow {
 
         private Path repositoryDir;
+        private GitHubIssueContext issueContext;
         private int callOrder;
 
         @Override
@@ -905,12 +918,47 @@ class WorkspaceFixTaskExecutorTests {
             return new PatchWorkflowResult(true, "patch applied");
         }
 
+        @Override
+        public PatchWorkflowResult apply(FixTaskVo task, Path repositoryDir, GitHubIssueContext issueContext) {
+            this.repositoryDir = repositoryDir;
+            this.issueContext = issueContext;
+            this.callOrder = CallOrder.next();
+            return new PatchWorkflowResult(true, "patch applied");
+        }
+
         private Path repositoryDir() {
             return repositoryDir;
         }
 
+        private GitHubIssueContext issueContext() {
+            return issueContext;
+        }
+
         private int callOrder() {
             return callOrder;
+        }
+    }
+
+    private static final class RecordingIssueContextService extends IssueContextService {
+
+        private RecordingIssueContextService() {
+            super(new GitHubIssueContextClient(new GitHubProperties()) {
+                @Override
+                public GitHubIssueContext getIssueContext(GetIssueContextCommand command) {
+                    return new GitHubIssueContext(
+                            "Calculator add returns wrong value",
+                            "The issue body describes the failing add test.",
+                            "https://github.com/octocat/hello-world/issues/42",
+                            List.of(new GitHubIssueContextComment(
+                                    1001,
+                                    "alice",
+                                    "Reproduced in CalculatorTest#addsNumbers.",
+                                    "2026-06-20T01:00:00Z",
+                                    "https://github.com/octocat/hello-world/issues/42#issuecomment-1001"
+                            ))
+                    );
+                }
+            });
         }
     }
 

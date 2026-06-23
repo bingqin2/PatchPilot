@@ -277,6 +277,20 @@ const detail = {
     diff: 'diff --git a/docs/demo.md b/docs/demo.md\n+PatchPilot smoke test',
     generatedAt: '2026-06-20T01:00:21Z'
   },
+  issueContext: {
+    title: 'PatchPilot smoke test issue',
+    body: 'Replace the demo document so the smoke task proves issue context reaches the dashboard.',
+    url: 'https://github.com/bingqin2/PatchPilot/issues/1',
+    comments: [
+      {
+        id: 1001,
+        author: 'bingqin2',
+        body: 'Use the current issue title and recent comments when planning the fix.',
+        createdAt: '2026-06-20T01:00:10Z',
+        url: 'https://github.com/bingqin2/PatchPilot/issues/1#issuecomment-1001'
+      }
+    ]
+  },
   repositorySupportGuidance: null
 };
 
@@ -314,6 +328,7 @@ const manualTaskDetail = {
   toolCalls: [],
   modelCalls: [],
   generatedDiff: null,
+  issueContext: null,
   repositorySupportGuidance: null
 };
 
@@ -876,7 +891,9 @@ beforeEach(() => {
         testRuns: [],
         toolCalls: [],
         modelCalls: [],
-        generatedDiff: null
+        generatedDiff: null,
+        issueContext: null,
+        repositorySupportGuidance: null
       });
     }
     if (url === '/api/tasks/task-2/timeline') {
@@ -931,7 +948,9 @@ beforeEach(() => {
         testRuns: [],
         toolCalls: [],
         modelCalls: [],
-        generatedDiff: null
+        generatedDiff: null,
+        issueContext: null,
+        repositorySupportGuidance: null
       });
     }
     if (url === '/api/tasks/task-3/timeline') {
@@ -2185,7 +2204,9 @@ test('loads the next backend task page with offset pagination', async () => {
         testRuns: [],
         toolCalls: [],
         modelCalls: [],
-        generatedDiff: null
+        generatedDiff: null,
+        issueContext: null,
+        repositorySupportGuidance: null
       });
     }
     if (url === '/api/tasks/page-task-1/summary') {

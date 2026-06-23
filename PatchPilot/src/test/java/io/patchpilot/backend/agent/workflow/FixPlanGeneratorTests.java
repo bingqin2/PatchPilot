@@ -5,6 +5,8 @@ import io.patchpilot.backend.agent.provider.domain.ModelProviderRequest;
 import io.patchpilot.backend.agent.provider.domain.ModelProviderResponse;
 import io.patchpilot.backend.agent.workflow.domain.FixPlan;
 import io.patchpilot.backend.agent.workflow.domain.FixPlanGenerationException;
+import io.patchpilot.backend.github.client.domain.GitHubIssueContext;
+import io.patchpilot.backend.github.client.domain.GitHubIssueContextComment;
 import io.patchpilot.backend.task.domain.bo.CreateFixTaskCommand;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import io.patchpilot.backend.task.service.impl.InMemoryFixTaskService;
@@ -52,6 +54,27 @@ class FixPlanGeneratorTests {
     }
 
     @Test
+    void should_include_issue_context_in_model_prompt() {
+        RecordingModelProviderClient modelClient = new RecordingModelProviderClient("""
+                {
+                  "summary": "Fix Calculator#add",
+                  "targetFiles": ["src/main/java/example/Calculator.java"],
+                  "steps": ["Use the failing example from the issue"],
+                  "risk": "LOW"
+                }
+                """);
+        FixPlanGenerator generator = new FixPlanGenerator(modelClient);
+
+        generator.generatePlan(task("/agent fix failing add test"), issueContext());
+
+        assertThat(modelClient.request().userPrompt()).contains("Issue title: Calculator add returns wrong value");
+        assertThat(modelClient.request().userPrompt()).contains("Issue body: The issue body explains the expected sum.");
+        assertThat(modelClient.request().userPrompt()).contains("Issue URL: https://github.com/octocat/hello-world/issues/42");
+        assertThat(modelClient.request().userPrompt()).contains("Recent issue comments:");
+        assertThat(modelClient.request().userPrompt()).contains("- alice at 2026-06-20T01:00:00Z: Reproduced in CalculatorTest#addsNumbers.");
+    }
+
+    @Test
     void should_fail_when_model_output_is_not_json() {
         FixPlanGenerator generator = new FixPlanGenerator(new RecordingModelProviderClient("Use Calculator.java"));
 
@@ -85,6 +108,21 @@ class FixPlanGeneratorTests {
                 "delivery-123",
                 98765
         ));
+    }
+
+    private static GitHubIssueContext issueContext() {
+        return new GitHubIssueContext(
+                "Calculator add returns wrong value",
+                "The issue body explains the expected sum.",
+                "https://github.com/octocat/hello-world/issues/42",
+                List.of(new GitHubIssueContextComment(
+                        1001,
+                        "alice",
+                        "Reproduced in CalculatorTest#addsNumbers.",
+                        "2026-06-20T01:00:00Z",
+                        "https://github.com/octocat/hello-world/issues/42#issuecomment-1001"
+                ))
+        );
     }
 
     private static final class RecordingModelProviderClient implements ModelProviderClient {

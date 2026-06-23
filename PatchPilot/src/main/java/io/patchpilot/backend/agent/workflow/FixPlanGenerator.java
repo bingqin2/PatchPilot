@@ -8,6 +8,8 @@ import io.patchpilot.backend.agent.provider.domain.ModelProviderRequest;
 import io.patchpilot.backend.agent.provider.domain.ModelProviderResponse;
 import io.patchpilot.backend.agent.workflow.domain.FixPlan;
 import io.patchpilot.backend.agent.workflow.domain.FixPlanGenerationException;
+import io.patchpilot.backend.github.client.domain.GitHubIssueContext;
+import io.patchpilot.backend.github.client.domain.GitHubIssueContextComment;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -33,10 +35,14 @@ public class FixPlanGenerator {
     }
 
     public FixPlan generatePlan(FixTaskVo task) {
+        return generatePlan(task, null);
+    }
+
+    public FixPlan generatePlan(FixTaskVo task, GitHubIssueContext issueContext) {
         ModelProviderResponse response = modelProviderClient.complete(new ModelProviderRequest(
                 task.id(),
                 systemPrompt(),
-                userPrompt(task)
+                userPrompt(task, issueContext)
         ));
         return parsePlan(response.content());
     }
@@ -49,12 +55,13 @@ public class FixPlanGenerator {
                 """;
     }
 
-    private String userPrompt(FixTaskVo task) {
+    private String userPrompt(FixTaskVo task, GitHubIssueContext issueContext) {
         return """
                 Repository: %s/%s
                 Issue number: %d
                 Trigger user: %s
                 Trigger comment: %s
+                %s
 
                 Produce a focused fix plan. Do not edit files.
                 """.formatted(
@@ -62,8 +69,41 @@ public class FixPlanGenerator {
                 task.repositoryName(),
                 task.issueNumber(),
                 task.triggerUser(),
-                task.triggerComment()
+                task.triggerComment(),
+                issueContextPrompt(issueContext)
         );
+    }
+
+    private String issueContextPrompt(GitHubIssueContext issueContext) {
+        if (issueContext == null) {
+            return "Issue context: unavailable";
+        }
+        return """
+                Issue title: %s
+                Issue URL: %s
+                Issue body: %s
+                Recent issue comments:
+                %s
+                """.formatted(
+                issueContext.title(),
+                issueContext.url(),
+                issueContext.body(),
+                issueCommentsPrompt(issueContext.comments())
+        );
+    }
+
+    private String issueCommentsPrompt(List<GitHubIssueContextComment> comments) {
+        if (comments.isEmpty()) {
+            return "- none";
+        }
+        return comments.stream()
+                .map(comment -> "- %s at %s: %s".formatted(
+                        comment.author(),
+                        comment.createdAt(),
+                        comment.body()
+                ))
+                .reduce((left, right) -> left + "\n" + right)
+                .orElse("- none");
     }
 
     private FixPlan parsePlan(String content) {
