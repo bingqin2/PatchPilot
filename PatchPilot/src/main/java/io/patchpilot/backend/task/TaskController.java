@@ -32,6 +32,7 @@ import io.patchpilot.backend.task.service.FixTaskAuditSummaryService;
 import io.patchpilot.backend.task.service.FixTaskControlService;
 import io.patchpilot.backend.task.service.FixTaskMetricsService;
 import io.patchpilot.backend.task.service.FixTaskModelCallService;
+import io.patchpilot.backend.task.service.FixTaskPatchReviewService;
 import io.patchpilot.backend.task.service.FixTaskQueueQueryService;
 import io.patchpilot.backend.task.service.FixTaskReportFormatter;
 import io.patchpilot.backend.task.service.FixTaskTestRunService;
@@ -65,6 +66,7 @@ public class TaskController {
     private final FixTaskTestRunService fixTaskTestRunService;
     private final FixTaskToolCallService fixTaskToolCallService;
     private final FixTaskModelCallService fixTaskModelCallService;
+    private final FixTaskPatchReviewService fixTaskPatchReviewService;
     private final FixTaskControlService fixTaskControlService;
     private final FixTaskMetricsService fixTaskMetricsService;
     private final FixTaskAuditSummaryService fixTaskAuditSummaryService;
@@ -529,6 +531,7 @@ public class TaskController {
                 toolCalls,
                 fixTaskModelCallService.listModelCalls(taskId),
                 latestGeneratedDiff(toolCalls),
+                fixTaskPatchReviewService.findLatestPatchReview(taskId).orElse(null),
                 issueContext(summary.task()),
                 queueItems.stream().findFirst().orElse(null),
                 queueItems,

@@ -2715,3 +2715,22 @@ Validation:
 - `npm test -- TaskDetailPanel.test.tsx App.test.tsx api.test.ts`: passed after dashboard issue context rendering, 87 tests run, 0 failures.
 - `npm run build`: passed after frontend type and fixture updates.
 - `mvn -pl PatchPilot test`: passed after webhook test fake issue context service was added, 478 tests run, 0 failures.
+
+Implemented patch review evidence visibility from `docs/plans/135-patch-review-evidence-visibility.md`.
+
+Changes:
+
+- Added task-level patch review records with decision, reason, confidence, required follow-up, edited files, and created timestamp.
+- Added in-memory and MyBatis-backed patch review services plus a Flyway migration for MySQL persistence.
+- Recorded post-edit review evidence before writing model-generated files, including rejected reviews that stop execution.
+- Added latest patch review evidence to task detail API responses and markdown task reports.
+- Rendered patch review evidence in the dashboard task detail panel with approved and blocked review gate states.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=PlannedPatchWorkflowTests,PlanDrivenPatchWorkflowTests,TaskControllerTests,FixTaskPatchReviewConvertTests,InMemoryFixTaskPatchReviewServiceTests,MyBatisFixTaskPatchReviewServiceTests,FixTaskPatchReviewMigrationTests test`: first failed because the new patch review service/entity/mapper did not exist; then passed after backend implementation, 75 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts src/dashboard/components/TaskDetailPanel.test.tsx`: first failed because the dashboard did not render a patch review section; then passed after frontend implementation, 38 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed after full backend verification, 493 tests run, 0 failures.
+- `npm test`: passed after full frontend verification, 110 tests run, 0 failures.
+- `npm run build`: passed after production frontend build verification.
+- `git diff --check`: passed after whitespace verification.

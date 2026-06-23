@@ -10,10 +10,12 @@ import io.patchpilot.backend.agent.workflow.domain.PatchReview;
 import io.patchpilot.backend.agent.workflow.domain.PatchReviewDecision;
 import io.patchpilot.backend.agent.workflow.domain.ProposedFileEdit;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
+import io.patchpilot.backend.task.service.FixTaskPatchReviewService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.util.StringUtils;
 
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -32,6 +34,7 @@ public class PlannedPatchWorkflow {
     private final FileReadTool fileReadTool;
     private final FileEditPlanGenerator fileEditPlanGenerator;
     private final PatchReviewGenerator patchReviewGenerator;
+    private final FixTaskPatchReviewService patchReviewService;
 
     public PatchWorkflowResult apply(FixTaskVo task, Path repositoryDir, FixPlan fixPlan) {
         Optional<ReplacementInstruction> instruction = replacementInstruction(task.triggerComment());
@@ -58,6 +61,7 @@ public class PlannedPatchWorkflow {
             validateEdit(edit, fixPlan);
         }
         PatchReview review = patchReviewGenerator.review(task, fixPlan, fileContexts, edits);
+        recordPatchReview(task, review, edits);
         if (review.decision() == PatchReviewDecision.REJECT) {
             throw new IllegalStateException("Model patch review rejected generated edits: " + review.reason());
         }
@@ -115,6 +119,18 @@ public class PlannedPatchWorkflow {
                 .orElse("");
         String noun = edits.size() == 1 ? "edit" : "edits";
         return "Applied " + edits.size() + " model-generated file " + noun + " after review " + review.decision() + ": " + files;
+    }
+
+    private void recordPatchReview(FixTaskVo task, PatchReview review, List<ProposedFileEdit> edits) {
+        patchReviewService.recordPatchReview(
+                task.id(),
+                review.decision().name(),
+                review.reason(),
+                review.confidence(),
+                review.requiredFollowUp(),
+                edits.stream().map(ProposedFileEdit::path).toList(),
+                Instant.now()
+        );
     }
 
     private Optional<ReplacementInstruction> replacementInstruction(String triggerComment) {

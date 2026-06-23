@@ -9,7 +9,9 @@ import io.patchpilot.backend.agent.workflow.domain.PatchReview;
 import io.patchpilot.backend.agent.workflow.domain.PatchReviewDecision;
 import io.patchpilot.backend.github.client.domain.GitHubIssueContext;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
+import io.patchpilot.backend.task.domain.vo.FixTaskPatchReviewVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
+import io.patchpilot.backend.task.service.FixTaskPatchReviewService;
 import io.patchpilot.backend.workspace.WorkspacePathResolver;
 import io.patchpilot.backend.workspace.config.WorkspaceProperties;
 import org.junit.jupiter.api.Test;
@@ -19,6 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -91,7 +94,8 @@ class PlanDrivenPatchWorkflowTests {
                 new FileWriteTool(pathResolver),
                 new FileReadTool(pathResolver),
                 new RecordingFileEditPlanGenerator(FileEditPlan.empty()),
-                new RecordingPatchReviewGenerator()
+                new RecordingPatchReviewGenerator(),
+                new NoOpFixTaskPatchReviewService()
         );
     }
 
@@ -176,7 +180,7 @@ class PlanDrivenPatchWorkflowTests {
         private int callOrder;
 
         private RecordingPlannedPatchWorkflow(PatchWorkflowResult result) {
-            super(null, null, null, null);
+            super(null, null, null, null, new NoOpFixTaskPatchReviewService());
             this.result = result;
         }
 
@@ -241,6 +245,36 @@ class PlanDrivenPatchWorkflowTests {
                 List<io.patchpilot.backend.agent.workflow.domain.ProposedFileEdit> edits
         ) {
             return new PatchReview(PatchReviewDecision.APPROVE, "ok", "HIGH", "Run verification.");
+        }
+    }
+
+    private static final class NoOpFixTaskPatchReviewService implements FixTaskPatchReviewService {
+
+        @Override
+        public FixTaskPatchReviewVo recordPatchReview(
+                String taskId,
+                String decision,
+                String reason,
+                String confidence,
+                String requiredFollowUp,
+                List<String> editedFiles,
+                Instant createdAt
+        ) {
+            return new FixTaskPatchReviewVo(
+                    "patch-review-test",
+                    taskId,
+                    decision,
+                    reason,
+                    confidence,
+                    requiredFollowUp,
+                    editedFiles,
+                    createdAt
+            );
+        }
+
+        @Override
+        public Optional<FixTaskPatchReviewVo> findLatestPatchReview(String taskId) {
+            return Optional.empty();
         }
     }
 }

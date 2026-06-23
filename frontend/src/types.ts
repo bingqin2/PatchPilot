@@ -311,6 +311,7 @@ export interface FixTaskDetail {
   toolCalls: FixTaskToolCall[];
   modelCalls: FixTaskModelCall[];
   generatedDiff: FixTaskGeneratedDiff | null;
+  patchReview: FixTaskPatchReview | null;
   issueContext: IssueContext | null;
   repositorySupportGuidance: RepositorySupportGuidance | null;
 }
@@ -334,6 +335,17 @@ export interface FixTaskGeneratedDiff {
   toolCallId: string;
   diff: string;
   generatedAt: string;
+}
+
+export interface FixTaskPatchReview {
+  id: string;
+  taskId: string;
+  decision: string;
+  reason: string;
+  confidence: string;
+  requiredFollowUp: string | null;
+  editedFiles: string[];
+  createdAt: string;
 }
 
 export interface FixTaskTimelineEvent {

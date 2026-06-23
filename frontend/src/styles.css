@@ -1458,6 +1458,11 @@ h3 {
   color: #a13724;
 }
 
+.evidence-summary .evidence-patch-approved {
+  background: #dff6e7;
+  color: #126b35;
+}
+
 .evidence-summary .evidence-test-none {
   background: #eef0f2;
   color: #52606e;
@@ -1678,6 +1683,76 @@ h3 {
   font-weight: 800;
   padding: 5px 9px;
   white-space: nowrap;
+}
+
+.patch-review-section {
+  display: grid;
+  gap: 12px;
+}
+
+.patch-review-header {
+  align-items: start;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+}
+
+.patch-review-header p,
+.patch-review-section > p,
+.patch-review-follow-up p {
+  color: #52606e;
+  font-size: 13px;
+  margin: 3px 0 0;
+}
+
+.patch-review-badges,
+.patch-review-files {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.patch-review-badges strong,
+.patch-review-badges span,
+.patch-review-badges time,
+.patch-review-files code {
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 5px 9px;
+  white-space: nowrap;
+}
+
+.patch-review-approve .patch-review-badges strong {
+  background: #dff6e7;
+  color: #126b35;
+}
+
+.patch-review-reject .patch-review-badges strong {
+  background: #fde5df;
+  color: #a13724;
+}
+
+.patch-review-badges span,
+.patch-review-badges time,
+.patch-review-files code {
+  background: #f5f7f9;
+  border: 1px solid #dfe6ec;
+  color: #52606e;
+}
+
+.patch-review-follow-up {
+  background: #f8fafc;
+  border: 1px solid #dfe6ec;
+  border-radius: 6px;
+  padding: 10px 12px;
+}
+
+.patch-review-follow-up span {
+  color: #637181;
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .review-approval-detail,

@@ -10,7 +10,9 @@ import io.patchpilot.backend.agent.workflow.domain.PatchReview;
 import io.patchpilot.backend.agent.workflow.domain.PatchReviewDecision;
 import io.patchpilot.backend.agent.workflow.domain.ProposedFileEdit;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
+import io.patchpilot.backend.task.domain.vo.FixTaskPatchReviewVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
+import io.patchpilot.backend.task.service.FixTaskPatchReviewService;
 import io.patchpilot.backend.workspace.WorkspacePathResolver;
 import io.patchpilot.backend.workspace.config.WorkspaceProperties;
 import org.junit.jupiter.api.Test;
@@ -19,7 +21,9 @@ import org.junit.jupiter.api.io.TempDir;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -33,7 +37,8 @@ class PlannedPatchWorkflowTests {
     void should_replace_file_when_target_is_authorized_by_fix_plan() throws Exception {
         RecordingFileEditPlanGenerator editPlanGenerator = new RecordingFileEditPlanGenerator(FileEditPlan.empty());
         RecordingPatchReviewGenerator reviewGenerator = new RecordingPatchReviewGenerator(approvedReview());
-        PlannedPatchWorkflow workflow = workflow(editPlanGenerator, reviewGenerator);
+        RecordingFixTaskPatchReviewService patchReviewService = new RecordingFixTaskPatchReviewService();
+        PlannedPatchWorkflow workflow = workflow(editPlanGenerator, reviewGenerator, patchReviewService);
 
         PatchWorkflowResult result = workflow.apply(
                 task("/agent fix replace src/main/App.java class App {}"),
@@ -46,6 +51,7 @@ class PlannedPatchWorkflowTests {
         assertThat(Files.readString(repositoryDir.resolve("src/main/App.java"))).isEqualTo("class App {}");
         assertThat(editPlanGenerator.called()).isFalse();
         assertThat(reviewGenerator.called()).isFalse();
+        assertThat(patchReviewService.patchReviews()).isEmpty();
     }
 
     @Test
@@ -60,7 +66,8 @@ class PlannedPatchWorkflowTests {
                 )
         )));
         RecordingPatchReviewGenerator reviewGenerator = new RecordingPatchReviewGenerator(approvedReview());
-        PlannedPatchWorkflow workflow = workflow(editPlanGenerator, reviewGenerator);
+        RecordingFixTaskPatchReviewService patchReviewService = new RecordingFixTaskPatchReviewService();
+        PlannedPatchWorkflow workflow = workflow(editPlanGenerator, reviewGenerator, patchReviewService);
 
         PatchWorkflowResult result = workflow.apply(task("/agent fix"), repositoryDir, plan("src/main/App.java"));
 
@@ -78,6 +85,16 @@ class PlannedPatchWorkflowTests {
                 "src/main/App.java",
                 "class App { int add(int a, int b) { return 0; } }\n"
         ));
+        assertThat(patchReviewService.patchReviews())
+                .singleElement()
+                .satisfies(review -> {
+                    assertThat(review.taskId()).isEqualTo("task-123");
+                    assertThat(review.decision()).isEqualTo("APPROVE");
+                    assertThat(review.reason()).isEqualTo("The edit matches the fix plan.");
+                    assertThat(review.confidence()).isEqualTo("HIGH");
+                    assertThat(review.requiredFollowUp()).isEqualTo("Run verification.");
+                    assertThat(review.editedFiles()).containsExactly("src/main/App.java");
+                });
     }
 
     @Test
@@ -97,7 +114,8 @@ class PlannedPatchWorkflowTests {
                 "HIGH",
                 "Generate a focused edit that returns a + b."
         ));
-        PlannedPatchWorkflow workflow = workflow(editPlanGenerator, reviewGenerator);
+        RecordingFixTaskPatchReviewService patchReviewService = new RecordingFixTaskPatchReviewService();
+        PlannedPatchWorkflow workflow = workflow(editPlanGenerator, reviewGenerator, patchReviewService);
 
         assertThatThrownBy(() -> workflow.apply(task("/agent fix"), repositoryDir, plan("src/main/App.java")))
                 .isInstanceOf(IllegalStateException.class)
@@ -105,6 +123,14 @@ class PlannedPatchWorkflowTests {
 
         assertThat(Files.readString(repositoryDir.resolve("src/main/App.java"))).contains("return 0");
         assertThat(reviewGenerator.called()).isTrue();
+        assertThat(patchReviewService.patchReviews())
+                .singleElement()
+                .satisfies(review -> {
+                    assertThat(review.decision()).isEqualTo("REJECT");
+                    assertThat(review.reason()).contains("returns a constant");
+                    assertThat(review.requiredFollowUp()).isEqualTo("Generate a focused edit that returns a + b.");
+                    assertThat(review.editedFiles()).containsExactly("src/main/App.java");
+                });
     }
 
     @Test
@@ -174,6 +200,14 @@ class PlannedPatchWorkflowTests {
             RecordingFileEditPlanGenerator editPlanGenerator,
             RecordingPatchReviewGenerator reviewGenerator
     ) {
+        return workflow(editPlanGenerator, reviewGenerator, new RecordingFixTaskPatchReviewService());
+    }
+
+    private PlannedPatchWorkflow workflow(
+            RecordingFileEditPlanGenerator editPlanGenerator,
+            RecordingPatchReviewGenerator reviewGenerator,
+            RecordingFixTaskPatchReviewService patchReviewService
+    ) {
         WorkspaceProperties properties = new WorkspaceProperties();
         properties.setRootDir(repositoryDir);
         WorkspacePathResolver pathResolver = new WorkspacePathResolver(properties);
@@ -181,7 +215,8 @@ class PlannedPatchWorkflowTests {
                 new FileWriteTool(pathResolver),
                 new FileReadTool(pathResolver),
                 editPlanGenerator,
-                reviewGenerator
+                reviewGenerator,
+                patchReviewService
         );
     }
 
@@ -284,6 +319,46 @@ class PlannedPatchWorkflowTests {
 
         private List<ProposedFileEdit> edits() {
             return edits;
+        }
+    }
+
+    private static final class RecordingFixTaskPatchReviewService implements FixTaskPatchReviewService {
+
+        private final List<FixTaskPatchReviewVo> patchReviews = new ArrayList<>();
+
+        @Override
+        public FixTaskPatchReviewVo recordPatchReview(
+                String taskId,
+                String decision,
+                String reason,
+                String confidence,
+                String requiredFollowUp,
+                List<String> editedFiles,
+                Instant createdAt
+        ) {
+            FixTaskPatchReviewVo patchReview = new FixTaskPatchReviewVo(
+                    "patch-review-" + (patchReviews.size() + 1),
+                    taskId,
+                    decision,
+                    reason,
+                    confidence,
+                    requiredFollowUp,
+                    editedFiles,
+                    createdAt
+            );
+            patchReviews.add(patchReview);
+            return patchReview;
+        }
+
+        @Override
+        public Optional<FixTaskPatchReviewVo> findLatestPatchReview(String taskId) {
+            return patchReviews.stream()
+                    .filter(review -> review.taskId().equals(taskId))
+                    .reduce((left, right) -> right);
+        }
+
+        private List<FixTaskPatchReviewVo> patchReviews() {
+            return patchReviews;
         }
     }
 }
