@@ -11,7 +11,19 @@ public interface TriggerQuarantineRecordService {
 
     TriggerQuarantineVo recordQuarantine(RecordTriggerQuarantineCommand command);
 
+    TriggerQuarantineVo createManualQuarantine(
+            TriggerQuarantineScope scope,
+            String scopeKey,
+            String reason,
+            long durationMs,
+            String operator
+    );
+
+    TriggerQuarantineVo releaseQuarantine(String id, String operator, String reason);
+
     Optional<TriggerQuarantineVo> findActiveQuarantine(TriggerQuarantineScope scope, String scopeKey);
+
+    Optional<TriggerQuarantineVo> findQuarantine(TriggerQuarantineScope scope, String scopeKey);
 
     List<TriggerQuarantineVo> listQuarantines(boolean activeOnly, int limit);
 }

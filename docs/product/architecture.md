@@ -130,7 +130,8 @@ Responsibilities:
 - Summarize recent rejected triggering attempts by category, source, trigger user, and repository so operators can spot abuse or bad prompt patterns without reading every row.
 - Apply rejected-trigger quarantine before rate limiting, model classification, task creation, queueing, or workspace work when recent rejected attempts from the same trigger user or repository exceed the configured threshold. Quarantined attempts are recorded as `ABUSE_QUARANTINED`.
 - Persist trigger-user and repository quarantine records through `TriggerQuarantineRecordService` so active safety state survives worker restarts in MySQL-backed profiles.
-- Expose read-only active or historical quarantine records through `GET /api/trigger-quarantines` for operator diagnosis.
+- Expose active or historical quarantine records through `GET /api/trigger-quarantines` for operator diagnosis.
+- Allow operators to create and release trigger quarantines through admin-token-protected `/api/trigger-quarantines` write endpoints.
 - Deduplicate delivery ids.
 - Submit work to task services.
 
@@ -317,6 +318,10 @@ Important fields:
 - `expiresAt`
 - `createdAt`
 - `updatedAt`
+- `createdBy`
+- `releasedAt`
+- `releasedBy`
+- `releaseReason`
 
 ### ToolCallRecord
 

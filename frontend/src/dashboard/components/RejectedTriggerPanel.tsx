@@ -1,11 +1,14 @@
 import type {
+  CreateTriggerQuarantineInput,
   RejectedTriggerAudit,
   RejectedTriggerAuditSummary,
   RejectedTriggerCategoryFilter,
   RejectedTriggerCountSummary,
+  ReleaseTriggerQuarantineInput,
   TriggerQuarantine,
   TriggerQuarantineScope
 } from '../../types';
+import { useState, type FormEvent } from 'react';
 import { compactTime } from '../format';
 
 const REJECTED_TRIGGER_CATEGORY_FILTERS: RejectedTriggerCategoryFilter[] = [
@@ -34,6 +37,10 @@ interface RejectedTriggerPanelProps {
   onCategoryFilterChange: (category: RejectedTriggerCategoryFilter) => void;
   onRetryRejectedTrigger: (id: string) => void;
   onSelectTask: (taskId: string) => void;
+  onCreateTriggerQuarantine: (input: CreateTriggerQuarantineInput) => void;
+  onReleaseTriggerQuarantine: (id: string, input: ReleaseTriggerQuarantineInput) => void;
+  creatingTriggerQuarantine: boolean;
+  releasingTriggerQuarantineId: string | null;
 }
 
 export function RejectedTriggerPanel({
@@ -45,7 +52,11 @@ export function RejectedTriggerPanel({
   retryingRejectedTriggerId,
   onCategoryFilterChange,
   onRetryRejectedTrigger,
-  onSelectTask
+  onSelectTask,
+  onCreateTriggerQuarantine,
+  onReleaseTriggerQuarantine,
+  creatingTriggerQuarantine,
+  releasingTriggerQuarantineId
 }: RejectedTriggerPanelProps) {
   const rejectionSummary =
     rejectedTriggers.length === 0
@@ -78,7 +89,13 @@ export function RejectedTriggerPanel({
       </div>
       {error ? <p className="panel-error">{error}</p> : null}
       <RejectedTriggerSummary summary={summary} onCategoryFilterChange={onCategoryFilterChange} />
-      <TriggerQuarantineSummary quarantines={quarantines} />
+      <TriggerQuarantineControls
+        quarantines={quarantines}
+        onCreateTriggerQuarantine={onCreateTriggerQuarantine}
+        onReleaseTriggerQuarantine={onReleaseTriggerQuarantine}
+        creatingTriggerQuarantine={creatingTriggerQuarantine}
+        releasingTriggerQuarantineId={releasingTriggerQuarantineId}
+      />
       <div className="rejected-trigger-list" role="group" aria-label="Rejected trigger audit rows">
         {rejectedTriggers.map((trigger) => (
           <article className="rejected-trigger-row" key={trigger.id}>
@@ -118,33 +135,157 @@ export function RejectedTriggerPanel({
   );
 }
 
-function TriggerQuarantineSummary({ quarantines }: { quarantines: TriggerQuarantine[] }) {
-  if (quarantines.length === 0) {
-    return null;
+function TriggerQuarantineControls({
+  quarantines,
+  onCreateTriggerQuarantine,
+  onReleaseTriggerQuarantine,
+  creatingTriggerQuarantine,
+  releasingTriggerQuarantineId
+}: {
+  quarantines: TriggerQuarantine[];
+  onCreateTriggerQuarantine: (input: CreateTriggerQuarantineInput) => void;
+  onReleaseTriggerQuarantine: (id: string, input: ReleaseTriggerQuarantineInput) => void;
+  creatingTriggerQuarantine: boolean;
+  releasingTriggerQuarantineId: string | null;
+}) {
+  const [scope, setScope] = useState<TriggerQuarantineScope>('TRIGGER_USER');
+  const [scopeKey, setScopeKey] = useState('');
+  const [reason, setReason] = useState('');
+  const [durationMinutes, setDurationMinutes] = useState('30');
+  const [operator, setOperator] = useState('');
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    onCreateTriggerQuarantine({
+      scope,
+      scopeKey: scopeKey.trim(),
+      reason: reason.trim(),
+      durationMs: Math.max(1, Number(durationMinutes)) * 60_000,
+      operator: operator.trim()
+    });
   }
+
   return (
-    <div className="trigger-quarantine-summary" role="group" aria-label="Active trigger quarantines">
+    <div className="trigger-quarantine-summary" role="group" aria-label="Trigger quarantine controls">
       <div className="rejected-trigger-summary-header">
         <div>
-          <h3>Active trigger quarantines</h3>
+          <h3>Trigger quarantine controls</h3>
           <p>
             {quarantines.length} active {quarantines.length === 1 ? 'quarantine' : 'quarantines'}
           </p>
         </div>
       </div>
-      <div className="trigger-quarantine-list">
-        {quarantines.map((quarantine) => (
-          <article className="trigger-quarantine-row" key={quarantine.id}>
-            <div>
-              <span className="status-pill status-warning">{scopeLabel(quarantine.scope)}</span>
-              <strong>{quarantine.scopeKey}</strong>
-              <span>{quarantine.evidenceCount} rejected triggers</span>
-              <time>Expires {compactTime(quarantine.expiresAt)}</time>
-            </div>
-            <p>{quarantine.reason}</p>
-          </article>
-        ))}
-      </div>
+      <form className="trigger-quarantine-form" onSubmit={handleSubmit}>
+        <label>
+          <span>Scope</span>
+          <select
+            aria-label="Manual quarantine scope"
+            value={scope}
+            onChange={(event) => setScope(event.target.value as TriggerQuarantineScope)}
+          >
+            <option value="TRIGGER_USER">Trigger user</option>
+            <option value="REPOSITORY">Repository</option>
+          </select>
+        </label>
+        <label>
+          <span>Target</span>
+          <input
+            aria-label="Manual quarantine target"
+            value={scopeKey}
+            onChange={(event) => setScopeKey(event.target.value)}
+            placeholder={scope === 'TRIGGER_USER' ? 'github-user' : 'owner/repo'}
+          />
+        </label>
+        <label>
+          <span>Reason</span>
+          <input
+            aria-label="Manual quarantine reason"
+            value={reason}
+            onChange={(event) => setReason(event.target.value)}
+            placeholder="Why this trigger should be blocked"
+          />
+        </label>
+        <label>
+          <span>Minutes</span>
+          <input
+            aria-label="Manual quarantine duration minutes"
+            min="1"
+            type="number"
+            value={durationMinutes}
+            onChange={(event) => setDurationMinutes(event.target.value)}
+          />
+        </label>
+        <label>
+          <span>Operator</span>
+          <input
+            aria-label="Manual quarantine operator"
+            value={operator}
+            onChange={(event) => setOperator(event.target.value)}
+            placeholder="local-admin"
+          />
+        </label>
+        <button
+          type="submit"
+          className="secondary-button"
+          disabled={creatingTriggerQuarantine || !scopeKey.trim() || !reason.trim() || !operator.trim()}
+        >
+          {creatingTriggerQuarantine ? 'Creating quarantine' : 'Create quarantine'}
+        </button>
+      </form>
+      <TriggerQuarantineSummary
+        quarantines={quarantines}
+        operator={operator.trim() || 'dashboard-operator'}
+        releasingTriggerQuarantineId={releasingTriggerQuarantineId}
+        onReleaseTriggerQuarantine={onReleaseTriggerQuarantine}
+      />
+    </div>
+  );
+}
+
+function TriggerQuarantineSummary({
+  quarantines,
+  operator,
+  releasingTriggerQuarantineId,
+  onReleaseTriggerQuarantine
+}: {
+  quarantines: TriggerQuarantine[];
+  operator: string;
+  releasingTriggerQuarantineId: string | null;
+  onReleaseTriggerQuarantine: (id: string, input: ReleaseTriggerQuarantineInput) => void;
+}) {
+  if (quarantines.length === 0) {
+    return <p className="empty-state compact-empty-state">No active trigger quarantines.</p>;
+  }
+  return (
+    <div className="trigger-quarantine-list" role="group" aria-label="Active trigger quarantines">
+      <h4>Active trigger quarantines</h4>
+      {quarantines.map((quarantine) => (
+        <article className="trigger-quarantine-row" key={quarantine.id}>
+          <div>
+            <span className="status-pill status-warning">{scopeLabel(quarantine.scope)}</span>
+            <strong>{quarantine.scopeKey}</strong>
+            <span>{quarantine.evidenceCount} rejected triggers</span>
+            {quarantine.createdBy ? <span>By {quarantine.createdBy}</span> : null}
+            <time>Expires {compactTime(quarantine.expiresAt)}</time>
+            <button
+              type="button"
+              className="inline-action"
+              disabled={releasingTriggerQuarantineId === quarantine.id}
+              onClick={() =>
+                onReleaseTriggerQuarantine(quarantine.id, {
+                  operator,
+                  reason: 'Operator released active quarantine from dashboard'
+                })
+              }
+            >
+              {releasingTriggerQuarantineId === quarantine.id
+                ? 'Releasing quarantine'
+                : `Release ${quarantine.scopeKey} quarantine`}
+            </button>
+          </div>
+          <p>{quarantine.reason}</p>
+        </article>
+      ))}
     </div>
   );
 }

@@ -31,11 +31,16 @@ public final class TriggerQuarantineConvert {
         entity.setExpiresAt(command.expiresAt());
         entity.setCreatedAt(now);
         entity.setUpdatedAt(now);
+        entity.setCreatedBy(null);
+        entity.setReleasedAt(null);
+        entity.setReleasedBy(null);
+        entity.setReleaseReason(null);
         return entity;
     }
 
     public static TriggerQuarantineVo toVo(TriggerQuarantineEntity entity, Instant now) {
         Instant expiresAt = entity.getExpiresAt();
+        Instant releasedAt = entity.getReleasedAt();
         return new TriggerQuarantineVo(
                 entity.getId(),
                 TriggerQuarantineScope.valueOf(entity.getScope()),
@@ -48,7 +53,11 @@ public final class TriggerQuarantineConvert {
                 expiresAt,
                 entity.getCreatedAt(),
                 entity.getUpdatedAt(),
-                expiresAt != null && expiresAt.isAfter(now)
+                entity.getCreatedBy(),
+                releasedAt,
+                entity.getReleasedBy(),
+                entity.getReleaseReason(),
+                releasedAt == null && expiresAt != null && expiresAt.isAfter(now)
         );
     }
 

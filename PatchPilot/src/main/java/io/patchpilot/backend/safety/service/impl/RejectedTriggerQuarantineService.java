@@ -128,6 +128,9 @@ public class RejectedTriggerQuarantineService implements TriggerQuarantineServic
         if (latestRejection == null || latestRejection.plusMillis(cooldownMs).isBefore(now)) {
             return false;
         }
+        if (wasReleasedAfterLatestRejection(scope, scopeKey, latestRejection, now)) {
+            return false;
+        }
 
         Instant thresholdWindowStart = latestRejection.minusMillis(windowMs);
         int rejectionCount = 0;
@@ -152,6 +155,19 @@ public class RejectedTriggerQuarantineService implements TriggerQuarantineServic
                 latestRejection.plusMillis(cooldownMs)
         ));
         return true;
+    }
+
+    private boolean wasReleasedAfterLatestRejection(
+            TriggerQuarantineScope scope,
+            String scopeKey,
+            Instant latestRejection,
+            Instant now
+    ) {
+        return quarantineRecordService.findQuarantine(scope, scopeKey)
+                .filter(quarantine -> quarantine.releasedAt() != null)
+                .filter(quarantine -> !quarantine.releasedAt().isBefore(latestRejection))
+                .filter(quarantine -> quarantine.expiresAt() != null && quarantine.expiresAt().isAfter(now))
+                .isPresent();
     }
 
     private static String repositoryKey(String repositoryOwner, String repositoryName) {

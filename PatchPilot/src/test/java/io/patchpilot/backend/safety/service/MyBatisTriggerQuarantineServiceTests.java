@@ -123,6 +123,58 @@ class MyBatisTriggerQuarantineServiceTests {
     }
 
     @Test
+    void should_create_manual_quarantine_with_operator_metadata() {
+        when(quarantineMapper.selectList(any())).thenReturn(List.of());
+        when(quarantineMapper.insert(any(TriggerQuarantineEntity.class))).thenReturn(1);
+        ArgumentCaptor<TriggerQuarantineEntity> entityCaptor =
+                ArgumentCaptor.forClass(TriggerQuarantineEntity.class);
+
+        TriggerQuarantineVo quarantine = quarantineService.createManualQuarantine(
+                TriggerQuarantineScope.REPOSITORY,
+                "Octocat/Hello-World",
+                "Operator blocked a noisy demo repository",
+                3_600_000,
+                "local-admin"
+        );
+
+        verify(quarantineMapper).insert(entityCaptor.capture());
+        TriggerQuarantineEntity entity = entityCaptor.getValue();
+        assertThat(entity.getScope()).isEqualTo("REPOSITORY");
+        assertThat(entity.getScopeKey()).isEqualTo("octocat/hello-world");
+        assertThat(entity.getReason()).isEqualTo("Operator blocked a noisy demo repository");
+        assertThat(entity.getCategory()).isEqualTo("MANUAL_QUARANTINE");
+        assertThat(entity.getEvidenceCount()).isZero();
+        assertThat(entity.getWindowMs()).isZero();
+        assertThat(entity.getCreatedBy()).isEqualTo("local-admin");
+        assertThat(entity.getReleasedAt()).isNull();
+        assertThat(quarantine.createdBy()).isEqualTo("local-admin");
+        assertThat(quarantine.active()).isTrue();
+    }
+
+    @Test
+    void should_release_quarantine_and_exclude_it_from_active_lookup() {
+        TriggerQuarantineEntity existing = entity("quarantine-1", Instant.now().plusSeconds(1800));
+        when(quarantineMapper.selectList(any())).thenReturn(List.of(existing));
+        when(quarantineMapper.updateById(any(TriggerQuarantineEntity.class))).thenReturn(1);
+        ArgumentCaptor<TriggerQuarantineEntity> entityCaptor =
+                ArgumentCaptor.forClass(TriggerQuarantineEntity.class);
+
+        TriggerQuarantineVo released = quarantineService.releaseQuarantine(
+                "quarantine-1",
+                "local-admin",
+                "False positive during demo"
+        );
+
+        verify(quarantineMapper).updateById(entityCaptor.capture());
+        assertThat(entityCaptor.getValue().getId()).isEqualTo("quarantine-1");
+        assertThat(entityCaptor.getValue().getReleasedBy()).isEqualTo("local-admin");
+        assertThat(entityCaptor.getValue().getReleaseReason()).isEqualTo("False positive during demo");
+        assertThat(released.active()).isFalse();
+        assertThat(released.releasedBy()).isEqualTo("local-admin");
+        assertThat(released.releaseReason()).isEqualTo("False positive during demo");
+    }
+
+    @Test
     @SuppressWarnings({"unchecked", "rawtypes"})
     void should_order_query_before_limiting_quarantine_list() {
         when(quarantineMapper.selectList(any())).thenReturn(List.of());
@@ -153,6 +205,10 @@ class MyBatisTriggerQuarantineServiceTests {
         entity.setExpiresAt(expiresAt);
         entity.setCreatedAt(Instant.parse("2026-06-24T00:00:00Z"));
         entity.setUpdatedAt(Instant.parse("2026-06-24T00:00:00Z"));
+        entity.setCreatedBy(null);
+        entity.setReleasedAt(null);
+        entity.setReleasedBy(null);
+        entity.setReleaseReason(null);
         return entity;
     }
 }

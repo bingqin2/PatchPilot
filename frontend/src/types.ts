@@ -330,6 +330,19 @@ export interface RejectedTriggerAuditSummary {
 
 export type TriggerQuarantineScope = 'TRIGGER_USER' | 'REPOSITORY';
 
+export interface CreateTriggerQuarantineInput {
+  scope: TriggerQuarantineScope;
+  scopeKey: string;
+  reason: string;
+  durationMs: number;
+  operator: string;
+}
+
+export interface ReleaseTriggerQuarantineInput {
+  operator: string;
+  reason: string;
+}
+
 export interface TriggerQuarantine {
   id: string;
   scope: TriggerQuarantineScope;
@@ -342,6 +355,10 @@ export interface TriggerQuarantine {
   expiresAt: string;
   createdAt: string;
   updatedAt: string;
+  createdBy: string | null;
+  releasedAt: string | null;
+  releasedBy: string | null;
+  releaseReason: string | null;
   active: boolean;
 }
 

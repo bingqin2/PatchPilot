@@ -1,6 +1,7 @@
 package io.patchpilot.backend.safety.domain;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.FieldStrategy;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -44,4 +45,16 @@ public class TriggerQuarantineEntity {
 
     @TableField("updated_at")
     private Instant updatedAt;
+
+    @TableField("created_by")
+    private String createdBy;
+
+    @TableField(value = "released_at", updateStrategy = FieldStrategy.ALWAYS)
+    private Instant releasedAt;
+
+    @TableField(value = "released_by", updateStrategy = FieldStrategy.ALWAYS)
+    private String releasedBy;
+
+    @TableField(value = "release_reason", updateStrategy = FieldStrategy.ALWAYS)
+    private String releaseReason;
 }

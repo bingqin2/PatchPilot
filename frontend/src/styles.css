@@ -2163,6 +2163,41 @@ pre {
   padding: 14px 16px;
 }
 
+.trigger-quarantine-form {
+  align-items: end;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(130px, 0.7fr) minmax(180px, 1fr) minmax(220px, 1.4fr) minmax(110px, 0.6fr) minmax(150px, 0.9fr) auto;
+}
+
+.trigger-quarantine-form label {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.trigger-quarantine-form label span {
+  color: #64727f;
+  font-size: 11px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.trigger-quarantine-form input,
+.trigger-quarantine-form select {
+  background: #ffffff;
+  border: 1px solid #ccd6df;
+  border-radius: 6px;
+  color: #17202a;
+  min-height: 36px;
+  min-width: 0;
+  padding: 7px 9px;
+}
+
+.compact-empty-state {
+  padding: 8px 0 0;
+}
+
 .rejected-trigger-summary-header p {
   color: #64727f;
   font-size: 12px;

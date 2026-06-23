@@ -1,6 +1,7 @@
 import {
   approveTaskReview,
   createTask,
+  createTriggerQuarantine,
   ADMIN_TOKEN_STORAGE_KEY,
   getBackendHealth,
   getConfigurationSummary,
@@ -13,6 +14,7 @@ import {
   listLanguageAdapters,
   listRejectedTriggers,
   listTriggerQuarantines,
+  releaseTriggerQuarantine,
   retryRejectedTrigger,
   getDemoReadiness,
   getTaskReport,
@@ -356,6 +358,104 @@ test('lists active trigger quarantines through backend API', async () => {
   expect(quarantines[0].scope).toBe('TRIGGER_USER');
   expect(quarantines[0].scopeKey).toBe('drive-by-user');
   expect(quarantines[0].active).toBe(true);
+});
+
+test('creates manual trigger quarantines through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 201,
+    json: async () => ({
+      success: true,
+      data: {
+        id: 'quarantine-1',
+        scope: 'TRIGGER_USER',
+        scopeKey: 'drive-by-user',
+        reason: 'Operator blocked noisy demo trigger user',
+        category: 'MANUAL_QUARANTINE',
+        evidenceCount: 0,
+        windowMs: 0,
+        startedAt: '2026-06-24T01:00:00Z',
+        expiresAt: '2026-06-24T01:30:00Z',
+        createdAt: '2026-06-24T01:00:00Z',
+        updatedAt: '2026-06-24T01:00:00Z',
+        createdBy: 'local-admin',
+        releasedAt: null,
+        releasedBy: null,
+        releaseReason: null,
+        active: true
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const quarantine = await createTriggerQuarantine({
+    scope: 'TRIGGER_USER',
+    scopeKey: 'drive-by-user',
+    reason: 'Operator blocked noisy demo trigger user',
+    durationMs: 1800000,
+    operator: 'local-admin'
+  });
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/trigger-quarantines', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      scope: 'TRIGGER_USER',
+      scopeKey: 'drive-by-user',
+      reason: 'Operator blocked noisy demo trigger user',
+      durationMs: 1800000,
+      operator: 'local-admin'
+    })
+  });
+  expect(quarantine.category).toBe('MANUAL_QUARANTINE');
+  expect(quarantine.createdBy).toBe('local-admin');
+});
+
+test('releases trigger quarantines through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        id: 'quarantine-1',
+        scope: 'TRIGGER_USER',
+        scopeKey: 'drive-by-user',
+        reason: 'Operator blocked noisy demo trigger user',
+        category: 'MANUAL_QUARANTINE',
+        evidenceCount: 0,
+        windowMs: 0,
+        startedAt: '2026-06-24T01:00:00Z',
+        expiresAt: '2026-06-24T01:30:00Z',
+        createdAt: '2026-06-24T01:00:00Z',
+        updatedAt: '2026-06-24T01:05:00Z',
+        createdBy: 'local-admin',
+        releasedAt: '2026-06-24T01:05:00Z',
+        releasedBy: 'local-admin',
+        releaseReason: 'False positive during demo',
+        active: false
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const quarantine = await releaseTriggerQuarantine('quarantine-1', {
+    operator: 'local-admin',
+    reason: 'False positive during demo'
+  });
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/trigger-quarantines/quarantine-1/release', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      operator: 'local-admin',
+      reason: 'False positive during demo'
+    })
+  });
+  expect(quarantine.active).toBe(false);
+  expect(quarantine.releasedBy).toBe('local-admin');
 });
 
 test('retries a rejected trigger through backend API', async () => {
