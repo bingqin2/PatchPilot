@@ -17,6 +17,7 @@ import type {
   FixTaskModelUsageSummary,
   FixTaskQueueItem,
   FixTaskQueueSummary,
+  RejectedTriggerAudit,
   WebhookDeliveryDiagnostic,
   FixTaskModelCall,
   FixTaskTestRun,
@@ -157,6 +158,10 @@ export async function listQueueItems(): Promise<FixTaskQueueItem[]> {
 
 export async function listWebhookDeliveries(limit = 10): Promise<WebhookDeliveryDiagnostic[]> {
   return getApi<WebhookDeliveryDiagnostic[]>(`/api/github/webhook-deliveries?limit=${limit}`);
+}
+
+export async function listRejectedTriggers(limit = 20): Promise<RejectedTriggerAudit[]> {
+  return getApi<RejectedTriggerAudit[]>(`/api/rejected-triggers?limit=${limit}`);
 }
 
 export async function getTaskSummary(taskId: string): Promise<FixTaskAuditSummary> {

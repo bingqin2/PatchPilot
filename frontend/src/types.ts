@@ -266,6 +266,19 @@ export interface WebhookDeliveryDiagnostic {
   createdAt: string;
 }
 
+export interface RejectedTriggerAudit {
+  id: string;
+  source: string;
+  deliveryId: string | null;
+  repositoryOwner: string | null;
+  repositoryName: string | null;
+  issueNumber: number | null;
+  triggerUser: string | null;
+  triggerComment: string | null;
+  reason: string;
+  createdAt: string;
+}
+
 export interface FixTaskAuditSummary {
   task: FixTask;
   timelineEventCount: number;

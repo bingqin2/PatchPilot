@@ -10,6 +10,7 @@ import {
   getDemoSmokeChecklist,
   listLanguageAdapterFixtures,
   listLanguageAdapters,
+  listRejectedTriggers,
   getDemoReadiness,
   getTaskReport,
   getTaskDetail,
@@ -216,6 +217,38 @@ test('lists recent webhook deliveries through backend API', async () => {
   expect(deliveries[0].status).toBe('TASK_CREATED');
   expect(deliveries[0].redeliveryRecommended).toBe(false);
   expect(deliveries[0].operatorAction).toBe('Task was created. Do not redeliver this webhook unless you intentionally want GitHub to report a duplicate delivery.');
+});
+
+test('lists recent rejected triggers through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: [
+        {
+          id: 'rejected-1',
+          source: 'webhook',
+          deliveryId: 'delivery-rejected',
+          repositoryOwner: 'bingqin2',
+          repositoryName: 'PatchPilot',
+          issueNumber: 1,
+          triggerUser: 'unknown-user',
+          triggerComment: '/agent fix make it better',
+          reason: 'Unsafe request rejected: instruction is not actionable',
+          createdAt: '2026-06-23T01:05:00Z'
+        }
+      ],
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const rejectedTriggers = await listRejectedTriggers(20);
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/rejected-triggers?limit=20');
+  expect(rejectedTriggers[0].reason).toBe('Unsafe request rejected: instruction is not actionable');
+  expect(rejectedTriggers[0].triggerComment).toBe('/agent fix make it better');
 });
 
 test('builds backend task status count query parameters without status or pagination', async () => {
