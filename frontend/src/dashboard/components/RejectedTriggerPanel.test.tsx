@@ -69,8 +69,11 @@ test('renders rejected trigger audit rows and retries a rejected trigger', async
       onCategoryFilterChange={onCategoryFilterChange}
       onCreateTriggerQuarantine={vi.fn()}
       onReleaseTriggerQuarantine={vi.fn()}
+      onInspectTriggerQuarantine={vi.fn()}
       creatingTriggerQuarantine={false}
       releasingTriggerQuarantineId={null}
+      inspectingTriggerQuarantineId={null}
+      triggerQuarantineEvidence={null}
       rejectedTriggers={[
         {
           id: 'rejected-1',
@@ -168,8 +171,11 @@ test('renders rejected trigger empty and error states', () => {
       onCategoryFilterChange={vi.fn()}
       onCreateTriggerQuarantine={vi.fn()}
       onReleaseTriggerQuarantine={vi.fn()}
+      onInspectTriggerQuarantine={vi.fn()}
       creatingTriggerQuarantine={false}
       releasingTriggerQuarantineId={null}
+      inspectingTriggerQuarantineId={null}
+      triggerQuarantineEvidence={null}
     />
   );
 
@@ -190,8 +196,11 @@ test('renders rejected trigger empty and error states', () => {
       onCategoryFilterChange={vi.fn()}
       onCreateTriggerQuarantine={vi.fn()}
       onReleaseTriggerQuarantine={vi.fn()}
+      onInspectTriggerQuarantine={vi.fn()}
       creatingTriggerQuarantine={false}
       releasingTriggerQuarantineId={null}
+      inspectingTriggerQuarantineId={null}
+      triggerQuarantineEvidence={null}
     />
   );
 
@@ -212,8 +221,11 @@ test('disables the retry action while retrying a rejected trigger', () => {
       onCategoryFilterChange={vi.fn()}
       onCreateTriggerQuarantine={vi.fn()}
       onReleaseTriggerQuarantine={vi.fn()}
+      onInspectTriggerQuarantine={vi.fn()}
       creatingTriggerQuarantine={false}
       releasingTriggerQuarantineId={null}
+      inspectingTriggerQuarantineId={null}
+      triggerQuarantineEvidence={null}
       rejectedTriggers={[
         {
           id: 'rejected-1',
@@ -278,8 +290,11 @@ test('creates and releases manual trigger quarantines', async () => {
       onCategoryFilterChange={vi.fn()}
       onCreateTriggerQuarantine={onCreateTriggerQuarantine}
       onReleaseTriggerQuarantine={onReleaseTriggerQuarantine}
+      onInspectTriggerQuarantine={vi.fn()}
       creatingTriggerQuarantine={false}
       releasingTriggerQuarantineId={null}
+      inspectingTriggerQuarantineId={null}
+      triggerQuarantineEvidence={null}
     />
   );
 
@@ -306,4 +321,114 @@ test('creates and releases manual trigger quarantines', async () => {
     operator: 'local-admin',
     reason: 'Operator released active quarantine from dashboard'
   });
+});
+
+test('inspects trigger quarantine evidence', async () => {
+  const user = userEvent.setup();
+  const onInspectTriggerQuarantine = vi.fn();
+
+  render(
+    <RejectedTriggerPanel
+      error={null}
+      quarantines={[
+        {
+          id: 'quarantine-1',
+          scope: 'TRIGGER_USER',
+          scopeKey: 'drive-by-user',
+          reason: 'Unsafe request rejected: trigger user is temporarily quarantined',
+          category: 'ABUSE_QUARANTINED',
+          evidenceCount: 5,
+          windowMs: 600000,
+          startedAt: '2026-06-20T01:03:00Z',
+          expiresAt: '2026-06-20T01:33:00Z',
+          createdAt: '2026-06-20T01:03:00Z',
+          updatedAt: '2026-06-20T01:08:00Z',
+          createdBy: null,
+          releasedAt: null,
+          releasedBy: null,
+          releaseReason: null,
+          active: true
+        }
+      ]}
+      operatorSafetyAudits={[]}
+      summary={null}
+      categoryFilter="ALL"
+      rejectedTriggers={[]}
+      retryingRejectedTriggerId={null}
+      onRetryRejectedTrigger={vi.fn()}
+      onSelectTask={vi.fn()}
+      onCategoryFilterChange={vi.fn()}
+      onCreateTriggerQuarantine={vi.fn()}
+      onReleaseTriggerQuarantine={vi.fn()}
+      onInspectTriggerQuarantine={onInspectTriggerQuarantine}
+      creatingTriggerQuarantine={false}
+      releasingTriggerQuarantineId={null}
+      inspectingTriggerQuarantineId={null}
+      triggerQuarantineEvidence={{
+        quarantine: {
+          id: 'quarantine-1',
+          scope: 'TRIGGER_USER',
+          scopeKey: 'drive-by-user',
+          reason: 'Unsafe request rejected: trigger user is temporarily quarantined',
+          category: 'ABUSE_QUARANTINED',
+          evidenceCount: 5,
+          windowMs: 600000,
+          startedAt: '2026-06-20T01:03:00Z',
+          expiresAt: '2026-06-20T01:33:00Z',
+          createdAt: '2026-06-20T01:03:00Z',
+          updatedAt: '2026-06-20T01:08:00Z',
+          createdBy: null,
+          releasedAt: null,
+          releasedBy: null,
+          releaseReason: null,
+          active: true
+        },
+        rejectedTriggers: [
+          {
+            id: 'rejected-1',
+            source: 'issue_comment',
+            deliveryId: 'delivery-rejected',
+            repositoryOwner: 'bingqin2',
+            repositoryName: 'PatchPilot',
+            issueNumber: 1,
+            triggerUser: 'drive-by-user',
+            triggerComment: '/agent fix make it better',
+            category: 'NOT_ACTIONABLE',
+            reason: 'Unsafe request rejected: instruction is not actionable',
+            commentId: 456,
+            commentUrl: 'https://github.com/bingqin2/PatchPilot/issues/1#issuecomment-456',
+            retriedTaskId: null,
+            retriedAt: null,
+            createdAt: '2026-06-20T01:04:00Z'
+          }
+        ],
+        operatorSafetyAudits: [
+          {
+            id: 'operator-audit-1',
+            action: 'MANUAL_QUARANTINE_CREATED',
+            resourceType: 'TRIGGER_QUARANTINE',
+            resourceId: 'quarantine-1',
+            scope: 'TRIGGER_USER',
+            scopeKey: 'drive-by-user',
+            operator: 'local-admin',
+            reason: 'Operator blocked noisy demo trigger user',
+            createdAt: '2026-06-20T01:05:00Z'
+          }
+        ]
+      }}
+    />
+  );
+
+  const panel = screen.getByRole('region', { name: 'Rejected triggers' });
+  await user.click(within(panel).getByRole('button', { name: 'Inspect drive-by-user evidence' }));
+
+  expect(onInspectTriggerQuarantine).toHaveBeenCalledWith('quarantine-1');
+  const evidencePanel = within(panel).getByRole('group', { name: 'Trigger quarantine evidence' });
+  expect(within(evidencePanel).getByText('Quarantine evidence')).toBeInTheDocument();
+  expect(within(evidencePanel).getByText(/1 rejected trigger/)).toBeInTheDocument();
+  expect(within(evidencePanel).getByText(/1 operator action/)).toBeInTheDocument();
+  expect(within(evidencePanel).getByText('/agent fix make it better')).toBeInTheDocument();
+  expect(within(evidencePanel).getByText('Unsafe request rejected: instruction is not actionable')).toBeInTheDocument();
+  expect(within(evidencePanel).getByText('Manual quarantine created')).toBeInTheDocument();
+  expect(within(evidencePanel).getByText('Operator blocked noisy demo trigger user')).toBeInTheDocument();
 });

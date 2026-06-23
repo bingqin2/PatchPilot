@@ -4,8 +4,10 @@ import io.patchpilot.backend.common.response.ApiResponse;
 import io.patchpilot.backend.safety.domain.ManualTriggerQuarantineRequest;
 import io.patchpilot.backend.safety.domain.RecordOperatorSafetyAuditCommand;
 import io.patchpilot.backend.safety.domain.ReleaseTriggerQuarantineRequest;
+import io.patchpilot.backend.safety.domain.TriggerQuarantineEvidenceVo;
 import io.patchpilot.backend.safety.domain.TriggerQuarantineVo;
 import io.patchpilot.backend.safety.service.OperatorSafetyAuditService;
+import io.patchpilot.backend.safety.service.TriggerQuarantineEvidenceService;
 import io.patchpilot.backend.safety.service.TriggerQuarantineRecordService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -27,6 +29,7 @@ public class TriggerQuarantineController {
 
     private final TriggerQuarantineRecordService quarantineRecordService;
     private final OperatorSafetyAuditService operatorSafetyAuditService;
+    private final TriggerQuarantineEvidenceService triggerQuarantineEvidenceService;
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<TriggerQuarantineVo>>> listTriggerQuarantines(
@@ -38,6 +41,23 @@ public class TriggerQuarantineController {
                     activeOnly == null || activeOnly,
                     normalizeLimit(limit)
             )));
+        } catch (IllegalArgumentException exception) {
+            return ResponseEntity.badRequest().body(ApiResponse.fail(exception.getMessage()));
+        }
+    }
+
+    @GetMapping("/{id}/evidence")
+    public ResponseEntity<ApiResponse<TriggerQuarantineEvidenceVo>> getTriggerQuarantineEvidence(
+            @PathVariable String id,
+            @RequestParam(required = false) Integer limit
+    ) {
+        try {
+            return ResponseEntity.ok(ApiResponse.ok(triggerQuarantineEvidenceService.getEvidence(
+                    id,
+                    normalizeLimit(limit)
+            )));
+        } catch (TriggerQuarantineEvidenceService.QuarantineNotFoundException exception) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.fail(exception.getMessage()));
         } catch (IllegalArgumentException exception) {
             return ResponseEntity.badRequest().body(ApiResponse.fail(exception.getMessage()));
         }

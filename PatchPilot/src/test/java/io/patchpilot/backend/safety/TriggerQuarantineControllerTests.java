@@ -1,8 +1,12 @@
 package io.patchpilot.backend.safety;
 
 import io.patchpilot.backend.safety.domain.TriggerQuarantineScope;
+import io.patchpilot.backend.safety.domain.OperatorSafetyAuditVo;
+import io.patchpilot.backend.safety.domain.RejectedTriggerAuditVo;
+import io.patchpilot.backend.safety.domain.TriggerQuarantineEvidenceVo;
 import io.patchpilot.backend.safety.domain.TriggerQuarantineVo;
 import io.patchpilot.backend.safety.service.OperatorSafetyAuditService;
+import io.patchpilot.backend.safety.service.TriggerQuarantineEvidenceService;
 import io.patchpilot.backend.safety.service.TriggerQuarantineRecordService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +36,9 @@ class TriggerQuarantineControllerTests {
 
     @MockitoBean
     private OperatorSafetyAuditService operatorSafetyAuditService;
+
+    @MockitoBean
+    private TriggerQuarantineEvidenceService triggerQuarantineEvidenceService;
 
     @Test
     void should_list_active_trigger_quarantines() throws Exception {
@@ -75,6 +82,82 @@ class TriggerQuarantineControllerTests {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.message").value("limit must be between 1 and 100"));
+    }
+
+    @Test
+    void should_get_trigger_quarantine_evidence() throws Exception {
+        TriggerQuarantineVo quarantine = new TriggerQuarantineVo(
+                "quarantine-1",
+                TriggerQuarantineScope.TRIGGER_USER,
+                "drive-by-user",
+                "Unsafe request rejected: trigger user is temporarily quarantined",
+                "ABUSE_QUARANTINED",
+                5,
+                600_000,
+                Instant.parse("2026-06-24T00:00:00Z"),
+                Instant.parse("2026-06-24T00:30:00Z"),
+                Instant.parse("2026-06-24T00:00:00Z"),
+                Instant.parse("2026-06-24T00:05:00Z"),
+                null,
+                null,
+                null,
+                null,
+                true
+        );
+        when(triggerQuarantineEvidenceService.getEvidence("quarantine-1", 20)).thenReturn(new TriggerQuarantineEvidenceVo(
+                quarantine,
+                List.of(new RejectedTriggerAuditVo(
+                        "rejected-1",
+                        "issue_comment",
+                        "delivery-rejected",
+                        "bingqin2",
+                        "PatchPilot",
+                        1L,
+                        "drive-by-user",
+                        "/agent fix make it better",
+                        "Unsafe request rejected: instruction is not actionable",
+                        "NOT_ACTIONABLE",
+                        456L,
+                        "https://github.com/bingqin2/PatchPilot/issues/1#issuecomment-456",
+                        null,
+                        null,
+                        Instant.parse("2026-06-24T00:01:00Z")
+                )),
+                List.of(new OperatorSafetyAuditVo(
+                        "operator-audit-1",
+                        "MANUAL_QUARANTINE_CREATED",
+                        "TRIGGER_QUARANTINE",
+                        "quarantine-1",
+                        TriggerQuarantineScope.TRIGGER_USER,
+                        "drive-by-user",
+                        "local-admin",
+                        "Operator blocked noisy demo trigger user",
+                        Instant.parse("2026-06-24T00:02:00Z")
+                ))
+        ));
+
+        mockMvc.perform(get("/api/trigger-quarantines/quarantine-1/evidence")
+                        .param("limit", "20"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.quarantine.id").value("quarantine-1"))
+                .andExpect(jsonPath("$.data.quarantine.scopeKey").value("drive-by-user"))
+                .andExpect(jsonPath("$.data.rejectedTriggers.length()").value(1))
+                .andExpect(jsonPath("$.data.rejectedTriggers[0].id").value("rejected-1"))
+                .andExpect(jsonPath("$.data.rejectedTriggers[0].triggerUser").value("drive-by-user"))
+                .andExpect(jsonPath("$.data.operatorSafetyAudits.length()").value(1))
+                .andExpect(jsonPath("$.data.operatorSafetyAudits[0].action").value("MANUAL_QUARANTINE_CREATED"));
+    }
+
+    @Test
+    void should_return_not_found_when_trigger_quarantine_evidence_is_missing() throws Exception {
+        when(triggerQuarantineEvidenceService.getEvidence("missing-quarantine", 50))
+                .thenThrow(new TriggerQuarantineEvidenceService.QuarantineNotFoundException("quarantine not found"));
+
+        mockMvc.perform(get("/api/trigger-quarantines/missing-quarantine/evidence"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("quarantine not found"));
     }
 
     @Test

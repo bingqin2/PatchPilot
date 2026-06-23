@@ -108,6 +108,19 @@ class MyBatisTriggerQuarantineServiceTests {
     }
 
     @Test
+    void should_find_quarantine_by_id() {
+        TriggerQuarantineEntity entity = entity("quarantine-1", Instant.now().plusSeconds(1800));
+        when(quarantineMapper.selectList(any())).thenReturn(List.of(entity));
+
+        assertThat(quarantineService.findQuarantineById("quarantine-1"))
+                .hasValueSatisfying(quarantine -> {
+                    assertThat(quarantine.id()).isEqualTo("quarantine-1");
+                    assertThat(quarantine.scopeKey()).isEqualTo("alice");
+                    assertThat(quarantine.active()).isTrue();
+                });
+    }
+
+    @Test
     void should_list_quarantines_newest_first() {
         TriggerQuarantineEntity older = entity("older", Instant.now().plusSeconds(1800));
         older.setUpdatedAt(Instant.parse("2026-06-24T00:01:00Z"));

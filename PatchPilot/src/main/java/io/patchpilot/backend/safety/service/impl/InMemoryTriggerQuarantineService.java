@@ -197,6 +197,15 @@ public class InMemoryTriggerQuarantineService implements TriggerQuarantineRecord
     }
 
     @Override
+    public Optional<TriggerQuarantineVo> findQuarantineById(String id) {
+        Instant now = clock.get();
+        return quarantines.stream()
+                .filter(quarantine -> quarantine.id().equals(trimmed(id)))
+                .findFirst()
+                .map(quarantine -> withActive(quarantine, now));
+    }
+
+    @Override
     public List<TriggerQuarantineVo> listQuarantines(boolean activeOnly, int limit) {
         Instant now = clock.get();
         return quarantines.stream()

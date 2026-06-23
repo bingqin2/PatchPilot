@@ -49,4 +49,47 @@ class InMemoryOperatorSafetyAuditServiceTests {
                 .extracting(OperatorSafetyAuditVo::action)
                 .containsExactly("TRIGGER_QUARANTINE_RELEASED", "MANUAL_QUARANTINE_CREATED");
     }
+
+    @Test
+    void should_list_safety_audits_for_resource_newest_first() {
+        auditService.recordSafetyAudit(new RecordOperatorSafetyAuditCommand(
+                "MANUAL_QUARANTINE_CREATED",
+                "TRIGGER_QUARANTINE",
+                "quarantine-1",
+                TriggerQuarantineScope.TRIGGER_USER,
+                "drive-by-user",
+                "local-admin",
+                "Operator blocked noisy demo trigger user"
+        ));
+        now.set(Instant.parse("2026-06-24T01:03:00Z"));
+        auditService.recordSafetyAudit(new RecordOperatorSafetyAuditCommand(
+                "MANUAL_QUARANTINE_CREATED",
+                "TRIGGER_QUARANTINE",
+                "quarantine-2",
+                TriggerQuarantineScope.TRIGGER_USER,
+                "other-user",
+                "local-admin",
+                "Unrelated quarantine"
+        ));
+        now.set(Instant.parse("2026-06-24T01:05:00Z"));
+        auditService.recordSafetyAudit(new RecordOperatorSafetyAuditCommand(
+                "TRIGGER_QUARANTINE_RELEASED",
+                "TRIGGER_QUARANTINE",
+                "quarantine-1",
+                TriggerQuarantineScope.TRIGGER_USER,
+                "drive-by-user",
+                "release-captain",
+                "False positive during demo"
+        ));
+
+        List<OperatorSafetyAuditVo> audits = auditService.listSafetyAuditsForResource(
+                "TRIGGER_QUARANTINE",
+                "quarantine-1",
+                20
+        );
+
+        assertThat(audits)
+                .extracting(OperatorSafetyAuditVo::action)
+                .containsExactly("TRIGGER_QUARANTINE_RELEASED", "MANUAL_QUARANTINE_CREATED");
+    }
 }

@@ -10,6 +10,7 @@ import {
   getModelUsageSummary,
   getDemoSmokeChecklist,
   getRejectedTriggerSummary,
+  getTriggerQuarantineEvidence,
   listLanguageAdapterFixtures,
   listLanguageAdapters,
   listOperatorSafetyAudits,
@@ -359,6 +360,77 @@ test('lists active trigger quarantines through backend API', async () => {
   expect(quarantines[0].scope).toBe('TRIGGER_USER');
   expect(quarantines[0].scopeKey).toBe('drive-by-user');
   expect(quarantines[0].active).toBe(true);
+});
+
+test('gets trigger quarantine evidence through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        quarantine: {
+          id: 'quarantine-1',
+          scope: 'TRIGGER_USER',
+          scopeKey: 'drive-by-user',
+          reason: 'Unsafe request rejected: trigger user is temporarily quarantined',
+          category: 'ABUSE_QUARANTINED',
+          evidenceCount: 5,
+          windowMs: 600000,
+          startedAt: '2026-06-23T01:05:00Z',
+          expiresAt: '2026-06-23T01:35:00Z',
+          createdAt: '2026-06-23T01:05:00Z',
+          updatedAt: '2026-06-23T01:10:00Z',
+          createdBy: null,
+          releasedAt: null,
+          releasedBy: null,
+          releaseReason: null,
+          active: true
+        },
+        rejectedTriggers: [
+          {
+            id: 'rejected-1',
+            source: 'issue_comment',
+            deliveryId: 'delivery-rejected',
+            repositoryOwner: 'bingqin2',
+            repositoryName: 'PatchPilot',
+            issueNumber: 1,
+            triggerUser: 'drive-by-user',
+            triggerComment: '/agent fix make it better',
+            category: 'NOT_ACTIONABLE',
+            reason: 'Unsafe request rejected: instruction is not actionable',
+            commentId: 456,
+            commentUrl: 'https://github.com/bingqin2/PatchPilot/issues/1#issuecomment-456',
+            retriedTaskId: null,
+            retriedAt: null,
+            createdAt: '2026-06-23T01:06:00Z'
+          }
+        ],
+        operatorSafetyAudits: [
+          {
+            id: 'operator-audit-1',
+            action: 'MANUAL_QUARANTINE_CREATED',
+            resourceType: 'TRIGGER_QUARANTINE',
+            resourceId: 'quarantine-1',
+            scope: 'TRIGGER_USER',
+            scopeKey: 'drive-by-user',
+            operator: 'local-admin',
+            reason: 'Operator blocked noisy demo trigger user',
+            createdAt: '2026-06-24T01:00:00Z'
+          }
+        ]
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const evidence = await getTriggerQuarantineEvidence('quarantine-1', 20);
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/trigger-quarantines/quarantine-1/evidence?limit=20');
+  expect(evidence.quarantine.scopeKey).toBe('drive-by-user');
+  expect(evidence.rejectedTriggers[0].id).toBe('rejected-1');
+  expect(evidence.operatorSafetyAudits[0].action).toBe('MANUAL_QUARANTINE_CREATED');
 });
 
 test('lists recent operator safety audits through backend API', async () => {

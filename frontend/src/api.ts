@@ -24,6 +24,7 @@ import type {
   ReleaseTriggerQuarantineInput,
   RejectedTriggerCategoryFilter,
   TriggerQuarantine,
+  TriggerQuarantineEvidence,
   WebhookDeliveryDiagnostic,
   FixTaskModelCall,
   FixTaskTestRun,
@@ -197,6 +198,15 @@ export async function listTriggerQuarantines(
     limit: String(options.limit ?? 20)
   });
   return getApi<TriggerQuarantine[]>(`/api/trigger-quarantines?${searchParams.toString()}`);
+}
+
+export async function getTriggerQuarantineEvidence(
+  quarantineId: string,
+  limit = 20
+): Promise<TriggerQuarantineEvidence> {
+  return getApi<TriggerQuarantineEvidence>(
+    `/api/trigger-quarantines/${encodeURIComponent(quarantineId)}/evidence?limit=${limit}`
+  );
 }
 
 export async function listOperatorSafetyAudits(limit = 20): Promise<OperatorSafetyAudit[]> {

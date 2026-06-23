@@ -11,6 +11,7 @@ import {
   getDemoReadiness,
   getDemoSmokeChecklist,
   getRejectedTriggerSummary,
+  getTriggerQuarantineEvidence,
   getFailureCauseSummary,
   getLatencySummary,
   getMetricsSummary,
@@ -73,6 +74,7 @@ import type {
   RejectedTriggerAuditSummary,
   ReleaseTriggerQuarantineInput,
   TriggerQuarantine,
+  TriggerQuarantineEvidence,
   WebhookDeliveryDiagnostic,
   LanguageAdapterFixtureVerification,
   SupportedLanguageAdapter,
@@ -136,6 +138,7 @@ export default function App() {
   const [rejectedTriggerSummary, setRejectedTriggerSummary] = useState<RejectedTriggerAuditSummary | null>(null);
   const [triggerQuarantines, setTriggerQuarantines] = useState<TriggerQuarantine[]>([]);
   const [operatorSafetyAudits, setOperatorSafetyAudits] = useState<OperatorSafetyAudit[]>([]);
+  const [triggerQuarantineEvidence, setTriggerQuarantineEvidence] = useState<TriggerQuarantineEvidence | null>(null);
   const [rejectedTriggerError, setRejectedTriggerError] = useState<string | null>(null);
   const [rejectedTriggerCategoryFilter, setRejectedTriggerCategoryFilter] = useState<RejectedTriggerCategoryFilter>(
     initialFilters.rejectedCategory
@@ -167,6 +170,7 @@ export default function App() {
   const [createTaskStatus, setCreateTaskStatus] = useState<string | null>(null);
   const [creatingTriggerQuarantine, setCreatingTriggerQuarantine] = useState(false);
   const [releasingTriggerQuarantineId, setReleasingTriggerQuarantineId] = useState<string | null>(null);
+  const [inspectingTriggerQuarantineId, setInspectingTriggerQuarantineId] = useState<string | null>(null);
 
   const selectedTask = useMemo(
     () => tasks.find((task) => task.id === selectedTaskId) ?? tasks[0] ?? null,
@@ -626,6 +630,7 @@ export default function App() {
     setError(null);
     try {
       await createTriggerQuarantine(input);
+      setTriggerQuarantineEvidence(null);
       await refresh();
     } catch (caught) {
       setError(errorMessage(caught));
@@ -642,6 +647,7 @@ export default function App() {
     setError(null);
     try {
       await releaseTriggerQuarantine(quarantineId, input);
+      setTriggerQuarantineEvidence(null);
       await refresh();
     } catch (caught) {
       setError(errorMessage(caught));
@@ -649,6 +655,18 @@ export default function App() {
       setReleasingTriggerQuarantineId(null);
     }
   }, [refresh]);
+
+  const handleInspectTriggerQuarantine = useCallback(async (quarantineId: string) => {
+    setInspectingTriggerQuarantineId(quarantineId);
+    setError(null);
+    try {
+      setTriggerQuarantineEvidence(await getTriggerQuarantineEvidence(quarantineId, 20));
+    } catch (caught) {
+      setError(errorMessage(caught));
+    } finally {
+      setInspectingTriggerQuarantineId(null);
+    }
+  }, []);
 
   const handleAdminTokenSubmit = useCallback((event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -890,8 +908,11 @@ export default function App() {
         onSelectTask={selectTask}
         onCreateTriggerQuarantine={handleCreateTriggerQuarantine}
         onReleaseTriggerQuarantine={handleReleaseTriggerQuarantine}
+        onInspectTriggerQuarantine={handleInspectTriggerQuarantine}
         creatingTriggerQuarantine={creatingTriggerQuarantine}
         releasingTriggerQuarantineId={releasingTriggerQuarantineId}
+        inspectingTriggerQuarantineId={inspectingTriggerQuarantineId}
+        triggerQuarantineEvidence={triggerQuarantineEvidence}
       />
     </main>
   );

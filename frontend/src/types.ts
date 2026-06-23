@@ -374,6 +374,12 @@ export interface OperatorSafetyAudit {
   createdAt: string;
 }
 
+export interface TriggerQuarantineEvidence {
+  quarantine: TriggerQuarantine;
+  rejectedTriggers: RejectedTriggerAudit[];
+  operatorSafetyAudits: OperatorSafetyAudit[];
+}
+
 export interface FixTaskAuditSummary {
   task: FixTask;
   timelineEventCount: number;

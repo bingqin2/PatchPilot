@@ -4,6 +4,7 @@ import io.patchpilot.backend.safety.domain.RecordRejectedTriggerCommand;
 import io.patchpilot.backend.safety.domain.RejectedTriggerAuditVo;
 import io.patchpilot.backend.safety.domain.RejectedTriggerAuditSummaryVo;
 import io.patchpilot.backend.safety.domain.RejectedTriggerCountVo;
+import io.patchpilot.backend.safety.domain.TriggerQuarantineScope;
 import io.patchpilot.backend.safety.service.impl.InMemoryRejectedTriggerAuditService;
 import org.junit.jupiter.api.Test;
 
@@ -94,6 +95,74 @@ class InMemoryRejectedTriggerAuditServiceTests {
                 .extracting(RejectedTriggerAuditVo::deliveryId)
                 .containsExactly("not-actionable-delivery");
         assertThat(audits.get(0).category()).isEqualTo("NOT_ACTIONABLE");
+    }
+
+    @Test
+    void should_list_rejected_triggers_for_trigger_user_quarantine() {
+        auditService.recordRejectedTrigger(command(
+                "issue_comment",
+                "delivery-user-match",
+                "bingqin2",
+                "PatchPilot",
+                1,
+                "Drive-By-User",
+                "/agent fix make it better",
+                "Unsafe request rejected: instruction is not actionable"
+        ));
+        auditService.recordRejectedTrigger(command(
+                "issue_comment",
+                "delivery-other-user",
+                "bingqin2",
+                "PatchPilot",
+                1,
+                "trusted-user",
+                "/agent fix make it better",
+                "Unsafe request rejected: instruction is not actionable"
+        ));
+
+        List<RejectedTriggerAuditVo> audits = auditService.listRejectedTriggersForQuarantine(
+                TriggerQuarantineScope.TRIGGER_USER,
+                "drive-by-user",
+                20
+        );
+
+        assertThat(audits)
+                .extracting(RejectedTriggerAuditVo::deliveryId)
+                .containsExactly("delivery-user-match");
+    }
+
+    @Test
+    void should_list_rejected_triggers_for_repository_quarantine() {
+        auditService.recordRejectedTrigger(command(
+                "issue_comment",
+                "delivery-repository-match",
+                "Bingqin2",
+                "PatchPilot",
+                1,
+                "drive-by-user",
+                "/agent fix make it better",
+                "Unsafe request rejected: instruction is not actionable"
+        ));
+        auditService.recordRejectedTrigger(command(
+                "issue_comment",
+                "delivery-other-repository",
+                "octocat",
+                "hello-world",
+                42,
+                "drive-by-user",
+                "/agent fix make it better",
+                "Unsafe request rejected: instruction is not actionable"
+        ));
+
+        List<RejectedTriggerAuditVo> audits = auditService.listRejectedTriggersForQuarantine(
+                TriggerQuarantineScope.REPOSITORY,
+                "bingqin2/patchpilot",
+                20
+        );
+
+        assertThat(audits)
+                .extracting(RejectedTriggerAuditVo::deliveryId)
+                .containsExactly("delivery-repository-match");
     }
 
     @Test

@@ -50,6 +50,27 @@ class InMemoryTriggerQuarantineServiceTests {
     }
 
     @Test
+    void should_find_quarantine_by_id() {
+        TriggerQuarantineVo quarantine = quarantineService.recordQuarantine(new RecordTriggerQuarantineCommand(
+                TriggerQuarantineScope.TRIGGER_USER,
+                "Alice",
+                "Unsafe request rejected: trigger user is temporarily quarantined",
+                "ABUSE_QUARANTINED",
+                5,
+                600_000,
+                now.get().plusSeconds(1800)
+        ));
+
+        assertThat(quarantineService.findQuarantineById(quarantine.id()))
+                .hasValueSatisfying(found -> {
+                    assertThat(found.id()).isEqualTo(quarantine.id());
+                    assertThat(found.scopeKey()).isEqualTo("alice");
+                    assertThat(found.active()).isTrue();
+                });
+        assertThat(quarantineService.findQuarantineById("missing-quarantine")).isEmpty();
+    }
+
+    @Test
     void should_extend_existing_repository_quarantine() {
         quarantineService.recordQuarantine(new RecordTriggerQuarantineCommand(
                 TriggerQuarantineScope.REPOSITORY,

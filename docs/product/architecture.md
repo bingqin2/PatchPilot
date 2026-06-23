@@ -131,6 +131,7 @@ Responsibilities:
 - Apply rejected-trigger quarantine before rate limiting, model classification, task creation, queueing, or workspace work when recent rejected attempts from the same trigger user or repository exceed the configured threshold. Quarantined attempts are recorded as `ABUSE_QUARANTINED`.
 - Persist trigger-user and repository quarantine records through `TriggerQuarantineRecordService` so active safety state survives worker restarts in MySQL-backed profiles.
 - Expose active or historical quarantine records through `GET /api/trigger-quarantines` for operator diagnosis.
+- Expose `GET /api/trigger-quarantines/{id}/evidence` so operators can inspect the rejected-trigger audit rows and manual safety actions behind one quarantine.
 - Allow operators to create and release trigger quarantines through admin-token-protected `/api/trigger-quarantines` write endpoints.
 - Record manual safety mutations through `OperatorSafetyAuditService` and expose recent rows through `GET /api/operator-safety-audits`.
 - Deduplicate delivery ids.

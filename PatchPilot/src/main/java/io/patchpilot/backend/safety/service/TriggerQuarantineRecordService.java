@@ -25,5 +25,11 @@ public interface TriggerQuarantineRecordService {
 
     Optional<TriggerQuarantineVo> findQuarantine(TriggerQuarantineScope scope, String scopeKey);
 
+    default Optional<TriggerQuarantineVo> findQuarantineById(String id) {
+        return listQuarantines(false, 100).stream()
+                .filter(quarantine -> quarantine.id().equals(id))
+                .findFirst();
+    }
+
     List<TriggerQuarantineVo> listQuarantines(boolean activeOnly, int limit);
 }
