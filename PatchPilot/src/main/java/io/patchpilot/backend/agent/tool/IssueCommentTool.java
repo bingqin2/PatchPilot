@@ -59,6 +59,22 @@ public class IssueCommentTool {
                 task.failureReason());
     }
 
+    public IssueCommentResult commentRejected(
+            String repositoryOwner,
+            String repositoryName,
+            long issueNumber,
+            String triggerUser,
+            String triggerComment,
+            String reason
+    ) {
+        return gitHubIssueCommentClient.createIssueComment(new CreateIssueCommentCommand(
+                repositoryOwner,
+                repositoryName,
+                issueNumber,
+                rejectionBody(repositoryOwner, repositoryName, issueNumber, triggerUser, reason)
+        ));
+    }
+
     public IssueCommentResult commentCompleted(FixTaskVo task, String pullRequestUrl) {
         return updateCompleted(task).orElseGet(() -> gitHubIssueCommentClient.createIssueComment(command(task, body(
                 "PatchPilot completed the task.",
@@ -126,6 +142,28 @@ public class IssueCommentTool {
         if (StringUtils.hasText(failureReason)) {
             body.append("Reason: ").append(failureReason).append("\n");
         }
+        return body.toString();
+    }
+
+    private static String rejectionBody(
+            String repositoryOwner,
+            String repositoryName,
+            long issueNumber,
+            String triggerUser,
+            String reason
+    ) {
+        StringBuilder body = new StringBuilder();
+        body.append("PatchPilot did not start a task for this request.\n\n");
+        body.append("Status: REJECTED\n");
+        body.append("Repository: ").append(repositoryOwner).append("/").append(repositoryName).append("\n");
+        body.append("Issue: #").append(issueNumber).append("\n");
+        body.append("Triggered by: ").append(triggerUser).append("\n");
+        if (StringUtils.hasText(reason)) {
+            body.append("Reason: ").append(reason).append("\n");
+        }
+        body.append("\n");
+        body.append("No repository changes, commands, tests, commits, or pull requests were attempted. ");
+        body.append("Update the request so it is specific, safe, authorized, and within rate limits, then comment `/agent fix ...` again.");
         return body.toString();
     }
 }

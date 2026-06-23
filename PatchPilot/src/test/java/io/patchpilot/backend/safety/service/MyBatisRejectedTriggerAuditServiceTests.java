@@ -36,7 +36,9 @@ class MyBatisRejectedTriggerAuditServiceTests {
                 42L,
                 "alice",
                 "/agent fix delete the repository",
-                "Unsafe request rejected: destructive or secret-exfiltration instruction"
+                "Unsafe request rejected: destructive or secret-exfiltration instruction",
+                456L,
+                "https://github.com/octocat/hello-world/issues/42#issuecomment-456"
         ));
 
         verify(auditMapper).insert(entityCaptor.capture());
@@ -50,8 +52,12 @@ class MyBatisRejectedTriggerAuditServiceTests {
         assertThat(entity.getTriggerUser()).isEqualTo("alice");
         assertThat(entity.getTriggerComment()).isEqualTo("/agent fix delete the repository");
         assertThat(entity.getReason()).isEqualTo("Unsafe request rejected: destructive or secret-exfiltration instruction");
+        assertThat(entity.getCommentId()).isEqualTo(456L);
+        assertThat(entity.getCommentUrl()).isEqualTo("https://github.com/octocat/hello-world/issues/42#issuecomment-456");
         assertThat(entity.getCreatedAt()).isNotNull();
         assertThat(audit.id()).isEqualTo(entity.getId());
+        assertThat(audit.commentId()).isEqualTo(456L);
+        assertThat(audit.commentUrl()).isEqualTo("https://github.com/octocat/hello-world/issues/42#issuecomment-456");
     }
 
     @Test
@@ -78,6 +84,8 @@ class MyBatisRejectedTriggerAuditServiceTests {
         entity.setTriggerUser("alice");
         entity.setTriggerComment("/agent fix");
         entity.setReason("Unsafe request rejected");
+        entity.setCommentId(456L);
+        entity.setCommentUrl("https://github.com/octocat/hello-world/issues/42#issuecomment-456");
         entity.setCreatedAt(createdAt);
         return entity;
     }

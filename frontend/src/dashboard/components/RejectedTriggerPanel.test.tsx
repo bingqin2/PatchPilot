@@ -16,6 +16,8 @@ test('renders rejected trigger audit rows', () => {
           triggerUser: 'drive-by-user',
           triggerComment: '/agent fix make it better',
           reason: 'Unsafe request rejected: instruction is not actionable',
+          commentId: 456,
+          commentUrl: 'https://github.com/bingqin2/PatchPilot/issues/1#issuecomment-456',
           createdAt: '2026-06-20T01:03:05Z'
         }
       ]}
@@ -29,6 +31,10 @@ test('renders rejected trigger audit rows', () => {
   expect(within(panel).getByText('drive-by-user')).toBeInTheDocument();
   expect(within(panel).getByText('delivery-rejected')).toBeInTheDocument();
   expect(within(panel).getByText('Unsafe request rejected: instruction is not actionable')).toBeInTheDocument();
+  expect(within(panel).getByRole('link', { name: 'Refusal comment' })).toHaveAttribute(
+    'href',
+    'https://github.com/bingqin2/PatchPilot/issues/1#issuecomment-456'
+  );
 });
 
 test('renders rejected trigger empty and error states', () => {

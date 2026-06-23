@@ -30,6 +30,8 @@ public class InMemoryRejectedTriggerAuditService implements RejectedTriggerAudit
                 command.triggerUser(),
                 command.triggerComment(),
                 command.reason(),
+                command.commentId(),
+                command.commentUrl(),
                 Instant.now()
         );
         audits.add(audit);

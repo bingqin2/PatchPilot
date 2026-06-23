@@ -41,6 +41,8 @@ class InMemoryRejectedTriggerAuditServiceTests {
         assertThat(older.id()).isNotBlank();
         assertThat(older.createdAt()).isNotNull();
         assertThat(newer.id()).isNotBlank();
+        assertThat(newer.commentId()).isEqualTo(456L);
+        assertThat(newer.commentUrl()).isEqualTo("https://github.com/bingqin2/PatchPilot/issues/7#issuecomment-456");
         assertThat(audits)
                 .extracting(RejectedTriggerAuditVo::deliveryId)
                 .containsExactly("manual-newer", "delivery-older");
@@ -91,7 +93,9 @@ class InMemoryRejectedTriggerAuditServiceTests {
                 issueNumber,
                 triggerUser,
                 triggerComment,
-                reason
+                reason,
+                "manual".equals(source) ? 456L : null,
+                "manual".equals(source) ? "https://github.com/bingqin2/PatchPilot/issues/7#issuecomment-456" : null
         );
     }
 }

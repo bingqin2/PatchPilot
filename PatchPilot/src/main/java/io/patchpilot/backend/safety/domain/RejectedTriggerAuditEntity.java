@@ -39,6 +39,12 @@ public class RejectedTriggerAuditEntity {
     @TableField("reason")
     private String reason;
 
+    @TableField("comment_id")
+    private Long commentId;
+
+    @TableField("comment_url")
+    private String commentUrl;
+
     @TableField("created_at")
     private Instant createdAt;
 }

@@ -30,4 +30,14 @@ class RejectedTriggerAuditMigrationTests {
         assertThat(sql).contains("idx_rejected_trigger_audit_created");
         assertThat(sql).contains("idx_rejected_trigger_audit_repository");
     }
+
+    @Test
+    void should_add_refusal_comment_metadata_to_rejected_trigger_audit() throws IOException {
+        String sql = Files.readString(Path.of("src/main/resources/db/migration/V17__add_rejected_trigger_comment_metadata.sql"))
+                .toLowerCase(Locale.ROOT);
+
+        assertThat(sql).contains("alter table rejected_trigger_audit");
+        assertThat(sql).contains("add column comment_id bigint null");
+        assertThat(sql).contains("add column comment_url varchar(512) null");
+    }
 }
