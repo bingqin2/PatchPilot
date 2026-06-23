@@ -12,8 +12,9 @@ public class PatchWorkflowConfiguration {
     PlannedPatchWorkflow plannedPatchWorkflow(
             FileWriteTool fileWriteTool,
             FileReadTool fileReadTool,
-            FileEditPlanGenerator fileEditPlanGenerator
+            FileEditPlanGenerator fileEditPlanGenerator,
+            PatchReviewGenerator patchReviewGenerator
     ) {
-        return new PlannedPatchWorkflow(fileWriteTool, fileReadTool, fileEditPlanGenerator);
+        return new PlannedPatchWorkflow(fileWriteTool, fileReadTool, fileEditPlanGenerator, patchReviewGenerator);
     }
 }

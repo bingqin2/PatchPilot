@@ -6,6 +6,8 @@ import io.patchpilot.backend.agent.workflow.domain.FileEditContext;
 import io.patchpilot.backend.agent.workflow.domain.FileEditPlan;
 import io.patchpilot.backend.agent.workflow.domain.FixPlan;
 import io.patchpilot.backend.agent.workflow.domain.PatchWorkflowResult;
+import io.patchpilot.backend.agent.workflow.domain.PatchReview;
+import io.patchpilot.backend.agent.workflow.domain.PatchReviewDecision;
 import io.patchpilot.backend.agent.workflow.domain.ProposedFileEdit;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
@@ -30,7 +32,8 @@ class PlannedPatchWorkflowTests {
     @Test
     void should_replace_file_when_target_is_authorized_by_fix_plan() throws Exception {
         RecordingFileEditPlanGenerator editPlanGenerator = new RecordingFileEditPlanGenerator(FileEditPlan.empty());
-        PlannedPatchWorkflow workflow = workflow(editPlanGenerator);
+        RecordingPatchReviewGenerator reviewGenerator = new RecordingPatchReviewGenerator(approvedReview());
+        PlannedPatchWorkflow workflow = workflow(editPlanGenerator, reviewGenerator);
 
         PatchWorkflowResult result = workflow.apply(
                 task("/agent fix replace src/main/App.java class App {}"),
@@ -42,6 +45,7 @@ class PlannedPatchWorkflowTests {
         assertThat(result.summary()).isEqualTo("Replaced src/main/App.java from planned instruction");
         assertThat(Files.readString(repositoryDir.resolve("src/main/App.java"))).isEqualTo("class App {}");
         assertThat(editPlanGenerator.called()).isFalse();
+        assertThat(reviewGenerator.called()).isFalse();
     }
 
     @Test
@@ -55,14 +59,21 @@ class PlannedPatchWorkflowTests {
                         "Use the operands from the issue."
                 )
         )));
-        PlannedPatchWorkflow workflow = workflow(editPlanGenerator);
+        RecordingPatchReviewGenerator reviewGenerator = new RecordingPatchReviewGenerator(approvedReview());
+        PlannedPatchWorkflow workflow = workflow(editPlanGenerator, reviewGenerator);
 
         PatchWorkflowResult result = workflow.apply(task("/agent fix"), repositoryDir, plan("src/main/App.java"));
 
         assertThat(result.patchApplied()).isTrue();
-        assertThat(result.summary()).isEqualTo("Applied 1 model-generated file edit: src/main/App.java");
+        assertThat(result.summary()).isEqualTo("Applied 1 model-generated file edit after review APPROVE: src/main/App.java");
         assertThat(Files.readString(repositoryDir.resolve("src/main/App.java"))).contains("return a + b");
         assertThat(editPlanGenerator.called()).isTrue();
+        assertThat(reviewGenerator.called()).isTrue();
+        assertThat(reviewGenerator.edits()).containsExactly(new ProposedFileEdit(
+                "src/main/App.java",
+                "class App { int add(int a, int b) { return a + b; } }\n",
+                "Use the operands from the issue."
+        ));
         assertThat(editPlanGenerator.fileContexts()).containsExactly(new FileEditContext(
                 "src/main/App.java",
                 "class App { int add(int a, int b) { return 0; } }\n"
@@ -70,8 +81,35 @@ class PlannedPatchWorkflowTests {
     }
 
     @Test
+    void should_reject_model_generated_file_edit_when_review_declines_it() throws Exception {
+        Files.createDirectories(repositoryDir.resolve("src/main"));
+        Files.writeString(repositoryDir.resolve("src/main/App.java"), "class App { int add(int a, int b) { return 0; } }\n");
+        RecordingFileEditPlanGenerator editPlanGenerator = new RecordingFileEditPlanGenerator(new FileEditPlan(List.of(
+                new ProposedFileEdit(
+                        "src/main/App.java",
+                        "class App { int add(int a, int b) { return 999; } }\n",
+                        "Incorrectly return a constant."
+                )
+        )));
+        RecordingPatchReviewGenerator reviewGenerator = new RecordingPatchReviewGenerator(new PatchReview(
+                PatchReviewDecision.REJECT,
+                "The edit does not solve the issue because it returns a constant.",
+                "HIGH",
+                "Generate a focused edit that returns a + b."
+        ));
+        PlannedPatchWorkflow workflow = workflow(editPlanGenerator, reviewGenerator);
+
+        assertThatThrownBy(() -> workflow.apply(task("/agent fix"), repositoryDir, plan("src/main/App.java")))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Model patch review rejected generated edits: The edit does not solve the issue because it returns a constant.");
+
+        assertThat(Files.readString(repositoryDir.resolve("src/main/App.java"))).contains("return 0");
+        assertThat(reviewGenerator.called()).isTrue();
+    }
+
+    @Test
     void should_reject_replacement_for_file_not_in_fix_plan() {
-        PlannedPatchWorkflow workflow = workflow(new RecordingFileEditPlanGenerator(FileEditPlan.empty()));
+        PlannedPatchWorkflow workflow = workflow(new RecordingFileEditPlanGenerator(FileEditPlan.empty()), approvedReviewGenerator());
 
         assertThatThrownBy(() -> workflow.apply(
                 task("/agent fix replace src/main/App.java class App {}"),
@@ -84,7 +122,7 @@ class PlannedPatchWorkflowTests {
 
     @Test
     void should_reject_unsafe_paths_through_workspace_guard() {
-        PlannedPatchWorkflow workflow = workflow(new RecordingFileEditPlanGenerator(FileEditPlan.empty()));
+        PlannedPatchWorkflow workflow = workflow(new RecordingFileEditPlanGenerator(FileEditPlan.empty()), approvedReviewGenerator());
 
         assertThatThrownBy(() -> workflow.apply(
                 task("/agent fix replace ../outside.md bad"),
@@ -102,7 +140,7 @@ class PlannedPatchWorkflowTests {
         RecordingFileEditPlanGenerator editPlanGenerator = new RecordingFileEditPlanGenerator(new FileEditPlan(List.of(
                 new ProposedFileEdit("src/main/App.java", "class App {}", "Change an unapproved file.")
         )));
-        PlannedPatchWorkflow workflow = workflow(editPlanGenerator);
+        PlannedPatchWorkflow workflow = workflow(editPlanGenerator, approvedReviewGenerator());
 
         assertThatThrownBy(() -> workflow.apply(task("/agent fix"), repositoryDir, plan("src/main/Other.java")))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -111,7 +149,7 @@ class PlannedPatchWorkflowTests {
 
     @Test
     void should_reject_sensitive_fix_plan_target_before_model_editing() {
-        PlannedPatchWorkflow workflow = workflow(new RecordingFileEditPlanGenerator(FileEditPlan.empty()));
+        PlannedPatchWorkflow workflow = workflow(new RecordingFileEditPlanGenerator(FileEditPlan.empty()), approvedReviewGenerator());
 
         assertThatThrownBy(() -> workflow.apply(task("/agent fix"), repositoryDir, plan(".env")))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -125,21 +163,25 @@ class PlannedPatchWorkflowTests {
         RecordingFileEditPlanGenerator editPlanGenerator = new RecordingFileEditPlanGenerator(new FileEditPlan(List.of(
                 new ProposedFileEdit("src/main/App.java", "  ", "Empty rewrite would be destructive.")
         )));
-        PlannedPatchWorkflow workflow = workflow(editPlanGenerator);
+        PlannedPatchWorkflow workflow = workflow(editPlanGenerator, approvedReviewGenerator());
 
         assertThatThrownBy(() -> workflow.apply(task("/agent fix"), repositoryDir, plan("src/main/App.java")))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Model edit content must not be blank: src/main/App.java");
     }
 
-    private PlannedPatchWorkflow workflow(RecordingFileEditPlanGenerator editPlanGenerator) {
+    private PlannedPatchWorkflow workflow(
+            RecordingFileEditPlanGenerator editPlanGenerator,
+            RecordingPatchReviewGenerator reviewGenerator
+    ) {
         WorkspaceProperties properties = new WorkspaceProperties();
         properties.setRootDir(repositoryDir);
         WorkspacePathResolver pathResolver = new WorkspacePathResolver(properties);
         return new PlannedPatchWorkflow(
                 new FileWriteTool(pathResolver),
                 new FileReadTool(pathResolver),
-                editPlanGenerator
+                editPlanGenerator,
+                reviewGenerator
         );
     }
 
@@ -169,6 +211,19 @@ class PlannedPatchWorkflowTests {
         );
     }
 
+    private static PatchReview approvedReview() {
+        return new PatchReview(
+                PatchReviewDecision.APPROVE,
+                "The edit matches the fix plan.",
+                "HIGH",
+                "Run verification."
+        );
+    }
+
+    private static RecordingPatchReviewGenerator approvedReviewGenerator() {
+        return new RecordingPatchReviewGenerator(approvedReview());
+    }
+
     private static final class RecordingFileEditPlanGenerator extends FileEditPlanGenerator {
 
         private final FileEditPlan fileEditPlan;
@@ -195,6 +250,40 @@ class PlannedPatchWorkflowTests {
 
         private List<FileEditContext> fileContexts() {
             return fileContexts;
+        }
+    }
+
+    private static final class RecordingPatchReviewGenerator extends PatchReviewGenerator {
+
+        private final PatchReview review;
+        private boolean called;
+        private List<ProposedFileEdit> edits;
+
+        private RecordingPatchReviewGenerator(PatchReview review) {
+            super(request -> {
+                throw new AssertionError("Model client should not be called by this test double");
+            });
+            this.review = review;
+        }
+
+        @Override
+        public PatchReview review(
+                FixTaskVo task,
+                FixPlan fixPlan,
+                List<FileEditContext> fileContexts,
+                List<ProposedFileEdit> edits
+        ) {
+            this.called = true;
+            this.edits = edits;
+            return review;
+        }
+
+        private boolean called() {
+            return called;
+        }
+
+        private List<ProposedFileEdit> edits() {
+            return edits;
         }
     }
 }

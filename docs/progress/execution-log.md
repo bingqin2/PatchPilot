@@ -4,6 +4,26 @@ This file records dated implementation progress, validation commands, and import
 
 ## 2026-06-23
 
+Implemented the post-edit model review gate from `docs/plans/134-post-edit-model-review-gate.md`.
+
+Changes:
+
+- Added `PatchReviewGenerator` to ask the configured model for JSON-only post-edit review decisions.
+- Added patch review domain objects for `APPROVE` and `REJECT` decisions plus review generation failures.
+- Extended `PlannedPatchWorkflow` so model-generated file edits are reviewed before writing to the workspace.
+- Rejected edits now fail before file writes, preventing tests, commits, pushes, and Pull Request creation from continuing with a mismatched patch.
+- Preserved the manual `/agent fix replace <path> <content>` smoke path without invoking the review gate.
+- Added tests for review parsing, unsupported review decisions, approved edits, rejected edits, and Spring wiring.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=PatchReviewGeneratorTests,PlannedPatchWorkflowTests test`: first failed because the patch review generator/domain objects did not exist.
+- `mvn -pl PatchPilot -Dtest=PatchReviewGeneratorTests,PlannedPatchWorkflowTests,PlanDrivenPatchWorkflowTests,PatchPilotApplicationTests test`: passed after implementation and Spring wiring updates, 21 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed after full backend verification, 488 tests run, 0 failures.
+- `git diff --check`: passed after whitespace verification.
+
+## 2026-06-23
+
 Implemented model-generated file edits from `docs/plans/133-model-generated-file-edits.md`.
 
 Changes:

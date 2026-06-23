@@ -6,6 +6,8 @@ import io.patchpilot.backend.agent.workflow.domain.FileEditContext;
 import io.patchpilot.backend.agent.workflow.domain.FileEditPlan;
 import io.patchpilot.backend.agent.workflow.domain.FixPlan;
 import io.patchpilot.backend.agent.workflow.domain.PatchWorkflowResult;
+import io.patchpilot.backend.agent.workflow.domain.PatchReview;
+import io.patchpilot.backend.agent.workflow.domain.PatchReviewDecision;
 import io.patchpilot.backend.agent.workflow.domain.ProposedFileEdit;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +31,7 @@ public class PlannedPatchWorkflow {
     private final FileWriteTool fileWriteTool;
     private final FileReadTool fileReadTool;
     private final FileEditPlanGenerator fileEditPlanGenerator;
+    private final PatchReviewGenerator patchReviewGenerator;
 
     public PatchWorkflowResult apply(FixTaskVo task, Path repositoryDir, FixPlan fixPlan) {
         Optional<ReplacementInstruction> instruction = replacementInstruction(task.triggerComment());
@@ -42,7 +45,8 @@ public class PlannedPatchWorkflow {
             return new PatchWorkflowResult(true, "Replaced " + replacement.relativePath() + " from planned instruction");
         }
 
-        FileEditPlan fileEditPlan = fileEditPlanGenerator.generateEdits(task, fixPlan, fileContexts(repositoryDir, fixPlan));
+        List<FileEditContext> fileContexts = fileContexts(repositoryDir, fixPlan);
+        FileEditPlan fileEditPlan = fileEditPlanGenerator.generateEdits(task, fixPlan, fileContexts);
         List<ProposedFileEdit> edits = fileEditPlan.edits();
         if (edits.isEmpty()) {
             return new PatchWorkflowResult(false, "No model-generated file edits found");
@@ -53,10 +57,14 @@ public class PlannedPatchWorkflow {
         for (ProposedFileEdit edit : edits) {
             validateEdit(edit, fixPlan);
         }
+        PatchReview review = patchReviewGenerator.review(task, fixPlan, fileContexts, edits);
+        if (review.decision() == PatchReviewDecision.REJECT) {
+            throw new IllegalStateException("Model patch review rejected generated edits: " + review.reason());
+        }
         for (ProposedFileEdit edit : edits) {
             fileWriteTool.write(repositoryDir, edit.path(), edit.content());
         }
-        return new PatchWorkflowResult(true, appliedSummary(edits));
+        return new PatchWorkflowResult(true, appliedSummary(edits, review));
     }
 
     private List<FileEditContext> fileContexts(Path repositoryDir, FixPlan fixPlan) {
@@ -100,13 +108,13 @@ public class PlannedPatchWorkflow {
                 || relativePath.endsWith(".key");
     }
 
-    private String appliedSummary(List<ProposedFileEdit> edits) {
+    private String appliedSummary(List<ProposedFileEdit> edits, PatchReview review) {
         String files = edits.stream()
                 .map(ProposedFileEdit::path)
                 .reduce((left, right) -> left + ", " + right)
                 .orElse("");
         String noun = edits.size() == 1 ? "edit" : "edits";
-        return "Applied " + edits.size() + " model-generated file " + noun + ": " + files;
+        return "Applied " + edits.size() + " model-generated file " + noun + " after review " + review.decision() + ": " + files;
     }
 
     private Optional<ReplacementInstruction> replacementInstruction(String triggerComment) {
