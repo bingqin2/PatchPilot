@@ -38,6 +38,7 @@ class CommandSafetyGateTests {
 
         assertThat(decision.allowed()).isFalse();
         assertThat(decision.reason()).isEqualTo("Unsafe request rejected: instruction is not actionable");
+        assertThat(decision.category()).isEqualTo("NOT_ACTIONABLE");
     }
 
     @Test
@@ -53,6 +54,7 @@ class CommandSafetyGateTests {
 
         assertThat(decision.allowed()).isFalse();
         assertThat(decision.reason()).isEqualTo("Unsafe request rejected: instruction is not actionable");
+        assertThat(decision.category()).isEqualTo("NOT_ACTIONABLE");
     }
 
     @Test
@@ -85,6 +87,7 @@ class CommandSafetyGateTests {
 
         assertThat(decision.allowed()).isFalse();
         assertThat(decision.reason()).isEqualTo("Unsafe request rejected: trigger user is not allowed");
+        assertThat(decision.category()).isEqualTo("TRIGGER_USER_NOT_ALLOWED");
     }
 
     @Test
@@ -103,6 +106,23 @@ class CommandSafetyGateTests {
 
         assertThat(decision.allowed()).isFalse();
         assertThat(decision.reason()).isEqualTo("Unsafe request rejected: repository is not allowed");
+        assertThat(decision.category()).isEqualTo("REPOSITORY_NOT_ALLOWED");
+    }
+
+    @Test
+    void should_classify_dangerous_instruction_rejection() {
+        CommandSafetyGate safetyGate = new CommandSafetyGate();
+
+        SafetyGateDecision decision = safetyGate.evaluate(request(
+                "octocat",
+                "hello-world",
+                "alice",
+                "/agent fix delete the repository"
+        ));
+
+        assertThat(decision.allowed()).isFalse();
+        assertThat(decision.reason()).isEqualTo("Unsafe request rejected: destructive or secret-exfiltration instruction");
+        assertThat(decision.category()).isEqualTo("DANGEROUS_INSTRUCTION");
     }
 
     @Test

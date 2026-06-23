@@ -44,6 +44,7 @@ class RejectedTriggerAuditControllerTests {
                 "alice",
                 "/agent fix delete the repository",
                 "Unsafe request rejected: destructive or secret-exfiltration instruction",
+                "DANGEROUS_INSTRUCTION",
                 456L,
                 "https://github.com/octocat/hello-world/issues/42#issuecomment-456",
                 "task-123",
@@ -64,6 +65,7 @@ class RejectedTriggerAuditControllerTests {
                 .andExpect(jsonPath("$.data[0].triggerUser").value("alice"))
                 .andExpect(jsonPath("$.data[0].triggerComment").value("/agent fix delete the repository"))
                 .andExpect(jsonPath("$.data[0].reason").value("Unsafe request rejected: destructive or secret-exfiltration instruction"))
+                .andExpect(jsonPath("$.data[0].category").value("DANGEROUS_INSTRUCTION"))
                 .andExpect(jsonPath("$.data[0].commentId").value(456))
                 .andExpect(jsonPath("$.data[0].commentUrl").value("https://github.com/octocat/hello-world/issues/42#issuecomment-456"))
                 .andExpect(jsonPath("$.data[0].retriedTaskId").value("task-123"))

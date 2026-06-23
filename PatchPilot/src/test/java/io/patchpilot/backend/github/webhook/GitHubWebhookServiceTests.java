@@ -221,6 +221,7 @@ class GitHubWebhookServiceTests {
         assertThat(auditService.commands().get(0).triggerUser()).isEqualTo("alice");
         assertThat(auditService.commands().get(0).reason())
                 .isEqualTo("Unsafe request rejected: destructive or secret-exfiltration instruction");
+        assertThat(auditService.commands().get(0).category()).isEqualTo("DANGEROUS_INSTRUCTION");
         assertThat(auditService.commands().get(0).commentId()).isEqualTo(456L);
         assertThat(auditService.commands().get(0).commentUrl())
                 .isEqualTo("https://github.com/octocat/hello-world/issues/42#issuecomment-456");
@@ -262,6 +263,7 @@ class GitHubWebhookServiceTests {
         assertThat(auditService.commands().get(0).commentUrl()).isNull();
         assertThat(auditService.commands().get(0).reason())
                 .isEqualTo("Unsafe request rejected: destructive or secret-exfiltration instruction");
+        assertThat(auditService.commands().get(0).category()).isEqualTo("DANGEROUS_INSTRUCTION");
     }
 
     @Test
@@ -295,6 +297,7 @@ class GitHubWebhookServiceTests {
         assertThat(auditService.commands()).hasSize(1);
         assertThat(auditService.commands().get(0).reason())
                 .isEqualTo("Unsafe request rejected: instruction is not actionable");
+        assertThat(auditService.commands().get(0).category()).isEqualTo("NOT_ACTIONABLE");
     }
 
     @Test
@@ -396,6 +399,7 @@ class GitHubWebhookServiceTests {
         assertThat(auditService.commands()).hasSize(1);
         assertThat(auditService.commands().get(0).reason())
                 .isEqualTo("Model trigger classification needs clarification: The requested change is too vague for an automated patch.");
+        assertThat(auditService.commands().get(0).category()).isEqualTo("MODEL_NEEDS_CLARIFICATION");
     }
 
     @Test
@@ -430,6 +434,7 @@ class GitHubWebhookServiceTests {
         assertThat(auditService.commands()).hasSize(1);
         assertThat(auditService.commands().get(0).reason())
                 .isEqualTo("Unsafe request rejected: destructive or secret-exfiltration instruction");
+        assertThat(auditService.commands().get(0).category()).isEqualTo("DANGEROUS_INSTRUCTION");
     }
 
     @Test
@@ -508,6 +513,7 @@ class GitHubWebhookServiceTests {
         assertThat(auditService.commands()).hasSize(1);
         assertThat(auditService.commands().get(0).reason())
                 .isEqualTo("Unsafe request rejected: trigger rate limit exceeded for issue");
+        assertThat(auditService.commands().get(0).category()).isEqualTo("RATE_LIMITED");
     }
 
     @Test
@@ -969,6 +975,7 @@ class GitHubWebhookServiceTests {
                     command.triggerUser(),
                     command.triggerComment(),
                     command.reason(),
+                    command.category(),
                     command.commentId(),
                     command.commentUrl(),
                     Instant.parse("2026-06-21T00:00:00Z").plusSeconds(commands.size())

@@ -244,6 +244,7 @@ test('lists recent rejected triggers through backend API', async () => {
           issueNumber: 1,
           triggerUser: 'unknown-user',
           triggerComment: '/agent fix make it better',
+          category: 'NOT_ACTIONABLE',
           reason: 'Unsafe request rejected: instruction is not actionable',
           commentId: 456,
           commentUrl: 'https://github.com/bingqin2/PatchPilot/issues/1#issuecomment-456',
@@ -260,6 +261,7 @@ test('lists recent rejected triggers through backend API', async () => {
   const rejectedTriggers = await listRejectedTriggers(20);
 
   expect(fetchMock).toHaveBeenCalledWith('/api/rejected-triggers?limit=20');
+  expect(rejectedTriggers[0].category).toBe('NOT_ACTIONABLE');
   expect(rejectedTriggers[0].reason).toBe('Unsafe request rejected: instruction is not actionable');
   expect(rejectedTriggers[0].triggerComment).toBe('/agent fix make it better');
   expect(rejectedTriggers[0].commentUrl).toBe('https://github.com/bingqin2/PatchPilot/issues/1#issuecomment-456');
