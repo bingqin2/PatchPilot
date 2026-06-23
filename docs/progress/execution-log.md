@@ -2402,3 +2402,25 @@ Validation:
 
 - `mvn -pl PatchPilot -Dtest=ConfigurationSummaryServiceTests,ConfigurationControllerTests,DemoReadinessServiceTests test`: first failed because `ConfigurationSummaryVo` did not expose safety policy fields; then passed after backend implementation, 6 tests run, 0 failures.
 - `npm test -- src/dashboard/components/ConfigurationPanel.test.tsx src/dashboard/components/DemoReadinessPanel.test.tsx src/api.test.ts src/App.test.tsx`: first failed because the configuration panel did not render trigger-user and repository allowlist state; then passed after frontend implementation, 65 tests run, 0 failures.
+
+Implemented admin API token guard from `docs/plans/118-admin-api-token-guard.md`.
+
+Changes:
+
+- Added optional `patchpilot.security.admin-token` / `PATCHPILOT_ADMIN_TOKEN` for protecting operator APIs when PatchPilot is reachable through a public temporary tunnel.
+- Added `AdminApiSecurityFilter` so configured deployments require `X-PatchPilot-Admin-Token` or `Authorization: Bearer <token>` for `/api/**` operator calls while keeping `/health`, actuator health, and `/api/github/webhook` public for health checks and GitHub deliveries.
+- Exposed non-sensitive `adminTokenConfigured` state in `GET /api/configuration/summary`.
+- Added admin-token readiness guidance to the demo `Safety policy` check.
+- Updated the dashboard configuration panel and frontend API helper so a locally stored browser token is sent as `X-PatchPilot-Admin-Token` without changing request shapes when no token is stored.
+- Updated `.env.example`, Docker Compose, README, and this execution log.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=ConfigurationControllerTests,AdminApiSecurityFilterTests test`: first failed because the admin token field and filter did not exist.
+- `npm test -- --run src/api.test.ts src/dashboard/components/ConfigurationPanel.test.tsx`: first failed because frontend API calls did not send the admin header and the configuration panel did not render the admin token state.
+- `mvn -pl PatchPilot -Dtest=ConfigurationControllerTests,ConfigurationSummaryServiceTests,DemoReadinessServiceTests,AdminApiSecurityFilterTests test`: passed after backend implementation, 11 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts src/dashboard/components/ConfigurationPanel.test.tsx`: passed after frontend implementation, 20 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed after full backend verification, 439 tests run, 0 failures.
+- `npm test`: passed after full frontend verification, 91 tests run, 0 failures.
+- `npm run build`: passed after production frontend build.
+- `git diff --check`: passed after whitespace and conflict-marker verification.

@@ -36,6 +36,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "patchpilot.safety.trigger-rate-limit-max-per-repository=30",
         "patchpilot.safety.trigger-rate-limit-max-per-issue=4",
         "patchpilot.review-approval.allowed-operators=release-captain,local-operator",
+        "patchpilot.security.admin-token=test-admin-token",
         "patchpilot.workspace.root-dir=/tmp/patchpilot/test-workspaces",
         "patchpilot.task.queue.max-attempts=5",
         "patchpilot.task.queue.retry-delay-ms=15000",
@@ -48,7 +49,8 @@ class ConfigurationControllerTests {
 
     @Test
     void should_return_non_sensitive_configuration_summary() throws Exception {
-        mockMvc.perform(get("/api/configuration/summary"))
+        mockMvc.perform(get("/api/configuration/summary")
+                        .header("X-PatchPilot-Admin-Token", "test-admin-token"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.agentProvider").value("openai-compatible"))
@@ -57,6 +59,7 @@ class ConfigurationControllerTests {
                 .andExpect(jsonPath("$.data.agentApiKeyConfigured").value(true))
                 .andExpect(jsonPath("$.data.githubTokenConfigured").value(true))
                 .andExpect(jsonPath("$.data.githubWebhookSecretConfigured").value(true))
+                .andExpect(jsonPath("$.data.adminTokenConfigured").value(true))
                 .andExpect(jsonPath("$.data.workspaceRootDir").value("/tmp/patchpilot/test-workspaces"))
                 .andExpect(jsonPath("$.data.queueMaxAttempts").value(5))
                 .andExpect(jsonPath("$.data.queueRetryDelayMs").value(15000))
@@ -79,6 +82,7 @@ class ConfigurationControllerTests {
                 .andExpect(jsonPath("$.data.reviewApprovalAllowedOperators[1]").value("local-operator"))
                 .andExpect(content().string(not(containsString("test-agent-key"))))
                 .andExpect(content().string(not(containsString("test-github-token"))))
-                .andExpect(content().string(not(containsString("test-webhook-secret"))));
+                .andExpect(content().string(not(containsString("test-webhook-secret"))))
+                .andExpect(content().string(not(containsString("test-admin-token"))));
     }
 }

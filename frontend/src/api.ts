@@ -43,6 +43,8 @@ interface ListTasksOptions {
 const backendConnectionError =
   'Backend request failed. Check that PatchPilot backend is running and the frontend proxy target is correct.';
 
+export const ADMIN_TOKEN_STORAGE_KEY = 'patchpilot.adminToken';
+
 export async function createTask(input: CreateTaskInput): Promise<FixTask> {
   return postApi<FixTask>('/api/tasks', input);
 }
@@ -197,8 +199,9 @@ async function postApi<T>(path: string, body?: unknown): Promise<T> {
 
 async function requestApi<T>(path: string, init?: RequestInit): Promise<T> {
   let response: Response;
+  const securedInit = withAdminToken(init);
   try {
-    response = init ? await fetch(path, init) : await fetch(path);
+    response = securedInit ? await fetch(path, securedInit) : await fetch(path);
   } catch {
     throw new Error(backendConnectionError);
   }
@@ -208,6 +211,40 @@ async function requestApi<T>(path: string, init?: RequestInit): Promise<T> {
     throw new Error(body.message ?? `Request failed: ${response.status}`);
   }
   return body.data;
+}
+
+function withAdminToken(init?: RequestInit): RequestInit | undefined {
+  const adminToken = getStoredAdminToken();
+  if (!adminToken) {
+    return init;
+  }
+  return {
+    ...init,
+    headers: {
+      ...headersAsRecord(init?.headers),
+      'X-PatchPilot-Admin-Token': adminToken
+    }
+  };
+}
+
+function getStoredAdminToken() {
+  if (typeof globalThis.localStorage === 'undefined') {
+    return '';
+  }
+  return globalThis.localStorage.getItem(ADMIN_TOKEN_STORAGE_KEY)?.trim() ?? '';
+}
+
+function headersAsRecord(headers?: HeadersInit): Record<string, string> {
+  if (!headers) {
+    return {};
+  }
+  if (headers instanceof Headers) {
+    return Object.fromEntries(headers.entries());
+  }
+  if (Array.isArray(headers)) {
+    return Object.fromEntries(headers);
+  }
+  return { ...headers };
 }
 
 function postRequest(body?: unknown): RequestInit {

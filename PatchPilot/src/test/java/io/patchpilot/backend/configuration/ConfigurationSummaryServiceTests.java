@@ -3,6 +3,7 @@ package io.patchpilot.backend.configuration;
 import io.patchpilot.backend.agent.config.AgentProperties;
 import io.patchpilot.backend.github.config.GitHubProperties;
 import io.patchpilot.backend.safety.config.SafetyProperties;
+import io.patchpilot.backend.security.config.AdminApiSecurityProperties;
 import io.patchpilot.backend.task.config.ReviewApprovalProperties;
 import io.patchpilot.backend.task.config.TaskQueueProperties;
 import io.patchpilot.backend.workspace.config.WorkspaceProperties;
@@ -30,6 +31,8 @@ class ConfigurationSummaryServiceTests {
         safetyProperties.setAllowedRepositories(List.of(" bingqin2/PatchPilot ", "BINGQIN2/PATCHPILOT", "octocat/hello-world"));
         ReviewApprovalProperties reviewApprovalProperties = new ReviewApprovalProperties();
         reviewApprovalProperties.setAllowedOperators(List.of(" release-captain ", "RELEASE-CAPTAIN", "local-operator", ""));
+        AdminApiSecurityProperties adminApiSecurityProperties = new AdminApiSecurityProperties();
+        adminApiSecurityProperties.setAdminToken("test-admin-token");
 
         ConfigurationSummaryVo summary = new ConfigurationSummaryService(
                 agentProperties,
@@ -37,7 +40,8 @@ class ConfigurationSummaryServiceTests {
                 workspaceProperties,
                 taskQueueProperties,
                 safetyProperties,
-                reviewApprovalProperties
+                reviewApprovalProperties,
+                adminApiSecurityProperties
         ).getConfigurationSummary();
 
         assertThat(summary.reviewApprovalAllowedOperators()).containsExactly("release-captain", "local-operator");
@@ -46,5 +50,6 @@ class ConfigurationSummaryServiceTests {
         assertThat(summary.triggerUserAllowlistConfigured()).isTrue();
         assertThat(summary.repositoryAllowlistConfigured()).isTrue();
         assertThat(summary.reviewApprovalAllowlistConfigured()).isTrue();
+        assertThat(summary.adminTokenConfigured()).isTrue();
     }
 }

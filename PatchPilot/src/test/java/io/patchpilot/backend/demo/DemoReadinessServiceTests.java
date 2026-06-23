@@ -142,11 +142,50 @@ class DemoReadinessServiceTests {
         assertThat(readiness.nextActions()).contains("Inspect failed or running queue items before starting a demo.");
     }
 
+    @Test
+    void should_report_safety_policy_attention_when_admin_token_is_missing() {
+        DemoReadinessService service = new DemoReadinessService(
+                () -> configuration(true, true, true, true, false),
+                () -> List.of(fixture("java-maven", "PASS")),
+                () -> FixTaskQueueSummaryVo.empty(),
+                () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/12"))
+        );
+
+        DemoReadinessVo readiness = service.getReadiness();
+
+        assertThat(readiness.status()).isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
+        assertThat(readiness.checks())
+                .filteredOn(check -> check.name().equals("Safety policy"))
+                .singleElement()
+                .satisfies(check -> {
+                    assertThat(check.status()).isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
+                    assertThat(check.message()).contains("Admin API token is missing");
+                    assertThat(check.action()).contains("PATCHPILOT_ADMIN_TOKEN");
+                });
+        assertThat(readiness.nextActions()).contains("Configure PATCHPILOT_ADMIN_TOKEN before a live demo.");
+    }
+
     private static ConfigurationSummaryVo configuration(
             boolean agentApiKeyConfigured,
             boolean githubTokenConfigured,
             boolean githubWebhookSecretConfigured,
             boolean modelCostConfigured
+    ) {
+        return configuration(
+                agentApiKeyConfigured,
+                githubTokenConfigured,
+                githubWebhookSecretConfigured,
+                modelCostConfigured,
+                true
+        );
+    }
+
+    private static ConfigurationSummaryVo configuration(
+            boolean agentApiKeyConfigured,
+            boolean githubTokenConfigured,
+            boolean githubWebhookSecretConfigured,
+            boolean modelCostConfigured,
+            boolean adminTokenConfigured
     ) {
         return new ConfigurationSummaryVo(
                 "openai-compatible",
@@ -155,6 +194,7 @@ class DemoReadinessServiceTests {
                 agentApiKeyConfigured,
                 githubTokenConfigured,
                 githubWebhookSecretConfigured,
+                adminTokenConfigured,
                 "/tmp/patchpilot/workspaces",
                 3,
                 1000,
@@ -191,6 +231,7 @@ class DemoReadinessServiceTests {
                 agentApiKeyConfigured,
                 githubTokenConfigured,
                 githubWebhookSecretConfigured,
+                true,
                 "/tmp/patchpilot/workspaces",
                 3,
                 1000,

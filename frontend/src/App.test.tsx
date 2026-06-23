@@ -521,6 +521,7 @@ const configurationSummary = {
   agentApiKeyConfigured: true,
   githubTokenConfigured: true,
   githubWebhookSecretConfigured: true,
+  adminTokenConfigured: true,
   workspaceRootDir: '/tmp/patchpilot/workspaces',
   queueMaxAttempts: 3,
   queueRetryDelayMs: 30000,

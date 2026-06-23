@@ -1,6 +1,7 @@
 import {
   approveTaskReview,
   createTask,
+  ADMIN_TOKEN_STORAGE_KEY,
   getBackendHealth,
   getConfigurationSummary,
   getFailureCauseSummary,
@@ -17,6 +18,7 @@ import {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
 });
 
 test('creates manual task through backend API', async () => {
@@ -416,6 +418,58 @@ test('loads backend health status from health endpoint', async () => {
     status: 'UP',
     service: 'patchpilot-backend',
     timestamp: '2026-06-21T01:00:00Z'
+  });
+});
+
+test('sends stored admin token with operator API requests', async () => {
+  const storage = new Map<string, string>();
+  vi.stubGlobal('localStorage', {
+    getItem: (key: string) => storage.get(key) ?? null,
+    setItem: (key: string, value: string) => storage.set(key, value),
+    removeItem: (key: string) => storage.delete(key),
+    clear: () => storage.clear()
+  });
+  globalThis.localStorage.setItem(ADMIN_TOKEN_STORAGE_KEY, 'test-admin-token');
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        agentProvider: 'openai-compatible',
+        agentModel: 'gpt-5.5',
+        agentBaseUrl: 'https://api.example.test/v1',
+        agentApiKeyConfigured: true,
+        githubTokenConfigured: true,
+        githubWebhookSecretConfigured: true,
+        adminTokenConfigured: true,
+        workspaceRootDir: '/tmp/patchpilot/workspaces',
+        queueMaxAttempts: 3,
+        queueRetryDelayMs: 30000,
+        queueVisibilityTimeoutMs: 300000,
+        modelCostConfigured: true,
+        modelTriggerClassificationEnabled: true,
+        triggerRateLimitEnabled: true,
+        triggerRateLimitWindowMs: 600000,
+        triggerRateLimitMaxPerTriggerUser: 30,
+        triggerRateLimitMaxPerRepository: 60,
+        triggerRateLimitMaxPerIssue: 20,
+        triggerUserAllowlistConfigured: true,
+        repositoryAllowlistConfigured: true,
+        reviewApprovalAllowlistConfigured: true,
+        allowedTriggerUsers: ['bingqin2'],
+        allowedRepositories: ['bingqin2/PatchPilot'],
+        reviewApprovalAllowedOperators: ['release-captain']
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  await getConfigurationSummary();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/configuration/summary', {
+    headers: { 'X-PatchPilot-Admin-Token': 'test-admin-token' }
   });
 });
 
