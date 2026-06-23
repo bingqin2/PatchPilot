@@ -2424,3 +2424,19 @@ Validation:
 - `npm test`: passed after full frontend verification, 91 tests run, 0 failures.
 - `npm run build`: passed after production frontend build.
 - `git diff --check`: passed after whitespace and conflict-marker verification.
+
+Implemented dashboard admin token prompt from `docs/plans/119-dashboard-admin-token-prompt.md`.
+
+Changes:
+
+- Added an inline `Admin API token` password prompt when the dashboard receives the backend `Admin token is required` response.
+- Saved the submitted token to browser `localStorage` under `patchpilot.adminToken` and reused the existing API helper so later requests include `X-PatchPilot-Admin-Token`.
+- Retried dashboard loading immediately after saving the token so operators can recover from a protected temporary URL without opening browser DevTools.
+- Updated README, frontend design notes, and this execution log.
+
+Validation:
+
+- `npm test -- --run src/App.test.tsx -t "prompts for admin token"`: first failed because the dashboard rendered only the backend/proxy alert and had no admin-token prompt; then passed after frontend implementation, 1 test run, 0 failures.
+- `npm test`: passed after full frontend verification, 92 tests run, 0 failures.
+- `npm run build`: passed after production frontend build.
+- `git diff --check`: passed after whitespace and conflict-marker verification.

@@ -1,6 +1,7 @@
 import { AlertCircle, RefreshCw } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import {
+  ADMIN_TOKEN_STORAGE_KEY,
   approveTaskReview,
   cancelTask,
   createTask,
@@ -68,6 +69,7 @@ const TASK_STATUS_FILTERS: TaskStatusFilter[] = [
   'CANCELLED'
 ];
 const TASK_SORTS: TaskSort[] = ['createdAtDesc', 'createdAtAsc'];
+const ADMIN_TOKEN_REQUIRED_MESSAGE = 'Admin token is required';
 
 export default function App() {
   const initialFilters = useMemo(() => filtersFromUrl(), []);
@@ -102,6 +104,7 @@ export default function App() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [actionTaskId, setActionTaskId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [adminTokenInput, setAdminTokenInput] = useState('');
   const [canLoadMoreTasks, setCanLoadMoreTasks] = useState(false);
   const [loadingMoreTasks, setLoadingMoreTasks] = useState(false);
   const [taskTotal, setTaskTotal] = useState(0);
@@ -487,6 +490,20 @@ export default function App() {
     }
   }, [refresh]);
 
+  const handleAdminTokenSubmit = useCallback((event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const trimmedToken = adminTokenInput.trim();
+    if (!trimmedToken || typeof globalThis.localStorage === 'undefined') {
+      return;
+    }
+    globalThis.localStorage.setItem(ADMIN_TOKEN_STORAGE_KEY, trimmedToken);
+    setAdminTokenInput('');
+    setError(null);
+    void refresh();
+  }, [adminTokenInput, refresh]);
+
+  const adminTokenRequired = error === ADMIN_TOKEN_REQUIRED_MESSAGE;
+
   return (
     <main className="app-shell">
       <header className="top-bar">
@@ -520,7 +537,25 @@ export default function App() {
       {error ? (
         <section className="alert" role="alert">
           <AlertCircle size={18} />
-          <span>{error}</span>
+          <div className="alert-content">
+            <span>{error}</span>
+            {adminTokenRequired ? (
+              <form className="admin-token-form" onSubmit={handleAdminTokenSubmit}>
+                <label>
+                  <span>Admin API token</span>
+                  <input
+                    type="password"
+                    value={adminTokenInput}
+                    onChange={(event) => setAdminTokenInput(event.target.value)}
+                    autoComplete="off"
+                  />
+                </label>
+                <button className="secondary-button" type="submit" disabled={!adminTokenInput.trim()}>
+                  Save admin token
+                </button>
+              </form>
+            ) : null}
+          </div>
         </section>
       ) : null}
 
