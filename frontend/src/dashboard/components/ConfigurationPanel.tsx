@@ -80,6 +80,11 @@ export function ConfigurationPanel({ configuration, backendHealth }: Configurati
           <strong>{allowlistSummary(configuration?.allowedRepositories)}</strong>
           <p>Task creation repository allowlist</p>
         </div>
+        <div>
+          <span>Generated diff policy</span>
+          <strong>Risk gate {enabled(configuration?.generatedDiffRiskGateEnabled)}</strong>
+          <p>{number(configuration?.generatedDiffProtectedPathCount)} protected path patterns</p>
+        </div>
       </div>
       {health.items.length > 0 ? (
         <div className="configuration-issues" aria-label="Configuration issues">
@@ -160,6 +165,12 @@ function configurationHealth(configuration: ConfigurationSummary | null) {
   }
   if (configuration.reviewApprovalAllowedOperators.length === 0) {
     advisoryIssues.push({ kind: 'advisory', message: 'Review approval operators are not configured' });
+  }
+  if (!configuration.generatedDiffRiskGateEnabled) {
+    advisoryIssues.push({ kind: 'advisory', message: 'Generated diff risk gate is disabled' });
+  }
+  if (configuration.generatedDiffProtectedPathCount < 1) {
+    advisoryIssues.push({ kind: 'advisory', message: 'Generated diff protected path policy is empty' });
   }
 
   if (criticalIssues.length > 0) {

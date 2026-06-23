@@ -2,6 +2,7 @@ package io.patchpilot.backend.configuration;
 
 import io.patchpilot.backend.agent.config.AgentProperties;
 import io.patchpilot.backend.github.config.GitHubProperties;
+import io.patchpilot.backend.safety.GeneratedDiffSafetyPolicy;
 import io.patchpilot.backend.safety.config.SafetyProperties;
 import io.patchpilot.backend.security.config.AdminApiSecurityProperties;
 import io.patchpilot.backend.task.config.ReviewApprovalProperties;
@@ -27,6 +28,7 @@ public class ConfigurationSummaryService {
     private final SafetyProperties safetyProperties;
     private final ReviewApprovalProperties reviewApprovalProperties;
     private final AdminApiSecurityProperties adminApiSecurityProperties;
+    private final GeneratedDiffSafetyPolicy generatedDiffSafetyPolicy;
 
     @Value("${patchpilot.github.webhook-secret:}")
     private String webhookSecret;
@@ -57,6 +59,8 @@ public class ConfigurationSummaryService {
                 !allowedTriggerUsers.isEmpty(),
                 !allowedRepositories.isEmpty(),
                 !reviewApprovalAllowedOperators.isEmpty(),
+                generatedDiffSafetyPolicy.enabled(),
+                generatedDiffSafetyPolicy.protectedPathCount(),
                 allowedTriggerUsers,
                 allowedRepositories,
                 reviewApprovalAllowedOperators

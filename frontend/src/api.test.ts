@@ -484,6 +484,8 @@ test('loads non-sensitive configuration summary from backend API', async () => {
         triggerUserAllowlistConfigured: true,
         repositoryAllowlistConfigured: true,
         reviewApprovalAllowlistConfigured: true,
+        generatedDiffRiskGateEnabled: true,
+        generatedDiffProtectedPathCount: 15,
         allowedTriggerUsers: ['bingqin2', 'local-operator'],
         allowedRepositories: ['bingqin2/PatchPilot'],
         reviewApprovalAllowedOperators: ['release-captain', 'local-operator']
@@ -517,6 +519,8 @@ test('loads non-sensitive configuration summary from backend API', async () => {
     triggerUserAllowlistConfigured: true,
     repositoryAllowlistConfigured: true,
     reviewApprovalAllowlistConfigured: true,
+    generatedDiffRiskGateEnabled: true,
+    generatedDiffProtectedPathCount: 15,
     allowedTriggerUsers: ['bingqin2', 'local-operator'],
     allowedRepositories: ['bingqin2/PatchPilot'],
     reviewApprovalAllowedOperators: ['release-captain', 'local-operator']
@@ -585,6 +589,8 @@ test('sends stored admin token with operator API requests', async () => {
         triggerUserAllowlistConfigured: true,
         repositoryAllowlistConfigured: true,
         reviewApprovalAllowlistConfigured: true,
+        generatedDiffRiskGateEnabled: true,
+        generatedDiffProtectedPathCount: 15,
         allowedTriggerUsers: ['bingqin2'],
         allowedRepositories: ['bingqin2/PatchPilot'],
         reviewApprovalAllowedOperators: ['release-captain']

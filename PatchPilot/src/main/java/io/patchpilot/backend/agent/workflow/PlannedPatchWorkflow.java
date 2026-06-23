@@ -9,6 +9,7 @@ import io.patchpilot.backend.agent.workflow.domain.PatchWorkflowResult;
 import io.patchpilot.backend.agent.workflow.domain.PatchReview;
 import io.patchpilot.backend.agent.workflow.domain.PatchReviewDecision;
 import io.patchpilot.backend.agent.workflow.domain.ProposedFileEdit;
+import io.patchpilot.backend.safety.GeneratedDiffSafetyPolicy;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import io.patchpilot.backend.task.service.FixTaskPatchReviewService;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +36,7 @@ public class PlannedPatchWorkflow {
     private final FileEditPlanGenerator fileEditPlanGenerator;
     private final PatchReviewGenerator patchReviewGenerator;
     private final FixTaskPatchReviewService patchReviewService;
+    private final GeneratedDiffSafetyPolicy safetyPolicy;
 
     public PatchWorkflowResult apply(FixTaskVo task, Path repositoryDir, FixPlan fixPlan) {
         Optional<ReplacementInstruction> instruction = replacementInstruction(task.triggerComment());
@@ -43,6 +45,7 @@ public class PlannedPatchWorkflow {
             if (!fixPlan.targetFiles().contains(replacement.relativePath())) {
                 throw new IllegalArgumentException("Replacement target is not listed in fix plan: " + replacement.relativePath());
             }
+            validateAllowedPath(replacement.relativePath(), "Replacement target");
 
             fileWriteTool.write(repositoryDir, replacement.relativePath(), replacement.content());
             return new PatchWorkflowResult(true, "Replaced " + replacement.relativePath() + " from planned instruction");
@@ -98,18 +101,9 @@ public class PlannedPatchWorkflow {
     }
 
     private void validateAllowedPath(String relativePath, String subject) {
-        if (isSensitivePath(relativePath)) {
+        if (safetyPolicy.isProtectedPath(relativePath)) {
             throw new IllegalArgumentException(subject + " is sensitive and cannot be modified: " + relativePath);
         }
-    }
-
-    private boolean isSensitivePath(String relativePath) {
-        return relativePath.equals(".env")
-                || relativePath.startsWith(".env.")
-                || relativePath.startsWith(".git/")
-                || relativePath.startsWith(".github/workflows/")
-                || relativePath.endsWith(".pem")
-                || relativePath.endsWith(".key");
     }
 
     private String appliedSummary(List<ProposedFileEdit> edits, PatchReview review) {

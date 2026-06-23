@@ -209,6 +209,8 @@ class DemoReadinessServiceTests {
                 true,
                 true,
                 true,
+                true,
+                15,
                 List.of("bingqin2"),
                 List.of("bingqin2/PatchPilot"),
                 List.of("release-captain")
@@ -246,6 +248,8 @@ class DemoReadinessServiceTests {
                 !allowedTriggerUsers.isEmpty(),
                 !allowedRepositories.isEmpty(),
                 !reviewApprovalAllowedOperators.isEmpty(),
+                true,
+                15,
                 allowedTriggerUsers,
                 allowedRepositories,
                 reviewApprovalAllowedOperators

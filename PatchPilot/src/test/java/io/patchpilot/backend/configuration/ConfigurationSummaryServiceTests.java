@@ -2,6 +2,7 @@ package io.patchpilot.backend.configuration;
 
 import io.patchpilot.backend.agent.config.AgentProperties;
 import io.patchpilot.backend.github.config.GitHubProperties;
+import io.patchpilot.backend.safety.GeneratedDiffSafetyPolicy;
 import io.patchpilot.backend.safety.config.SafetyProperties;
 import io.patchpilot.backend.security.config.AdminApiSecurityProperties;
 import io.patchpilot.backend.task.config.ReviewApprovalProperties;
@@ -41,7 +42,8 @@ class ConfigurationSummaryServiceTests {
                 taskQueueProperties,
                 safetyProperties,
                 reviewApprovalProperties,
-                adminApiSecurityProperties
+                adminApiSecurityProperties,
+                new GeneratedDiffSafetyPolicy()
         ).getConfigurationSummary();
 
         assertThat(summary.reviewApprovalAllowedOperators()).containsExactly("release-captain", "local-operator");
@@ -51,5 +53,7 @@ class ConfigurationSummaryServiceTests {
         assertThat(summary.repositoryAllowlistConfigured()).isTrue();
         assertThat(summary.reviewApprovalAllowlistConfigured()).isTrue();
         assertThat(summary.adminTokenConfigured()).isTrue();
+        assertThat(summary.generatedDiffRiskGateEnabled()).isTrue();
+        assertThat(summary.generatedDiffProtectedPathCount()).isEqualTo(15);
     }
 }

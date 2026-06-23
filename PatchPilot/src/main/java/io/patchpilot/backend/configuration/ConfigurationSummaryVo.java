@@ -24,6 +24,8 @@ public record ConfigurationSummaryVo(
         boolean triggerUserAllowlistConfigured,
         boolean repositoryAllowlistConfigured,
         boolean reviewApprovalAllowlistConfigured,
+        boolean generatedDiffRiskGateEnabled,
+        int generatedDiffProtectedPathCount,
         List<String> allowedTriggerUsers,
         List<String> allowedRepositories,
         List<String> reviewApprovalAllowedOperators

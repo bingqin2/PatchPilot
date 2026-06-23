@@ -9,6 +9,7 @@ import io.patchpilot.backend.agent.workflow.domain.PatchWorkflowResult;
 import io.patchpilot.backend.agent.workflow.domain.PatchReview;
 import io.patchpilot.backend.agent.workflow.domain.PatchReviewDecision;
 import io.patchpilot.backend.agent.workflow.domain.ProposedFileEdit;
+import io.patchpilot.backend.safety.GeneratedDiffSafetyPolicy;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.vo.FixTaskPatchReviewVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
@@ -147,6 +148,21 @@ class PlannedPatchWorkflowTests {
     }
 
     @Test
+    void should_reject_sensitive_replacement_target_before_writing() {
+        PlannedPatchWorkflow workflow = workflow(new RecordingFileEditPlanGenerator(FileEditPlan.empty()), approvedReviewGenerator());
+
+        assertThatThrownBy(() -> workflow.apply(
+                task("/agent fix replace .npmrc registry=https://npm.pkg.github.com/"),
+                repositoryDir,
+                plan(".npmrc")
+        ))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Replacement target is sensitive and cannot be modified: .npmrc");
+
+        assertThat(repositoryDir.resolve(".npmrc")).doesNotExist();
+    }
+
+    @Test
     void should_reject_unsafe_paths_through_workspace_guard() {
         PlannedPatchWorkflow workflow = workflow(new RecordingFileEditPlanGenerator(FileEditPlan.empty()), approvedReviewGenerator());
 
@@ -183,6 +199,24 @@ class PlannedPatchWorkflowTests {
     }
 
     @Test
+    void should_reject_sensitive_package_manager_config_before_model_editing() {
+        PlannedPatchWorkflow workflow = workflow(new RecordingFileEditPlanGenerator(FileEditPlan.empty()), approvedReviewGenerator());
+
+        assertThatThrownBy(() -> workflow.apply(task("/agent fix"), repositoryDir, plan(".npmrc")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Fix plan target is sensitive and cannot be modified: .npmrc");
+    }
+
+    @Test
+    void should_reject_git_metadata_before_model_editing() {
+        PlannedPatchWorkflow workflow = workflow(new RecordingFileEditPlanGenerator(FileEditPlan.empty()), approvedReviewGenerator());
+
+        assertThatThrownBy(() -> workflow.apply(task("/agent fix"), repositoryDir, plan(".git/config")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Fix plan target is sensitive and cannot be modified: .git/config");
+    }
+
+    @Test
     void should_reject_model_edit_with_blank_content() throws Exception {
         Files.createDirectories(repositoryDir.resolve("src/main"));
         Files.writeString(repositoryDir.resolve("src/main/App.java"), "class App {}\n");
@@ -216,7 +250,8 @@ class PlannedPatchWorkflowTests {
                 new FileReadTool(pathResolver),
                 editPlanGenerator,
                 reviewGenerator,
-                patchReviewService
+                patchReviewService,
+                new GeneratedDiffSafetyPolicy()
         );
     }
 

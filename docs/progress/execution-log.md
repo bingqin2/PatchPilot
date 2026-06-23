@@ -2775,3 +2775,18 @@ Validation:
 - `npm test`: passed after full frontend verification, 111 tests run, 0 failures.
 - `npm run build`: passed after production frontend build verification.
 - `git diff --check`: passed after whitespace verification.
+
+Implemented sensitive diff policy visibility from `docs/plans/138-sensitive-diff-policy.md`.
+
+Changes:
+
+- Added a shared `GeneratedDiffSafetyPolicy` for generated-diff risk thresholds, sensitive path matching, binary diff detection, and secret-like added lines.
+- Wired `GeneratedDiffRiskGate` and `PlannedPatchWorkflow` to the shared policy so planning-time target validation and post-generation diff review use the same protected path rules.
+- Extended protected path coverage to Git metadata and package-manager credential files such as `.npmrc`, `.pypirc`, `.netrc`, and Maven `settings.xml`.
+- Extended `GET /api/configuration/summary` with non-sensitive generated-diff policy state.
+- Rendered generated-diff risk-gate state and protected path pattern count in the dashboard configuration panel with advisories for disabled or empty policy state.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=GeneratedDiffRiskGateTests,PlannedPatchWorkflowTests,PlanDrivenPatchWorkflowTests,ConfigurationSummaryServiceTests,ConfigurationControllerTests,DemoReadinessServiceTests test`: first failed because the configuration summary and planned workflow tests did not yet share the new policy fields; then passed after backend implementation, 27 tests run, 0 failures.
+- `npm test -- --run src/dashboard/components/ConfigurationPanel.test.tsx src/api.test.ts src/App.test.tsx`: first failed because the configuration panel did not render generated-diff policy state and later because the advisory count changed; then passed after frontend implementation, 75 tests run, 0 failures.

@@ -44,7 +44,7 @@ Reusable dashboard components live under `frontend/src/dashboard/components/`:
 - `QueuePanel`: read-only queue health, summary, and queue items.
 - `RejectedTriggerPanel`: read-only recent `/agent fix` attempts that were refused before task creation, including command text, repository, trigger user, delivery id, and rejection reason.
 - `WebhookDeliveryPanel`: read-only recent delivery diagnostics for ignored comments, rejected triggers, duplicate deliveries, invalid signatures, bad payloads, active-task collisions, and task-created outcomes, including whether a delivery should be fixed and redelivered from GitHub.
-- `ConfigurationPanel`: read-only runtime configuration summary with backend health, provider, model, workspace, queue policy, configured/missing secret states, and setup health hints.
+- `ConfigurationPanel`: read-only runtime configuration summary with backend health, provider, model, workspace, queue policy, generated-diff policy state, configured/missing secret states, and setup health hints.
 - `SupportedAdaptersPanel`: read-only support matrix for Java/Maven, Java/Gradle, Go, Node/Bun, Node/npm, Node/pnpm, Node/yarn, Python/tox, Python/nox, Python/hatch, Python/Poetry, Python/uv, and Python/pytest adapters.
 - `AdapterFixtureVerificationPanel`: read-only fixture verification matrix showing expected versus actual adapter detection for each checked-in demo fixture.
 - `FailureCausePanel`, `ModelUsagePanel`, and `LatencyPanel`: operational summary cards for failure grouping, token usage, call counts, estimated model cost, and execution latency.
@@ -71,7 +71,7 @@ The first screen is the working dashboard:
 - Queue visibility shows whether work is pending, delayed, running, failed, or cancelled, with failed/delayed/running health hints before the row list.
 - Rejected-trigger visibility shows why a `/agent fix` comment did not create a task when the safety gate, allowlists, rate limiter, or model classifier intentionally refused it.
 - Webhook delivery visibility shows whether recent GitHub deliveries reached PatchPilot, why they were ignored or rejected, and which task id was created when a delivery succeeded.
-- Configuration visibility shows backend `/health` status, the active provider, model, workspace root, queue policy, whether required secrets are configured, and clear health hints for missing secrets or weak optional settings without exposing secret values.
+- Configuration visibility shows backend `/health` status, the active provider, model, workspace root, queue policy, generated-diff risk-gate state, protected path pattern count, whether required secrets are configured, and clear health hints for missing secrets or weak optional settings without exposing secret values.
 - Supported-adapter visibility shows each supported language/build system, verification command, detection signals, and demo fixture path. Fixture verification visibility shows whether each demo fixture still maps to the expected adapter and command. If either adapter API fails, its panel shows a local warning while the rest of the dashboard can still load.
 - If the readiness API fails, the demo readiness panel shows a local warning while the rest of the dashboard can still load.
 - Cancel and retry are available only for task states where those actions make sense; retried tasks keep source failure context in the detail panel.

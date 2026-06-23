@@ -163,6 +163,8 @@ export interface ConfigurationSummary {
   triggerUserAllowlistConfigured: boolean;
   repositoryAllowlistConfigured: boolean;
   reviewApprovalAllowlistConfigured: boolean;
+  generatedDiffRiskGateEnabled: boolean;
+  generatedDiffProtectedPathCount: number;
   allowedTriggerUsers: string[];
   allowedRepositories: string[];
   reviewApprovalAllowedOperators: string[];
