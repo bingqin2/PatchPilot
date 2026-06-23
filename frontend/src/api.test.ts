@@ -236,6 +236,8 @@ test('lists recent rejected triggers through backend API', async () => {
           triggerUser: 'unknown-user',
           triggerComment: '/agent fix make it better',
           reason: 'Unsafe request rejected: instruction is not actionable',
+          commentId: 456,
+          commentUrl: 'https://github.com/bingqin2/PatchPilot/issues/1#issuecomment-456',
           createdAt: '2026-06-23T01:05:00Z'
         }
       ],
@@ -249,6 +251,7 @@ test('lists recent rejected triggers through backend API', async () => {
   expect(fetchMock).toHaveBeenCalledWith('/api/rejected-triggers?limit=20');
   expect(rejectedTriggers[0].reason).toBe('Unsafe request rejected: instruction is not actionable');
   expect(rejectedTriggers[0].triggerComment).toBe('/agent fix make it better');
+  expect(rejectedTriggers[0].commentUrl).toBe('https://github.com/bingqin2/PatchPilot/issues/1#issuecomment-456');
 });
 
 test('builds backend task status count query parameters without status or pagination', async () => {

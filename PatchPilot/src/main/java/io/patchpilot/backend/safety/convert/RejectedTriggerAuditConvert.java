@@ -26,6 +26,8 @@ public final class RejectedTriggerAuditConvert {
         entity.setTriggerUser(command.triggerUser());
         entity.setTriggerComment(command.triggerComment());
         entity.setReason(command.reason());
+        entity.setCommentId(command.commentId());
+        entity.setCommentUrl(command.commentUrl());
         entity.setCreatedAt(createdAt);
         return entity;
     }
@@ -41,6 +43,8 @@ public final class RejectedTriggerAuditConvert {
                 entity.getTriggerUser(),
                 entity.getTriggerComment(),
                 entity.getReason(),
+                entity.getCommentId(),
+                entity.getCommentUrl(),
                 entity.getCreatedAt()
         );
     }

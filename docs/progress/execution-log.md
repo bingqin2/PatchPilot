@@ -2601,3 +2601,19 @@ Validation:
 
 - `mvn -pl PatchPilot -Dtest=TaskControllerTests test`: first failed because task detail and report did not expose repository support guidance; then passed after backend implementation, 59 tests run, 0 failures.
 - `npm test -- TaskDetailPanel.test.tsx`: first failed because no accessible repository support guidance panel existed; then passed after frontend implementation, 14 tests run, 0 failures.
+
+Implemented safe refusal issue comments from `docs/plans/129-safe-refusal-issue-comments.md`.
+
+Changes:
+
+- Added optional refusal comment metadata to rejected trigger audit commands, VOs, in-memory storage, and MyBatis entities.
+- Added a Flyway migration for rejected trigger `comment_id` and `comment_url`.
+- Added `IssueCommentTool.commentRejected` with a safe body that explains refusal without echoing the raw rejected command.
+- Updated webhook rejection paths to attempt a refusal comment before recording rejected trigger audits, while keeping rejection successful if comment creation fails.
+- Rendered refusal comment links in the dashboard rejected triggers panel when GitHub comment URLs are available.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=GitHubWebhookServiceTests,RejectedTriggerAuditControllerTests,InMemoryRejectedTriggerAuditServiceTests,MyBatisRejectedTriggerAuditServiceTests,RejectedTriggerAuditMigrationTests test`: first failed because refusal comment fields and methods did not exist.
+- `mvn -pl PatchPilot -Dtest=GitHubWebhookServiceTests,IssueCommentToolTests,RejectedTriggerAuditControllerTests,InMemoryRejectedTriggerAuditServiceTests,MyBatisRejectedTriggerAuditServiceTests,RejectedTriggerAuditMigrationTests test`: passed after backend implementation, 32 tests run, 0 failures.
+- `npm test -- RejectedTriggerPanel.test.tsx api.test.ts App.test.tsx`: first failed because the rejected triggers panel did not expose a `Refusal comment` link; then passed after frontend implementation, 71 tests run, 0 failures.

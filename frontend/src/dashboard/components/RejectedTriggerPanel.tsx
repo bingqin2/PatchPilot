@@ -37,6 +37,11 @@ export function RejectedTriggerPanel({ rejectedTriggers, error }: RejectedTrigge
             <div className="rejected-trigger-meta">
               {trigger.triggerUser ? <span>{trigger.triggerUser}</span> : null}
               {trigger.deliveryId ? <span>{trigger.deliveryId}</span> : null}
+              {trigger.commentUrl ? (
+                <a href={trigger.commentUrl} target="_blank" rel="noreferrer">
+                  Refusal comment
+                </a>
+              ) : null}
             </div>
             <p>{trigger.reason}</p>
           </article>

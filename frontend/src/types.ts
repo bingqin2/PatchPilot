@@ -283,6 +283,8 @@ export interface RejectedTriggerAudit {
   triggerUser: string | null;
   triggerComment: string | null;
   reason: string;
+  commentId: number | null;
+  commentUrl: string | null;
   createdAt: string;
 }
 

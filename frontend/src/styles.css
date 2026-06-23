@@ -1982,10 +1982,20 @@ pre {
 
 .rejected-trigger-main span,
 .rejected-trigger-main time,
-.rejected-trigger-meta span {
+.rejected-trigger-meta span,
+.rejected-trigger-meta a {
   color: #64727f;
   font-size: 12px;
   font-weight: 750;
+}
+
+.rejected-trigger-meta a {
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.rejected-trigger-meta a:hover {
+  text-decoration: underline;
 }
 
 .rejected-trigger-row p {

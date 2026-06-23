@@ -359,8 +359,7 @@ public class GitHubWebhookService {
                 commentBody
         ));
         if (!safetyDecision.allowed()) {
-            rejectedTriggerAuditService.recordRejectedTrigger(new RecordRejectedTriggerCommand(
-                    "issue_comment",
+            recordRejectedTrigger(
                     deliveryId,
                     repositoryOwner,
                     repositoryName,
@@ -368,7 +367,7 @@ public class GitHubWebhookService {
                     triggerUser,
                     commentBody,
                     safetyDecision.reason()
-            ));
+            );
             recordDelivery(
                     deliveryId,
                     event,
@@ -430,8 +429,7 @@ public class GitHubWebhookService {
                 triggerUser
         ));
         if (!rateLimitDecision.allowed()) {
-            rejectedTriggerAuditService.recordRejectedTrigger(new RecordRejectedTriggerCommand(
-                    "issue_comment",
+            recordRejectedTrigger(
                     deliveryId,
                     repositoryOwner,
                     repositoryName,
@@ -439,7 +437,7 @@ public class GitHubWebhookService {
                     triggerUser,
                     commentBody,
                     rateLimitDecision.reason()
-            ));
+            );
             recordDelivery(
                     deliveryId,
                     event,
@@ -466,8 +464,7 @@ public class GitHubWebhookService {
                 )
         );
         if (!triggerIntentDecision.shouldExecute()) {
-            rejectedTriggerAuditService.recordRejectedTrigger(new RecordRejectedTriggerCommand(
-                    "issue_comment",
+            recordRejectedTrigger(
                     deliveryId,
                     repositoryOwner,
                     repositoryName,
@@ -475,7 +472,7 @@ public class GitHubWebhookService {
                     triggerUser,
                     commentBody,
                     triggerIntentDecision.rejectionReason()
-            ));
+            );
             recordDelivery(
                     deliveryId,
                     event,
@@ -563,6 +560,59 @@ public class GitHubWebhookService {
                 "Ignored duplicate /agent fix while task is active"
         );
         return WebhookHandleResult.activeTaskExists(activeTask.id());
+    }
+
+    private void recordRejectedTrigger(
+            String deliveryId,
+            String repositoryOwner,
+            String repositoryName,
+            long issueNumber,
+            String triggerUser,
+            String triggerComment,
+            String reason
+    ) {
+        IssueCommentResult refusalComment = createRefusalComment(
+                repositoryOwner,
+                repositoryName,
+                issueNumber,
+                triggerUser,
+                triggerComment,
+                reason
+        );
+        rejectedTriggerAuditService.recordRejectedTrigger(new RecordRejectedTriggerCommand(
+                "issue_comment",
+                deliveryId,
+                repositoryOwner,
+                repositoryName,
+                issueNumber,
+                triggerUser,
+                triggerComment,
+                reason,
+                refusalComment == null ? null : refusalComment.id(),
+                refusalComment == null ? null : refusalComment.url()
+        ));
+    }
+
+    private IssueCommentResult createRefusalComment(
+            String repositoryOwner,
+            String repositoryName,
+            long issueNumber,
+            String triggerUser,
+            String triggerComment,
+            String reason
+    ) {
+        try {
+            return issueCommentTool.commentRejected(
+                    repositoryOwner,
+                    repositoryName,
+                    issueNumber,
+                    triggerUser,
+                    triggerComment,
+                    reason
+            );
+        } catch (RuntimeException exception) {
+            return null;
+        }
     }
 
     private void createStatusComment(FixTaskVo task) {
