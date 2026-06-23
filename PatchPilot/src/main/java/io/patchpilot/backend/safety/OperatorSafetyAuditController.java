@@ -1,0 +1,40 @@
+package io.patchpilot.backend.safety;
+
+import io.patchpilot.backend.common.response.ApiResponse;
+import io.patchpilot.backend.safety.domain.OperatorSafetyAuditVo;
+import io.patchpilot.backend.safety.service.OperatorSafetyAuditService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/operator-safety-audits")
+@RequiredArgsConstructor
+public class OperatorSafetyAuditController {
+
+    private final OperatorSafetyAuditService auditService;
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<List<OperatorSafetyAuditVo>>> listSafetyAudits(
+            @RequestParam(required = false) Integer limit
+    ) {
+        try {
+            return ResponseEntity.ok(ApiResponse.ok(auditService.listSafetyAudits(normalizeLimit(limit))));
+        } catch (IllegalArgumentException exception) {
+            return ResponseEntity.badRequest().body(ApiResponse.fail(exception.getMessage()));
+        }
+    }
+
+    private static int normalizeLimit(Integer limit) {
+        int normalizedLimit = limit == null ? 50 : limit;
+        if (normalizedLimit < 1 || normalizedLimit > 100) {
+            throw new IllegalArgumentException("limit must be between 1 and 100");
+        }
+        return normalizedLimit;
+    }
+}

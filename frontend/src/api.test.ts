@@ -12,6 +12,7 @@ import {
   getRejectedTriggerSummary,
   listLanguageAdapterFixtures,
   listLanguageAdapters,
+  listOperatorSafetyAudits,
   listRejectedTriggers,
   listTriggerQuarantines,
   releaseTriggerQuarantine,
@@ -358,6 +359,39 @@ test('lists active trigger quarantines through backend API', async () => {
   expect(quarantines[0].scope).toBe('TRIGGER_USER');
   expect(quarantines[0].scopeKey).toBe('drive-by-user');
   expect(quarantines[0].active).toBe(true);
+});
+
+test('lists recent operator safety audits through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: [
+        {
+          id: 'operator-audit-1',
+          action: 'MANUAL_QUARANTINE_CREATED',
+          resourceType: 'TRIGGER_QUARANTINE',
+          resourceId: 'quarantine-1',
+          scope: 'TRIGGER_USER',
+          scopeKey: 'drive-by-user',
+          operator: 'local-admin',
+          reason: 'Operator blocked noisy demo trigger user',
+          createdAt: '2026-06-24T01:00:00Z'
+        }
+      ],
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const audits = await listOperatorSafetyAudits(20);
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/operator-safety-audits?limit=20');
+  expect(audits[0].action).toBe('MANUAL_QUARANTINE_CREATED');
+  expect(audits[0].resourceType).toBe('TRIGGER_QUARANTINE');
+  expect(audits[0].scopeKey).toBe('drive-by-user');
+  expect(audits[0].operator).toBe('local-admin');
 });
 
 test('creates manual trigger quarantines through backend API', async () => {

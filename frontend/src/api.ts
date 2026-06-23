@@ -18,6 +18,7 @@ import type {
   FixTaskModelUsageSummary,
   FixTaskQueueItem,
   FixTaskQueueSummary,
+  OperatorSafetyAudit,
   RejectedTriggerAudit,
   RejectedTriggerAuditSummary,
   ReleaseTriggerQuarantineInput,
@@ -196,6 +197,10 @@ export async function listTriggerQuarantines(
     limit: String(options.limit ?? 20)
   });
   return getApi<TriggerQuarantine[]>(`/api/trigger-quarantines?${searchParams.toString()}`);
+}
+
+export async function listOperatorSafetyAudits(limit = 20): Promise<OperatorSafetyAudit[]> {
+  return getApi<OperatorSafetyAudit[]>(`/api/operator-safety-audits?limit=${limit}`);
 }
 
 export async function createTriggerQuarantine(input: CreateTriggerQuarantineInput): Promise<TriggerQuarantine> {

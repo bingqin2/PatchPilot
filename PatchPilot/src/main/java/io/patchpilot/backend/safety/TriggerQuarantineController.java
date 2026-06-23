@@ -2,8 +2,10 @@ package io.patchpilot.backend.safety;
 
 import io.patchpilot.backend.common.response.ApiResponse;
 import io.patchpilot.backend.safety.domain.ManualTriggerQuarantineRequest;
+import io.patchpilot.backend.safety.domain.RecordOperatorSafetyAuditCommand;
 import io.patchpilot.backend.safety.domain.ReleaseTriggerQuarantineRequest;
 import io.patchpilot.backend.safety.domain.TriggerQuarantineVo;
+import io.patchpilot.backend.safety.service.OperatorSafetyAuditService;
 import io.patchpilot.backend.safety.service.TriggerQuarantineRecordService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -24,6 +26,7 @@ import java.util.List;
 public class TriggerQuarantineController {
 
     private final TriggerQuarantineRecordService quarantineRecordService;
+    private final OperatorSafetyAuditService operatorSafetyAuditService;
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<TriggerQuarantineVo>>> listTriggerQuarantines(
@@ -45,15 +48,23 @@ public class TriggerQuarantineController {
             @RequestBody ManualTriggerQuarantineRequest request
     ) {
         try {
-            return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok(
-                    quarantineRecordService.createManualQuarantine(
-                            request.scope(),
-                            request.scopeKey(),
-                            request.reason(),
-                            request.durationMs() == null ? 0 : request.durationMs(),
-                            request.operator()
-                    )
+            TriggerQuarantineVo quarantine = quarantineRecordService.createManualQuarantine(
+                    request.scope(),
+                    request.scopeKey(),
+                    request.reason(),
+                    request.durationMs() == null ? 0 : request.durationMs(),
+                    request.operator()
+            );
+            operatorSafetyAuditService.recordSafetyAudit(new RecordOperatorSafetyAuditCommand(
+                    "MANUAL_QUARANTINE_CREATED",
+                    "TRIGGER_QUARANTINE",
+                    quarantine.id(),
+                    quarantine.scope(),
+                    quarantine.scopeKey(),
+                    request.operator(),
+                    request.reason()
             ));
+            return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok(quarantine));
         } catch (IllegalArgumentException exception) {
             return ResponseEntity.badRequest().body(ApiResponse.fail(exception.getMessage()));
         }
@@ -65,11 +76,21 @@ public class TriggerQuarantineController {
             @RequestBody ReleaseTriggerQuarantineRequest request
     ) {
         try {
-            return ResponseEntity.ok(ApiResponse.ok(quarantineRecordService.releaseQuarantine(
+            TriggerQuarantineVo quarantine = quarantineRecordService.releaseQuarantine(
                     id,
                     request.operator(),
                     request.reason()
-            )));
+            );
+            operatorSafetyAuditService.recordSafetyAudit(new RecordOperatorSafetyAuditCommand(
+                    "TRIGGER_QUARANTINE_RELEASED",
+                    "TRIGGER_QUARANTINE",
+                    quarantine.id(),
+                    quarantine.scope(),
+                    quarantine.scopeKey(),
+                    request.operator(),
+                    request.reason()
+            ));
+            return ResponseEntity.ok(ApiResponse.ok(quarantine));
         } catch (IllegalArgumentException exception) {
             return ResponseEntity.badRequest().body(ApiResponse.fail(exception.getMessage()));
         }

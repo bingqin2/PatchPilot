@@ -31,6 +31,19 @@ test('renders rejected trigger audit rows and retries a rejected trigger', async
           active: true
         }
       ]}
+      operatorSafetyAudits={[
+        {
+          id: 'operator-audit-1',
+          action: 'MANUAL_QUARANTINE_CREATED',
+          resourceType: 'TRIGGER_QUARANTINE',
+          resourceId: 'quarantine-1',
+          scope: 'TRIGGER_USER',
+          scopeKey: 'drive-by-user',
+          operator: 'local-admin',
+          reason: 'Operator blocked noisy demo trigger user',
+          createdAt: '2026-06-24T01:00:00Z'
+        }
+      ]}
       summary={{
         totalCount: 4,
         categoryCounts: [
@@ -94,6 +107,11 @@ test('renders rejected trigger audit rows and retries a rejected trigger', async
   expect(within(quarantineRows).getByText('drive-by-user')).toBeInTheDocument();
   expect(within(quarantineRows).getByText('5 rejected triggers')).toBeInTheDocument();
   expect(within(quarantineRows).getByText('Unsafe request rejected: trigger user is temporarily quarantined')).toBeInTheDocument();
+  const operatorAuditRows = within(panel).getByRole('group', { name: 'Operator safety audit rows' });
+  expect(within(operatorAuditRows).getByText('Manual quarantine created')).toBeInTheDocument();
+  expect(within(operatorAuditRows).getByText('drive-by-user')).toBeInTheDocument();
+  expect(within(operatorAuditRows).getByText('local-admin')).toBeInTheDocument();
+  expect(within(operatorAuditRows).getByText('Operator blocked noisy demo trigger user')).toBeInTheDocument();
   expect(within(panel).getByRole('combobox', { name: 'Filter rejected triggers by category' })).toHaveValue('ALL');
   const auditRows = within(panel).getByRole('group', { name: 'Rejected trigger audit rows' });
   expect(within(auditRows).getByText('/agent fix make it better')).toBeInTheDocument();
@@ -140,6 +158,7 @@ test('renders rejected trigger empty and error states', () => {
     <RejectedTriggerPanel
       error={null}
       quarantines={[]}
+      operatorSafetyAudits={[]}
       summary={null}
       categoryFilter="ALL"
       rejectedTriggers={[]}
@@ -161,6 +180,7 @@ test('renders rejected trigger empty and error states', () => {
     <RejectedTriggerPanel
       error="Rejected trigger API unavailable"
       quarantines={[]}
+      operatorSafetyAudits={[]}
       summary={null}
       categoryFilter="ALL"
       rejectedTriggers={[]}
@@ -183,6 +203,7 @@ test('disables the retry action while retrying a rejected trigger', () => {
     <RejectedTriggerPanel
       error={null}
       quarantines={[]}
+      operatorSafetyAudits={[]}
       summary={null}
       categoryFilter="NOT_ACTIONABLE"
       retryingRejectedTriggerId="rejected-1"
@@ -247,6 +268,7 @@ test('creates and releases manual trigger quarantines', async () => {
           active: true
         }
       ]}
+      operatorSafetyAudits={[]}
       summary={null}
       categoryFilter="ALL"
       rejectedTriggers={[]}

@@ -2,6 +2,7 @@ package io.patchpilot.backend.safety;
 
 import io.patchpilot.backend.safety.domain.TriggerQuarantineScope;
 import io.patchpilot.backend.safety.domain.TriggerQuarantineVo;
+import io.patchpilot.backend.safety.service.OperatorSafetyAuditService;
 import io.patchpilot.backend.safety.service.TriggerQuarantineRecordService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +14,8 @@ import java.time.Instant;
 import java.util.List;
 
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -26,6 +29,9 @@ class TriggerQuarantineControllerTests {
 
     @MockitoBean
     private TriggerQuarantineRecordService quarantineRecordService;
+
+    @MockitoBean
+    private OperatorSafetyAuditService operatorSafetyAuditService;
 
     @Test
     void should_list_active_trigger_quarantines() throws Exception {
@@ -115,6 +121,16 @@ class TriggerQuarantineControllerTests {
                 .andExpect(jsonPath("$.data.category").value("MANUAL_QUARANTINE"))
                 .andExpect(jsonPath("$.data.createdBy").value("local-admin"))
                 .andExpect(jsonPath("$.data.active").value(true));
+
+        verify(operatorSafetyAuditService).recordSafetyAudit(argThat(command ->
+                command.action().equals("MANUAL_QUARANTINE_CREATED")
+                        && command.resourceType().equals("TRIGGER_QUARANTINE")
+                        && command.resourceId().equals("quarantine-1")
+                        && command.scope() == TriggerQuarantineScope.TRIGGER_USER
+                        && command.scopeKey().equals("alice")
+                        && command.operator().equals("local-admin")
+                        && command.reason().equals("Operator blocked noisy demo trigger user")
+        ));
     }
 
     @Test
@@ -156,5 +172,15 @@ class TriggerQuarantineControllerTests {
                 .andExpect(jsonPath("$.data.releasedBy").value("local-admin"))
                 .andExpect(jsonPath("$.data.releaseReason").value("False positive during demo"))
                 .andExpect(jsonPath("$.data.active").value(false));
+
+        verify(operatorSafetyAuditService).recordSafetyAudit(argThat(command ->
+                command.action().equals("TRIGGER_QUARANTINE_RELEASED")
+                        && command.resourceType().equals("TRIGGER_QUARANTINE")
+                        && command.resourceId().equals("quarantine-1")
+                        && command.scope() == TriggerQuarantineScope.TRIGGER_USER
+                        && command.scopeKey().equals("alice")
+                        && command.operator().equals("local-admin")
+                        && command.reason().equals("False positive during demo")
+        ));
     }
 }
