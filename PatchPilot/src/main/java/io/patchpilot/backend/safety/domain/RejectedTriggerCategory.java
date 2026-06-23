@@ -13,6 +13,7 @@ public final class RejectedTriggerCategory {
     public static final String MODEL_REJECTED = "MODEL_REJECTED";
     public static final String MODEL_NEEDS_CLARIFICATION = "MODEL_NEEDS_CLARIFICATION";
     public static final String MODEL_CLASSIFICATION_FAILED = "MODEL_CLASSIFICATION_FAILED";
+    public static final String ABUSE_QUARANTINED = "ABUSE_QUARANTINED";
 
     private RejectedTriggerCategory() {
     }

@@ -200,6 +200,7 @@ PatchPilot must:
 - Never run a task from an unauthorized user or repository.
 - Reject or ignore unclear, unsupported, or unsafe requests before cloning or model execution, record stable refusal categories, and let operators filter refusal audit records by category for diagnosis.
 - Enforce per-user, per-repository, and global rate limits before expensive work starts.
+- Quarantine repeated rejected-trigger patterns by trigger user or repository before rate-limit checks, model calls, task creation, queueing, or workspace work.
 - Run repository commands with allowlisted command templates, timeouts, resource limits, and no unnecessary secrets.
 - Re-check generated diffs before verification or GitHub writes, and block sensitive files, secret-like additions, binary patches, or overly broad changes.
 - Park generated-diff risk rejections in an explicit `PENDING_REVIEW` state, expose the generated diff for operator inspection, and only resume the same workspace after the operator cancels or approves the already-generated diff with an auditable approver and reason.

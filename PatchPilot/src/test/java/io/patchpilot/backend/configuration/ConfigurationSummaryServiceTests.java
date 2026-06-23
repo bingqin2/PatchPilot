@@ -30,6 +30,10 @@ class ConfigurationSummaryServiceTests {
         SafetyProperties safetyProperties = new SafetyProperties();
         safetyProperties.setAllowedTriggerUsers(List.of(" bingqin2 ", "BINGQIN2", "local-operator", ""));
         safetyProperties.setAllowedRepositories(List.of(" bingqin2/PatchPilot ", "BINGQIN2/PATCHPILOT", "octocat/hello-world"));
+        safetyProperties.setRejectedTriggerQuarantineEnabled(true);
+        safetyProperties.setRejectedTriggerQuarantineWindowMs(900_000);
+        safetyProperties.setRejectedTriggerQuarantineThreshold(4);
+        safetyProperties.setRejectedTriggerQuarantineCooldownMs(1_800_000);
         ReviewApprovalProperties reviewApprovalProperties = new ReviewApprovalProperties();
         reviewApprovalProperties.setAllowedOperators(List.of(" release-captain ", "RELEASE-CAPTAIN", "local-operator", ""));
         AdminApiSecurityProperties adminApiSecurityProperties = new AdminApiSecurityProperties();
@@ -55,5 +59,9 @@ class ConfigurationSummaryServiceTests {
         assertThat(summary.adminTokenConfigured()).isTrue();
         assertThat(summary.generatedDiffRiskGateEnabled()).isTrue();
         assertThat(summary.generatedDiffProtectedPathCount()).isEqualTo(15);
+        assertThat(summary.rejectedTriggerQuarantineEnabled()).isTrue();
+        assertThat(summary.rejectedTriggerQuarantineWindowMs()).isEqualTo(900_000);
+        assertThat(summary.rejectedTriggerQuarantineThreshold()).isEqualTo(4);
+        assertThat(summary.rejectedTriggerQuarantineCooldownMs()).isEqualTo(1_800_000);
     }
 }

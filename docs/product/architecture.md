@@ -45,6 +45,7 @@ GitHub issue comment created
   -> WebhookController verifies signature
   -> WebhookEventRouter detects /agent fix
   -> CommandSafetyGate rejects unsupported, unauthorized, unsafe, or non-actionable commands
+  -> TriggerQuarantineService rejects repeated abusive rejected-trigger patterns by user or repository
   -> TriggerRateLimitService rejects repeated attempts by issue, trigger user, or repository
   -> TriggerIntentClassifier optionally asks the configured model whether the safe request should execute
   -> RejectedTriggerAuditService records rejected triggering attempts
@@ -127,6 +128,7 @@ Responsibilities:
 - Record rejected triggering attempts for operator inspection, including a stable category such as `NOT_ACTIONABLE`, `DANGEROUS_INSTRUCTION`, `TRIGGER_USER_NOT_ALLOWED`, `REPOSITORY_NOT_ALLOWED`, `RATE_LIMITED`, or model-classifier refusal categories.
 - List rejected triggering attempts with optional category filtering for operator diagnosis.
 - Summarize recent rejected triggering attempts by category, source, trigger user, and repository so operators can spot abuse or bad prompt patterns without reading every row.
+- Apply rejected-trigger quarantine before rate limiting, model classification, task creation, queueing, or workspace work when recent rejected attempts from the same trigger user or repository exceed the configured threshold. Quarantined attempts are recorded as `ABUSE_QUARANTINED`.
 - Deduplicate delivery ids.
 - Submit work to task services.
 

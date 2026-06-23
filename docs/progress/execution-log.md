@@ -2851,3 +2851,27 @@ Validation:
 - `npm test`: passed after full frontend verification, 116 tests run, 0 failures.
 - `npm run build`: passed after production frontend build verification.
 - `git diff --check`: passed after whitespace verification.
+
+Implemented rejected trigger auto quarantine from `docs/plans/142-rejected-trigger-auto-quarantine.md`.
+
+Changes:
+
+- Added a configurable rejected-trigger quarantine policy based on recent rejected-trigger audit records.
+- Applied quarantine to GitHub webhook triggers and manual dashboard-created tasks before rate-limit checks, model classification, task creation, queueing, workspace cloning, or execution.
+- Added the `ABUSE_QUARANTINED` rejected-trigger category for trigger-user and repository cooldowns.
+- Exposed quarantine policy state in `GET /api/configuration/summary`, demo readiness, and the dashboard configuration panel.
+- Updated the rejected-trigger dashboard summary/filter path to include abuse-quarantined records.
+- Documented the self-hosted/private-demo quarantine behavior in product docs and README.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=GitHubWebhookServiceTests,DefaultManualFixTaskServiceTests,ConfigurationSummaryServiceTests test`: first failed because quarantine decision/request/service types did not exist.
+- `npm test -- --run src/dashboard/components/RejectedTriggerPanel.test.tsx src/dashboard/components/ConfigurationPanel.test.tsx`: first failed because the dashboard did not expose quarantine policy or the `ABUSE_QUARANTINED` category.
+- `mvn -pl PatchPilot -Dtest=GitHubWebhookServiceTests,DefaultManualFixTaskServiceTests,ConfigurationSummaryServiceTests,RejectedTriggerQuarantineServiceTests test`: passed after backend implementation, 30 tests run, 0 failures.
+- `npm test -- --run src/dashboard/components/RejectedTriggerPanel.test.tsx src/dashboard/components/ConfigurationPanel.test.tsx`: passed after frontend implementation, 6 tests run, 0 failures.
+- `JAVA_HOME=/Library/Java/JavaVirtualMachines/openjdk-17.jdk/Contents/Home mvn -pl PatchPilot -Dtest=GitHubWebhookServiceTests,DefaultManualFixTaskServiceTests,ConfigurationSummaryServiceTests,RejectedTriggerQuarantineServiceTests,DemoReadinessServiceTests test`: passed after adding demo-readiness and invalid-threshold coverage, 36 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts src/App.test.tsx src/dashboard/components/RejectedTriggerPanel.test.tsx src/dashboard/components/ConfigurationPanel.test.tsx`: passed after adding API and app fixtures, 83 tests run, 0 failures.
+- `JAVA_HOME=/Library/Java/JavaVirtualMachines/openjdk-17.jdk/Contents/Home mvn -pl PatchPilot test`: passed after full backend verification, 519 tests run, 0 failures.
+- `npm test`: passed after full frontend verification, 116 tests run, 0 failures.
+- `npm run build`: passed after production frontend build verification.
+- `git diff --check`: passed after whitespace verification.

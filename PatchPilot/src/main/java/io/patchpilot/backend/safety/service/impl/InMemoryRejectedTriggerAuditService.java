@@ -12,12 +12,22 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Supplier;
 
 @Service
 @Profile("default")
 public class InMemoryRejectedTriggerAuditService implements RejectedTriggerAuditService {
 
     private final List<RejectedTriggerAuditVo> audits = new CopyOnWriteArrayList<>();
+    private final Supplier<Instant> clock;
+
+    public InMemoryRejectedTriggerAuditService() {
+        this(Instant::now);
+    }
+
+    public InMemoryRejectedTriggerAuditService(Supplier<Instant> clock) {
+        this.clock = clock;
+    }
 
     @Override
     public RejectedTriggerAuditVo recordRejectedTrigger(RecordRejectedTriggerCommand command) {
@@ -36,7 +46,7 @@ public class InMemoryRejectedTriggerAuditService implements RejectedTriggerAudit
                 command.commentUrl(),
                 null,
                 null,
-                Instant.now()
+                clock.get()
         );
         audits.add(audit);
         return audit;

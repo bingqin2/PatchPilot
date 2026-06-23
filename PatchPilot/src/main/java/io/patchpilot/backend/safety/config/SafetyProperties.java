@@ -16,6 +16,10 @@ public class SafetyProperties {
     private int triggerRateLimitMaxPerTriggerUser = 30;
     private int triggerRateLimitMaxPerRepository = 60;
     private int triggerRateLimitMaxPerIssue = 20;
+    private boolean rejectedTriggerQuarantineEnabled = true;
+    private long rejectedTriggerQuarantineWindowMs = 600_000;
+    private int rejectedTriggerQuarantineThreshold = 5;
+    private long rejectedTriggerQuarantineCooldownMs = 1_800_000;
 
     public List<String> getAllowedTriggerUsers() {
         return allowedTriggerUsers;
@@ -79,5 +83,37 @@ public class SafetyProperties {
 
     public void setTriggerRateLimitMaxPerIssue(int triggerRateLimitMaxPerIssue) {
         this.triggerRateLimitMaxPerIssue = triggerRateLimitMaxPerIssue;
+    }
+
+    public boolean isRejectedTriggerQuarantineEnabled() {
+        return rejectedTriggerQuarantineEnabled;
+    }
+
+    public void setRejectedTriggerQuarantineEnabled(boolean rejectedTriggerQuarantineEnabled) {
+        this.rejectedTriggerQuarantineEnabled = rejectedTriggerQuarantineEnabled;
+    }
+
+    public long getRejectedTriggerQuarantineWindowMs() {
+        return rejectedTriggerQuarantineWindowMs;
+    }
+
+    public void setRejectedTriggerQuarantineWindowMs(long rejectedTriggerQuarantineWindowMs) {
+        this.rejectedTriggerQuarantineWindowMs = rejectedTriggerQuarantineWindowMs;
+    }
+
+    public int getRejectedTriggerQuarantineThreshold() {
+        return rejectedTriggerQuarantineThreshold;
+    }
+
+    public void setRejectedTriggerQuarantineThreshold(int rejectedTriggerQuarantineThreshold) {
+        this.rejectedTriggerQuarantineThreshold = rejectedTriggerQuarantineThreshold;
+    }
+
+    public long getRejectedTriggerQuarantineCooldownMs() {
+        return rejectedTriggerQuarantineCooldownMs;
+    }
+
+    public void setRejectedTriggerQuarantineCooldownMs(long rejectedTriggerQuarantineCooldownMs) {
+        this.rejectedTriggerQuarantineCooldownMs = rejectedTriggerQuarantineCooldownMs;
     }
 }
