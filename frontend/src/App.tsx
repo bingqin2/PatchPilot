@@ -31,6 +31,7 @@ import { LatencyPanel } from './dashboard/components/LatencyPanel';
 import { MetricCard } from './dashboard/components/MetricCard';
 import { ModelUsagePanel } from './dashboard/components/ModelUsagePanel';
 import { ManualTaskForm } from './dashboard/components/ManualTaskForm';
+import { OperatorSetupChecklistPanel } from './dashboard/components/OperatorSetupChecklistPanel';
 import { QueuePanel } from './dashboard/components/QueuePanel';
 import { SupportedAdaptersPanel } from './dashboard/components/SupportedAdaptersPanel';
 import { TaskDetailPanel } from './dashboard/components/TaskDetailPanel';
@@ -619,6 +620,16 @@ export default function App() {
         configuration={configuration}
         hasStoredAdminToken={hasStoredAdminToken}
         error={error}
+      />
+
+      <OperatorSetupChecklistPanel
+        backendHealth={backendHealth}
+        configuration={configuration}
+        demoReadiness={demoReadiness}
+        adapterFixtureVerifications={adapterFixtureVerifications}
+        queueSummary={queueSummary}
+        tasks={tasks}
+        hasStoredAdminToken={hasStoredAdminToken}
       />
 
       <DemoReadinessPanel readiness={demoReadiness} error={demoReadinessError} />
