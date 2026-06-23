@@ -1874,6 +1874,72 @@ pre {
   margin: 0;
 }
 
+.rejected-trigger-panel {
+  margin-top: 16px;
+}
+
+.rejected-trigger-list {
+  display: grid;
+}
+
+.rejected-trigger-row {
+  border-bottom: 1px solid #edf1f5;
+  display: grid;
+  gap: 8px;
+  padding: 12px 16px;
+}
+
+.rejected-trigger-row:last-child {
+  border-bottom: 0;
+}
+
+.rejected-trigger-main,
+.rejected-trigger-meta {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+.rejected-trigger-main > div {
+  display: grid;
+  gap: 2px;
+  min-width: min(320px, 100%);
+}
+
+.rejected-trigger-main strong,
+.rejected-trigger-main span,
+.rejected-trigger-meta span,
+.rejected-trigger-row p {
+  overflow-wrap: anywhere;
+}
+
+.rejected-trigger-main strong {
+  color: #17202a;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 12px;
+}
+
+.rejected-trigger-main span,
+.rejected-trigger-main time,
+.rejected-trigger-meta span {
+  color: #64727f;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.rejected-trigger-row p {
+  background: #fff4f2;
+  border: 1px solid #efc2b7;
+  border-radius: 6px;
+  color: #8b2f21;
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1.35;
+  padding: 8px 10px;
+}
+
 .panel-error {
   background: #fff4f2;
   border-bottom: 1px solid #ef8a7b;

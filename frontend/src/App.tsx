@@ -20,6 +20,7 @@ import {
   listLanguageAdapterFixtures,
   listLanguageAdapters,
   listQueueItems,
+  listRejectedTriggers,
   listWebhookDeliveries,
   listTasks,
   retryTask
@@ -36,6 +37,7 @@ import { ModelUsagePanel } from './dashboard/components/ModelUsagePanel';
 import { ManualTaskForm } from './dashboard/components/ManualTaskForm';
 import { OperatorSetupChecklistPanel } from './dashboard/components/OperatorSetupChecklistPanel';
 import { QueuePanel } from './dashboard/components/QueuePanel';
+import { RejectedTriggerPanel } from './dashboard/components/RejectedTriggerPanel';
 import { SupportedAdaptersPanel } from './dashboard/components/SupportedAdaptersPanel';
 import { TaskDetailPanel } from './dashboard/components/TaskDetailPanel';
 import { TaskListPanel } from './dashboard/components/TaskListPanel';
@@ -58,6 +60,7 @@ import type {
   FixTaskModelUsageSummary,
   FixTaskQueueItem,
   FixTaskQueueSummary,
+  RejectedTriggerAudit,
   WebhookDeliveryDiagnostic,
   LanguageAdapterFixtureVerification,
   SupportedLanguageAdapter,
@@ -102,6 +105,8 @@ export default function App() {
   const [queueItems, setQueueItems] = useState<FixTaskQueueItem[]>([]);
   const [webhookDeliveries, setWebhookDeliveries] = useState<WebhookDeliveryDiagnostic[]>([]);
   const [webhookDeliveryError, setWebhookDeliveryError] = useState<string | null>(null);
+  const [rejectedTriggers, setRejectedTriggers] = useState<RejectedTriggerAudit[]>([]);
+  const [rejectedTriggerError, setRejectedTriggerError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<TaskStatusFilter>(initialFilters.status);
   const [searchQuery, setSearchQuery] = useState(initialFilters.query);
   const [repositoryOwnerFilter, setRepositoryOwnerFilter] = useState(initialFilters.repositoryOwner);
@@ -323,7 +328,8 @@ export default function App() {
         adapterFixtureResult,
         queueSummaryData,
         queueItemList,
-        webhookDeliveryResult
+        webhookDeliveryResult,
+        rejectedTriggerResult
       ] = await Promise.all([
         listTasks({
           status: statusFilter,
@@ -358,6 +364,10 @@ export default function App() {
         listWebhookDeliveries(10).then(
           (deliveries) => ({ deliveries, error: null as string | null }),
           (caught) => ({ deliveries: null, error: errorMessage(caught) })
+        ),
+        listRejectedTriggers(20).then(
+          (rejections) => ({ rejections, error: null as string | null }),
+          (caught) => ({ rejections: null, error: errorMessage(caught) })
         )
       ]);
       setTasks(taskList.items);
@@ -389,6 +399,10 @@ export default function App() {
         setWebhookDeliveries(webhookDeliveryResult.deliveries);
       }
       setWebhookDeliveryError(webhookDeliveryResult.error);
+      if (rejectedTriggerResult.rejections) {
+        setRejectedTriggers(rejectedTriggerResult.rejections);
+      }
+      setRejectedTriggerError(rejectedTriggerResult.error);
       setCanLoadMoreTasks(taskList.hasMore);
       setTaskTotal(taskList.total);
       setSelectedTaskId((current) => selectedTaskIdFromList(taskList.items, current));
@@ -748,6 +762,8 @@ export default function App() {
       <QueuePanel summary={queueSummary} items={queueItems} />
 
       <WebhookDeliveryPanel deliveries={webhookDeliveries} error={webhookDeliveryError} />
+
+      <RejectedTriggerPanel rejectedTriggers={rejectedTriggers} error={rejectedTriggerError} />
     </main>
   );
 }

@@ -2548,3 +2548,22 @@ Validation:
 - `mvn -pl PatchPilot test`: passed after full backend verification, 454 tests run, 0 failures.
 - `npm test`: passed after full frontend verification, 99 tests run, 0 failures.
 - `npm run build`: passed after production frontend build.
+
+Implemented rejected trigger dashboard visibility from `docs/plans/126-rejected-trigger-dashboard.md`.
+
+Changes:
+
+- Added a typed frontend API helper for `GET /api/rejected-triggers?limit=20`.
+- Added a dashboard `RejectedTriggerPanel` that shows recent refused `/agent fix` attempts with source, repository, issue, trigger user, delivery id, command text, timestamp, and rejection reason.
+- Kept rejected-trigger API failures local to the panel so the rest of the dashboard can still load.
+- Updated README, frontend design notes, and this execution log.
+
+Validation:
+
+- `npm test -- api.test.ts App.test.tsx`: first failed because the API helper and dashboard region did not exist; then passed after frontend implementation, 69 tests run, 0 failures.
+- `npm test -- api.test.ts App.test.tsx RejectedTriggerPanel.test.tsx`: passed after component empty/error coverage, 71 tests run, 0 failures.
+- `npm test`: passed after full frontend verification, 102 tests run, 0 failures.
+- `npm run build`: passed after production frontend build.
+- `mvn -pl PatchPilot test`: passed after full backend verification, 454 tests run, 0 failures.
+- `git diff --check`: passed after whitespace verification.
+- Conflict-marker scan over README, docs, and frontend sources: no conflict markers found.
