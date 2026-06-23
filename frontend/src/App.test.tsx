@@ -985,6 +985,44 @@ test('prompts for admin token and reloads dashboard after saving it', async () =
   expect(screen.queryByText('Admin token is required')).not.toBeInTheDocument();
 });
 
+test('manages stored admin token from the dashboard header', async () => {
+  const user = userEvent.setup();
+  const storage = new Map<string, string>([['patchpilot.adminToken', 'existing-token']]);
+  vi.stubGlobal('localStorage', {
+    getItem: (key: string) => storage.get(key) ?? null,
+    setItem: (key: string, value: string) => storage.set(key, value),
+    removeItem: (key: string) => storage.delete(key),
+    clear: () => storage.clear()
+  });
+  const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => defaultAppResponse(input, init));
+  vi.stubGlobal('fetch', fetchMock);
+
+  render(<App />);
+
+  expect(await screen.findByText('Admin token saved')).toBeInTheDocument();
+  await waitFor(() => {
+    expect(fetchMock).toHaveBeenCalledWith('/api/tasks?limit=50', {
+      headers: { 'X-PatchPilot-Admin-Token': 'existing-token' }
+    });
+  });
+
+  await user.clear(screen.getByLabelText('Dashboard admin token'));
+  await user.type(screen.getByLabelText('Dashboard admin token'), 'new-token');
+  await user.click(screen.getByRole('button', { name: 'Save dashboard admin token' }));
+
+  await waitFor(() => expect(storage.get('patchpilot.adminToken')).toBe('new-token'));
+  await waitFor(() => {
+    expect(fetchMock).toHaveBeenCalledWith('/api/tasks?limit=50', {
+      headers: { 'X-PatchPilot-Admin-Token': 'new-token' }
+    });
+  });
+
+  await user.click(screen.getByRole('button', { name: 'Clear admin token' }));
+
+  await waitFor(() => expect(storage.has('patchpilot.adminToken')).toBe(false));
+  expect(await screen.findByText('No admin token saved')).toBeInTheDocument();
+});
+
 test('copies selected task report from backend API', async () => {
   const user = userEvent.setup();
   const fetchMock = vi.mocked(fetch);

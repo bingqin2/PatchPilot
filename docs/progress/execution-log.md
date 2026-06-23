@@ -2440,3 +2440,19 @@ Validation:
 - `npm test`: passed after full frontend verification, 92 tests run, 0 failures.
 - `npm run build`: passed after production frontend build.
 - `git diff --check`: passed after whitespace and conflict-marker verification.
+
+Implemented dashboard admin token management from `docs/plans/120-dashboard-admin-token-management.md`.
+
+Changes:
+
+- Added a dashboard header token manager that reports whether the current browser has a saved admin token.
+- Added `Dashboard admin token` input support for saving or replacing the local `patchpilot.adminToken` value.
+- Added `Clear admin token` so operators can remove the local credential during rotation or unauthenticated testing.
+- Refreshed dashboard data after saving or clearing the token so the current credential state is used immediately.
+- Updated README, frontend design notes, and this execution log.
+
+Validation:
+
+- `npm test -- --run src/App.test.tsx -t "manages stored admin token"`: first failed because the dashboard header did not show saved-token state or management actions; then passed after frontend implementation, 1 test run, 0 failures.
+- `npm test`: passed after full frontend verification, 93 tests run, 0 failures.
+- `npm run build`: passed after production frontend build.

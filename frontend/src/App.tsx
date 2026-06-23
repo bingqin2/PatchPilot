@@ -73,6 +73,7 @@ const ADMIN_TOKEN_REQUIRED_MESSAGE = 'Admin token is required';
 
 export default function App() {
   const initialFilters = useMemo(() => filtersFromUrl(), []);
+  const initialStoredAdminToken = useMemo(() => storedAdminToken(), []);
   const [tasks, setTasks] = useState<FixTask[]>([]);
   const [metrics, setMetrics] = useState<FixTaskMetricsSummary | null>(null);
   const [statusCounts, setStatusCounts] = useState<FixTaskStatusCounts | null>(null);
@@ -105,6 +106,8 @@ export default function App() {
   const [actionTaskId, setActionTaskId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [adminTokenInput, setAdminTokenInput] = useState('');
+  const [dashboardAdminTokenInput, setDashboardAdminTokenInput] = useState(initialStoredAdminToken);
+  const [hasStoredAdminToken, setHasStoredAdminToken] = useState(initialStoredAdminToken.length > 0);
   const [canLoadMoreTasks, setCanLoadMoreTasks] = useState(false);
   const [loadingMoreTasks, setLoadingMoreTasks] = useState(false);
   const [taskTotal, setTaskTotal] = useState(0);
@@ -497,10 +500,35 @@ export default function App() {
       return;
     }
     globalThis.localStorage.setItem(ADMIN_TOKEN_STORAGE_KEY, trimmedToken);
+    setDashboardAdminTokenInput(trimmedToken);
+    setHasStoredAdminToken(true);
     setAdminTokenInput('');
     setError(null);
     void refresh();
   }, [adminTokenInput, refresh]);
+
+  const handleDashboardAdminTokenSubmit = useCallback((event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const trimmedToken = dashboardAdminTokenInput.trim();
+    if (!trimmedToken || typeof globalThis.localStorage === 'undefined') {
+      return;
+    }
+    globalThis.localStorage.setItem(ADMIN_TOKEN_STORAGE_KEY, trimmedToken);
+    setDashboardAdminTokenInput(trimmedToken);
+    setHasStoredAdminToken(true);
+    setError(null);
+    void refresh();
+  }, [dashboardAdminTokenInput, refresh]);
+
+  const handleClearAdminToken = useCallback(() => {
+    if (typeof globalThis.localStorage !== 'undefined') {
+      globalThis.localStorage.removeItem(ADMIN_TOKEN_STORAGE_KEY);
+    }
+    setDashboardAdminTokenInput('');
+    setHasStoredAdminToken(false);
+    setError(null);
+    void refresh();
+  }, [refresh]);
 
   const adminTokenRequired = error === ADMIN_TOKEN_REQUIRED_MESSAGE;
 
@@ -516,16 +544,43 @@ export default function App() {
             </time>
           ) : null}
         </div>
-        <button
-          className="icon-button"
-          type="button"
-          onClick={() => void refresh()}
-          aria-label={loading ? 'Refreshing dashboard' : 'Refresh dashboard'}
-          disabled={loading}
-        >
-          <RefreshCw size={17} />
-          {loading ? 'Refreshing' : 'Refresh'}
-        </button>
+        <div className="top-bar-actions">
+          <section className="admin-token-manager" aria-label="Admin token management">
+            <div>
+              <span>Admin token</span>
+              <strong>{hasStoredAdminToken ? 'Admin token saved' : 'No admin token saved'}</strong>
+            </div>
+            <form onSubmit={handleDashboardAdminTokenSubmit}>
+              <label>
+                <span>Dashboard admin token</span>
+                <input
+                  type="password"
+                  value={dashboardAdminTokenInput}
+                  onChange={(event) => setDashboardAdminTokenInput(event.target.value)}
+                  autoComplete="off"
+                />
+              </label>
+              <button className="secondary-button" type="submit" disabled={!dashboardAdminTokenInput.trim()}>
+                Save dashboard admin token
+              </button>
+              {hasStoredAdminToken ? (
+                <button className="secondary-button" type="button" onClick={handleClearAdminToken}>
+                  Clear admin token
+                </button>
+              ) : null}
+            </form>
+          </section>
+          <button
+            className="icon-button"
+            type="button"
+            onClick={() => void refresh()}
+            aria-label={loading ? 'Refreshing dashboard' : 'Refresh dashboard'}
+            disabled={loading}
+          >
+            <RefreshCw size={17} />
+            {loading ? 'Refreshing' : 'Refresh'}
+          </button>
+        </div>
       </header>
 
       {loading ? (
@@ -649,6 +704,13 @@ export default function App() {
 
 function errorMessage(caught: unknown) {
   return caught instanceof Error ? caught.message : 'Dashboard request failed';
+}
+
+function storedAdminToken() {
+  if (typeof globalThis.localStorage === 'undefined') {
+    return '';
+  }
+  return globalThis.localStorage.getItem(ADMIN_TOKEN_STORAGE_KEY)?.trim() ?? '';
 }
 
 function taskIdFromUrl() {

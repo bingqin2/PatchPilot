@@ -354,7 +354,9 @@ Status count badges and metrics use the same search, repository, adapter, and cr
 The dashboard also stores `status`, `query`, repository filters, adapter filters, created time filters, and non-default `sort` in the browser URL, so links like `/tasks/{taskId}?status=FAILED&query=maven&repositoryOwner=bingqin2&repositoryName=PatchPilot&language=node&buildSystem=npm&sort=createdAtAsc&createdAfter=2026-06-20T01:00:00Z&createdBefore=2026-06-21T01:00:00Z` reopen the same filtered investigation view. The `Clear filters` action removes `status`, `query`, `repositoryOwner`, `repositoryName`, `language`, `buildSystem`, `createdAfter`, and `createdBefore`, keeping sort, the selected task route, unrelated query parameters, and hash fragments intact.
 The selected-task panel uses the aggregate detail endpoint so opening a task needs one backend detail request instead of separate summary, timeline, test-run, tool-call, and model-call requests.
 If the backend is down or the Vite proxy target is wrong, the dashboard shows a backend/proxy guidance message instead of a raw JSON parsing error.
-If `PATCHPILOT_ADMIN_TOKEN` is configured, the dashboard prompts for the admin API token after the first protected API call returns `Admin token is required`. Enter the same token value and click `Save admin token`; the browser stores it under `patchpilot.adminToken` and retries dashboard loading with `X-PatchPilot-Admin-Token`.
+If `PATCHPILOT_ADMIN_TOKEN` is configured, the dashboard header shows whether this browser has an admin token saved. Enter the same token value in `Dashboard admin token` and click `Save dashboard admin token`; the browser stores it under `patchpilot.adminToken`, retries dashboard loading, and later API calls include `X-PatchPilot-Admin-Token`. Use `Clear admin token` when you rotate or remove the local credential.
+
+If the first protected API call returns `Admin token is required`, the dashboard also shows the same recovery path inside the alert so you can restore access without opening browser DevTools.
 
 You can also prefill the token from the browser console before opening the dashboard:
 
