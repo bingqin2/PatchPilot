@@ -34,6 +34,7 @@ import io.patchpilot.backend.task.service.FixTaskTimelineService;
 import io.patchpilot.backend.task.service.FixTaskService;
 import io.patchpilot.backend.task.service.FixTaskToolCallService;
 import io.patchpilot.backend.task.service.ManualFixTaskService;
+import io.patchpilot.backend.task.service.RepositorySupportGuidanceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -65,6 +66,7 @@ public class TaskController {
     private final FixTaskQueueQueryService fixTaskQueueQueryService;
     private final FixTaskReportFormatter fixTaskReportFormatter;
     private final ManualFixTaskService manualFixTaskService;
+    private final RepositorySupportGuidanceService repositorySupportGuidanceService;
 
     @PostMapping
     public ResponseEntity<ApiResponse<FixTaskVo>> createTask(@RequestBody CreateFixTaskDto request) {
@@ -522,7 +524,8 @@ public class TaskController {
                 fixTaskModelCallService.listModelCalls(taskId),
                 latestGeneratedDiff(toolCalls),
                 queueItems.stream().findFirst().orElse(null),
-                queueItems
+                queueItems,
+                repositorySupportGuidanceService.guidanceFor(summary.task()).orElse(null)
         );
     }
 

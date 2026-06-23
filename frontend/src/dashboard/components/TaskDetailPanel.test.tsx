@@ -90,7 +90,8 @@ const baseDetail: TaskDetailState = {
   testRuns: [],
   toolCalls: [],
   modelCalls: [],
-  generatedDiff: null
+  generatedDiff: null,
+  repositorySupportGuidance: null
 };
 
 test('shows execution evidence summary for selected task', () => {
@@ -193,6 +194,67 @@ test('shows missing latest test evidence when no test result is recorded', () =>
 
   expect(screen.getByText('Tests 0')).toBeInTheDocument();
   expect(screen.getByText('Latest test None')).toBeInTheDocument();
+});
+
+test('shows unsupported repository guidance with supported adapter signals', () => {
+  render(
+    <TaskDetailPanel
+      task={{
+        ...task,
+        status: 'FAILED',
+        failureReason: 'Unsupported repository: no supported language adapter detected',
+        language: null,
+        buildSystem: null,
+        verificationCommand: null,
+        adapterDetectionReason: null
+      }}
+      detail={{
+        ...baseDetail,
+        repositorySupportGuidance: {
+          status: 'UNSUPPORTED',
+          reason: 'Unsupported repository: no supported language adapter detected',
+          operatorAction: 'Add one supported project marker and deterministic test command, then trigger /agent fix again. PatchPilot will not run arbitrary commands for unsupported repositories.',
+          supportedAdapters: [
+            {
+              language: 'java',
+              buildSystem: 'maven',
+              verificationCommand: ['mvn', 'test'],
+              detectionSignals: ['pom.xml', 'mvnw'],
+              demoFixturePath: 'docs/demo-repositories/java-maven',
+              status: 'SUPPORTED'
+            },
+            {
+              language: 'go',
+              buildSystem: 'go',
+              verificationCommand: ['go', 'test', './...'],
+              detectionSignals: ['go.mod', '*_test.go'],
+              demoFixturePath: 'docs/demo-repositories/go-module',
+              status: 'SUPPORTED'
+            }
+          ]
+        }
+      }}
+      loading={false}
+      actionInFlight={false}
+      reviewApprovalAllowedOperators={['release-captain']}
+      onCancelTask={vi.fn()}
+      onRetryTask={vi.fn()}
+      onApproveReview={vi.fn()}
+      onCopyReport={vi.fn()}
+    />
+  );
+
+  const guidance = screen.getByRole('region', { name: 'Repository support guidance' });
+  expect(within(guidance).getByText('Repository support guidance')).toBeInTheDocument();
+  expect(within(guidance).getByText('UNSUPPORTED')).toBeInTheDocument();
+  expect(within(guidance).getByText('Unsupported repository: no supported language adapter detected')).toBeInTheDocument();
+  expect(within(guidance).getByText(/PatchPilot will not run arbitrary commands/)).toBeInTheDocument();
+  expect(within(guidance).getByText('java / maven')).toBeInTheDocument();
+  expect(within(guidance).getByText('mvn test')).toBeInTheDocument();
+  expect(within(guidance).getByText('pom.xml, mvnw')).toBeInTheDocument();
+  expect(within(guidance).getByText('go / go')).toBeInTheDocument();
+  expect(within(guidance).getByText('go test ./...')).toBeInTheDocument();
+  expect(within(guidance).getByText('go.mod, *_test.go')).toBeInTheDocument();
 });
 
 test('surfaces generated diff risk gate failures in task evidence', () => {

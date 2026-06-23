@@ -1485,6 +1485,65 @@ h3 {
   font-size: 13px;
 }
 
+.repository-support-guidance {
+  background: #fffaf5;
+  display: grid;
+  gap: 12px;
+}
+
+.repository-support-header {
+  align-items: start;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+}
+
+.repository-support-header p,
+.repository-support-guidance > p {
+  color: #52606e;
+  font-size: 13px;
+}
+
+.repository-support-header strong {
+  background: #fde5df;
+  border-radius: 999px;
+  color: #a13724;
+  font-size: 12px;
+  padding: 5px 9px;
+}
+
+.repository-support-adapters {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.repository-support-adapter {
+  background: #fff;
+  border: 1px solid #eadfd4;
+  border-radius: 6px;
+  display: grid;
+  gap: 5px;
+  padding: 10px;
+}
+
+.repository-support-adapter strong {
+  color: #202b36;
+  font-size: 13px;
+}
+
+.repository-support-adapter span {
+  color: #146c69;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.repository-support-adapter p {
+  color: #637181;
+  font-size: 12px;
+}
+
 .latest-event {
   background: #f8fafb;
   border-top: 1px solid #e6ebef;

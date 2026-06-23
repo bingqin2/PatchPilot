@@ -213,6 +213,13 @@ export interface SupportedLanguageAdapter {
   status: 'SUPPORTED';
 }
 
+export interface RepositorySupportGuidance {
+  status: 'UNSUPPORTED';
+  reason: string;
+  operatorAction: string;
+  supportedAdapters: SupportedLanguageAdapter[];
+}
+
 export interface LanguageAdapterFixtureVerification {
   fixtureName: string;
   fixturePath: string;
@@ -300,6 +307,7 @@ export interface FixTaskDetail {
   toolCalls: FixTaskToolCall[];
   modelCalls: FixTaskModelCall[];
   generatedDiff: FixTaskGeneratedDiff | null;
+  repositorySupportGuidance: RepositorySupportGuidance | null;
 }
 
 export interface FixTaskGeneratedDiff {

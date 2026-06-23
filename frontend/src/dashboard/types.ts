@@ -5,7 +5,8 @@ import type {
   FixTaskTestRun,
   FixTaskTimelineEvent,
   FixTaskToolCall,
-  FixTaskGeneratedDiff
+  FixTaskGeneratedDiff,
+  RepositorySupportGuidance
 } from '../types';
 
 export interface TaskDetailState {
@@ -17,6 +18,7 @@ export interface TaskDetailState {
   toolCalls: FixTaskToolCall[];
   modelCalls: FixTaskModelCall[];
   generatedDiff: FixTaskGeneratedDiff | null;
+  repositorySupportGuidance: RepositorySupportGuidance | null;
 }
 
 export const emptyDetail: TaskDetailState = {
@@ -27,5 +29,6 @@ export const emptyDetail: TaskDetailState = {
   testRuns: [],
   toolCalls: [],
   modelCalls: [],
-  generatedDiff: null
+  generatedDiff: null,
+  repositorySupportGuidance: null
 };

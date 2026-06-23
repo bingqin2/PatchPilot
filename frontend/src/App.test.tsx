@@ -276,7 +276,8 @@ const detail = {
     toolCallId: 'tool-diff-1',
     diff: 'diff --git a/docs/demo.md b/docs/demo.md\n+PatchPilot smoke test',
     generatedAt: '2026-06-20T01:00:21Z'
-  }
+  },
+  repositorySupportGuidance: null
 };
 
 const manualTaskDetail = {
@@ -312,7 +313,8 @@ const manualTaskDetail = {
   testRuns: [],
   toolCalls: [],
   modelCalls: [],
-  generatedDiff: null
+  generatedDiff: null,
+  repositorySupportGuidance: null
 };
 
 const modelUsageSummary = {
