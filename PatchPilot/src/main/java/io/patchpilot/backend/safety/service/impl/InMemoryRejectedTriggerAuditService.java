@@ -33,6 +33,8 @@ public class InMemoryRejectedTriggerAuditService implements RejectedTriggerAudit
                 command.reason(),
                 command.commentId(),
                 command.commentUrl(),
+                null,
+                null,
                 Instant.now()
         );
         audits.add(audit);
@@ -52,5 +54,33 @@ public class InMemoryRejectedTriggerAuditService implements RejectedTriggerAudit
         return audits.stream()
                 .filter(audit -> audit.id().equals(id))
                 .findFirst();
+    }
+
+    @Override
+    public RejectedTriggerAuditVo markRetried(String id, String taskId, Instant retriedAt) {
+        for (int index = 0; index < audits.size(); index++) {
+            RejectedTriggerAuditVo audit = audits.get(index);
+            if (audit.id().equals(id)) {
+                RejectedTriggerAuditVo updated = new RejectedTriggerAuditVo(
+                        audit.id(),
+                        audit.source(),
+                        audit.deliveryId(),
+                        audit.repositoryOwner(),
+                        audit.repositoryName(),
+                        audit.issueNumber(),
+                        audit.triggerUser(),
+                        audit.triggerComment(),
+                        audit.reason(),
+                        audit.commentId(),
+                        audit.commentUrl(),
+                        taskId,
+                        retriedAt,
+                        audit.createdAt()
+                );
+                audits.set(index, updated);
+                return updated;
+            }
+        }
+        throw new IllegalArgumentException("Rejected trigger not found");
     }
 }

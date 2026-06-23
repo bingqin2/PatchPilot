@@ -45,6 +45,8 @@ public final class RejectedTriggerAuditConvert {
                 entity.getReason(),
                 entity.getCommentId(),
                 entity.getCommentUrl(),
+                entity.getRetriedTaskId(),
+                entity.getRetriedAt(),
                 entity.getCreatedAt()
         );
     }

@@ -40,4 +40,15 @@ class RejectedTriggerAuditMigrationTests {
         assertThat(sql).contains("add column comment_id bigint null");
         assertThat(sql).contains("add column comment_url varchar(512) null");
     }
+
+    @Test
+    void should_add_retry_metadata_to_rejected_trigger_audit() throws IOException {
+        String sql = Files.readString(Path.of("src/main/resources/db/migration/V18__add_rejected_trigger_retry_metadata.sql"))
+                .toLowerCase(Locale.ROOT);
+
+        assertThat(sql).contains("alter table rejected_trigger_audit");
+        assertThat(sql).contains("add column retried_task_id varchar(36) null");
+        assertThat(sql).contains("add column retried_at timestamp(6) null");
+        assertThat(sql).contains("idx_rejected_trigger_audit_retried_task");
+    }
 }

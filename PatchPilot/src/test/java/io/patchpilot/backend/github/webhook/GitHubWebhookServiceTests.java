@@ -985,6 +985,11 @@ class GitHubWebhookServiceTests {
             return java.util.Optional.empty();
         }
 
+        @Override
+        public RejectedTriggerAuditVo markRetried(String id, String taskId, Instant retriedAt) {
+            throw new UnsupportedOperationException("markRetried is not used by webhook service tests");
+        }
+
         private List<RecordRejectedTriggerCommand> commands() {
             return commands;
         }

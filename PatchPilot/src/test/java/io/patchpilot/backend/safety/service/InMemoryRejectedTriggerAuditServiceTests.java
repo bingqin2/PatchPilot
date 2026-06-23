@@ -74,6 +74,22 @@ class InMemoryRejectedTriggerAuditServiceTests {
         assertThat(auditService.findRejectedTrigger("missing-audit")).isEmpty();
     }
 
+    @Test
+    void should_mark_rejected_trigger_as_retried() {
+        RejectedTriggerAuditVo audit = auditService.recordRejectedTrigger(command("manual", "manual-retried"));
+
+        RejectedTriggerAuditVo retried = auditService.markRetried(
+                audit.id(),
+                "task-123",
+                java.time.Instant.parse("2026-06-21T03:00:00Z")
+        );
+
+        assertThat(retried.retriedTaskId()).isEqualTo("task-123");
+        assertThat(retried.retriedAt()).isEqualTo(java.time.Instant.parse("2026-06-21T03:00:00Z"));
+        assertThat(auditService.findRejectedTrigger(audit.id()))
+                .hasValueSatisfying(found -> assertThat(found.retriedTaskId()).isEqualTo("task-123"));
+    }
+
     private static RecordRejectedTriggerCommand command(String source, String deliveryId) {
         return command(
                 source,

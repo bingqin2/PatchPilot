@@ -3,6 +3,7 @@ package io.patchpilot.backend.safety.service;
 import io.patchpilot.backend.safety.domain.RecordRejectedTriggerCommand;
 import io.patchpilot.backend.safety.domain.RejectedTriggerAuditVo;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -13,4 +14,6 @@ public interface RejectedTriggerAuditService {
     List<RejectedTriggerAuditVo> listRejectedTriggers(int limit);
 
     Optional<RejectedTriggerAuditVo> findRejectedTrigger(String id);
+
+    RejectedTriggerAuditVo markRetried(String id, String taskId, Instant retriedAt);
 }

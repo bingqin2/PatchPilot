@@ -2635,3 +2635,24 @@ Validation:
 - `mvn -pl PatchPilot -Dtest=RejectedTriggerAuditControllerTests,DefaultRejectedTriggerRetryServiceTests,InMemoryRejectedTriggerAuditServiceTests,MyBatisRejectedTriggerAuditServiceTests,GitHubWebhookServiceTests test`: passed after audit lookup coverage and legacy fake updates, 28 tests run, 0 failures.
 - `npm test -- RejectedTriggerPanel.test.tsx api.test.ts App.test.tsx`: first failed because the retry API helper and rejected-trigger retry buttons did not exist.
 - `npm test -- RejectedTriggerPanel.test.tsx api.test.ts App.test.tsx`: passed after frontend implementation, 74 tests run, 0 failures.
+
+Implemented retry audit links for rejected triggers from `docs/plans/131-retry-rejected-trigger-audit-link.md`.
+
+Changes:
+
+- Added `retriedTaskId` and `retriedAt` metadata to rejected trigger audit records.
+- Added a Flyway migration for MySQL-backed rejected trigger retry metadata.
+- Marked a rejected trigger audit as retried after the retry flow creates a new task and records the retry timeline event.
+- Returned retry metadata from rejected-trigger API responses.
+- Added a dashboard `Retried task` link that opens the generated task through the existing `/tasks/{id}` detail route.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=DefaultRejectedTriggerRetryServiceTests,InMemoryRejectedTriggerAuditServiceTests,MyBatisRejectedTriggerAuditServiceTests,RejectedTriggerAuditControllerTests,RejectedTriggerAuditMigrationTests test`: first failed because retry metadata fields, service methods, and the migration did not exist.
+- `mvn -pl PatchPilot -Dtest=DefaultRejectedTriggerRetryServiceTests,InMemoryRejectedTriggerAuditServiceTests,MyBatisRejectedTriggerAuditServiceTests,RejectedTriggerAuditControllerTests,RejectedTriggerAuditMigrationTests,GitHubWebhookServiceTests test`: passed after backend implementation, 33 tests run, 0 failures.
+- `npm test -- RejectedTriggerPanel.test.tsx api.test.ts App.test.tsx`: first failed because the dashboard did not render a `Retried task` link.
+- `npm test -- RejectedTriggerPanel.test.tsx api.test.ts App.test.tsx`: passed after frontend implementation, 75 tests run, 0 failures.
+- `npm run build`: first failed because the retried task click handler did not preserve TypeScript's non-null narrowing; then passed after extracting a render helper.
+- `mvn -pl PatchPilot test`: passed after full backend verification, 472 tests run, 0 failures.
+- `npm test`: passed after full frontend verification, 107 tests run, 0 failures.
+- `git diff --check`: passed after whitespace verification.
