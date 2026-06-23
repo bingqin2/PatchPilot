@@ -17,8 +17,11 @@ import io.patchpilot.backend.safety.domain.RecordRejectedTriggerCommand;
 import io.patchpilot.backend.safety.domain.RejectedTriggerAuditVo;
 import io.patchpilot.backend.safety.domain.TriggerIntentClassificationRequest;
 import io.patchpilot.backend.safety.domain.TriggerIntentDecision;
+import io.patchpilot.backend.safety.domain.TriggerQuarantineDecision;
+import io.patchpilot.backend.safety.domain.TriggerQuarantineRequest;
 import io.patchpilot.backend.safety.domain.TriggerRateLimitDecision;
 import io.patchpilot.backend.safety.domain.TriggerRateLimitRequest;
+import io.patchpilot.backend.safety.service.TriggerQuarantineService;
 import io.patchpilot.backend.safety.service.TriggerIntentClassifier;
 import io.patchpilot.backend.safety.service.RejectedTriggerAuditService;
 import io.patchpilot.backend.safety.service.TriggerRateLimitService;
@@ -514,6 +517,61 @@ class GitHubWebhookServiceTests {
         assertThat(auditService.commands().get(0).reason())
                 .isEqualTo("Unsafe request rejected: trigger rate limit exceeded for issue");
         assertThat(auditService.commands().get(0).category()).isEqualTo("RATE_LIMITED");
+    }
+
+    @Test
+    void should_reject_when_trigger_user_is_quarantined_before_rate_limit_or_model_classification() {
+        FixTaskService fixTaskService = new InMemoryFixTaskService();
+        RecordingFixTaskDispatcher fixTaskDispatcher = new RecordingFixTaskDispatcher();
+        RecordingIssueCommentTool issueCommentTool = new RecordingIssueCommentTool();
+        RecordingTimelineService timelineService = new RecordingTimelineService();
+        RecordingRejectedTriggerAuditService auditService = new RecordingRejectedTriggerAuditService();
+        RecordingTriggerQuarantineService quarantineService = new RecordingTriggerQuarantineService(
+                TriggerQuarantineDecision.rejected("Unsafe request rejected: trigger user is temporarily quarantined")
+        );
+        RecordingTriggerRateLimitService rateLimitService = new RecordingTriggerRateLimitService(
+                TriggerRateLimitDecision.accepted()
+        );
+        RecordingTriggerIntentClassifier triggerIntentClassifier = new RecordingTriggerIntentClassifier(
+                TriggerIntentDecision.shouldExecute("should not be called")
+        );
+        GitHubWebhookService webhookService = new GitHubWebhookService(
+                new ObjectMapper(),
+                fixTaskService,
+                fixTaskDispatcher,
+                issueCommentTool,
+                timelineService,
+                auditService,
+                new CommandSafetyGate(),
+                quarantineService,
+                rateLimitService,
+                triggerIntentClassifier
+        );
+
+        WebhookHandleResult result = webhookService.handle(
+                "issue_comment",
+                "delivery-quarantined-user",
+                issueCommentPayload("/agent fix touch docs/demo.md")
+        );
+
+        assertThat(result.status()).isEqualTo(WebhookHandleStatus.REJECTED);
+        assertThat(result.taskId()).isNull();
+        assertThat(fixTaskService.listTasks()).isEmpty();
+        assertThat(fixTaskDispatcher.dispatchCount()).isZero();
+        assertThat(issueCommentTool.acceptedCount()).isZero();
+        assertThat(issueCommentTool.rejectedReason())
+                .isEqualTo("Unsafe request rejected: trigger user is temporarily quarantined");
+        assertThat(quarantineService.request().source()).isEqualTo("issue_comment");
+        assertThat(quarantineService.request().repositoryOwner()).isEqualTo("octocat");
+        assertThat(quarantineService.request().repositoryName()).isEqualTo("hello-world");
+        assertThat(quarantineService.request().issueNumber()).isEqualTo(42L);
+        assertThat(quarantineService.request().triggerUser()).isEqualTo("alice");
+        assertThat(rateLimitService.request()).isNull();
+        assertThat(triggerIntentClassifier.request()).isNull();
+        assertThat(auditService.commands()).hasSize(1);
+        assertThat(auditService.commands().get(0).reason())
+                .isEqualTo("Unsafe request rejected: trigger user is temporarily quarantined");
+        assertThat(auditService.commands().get(0).category()).isEqualTo("ABUSE_QUARANTINED");
     }
 
     @Test
@@ -1038,6 +1096,26 @@ class GitHubWebhookServiceTests {
         }
 
         private TriggerRateLimitRequest request() {
+            return request;
+        }
+    }
+
+    private static final class RecordingTriggerQuarantineService implements TriggerQuarantineService {
+
+        private final TriggerQuarantineDecision decision;
+        private TriggerQuarantineRequest request;
+
+        private RecordingTriggerQuarantineService(TriggerQuarantineDecision decision) {
+            this.decision = decision;
+        }
+
+        @Override
+        public TriggerQuarantineDecision check(TriggerQuarantineRequest request) {
+            this.request = request;
+            return decision;
+        }
+
+        private TriggerQuarantineRequest request() {
             return request;
         }
     }

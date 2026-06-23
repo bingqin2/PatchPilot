@@ -18,6 +18,7 @@ export type RejectedTriggerCategoryFilter =
   | 'TRIGGER_USER_NOT_ALLOWED'
   | 'REPOSITORY_NOT_ALLOWED'
   | 'RATE_LIMITED'
+  | 'ABUSE_QUARANTINED'
   | 'MODEL_REJECTED'
   | 'MODEL_NEEDS_CLARIFICATION'
   | 'MODEL_CLASSIFICATION_FAILED';
@@ -173,6 +174,10 @@ export interface ConfigurationSummary {
   triggerRateLimitMaxPerTriggerUser: number;
   triggerRateLimitMaxPerRepository: number;
   triggerRateLimitMaxPerIssue: number;
+  rejectedTriggerQuarantineEnabled: boolean;
+  rejectedTriggerQuarantineWindowMs: number;
+  rejectedTriggerQuarantineThreshold: number;
+  rejectedTriggerQuarantineCooldownMs: number;
   triggerUserAllowlistConfigured: boolean;
   repositoryAllowlistConfigured: boolean;
   reviewApprovalAllowlistConfigured: boolean;

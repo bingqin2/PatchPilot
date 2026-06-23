@@ -145,6 +145,10 @@ public class DemoReadinessService {
             gaps.add("Admin API token is missing");
             envNames.add("PATCHPILOT_ADMIN_TOKEN");
         }
+        if (!configuration.rejectedTriggerQuarantineEnabled()) {
+            gaps.add("Rejected-trigger quarantine is disabled");
+            envNames.add("PATCHPILOT_REJECTED_TRIGGER_QUARANTINE_ENABLED");
+        }
         if (!gaps.isEmpty()) {
             return new DemoReadinessCheckVo(
                     "Safety policy",
@@ -156,7 +160,7 @@ public class DemoReadinessService {
         return new DemoReadinessCheckVo(
                 "Safety policy",
                 DemoReadinessStatus.READY,
-                "Trigger users, repositories, review approvers, admin API token, command safety, and rate limits are configured.",
+                "Trigger users, repositories, review approvers, admin API token, command safety, rate limits, and rejected-trigger quarantine are configured.",
                 "No action needed."
         );
     }

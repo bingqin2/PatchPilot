@@ -10,16 +10,20 @@ import io.patchpilot.backend.github.webhook.service.WebhookDeliveryDiagnosticSer
 import io.patchpilot.backend.github.webhook.service.impl.InMemoryWebhookDeliveryDiagnosticService;
 import io.patchpilot.backend.safety.CommandSafetyGate;
 import io.patchpilot.backend.safety.NoOpTriggerIntentClassifier;
+import io.patchpilot.backend.safety.NoOpTriggerQuarantineService;
 import io.patchpilot.backend.safety.NoOpTriggerRateLimitService;
 import io.patchpilot.backend.safety.domain.RecordRejectedTriggerCommand;
 import io.patchpilot.backend.safety.domain.SafetyGateDecision;
 import io.patchpilot.backend.safety.domain.SafetyGateRequest;
 import io.patchpilot.backend.safety.domain.TriggerIntentClassificationRequest;
 import io.patchpilot.backend.safety.domain.TriggerIntentDecision;
+import io.patchpilot.backend.safety.domain.TriggerQuarantineDecision;
+import io.patchpilot.backend.safety.domain.TriggerQuarantineRequest;
 import io.patchpilot.backend.safety.domain.TriggerRateLimitDecision;
 import io.patchpilot.backend.safety.domain.TriggerRateLimitRequest;
 import io.patchpilot.backend.safety.service.RejectedTriggerAuditService;
 import io.patchpilot.backend.safety.service.TriggerIntentClassifier;
+import io.patchpilot.backend.safety.service.TriggerQuarantineService;
 import io.patchpilot.backend.safety.service.TriggerRateLimitService;
 import io.patchpilot.backend.safety.service.impl.InMemoryRejectedTriggerAuditService;
 import io.patchpilot.backend.task.domain.bo.CreateFixTaskCommand;
@@ -52,6 +56,7 @@ public class GitHubWebhookService {
     private final CommandSafetyGate commandSafetyGate;
     private final RejectedTriggerAuditService rejectedTriggerAuditService;
     private final TriggerRateLimitService triggerRateLimitService;
+    private final TriggerQuarantineService triggerQuarantineService;
     private final TriggerIntentClassifier triggerIntentClassifier;
     private final WebhookDeliveryDiagnosticService webhookDeliveryDiagnosticService;
     private final ConcurrentMap<String, WebhookHandleResult> deliveryResults = new ConcurrentHashMap<>();
@@ -71,6 +76,7 @@ public class GitHubWebhookService {
                 fixTaskTimelineService,
                 new InMemoryRejectedTriggerAuditService(),
                 new CommandSafetyGate(),
+                new NoOpTriggerQuarantineService(),
                 new NoOpTriggerRateLimitService(),
                 new NoOpTriggerIntentClassifier(),
                 new InMemoryWebhookDeliveryDiagnosticService()
@@ -96,6 +102,7 @@ public class GitHubWebhookService {
                 fixTaskTimelineService,
                 rejectedTriggerAuditService,
                 commandSafetyGate,
+                new NoOpTriggerQuarantineService(),
                 triggerRateLimitService,
                 triggerIntentClassifier,
                 new InMemoryWebhookDeliveryDiagnosticService()
@@ -118,6 +125,7 @@ public class GitHubWebhookService {
                 fixTaskTimelineService,
                 new InMemoryRejectedTriggerAuditService(),
                 new CommandSafetyGate(),
+                new NoOpTriggerQuarantineService(),
                 new NoOpTriggerRateLimitService(),
                 new NoOpTriggerIntentClassifier(),
                 webhookDeliveryDiagnosticService
@@ -140,6 +148,7 @@ public class GitHubWebhookService {
                 fixTaskTimelineService,
                 new InMemoryRejectedTriggerAuditService(),
                 commandSafetyGate,
+                new NoOpTriggerQuarantineService(),
                 new NoOpTriggerRateLimitService(),
                 new NoOpTriggerIntentClassifier(),
                 new InMemoryWebhookDeliveryDiagnosticService()
@@ -162,6 +171,7 @@ public class GitHubWebhookService {
                 fixTaskTimelineService,
                 rejectedTriggerAuditService,
                 new CommandSafetyGate(),
+                new NoOpTriggerQuarantineService(),
                 new NoOpTriggerRateLimitService(),
                 new NoOpTriggerIntentClassifier(),
                 new InMemoryWebhookDeliveryDiagnosticService()
@@ -185,6 +195,7 @@ public class GitHubWebhookService {
                 fixTaskTimelineService,
                 rejectedTriggerAuditService,
                 new CommandSafetyGate(),
+                new NoOpTriggerQuarantineService(),
                 new NoOpTriggerRateLimitService(),
                 new NoOpTriggerIntentClassifier(),
                 webhookDeliveryDiagnosticService
@@ -208,6 +219,7 @@ public class GitHubWebhookService {
                 fixTaskTimelineService,
                 rejectedTriggerAuditService,
                 commandSafetyGate,
+                new NoOpTriggerQuarantineService(),
                 new NoOpTriggerRateLimitService(),
                 new NoOpTriggerIntentClassifier(),
                 new InMemoryWebhookDeliveryDiagnosticService()
@@ -232,7 +244,35 @@ public class GitHubWebhookService {
                 fixTaskTimelineService,
                 rejectedTriggerAuditService,
                 commandSafetyGate,
+                new NoOpTriggerQuarantineService(),
                 new NoOpTriggerRateLimitService(),
+                triggerIntentClassifier,
+                new InMemoryWebhookDeliveryDiagnosticService()
+        );
+    }
+
+    public GitHubWebhookService(
+            ObjectMapper objectMapper,
+            FixTaskService fixTaskService,
+            FixTaskDispatcher fixTaskDispatcher,
+            IssueCommentTool issueCommentTool,
+            FixTaskTimelineService fixTaskTimelineService,
+            RejectedTriggerAuditService rejectedTriggerAuditService,
+            CommandSafetyGate commandSafetyGate,
+            TriggerQuarantineService triggerQuarantineService,
+            TriggerRateLimitService triggerRateLimitService,
+            TriggerIntentClassifier triggerIntentClassifier
+    ) {
+        this(
+                objectMapper,
+                fixTaskService,
+                fixTaskDispatcher,
+                issueCommentTool,
+                fixTaskTimelineService,
+                rejectedTriggerAuditService,
+                commandSafetyGate,
+                triggerQuarantineService,
+                triggerRateLimitService,
                 triggerIntentClassifier,
                 new InMemoryWebhookDeliveryDiagnosticService()
         );
@@ -247,6 +287,7 @@ public class GitHubWebhookService {
             FixTaskTimelineService fixTaskTimelineService,
             RejectedTriggerAuditService rejectedTriggerAuditService,
             CommandSafetyGate commandSafetyGate,
+            TriggerQuarantineService triggerQuarantineService,
             TriggerRateLimitService triggerRateLimitService,
             TriggerIntentClassifier triggerIntentClassifier,
             WebhookDeliveryDiagnosticService webhookDeliveryDiagnosticService
@@ -258,6 +299,7 @@ public class GitHubWebhookService {
         this.fixTaskTimelineService = fixTaskTimelineService;
         this.rejectedTriggerAuditService = rejectedTriggerAuditService;
         this.commandSafetyGate = commandSafetyGate;
+        this.triggerQuarantineService = triggerQuarantineService;
         this.triggerRateLimitService = triggerRateLimitService;
         this.triggerIntentClassifier = triggerIntentClassifier;
         this.webhookDeliveryDiagnosticService = webhookDeliveryDiagnosticService;
@@ -421,6 +463,38 @@ public class GitHubWebhookService {
                 .orElse(null);
         if (activeTaskResult != null) {
             return activeTaskResult;
+        }
+        TriggerQuarantineDecision quarantineDecision = triggerQuarantineService.check(new TriggerQuarantineRequest(
+                "issue_comment",
+                repositoryOwner,
+                repositoryName,
+                issueNumber,
+                triggerUser
+        ));
+        if (!quarantineDecision.allowed()) {
+            recordRejectedTrigger(
+                    deliveryId,
+                    repositoryOwner,
+                    repositoryName,
+                    issueNumber,
+                    triggerUser,
+                    commentBody,
+                    quarantineDecision.reason(),
+                    quarantineDecision.category()
+            );
+            recordDelivery(
+                    deliveryId,
+                    event,
+                    WebhookDeliveryDiagnosticStatus.REJECTED,
+                    null,
+                    repositoryOwner,
+                    repositoryName,
+                    issueNumber,
+                    triggerUser,
+                    commentBody,
+                    quarantineDecision.reason()
+            );
+            return WebhookHandleResult.rejected();
         }
         TriggerRateLimitDecision rateLimitDecision = triggerRateLimitService.checkAndRecord(new TriggerRateLimitRequest(
                 "issue_comment",

@@ -4,9 +4,12 @@ import io.patchpilot.backend.safety.CommandSafetyGate;
 import io.patchpilot.backend.safety.config.SafetyProperties;
 import io.patchpilot.backend.safety.domain.TriggerIntentClassificationRequest;
 import io.patchpilot.backend.safety.domain.TriggerIntentDecision;
+import io.patchpilot.backend.safety.domain.TriggerQuarantineDecision;
+import io.patchpilot.backend.safety.domain.TriggerQuarantineRequest;
 import io.patchpilot.backend.safety.domain.TriggerRateLimitDecision;
 import io.patchpilot.backend.safety.domain.TriggerRateLimitRequest;
 import io.patchpilot.backend.safety.service.TriggerIntentClassifier;
+import io.patchpilot.backend.safety.service.TriggerQuarantineService;
 import io.patchpilot.backend.safety.service.TriggerRateLimitService;
 import io.patchpilot.backend.task.domain.bo.CreateFixTaskCommand;
 import io.patchpilot.backend.task.domain.bo.CreateManualFixTaskCommand;
@@ -192,6 +195,7 @@ class DefaultManualFixTaskServiceTests {
                 fixTaskDispatcher,
                 new io.patchpilot.backend.safety.service.impl.InMemoryRejectedTriggerAuditService(),
                 new CommandSafetyGate(),
+                new io.patchpilot.backend.safety.NoOpTriggerQuarantineService(),
                 rateLimitService,
                 triggerIntentClassifier
         );
@@ -208,6 +212,50 @@ class DefaultManualFixTaskServiceTests {
 
         assertThat(rateLimitService.request().source()).isEqualTo("manual");
         assertThat(rateLimitService.request().triggerUser()).isEqualTo("local-operator");
+        assertThat(triggerIntentClassifier.request()).isNull();
+        assertThat(fixTaskService.listTasks()).isEmpty();
+        assertThat(fixTaskTimelineService.eventTypes()).isEmpty();
+        assertThat(fixTaskDispatcher.taskIds()).isEmpty();
+    }
+
+    @Test
+    void should_reject_manual_task_when_trigger_user_is_quarantined_before_rate_limit_or_model_classification() {
+        RecordingTriggerQuarantineService quarantineService = new RecordingTriggerQuarantineService(
+                TriggerQuarantineDecision.rejected("Unsafe request rejected: trigger user is temporarily quarantined")
+        );
+        RecordingTriggerRateLimitService rateLimitService = new RecordingTriggerRateLimitService(
+                TriggerRateLimitDecision.accepted()
+        );
+        RecordingTriggerIntentClassifier triggerIntentClassifier = new RecordingTriggerIntentClassifier(
+                TriggerIntentDecision.shouldExecute("should not be called")
+        );
+        ManualFixTaskService quarantinedManualFixTaskService = new DefaultManualFixTaskService(
+                fixTaskService,
+                fixTaskTimelineService,
+                fixTaskDispatcher,
+                new io.patchpilot.backend.safety.service.impl.InMemoryRejectedTriggerAuditService(),
+                new CommandSafetyGate(),
+                quarantineService,
+                rateLimitService,
+                triggerIntentClassifier
+        );
+
+        assertThatThrownBy(() -> quarantinedManualFixTaskService.createManualTask(new CreateManualFixTaskCommand(
+                "bingqin2",
+                "PatchPilot",
+                7,
+                "local-operator",
+                "/agent fix touch docs/manual-task.md"
+        )))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Unsafe request rejected: trigger user is temporarily quarantined");
+
+        assertThat(quarantineService.request().source()).isEqualTo("manual");
+        assertThat(quarantineService.request().repositoryOwner()).isEqualTo("bingqin2");
+        assertThat(quarantineService.request().repositoryName()).isEqualTo("PatchPilot");
+        assertThat(quarantineService.request().issueNumber()).isEqualTo(7L);
+        assertThat(quarantineService.request().triggerUser()).isEqualTo("local-operator");
+        assertThat(rateLimitService.request()).isNull();
         assertThat(triggerIntentClassifier.request()).isNull();
         assertThat(fixTaskService.listTasks()).isEmpty();
         assertThat(fixTaskTimelineService.eventTypes()).isEmpty();
@@ -303,6 +351,26 @@ class DefaultManualFixTaskServiceTests {
         }
 
         private TriggerRateLimitRequest request() {
+            return request;
+        }
+    }
+
+    private static final class RecordingTriggerQuarantineService implements TriggerQuarantineService {
+
+        private final TriggerQuarantineDecision decision;
+        private TriggerQuarantineRequest request;
+
+        private RecordingTriggerQuarantineService(TriggerQuarantineDecision decision) {
+            this.decision = decision;
+        }
+
+        @Override
+        public TriggerQuarantineDecision check(TriggerQuarantineRequest request) {
+            this.request = request;
+            return decision;
+        }
+
+        private TriggerQuarantineRequest request() {
             return request;
         }
     }

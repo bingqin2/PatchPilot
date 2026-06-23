@@ -15,6 +15,7 @@ test('renders rejected trigger audit rows and retries a rejected trigger', async
         totalCount: 4,
         categoryCounts: [
           { value: 'NOT_ACTIONABLE', count: 2 },
+          { value: 'ABUSE_QUARANTINED', count: 1 },
           { value: 'DANGEROUS_INSTRUCTION', count: 1 },
           { value: 'TRIGGER_USER_NOT_ALLOWED', count: 1 }
         ],
@@ -43,8 +44,8 @@ test('renders rejected trigger audit rows and retries a rejected trigger', async
           issueNumber: 1,
           triggerUser: 'drive-by-user',
           triggerComment: '/agent fix make it better',
-          category: 'NOT_ACTIONABLE',
-          reason: 'Unsafe request rejected: instruction is not actionable',
+          category: 'ABUSE_QUARANTINED',
+          reason: 'Unsafe request rejected: trigger user is temporarily quarantined',
           commentId: 456,
           commentUrl: 'https://github.com/bingqin2/PatchPilot/issues/1#issuecomment-456',
           retriedTaskId: 'task-from-rejected-1',
@@ -61,6 +62,7 @@ test('renders rejected trigger audit rows and retries a rejected trigger', async
   expect(within(summary).getByText('Rejected trigger summary')).toBeInTheDocument();
   expect(within(summary).getByText('4 rejected triggers analyzed')).toBeInTheDocument();
   expect(within(summary).getByRole('button', { name: 'Filter by Dangerous instruction, 1 rejected trigger' })).toBeInTheDocument();
+  expect(within(summary).getByRole('button', { name: 'Filter by Abuse quarantined, 1 rejected trigger' })).toBeInTheDocument();
   expect(within(summary).getByText('drive-by-user')).toBeInTheDocument();
   expect(within(summary).getByText('bingqin2/PatchPilot')).toBeInTheDocument();
   expect(within(panel).getByRole('combobox', { name: 'Filter rejected triggers by category' })).toHaveValue('ALL');
@@ -69,8 +71,8 @@ test('renders rejected trigger audit rows and retries a rejected trigger', async
   expect(within(auditRows).getByText('bingqin2/PatchPilot #1')).toBeInTheDocument();
   expect(within(auditRows).getByText('drive-by-user')).toBeInTheDocument();
   expect(within(auditRows).getByText('delivery-rejected')).toBeInTheDocument();
-  expect(within(auditRows).getByText('Unsafe request rejected: instruction is not actionable')).toBeInTheDocument();
-  expect(within(auditRows).getByText('Not actionable')).toBeInTheDocument();
+  expect(within(auditRows).getByText('Unsafe request rejected: trigger user is temporarily quarantined')).toBeInTheDocument();
+  expect(within(auditRows).getByText('Abuse quarantined')).toBeInTheDocument();
   expect(within(auditRows).getByRole('link', { name: 'Refusal comment' })).toHaveAttribute(
     'href',
     'https://github.com/bingqin2/PatchPilot/issues/1#issuecomment-456'
@@ -98,6 +100,10 @@ test('renders rejected trigger audit rows and retries a rejected trigger', async
   await user.click(within(summary).getByRole('button', { name: 'Filter by Dangerous instruction, 1 rejected trigger' }));
 
   expect(onCategoryFilterChange).toHaveBeenCalledWith('DANGEROUS_INSTRUCTION');
+
+  await user.click(within(summary).getByRole('button', { name: 'Filter by Abuse quarantined, 1 rejected trigger' }));
+
+  expect(onCategoryFilterChange).toHaveBeenCalledWith('ABUSE_QUARANTINED');
 });
 
 test('renders rejected trigger empty and error states', () => {

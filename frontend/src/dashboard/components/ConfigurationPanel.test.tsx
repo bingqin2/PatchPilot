@@ -20,6 +20,10 @@ const healthyConfiguration = {
   triggerRateLimitMaxPerTriggerUser: 30,
   triggerRateLimitMaxPerRepository: 60,
   triggerRateLimitMaxPerIssue: 20,
+  rejectedTriggerQuarantineEnabled: true,
+  rejectedTriggerQuarantineWindowMs: 900000,
+  rejectedTriggerQuarantineThreshold: 4,
+  rejectedTriggerQuarantineCooldownMs: 1800000,
   triggerUserAllowlistConfigured: true,
   repositoryAllowlistConfigured: true,
   reviewApprovalAllowlistConfigured: true,
@@ -47,6 +51,8 @@ test('shows healthy configuration status when required and advisory settings are
   expect(screen.getByText('patchpilot-backend')).toBeInTheDocument();
   expect(screen.getByText('Trigger classifier Enabled')).toBeInTheDocument();
   expect(screen.getByText('Rate limit Enabled')).toBeInTheDocument();
+  expect(screen.getByText('Rejected-trigger quarantine Enabled')).toBeInTheDocument();
+  expect(screen.getByText('4 rejections / 900.0s window / 1800.0s cooldown')).toBeInTheDocument();
   expect(screen.getByText('Trigger users')).toBeInTheDocument();
   expect(screen.getByText('bingqin2, local-operator')).toBeInTheDocument();
   expect(screen.getByText('Repositories')).toBeInTheDocument();
@@ -78,6 +84,10 @@ test('shows setup issues and advisories for weak configuration', () => {
         triggerRateLimitEnabled: false,
         triggerRateLimitWindowMs: 500,
         triggerRateLimitMaxPerIssue: 0,
+        rejectedTriggerQuarantineEnabled: false,
+        rejectedTriggerQuarantineWindowMs: 500,
+        rejectedTriggerQuarantineThreshold: 0,
+        rejectedTriggerQuarantineCooldownMs: 0,
         triggerUserAllowlistConfigured: false,
         repositoryAllowlistConfigured: false,
         reviewApprovalAllowlistConfigured: false,
@@ -93,7 +103,7 @@ test('shows setup issues and advisories for weak configuration', () => {
 
   expect(screen.getByText('3 setup issues')).toBeInTheDocument();
   expect(screen.getByText('Backend unavailable')).toBeInTheDocument();
-  expect(screen.getByText('13 advisory items')).toBeInTheDocument();
+  expect(screen.getByText('16 advisory items')).toBeInTheDocument();
   expect(screen.getByText('Agent API key is missing')).toBeInTheDocument();
   expect(screen.getByText('GitHub token is missing')).toBeInTheDocument();
   expect(screen.getByText('Webhook secret is missing')).toBeInTheDocument();
@@ -105,6 +115,9 @@ test('shows setup issues and advisories for weak configuration', () => {
   expect(screen.getByText('Trigger rate limit is disabled')).toBeInTheDocument();
   expect(screen.getByText('Trigger rate limit window is below 1.0s')).toBeInTheDocument();
   expect(screen.getByText('Trigger rate limit thresholds must be at least 1')).toBeInTheDocument();
+  expect(screen.getByText('Rejected-trigger quarantine is disabled')).toBeInTheDocument();
+  expect(screen.getByText('Rejected-trigger quarantine window is below 1.0s')).toBeInTheDocument();
+  expect(screen.getByText('Rejected-trigger quarantine thresholds must be at least 1')).toBeInTheDocument();
   expect(screen.getByText('Trigger user allowlist is open')).toBeInTheDocument();
   expect(screen.getByText('Repository allowlist is open')).toBeInTheDocument();
   expect(screen.getByText('Review approval operators are not configured')).toBeInTheDocument();

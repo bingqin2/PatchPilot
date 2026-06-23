@@ -66,6 +66,15 @@ export function ConfigurationPanel({ configuration, backendHealth }: Configurati
           </p>
         </div>
         <div>
+          <span>Rejected-trigger quarantine</span>
+          <strong>Rejected-trigger quarantine {enabled(configuration?.rejectedTriggerQuarantineEnabled)}</strong>
+          <p>
+            {number(configuration?.rejectedTriggerQuarantineThreshold)} rejections /{' '}
+            {duration(configuration?.rejectedTriggerQuarantineWindowMs)} window /{' '}
+            {duration(configuration?.rejectedTriggerQuarantineCooldownMs)} cooldown
+          </p>
+        </div>
+        <div>
           <span>Review approvers</span>
           <strong>{reviewApproverSummary(configuration)}</strong>
           <p>Risk review approval allowlist</p>
@@ -156,6 +165,15 @@ function configurationHealth(configuration: ConfigurationSummary | null) {
     configuration.triggerRateLimitMaxPerIssue < 1
   ) {
     advisoryIssues.push({ kind: 'advisory', message: 'Trigger rate limit thresholds must be at least 1' });
+  }
+  if (!configuration.rejectedTriggerQuarantineEnabled) {
+    advisoryIssues.push({ kind: 'advisory', message: 'Rejected-trigger quarantine is disabled' });
+  }
+  if (configuration.rejectedTriggerQuarantineWindowMs < 1000) {
+    advisoryIssues.push({ kind: 'advisory', message: 'Rejected-trigger quarantine window is below 1.0s' });
+  }
+  if (configuration.rejectedTriggerQuarantineThreshold < 1 || configuration.rejectedTriggerQuarantineCooldownMs < 1) {
+    advisoryIssues.push({ kind: 'advisory', message: 'Rejected-trigger quarantine thresholds must be at least 1' });
   }
   if (!configuration.triggerUserAllowlistConfigured) {
     advisoryIssues.push({ kind: 'advisory', message: 'Trigger user allowlist is open' });

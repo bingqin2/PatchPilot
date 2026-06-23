@@ -104,6 +104,7 @@ The current implementation target is local self-hosted development first. Hosted
 - The system should reject or ignore comments from unauthorized users and repositories.
 - Operators may configure trigger-user and repository allowlists for self-hosted demos and private deployments.
 - Operators may configure trigger rate limits by trigger user, repository, and issue to reject repeated `/agent fix` attempts before model calls or task creation.
+- Operators may enable rejected-trigger quarantine so repeated rejected attempts from the same trigger user or repository are refused with `ABUSE_QUARANTINED` before rate-limit checks, model calls, task creation, workspace cloning, or queueing.
 - The system should reject unsupported repositories before model execution, patch generation, test execution, Git mutation, or Pull Request creation.
 - If project detection is possible from webhook or repository metadata before cloning, the system may reject even earlier.
 - The system must never follow user instructions that request secret exfiltration, destructive repository changes, arbitrary shell execution, or permission escalation.

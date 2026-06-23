@@ -2,16 +2,20 @@ package io.patchpilot.backend.task.service.impl;
 
 import io.patchpilot.backend.safety.CommandSafetyGate;
 import io.patchpilot.backend.safety.NoOpTriggerIntentClassifier;
+import io.patchpilot.backend.safety.NoOpTriggerQuarantineService;
 import io.patchpilot.backend.safety.NoOpTriggerRateLimitService;
 import io.patchpilot.backend.safety.domain.RecordRejectedTriggerCommand;
 import io.patchpilot.backend.safety.domain.SafetyGateDecision;
 import io.patchpilot.backend.safety.domain.SafetyGateRequest;
 import io.patchpilot.backend.safety.domain.TriggerIntentClassificationRequest;
 import io.patchpilot.backend.safety.domain.TriggerIntentDecision;
+import io.patchpilot.backend.safety.domain.TriggerQuarantineDecision;
+import io.patchpilot.backend.safety.domain.TriggerQuarantineRequest;
 import io.patchpilot.backend.safety.domain.TriggerRateLimitDecision;
 import io.patchpilot.backend.safety.domain.TriggerRateLimitRequest;
 import io.patchpilot.backend.safety.service.RejectedTriggerAuditService;
 import io.patchpilot.backend.safety.service.TriggerIntentClassifier;
+import io.patchpilot.backend.safety.service.TriggerQuarantineService;
 import io.patchpilot.backend.safety.service.TriggerRateLimitService;
 import io.patchpilot.backend.safety.service.impl.InMemoryRejectedTriggerAuditService;
 import io.patchpilot.backend.task.domain.bo.CreateFixTaskCommand;
@@ -35,6 +39,7 @@ public class DefaultManualFixTaskService implements ManualFixTaskService {
     private final FixTaskDispatcher fixTaskDispatcher;
     private final CommandSafetyGate commandSafetyGate;
     private final RejectedTriggerAuditService rejectedTriggerAuditService;
+    private final TriggerQuarantineService triggerQuarantineService;
     private final TriggerRateLimitService triggerRateLimitService;
     private final TriggerIntentClassifier triggerIntentClassifier;
 
@@ -49,6 +54,7 @@ public class DefaultManualFixTaskService implements ManualFixTaskService {
                 fixTaskDispatcher,
                 new InMemoryRejectedTriggerAuditService(),
                 new CommandSafetyGate(),
+                new NoOpTriggerQuarantineService(),
                 new NoOpTriggerRateLimitService(),
                 new NoOpTriggerIntentClassifier()
         );
@@ -66,6 +72,7 @@ public class DefaultManualFixTaskService implements ManualFixTaskService {
                 fixTaskDispatcher,
                 new InMemoryRejectedTriggerAuditService(),
                 commandSafetyGate,
+                new NoOpTriggerQuarantineService(),
                 new NoOpTriggerRateLimitService(),
                 new NoOpTriggerIntentClassifier()
         );
@@ -84,6 +91,7 @@ public class DefaultManualFixTaskService implements ManualFixTaskService {
                 fixTaskDispatcher,
                 rejectedTriggerAuditService,
                 commandSafetyGate,
+                new NoOpTriggerQuarantineService(),
                 new NoOpTriggerRateLimitService(),
                 new NoOpTriggerIntentClassifier()
         );
@@ -103,6 +111,7 @@ public class DefaultManualFixTaskService implements ManualFixTaskService {
                 fixTaskDispatcher,
                 rejectedTriggerAuditService,
                 commandSafetyGate,
+                new NoOpTriggerQuarantineService(),
                 new NoOpTriggerRateLimitService(),
                 triggerIntentClassifier
         );
@@ -115,6 +124,7 @@ public class DefaultManualFixTaskService implements ManualFixTaskService {
             FixTaskDispatcher fixTaskDispatcher,
             RejectedTriggerAuditService rejectedTriggerAuditService,
             CommandSafetyGate commandSafetyGate,
+            TriggerQuarantineService triggerQuarantineService,
             TriggerRateLimitService triggerRateLimitService,
             TriggerIntentClassifier triggerIntentClassifier
     ) {
@@ -123,6 +133,7 @@ public class DefaultManualFixTaskService implements ManualFixTaskService {
         this.fixTaskDispatcher = fixTaskDispatcher;
         this.rejectedTriggerAuditService = rejectedTriggerAuditService;
         this.commandSafetyGate = commandSafetyGate;
+        this.triggerQuarantineService = triggerQuarantineService;
         this.triggerRateLimitService = triggerRateLimitService;
         this.triggerIntentClassifier = triggerIntentClassifier;
     }
@@ -157,6 +168,28 @@ public class DefaultManualFixTaskService implements ManualFixTaskService {
                 .ifPresent(activeTask -> {
                     throw new IllegalStateException("An active task already exists for this issue");
                 });
+
+        TriggerQuarantineDecision quarantineDecision = triggerQuarantineService.check(new TriggerQuarantineRequest(
+                "manual",
+                command.repositoryOwner(),
+                command.repositoryName(),
+                command.issueNumber(),
+                command.triggerUser()
+        ));
+        if (!quarantineDecision.allowed()) {
+            rejectedTriggerAuditService.recordRejectedTrigger(new RecordRejectedTriggerCommand(
+                    "manual",
+                    "manual-rejected-" + UUID.randomUUID(),
+                    command.repositoryOwner(),
+                    command.repositoryName(),
+                    command.issueNumber(),
+                    command.triggerUser(),
+                    command.triggerComment(),
+                    quarantineDecision.reason(),
+                    quarantineDecision.category()
+            ));
+            throw new IllegalArgumentException(quarantineDecision.reason());
+        }
 
         TriggerRateLimitDecision rateLimitDecision = triggerRateLimitService.checkAndRecord(new TriggerRateLimitRequest(
                 "manual",
