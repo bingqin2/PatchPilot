@@ -269,6 +269,23 @@ test('lists recent rejected triggers through backend API', async () => {
   expect(rejectedTriggers[0].retriedAt).toBe('2026-06-23T01:06:00Z');
 });
 
+test('lists recent rejected triggers by category through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: [],
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  await listRejectedTriggers({ limit: 20, category: 'DANGEROUS_INSTRUCTION' });
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/rejected-triggers?limit=20&category=DANGEROUS_INSTRUCTION');
+});
+
 test('retries a rejected trigger through backend API', async () => {
   const fetchMock = vi.fn(async () => ({
     ok: true,

@@ -61,6 +61,7 @@ import type {
   FixTaskModelUsageSummary,
   FixTaskQueueItem,
   FixTaskQueueSummary,
+  RejectedTriggerCategoryFilter,
   RejectedTriggerAudit,
   WebhookDeliveryDiagnostic,
   LanguageAdapterFixtureVerification,
@@ -81,6 +82,20 @@ const TASK_STATUS_FILTERS: TaskStatusFilter[] = [
   'CANCELLED'
 ];
 const TASK_SORTS: TaskSort[] = ['createdAtDesc', 'createdAtAsc'];
+const REJECTED_TRIGGER_CATEGORY_FILTERS: RejectedTriggerCategoryFilter[] = [
+  'ALL',
+  'UNKNOWN',
+  'EMPTY_COMMAND',
+  'UNSUPPORTED_COMMAND',
+  'NOT_ACTIONABLE',
+  'DANGEROUS_INSTRUCTION',
+  'TRIGGER_USER_NOT_ALLOWED',
+  'REPOSITORY_NOT_ALLOWED',
+  'RATE_LIMITED',
+  'MODEL_REJECTED',
+  'MODEL_NEEDS_CLARIFICATION',
+  'MODEL_CLASSIFICATION_FAILED'
+];
 const ADMIN_TOKEN_REQUIRED_MESSAGE = 'Admin token is required';
 
 export default function App() {
@@ -108,6 +123,9 @@ export default function App() {
   const [webhookDeliveryError, setWebhookDeliveryError] = useState<string | null>(null);
   const [rejectedTriggers, setRejectedTriggers] = useState<RejectedTriggerAudit[]>([]);
   const [rejectedTriggerError, setRejectedTriggerError] = useState<string | null>(null);
+  const [rejectedTriggerCategoryFilter, setRejectedTriggerCategoryFilter] = useState<RejectedTriggerCategoryFilter>(
+    initialFilters.rejectedCategory
+  );
   const [statusFilter, setStatusFilter] = useState<TaskStatusFilter>(initialFilters.status);
   const [searchQuery, setSearchQuery] = useState(initialFilters.query);
   const [repositoryOwnerFilter, setRepositoryOwnerFilter] = useState(initialFilters.repositoryOwner);
@@ -301,6 +319,11 @@ export default function App() {
     });
   }, [taskSort]);
 
+  const handleRejectedTriggerCategoryFilterChange = useCallback((category: RejectedTriggerCategoryFilter) => {
+    setRejectedTriggerCategoryFilter(category);
+    writeRejectedTriggerStateToUrl(category);
+  }, []);
+
   const refresh = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -367,7 +390,7 @@ export default function App() {
           (deliveries) => ({ deliveries, error: null as string | null }),
           (caught) => ({ deliveries: null, error: errorMessage(caught) })
         ),
-        listRejectedTriggers(20).then(
+        listRejectedTriggers({ limit: 20, category: rejectedTriggerCategoryFilter }).then(
           (rejections) => ({ rejections, error: null as string | null }),
           (caught) => ({ rejections: null, error: errorMessage(caught) })
         )
@@ -414,7 +437,7 @@ export default function App() {
     } finally {
       setLoading(false);
     }
-  }, [buildSystemFilter, createdAfterFilter, createdBeforeFilter, languageFilter, repositoryNameFilter, repositoryOwnerFilter, searchQuery, statusFilter, taskSort]);
+  }, [buildSystemFilter, createdAfterFilter, createdBeforeFilter, languageFilter, rejectedTriggerCategoryFilter, repositoryNameFilter, repositoryOwnerFilter, searchQuery, statusFilter, taskSort]);
 
   const handleLoadMoreTasks = useCallback(async () => {
     setLoadingMoreTasks(true);
@@ -782,8 +805,10 @@ export default function App() {
 
       <RejectedTriggerPanel
         rejectedTriggers={rejectedTriggers}
+        categoryFilter={rejectedTriggerCategoryFilter}
         error={rejectedTriggerError}
         retryingRejectedTriggerId={retryingRejectedTriggerId}
+        onCategoryFilterChange={handleRejectedTriggerCategoryFilterChange}
         onRetryRejectedTrigger={handleRetryRejectedTrigger}
         onSelectTask={selectTask}
       />
@@ -821,7 +846,8 @@ function filtersFromUrl() {
     buildSystem: searchParams.get('buildSystem') ?? '',
     createdAfter: searchParams.get('createdAfter') ?? '',
     createdBefore: searchParams.get('createdBefore') ?? '',
-    sort: sortFromUrl(searchParams.get('sort'))
+    sort: sortFromUrl(searchParams.get('sort')),
+    rejectedCategory: rejectedTriggerCategoryFromUrl(searchParams.get('rejectedCategory'))
   };
 }
 
@@ -837,6 +863,13 @@ function sortFromUrl(value: string | null): TaskSort {
     return value as TaskSort;
   }
   return 'createdAtDesc';
+}
+
+function rejectedTriggerCategoryFromUrl(value: string | null): RejectedTriggerCategoryFilter {
+  if (value && REJECTED_TRIGGER_CATEGORY_FILTERS.includes(value as RejectedTriggerCategoryFilter)) {
+    return value as RejectedTriggerCategoryFilter;
+  }
+  return 'ALL';
 }
 
 function selectedTaskIdFromList(tasks: FixTask[], currentTaskId: string | null) {
@@ -863,6 +896,16 @@ interface TaskListUrlState {
   createdAfter: string;
   createdBefore: string;
   sort: TaskSort;
+}
+
+function writeRejectedTriggerStateToUrl(category: RejectedTriggerCategoryFilter) {
+  const nextUrl = new URL(window.location.href);
+  if (category === 'ALL') {
+    nextUrl.searchParams.delete('rejectedCategory');
+  } else {
+    nextUrl.searchParams.set('rejectedCategory', category);
+  }
+  window.history.replaceState(null, '', `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`);
 }
 
 function writeTaskListStateToUrl({

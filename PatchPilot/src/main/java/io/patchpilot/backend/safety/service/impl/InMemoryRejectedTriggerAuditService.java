@@ -51,6 +51,18 @@ public class InMemoryRejectedTriggerAuditService implements RejectedTriggerAudit
     }
 
     @Override
+    public List<RejectedTriggerAuditVo> listRejectedTriggers(int limit, String category) {
+        if (category == null || category.isBlank()) {
+            return listRejectedTriggers(limit);
+        }
+        return audits.stream()
+                .filter(audit -> category.trim().equals(audit.category()))
+                .sorted(Comparator.comparing(RejectedTriggerAuditVo::createdAt).reversed())
+                .limit(limit)
+                .toList();
+    }
+
+    @Override
     public Optional<RejectedTriggerAuditVo> findRejectedTrigger(String id) {
         return audits.stream()
                 .filter(audit -> audit.id().equals(id))

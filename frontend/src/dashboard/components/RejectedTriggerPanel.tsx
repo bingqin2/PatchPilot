@@ -1,18 +1,37 @@
-import type { RejectedTriggerAudit } from '../../types';
+import type { RejectedTriggerAudit, RejectedTriggerCategoryFilter } from '../../types';
 import { compactTime } from '../format';
+
+const REJECTED_TRIGGER_CATEGORY_FILTERS: RejectedTriggerCategoryFilter[] = [
+  'ALL',
+  'UNKNOWN',
+  'EMPTY_COMMAND',
+  'UNSUPPORTED_COMMAND',
+  'NOT_ACTIONABLE',
+  'DANGEROUS_INSTRUCTION',
+  'TRIGGER_USER_NOT_ALLOWED',
+  'REPOSITORY_NOT_ALLOWED',
+  'RATE_LIMITED',
+  'MODEL_REJECTED',
+  'MODEL_NEEDS_CLARIFICATION',
+  'MODEL_CLASSIFICATION_FAILED'
+];
 
 interface RejectedTriggerPanelProps {
   rejectedTriggers: RejectedTriggerAudit[];
+  categoryFilter: RejectedTriggerCategoryFilter;
   error: string | null;
   retryingRejectedTriggerId: string | null;
+  onCategoryFilterChange: (category: RejectedTriggerCategoryFilter) => void;
   onRetryRejectedTrigger: (id: string) => void;
   onSelectTask: (taskId: string) => void;
 }
 
 export function RejectedTriggerPanel({
   rejectedTriggers,
+  categoryFilter,
   error,
   retryingRejectedTriggerId,
+  onCategoryFilterChange,
   onRetryRejectedTrigger,
   onSelectTask
 }: RejectedTriggerPanelProps) {
@@ -30,6 +49,20 @@ export function RejectedTriggerPanel({
           <h2>Rejected triggers</h2>
           <p>{rejectionSummary}</p>
         </div>
+        <label className="compact-filter-control">
+          <span>Category</span>
+          <select
+            aria-label="Filter rejected triggers by category"
+            value={categoryFilter}
+            onChange={(event) => onCategoryFilterChange(event.target.value as RejectedTriggerCategoryFilter)}
+          >
+            {REJECTED_TRIGGER_CATEGORY_FILTERS.map((category) => (
+              <option key={category} value={category}>
+                {category === 'ALL' ? 'All categories' : categoryLabel(category)}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
       {error ? <p className="panel-error">{error}</p> : null}
       <div className="rejected-trigger-list">

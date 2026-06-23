@@ -1579,6 +1579,39 @@ test('restores created time filter URL state on initial dashboard load', async (
   );
 });
 
+test('restores rejected trigger category filter URL state on initial dashboard load', async () => {
+  const fetchMock = vi.mocked(fetch);
+  window.history.replaceState(null, '', '/?rejectedCategory=DANGEROUS_INSTRUCTION');
+
+  render(<App />);
+
+  const rejectedPanel = await screen.findByRole('region', { name: 'Rejected triggers' });
+  expect(within(rejectedPanel).getByRole('combobox', { name: 'Filter rejected triggers by category' })).toHaveValue(
+    'DANGEROUS_INSTRUCTION'
+  );
+  await waitFor(() =>
+    expect(fetchMock).toHaveBeenCalledWith('/api/rejected-triggers?limit=20&category=DANGEROUS_INSTRUCTION')
+  );
+});
+
+test('syncs rejected trigger category filter into the URL and backend request', async () => {
+  const user = userEvent.setup();
+  const fetchMock = vi.mocked(fetch);
+
+  render(<App />);
+
+  const rejectedPanel = await screen.findByRole('region', { name: 'Rejected triggers' });
+  await user.selectOptions(
+    within(rejectedPanel).getByRole('combobox', { name: 'Filter rejected triggers by category' }),
+    'DANGEROUS_INSTRUCTION'
+  );
+
+  expect(window.location.search).toContain('rejectedCategory=DANGEROUS_INSTRUCTION');
+  await waitFor(() =>
+    expect(fetchMock).toHaveBeenCalledWith('/api/rejected-triggers?limit=20&category=DANGEROUS_INSTRUCTION')
+  );
+});
+
 test('shows task status filter counts from backend status count API', async () => {
   const fetchMock = vi.mocked(fetch);
 

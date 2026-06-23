@@ -27,10 +27,11 @@ public class RejectedTriggerAuditController {
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<RejectedTriggerAuditVo>>> listRejectedTriggers(
-            @RequestParam(required = false) Integer limit
+            @RequestParam(required = false) Integer limit,
+            @RequestParam(required = false) String category
     ) {
         try {
-            return ResponseEntity.ok(ApiResponse.ok(auditService.listRejectedTriggers(normalizeLimit(limit))));
+            return ResponseEntity.ok(ApiResponse.ok(auditService.listRejectedTriggers(normalizeLimit(limit), category)));
         } catch (IllegalArgumentException exception) {
             return ResponseEntity.badRequest().body(ApiResponse.fail(exception.getMessage()));
         }
