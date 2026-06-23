@@ -113,7 +113,7 @@ h3 {
 }
 
 .alert {
-  align-items: center;
+  align-items: flex-start;
   background: #fff4f2;
   border: 1px solid #ef8a7b;
   border-radius: 6px;
@@ -122,6 +122,38 @@ h3 {
   gap: 10px;
   margin-bottom: 18px;
   padding: 12px 14px;
+}
+
+.alert-content {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+}
+
+.admin-token-form {
+  align-items: end;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.admin-token-form label {
+  color: #6d332c;
+  display: grid;
+  font-size: 12px;
+  font-weight: 800;
+  gap: 5px;
+  min-width: min(320px, 100%);
+}
+
+.admin-token-form input {
+  background: #ffffff;
+  border: 1px solid #ef8a7b;
+  border-radius: 6px;
+  color: #17202a;
+  font: inherit;
+  min-height: 34px;
+  padding: 0 10px;
 }
 
 .refresh-status {

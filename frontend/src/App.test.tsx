@@ -944,6 +944,47 @@ test('shows tool and model call durations in task detail records', async () => {
   expect(screen.getByText('1800 tokens · 2.0s')).toBeInTheDocument();
 });
 
+test('prompts for admin token and reloads dashboard after saving it', async () => {
+  const user = userEvent.setup();
+  const storage = new Map<string, string>();
+  vi.stubGlobal('localStorage', {
+    getItem: (key: string) => storage.get(key) ?? null,
+    setItem: (key: string, value: string) => storage.set(key, value),
+    removeItem: (key: string) => storage.delete(key),
+    clear: () => storage.clear()
+  });
+  const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    const adminToken = headersRecord(init?.headers)['X-PatchPilot-Admin-Token'];
+    if (input.toString() === '/health') {
+      return jsonResponse({
+        status: 'UP',
+        service: 'patchpilot-backend',
+        timestamp: '2026-06-21T01:00:00Z'
+      });
+    }
+    if (adminToken !== 'operator-token') {
+      return jsonResponse(null, false, 'Admin token is required', 401);
+    }
+    return defaultAppResponse(input, init);
+  });
+  vi.stubGlobal('fetch', fetchMock);
+
+  render(<App />);
+
+  expect(await screen.findByText('Admin token is required')).toBeInTheDocument();
+  await user.type(screen.getByLabelText('Admin API token'), 'operator-token');
+  await user.click(screen.getByRole('button', { name: 'Save admin token' }));
+
+  await waitFor(() => expect(storage.get('patchpilot.adminToken')).toBe('operator-token'));
+  await waitFor(() => {
+    expect(fetchMock).toHaveBeenCalledWith('/api/tasks?limit=50', {
+      headers: { 'X-PatchPilot-Admin-Token': 'operator-token' }
+    });
+  });
+  expect(await screen.findByText('3 of 3 tasks visible')).toBeInTheDocument();
+  expect(screen.queryByText('Admin token is required')).not.toBeInTheDocument();
+});
+
 test('copies selected task report from backend API', async () => {
   const user = userEvent.setup();
   const fetchMock = vi.mocked(fetch);
@@ -1911,6 +1952,97 @@ function jsonResponse(data: unknown, success = true, message: string | null = nu
     status,
     json: async () => ({ success, data, message })
   } as Response);
+}
+
+function defaultAppResponse(input: RequestInfo | URL, init?: RequestInit) {
+  const url = input.toString();
+  if (url === '/api/tasks/status-counts') {
+    return jsonResponse(statusCounts);
+  }
+  if (url === '/api/tasks?limit=50') {
+    return jsonResponse(taskPage([completedTask, reviewTask, failedTask]));
+  }
+  if (url === '/api/tasks/metrics/summary' || url.startsWith('/api/tasks/metrics/summary?')) {
+    return jsonResponse({
+      totalCount: 3,
+      pendingCount: 0,
+      runningCount: 0,
+      runningTestsCount: 0,
+      completedCount: 1,
+      failedCount: 1,
+      pendingReviewCount: 1,
+      cancelledCount: 0,
+      completionRate: 1 / 3,
+      failureRate: 1 / 3,
+      averageCompletionDurationMs: 60000,
+      totalModelTokens: 1800,
+      averageModelTokensPerCompletedTask: 1800,
+      testRunCount: 1,
+      passedTestRunCount: 1,
+      failedTestRunCount: 0,
+      testPassRate: 1
+    });
+  }
+  if (url === '/api/tasks/metrics/failure-causes' || url.startsWith('/api/tasks/metrics/failure-causes?')) {
+    return jsonResponse([
+      { cause: 'MAVEN_TESTS', count: 1 },
+      { cause: 'GITHUB_AUTH', count: 1 }
+    ]);
+  }
+  if (url === '/api/tasks/metrics/model-usage' || url.startsWith('/api/tasks/metrics/model-usage?')) {
+    return jsonResponse(modelUsageSummary);
+  }
+  if (url === '/api/tasks/metrics/latency' || url.startsWith('/api/tasks/metrics/latency?')) {
+    return jsonResponse(latencySummary);
+  }
+  if (url === '/api/configuration/summary') {
+    return jsonResponse(configurationSummary);
+  }
+  if (url === '/api/demo/readiness') {
+    return jsonResponse(demoReadiness);
+  }
+  if (url === '/health') {
+    return jsonResponse({
+      status: 'UP',
+      service: 'patchpilot-backend',
+      timestamp: '2026-06-21T01:00:00Z'
+    });
+  }
+  if (url === '/api/language-adapters') {
+    return jsonResponse(supportedLanguageAdapters);
+  }
+  if (url === '/api/language-adapters/fixtures') {
+    return jsonResponse(adapterFixtureVerifications);
+  }
+  if (url === '/api/task-queue/summary') {
+    return jsonResponse(queueSummary);
+  }
+  if (url === '/api/task-queue/items') {
+    return jsonResponse(queueItems);
+  }
+  if (url === '/api/tasks/task-1/detail') {
+    return jsonResponse(detail);
+  }
+  if (url === '/api/tasks/task-1/report') {
+    return jsonResponse('# PatchPilot Task Report\n\n- Task: `task-1`');
+  }
+  if (url === '/api/tasks' && init?.method === 'POST') {
+    return jsonResponse(manuallyCreatedTask, true, null, 201);
+  }
+  return jsonResponse(null, false, 'not found', 404);
+}
+
+function headersRecord(headers?: HeadersInit): Record<string, string> {
+  if (!headers) {
+    return {};
+  }
+  if (headers instanceof Headers) {
+    return Object.fromEntries(headers.entries());
+  }
+  if (Array.isArray(headers)) {
+    return Object.fromEntries(headers);
+  }
+  return { ...headers };
 }
 
 function taskPage(items: unknown[], limit = 50, offset = 0, hasMore = false, total = items.length) {

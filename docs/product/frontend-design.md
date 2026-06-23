@@ -25,6 +25,8 @@ The current frontend lives in `frontend/` and uses React, Vite, and TypeScript.
 
 During local development, Vite proxies `/api` and `/health` to `PATCHPILOT_FRONTEND_BACKEND_URL` or `VITE_PATCHPILOT_BACKEND_URL` from the shell environment or repository root `.env`, defaulting to `http://127.0.0.1:8080`.
 
+When the backend protects operator APIs with `PATCHPILOT_ADMIN_TOKEN`, the dashboard does not require a separate login flow. If a protected API call returns `Admin token is required`, `App.tsx` shows an inline admin-token prompt inside the alert, saves the submitted value to browser `localStorage` as `patchpilot.adminToken`, and immediately retries the dashboard refresh. The API helper reads that value for later requests and sends it as `X-PatchPilot-Admin-Token`.
+
 The page coordinator is `frontend/src/App.tsx`. It loads backend data, owns selected-task state, applies status filters, repository owner/name filters, language/build-system adapter filters, created time range filters, task-list sort, and search state, and coordinates manual creation plus cancel/retry actions.
 It also loads `GET /api/demo/readiness`, `GET /api/language-adapters`, and `GET /api/language-adapters/fixtures` so demo readiness, supported repository shapes, fixed verification commands, detection signals, demo fixture paths, and current fixture pass/fail status are visible in the dashboard instead of only in source code or terminal smoke output.
 
