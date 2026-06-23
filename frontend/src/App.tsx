@@ -24,6 +24,7 @@ import {
 } from './api';
 import { AdapterFixtureVerificationPanel } from './dashboard/components/AdapterFixtureVerificationPanel';
 import { ConfigurationPanel } from './dashboard/components/ConfigurationPanel';
+import { ConnectivityPanel } from './dashboard/components/ConnectivityPanel';
 import { DemoReadinessPanel } from './dashboard/components/DemoReadinessPanel';
 import { FailureCausePanel } from './dashboard/components/FailureCausePanel';
 import { LatencyPanel } from './dashboard/components/LatencyPanel';
@@ -286,6 +287,8 @@ export default function App() {
     setLoading(true);
     setError(null);
     try {
+      const healthSummary = await getBackendHealth().catch(() => null);
+      setBackendHealth(healthSummary);
       const taskFilters = {
         query: searchQuery,
         repositoryOwner: repositoryOwnerFilter,
@@ -303,7 +306,6 @@ export default function App() {
         modelUsageSummary,
         latencySummary,
         configurationSummary,
-        healthSummary,
         demoReadinessResult,
         adapterListResult,
         adapterFixtureResult,
@@ -322,7 +324,6 @@ export default function App() {
         getModelUsageSummary(taskFilters),
         getLatencySummary(taskFilters),
         getConfigurationSummary(),
-        getBackendHealth(),
         getDemoReadiness().then(
           (readiness) => ({ readiness, error: null as string | null }),
           (caught) => ({ readiness: null, error: errorMessage(caught) })
@@ -345,7 +346,6 @@ export default function App() {
       setModelUsage(modelUsageSummary);
       setLatency(latencySummary);
       setConfiguration(configurationSummary);
-      setBackendHealth(healthSummary);
       if (demoReadinessResult.readiness) {
         setDemoReadiness(demoReadinessResult.readiness);
       }
@@ -613,6 +613,13 @@ export default function App() {
           </div>
         </section>
       ) : null}
+
+      <ConnectivityPanel
+        backendHealth={backendHealth}
+        configuration={configuration}
+        hasStoredAdminToken={hasStoredAdminToken}
+        error={error}
+      />
 
       <DemoReadinessPanel readiness={demoReadiness} error={demoReadinessError} />
 
