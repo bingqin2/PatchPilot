@@ -20,6 +20,7 @@ import type {
   RejectedTriggerAudit,
   RejectedTriggerAuditSummary,
   RejectedTriggerCategoryFilter,
+  TriggerQuarantine,
   WebhookDeliveryDiagnostic,
   FixTaskModelCall,
   FixTaskTestRun,
@@ -48,6 +49,11 @@ interface ListTasksOptions {
 interface ListRejectedTriggersOptions {
   limit?: number;
   category?: RejectedTriggerCategoryFilter;
+}
+
+interface ListTriggerQuarantinesOptions {
+  activeOnly?: boolean;
+  limit?: number;
 }
 
 const backendConnectionError =
@@ -178,6 +184,16 @@ export async function listRejectedTriggers(options: number | ListRejectedTrigger
 
 export async function getRejectedTriggerSummary(limit = 100): Promise<RejectedTriggerAuditSummary> {
   return getApi<RejectedTriggerAuditSummary>(`/api/rejected-triggers/summary?limit=${limit}`);
+}
+
+export async function listTriggerQuarantines(
+  options: ListTriggerQuarantinesOptions = {}
+): Promise<TriggerQuarantine[]> {
+  const searchParams = new URLSearchParams({
+    activeOnly: String(options.activeOnly ?? true),
+    limit: String(options.limit ?? 20)
+  });
+  return getApi<TriggerQuarantine[]>(`/api/trigger-quarantines?${searchParams.toString()}`);
 }
 
 export async function retryRejectedTrigger(rejectedTriggerId: string): Promise<FixTask> {

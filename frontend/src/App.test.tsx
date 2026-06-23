@@ -506,6 +506,23 @@ const rejectedTriggerSummary = {
   repositoryCounts: [{ value: 'bingqin2/PatchPilot', count: 4 }]
 };
 
+const triggerQuarantines = [
+  {
+    id: 'quarantine-1',
+    scope: 'TRIGGER_USER',
+    scopeKey: 'drive-by-user',
+    reason: 'Unsafe request rejected: trigger user is temporarily quarantined',
+    category: 'ABUSE_QUARANTINED',
+    evidenceCount: 5,
+    windowMs: 600000,
+    startedAt: '2026-06-20T01:03:00Z',
+    expiresAt: '2026-06-20T01:33:00Z',
+    createdAt: '2026-06-20T01:03:00Z',
+    updatedAt: '2026-06-20T01:08:00Z',
+    active: true
+  }
+];
+
 const supportedLanguageAdapters = [
   {
     language: 'java',
@@ -885,6 +902,9 @@ beforeEach(() => {
     if (url === '/api/rejected-triggers/summary?limit=100') {
       return jsonResponse(rejectedTriggerSummary);
     }
+    if (url === '/api/trigger-quarantines?activeOnly=true&limit=20') {
+      return jsonResponse(triggerQuarantines);
+    }
     if (url === '/api/rejected-triggers/rejected-1/retry') {
       return jsonResponse(manuallyCreatedTask, true, null, 201);
     }
@@ -1150,6 +1170,10 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(within(rejectedTriggerSummaryPanel).getByText('4 rejected triggers analyzed')).toBeInTheDocument();
   expect(within(rejectedTriggerSummaryPanel).getByRole('button', { name: 'Filter by Not actionable, 2 rejected triggers' })).toBeInTheDocument();
   expect(within(rejectedTriggerSummaryPanel).getByText('local-operator')).toBeInTheDocument();
+  const triggerQuarantinePanel = within(rejectedTriggerPanel).getByRole('group', { name: 'Active trigger quarantines' });
+  expect(within(triggerQuarantinePanel).getByText('Active trigger quarantines')).toBeInTheDocument();
+  expect(within(triggerQuarantinePanel).getByText('drive-by-user')).toBeInTheDocument();
+  expect(within(triggerQuarantinePanel).getByText('5 rejected triggers')).toBeInTheDocument();
   const rejectedTriggerRows = within(rejectedTriggerPanel).getByRole('group', { name: 'Rejected trigger audit rows' });
   expect(within(rejectedTriggerRows).getByText('/agent fix make it better')).toBeInTheDocument();
   expect(within(rejectedTriggerRows).getByText('Unsafe request rejected: instruction is not actionable')).toBeInTheDocument();

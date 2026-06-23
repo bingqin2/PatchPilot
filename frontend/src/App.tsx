@@ -22,6 +22,7 @@ import {
   listLanguageAdapters,
   listQueueItems,
   listRejectedTriggers,
+  listTriggerQuarantines,
   listWebhookDeliveries,
   listTasks,
   retryRejectedTrigger,
@@ -65,6 +66,7 @@ import type {
   RejectedTriggerCategoryFilter,
   RejectedTriggerAudit,
   RejectedTriggerAuditSummary,
+  TriggerQuarantine,
   WebhookDeliveryDiagnostic,
   LanguageAdapterFixtureVerification,
   SupportedLanguageAdapter,
@@ -94,6 +96,7 @@ const REJECTED_TRIGGER_CATEGORY_FILTERS: RejectedTriggerCategoryFilter[] = [
   'TRIGGER_USER_NOT_ALLOWED',
   'REPOSITORY_NOT_ALLOWED',
   'RATE_LIMITED',
+  'ABUSE_QUARANTINED',
   'MODEL_REJECTED',
   'MODEL_NEEDS_CLARIFICATION',
   'MODEL_CLASSIFICATION_FAILED'
@@ -125,6 +128,7 @@ export default function App() {
   const [webhookDeliveryError, setWebhookDeliveryError] = useState<string | null>(null);
   const [rejectedTriggers, setRejectedTriggers] = useState<RejectedTriggerAudit[]>([]);
   const [rejectedTriggerSummary, setRejectedTriggerSummary] = useState<RejectedTriggerAuditSummary | null>(null);
+  const [triggerQuarantines, setTriggerQuarantines] = useState<TriggerQuarantine[]>([]);
   const [rejectedTriggerError, setRejectedTriggerError] = useState<string | null>(null);
   const [rejectedTriggerCategoryFilter, setRejectedTriggerCategoryFilter] = useState<RejectedTriggerCategoryFilter>(
     initialFilters.rejectedCategory
@@ -358,7 +362,8 @@ export default function App() {
         queueItemList,
         webhookDeliveryResult,
         rejectedTriggerResult,
-        rejectedTriggerSummaryResult
+        rejectedTriggerSummaryResult,
+        triggerQuarantineResult
       ] = await Promise.all([
         listTasks({
           status: statusFilter,
@@ -401,6 +406,10 @@ export default function App() {
         getRejectedTriggerSummary(100).then(
           (summary) => ({ summary, error: null as string | null }),
           (caught) => ({ summary: null, error: errorMessage(caught) })
+        ),
+        listTriggerQuarantines({ activeOnly: true, limit: 20 }).then(
+          (quarantines) => ({ quarantines, error: null as string | null }),
+          (caught) => ({ quarantines: null, error: errorMessage(caught) })
         )
       ]);
       setTasks(taskList.items);
@@ -438,7 +447,12 @@ export default function App() {
       if (rejectedTriggerSummaryResult.summary) {
         setRejectedTriggerSummary(rejectedTriggerSummaryResult.summary);
       }
-      setRejectedTriggerError(rejectedTriggerResult.error ?? rejectedTriggerSummaryResult.error);
+      if (triggerQuarantineResult.quarantines) {
+        setTriggerQuarantines(triggerQuarantineResult.quarantines);
+      }
+      setRejectedTriggerError(
+        rejectedTriggerResult.error ?? rejectedTriggerSummaryResult.error ?? triggerQuarantineResult.error
+      );
       setCanLoadMoreTasks(taskList.hasMore);
       setTaskTotal(taskList.total);
       setSelectedTaskId((current) => selectedTaskIdFromList(taskList.items, current));
@@ -817,6 +831,7 @@ export default function App() {
       <RejectedTriggerPanel
         rejectedTriggers={rejectedTriggers}
         summary={rejectedTriggerSummary}
+        quarantines={triggerQuarantines}
         categoryFilter={rejectedTriggerCategoryFilter}
         error={rejectedTriggerError}
         retryingRejectedTriggerId={retryingRejectedTriggerId}
