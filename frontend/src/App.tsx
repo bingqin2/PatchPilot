@@ -21,6 +21,7 @@ import {
   getTaskStatusCounts,
   listLanguageAdapterFixtures,
   listLanguageAdapters,
+  listOperatorSafetyAudits,
   listQueueItems,
   listRejectedTriggers,
   listTriggerQuarantines,
@@ -66,6 +67,7 @@ import type {
   FixTaskModelUsageSummary,
   FixTaskQueueItem,
   FixTaskQueueSummary,
+  OperatorSafetyAudit,
   RejectedTriggerCategoryFilter,
   RejectedTriggerAudit,
   RejectedTriggerAuditSummary,
@@ -133,6 +135,7 @@ export default function App() {
   const [rejectedTriggers, setRejectedTriggers] = useState<RejectedTriggerAudit[]>([]);
   const [rejectedTriggerSummary, setRejectedTriggerSummary] = useState<RejectedTriggerAuditSummary | null>(null);
   const [triggerQuarantines, setTriggerQuarantines] = useState<TriggerQuarantine[]>([]);
+  const [operatorSafetyAudits, setOperatorSafetyAudits] = useState<OperatorSafetyAudit[]>([]);
   const [rejectedTriggerError, setRejectedTriggerError] = useState<string | null>(null);
   const [rejectedTriggerCategoryFilter, setRejectedTriggerCategoryFilter] = useState<RejectedTriggerCategoryFilter>(
     initialFilters.rejectedCategory
@@ -369,7 +372,8 @@ export default function App() {
         webhookDeliveryResult,
         rejectedTriggerResult,
         rejectedTriggerSummaryResult,
-        triggerQuarantineResult
+        triggerQuarantineResult,
+        operatorSafetyAuditResult
       ] = await Promise.all([
         listTasks({
           status: statusFilter,
@@ -416,6 +420,10 @@ export default function App() {
         listTriggerQuarantines({ activeOnly: true, limit: 20 }).then(
           (quarantines) => ({ quarantines, error: null as string | null }),
           (caught) => ({ quarantines: null, error: errorMessage(caught) })
+        ),
+        listOperatorSafetyAudits(20).then(
+          (audits) => ({ audits, error: null as string | null }),
+          (caught) => ({ audits: null, error: errorMessage(caught) })
         )
       ]);
       setTasks(taskList.items);
@@ -456,8 +464,14 @@ export default function App() {
       if (triggerQuarantineResult.quarantines) {
         setTriggerQuarantines(triggerQuarantineResult.quarantines);
       }
+      if (operatorSafetyAuditResult.audits) {
+        setOperatorSafetyAudits(operatorSafetyAuditResult.audits);
+      }
       setRejectedTriggerError(
-        rejectedTriggerResult.error ?? rejectedTriggerSummaryResult.error ?? triggerQuarantineResult.error
+        rejectedTriggerResult.error
+        ?? rejectedTriggerSummaryResult.error
+        ?? triggerQuarantineResult.error
+        ?? operatorSafetyAuditResult.error
       );
       setCanLoadMoreTasks(taskList.hasMore);
       setTaskTotal(taskList.total);
@@ -867,6 +881,7 @@ export default function App() {
         rejectedTriggers={rejectedTriggers}
         summary={rejectedTriggerSummary}
         quarantines={triggerQuarantines}
+        operatorSafetyAudits={operatorSafetyAudits}
         categoryFilter={rejectedTriggerCategoryFilter}
         error={rejectedTriggerError}
         retryingRejectedTriggerId={retryingRejectedTriggerId}

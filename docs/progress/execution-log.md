@@ -2922,3 +2922,20 @@ Validation so far:
 - `npm test`: passed after full frontend verification, 121 tests run, 0 failures.
 - `npm run build`: passed after production frontend build verification.
 - `git diff --check`: passed after whitespace verification.
+
+Implemented operator safety audit log from `docs/plans/145-operator-safety-audit-log.md`.
+
+Changes:
+
+- Added durable `operator_safety_audit` records for manual safety mutations.
+- Added in-memory and MyBatis-backed `OperatorSafetyAuditService` implementations plus the V24 Flyway migration.
+- Exposed `GET /api/operator-safety-audits` for recent operator safety audit rows.
+- Recorded audit rows when operators create or release trigger quarantines through `/api/trigger-quarantines`.
+- Added frontend API typing and dashboard loading for recent operator safety audits.
+- Rendered operator safety audit rows in the rejected-trigger panel so quarantine create/release actions show operator, reason, target, and time.
+- Updated README and product docs to describe traceable manual safety controls.
+
+Validation so far:
+
+- `JAVA_HOME=/Library/Java/JavaVirtualMachines/openjdk-17.jdk/Contents/Home mvn -pl PatchPilot -Dtest=OperatorSafetyAuditControllerTests,InMemoryOperatorSafetyAuditServiceTests,MyBatisOperatorSafetyAuditServiceTests,OperatorSafetyAuditMigrationTests,TriggerQuarantineControllerTests test`: first failed because the operator safety audit model, service, controller, mapper, and migration did not exist; then passed after implementation, 10 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts src/dashboard/components/RejectedTriggerPanel.test.tsx src/App.test.tsx`: first failed because `listOperatorSafetyAudits` and the operator safety audit panel did not exist; then passed after frontend implementation, 86 tests run, 0 failures.

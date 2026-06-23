@@ -132,6 +132,7 @@ Responsibilities:
 - Persist trigger-user and repository quarantine records through `TriggerQuarantineRecordService` so active safety state survives worker restarts in MySQL-backed profiles.
 - Expose active or historical quarantine records through `GET /api/trigger-quarantines` for operator diagnosis.
 - Allow operators to create and release trigger quarantines through admin-token-protected `/api/trigger-quarantines` write endpoints.
+- Record manual safety mutations through `OperatorSafetyAuditService` and expose recent rows through `GET /api/operator-safety-audits`.
 - Deduplicate delivery ids.
 - Submit work to task services.
 

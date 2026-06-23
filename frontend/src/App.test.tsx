@@ -527,6 +527,31 @@ const triggerQuarantines = [
   }
 ];
 
+const operatorSafetyAudits = [
+  {
+    id: 'operator-audit-1',
+    action: 'MANUAL_QUARANTINE_CREATED',
+    resourceType: 'TRIGGER_QUARANTINE',
+    resourceId: 'quarantine-1',
+    scope: 'TRIGGER_USER',
+    scopeKey: 'drive-by-user',
+    operator: 'local-admin',
+    reason: 'Operator blocked noisy demo trigger user',
+    createdAt: '2026-06-24T01:00:00Z'
+  },
+  {
+    id: 'operator-audit-2',
+    action: 'TRIGGER_QUARANTINE_RELEASED',
+    resourceType: 'TRIGGER_QUARANTINE',
+    resourceId: 'quarantine-2',
+    scope: 'REPOSITORY',
+    scopeKey: 'bingqin2/patchpilot',
+    operator: 'release-captain',
+    reason: 'False positive during demo',
+    createdAt: '2026-06-24T01:05:00Z'
+  }
+];
+
 const supportedLanguageAdapters = [
   {
     language: 'java',
@@ -909,6 +934,9 @@ beforeEach(() => {
     if (url === '/api/trigger-quarantines?activeOnly=true&limit=20') {
       return jsonResponse(triggerQuarantines);
     }
+    if (url === '/api/operator-safety-audits?limit=20') {
+      return jsonResponse(operatorSafetyAudits);
+    }
     if (url === '/api/trigger-quarantines' && init?.method === 'POST') {
       return jsonResponse({
         id: 'manual-quarantine-1',
@@ -1208,6 +1236,11 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(within(triggerQuarantinePanel).getByText('Active trigger quarantines')).toBeInTheDocument();
   expect(within(triggerQuarantinePanel).getByText('drive-by-user')).toBeInTheDocument();
   expect(within(triggerQuarantinePanel).getByText('5 rejected triggers')).toBeInTheDocument();
+  const operatorAuditRows = within(rejectedTriggerPanel).getByRole('group', { name: 'Operator safety audit rows' });
+  expect(within(operatorAuditRows).getByText('Manual quarantine created')).toBeInTheDocument();
+  expect(within(operatorAuditRows).getByText('Trigger quarantine released')).toBeInTheDocument();
+  expect(within(operatorAuditRows).getByText('release-captain')).toBeInTheDocument();
+  expect(within(operatorAuditRows).getByText('False positive during demo')).toBeInTheDocument();
   const rejectedTriggerRows = within(rejectedTriggerPanel).getByRole('group', { name: 'Rejected trigger audit rows' });
   expect(within(rejectedTriggerRows).getByText('/agent fix make it better')).toBeInTheDocument();
   expect(within(rejectedTriggerRows).getByText('Unsafe request rejected: instruction is not actionable')).toBeInTheDocument();
@@ -1226,6 +1259,7 @@ test('renders operational task dashboard from backend APIs', async () => {
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/github/webhook-deliveries?limit=10'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/rejected-triggers?limit=20'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/rejected-triggers/summary?limit=100'));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/operator-safety-audits?limit=20'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks/task-1/detail'));
   expect(screen.getByText('Pull request opened')).toBeInTheDocument();
   expect(screen.getByText('Tests run: 247, Failures: 0, Errors: 0')).toBeInTheDocument();
@@ -2657,6 +2691,9 @@ function defaultAppResponse(input: RequestInfo | URL, init?: RequestInit) {
   }
   if (url === '/api/trigger-quarantines?activeOnly=true&limit=20') {
     return jsonResponse(triggerQuarantines);
+  }
+  if (url === '/api/operator-safety-audits?limit=20') {
+    return jsonResponse(operatorSafetyAudits);
   }
   if (url === '/api/trigger-quarantines' && init?.method === 'POST') {
     return jsonResponse({

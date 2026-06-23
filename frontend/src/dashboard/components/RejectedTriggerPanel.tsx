@@ -1,5 +1,6 @@
 import type {
   CreateTriggerQuarantineInput,
+  OperatorSafetyAudit,
   RejectedTriggerAudit,
   RejectedTriggerAuditSummary,
   RejectedTriggerCategoryFilter,
@@ -31,6 +32,7 @@ interface RejectedTriggerPanelProps {
   rejectedTriggers: RejectedTriggerAudit[];
   summary: RejectedTriggerAuditSummary | null;
   quarantines: TriggerQuarantine[];
+  operatorSafetyAudits: OperatorSafetyAudit[];
   categoryFilter: RejectedTriggerCategoryFilter;
   error: string | null;
   retryingRejectedTriggerId: string | null;
@@ -47,6 +49,7 @@ export function RejectedTriggerPanel({
   rejectedTriggers,
   summary,
   quarantines,
+  operatorSafetyAudits,
   categoryFilter,
   error,
   retryingRejectedTriggerId,
@@ -96,6 +99,7 @@ export function RejectedTriggerPanel({
         creatingTriggerQuarantine={creatingTriggerQuarantine}
         releasingTriggerQuarantineId={releasingTriggerQuarantineId}
       />
+      <OperatorSafetyAuditList audits={operatorSafetyAudits} />
       <div className="rejected-trigger-list" role="group" aria-label="Rejected trigger audit rows">
         {rejectedTriggers.map((trigger) => (
           <article className="rejected-trigger-row" key={trigger.id}>
@@ -132,6 +136,34 @@ export function RejectedTriggerPanel({
         {rejectedTriggers.length === 0 && !error ? <p className="empty-state">No rejected /agent fix triggers recorded.</p> : null}
       </div>
     </section>
+  );
+}
+
+function OperatorSafetyAuditList({ audits }: { audits: OperatorSafetyAudit[] }) {
+  return (
+    <div className="operator-safety-audit-list" role="group" aria-label="Operator safety audit rows">
+      <div className="rejected-trigger-summary-header">
+        <div>
+          <h3>Operator safety audit</h3>
+          <p>
+            {audits.length} recent {audits.length === 1 ? 'operation' : 'operations'}
+          </p>
+        </div>
+      </div>
+      {audits.map((audit) => (
+        <article className="operator-safety-audit-row" key={audit.id}>
+          <div>
+            <span className="status-pill status-warning">{actionLabel(audit.action)}</span>
+            <strong>{audit.scopeKey}</strong>
+            <span>{scopeLabel(audit.scope)}</span>
+            <span>{audit.operator}</span>
+            <time>{compactTime(audit.createdAt)}</time>
+          </div>
+          <p>{audit.reason}</p>
+        </article>
+      ))}
+      {audits.length === 0 ? <p className="empty-state compact-empty-state">No operator safety changes recorded.</p> : null}
+    </div>
   );
 }
 
@@ -400,6 +432,15 @@ function categoryLabel(category: string | null) {
     return 'Unknown';
   }
   return category
+    .toLowerCase()
+    .split('_')
+    .filter(Boolean)
+    .join(' ')
+    .replace(/^./, (character) => character.toUpperCase());
+}
+
+function actionLabel(action: string) {
+  return action
     .toLowerCase()
     .split('_')
     .filter(Boolean)

@@ -2163,6 +2163,13 @@ pre {
   padding: 14px 16px;
 }
 
+.operator-safety-audit-list {
+  border-top: 1px solid #edf1f5;
+  display: grid;
+  gap: 12px;
+  padding: 14px 16px;
+}
+
 .trigger-quarantine-form {
   align-items: end;
   display: grid;
@@ -2279,7 +2286,24 @@ pre {
   padding: 10px;
 }
 
+.operator-safety-audit-row {
+  background: #f7f9fb;
+  border: 1px solid #dbe3ea;
+  border-radius: 6px;
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+}
+
 .trigger-quarantine-row > div {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+.operator-safety-audit-row > div {
   align-items: center;
   display: flex;
   flex-wrap: wrap;
@@ -2290,7 +2314,11 @@ pre {
 .trigger-quarantine-row strong,
 .trigger-quarantine-row span,
 .trigger-quarantine-row time,
-.trigger-quarantine-row p {
+.trigger-quarantine-row p,
+.operator-safety-audit-row strong,
+.operator-safety-audit-row span,
+.operator-safety-audit-row time,
+.operator-safety-audit-row p {
   overflow-wrap: anywhere;
 }
 
@@ -2300,19 +2328,37 @@ pre {
   font-size: 12px;
 }
 
+.operator-safety-audit-row strong {
+  color: #17202a;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 12px;
+}
+
 .trigger-quarantine-row span,
-.trigger-quarantine-row time {
+.trigger-quarantine-row time,
+.operator-safety-audit-row span,
+.operator-safety-audit-row time {
   color: #6d5723;
   font-size: 12px;
   font-weight: 800;
 }
 
-.trigger-quarantine-row p {
+.operator-safety-audit-row span,
+.operator-safety-audit-row time {
+  color: #64727f;
+}
+
+.trigger-quarantine-row p,
+.operator-safety-audit-row p {
   color: #7a4a08;
   font-size: 13px;
   font-weight: 750;
   line-height: 1.35;
   margin: 0;
+}
+
+.operator-safety-audit-row p {
+  color: #465563;
 }
 
 .rejected-trigger-row {

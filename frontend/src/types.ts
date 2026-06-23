@@ -362,6 +362,18 @@ export interface TriggerQuarantine {
   active: boolean;
 }
 
+export interface OperatorSafetyAudit {
+  id: string;
+  action: string;
+  resourceType: string;
+  resourceId: string;
+  scope: TriggerQuarantineScope;
+  scopeKey: string;
+  operator: string;
+  reason: string;
+  createdAt: string;
+}
+
 export interface FixTaskAuditSummary {
   task: FixTask;
   timelineEventCount: number;
