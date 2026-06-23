@@ -11,6 +11,23 @@ test('renders rejected trigger audit rows and retries a rejected trigger', async
   render(
     <RejectedTriggerPanel
       error={null}
+      summary={{
+        totalCount: 4,
+        categoryCounts: [
+          { value: 'NOT_ACTIONABLE', count: 2 },
+          { value: 'DANGEROUS_INSTRUCTION', count: 1 },
+          { value: 'TRIGGER_USER_NOT_ALLOWED', count: 1 }
+        ],
+        sourceCounts: [
+          { value: 'webhook', count: 3 },
+          { value: 'manual', count: 1 }
+        ],
+        triggerUserCounts: [
+          { value: 'drive-by-user', count: 3 },
+          { value: 'local-operator', count: 1 }
+        ],
+        repositoryCounts: [{ value: 'bingqin2/PatchPilot', count: 4 }]
+      }}
       categoryFilter="ALL"
       retryingRejectedTriggerId={null}
       onRetryRejectedTrigger={onRetryRejectedTrigger}
@@ -40,27 +57,34 @@ test('renders rejected trigger audit rows and retries a rejected trigger', async
 
   const panel = screen.getByRole('region', { name: 'Rejected triggers' });
   expect(within(panel).getByText('1 recent rejection')).toBeInTheDocument();
+  const summary = within(panel).getByRole('group', { name: 'Rejected trigger summary' });
+  expect(within(summary).getByText('Rejected trigger summary')).toBeInTheDocument();
+  expect(within(summary).getByText('4 rejected triggers analyzed')).toBeInTheDocument();
+  expect(within(summary).getByRole('button', { name: 'Filter by Dangerous instruction, 1 rejected trigger' })).toBeInTheDocument();
+  expect(within(summary).getByText('drive-by-user')).toBeInTheDocument();
+  expect(within(summary).getByText('bingqin2/PatchPilot')).toBeInTheDocument();
   expect(within(panel).getByRole('combobox', { name: 'Filter rejected triggers by category' })).toHaveValue('ALL');
-  expect(within(panel).getByText('/agent fix make it better')).toBeInTheDocument();
-  expect(within(panel).getByText('bingqin2/PatchPilot #1')).toBeInTheDocument();
-  expect(within(panel).getByText('drive-by-user')).toBeInTheDocument();
-  expect(within(panel).getByText('delivery-rejected')).toBeInTheDocument();
-  expect(within(panel).getByText('Unsafe request rejected: instruction is not actionable')).toBeInTheDocument();
-  expect(within(panel).getAllByText('Not actionable')).toHaveLength(2);
-  expect(within(panel).getByRole('link', { name: 'Refusal comment' })).toHaveAttribute(
+  const auditRows = within(panel).getByRole('group', { name: 'Rejected trigger audit rows' });
+  expect(within(auditRows).getByText('/agent fix make it better')).toBeInTheDocument();
+  expect(within(auditRows).getByText('bingqin2/PatchPilot #1')).toBeInTheDocument();
+  expect(within(auditRows).getByText('drive-by-user')).toBeInTheDocument();
+  expect(within(auditRows).getByText('delivery-rejected')).toBeInTheDocument();
+  expect(within(auditRows).getByText('Unsafe request rejected: instruction is not actionable')).toBeInTheDocument();
+  expect(within(auditRows).getByText('Not actionable')).toBeInTheDocument();
+  expect(within(auditRows).getByRole('link', { name: 'Refusal comment' })).toHaveAttribute(
     'href',
     'https://github.com/bingqin2/PatchPilot/issues/1#issuecomment-456'
   );
-  expect(within(panel).getByRole('link', { name: 'Retried task' })).toHaveAttribute(
+  expect(within(auditRows).getByRole('link', { name: 'Retried task' })).toHaveAttribute(
     'href',
     '/tasks/task-from-rejected-1'
   );
 
-  await user.click(within(panel).getByRole('link', { name: 'Retried task' }));
+  await user.click(within(auditRows).getByRole('link', { name: 'Retried task' }));
 
   expect(onSelectTask).toHaveBeenCalledWith('task-from-rejected-1');
 
-  await user.click(within(panel).getByRole('button', { name: 'Retry trigger' }));
+  await user.click(within(auditRows).getByRole('button', { name: 'Retry trigger' }));
 
   expect(onRetryRejectedTrigger).toHaveBeenCalledWith('rejected-1');
 
@@ -70,12 +94,17 @@ test('renders rejected trigger audit rows and retries a rejected trigger', async
   );
 
   expect(onCategoryFilterChange).toHaveBeenCalledWith('DANGEROUS_INSTRUCTION');
+
+  await user.click(within(summary).getByRole('button', { name: 'Filter by Dangerous instruction, 1 rejected trigger' }));
+
+  expect(onCategoryFilterChange).toHaveBeenCalledWith('DANGEROUS_INSTRUCTION');
 });
 
 test('renders rejected trigger empty and error states', () => {
   const { rerender } = render(
     <RejectedTriggerPanel
       error={null}
+      summary={null}
       categoryFilter="ALL"
       rejectedTriggers={[]}
       retryingRejectedTriggerId={null}
@@ -91,6 +120,7 @@ test('renders rejected trigger empty and error states', () => {
   rerender(
     <RejectedTriggerPanel
       error="Rejected trigger API unavailable"
+      summary={null}
       categoryFilter="ALL"
       rejectedTriggers={[]}
       retryingRejectedTriggerId={null}
@@ -107,6 +137,7 @@ test('disables the retry action while retrying a rejected trigger', () => {
   render(
     <RejectedTriggerPanel
       error={null}
+      summary={null}
       categoryFilter="NOT_ACTIONABLE"
       retryingRejectedTriggerId="rejected-1"
       onRetryRejectedTrigger={vi.fn()}

@@ -2831,3 +2831,23 @@ Validation:
 - `npm test`: passed after full frontend verification, 114 tests run, 0 failures.
 - `npm run build`: passed after production frontend build verification.
 - `git diff --check`: passed after whitespace verification.
+
+Implemented rejected trigger abuse summary from `docs/plans/141-rejected-trigger-abuse-summary.md`.
+
+Changes:
+
+- Added `GET /api/rejected-triggers/summary` for read-only recent rejection counts.
+- Summarized rejected-trigger audits by category, source, top trigger users, and top repositories using the existing rejected-trigger audit store.
+- Added typed frontend support for the summary endpoint.
+- Rendered a compact rejected-trigger summary above the dashboard audit rows.
+- Made category summary rows clickable so operators can apply the existing URL-backed rejected-category filter from the summary.
+- Updated product docs and README to document the summary endpoint and dashboard behavior.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=RejectedTriggerAuditControllerTests,InMemoryRejectedTriggerAuditServiceTests,MyBatisRejectedTriggerAuditServiceTests test`: first failed because summary VO records and service/controller support did not exist; then passed after backend implementation, 18 tests run, 0 failures.
+- `npm test -- --run src/dashboard/components/RejectedTriggerPanel.test.tsx src/api.test.ts src/App.test.tsx`: first failed because the API helper and dashboard had no rejected-trigger summary; then passed after frontend implementation, 80 tests run, 0 failures.
+- `JAVA_HOME=/Library/Java/JavaVirtualMachines/openjdk-17.jdk/Contents/Home mvn -pl PatchPilot test`: passed after full backend verification, 511 tests run, 0 failures.
+- `npm test`: passed after full frontend verification, 116 tests run, 0 failures.
+- `npm run build`: passed after production frontend build verification.
+- `git diff --check`: passed after whitespace verification.

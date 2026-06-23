@@ -108,6 +108,7 @@ The current implementation target is local self-hosted development first. Hosted
 - If project detection is possible from webhook or repository metadata before cloning, the system may reject even earlier.
 - The system must never follow user instructions that request secret exfiltration, destructive repository changes, arbitrary shell execution, or permission escalation.
 - The system should record rejected trigger decisions with clear operator-facing reasons.
+- The system should summarize recent rejected trigger decisions by category, source, trigger user, and repository so operators can detect abuse patterns and tune safety configuration.
 - Non-triggering comments may be ignored without creating task or rejection audit records.
 
 ### Agent Workflow

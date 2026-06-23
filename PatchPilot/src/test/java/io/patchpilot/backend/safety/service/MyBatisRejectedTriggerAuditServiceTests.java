@@ -2,6 +2,8 @@ package io.patchpilot.backend.safety.service;
 
 import io.patchpilot.backend.safety.domain.RecordRejectedTriggerCommand;
 import io.patchpilot.backend.safety.domain.RejectedTriggerAuditEntity;
+import io.patchpilot.backend.safety.domain.RejectedTriggerAuditSummaryVo;
+import io.patchpilot.backend.safety.domain.RejectedTriggerCountVo;
 import io.patchpilot.backend.safety.domain.RejectedTriggerAuditVo;
 import io.patchpilot.backend.safety.mapper.RejectedTriggerAuditMapper;
 import io.patchpilot.backend.safety.service.impl.MyBatisRejectedTriggerAuditService;
@@ -88,6 +90,44 @@ class MyBatisRejectedTriggerAuditServiceTests {
                 .extracting(RejectedTriggerAuditVo::id)
                 .containsExactly("audit-dangerous");
         assertThat(audits.get(0).category()).isEqualTo("DANGEROUS_INSTRUCTION");
+    }
+
+    @Test
+    void should_summarize_rejected_trigger_audits_from_recent_records() {
+        RejectedTriggerAuditEntity vague = entity("audit-vague", Instant.parse("2026-06-21T01:00:00Z"));
+        vague.setCategory("NOT_ACTIONABLE");
+        vague.setTriggerUser("drive-by-user");
+        RejectedTriggerAuditEntity dangerous = entity("audit-dangerous", Instant.parse("2026-06-21T02:00:00Z"));
+        dangerous.setCategory("DANGEROUS_INSTRUCTION");
+        dangerous.setTriggerUser("drive-by-user");
+        RejectedTriggerAuditEntity manual = entity("audit-manual", Instant.parse("2026-06-21T03:00:00Z"));
+        manual.setSource("manual");
+        manual.setCategory("TRIGGER_USER_NOT_ALLOWED");
+        manual.setRepositoryOwner("bingqin2");
+        manual.setRepositoryName("PatchPilot");
+        manual.setTriggerUser("local-operator");
+        when(auditMapper.selectList(any())).thenReturn(List.of(vague, dangerous, manual));
+
+        RejectedTriggerAuditSummaryVo summary = auditService.summarizeRejectedTriggers(50);
+
+        assertThat(summary.totalCount()).isEqualTo(3);
+        assertThat(summary.categoryCounts()).containsExactly(
+                new RejectedTriggerCountVo("DANGEROUS_INSTRUCTION", 1),
+                new RejectedTriggerCountVo("NOT_ACTIONABLE", 1),
+                new RejectedTriggerCountVo("TRIGGER_USER_NOT_ALLOWED", 1)
+        );
+        assertThat(summary.sourceCounts()).containsExactly(
+                new RejectedTriggerCountVo("issue_comment", 2),
+                new RejectedTriggerCountVo("manual", 1)
+        );
+        assertThat(summary.triggerUserCounts()).containsExactly(
+                new RejectedTriggerCountVo("drive-by-user", 2),
+                new RejectedTriggerCountVo("local-operator", 1)
+        );
+        assertThat(summary.repositoryCounts()).containsExactly(
+                new RejectedTriggerCountVo("octocat/hello-world", 2),
+                new RejectedTriggerCountVo("bingqin2/PatchPilot", 1)
+        );
     }
 
     @Test

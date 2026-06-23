@@ -1,4 +1,9 @@
-import type { RejectedTriggerAudit, RejectedTriggerCategoryFilter } from '../../types';
+import type {
+  RejectedTriggerAudit,
+  RejectedTriggerAuditSummary,
+  RejectedTriggerCategoryFilter,
+  RejectedTriggerCountSummary
+} from '../../types';
 import { compactTime } from '../format';
 
 const REJECTED_TRIGGER_CATEGORY_FILTERS: RejectedTriggerCategoryFilter[] = [
@@ -18,6 +23,7 @@ const REJECTED_TRIGGER_CATEGORY_FILTERS: RejectedTriggerCategoryFilter[] = [
 
 interface RejectedTriggerPanelProps {
   rejectedTriggers: RejectedTriggerAudit[];
+  summary: RejectedTriggerAuditSummary | null;
   categoryFilter: RejectedTriggerCategoryFilter;
   error: string | null;
   retryingRejectedTriggerId: string | null;
@@ -28,6 +34,7 @@ interface RejectedTriggerPanelProps {
 
 export function RejectedTriggerPanel({
   rejectedTriggers,
+  summary,
   categoryFilter,
   error,
   retryingRejectedTriggerId,
@@ -65,7 +72,8 @@ export function RejectedTriggerPanel({
         </label>
       </div>
       {error ? <p className="panel-error">{error}</p> : null}
-      <div className="rejected-trigger-list">
+      <RejectedTriggerSummary summary={summary} onCategoryFilterChange={onCategoryFilterChange} />
+      <div className="rejected-trigger-list" role="group" aria-label="Rejected trigger audit rows">
         {rejectedTriggers.map((trigger) => (
           <article className="rejected-trigger-row" key={trigger.id}>
             <div className="rejected-trigger-main">
@@ -104,12 +112,105 @@ export function RejectedTriggerPanel({
   );
 }
 
+function RejectedTriggerSummary({
+  summary,
+  onCategoryFilterChange
+}: {
+  summary: RejectedTriggerAuditSummary | null;
+  onCategoryFilterChange: (category: RejectedTriggerCategoryFilter) => void;
+}) {
+  if (!summary) {
+    return null;
+  }
+  return (
+    <div className="rejected-trigger-summary" role="group" aria-label="Rejected trigger summary">
+      <div className="rejected-trigger-summary-header">
+        <div>
+          <h3>Rejected trigger summary</h3>
+          <p>{summary.totalCount} rejected triggers analyzed</p>
+        </div>
+      </div>
+      <div className="rejected-trigger-summary-grid">
+        <CountList
+          title="Categories"
+          items={summary.categoryCounts}
+          valueLabel={categoryLabel}
+          onCategoryFilterChange={onCategoryFilterChange}
+        />
+        <CountList title="Sources" items={summary.sourceCounts} />
+        <CountList title="Top users" items={summary.triggerUserCounts} />
+        <CountList title="Top repositories" items={summary.repositoryCounts} />
+      </div>
+    </div>
+  );
+}
+
+function CountList({
+  title,
+  items,
+  valueLabel = rawValueLabel,
+  onCategoryFilterChange
+}: {
+  title: string;
+  items: RejectedTriggerCountSummary[];
+  valueLabel?: (value: string) => string;
+  onCategoryFilterChange?: (category: RejectedTriggerCategoryFilter) => void;
+}) {
+  return (
+    <div className="rejected-trigger-summary-card">
+      <span>{title}</span>
+      <div className="rejected-trigger-count-list">
+        {items.length === 0 ? <p>No data</p> : null}
+        {items.map((item) => renderCountItem(item, valueLabel, onCategoryFilterChange))}
+      </div>
+    </div>
+  );
+}
+
+function renderCountItem(
+  item: RejectedTriggerCountSummary,
+  valueLabel: (value: string) => string,
+  onCategoryFilterChange?: (category: RejectedTriggerCategoryFilter) => void
+) {
+  const label = valueLabel(item.value);
+  const accessibleName = `Filter by ${label}, ${item.count} rejected ${item.count === 1 ? 'trigger' : 'triggers'}`;
+  if (onCategoryFilterChange && isRejectedTriggerCategory(item.value)) {
+    const category = item.value;
+    return (
+      <button
+        key={item.value}
+        type="button"
+        className="rejected-trigger-count-button"
+        aria-label={accessibleName}
+        onClick={() => onCategoryFilterChange(category)}
+      >
+        <span>{label}</span>
+        <strong>{item.count}</strong>
+      </button>
+    );
+  }
+  return (
+    <div className="rejected-trigger-count-row" key={item.value}>
+      <span>{label}</span>
+      <strong>{item.count}</strong>
+    </div>
+  );
+}
+
+function rawValueLabel(value: string) {
+  return value;
+}
+
 function repositoryLabel(trigger: RejectedTriggerAudit) {
   if (!trigger.repositoryOwner || !trigger.repositoryName) {
     return 'repository unavailable';
   }
   const issue = trigger.issueNumber === null ? '' : ` #${trigger.issueNumber}`;
   return `${trigger.repositoryOwner}/${trigger.repositoryName}${issue}`;
+}
+
+function isRejectedTriggerCategory(value: string): value is RejectedTriggerCategoryFilter {
+  return REJECTED_TRIGGER_CATEGORY_FILTERS.includes(value as RejectedTriggerCategoryFilter) && value !== 'ALL';
 }
 
 function categoryLabel(category: string | null) {

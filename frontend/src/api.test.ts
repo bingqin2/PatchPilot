@@ -8,6 +8,7 @@ import {
   getLatencySummary,
   getModelUsageSummary,
   getDemoSmokeChecklist,
+  getRejectedTriggerSummary,
   listLanguageAdapterFixtures,
   listLanguageAdapters,
   listRejectedTriggers,
@@ -284,6 +285,41 @@ test('lists recent rejected triggers by category through backend API', async () 
   await listRejectedTriggers({ limit: 20, category: 'DANGEROUS_INSTRUCTION' });
 
   expect(fetchMock).toHaveBeenCalledWith('/api/rejected-triggers?limit=20&category=DANGEROUS_INSTRUCTION');
+});
+
+test('loads rejected trigger abuse summary through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        totalCount: 4,
+        categoryCounts: [
+          { value: 'NOT_ACTIONABLE', count: 2 },
+          { value: 'DANGEROUS_INSTRUCTION', count: 1 }
+        ],
+        sourceCounts: [
+          { value: 'issue_comment', count: 3 },
+          { value: 'manual', count: 1 }
+        ],
+        triggerUserCounts: [
+          { value: 'drive-by-user', count: 3 },
+          { value: 'local-operator', count: 1 }
+        ],
+        repositoryCounts: [{ value: 'bingqin2/PatchPilot', count: 4 }]
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const summary = await getRejectedTriggerSummary(50);
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/rejected-triggers/summary?limit=50');
+  expect(summary.totalCount).toBe(4);
+  expect(summary.categoryCounts[0]).toEqual({ value: 'NOT_ACTIONABLE', count: 2 });
+  expect(summary.triggerUserCounts[0]).toEqual({ value: 'drive-by-user', count: 3 });
 });
 
 test('retries a rejected trigger through backend API', async () => {

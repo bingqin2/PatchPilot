@@ -488,6 +488,24 @@ const rejectedTriggers = [
   }
 ];
 
+const rejectedTriggerSummary = {
+  totalCount: 4,
+  categoryCounts: [
+    { value: 'NOT_ACTIONABLE', count: 2 },
+    { value: 'DANGEROUS_INSTRUCTION', count: 1 },
+    { value: 'TRIGGER_USER_NOT_ALLOWED', count: 1 }
+  ],
+  sourceCounts: [
+    { value: 'webhook', count: 3 },
+    { value: 'manual', count: 1 }
+  ],
+  triggerUserCounts: [
+    { value: 'drive-by-user', count: 3 },
+    { value: 'local-operator', count: 1 }
+  ],
+  repositoryCounts: [{ value: 'bingqin2/PatchPilot', count: 4 }]
+};
+
 const supportedLanguageAdapters = [
   {
     language: 'java',
@@ -860,6 +878,9 @@ beforeEach(() => {
     if (url === '/api/rejected-triggers?limit=20') {
       return jsonResponse(rejectedTriggers);
     }
+    if (url === '/api/rejected-triggers/summary?limit=100') {
+      return jsonResponse(rejectedTriggerSummary);
+    }
     if (url === '/api/rejected-triggers/rejected-1/retry') {
       return jsonResponse(manuallyCreatedTask, true, null, 201);
     }
@@ -1120,11 +1141,17 @@ test('renders operational task dashboard from backend APIs', async () => {
   const rejectedTriggerPanel = screen.getByRole('region', { name: 'Rejected triggers' });
   expect(within(rejectedTriggerPanel).getByRole('heading', { name: 'Rejected triggers' })).toBeInTheDocument();
   expect(within(rejectedTriggerPanel).getByText('2 recent rejections')).toBeInTheDocument();
-  expect(within(rejectedTriggerPanel).getByText('/agent fix make it better')).toBeInTheDocument();
-  expect(within(rejectedTriggerPanel).getByText('Unsafe request rejected: instruction is not actionable')).toBeInTheDocument();
-  expect(within(rejectedTriggerPanel).getByText('bingqin2/PatchPilot #1')).toBeInTheDocument();
-  expect(within(rejectedTriggerPanel).getByText('drive-by-user')).toBeInTheDocument();
-  expect(within(rejectedTriggerPanel).getByRole('link', { name: 'Refusal comment' })).toHaveAttribute(
+  const rejectedTriggerSummaryPanel = within(rejectedTriggerPanel).getByRole('group', { name: 'Rejected trigger summary' });
+  expect(within(rejectedTriggerSummaryPanel).getByText('Rejected trigger summary')).toBeInTheDocument();
+  expect(within(rejectedTriggerSummaryPanel).getByText('4 rejected triggers analyzed')).toBeInTheDocument();
+  expect(within(rejectedTriggerSummaryPanel).getByRole('button', { name: 'Filter by Not actionable, 2 rejected triggers' })).toBeInTheDocument();
+  expect(within(rejectedTriggerSummaryPanel).getByText('local-operator')).toBeInTheDocument();
+  const rejectedTriggerRows = within(rejectedTriggerPanel).getByRole('group', { name: 'Rejected trigger audit rows' });
+  expect(within(rejectedTriggerRows).getByText('/agent fix make it better')).toBeInTheDocument();
+  expect(within(rejectedTriggerRows).getByText('Unsafe request rejected: instruction is not actionable')).toBeInTheDocument();
+  expect(within(rejectedTriggerRows).getByText('bingqin2/PatchPilot #1')).toBeInTheDocument();
+  expect(within(rejectedTriggerRows).getByText('drive-by-user')).toBeInTheDocument();
+  expect(within(rejectedTriggerRows).getByRole('link', { name: 'Refusal comment' })).toHaveAttribute(
     'href',
     'https://github.com/bingqin2/PatchPilot/issues/1#issuecomment-456'
   );
@@ -1136,6 +1163,7 @@ test('renders operational task dashboard from backend APIs', async () => {
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/smoke-checklist'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/github/webhook-deliveries?limit=10'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/rejected-triggers?limit=20'));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/rejected-triggers/summary?limit=100'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks/task-1/detail'));
   expect(screen.getByText('Pull request opened')).toBeInTheDocument();
   expect(screen.getByText('Tests run: 247, Failures: 0, Errors: 0')).toBeInTheDocument();
@@ -1605,6 +1633,21 @@ test('syncs rejected trigger category filter into the URL and backend request', 
     within(rejectedPanel).getByRole('combobox', { name: 'Filter rejected triggers by category' }),
     'DANGEROUS_INSTRUCTION'
   );
+
+  expect(window.location.search).toContain('rejectedCategory=DANGEROUS_INSTRUCTION');
+  await waitFor(() =>
+    expect(fetchMock).toHaveBeenCalledWith('/api/rejected-triggers?limit=20&category=DANGEROUS_INSTRUCTION')
+  );
+});
+
+test('syncs rejected trigger category filter from summary buttons into the URL and backend request', async () => {
+  const user = userEvent.setup();
+  const fetchMock = vi.mocked(fetch);
+
+  render(<App />);
+
+  const rejectedPanel = await screen.findByRole('region', { name: 'Rejected triggers' });
+  await user.click(within(rejectedPanel).getByRole('button', { name: 'Filter by Dangerous instruction, 1 rejected trigger' }));
 
   expect(window.location.search).toContain('rejectedCategory=DANGEROUS_INSTRUCTION');
   await waitFor(() =>
@@ -2500,6 +2543,9 @@ function defaultAppResponse(input: RequestInfo | URL, init?: RequestInit) {
   }
   if (url === '/api/rejected-triggers?limit=20') {
     return jsonResponse(rejectedTriggers);
+  }
+  if (url === '/api/rejected-triggers/summary?limit=100') {
+    return jsonResponse(rejectedTriggerSummary);
   }
   if (url === '/api/tasks/task-1/detail') {
     return jsonResponse(detail);

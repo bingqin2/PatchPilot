@@ -18,6 +18,7 @@ import type {
   FixTaskQueueItem,
   FixTaskQueueSummary,
   RejectedTriggerAudit,
+  RejectedTriggerAuditSummary,
   RejectedTriggerCategoryFilter,
   WebhookDeliveryDiagnostic,
   FixTaskModelCall,
@@ -173,6 +174,10 @@ export async function listRejectedTriggers(options: number | ListRejectedTrigger
     searchParams.set('category', normalizedOptions.category);
   }
   return getApi<RejectedTriggerAudit[]>(`/api/rejected-triggers?${searchParams.toString()}`);
+}
+
+export async function getRejectedTriggerSummary(limit = 100): Promise<RejectedTriggerAuditSummary> {
+  return getApi<RejectedTriggerAuditSummary>(`/api/rejected-triggers/summary?limit=${limit}`);
 }
 
 export async function retryRejectedTrigger(rejectedTriggerId: string): Promise<FixTask> {

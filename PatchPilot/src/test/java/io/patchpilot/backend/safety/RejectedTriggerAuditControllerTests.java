@@ -1,6 +1,8 @@
 package io.patchpilot.backend.safety;
 
 import io.patchpilot.backend.safety.domain.RejectedTriggerAuditVo;
+import io.patchpilot.backend.safety.domain.RejectedTriggerAuditSummaryVo;
+import io.patchpilot.backend.safety.domain.RejectedTriggerCountVo;
 import io.patchpilot.backend.safety.service.RejectedTriggerAuditService;
 import io.patchpilot.backend.safety.service.RejectedTriggerRetryService;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
@@ -99,6 +101,39 @@ class RejectedTriggerAuditControllerTests {
                 .andExpect(jsonPath("$.data.length()").value(1))
                 .andExpect(jsonPath("$.data[0].id").value("audit-dangerous"))
                 .andExpect(jsonPath("$.data[0].category").value("DANGEROUS_INSTRUCTION"));
+    }
+
+    @Test
+    void should_summarize_rejected_trigger_abuse_patterns() throws Exception {
+        when(auditService.summarizeRejectedTriggers(50)).thenReturn(new RejectedTriggerAuditSummaryVo(
+                4,
+                List.of(
+                        new RejectedTriggerCountVo("NOT_ACTIONABLE", 2),
+                        new RejectedTriggerCountVo("DANGEROUS_INSTRUCTION", 1)
+                ),
+                List.of(
+                        new RejectedTriggerCountVo("issue_comment", 3),
+                        new RejectedTriggerCountVo("manual", 1)
+                ),
+                List.of(
+                        new RejectedTriggerCountVo("drive-by-user", 3),
+                        new RejectedTriggerCountVo("local-operator", 1)
+                ),
+                List.of(
+                        new RejectedTriggerCountVo("bingqin2/PatchPilot", 4)
+                )
+        ));
+
+        mockMvc.perform(get("/api/rejected-triggers/summary").param("limit", "50"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.totalCount").value(4))
+                .andExpect(jsonPath("$.data.categoryCounts[0].value").value("NOT_ACTIONABLE"))
+                .andExpect(jsonPath("$.data.categoryCounts[0].count").value(2))
+                .andExpect(jsonPath("$.data.sourceCounts[0].value").value("issue_comment"))
+                .andExpect(jsonPath("$.data.sourceCounts[0].count").value(3))
+                .andExpect(jsonPath("$.data.triggerUserCounts[0].value").value("drive-by-user"))
+                .andExpect(jsonPath("$.data.repositoryCounts[0].value").value("bingqin2/PatchPilot"));
     }
 
     @Test

@@ -126,6 +126,7 @@ Responsibilities:
 - Optionally ask the configured model to classify safe triggers as executable, needing clarification, or rejected.
 - Record rejected triggering attempts for operator inspection, including a stable category such as `NOT_ACTIONABLE`, `DANGEROUS_INSTRUCTION`, `TRIGGER_USER_NOT_ALLOWED`, `REPOSITORY_NOT_ALLOWED`, `RATE_LIMITED`, or model-classifier refusal categories.
 - List rejected triggering attempts with optional category filtering for operator diagnosis.
+- Summarize recent rejected triggering attempts by category, source, trigger user, and repository so operators can spot abuse or bad prompt patterns without reading every row.
 - Deduplicate delivery ids.
 - Submit work to task services.
 

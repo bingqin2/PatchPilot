@@ -310,6 +310,19 @@ export interface RejectedTriggerAudit {
   createdAt: string;
 }
 
+export interface RejectedTriggerCountSummary {
+  value: string;
+  count: number;
+}
+
+export interface RejectedTriggerAuditSummary {
+  totalCount: number;
+  categoryCounts: RejectedTriggerCountSummary[];
+  sourceCounts: RejectedTriggerCountSummary[];
+  triggerUserCounts: RejectedTriggerCountSummary[];
+  repositoryCounts: RejectedTriggerCountSummary[];
+}
+
 export interface FixTaskAuditSummary {
   task: FixTask;
   timelineEventCount: number;
