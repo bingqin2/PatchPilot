@@ -18,6 +18,7 @@ import type {
   FixTaskQueueItem,
   FixTaskQueueSummary,
   RejectedTriggerAudit,
+  RejectedTriggerCategoryFilter,
   WebhookDeliveryDiagnostic,
   FixTaskModelCall,
   FixTaskTestRun,
@@ -41,6 +42,11 @@ interface ListTasksOptions {
   limit?: number;
   offset?: number;
   sort?: TaskSort;
+}
+
+interface ListRejectedTriggersOptions {
+  limit?: number;
+  category?: RejectedTriggerCategoryFilter;
 }
 
 const backendConnectionError =
@@ -160,8 +166,13 @@ export async function listWebhookDeliveries(limit = 10): Promise<WebhookDelivery
   return getApi<WebhookDeliveryDiagnostic[]>(`/api/github/webhook-deliveries?limit=${limit}`);
 }
 
-export async function listRejectedTriggers(limit = 20): Promise<RejectedTriggerAudit[]> {
-  return getApi<RejectedTriggerAudit[]>(`/api/rejected-triggers?limit=${limit}`);
+export async function listRejectedTriggers(options: number | ListRejectedTriggersOptions = 20): Promise<RejectedTriggerAudit[]> {
+  const normalizedOptions = typeof options === 'number' ? { limit: options } : options;
+  const searchParams = new URLSearchParams({ limit: String(normalizedOptions.limit ?? 20) });
+  if (normalizedOptions.category && normalizedOptions.category !== 'ALL') {
+    searchParams.set('category', normalizedOptions.category);
+  }
+  return getApi<RejectedTriggerAudit[]>(`/api/rejected-triggers?${searchParams.toString()}`);
 }
 
 export async function retryRejectedTrigger(rejectedTriggerId: string): Promise<FixTask> {

@@ -13,6 +13,15 @@ public interface RejectedTriggerAuditService {
 
     List<RejectedTriggerAuditVo> listRejectedTriggers(int limit);
 
+    default List<RejectedTriggerAuditVo> listRejectedTriggers(int limit, String category) {
+        if (category == null || category.isBlank()) {
+            return listRejectedTriggers(limit);
+        }
+        return listRejectedTriggers(limit).stream()
+                .filter(audit -> category.trim().equals(audit.category()))
+                .toList();
+    }
+
     Optional<RejectedTriggerAuditVo> findRejectedTrigger(String id);
 
     RejectedTriggerAuditVo markRetried(String id, String taskId, Instant retriedAt);

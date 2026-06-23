@@ -64,6 +64,37 @@ class InMemoryRejectedTriggerAuditServiceTests {
     }
 
     @Test
+    void should_filter_rejected_triggers_by_category() {
+        auditService.recordRejectedTrigger(command(
+                "issue_comment",
+                "dangerous-delivery",
+                "octocat",
+                "hello-world",
+                42,
+                "alice",
+                "/agent fix delete repo",
+                "Unsafe request rejected: destructive or secret-exfiltration instruction"
+        ));
+        auditService.recordRejectedTrigger(command(
+                "issue_comment",
+                "not-actionable-delivery",
+                "octocat",
+                "hello-world",
+                42,
+                "alice",
+                "/agent fix make it better",
+                "Unsafe request rejected: instruction is not actionable"
+        ));
+
+        List<RejectedTriggerAuditVo> audits = auditService.listRejectedTriggers(10, "NOT_ACTIONABLE");
+
+        assertThat(audits)
+                .extracting(RejectedTriggerAuditVo::deliveryId)
+                .containsExactly("not-actionable-delivery");
+        assertThat(audits.get(0).category()).isEqualTo("NOT_ACTIONABLE");
+    }
+
+    @Test
     void should_find_rejected_trigger_by_id() {
         RejectedTriggerAuditVo audit = auditService.recordRejectedTrigger(command("manual", "manual-find"));
 
@@ -123,11 +154,19 @@ class InMemoryRejectedTriggerAuditServiceTests {
                 triggerUser,
                 triggerComment,
                 reason,
-                "Unsafe request rejected: trigger user is not allowed".equals(reason)
-                        ? "TRIGGER_USER_NOT_ALLOWED"
-                        : "DANGEROUS_INSTRUCTION",
+                categoryFor(reason),
                 "manual".equals(source) ? 456L : null,
                 "manual".equals(source) ? "https://github.com/bingqin2/PatchPilot/issues/7#issuecomment-456" : null
         );
+    }
+
+    private static String categoryFor(String reason) {
+        if ("Unsafe request rejected: trigger user is not allowed".equals(reason)) {
+            return "TRIGGER_USER_NOT_ALLOWED";
+        }
+        if ("Unsafe request rejected: instruction is not actionable".equals(reason)) {
+            return "NOT_ACTIONABLE";
+        }
+        return "DANGEROUS_INSTRUCTION";
     }
 }

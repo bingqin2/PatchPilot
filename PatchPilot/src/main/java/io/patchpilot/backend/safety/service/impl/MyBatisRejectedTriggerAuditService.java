@@ -10,6 +10,7 @@ import io.patchpilot.backend.safety.service.RejectedTriggerAuditService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.time.Instant;
 import java.util.Comparator;
@@ -37,7 +38,16 @@ public class MyBatisRejectedTriggerAuditService implements RejectedTriggerAuditS
 
     @Override
     public List<RejectedTriggerAuditVo> listRejectedTriggers(int limit) {
-        LambdaQueryWrapper<RejectedTriggerAuditEntity> queryWrapper = new LambdaQueryWrapper<RejectedTriggerAuditEntity>()
+        return listRejectedTriggers(limit, null);
+    }
+
+    @Override
+    public List<RejectedTriggerAuditVo> listRejectedTriggers(int limit, String category) {
+        LambdaQueryWrapper<RejectedTriggerAuditEntity> queryWrapper = new LambdaQueryWrapper<>();
+        if (StringUtils.hasText(category)) {
+            queryWrapper.eq(RejectedTriggerAuditEntity::getCategory, category.trim());
+        }
+        queryWrapper
                 .last("LIMIT " + limit);
         return auditMapper.selectList(queryWrapper).stream()
                 .sorted(Comparator.comparing(RejectedTriggerAuditEntity::getCreatedAt).reversed())

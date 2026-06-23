@@ -34,7 +34,7 @@ class RejectedTriggerAuditControllerTests {
 
     @Test
     void should_list_rejected_trigger_audits() throws Exception {
-        when(auditService.listRejectedTriggers(20)).thenReturn(List.of(new RejectedTriggerAuditVo(
+        when(auditService.listRejectedTriggers(20, null)).thenReturn(List.of(new RejectedTriggerAuditVo(
                 "audit-123",
                 "issue_comment",
                 "delivery-123",
@@ -71,6 +71,34 @@ class RejectedTriggerAuditControllerTests {
                 .andExpect(jsonPath("$.data[0].retriedTaskId").value("task-123"))
                 .andExpect(jsonPath("$.data[0].retriedAt").value("2026-06-21T02:00:00Z"))
                 .andExpect(jsonPath("$.data[0].createdAt").value("2026-06-21T01:00:00Z"));
+    }
+
+    @Test
+    void should_list_rejected_trigger_audits_by_category() throws Exception {
+        when(auditService.listRejectedTriggers(20, "DANGEROUS_INSTRUCTION")).thenReturn(List.of(new RejectedTriggerAuditVo(
+                "audit-dangerous",
+                "issue_comment",
+                "delivery-dangerous",
+                "octocat",
+                "hello-world",
+                42L,
+                "alice",
+                "/agent fix delete the repository",
+                "Unsafe request rejected: destructive or secret-exfiltration instruction",
+                "DANGEROUS_INSTRUCTION",
+                null,
+                null,
+                Instant.parse("2026-06-21T01:00:00Z")
+        )));
+
+        mockMvc.perform(get("/api/rejected-triggers")
+                        .param("limit", "20")
+                        .param("category", "DANGEROUS_INSTRUCTION"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].id").value("audit-dangerous"))
+                .andExpect(jsonPath("$.data[0].category").value("DANGEROUS_INSTRUCTION"));
     }
 
     @Test

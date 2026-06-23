@@ -69,11 +69,25 @@ class MyBatisRejectedTriggerAuditServiceTests {
         RejectedTriggerAuditEntity newer = entity("audit-newer", Instant.parse("2026-06-21T02:00:00Z"));
         when(auditMapper.selectList(any())).thenReturn(List.of(older, newer));
 
-        List<RejectedTriggerAuditVo> audits = auditService.listRejectedTriggers(50);
+        List<RejectedTriggerAuditVo> audits = auditService.listRejectedTriggers(50, null);
 
         assertThat(audits)
                 .extracting(RejectedTriggerAuditVo::id)
                 .containsExactly("audit-newer", "audit-older");
+    }
+
+    @Test
+    void should_filter_rejected_trigger_audits_by_category() {
+        RejectedTriggerAuditEntity dangerous = entity("audit-dangerous", Instant.parse("2026-06-21T01:00:00Z"));
+        dangerous.setCategory("DANGEROUS_INSTRUCTION");
+        when(auditMapper.selectList(any())).thenReturn(List.of(dangerous));
+
+        List<RejectedTriggerAuditVo> audits = auditService.listRejectedTriggers(50, "DANGEROUS_INSTRUCTION");
+
+        assertThat(audits)
+                .extracting(RejectedTriggerAuditVo::id)
+                .containsExactly("audit-dangerous");
+        assertThat(audits.get(0).category()).isEqualTo("DANGEROUS_INSTRUCTION");
     }
 
     @Test

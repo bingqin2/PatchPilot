@@ -8,6 +8,19 @@ export type TaskStatus =
   | 'CANCELLED';
 
 export type TaskStatusFilter = 'ALL' | TaskStatus;
+export type RejectedTriggerCategoryFilter =
+  | 'ALL'
+  | 'UNKNOWN'
+  | 'EMPTY_COMMAND'
+  | 'UNSUPPORTED_COMMAND'
+  | 'NOT_ACTIONABLE'
+  | 'DANGEROUS_INSTRUCTION'
+  | 'TRIGGER_USER_NOT_ALLOWED'
+  | 'REPOSITORY_NOT_ALLOWED'
+  | 'RATE_LIMITED'
+  | 'MODEL_REJECTED'
+  | 'MODEL_NEEDS_CLARIFICATION'
+  | 'MODEL_CLASSIFICATION_FAILED';
 
 export type TaskSort = 'createdAtDesc' | 'createdAtAsc';
 

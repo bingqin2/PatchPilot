@@ -2812,3 +2812,22 @@ Validation:
 - `npm test`: passed after full frontend verification, 111 tests run, 0 failures.
 - `npm run build`: passed after production frontend build verification.
 - `git diff --check`: passed after whitespace verification.
+
+Implemented rejected trigger category filtering from `docs/plans/140-rejected-trigger-category-filtering.md`.
+
+Changes:
+
+- Added optional `category` filtering to `GET /api/rejected-triggers`.
+- Supported category filtering in in-memory and MyBatis-backed rejected-trigger audit services while preserving the existing limit-only API path.
+- Extended the dashboard API helper to request rejected triggers by category.
+- Added a rejected-trigger category select to the dashboard and preserved its state in the URL as `rejectedCategory`.
+- Updated product docs to describe category-filtered rejected-trigger diagnosis.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=RejectedTriggerAuditControllerTests,InMemoryRejectedTriggerAuditServiceTests,MyBatisRejectedTriggerAuditServiceTests test`: first failed because rejected-trigger audit services only supported limit-only listing; then passed after backend implementation, 15 tests run, 0 failures.
+- `npm test -- --run src/dashboard/components/RejectedTriggerPanel.test.tsx src/api.test.ts src/App.test.tsx`: first failed because the API helper treated options as a raw limit and the dashboard had no category select; then passed after frontend implementation, 78 tests run, 0 failures.
+- `JAVA_HOME=/Library/Java/JavaVirtualMachines/openjdk-17.jdk/Contents/Home mvn -pl PatchPilot test`: passed after full Java 17 backend verification, 508 tests run, 0 failures.
+- `npm test`: passed after full frontend verification, 114 tests run, 0 failures.
+- `npm run build`: passed after production frontend build verification.
+- `git diff --check`: passed after whitespace verification.
