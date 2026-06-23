@@ -2530,3 +2530,21 @@ Validation:
 - `npm test`: passed after full frontend verification, 98 tests run, 0 failures.
 - `npm run build`: passed after production frontend build.
 - `git diff --check`: passed after whitespace verification.
+
+Implemented live demo smoke checklist from `docs/plans/125-live-demo-smoke-checklist.md`.
+
+Changes:
+
+- Added `GET /api/demo/smoke-checklist` as a read-only final pre-demo checklist.
+- Derived ordered readiness, webhook delivery, task execution, and Pull Request evidence from existing readiness, delivery diagnostics, and task history data.
+- Kept duplicate, ignored, rejected, and active-task webhook deliveries as attention states instead of treating any task id as successful smoke evidence.
+- Added a dashboard `DemoSmokeChecklistPanel` near the existing setup and readiness panels.
+- Updated README, frontend design notes, and this execution log.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=DemoSmokeChecklistServiceTests,DemoReadinessControllerTests test`: first failed because the smoke checklist API/service/domain records did not exist; then passed after backend implementation, 6 tests run, 0 failures.
+- `npm test -- App.test.tsx api.test.ts`: first failed because the smoke checklist API helper and panel did not exist; then passed after frontend implementation and isolated request handling, 68 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed after full backend verification, 454 tests run, 0 failures.
+- `npm test`: passed after full frontend verification, 99 tests run, 0 failures.
+- `npm run build`: passed after production frontend build.

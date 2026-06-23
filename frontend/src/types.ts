@@ -180,6 +180,24 @@ export interface DemoReadiness {
   nextActions: string[];
 }
 
+export type DemoSmokeChecklistStatus = 'READY' | 'NEEDS_ATTENTION' | 'BLOCKED';
+
+export interface DemoSmokeChecklistStep {
+  order: number;
+  name: string;
+  status: DemoSmokeChecklistStatus;
+  message: string;
+  evidence: string;
+  action: string;
+}
+
+export interface DemoSmokeChecklist {
+  status: DemoSmokeChecklistStatus;
+  summary: string;
+  steps: DemoSmokeChecklistStep[];
+  nextActions: string[];
+}
+
 export interface BackendHealth {
   status: string;
   service: string;

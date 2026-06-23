@@ -5,6 +5,7 @@ import type {
   ConfigurationSummary,
   CreateTaskInput,
   DemoReadiness,
+  DemoSmokeChecklist,
   FixTask,
   FixTaskFailureCauseSummary,
   FixTaskLatencySummary,
@@ -128,6 +129,10 @@ export async function getConfigurationSummary(): Promise<ConfigurationSummary> {
 
 export async function getDemoReadiness(): Promise<DemoReadiness> {
   return getApi<DemoReadiness>('/api/demo/readiness');
+}
+
+export async function getDemoSmokeChecklist(): Promise<DemoSmokeChecklist> {
+  return getApi<DemoSmokeChecklist>('/api/demo/smoke-checklist');
 }
 
 export async function getBackendHealth(): Promise<BackendHealth> {
