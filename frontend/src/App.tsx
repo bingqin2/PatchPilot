@@ -8,6 +8,7 @@ import {
   getBackendHealth,
   getConfigurationSummary,
   getDemoReadiness,
+  getDemoSmokeChecklist,
   getFailureCauseSummary,
   getLatencySummary,
   getMetricsSummary,
@@ -27,6 +28,7 @@ import { AdapterFixtureVerificationPanel } from './dashboard/components/AdapterF
 import { ConfigurationPanel } from './dashboard/components/ConfigurationPanel';
 import { ConnectivityPanel } from './dashboard/components/ConnectivityPanel';
 import { DemoReadinessPanel } from './dashboard/components/DemoReadinessPanel';
+import { DemoSmokeChecklistPanel } from './dashboard/components/DemoSmokeChecklistPanel';
 import { FailureCausePanel } from './dashboard/components/FailureCausePanel';
 import { LatencyPanel } from './dashboard/components/LatencyPanel';
 import { MetricCard } from './dashboard/components/MetricCard';
@@ -47,6 +49,7 @@ import type {
   BackendHealth,
   CreateTaskInput,
   DemoReadiness,
+  DemoSmokeChecklist,
   FixTask,
   FixTaskFailureCauseSummary,
   FixTaskLatencySummary,
@@ -89,6 +92,8 @@ export default function App() {
   const [backendHealth, setBackendHealth] = useState<BackendHealth | null>(null);
   const [demoReadiness, setDemoReadiness] = useState<DemoReadiness | null>(null);
   const [demoReadinessError, setDemoReadinessError] = useState<string | null>(null);
+  const [demoSmokeChecklist, setDemoSmokeChecklist] = useState<DemoSmokeChecklist | null>(null);
+  const [demoSmokeChecklistError, setDemoSmokeChecklistError] = useState<string | null>(null);
   const [supportedAdapters, setSupportedAdapters] = useState<SupportedLanguageAdapter[]>([]);
   const [adapterError, setAdapterError] = useState<string | null>(null);
   const [adapterFixtureVerifications, setAdapterFixtureVerifications] = useState<LanguageAdapterFixtureVerification[]>([]);
@@ -313,6 +318,7 @@ export default function App() {
         latencySummary,
         configurationSummary,
         demoReadinessResult,
+        demoSmokeChecklistResult,
         adapterListResult,
         adapterFixtureResult,
         queueSummaryData,
@@ -334,6 +340,10 @@ export default function App() {
         getDemoReadiness().then(
           (readiness) => ({ readiness, error: null as string | null }),
           (caught) => ({ readiness: null, error: errorMessage(caught) })
+        ),
+        getDemoSmokeChecklist().then(
+          (checklist) => ({ checklist, error: null as string | null }),
+          (caught) => ({ checklist: null, error: errorMessage(caught) })
         ),
         listLanguageAdapters().then(
           (adapters) => ({ adapters, error: null as string | null }),
@@ -361,6 +371,10 @@ export default function App() {
         setDemoReadiness(demoReadinessResult.readiness);
       }
       setDemoReadinessError(demoReadinessResult.error);
+      if (demoSmokeChecklistResult.checklist) {
+        setDemoSmokeChecklist(demoSmokeChecklistResult.checklist);
+      }
+      setDemoSmokeChecklistError(demoSmokeChecklistResult.error);
       if (adapterListResult.adapters) {
         setSupportedAdapters(adapterListResult.adapters);
       }
@@ -647,6 +661,8 @@ export default function App() {
       />
 
       <DemoReadinessPanel readiness={demoReadiness} error={demoReadinessError} />
+
+      <DemoSmokeChecklistPanel checklist={demoSmokeChecklist} error={demoSmokeChecklistError} />
 
       <section className="metrics-grid" aria-label="Task metrics">
         <MetricCard label="Tasks" value={metrics?.totalCount ?? 0} detail={`${metrics?.completedCount ?? 0} completed`} />

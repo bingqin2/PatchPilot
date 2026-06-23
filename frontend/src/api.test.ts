@@ -7,6 +7,7 @@ import {
   getFailureCauseSummary,
   getLatencySummary,
   getModelUsageSummary,
+  getDemoSmokeChecklist,
   listLanguageAdapterFixtures,
   listLanguageAdapters,
   getDemoReadiness,
@@ -631,6 +632,40 @@ test('loads demo readiness from backend API', async () => {
     ],
     nextActions: ['Run one controlled issue-to-PR smoke task before a live demo.']
   });
+});
+
+test('loads demo smoke checklist from backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        status: 'NEEDS_ATTENTION',
+        summary: 'Live demo smoke checklist needs attention.',
+        steps: [
+          {
+            order: 2,
+            name: 'Webhook delivery',
+            status: 'NEEDS_ATTENTION',
+            message: 'Latest delivery needs redelivery.',
+            evidence: 'delivery-invalid',
+            action: 'Fix the webhook secret or URL, then use GitHub Redeliver before the live demo.'
+          }
+        ],
+        nextActions: ['Fix the webhook secret or URL, then use GitHub Redeliver before the live demo.']
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const checklist = await getDemoSmokeChecklist();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/smoke-checklist');
+  expect(checklist.status).toBe('NEEDS_ATTENTION');
+  expect(checklist.steps[0].name).toBe('Webhook delivery');
+  expect(checklist.nextActions).toEqual(['Fix the webhook secret or URL, then use GitHub Redeliver before the live demo.']);
 });
 
 test('loads aggregate task detail from backend API', async () => {

@@ -596,6 +596,46 @@ const demoReadiness = {
   nextActions: ['Run one controlled issue-to-PR smoke task before a live demo.']
 };
 
+const demoSmokeChecklist = {
+  status: 'NEEDS_ATTENTION',
+  summary: 'Live demo smoke checklist needs attention.',
+  steps: [
+    {
+      order: 1,
+      name: 'Readiness gate',
+      status: 'NEEDS_ATTENTION',
+      message: 'PatchPilot needs attention before a live demo.',
+      evidence: '2 readiness checks evaluated',
+      action: 'Run one controlled issue-to-PR smoke task before a live demo.'
+    },
+    {
+      order: 2,
+      name: 'Webhook delivery',
+      status: 'READY',
+      message: 'Latest webhook delivery reached PatchPilot and produced task task-1.',
+      evidence: 'delivery-created-status-comment',
+      action: 'Post the live /agent fix comment only after confirming the webhook URL is current.'
+    },
+    {
+      order: 3,
+      name: 'Task execution',
+      status: 'READY',
+      message: 'Recent task completed with verification command mvn test.',
+      evidence: 'task-1',
+      action: 'Use the same repository shape for the live demo.'
+    },
+    {
+      order: 4,
+      name: 'Pull Request evidence',
+      status: 'READY',
+      message: 'Recent completed task opened a Pull Request.',
+      evidence: 'https://github.com/bingqin2/PatchPilot/pull/7',
+      action: 'Use this as the baseline proof that branch push and PR creation work.'
+    }
+  ],
+  nextActions: ['Run one controlled issue-to-PR smoke task before a live demo.']
+};
+
 beforeEach(() => {
   let manualTaskCreated = false;
   vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -703,6 +743,9 @@ beforeEach(() => {
     }
     if (url === '/api/demo/readiness') {
       return jsonResponse(demoReadiness);
+    }
+    if (url === '/api/demo/smoke-checklist') {
+      return jsonResponse(demoSmokeChecklist);
     }
     if (url === '/health') {
       return jsonResponse({
@@ -947,6 +990,12 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(within(demoReadinessPanel).getByText('Needs attention')).toBeInTheDocument();
   expect(within(demoReadinessPanel).getByText('PatchPilot needs attention before a live demo.')).toBeInTheDocument();
   expect(within(demoReadinessPanel).getByText('Run one controlled issue-to-PR smoke task before a live demo.')).toBeInTheDocument();
+  const smokeChecklistPanel = screen.getByRole('region', { name: 'Live demo smoke checklist' });
+  expect(within(smokeChecklistPanel).getByRole('heading', { name: 'Live demo smoke checklist' })).toBeInTheDocument();
+  expect(within(smokeChecklistPanel).getByText('Live demo smoke checklist needs attention.')).toBeInTheDocument();
+  expect(within(smokeChecklistPanel).getByText('Webhook delivery')).toBeInTheDocument();
+  expect(within(smokeChecklistPanel).getByText('delivery-created-status-comment')).toBeInTheDocument();
+  expect(within(smokeChecklistPanel).getByText('Post the live /agent fix comment only after confirming the webhook URL is current.')).toBeInTheDocument();
   expect(screen.getByRole('heading', { name: 'Supported adapters' })).toBeInTheDocument();
   expect(screen.getByText('12 supported adapters')).toBeInTheDocument();
   expect(screen.getByRole('heading', { name: 'Fixture verification' })).toBeInTheDocument();
@@ -974,6 +1023,7 @@ test('renders operational task dashboard from backend APIs', async () => {
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/language-adapters'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/language-adapters/fixtures'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/readiness'));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/smoke-checklist'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/github/webhook-deliveries?limit=10'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks/task-1/detail'));
   expect(screen.getByText('Pull request opened')).toBeInTheDocument();
@@ -1185,6 +1235,15 @@ test('shows when every operator setup check is ready', async () => {
         nextActions: []
       });
     }
+    if (url === '/api/demo/smoke-checklist') {
+      return jsonResponse({
+        ...demoSmokeChecklist,
+        status: 'READY',
+        summary: 'Live demo smoke checklist is ready.',
+        steps: demoSmokeChecklist.steps.map((step) => ({ ...step, status: 'READY' })),
+        nextActions: ['Post a concrete /agent fix comment on the controlled GitHub issue.']
+      });
+    }
     if (url === '/api/task-queue/summary') {
       return jsonResponse({ ...queueSummary, failedCount: 0 });
     }
@@ -1291,6 +1350,9 @@ test('shows manual task creation failures without clearing the form', async () =
     }
     if (url === '/api/configuration/summary') {
       return jsonResponse(configurationSummary);
+    }
+    if (url === '/api/demo/smoke-checklist') {
+      return jsonResponse(demoSmokeChecklist);
     }
     if (url === '/health') {
       return jsonResponse({
@@ -1837,6 +1899,9 @@ test('shows dashboard refresh progress while top-level data is loading', async (
     if (url === '/api/configuration/summary') {
       return jsonResponse(configurationSummary);
     }
+    if (url === '/api/demo/smoke-checklist') {
+      return jsonResponse(demoSmokeChecklist);
+    }
     if (url === '/health') {
       return jsonResponse({
         status: 'UP',
@@ -2016,6 +2081,9 @@ test('loads the next backend task page with offset pagination', async () => {
     }
     if (url === '/api/configuration/summary') {
       return jsonResponse(configurationSummary);
+    }
+    if (url === '/api/demo/smoke-checklist') {
+      return jsonResponse(demoSmokeChecklist);
     }
     if (url === '/health') {
       return jsonResponse({
@@ -2225,6 +2293,9 @@ function defaultAppResponse(input: RequestInfo | URL, init?: RequestInit) {
   }
   if (url === '/api/demo/readiness') {
     return jsonResponse(demoReadiness);
+  }
+  if (url === '/api/demo/smoke-checklist') {
+    return jsonResponse(demoSmokeChecklist);
   }
   if (url === '/health') {
     return jsonResponse({

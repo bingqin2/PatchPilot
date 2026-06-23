@@ -28,7 +28,7 @@ During local development, Vite proxies `/api` and `/health` to `PATCHPILOT_FRONT
 When the backend protects operator APIs with `PATCHPILOT_ADMIN_TOKEN`, the dashboard does not require a separate login flow. `App.tsx` shows a compact header control that reports whether this browser has a saved admin token, lets an operator save or replace the local token, and lets the operator clear it when rotating credentials or testing unauthenticated behavior. If a protected API call returns `Admin token is required`, the same save-and-retry path appears inline inside the alert. Saved tokens live in browser `localStorage` as `patchpilot.adminToken`; the API helper reads that value for later requests and sends it as `X-PatchPilot-Admin-Token`.
 
 The page coordinator is `frontend/src/App.tsx`. It loads backend data, owns selected-task state, applies status filters, repository owner/name filters, language/build-system adapter filters, created time range filters, task-list sort, and search state, and coordinates manual creation plus cancel/retry actions. It loads `/health` before the protected dashboard API batch so the connectivity panel can distinguish "backend/proxy unavailable" from "backend is up but protected APIs need an admin token." The operator setup checklist is deliberately derived from the same loaded data instead of a new API, so it acts as a first-screen summary of the detailed panels below it.
-It also loads `GET /api/demo/readiness`, `GET /api/language-adapters`, `GET /api/language-adapters/fixtures`, and `GET /api/github/webhook-deliveries` so demo readiness, supported repository shapes, fixed verification commands, detection signals, demo fixture paths, current fixture pass/fail status, recent GitHub delivery outcomes, and redelivery guidance are visible in the dashboard instead of only in source code, terminal smoke output, or GitHub's delivery page.
+It also loads `GET /api/demo/readiness`, `GET /api/demo/smoke-checklist`, `GET /api/language-adapters`, `GET /api/language-adapters/fixtures`, and `GET /api/github/webhook-deliveries` so demo readiness, final smoke-check steps, supported repository shapes, fixed verification commands, detection signals, demo fixture paths, current fixture pass/fail status, recent GitHub delivery outcomes, and redelivery guidance are visible in the dashboard instead of only in source code, terminal smoke output, or GitHub's delivery page.
 
 Selected-task detail uses the `/tasks/{taskId}` frontend route and `GET /api/tasks/{taskId}/detail`, an aggregate read-model endpoint that returns the task audit summary, latest queue item, queue history, latest generated diff, timeline events, test runs, tool calls, and model calls together. The task summary includes selected adapter metadata and a nullable detection reason, which the detail evidence strip renders next to the verification command so operators can see why the task chose that language/build path. If the generated-diff risk gate rejects a patch, the task appears as `PENDING_REVIEW`, the same evidence strip shows a `Risk gate BLOCKED` marker, the generated-diff panel shows the exact patch to inspect before approval, and the tool-call list shows the concrete rejection reason. Operators can cancel pending-review tasks or approve the existing generated diff with an approver selected from the configured review-approval allowlist plus a reason. Approval requeues the task to resume the same workspace after the risk gate instead of asking the model to produce a new patch, and approved tasks show the stored approval audit metadata in detail. If no review approvers are configured, the approval form is disabled and explains the missing configuration. Retry remains hidden for pending-review tasks because retry is reserved for failed or cancelled fresh runs. Legacy `?taskId=` links still select the same task. Status, search, repository owner/name filters, adapter filters, created time filters, and non-default sort state are stored as URL query parameters, so `/tasks/{taskId}?status=PENDING_REVIEW&query=maven&repositoryOwner=bingqin2&repositoryName=PatchPilot&language=node&buildSystem=npm&sort=createdAtAsc&createdAfter=2026-06-20T01:00:00Z&createdBefore=2026-06-21T01:00:00Z` restores the selected task and task-list view together. The clear-filter action removes `status`, `query`, `repositoryOwner`, `repositoryName`, `language`, `buildSystem`, `createdAfter`, and `createdBefore`, preserving sort, the selected task route, unrelated query parameters, and hash fragments. Markdown task reports use `GET /api/tasks/{taskId}/report` so operators can copy a compact diagnostic summary and generated diff without manually assembling API responses. This keeps the dashboard detail panel to one request per selected task while preserving narrower backend endpoints for curl-based debugging.
 
@@ -39,6 +39,7 @@ Reusable dashboard components live under `frontend/src/dashboard/components/`:
 - `ConnectivityPanel`: top-of-page operational check for backend `/health`, saved browser admin-token state, protected API reachability, and the next corrective action when startup, proxy, or admin-token access is wrong.
 - `OperatorSetupChecklistPanel`: read-only demo setup checklist that turns connectivity, required credentials, safety policy, adapter fixtures, queue health, and recent Pull Request evidence into ready/attention checks with next actions.
 - `DemoReadinessPanel`: first-screen readiness gate that summarizes whether a controlled issue-to-PR demo is ready, needs attention, or is blocked.
+- `DemoSmokeChecklistPanel`: final pre-demo checklist that orders readiness gate, webhook delivery, task execution, and Pull Request evidence with concrete next actions.
 - `ManualTaskForm`: local demo/debug task creation through `POST /api/tasks`, with explicit repository, issue, trigger user, and `/agent fix` command fields.
 - `QueuePanel`: read-only queue health, summary, and queue items.
 - `WebhookDeliveryPanel`: read-only recent delivery diagnostics for ignored comments, rejected triggers, duplicate deliveries, invalid signatures, bad payloads, active-task collisions, and task-created outcomes, including whether a delivery should be fixed and redelivered from GitHub.
@@ -55,6 +56,7 @@ Formatting helpers live in `frontend/src/dashboard/format.ts`.
 The first screen is the working dashboard:
 
 - Demo readiness summarizes credentials, safety policy state, adapter fixture verification, queue health, and recent Pull Request evidence before an operator starts a live smoke run.
+- The smoke checklist turns readiness, webhook delivery, task execution, and Pull Request evidence into ordered final checks before the operator posts the live `/agent fix` comment.
 - Metrics summarize task health.
 - A compact refresh status tells operators when top-level dashboard data is still loading, and the title area shows when the dashboard last refreshed successfully.
 - Operational summaries highlight failure causes, model usage, and latency without requiring terminal inspection.
@@ -85,6 +87,7 @@ This keeps the UI focused on operator questions:
 - How many model tokens were used?
 - Where is the GitHub issue or Pull Request?
 - Did GitHub's latest webhook delivery reach PatchPilot and, if not, was it a signature, payload, safety, duplicate, or active-task issue?
+- Is there enough live-demo evidence to proceed, or should setup be fixed first?
 - Can I share a URL that reopens the same task detail?
 - Can I copy a compact report that explains the selected task state?
 
@@ -103,6 +106,7 @@ Target capabilities:
 - Show the supported adapter matrix, fixture paths, and fixture pass/fail verification for demo planning and troubleshooting.
 - Support manual demo task creation that still uses the durable backend queue.
 - Support demo readiness by making a full task lifecycle understandable without reading logs.
+- Support final smoke-check decisions by pairing every live-demo step with current evidence and a next action.
 
 ## Future Work
 
