@@ -1,6 +1,7 @@
 package io.patchpilot.backend.safety;
 
 import io.patchpilot.backend.common.response.ApiResponse;
+import io.patchpilot.backend.safety.domain.RejectedTriggerAuditSummaryVo;
 import io.patchpilot.backend.safety.domain.RejectedTriggerAuditVo;
 import io.patchpilot.backend.safety.service.RejectedTriggerAuditService;
 import io.patchpilot.backend.safety.service.RejectedTriggerRetryService;
@@ -32,6 +33,17 @@ public class RejectedTriggerAuditController {
     ) {
         try {
             return ResponseEntity.ok(ApiResponse.ok(auditService.listRejectedTriggers(normalizeLimit(limit), category)));
+        } catch (IllegalArgumentException exception) {
+            return ResponseEntity.badRequest().body(ApiResponse.fail(exception.getMessage()));
+        }
+    }
+
+    @GetMapping("/summary")
+    public ResponseEntity<ApiResponse<RejectedTriggerAuditSummaryVo>> summarizeRejectedTriggers(
+            @RequestParam(required = false) Integer limit
+    ) {
+        try {
+            return ResponseEntity.ok(ApiResponse.ok(auditService.summarizeRejectedTriggers(normalizeLimit(limit))));
         } catch (IllegalArgumentException exception) {
             return ResponseEntity.badRequest().body(ApiResponse.fail(exception.getMessage()));
         }

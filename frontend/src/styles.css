@@ -2149,6 +2149,80 @@ pre {
   display: grid;
 }
 
+.rejected-trigger-summary {
+  border-top: 1px solid #edf1f5;
+  display: grid;
+  gap: 12px;
+  padding: 14px 16px;
+}
+
+.rejected-trigger-summary-header p {
+  color: #64727f;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.rejected-trigger-summary-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.rejected-trigger-summary-card {
+  background: #f7f9fb;
+  border: 1px solid #dbe3ea;
+  border-radius: 6px;
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 10px;
+}
+
+.rejected-trigger-summary-card > span {
+  color: #64727f;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.rejected-trigger-count-list {
+  display: grid;
+  gap: 6px;
+}
+
+.rejected-trigger-count-row,
+.rejected-trigger-count-button {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #e2e8ee;
+  border-radius: 6px;
+  color: #263442;
+  display: flex;
+  justify-content: space-between;
+  min-height: 30px;
+  min-width: 0;
+  padding: 6px 8px;
+}
+
+.rejected-trigger-count-button {
+  cursor: pointer;
+  text-align: left;
+}
+
+.rejected-trigger-count-button:hover {
+  border-color: #9fb0c1;
+}
+
+.rejected-trigger-count-row span,
+.rejected-trigger-count-button span {
+  overflow-wrap: anywhere;
+}
+
+.rejected-trigger-count-row strong,
+.rejected-trigger-count-button strong {
+  font-size: 13px;
+  margin-left: 8px;
+}
+
 .rejected-trigger-row {
   border-bottom: 1px solid #edf1f5;
   display: grid;
@@ -2246,6 +2320,7 @@ pre {
   .manual-task-form,
   .split-section,
   .queue-summary,
+  .rejected-trigger-summary-grid,
   .queue-row {
     grid-template-columns: 1fr;
   }

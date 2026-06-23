@@ -1,6 +1,8 @@
 package io.patchpilot.backend.safety.service;
 
+import io.patchpilot.backend.safety.convert.RejectedTriggerAuditSummaryBuilder;
 import io.patchpilot.backend.safety.domain.RecordRejectedTriggerCommand;
+import io.patchpilot.backend.safety.domain.RejectedTriggerAuditSummaryVo;
 import io.patchpilot.backend.safety.domain.RejectedTriggerAuditVo;
 
 import java.time.Instant;
@@ -20,6 +22,10 @@ public interface RejectedTriggerAuditService {
         return listRejectedTriggers(limit).stream()
                 .filter(audit -> category.trim().equals(audit.category()))
                 .toList();
+    }
+
+    default RejectedTriggerAuditSummaryVo summarizeRejectedTriggers(int limit) {
+        return RejectedTriggerAuditSummaryBuilder.from(listRejectedTriggers(limit));
     }
 
     Optional<RejectedTriggerAuditVo> findRejectedTrigger(String id);

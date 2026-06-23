@@ -9,6 +9,7 @@ import {
   getConfigurationSummary,
   getDemoReadiness,
   getDemoSmokeChecklist,
+  getRejectedTriggerSummary,
   getFailureCauseSummary,
   getLatencySummary,
   getMetricsSummary,
@@ -63,6 +64,7 @@ import type {
   FixTaskQueueSummary,
   RejectedTriggerCategoryFilter,
   RejectedTriggerAudit,
+  RejectedTriggerAuditSummary,
   WebhookDeliveryDiagnostic,
   LanguageAdapterFixtureVerification,
   SupportedLanguageAdapter,
@@ -122,6 +124,7 @@ export default function App() {
   const [webhookDeliveries, setWebhookDeliveries] = useState<WebhookDeliveryDiagnostic[]>([]);
   const [webhookDeliveryError, setWebhookDeliveryError] = useState<string | null>(null);
   const [rejectedTriggers, setRejectedTriggers] = useState<RejectedTriggerAudit[]>([]);
+  const [rejectedTriggerSummary, setRejectedTriggerSummary] = useState<RejectedTriggerAuditSummary | null>(null);
   const [rejectedTriggerError, setRejectedTriggerError] = useState<string | null>(null);
   const [rejectedTriggerCategoryFilter, setRejectedTriggerCategoryFilter] = useState<RejectedTriggerCategoryFilter>(
     initialFilters.rejectedCategory
@@ -354,7 +357,8 @@ export default function App() {
         queueSummaryData,
         queueItemList,
         webhookDeliveryResult,
-        rejectedTriggerResult
+        rejectedTriggerResult,
+        rejectedTriggerSummaryResult
       ] = await Promise.all([
         listTasks({
           status: statusFilter,
@@ -393,6 +397,10 @@ export default function App() {
         listRejectedTriggers({ limit: 20, category: rejectedTriggerCategoryFilter }).then(
           (rejections) => ({ rejections, error: null as string | null }),
           (caught) => ({ rejections: null, error: errorMessage(caught) })
+        ),
+        getRejectedTriggerSummary(100).then(
+          (summary) => ({ summary, error: null as string | null }),
+          (caught) => ({ summary: null, error: errorMessage(caught) })
         )
       ]);
       setTasks(taskList.items);
@@ -427,7 +435,10 @@ export default function App() {
       if (rejectedTriggerResult.rejections) {
         setRejectedTriggers(rejectedTriggerResult.rejections);
       }
-      setRejectedTriggerError(rejectedTriggerResult.error);
+      if (rejectedTriggerSummaryResult.summary) {
+        setRejectedTriggerSummary(rejectedTriggerSummaryResult.summary);
+      }
+      setRejectedTriggerError(rejectedTriggerResult.error ?? rejectedTriggerSummaryResult.error);
       setCanLoadMoreTasks(taskList.hasMore);
       setTaskTotal(taskList.total);
       setSelectedTaskId((current) => selectedTaskIdFromList(taskList.items, current));
@@ -805,6 +816,7 @@ export default function App() {
 
       <RejectedTriggerPanel
         rejectedTriggers={rejectedTriggers}
+        summary={rejectedTriggerSummary}
         categoryFilter={rejectedTriggerCategoryFilter}
         error={rejectedTriggerError}
         retryingRejectedTriggerId={retryingRejectedTriggerId}
