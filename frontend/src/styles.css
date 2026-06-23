@@ -441,6 +441,63 @@ h3 {
   padding: 9px 10px;
 }
 
+.connectivity-panel {
+  margin-bottom: 16px;
+}
+
+.connectivity-panel-ready {
+  border-color: #b9d8d5;
+}
+
+.connectivity-panel-attention {
+  border-color: #efc36f;
+}
+
+.connectivity-grid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding: 0 16px 16px;
+}
+
+.connectivity-grid div {
+  background: #f7f9fb;
+  border: 1px solid #dbe3ea;
+  border-radius: 6px;
+  min-height: 86px;
+  padding: 10px;
+}
+
+.connectivity-grid span {
+  color: #637181;
+  display: block;
+  font-size: 12px;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+
+.connectivity-grid strong {
+  color: #202b36;
+  display: block;
+  font-size: 16px;
+}
+
+.connectivity-grid p {
+  color: #637181;
+  font-size: 12px;
+  line-height: 1.35;
+  margin-top: 6px;
+}
+
+.connectivity-action {
+  background: #fff7df;
+  border-top: 1px solid #f0db9b;
+  color: #795700;
+  font-size: 13px;
+  font-weight: 800;
+  padding: 11px 16px 13px;
+}
+
 .supported-adapters-panel,
 .fixture-verification-panel {
   margin-bottom: 16px;
@@ -1548,6 +1605,7 @@ pre {
   .summary-panel-grid,
   .workspace-grid,
   .configuration-grid,
+  .connectivity-grid,
   .manual-task-form,
   .split-section,
   .queue-summary,

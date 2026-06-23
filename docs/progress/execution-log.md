@@ -2456,3 +2456,19 @@ Validation:
 - `npm test -- --run src/App.test.tsx -t "manages stored admin token"`: first failed because the dashboard header did not show saved-token state or management actions; then passed after frontend implementation, 1 test run, 0 failures.
 - `npm test`: passed after full frontend verification, 93 tests run, 0 failures.
 - `npm run build`: passed after production frontend build.
+
+Implemented dashboard API connectivity check from `docs/plans/121-dashboard-api-connectivity-check.md`.
+
+Changes:
+
+- Added a top-of-page `ConnectivityPanel` that separates backend `/health`, browser admin-token state, and protected API reachability.
+- Loaded `/health` before the protected dashboard API batch so operators can still see that the backend is up when protected APIs reject missing or wrong admin tokens.
+- Added corrective next-action text for backend/proxy failures and admin-token failures.
+- Updated README, frontend design notes, and this execution log.
+
+Validation:
+
+- `npm test -- --run src/App.test.tsx -t "connectivity"`: first failed because the dashboard had no connectivity panel and could not distinguish backend-up/admin-token-missing failures; then passed after frontend implementation, 2 tests run, 0 failures.
+- `npm test`: first failed because the existing configuration assertions matched the new connectivity `Backend UP` text as well; then passed after scoping the assertion to the Configuration panel, 95 tests run, 0 failures.
+- `npm run build`: passed after production frontend build.
+- `git diff --check`: passed after whitespace and conflict-marker verification.

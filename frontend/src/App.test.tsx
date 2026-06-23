@@ -897,9 +897,10 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(screen.getByText('openai-compatible')).toBeInTheDocument();
   expect(screen.getByText('https://api.example.test/v1')).toBeInTheDocument();
   expect(screen.getByText('/tmp/patchpilot/workspaces')).toBeInTheDocument();
-  expect(screen.getByText('Configuration healthy')).toBeInTheDocument();
-  expect(screen.getByText('Backend UP')).toBeInTheDocument();
-  expect(screen.getByText('patchpilot-backend')).toBeInTheDocument();
+  const configurationPanel = screen.getByRole('region', { name: 'Configuration' });
+  expect(within(configurationPanel).getByText('Configuration healthy')).toBeInTheDocument();
+  expect(within(configurationPanel).getByText('Backend UP')).toBeInTheDocument();
+  expect(within(configurationPanel).getByText('patchpilot-backend')).toBeInTheDocument();
   expect(screen.getByText('Agent key Configured')).toBeInTheDocument();
   expect(screen.getByText('Webhook secret Configured')).toBeInTheDocument();
   expect(screen.getByText('Queue attempts 3')).toBeInTheDocument();
@@ -1021,6 +1022,58 @@ test('manages stored admin token from the dashboard header', async () => {
 
   await waitFor(() => expect(storage.has('patchpilot.adminToken')).toBe(false));
   expect(await screen.findByText('No admin token saved')).toBeInTheDocument();
+});
+
+test('summarizes healthy API connectivity in the dashboard header', async () => {
+  const storage = new Map<string, string>([['patchpilot.adminToken', 'existing-token']]);
+  vi.stubGlobal('localStorage', {
+    getItem: (key: string) => storage.get(key) ?? null,
+    setItem: (key: string, value: string) => storage.set(key, value),
+    removeItem: (key: string) => storage.delete(key),
+    clear: () => storage.clear()
+  });
+  vi.stubGlobal('fetch', vi.fn((input: RequestInfo | URL, init?: RequestInit) => defaultAppResponse(input, init)));
+
+  render(<App />);
+
+  const connectivity = await screen.findByRole('region', { name: 'Connectivity' });
+  expect(within(connectivity).getByRole('heading', { name: 'Connectivity' })).toBeInTheDocument();
+  expect(within(connectivity).getByText('API connectivity ready')).toBeInTheDocument();
+  expect(within(connectivity).getByText('Backend UP')).toBeInTheDocument();
+  expect(within(connectivity).getByText('Browser token saved')).toBeInTheDocument();
+  expect(within(connectivity).getByText('Protected APIs reachable')).toBeInTheDocument();
+});
+
+test('summarizes missing admin token connectivity failures', async () => {
+  vi.stubGlobal('localStorage', {
+    getItem: () => null,
+    setItem: vi.fn(),
+    removeItem: vi.fn(),
+    clear: vi.fn()
+  });
+  const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    if (input.toString() === '/health') {
+      return jsonResponse({
+        status: 'UP',
+        service: 'patchpilot-backend',
+        timestamp: '2026-06-21T01:00:00Z'
+      });
+    }
+    if (!headersRecord(init?.headers)['X-PatchPilot-Admin-Token']) {
+      return jsonResponse(null, false, 'Admin token is required', 401);
+    }
+    return defaultAppResponse(input, init);
+  });
+  vi.stubGlobal('fetch', fetchMock);
+
+  render(<App />);
+
+  const connectivity = await screen.findByRole('region', { name: 'Connectivity' });
+  expect(within(connectivity).getByText('API connectivity needs attention')).toBeInTheDocument();
+  expect(within(connectivity).getByText('Backend UP')).toBeInTheDocument();
+  expect(within(connectivity).getByText('Browser token missing')).toBeInTheDocument();
+  expect(within(connectivity).getByText('Protected APIs blocked')).toBeInTheDocument();
+  expect(within(connectivity).getByText('Save the dashboard admin token to retry protected API calls.')).toBeInTheDocument();
 });
 
 test('copies selected task report from backend API', async () => {
