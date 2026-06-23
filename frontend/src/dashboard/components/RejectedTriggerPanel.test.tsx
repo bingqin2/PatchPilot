@@ -24,6 +24,10 @@ test('renders rejected trigger audit rows and retries a rejected trigger', async
           expiresAt: '2026-06-20T01:33:00Z',
           createdAt: '2026-06-20T01:03:00Z',
           updatedAt: '2026-06-20T01:08:00Z',
+          createdBy: null,
+          releasedAt: null,
+          releasedBy: null,
+          releaseReason: null,
           active: true
         }
       ]}
@@ -50,6 +54,10 @@ test('renders rejected trigger audit rows and retries a rejected trigger', async
       onRetryRejectedTrigger={onRetryRejectedTrigger}
       onSelectTask={onSelectTask}
       onCategoryFilterChange={onCategoryFilterChange}
+      onCreateTriggerQuarantine={vi.fn()}
+      onReleaseTriggerQuarantine={vi.fn()}
+      creatingTriggerQuarantine={false}
+      releasingTriggerQuarantineId={null}
       rejectedTriggers={[
         {
           id: 'rejected-1',
@@ -139,6 +147,10 @@ test('renders rejected trigger empty and error states', () => {
       onRetryRejectedTrigger={vi.fn()}
       onSelectTask={vi.fn()}
       onCategoryFilterChange={vi.fn()}
+      onCreateTriggerQuarantine={vi.fn()}
+      onReleaseTriggerQuarantine={vi.fn()}
+      creatingTriggerQuarantine={false}
+      releasingTriggerQuarantineId={null}
     />
   );
 
@@ -156,6 +168,10 @@ test('renders rejected trigger empty and error states', () => {
       onRetryRejectedTrigger={vi.fn()}
       onSelectTask={vi.fn()}
       onCategoryFilterChange={vi.fn()}
+      onCreateTriggerQuarantine={vi.fn()}
+      onReleaseTriggerQuarantine={vi.fn()}
+      creatingTriggerQuarantine={false}
+      releasingTriggerQuarantineId={null}
     />
   );
 
@@ -173,6 +189,10 @@ test('disables the retry action while retrying a rejected trigger', () => {
       onRetryRejectedTrigger={vi.fn()}
       onSelectTask={vi.fn()}
       onCategoryFilterChange={vi.fn()}
+      onCreateTriggerQuarantine={vi.fn()}
+      onReleaseTriggerQuarantine={vi.fn()}
+      creatingTriggerQuarantine={false}
+      releasingTriggerQuarantineId={null}
       rejectedTriggers={[
         {
           id: 'rejected-1',
@@ -197,4 +217,71 @@ test('disables the retry action while retrying a rejected trigger', () => {
 
   expect(screen.getByRole('button', { name: 'Retrying trigger' })).toBeDisabled();
   expect(screen.getByRole('combobox', { name: 'Filter rejected triggers by category' })).toHaveValue('NOT_ACTIONABLE');
+});
+
+test('creates and releases manual trigger quarantines', async () => {
+  const user = userEvent.setup();
+  const onCreateTriggerQuarantine = vi.fn();
+  const onReleaseTriggerQuarantine = vi.fn();
+
+  render(
+    <RejectedTriggerPanel
+      error={null}
+      quarantines={[
+        {
+          id: 'quarantine-1',
+          scope: 'TRIGGER_USER',
+          scopeKey: 'drive-by-user',
+          reason: 'Operator blocked noisy demo trigger user',
+          category: 'MANUAL_QUARANTINE',
+          evidenceCount: 0,
+          windowMs: 0,
+          startedAt: '2026-06-24T01:00:00Z',
+          expiresAt: '2026-06-24T01:30:00Z',
+          createdAt: '2026-06-24T01:00:00Z',
+          updatedAt: '2026-06-24T01:00:00Z',
+          createdBy: 'local-admin',
+          releasedAt: null,
+          releasedBy: null,
+          releaseReason: null,
+          active: true
+        }
+      ]}
+      summary={null}
+      categoryFilter="ALL"
+      rejectedTriggers={[]}
+      retryingRejectedTriggerId={null}
+      onRetryRejectedTrigger={vi.fn()}
+      onSelectTask={vi.fn()}
+      onCategoryFilterChange={vi.fn()}
+      onCreateTriggerQuarantine={onCreateTriggerQuarantine}
+      onReleaseTriggerQuarantine={onReleaseTriggerQuarantine}
+      creatingTriggerQuarantine={false}
+      releasingTriggerQuarantineId={null}
+    />
+  );
+
+  const panel = screen.getByRole('region', { name: 'Rejected triggers' });
+  await user.selectOptions(within(panel).getByRole('combobox', { name: 'Manual quarantine scope' }), 'REPOSITORY');
+  await user.type(within(panel).getByLabelText('Manual quarantine target'), 'bingqin2/PatchPilot');
+  await user.type(within(panel).getByLabelText('Manual quarantine reason'), 'Blocking noisy demo repository');
+  await user.clear(within(panel).getByLabelText('Manual quarantine duration minutes'));
+  await user.type(within(panel).getByLabelText('Manual quarantine duration minutes'), '45');
+  await user.type(within(panel).getByLabelText('Manual quarantine operator'), 'local-admin');
+  await user.click(within(panel).getByRole('button', { name: 'Create quarantine' }));
+
+  expect(onCreateTriggerQuarantine).toHaveBeenCalledWith({
+    scope: 'REPOSITORY',
+    scopeKey: 'bingqin2/PatchPilot',
+    reason: 'Blocking noisy demo repository',
+    durationMs: 2700000,
+    operator: 'local-admin'
+  });
+
+  await user.click(within(panel).getByRole('button', { name: 'Release drive-by-user quarantine' }));
+
+  expect(onReleaseTriggerQuarantine).toHaveBeenCalledWith('quarantine-1', {
+    operator: 'local-admin',
+    reason: 'Operator released active quarantine from dashboard'
+  });
 });

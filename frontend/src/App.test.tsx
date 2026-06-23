@@ -519,6 +519,10 @@ const triggerQuarantines = [
     expiresAt: '2026-06-20T01:33:00Z',
     createdAt: '2026-06-20T01:03:00Z',
     updatedAt: '2026-06-20T01:08:00Z',
+    createdBy: null,
+    releasedAt: null,
+    releasedBy: null,
+    releaseReason: null,
     active: true
   }
 ];
@@ -905,6 +909,36 @@ beforeEach(() => {
     if (url === '/api/trigger-quarantines?activeOnly=true&limit=20') {
       return jsonResponse(triggerQuarantines);
     }
+    if (url === '/api/trigger-quarantines' && init?.method === 'POST') {
+      return jsonResponse({
+        id: 'manual-quarantine-1',
+        scope: 'REPOSITORY',
+        scopeKey: 'bingqin2/patchpilot',
+        reason: 'Blocking noisy demo repository',
+        category: 'MANUAL_QUARANTINE',
+        evidenceCount: 0,
+        windowMs: 0,
+        startedAt: '2026-06-20T01:12:00Z',
+        expiresAt: '2026-06-20T01:57:00Z',
+        createdAt: '2026-06-20T01:12:00Z',
+        updatedAt: '2026-06-20T01:12:00Z',
+        createdBy: 'local-admin',
+        releasedAt: null,
+        releasedBy: null,
+        releaseReason: null,
+        active: true
+      }, true, null, 201);
+    }
+    if (url === '/api/trigger-quarantines/quarantine-1/release' && init?.method === 'POST') {
+      return jsonResponse({
+        ...triggerQuarantines[0],
+        updatedAt: '2026-06-20T01:13:00Z',
+        releasedAt: '2026-06-20T01:13:00Z',
+        releasedBy: 'local-admin',
+        releaseReason: 'Operator released active quarantine from dashboard',
+        active: false
+      });
+    }
     if (url === '/api/rejected-triggers/rejected-1/retry') {
       return jsonResponse(manuallyCreatedTask, true, null, 201);
     }
@@ -1207,6 +1241,52 @@ test('shows tool and model call durations in task detail records', async () => {
   await waitFor(() => expect(screen.getByText('replace')).toBeInTheDocument());
   expect(screen.getByText('success · 1.0s')).toBeInTheDocument();
   expect(screen.getByText('1800 tokens · 2.0s')).toBeInTheDocument();
+});
+
+test('creates and releases trigger quarantines from rejected trigger panel', async () => {
+  const user = userEvent.setup();
+  const fetchMock = vi.mocked(fetch);
+
+  render(<App />);
+
+  const rejectedTriggerPanel = await screen.findByRole('region', { name: 'Rejected triggers' });
+  await user.selectOptions(
+    within(rejectedTriggerPanel).getByRole('combobox', { name: 'Manual quarantine scope' }),
+    'REPOSITORY'
+  );
+  await user.type(within(rejectedTriggerPanel).getByLabelText('Manual quarantine target'), 'bingqin2/PatchPilot');
+  await user.type(within(rejectedTriggerPanel).getByLabelText('Manual quarantine reason'), 'Blocking noisy demo repository');
+  await user.clear(within(rejectedTriggerPanel).getByLabelText('Manual quarantine duration minutes'));
+  await user.type(within(rejectedTriggerPanel).getByLabelText('Manual quarantine duration minutes'), '45');
+  await user.type(within(rejectedTriggerPanel).getByLabelText('Manual quarantine operator'), 'local-admin');
+  await user.click(within(rejectedTriggerPanel).getByRole('button', { name: 'Create quarantine' }));
+
+  await waitFor(() =>
+    expect(fetchMock).toHaveBeenCalledWith('/api/trigger-quarantines', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        scope: 'REPOSITORY',
+        scopeKey: 'bingqin2/PatchPilot',
+        reason: 'Blocking noisy demo repository',
+        durationMs: 2700000,
+        operator: 'local-admin'
+      })
+    })
+  );
+
+  await user.click(within(rejectedTriggerPanel).getByRole('button', { name: 'Release drive-by-user quarantine' }));
+
+  await waitFor(() =>
+    expect(fetchMock).toHaveBeenCalledWith('/api/trigger-quarantines/quarantine-1/release', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        operator: 'local-admin',
+        reason: 'Operator released active quarantine from dashboard'
+      })
+    })
+  );
 });
 
 test('prompts for admin token and reloads dashboard after saving it', async () => {
@@ -2574,6 +2654,39 @@ function defaultAppResponse(input: RequestInfo | URL, init?: RequestInit) {
   }
   if (url === '/api/rejected-triggers/summary?limit=100') {
     return jsonResponse(rejectedTriggerSummary);
+  }
+  if (url === '/api/trigger-quarantines?activeOnly=true&limit=20') {
+    return jsonResponse(triggerQuarantines);
+  }
+  if (url === '/api/trigger-quarantines' && init?.method === 'POST') {
+    return jsonResponse({
+      id: 'manual-quarantine-1',
+      scope: 'REPOSITORY',
+      scopeKey: 'bingqin2/patchpilot',
+      reason: 'Blocking noisy demo repository',
+      category: 'MANUAL_QUARANTINE',
+      evidenceCount: 0,
+      windowMs: 0,
+      startedAt: '2026-06-20T01:12:00Z',
+      expiresAt: '2026-06-20T01:57:00Z',
+      createdAt: '2026-06-20T01:12:00Z',
+      updatedAt: '2026-06-20T01:12:00Z',
+      createdBy: 'local-admin',
+      releasedAt: null,
+      releasedBy: null,
+      releaseReason: null,
+      active: true
+    }, true, null, 201);
+  }
+  if (url === '/api/trigger-quarantines/quarantine-1/release' && init?.method === 'POST') {
+    return jsonResponse({
+      ...triggerQuarantines[0],
+      updatedAt: '2026-06-20T01:13:00Z',
+      releasedAt: '2026-06-20T01:13:00Z',
+      releasedBy: 'local-admin',
+      releaseReason: 'Operator released active quarantine from dashboard',
+      active: false
+    });
   }
   if (url === '/api/tasks/task-1/detail') {
     return jsonResponse(detail);

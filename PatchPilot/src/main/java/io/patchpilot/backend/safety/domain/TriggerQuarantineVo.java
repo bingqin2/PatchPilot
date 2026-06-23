@@ -14,6 +14,10 @@ public record TriggerQuarantineVo(
         Instant expiresAt,
         Instant createdAt,
         Instant updatedAt,
+        String createdBy,
+        Instant releasedAt,
+        String releasedBy,
+        String releaseReason,
         boolean active
 ) {
 }

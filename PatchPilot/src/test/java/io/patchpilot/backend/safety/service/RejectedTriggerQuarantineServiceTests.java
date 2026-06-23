@@ -151,6 +151,33 @@ class RejectedTriggerQuarantineServiceTests {
         assertThat(decision.category()).isEqualTo("ABUSE_QUARANTINED");
     }
 
+    @Test
+    void should_not_recreate_threshold_quarantine_after_manual_release_before_original_expiry() {
+        RejectedTriggerQuarantineService quarantineService = new RejectedTriggerQuarantineService(
+                properties(true, 600_000, 2, 1_800_000),
+                auditService,
+                quarantineRecordService,
+                now::get
+        );
+        auditService.recordRejectedTrigger(command("alice", "octocat", "hello-world", "delivery-1"));
+        now.set(Instant.parse("2026-06-23T00:01:00Z"));
+        auditService.recordRejectedTrigger(command("alice", "octocat", "other-repo", "delivery-2"));
+        TriggerQuarantineDecision quarantined = quarantineService.check(request("alice", "octocat", "hello-world"));
+        assertThat(quarantined.allowed()).isFalse();
+        String quarantineId = quarantineRecordService
+                .findActiveQuarantine(TriggerQuarantineScope.TRIGGER_USER, "alice")
+                .orElseThrow()
+                .id();
+
+        now.set(Instant.parse("2026-06-23T00:05:00Z"));
+        quarantineRecordService.releaseQuarantine(quarantineId, "local-admin", "False positive during demo");
+
+        TriggerQuarantineDecision releasedDecision = quarantineService.check(request("alice", "octocat", "hello-world"));
+
+        assertThat(releasedDecision.allowed()).isTrue();
+        assertThat(quarantineRecordService.findActiveQuarantine(TriggerQuarantineScope.TRIGGER_USER, "alice")).isEmpty();
+    }
+
     private static SafetyProperties properties(
             boolean enabled,
             long windowMs,

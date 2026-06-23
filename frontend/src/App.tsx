@@ -5,6 +5,7 @@ import {
   approveTaskReview,
   cancelTask,
   createTask,
+  createTriggerQuarantine,
   getBackendHealth,
   getConfigurationSummary,
   getDemoReadiness,
@@ -26,6 +27,7 @@ import {
   listWebhookDeliveries,
   listTasks,
   retryRejectedTrigger,
+  releaseTriggerQuarantine,
   retryTask
 } from './api';
 import { AdapterFixtureVerificationPanel } from './dashboard/components/AdapterFixtureVerificationPanel';
@@ -53,6 +55,7 @@ import type {
   ConfigurationSummary,
   BackendHealth,
   CreateTaskInput,
+  CreateTriggerQuarantineInput,
   DemoReadiness,
   DemoSmokeChecklist,
   FixTask,
@@ -66,6 +69,7 @@ import type {
   RejectedTriggerCategoryFilter,
   RejectedTriggerAudit,
   RejectedTriggerAuditSummary,
+  ReleaseTriggerQuarantineInput,
   TriggerQuarantine,
   WebhookDeliveryDiagnostic,
   LanguageAdapterFixtureVerification,
@@ -158,6 +162,8 @@ export default function App() {
   const [lastRefreshedAt, setLastRefreshedAt] = useState<string | null>(null);
   const [creatingTask, setCreatingTask] = useState(false);
   const [createTaskStatus, setCreateTaskStatus] = useState<string | null>(null);
+  const [creatingTriggerQuarantine, setCreatingTriggerQuarantine] = useState(false);
+  const [releasingTriggerQuarantineId, setReleasingTriggerQuarantineId] = useState<string | null>(null);
 
   const selectedTask = useMemo(
     () => tasks.find((task) => task.id === selectedTaskId) ?? tasks[0] ?? null,
@@ -601,6 +607,35 @@ export default function App() {
     }
   }, [refresh]);
 
+  const handleCreateTriggerQuarantine = useCallback(async (input: CreateTriggerQuarantineInput) => {
+    setCreatingTriggerQuarantine(true);
+    setError(null);
+    try {
+      await createTriggerQuarantine(input);
+      await refresh();
+    } catch (caught) {
+      setError(errorMessage(caught));
+    } finally {
+      setCreatingTriggerQuarantine(false);
+    }
+  }, [refresh]);
+
+  const handleReleaseTriggerQuarantine = useCallback(async (
+    quarantineId: string,
+    input: ReleaseTriggerQuarantineInput
+  ) => {
+    setReleasingTriggerQuarantineId(quarantineId);
+    setError(null);
+    try {
+      await releaseTriggerQuarantine(quarantineId, input);
+      await refresh();
+    } catch (caught) {
+      setError(errorMessage(caught));
+    } finally {
+      setReleasingTriggerQuarantineId(null);
+    }
+  }, [refresh]);
+
   const handleAdminTokenSubmit = useCallback((event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const trimmedToken = adminTokenInput.trim();
@@ -838,6 +873,10 @@ export default function App() {
         onCategoryFilterChange={handleRejectedTriggerCategoryFilterChange}
         onRetryRejectedTrigger={handleRetryRejectedTrigger}
         onSelectTask={selectTask}
+        onCreateTriggerQuarantine={handleCreateTriggerQuarantine}
+        onReleaseTriggerQuarantine={handleReleaseTriggerQuarantine}
+        creatingTriggerQuarantine={creatingTriggerQuarantine}
+        releasingTriggerQuarantineId={releasingTriggerQuarantineId}
       />
     </main>
   );

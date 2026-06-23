@@ -2899,3 +2899,26 @@ Validation:
 - `npm test`: passed after full frontend verification, 117 tests run, 0 failures.
 - `npm run build`: passed after production frontend build verification.
 - `git diff --check`: passed after whitespace verification.
+
+Implemented manual trigger quarantine controls from `docs/plans/144-manual-trigger-quarantine-controls.md`.
+
+Changes:
+
+- Added manual trigger quarantine creation and release APIs under `/api/trigger-quarantines`.
+- Added quarantine operator and release metadata to domain records, MyBatis entities, list responses, and Flyway migrations.
+- Updated active quarantine lookup to ignore released records while preserving historical records.
+- Prevented released threshold quarantines from being immediately recreated from the same pre-release rejection evidence.
+- Added dashboard controls to create trigger-user or repository quarantines and release active quarantines from the rejected-trigger panel.
+- Updated README and product docs to document the operator API and dashboard behavior.
+
+Validation so far:
+
+- `JAVA_HOME=/Library/Java/JavaVirtualMachines/openjdk-17.jdk/Contents/Home mvn -pl PatchPilot -Dtest=InMemoryTriggerQuarantineServiceTests,MyBatisTriggerQuarantineServiceTests,TriggerQuarantineControllerTests,TriggerQuarantineMigrationTests test`: first failed because service APIs, release metadata, and V23 migration did not exist; then passed after backend implementation, 18 tests run, 0 failures.
+- `JAVA_HOME=/Library/Java/JavaVirtualMachines/openjdk-17.jdk/Contents/Home mvn -pl PatchPilot -Dtest=RejectedTriggerQuarantineServiceTests test`: first failed because a manually released quarantine could be recreated from the same rejected-trigger evidence; then passed after release suppression logic.
+- `JAVA_HOME=/Library/Java/JavaVirtualMachines/openjdk-17.jdk/Contents/Home mvn -pl PatchPilot -Dtest=RejectedTriggerQuarantineServiceTests,InMemoryTriggerQuarantineServiceTests,MyBatisTriggerQuarantineServiceTests,TriggerQuarantineControllerTests,TriggerQuarantineMigrationTests test`: passed after backend release suppression fix, 26 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts src/dashboard/components/RejectedTriggerPanel.test.tsx`: first failed because frontend API helpers and manual quarantine controls did not exist; then passed after frontend implementation, 30 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts src/dashboard/components/RejectedTriggerPanel.test.tsx src/App.test.tsx`: passed after App-level dashboard wiring, 85 tests run, 0 failures.
+- `JAVA_HOME=/Library/Java/JavaVirtualMachines/openjdk-17.jdk/Contents/Home mvn -pl PatchPilot test`: passed after full backend verification, 539 tests run, 0 failures.
+- `npm test`: passed after full frontend verification, 121 tests run, 0 failures.
+- `npm run build`: passed after production frontend build verification.
+- `git diff --check`: passed after whitespace verification.

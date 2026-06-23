@@ -3,6 +3,7 @@ import type {
   ApiResponse,
   BackendHealth,
   ConfigurationSummary,
+  CreateTriggerQuarantineInput,
   CreateTaskInput,
   DemoReadiness,
   DemoSmokeChecklist,
@@ -19,6 +20,7 @@ import type {
   FixTaskQueueSummary,
   RejectedTriggerAudit,
   RejectedTriggerAuditSummary,
+  ReleaseTriggerQuarantineInput,
   RejectedTriggerCategoryFilter,
   TriggerQuarantine,
   WebhookDeliveryDiagnostic,
@@ -194,6 +196,17 @@ export async function listTriggerQuarantines(
     limit: String(options.limit ?? 20)
   });
   return getApi<TriggerQuarantine[]>(`/api/trigger-quarantines?${searchParams.toString()}`);
+}
+
+export async function createTriggerQuarantine(input: CreateTriggerQuarantineInput): Promise<TriggerQuarantine> {
+  return postApi<TriggerQuarantine>('/api/trigger-quarantines', input);
+}
+
+export async function releaseTriggerQuarantine(
+  quarantineId: string,
+  input: ReleaseTriggerQuarantineInput
+): Promise<TriggerQuarantine> {
+  return postApi<TriggerQuarantine>(`/api/trigger-quarantines/${encodeURIComponent(quarantineId)}/release`, input);
 }
 
 export async function retryRejectedTrigger(rejectedTriggerId: string): Promise<FixTask> {
