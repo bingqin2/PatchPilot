@@ -181,6 +181,11 @@ export function TaskDetailPanel({
         ) : null}
         {task.adapterDetectionReason ? <strong>Detection {task.adapterDetectionReason}</strong> : null}
         {task.verificationCommand ? <strong>Verify {task.verificationCommand}</strong> : null}
+        {detail.patchReview ? (
+          <strong className={detail.patchReview.decision === 'REJECT' ? 'evidence-risk-blocked' : 'evidence-patch-approved'}>
+            Patch review {detail.patchReview.decision}
+          </strong>
+        ) : null}
       </div>
 
       {task.riskReviewApprovedAt ? (
@@ -274,6 +279,43 @@ export function TaskDetailPanel({
               </div>
             ))}
           </div>
+        </section>
+      ) : null}
+
+      {detail.patchReview ? (
+        <section
+          className={`detail-section patch-review-section patch-review-${detail.patchReview.decision.toLowerCase()}`}
+          aria-label="Patch review"
+        >
+          <div className="patch-review-header">
+            <div>
+              <h3>Patch review</h3>
+              <p>
+                {detail.patchReview.decision === 'REJECT'
+                  ? 'Review gate BLOCKED'
+                  : 'Model-generated patch passed review gate'}
+              </p>
+            </div>
+            <div className="patch-review-badges">
+              <strong>{detail.patchReview.decision}</strong>
+              <span>{detail.patchReview.confidence} confidence</span>
+              <time dateTime={detail.patchReview.createdAt}>{compactTime(detail.patchReview.createdAt)}</time>
+            </div>
+          </div>
+          <p>{detail.patchReview.reason}</p>
+          {detail.patchReview.requiredFollowUp ? (
+            <div className="patch-review-follow-up">
+              <span>Required follow-up</span>
+              <p>{detail.patchReview.requiredFollowUp}</p>
+            </div>
+          ) : null}
+          {detail.patchReview.editedFiles.length > 0 ? (
+            <div className="patch-review-files" aria-label="Patch review edited files">
+              {detail.patchReview.editedFiles.map((file) => (
+                <code key={file}>{file}</code>
+              ))}
+            </div>
+          ) : null}
         </section>
       ) : null}
 

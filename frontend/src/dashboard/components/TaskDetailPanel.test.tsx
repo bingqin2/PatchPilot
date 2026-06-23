@@ -91,6 +91,7 @@ const baseDetail: TaskDetailState = {
   toolCalls: [],
   modelCalls: [],
   generatedDiff: null,
+  patchReview: null,
   issueContext: {
     title: 'Dashboard should show issue context',
     body: 'The issue body explains why the dashboard needs to surface context before operators inspect evidence.',
@@ -134,6 +135,77 @@ test('shows execution evidence summary for selected task', () => {
     screen.getByText('Detection pyproject.toml declares pytest as the verification command')
   ).toBeInTheDocument();
   expect(screen.getByText('Verify python3 -m pytest')).toBeInTheDocument();
+});
+
+test('shows patch review evidence for model generated edits', () => {
+  render(
+    <TaskDetailPanel
+      task={task}
+      detail={{
+        ...baseDetail,
+        patchReview: {
+          id: 'patch-review-1',
+          taskId: 'task-1',
+          decision: 'APPROVE',
+          reason: 'The generated edit matches the issue and stays inside the planned file.',
+          confidence: 'HIGH',
+          requiredFollowUp: 'Run python3 -m pytest before opening the PR.',
+          editedFiles: ['src/app.py', 'tests/test_app.py'],
+          createdAt: '2026-06-20T01:00:14Z'
+        }
+      }}
+      loading={false}
+      actionInFlight={false}
+      reviewApprovalAllowedOperators={['release-captain']}
+      onCancelTask={vi.fn()}
+      onRetryTask={vi.fn()}
+      onApproveReview={vi.fn()}
+      onCopyReport={vi.fn()}
+    />
+  );
+
+  const patchReview = screen.getByLabelText('Patch review');
+  expect(within(patchReview).getByText('Patch review')).toBeInTheDocument();
+  expect(within(patchReview).getByText('APPROVE')).toBeInTheDocument();
+  expect(within(patchReview).getByText('HIGH confidence')).toBeInTheDocument();
+  expect(
+    within(patchReview).getByText('The generated edit matches the issue and stays inside the planned file.')
+  ).toBeInTheDocument();
+  expect(within(patchReview).getByText('Run python3 -m pytest before opening the PR.')).toBeInTheDocument();
+  expect(within(patchReview).getByText('src/app.py')).toBeInTheDocument();
+  expect(within(patchReview).getByText('tests/test_app.py')).toBeInTheDocument();
+});
+
+test('marks rejected patch reviews as review gate blocks', () => {
+  render(
+    <TaskDetailPanel
+      task={{ ...task, status: 'FAILED', failureReason: 'Model patch review rejected generated edits: unsafe edit' }}
+      detail={{
+        ...baseDetail,
+        patchReview: {
+          id: 'patch-review-2',
+          taskId: 'task-1',
+          decision: 'REJECT',
+          reason: 'The patch changes an unrelated authentication file.',
+          confidence: 'HIGH',
+          requiredFollowUp: 'Regenerate an edit limited to the planned target files.',
+          editedFiles: ['src/auth.ts'],
+          createdAt: '2026-06-20T01:00:14Z'
+        }
+      }}
+      loading={false}
+      actionInFlight={false}
+      reviewApprovalAllowedOperators={['release-captain']}
+      onCancelTask={vi.fn()}
+      onRetryTask={vi.fn()}
+      onApproveReview={vi.fn()}
+      onCopyReport={vi.fn()}
+    />
+  );
+
+  const patchReview = screen.getByLabelText('Patch review');
+  expect(within(patchReview).getByText('Review gate BLOCKED')).toBeInTheDocument();
+  expect(within(patchReview).getByText('The patch changes an unrelated authentication file.')).toBeInTheDocument();
 });
 
 test('shows issue context for selected task', () => {

@@ -833,6 +833,16 @@ test('loads aggregate task detail from backend API', async () => {
           diff: 'diff --git a/docs/demo.md b/docs/demo.md\n+PatchPilot smoke test',
           generatedAt: '2026-06-20T01:00:13Z'
         },
+        patchReview: {
+          id: 'patch-review-1',
+          taskId: 'task-1',
+          decision: 'APPROVE',
+          reason: 'The generated edit matches the issue and stays inside the planned file.',
+          confidence: 'HIGH',
+          requiredFollowUp: 'Run ./mvnw test before opening the PR.',
+          editedFiles: ['docs/demo.md'],
+          createdAt: '2026-06-20T01:00:14Z'
+        },
         issueContext: {
           title: 'PatchPilot issue context',
           body: 'Use GitHub issue context for the task.',
@@ -867,6 +877,8 @@ test('loads aggregate task detail from backend API', async () => {
   expect(detail.toolCalls).toEqual([]);
   expect(detail.modelCalls).toEqual([]);
   expect(detail.generatedDiff?.diff).toContain('+PatchPilot smoke test');
+  expect(detail.patchReview?.decision).toBe('APPROVE');
+  expect(detail.patchReview?.editedFiles).toEqual(['docs/demo.md']);
   expect(detail.issueContext?.title).toBe('PatchPilot issue context');
   expect(detail.issueContext?.comments[0].author).toBe('bingqin2');
 });

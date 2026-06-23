@@ -2,6 +2,7 @@ package io.patchpilot.backend.task.service;
 
 import io.patchpilot.backend.task.domain.vo.FixTaskDetailVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskModelCallVo;
+import io.patchpilot.backend.task.domain.vo.FixTaskPatchReviewVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskTestRunVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskTimelineEventVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskToolCallVo;
@@ -47,6 +48,7 @@ public class FixTaskReportFormatter {
         appendRepositorySupportGuidance(report, detail.repositorySupportGuidance());
         appendQueue(report, detail);
         appendGeneratedDiff(report, detail);
+        appendPatchReview(report, detail.patchReview());
         appendTimeline(report, detail.timeline());
         appendTestRuns(report, detail.testRuns());
         appendToolCalls(report, detail.toolCalls());
@@ -159,6 +161,22 @@ public class FixTaskReportFormatter {
                 .append("\n```\n");
     }
 
+    private static void appendPatchReview(StringBuilder report, FixTaskPatchReviewVo patchReview) {
+        if (patchReview == null) {
+            return;
+        }
+
+        report.append("\n## Patch Review\n\n")
+                .append("- Decision: `").append(patchReview.decision()).append("`\n")
+                .append("- Reason: ").append(patchReview.reason()).append("\n")
+                .append("- Confidence: `").append(patchReview.confidence()).append("`\n");
+        if (patchReview.requiredFollowUp() != null && !patchReview.requiredFollowUp().isBlank()) {
+            report.append("- Required follow-up: ").append(patchReview.requiredFollowUp()).append("\n");
+        }
+        report.append("- Edited files: ").append(formatEditedFiles(patchReview.editedFiles())).append("\n")
+                .append("- Reviewed at: `").append(patchReview.createdAt()).append("`\n");
+    }
+
     private static void appendTimeline(StringBuilder report, List<FixTaskTimelineEventVo> timeline) {
         report.append("\n## Timeline\n\n");
         if (timeline.isEmpty()) {
@@ -219,6 +237,13 @@ public class FixTaskReportFormatter {
 
     private static String valueOrUnknown(String value) {
         return value == null || value.isBlank() ? "unknown" : value;
+    }
+
+    private static String formatEditedFiles(List<String> editedFiles) {
+        if (editedFiles.isEmpty()) {
+            return "none";
+        }
+        return "`" + String.join("`, `", editedFiles) + "`";
     }
 
     private static String truncate(String value, int maxLength) {

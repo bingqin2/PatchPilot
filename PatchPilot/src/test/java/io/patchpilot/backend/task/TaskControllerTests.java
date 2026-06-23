@@ -18,6 +18,7 @@ import io.patchpilot.backend.task.domain.vo.FixTaskTestRunVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskToolCallVo;
 import io.patchpilot.backend.task.service.FixTaskModelCallService;
+import io.patchpilot.backend.task.service.FixTaskPatchReviewService;
 import io.patchpilot.backend.task.service.FixTaskQueueQueryService;
 import io.patchpilot.backend.task.service.FixTaskTestRunService;
 import io.patchpilot.backend.task.service.FixTaskTimelineService;
@@ -76,6 +77,9 @@ class TaskControllerTests {
 
     @Autowired
     private FixTaskModelCallService fixTaskModelCallService;
+
+    @Autowired
+    private FixTaskPatchReviewService fixTaskPatchReviewService;
 
     @Autowired
     private FixTaskQueueQueryService fixTaskQueueQueryService;
@@ -918,6 +922,15 @@ class TaskControllerTests {
                 Instant.parse("2026-06-20T04:00:09Z"),
                 Instant.parse("2026-06-20T04:00:13Z")
         );
+        fixTaskPatchReviewService.recordPatchReview(
+                task.id(),
+                "APPROVE",
+                "The generated edit matches the issue and stays inside the planned file.",
+                "HIGH",
+                "Run ./mvnw test before opening the PR.",
+                List.of("src/main/App.java"),
+                Instant.parse("2026-06-20T04:00:14Z")
+        );
         ((RecordingFixTaskQueueQueryService) fixTaskQueueQueryService).setQueueItems(List.of(
                 new FixTaskQueueItemVo(
                         "queue-detail-latest",
@@ -962,6 +975,13 @@ class TaskControllerTests {
                 .andExpect(jsonPath("$.data.testRuns[0].id").value(testRun.id()))
                 .andExpect(jsonPath("$.data.toolCalls[0].id").value(toolCall.id()))
                 .andExpect(jsonPath("$.data.modelCalls[0].id").value(modelCall.id()))
+                .andExpect(jsonPath("$.data.patchReview.taskId").value(task.id()))
+                .andExpect(jsonPath("$.data.patchReview.decision").value("APPROVE"))
+                .andExpect(jsonPath("$.data.patchReview.reason").value("The generated edit matches the issue and stays inside the planned file."))
+                .andExpect(jsonPath("$.data.patchReview.confidence").value("HIGH"))
+                .andExpect(jsonPath("$.data.patchReview.requiredFollowUp").value("Run ./mvnw test before opening the PR."))
+                .andExpect(jsonPath("$.data.patchReview.editedFiles[0]").value("src/main/App.java"))
+                .andExpect(jsonPath("$.data.patchReview.createdAt").value("2026-06-20T04:00:14Z"))
                 .andExpect(jsonPath("$.data.issueContext.title").value("Issue context fixture title"))
                 .andExpect(jsonPath("$.data.issueContext.url").value("https://github.com/octocat/hello-world/issues/42"))
                 .andExpect(jsonPath("$.data.issueContext.body").value("Issue context fixture body"))
@@ -1100,6 +1120,15 @@ class TaskControllerTests {
                 Instant.parse("2026-06-20T05:00:09Z"),
                 Instant.parse("2026-06-20T05:00:13Z")
         );
+        fixTaskPatchReviewService.recordPatchReview(
+                task.id(),
+                "REJECT",
+                "The proposed patch does not address the failing behavior.",
+                "MEDIUM",
+                "Regenerate a focused edit before writing files.",
+                List.of("docs/demo.md", "src/main/App.java"),
+                Instant.parse("2026-06-20T05:00:14Z")
+        );
         ((RecordingFixTaskQueueQueryService) fixTaskQueueQueryService).setQueueItems(List.of(new FixTaskQueueItemVo(
                 "queue-report",
                 task.id(),
@@ -1137,6 +1166,12 @@ class TaskControllerTests {
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("## Generated Diff")))
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("```diff\n")))
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("+PatchPilot report diff")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("## Patch Review")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Decision: `REJECT`")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Reason: The proposed patch does not address the failing behavior.")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Confidence: `MEDIUM`")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Required follow-up: Regenerate a focused edit before writing files.")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Edited files: `docs/demo.md`, `src/main/App.java`")))
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("## Model Calls")))
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- `gpt-5.5` -> success, 200 tokens")));
     }
