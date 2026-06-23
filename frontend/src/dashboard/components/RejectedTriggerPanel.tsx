@@ -6,13 +6,15 @@ interface RejectedTriggerPanelProps {
   error: string | null;
   retryingRejectedTriggerId: string | null;
   onRetryRejectedTrigger: (id: string) => void;
+  onSelectTask: (taskId: string) => void;
 }
 
 export function RejectedTriggerPanel({
   rejectedTriggers,
   error,
   retryingRejectedTriggerId,
-  onRetryRejectedTrigger
+  onRetryRejectedTrigger,
+  onSelectTask
 }: RejectedTriggerPanelProps) {
   const rejectionSummary =
     rejectedTriggers.length === 0
@@ -49,6 +51,7 @@ export function RejectedTriggerPanel({
                   Refusal comment
                 </a>
               ) : null}
+              {renderRetriedTaskLink(trigger.retriedTaskId, onSelectTask)}
               <button
                 type="button"
                 className="inline-action"
@@ -73,4 +76,25 @@ function repositoryLabel(trigger: RejectedTriggerAudit) {
   }
   const issue = trigger.issueNumber === null ? '' : ` #${trigger.issueNumber}`;
   return `${trigger.repositoryOwner}/${trigger.repositoryName}${issue}`;
+}
+
+function taskLink(taskId: string) {
+  return `/tasks/${encodeURIComponent(taskId)}`;
+}
+
+function renderRetriedTaskLink(retriedTaskId: string | null, onSelectTask: (taskId: string) => void) {
+  if (!retriedTaskId) {
+    return null;
+  }
+  return (
+    <a
+      href={taskLink(retriedTaskId)}
+      onClick={(event) => {
+        event.preventDefault();
+        onSelectTask(retriedTaskId);
+      }}
+    >
+      Retried task
+    </a>
+  );
 }

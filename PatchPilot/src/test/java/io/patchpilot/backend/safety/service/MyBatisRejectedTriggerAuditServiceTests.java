@@ -76,6 +76,8 @@ class MyBatisRejectedTriggerAuditServiceTests {
     @Test
     void should_find_rejected_trigger_by_id() {
         RejectedTriggerAuditEntity entity = entity("audit-123", Instant.parse("2026-06-21T01:00:00Z"));
+        entity.setRetriedTaskId("task-123");
+        entity.setRetriedAt(Instant.parse("2026-06-21T03:00:00Z"));
         when(auditMapper.selectById("audit-123")).thenReturn(entity);
 
         assertThat(auditService.findRejectedTrigger("audit-123"))
@@ -83,8 +85,34 @@ class MyBatisRejectedTriggerAuditServiceTests {
                     assertThat(found.id()).isEqualTo("audit-123");
                     assertThat(found.repositoryOwner()).isEqualTo("octocat");
                     assertThat(found.commentUrl()).isEqualTo("https://github.com/octocat/hello-world/issues/42#issuecomment-456");
+                    assertThat(found.retriedTaskId()).isEqualTo("task-123");
+                    assertThat(found.retriedAt()).isEqualTo(Instant.parse("2026-06-21T03:00:00Z"));
                 });
         assertThat(auditService.findRejectedTrigger("missing-audit")).isEmpty();
+    }
+
+    @Test
+    void should_mark_rejected_trigger_as_retried() {
+        when(auditMapper.updateById(any(RejectedTriggerAuditEntity.class))).thenReturn(1);
+        RejectedTriggerAuditEntity updated = entity("audit-123", Instant.parse("2026-06-21T01:00:00Z"));
+        updated.setRetriedTaskId("task-123");
+        updated.setRetriedAt(Instant.parse("2026-06-21T03:00:00Z"));
+        when(auditMapper.selectById("audit-123")).thenReturn(updated);
+        ArgumentCaptor<RejectedTriggerAuditEntity> entityCaptor =
+                ArgumentCaptor.forClass(RejectedTriggerAuditEntity.class);
+
+        RejectedTriggerAuditVo retried = auditService.markRetried(
+                "audit-123",
+                "task-123",
+                Instant.parse("2026-06-21T03:00:00Z")
+        );
+
+        verify(auditMapper).updateById(entityCaptor.capture());
+        assertThat(entityCaptor.getValue().getId()).isEqualTo("audit-123");
+        assertThat(entityCaptor.getValue().getRetriedTaskId()).isEqualTo("task-123");
+        assertThat(entityCaptor.getValue().getRetriedAt()).isEqualTo(Instant.parse("2026-06-21T03:00:00Z"));
+        assertThat(retried.retriedTaskId()).isEqualTo("task-123");
+        assertThat(retried.retriedAt()).isEqualTo(Instant.parse("2026-06-21T03:00:00Z"));
     }
 
     private static RejectedTriggerAuditEntity entity(String id, Instant createdAt) {

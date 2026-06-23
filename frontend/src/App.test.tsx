@@ -425,6 +425,8 @@ const rejectedTriggers = [
     reason: 'Unsafe request rejected: instruction is not actionable',
     commentId: 456,
     commentUrl: 'https://github.com/bingqin2/PatchPilot/issues/1#issuecomment-456',
+    retriedTaskId: 'task-2',
+    retriedAt: '2026-06-20T01:08:05Z',
     createdAt: '2026-06-20T01:03:05Z'
   },
   {
@@ -439,6 +441,8 @@ const rejectedTriggers = [
     reason: 'Unsafe request rejected: destructive or secret-exfiltration instruction',
     commentId: null,
     commentUrl: null,
+    retriedTaskId: null,
+    retriedAt: null,
     createdAt: '2026-06-20T01:04:05Z'
   }
 ];
@@ -2314,6 +2318,22 @@ test('retries rejected triggers and refreshes dashboard data', async () => {
     expect(fetchMock).toHaveBeenCalledWith('/api/rejected-triggers/rejected-1/retry', { method: 'POST' })
   );
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks?limit=50'));
+});
+
+test('opens a retried task from rejected trigger audit records', async () => {
+  const user = userEvent.setup();
+  const fetchMock = vi.mocked(fetch);
+
+  render(<App />);
+
+  const rejectedPanel = await screen.findByRole('region', { name: 'Rejected triggers' });
+  const retriedTaskLink = within(rejectedPanel).getByRole('link', { name: 'Retried task' });
+  expect(retriedTaskLink).toHaveAttribute('href', '/tasks/task-2');
+
+  await user.click(retriedTaskLink);
+
+  expect(window.location.pathname).toBe('/tasks/task-2');
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks/task-2/detail'));
 });
 
 function jsonResponse(data: unknown, success = true, message: string | null = null, status = 200) {

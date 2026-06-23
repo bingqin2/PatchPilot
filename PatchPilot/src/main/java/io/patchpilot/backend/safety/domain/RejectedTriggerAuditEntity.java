@@ -45,6 +45,12 @@ public class RejectedTriggerAuditEntity {
     @TableField("comment_url")
     private String commentUrl;
 
+    @TableField("retried_task_id")
+    private String retriedTaskId;
+
+    @TableField("retried_at")
+    private Instant retriedAt;
+
     @TableField("created_at")
     private Instant createdAt;
 }

@@ -5,12 +5,14 @@ import { RejectedTriggerPanel } from './RejectedTriggerPanel';
 test('renders rejected trigger audit rows and retries a rejected trigger', async () => {
   const user = userEvent.setup();
   const onRetryRejectedTrigger = vi.fn();
+  const onSelectTask = vi.fn();
 
   render(
     <RejectedTriggerPanel
       error={null}
       retryingRejectedTriggerId={null}
       onRetryRejectedTrigger={onRetryRejectedTrigger}
+      onSelectTask={onSelectTask}
       rejectedTriggers={[
         {
           id: 'rejected-1',
@@ -24,6 +26,8 @@ test('renders rejected trigger audit rows and retries a rejected trigger', async
           reason: 'Unsafe request rejected: instruction is not actionable',
           commentId: 456,
           commentUrl: 'https://github.com/bingqin2/PatchPilot/issues/1#issuecomment-456',
+          retriedTaskId: 'task-from-rejected-1',
+          retriedAt: '2026-06-20T01:08:05Z',
           createdAt: '2026-06-20T01:03:05Z'
         }
       ]}
@@ -41,6 +45,14 @@ test('renders rejected trigger audit rows and retries a rejected trigger', async
     'href',
     'https://github.com/bingqin2/PatchPilot/issues/1#issuecomment-456'
   );
+  expect(within(panel).getByRole('link', { name: 'Retried task' })).toHaveAttribute(
+    'href',
+    '/tasks/task-from-rejected-1'
+  );
+
+  await user.click(within(panel).getByRole('link', { name: 'Retried task' }));
+
+  expect(onSelectTask).toHaveBeenCalledWith('task-from-rejected-1');
 
   await user.click(within(panel).getByRole('button', { name: 'Retry trigger' }));
 
@@ -54,6 +66,7 @@ test('renders rejected trigger empty and error states', () => {
       rejectedTriggers={[]}
       retryingRejectedTriggerId={null}
       onRetryRejectedTrigger={vi.fn()}
+      onSelectTask={vi.fn()}
     />
   );
 
@@ -66,6 +79,7 @@ test('renders rejected trigger empty and error states', () => {
       rejectedTriggers={[]}
       retryingRejectedTriggerId={null}
       onRetryRejectedTrigger={vi.fn()}
+      onSelectTask={vi.fn()}
     />
   );
 
@@ -78,6 +92,7 @@ test('disables the retry action while retrying a rejected trigger', () => {
       error={null}
       retryingRejectedTriggerId="rejected-1"
       onRetryRejectedTrigger={vi.fn()}
+      onSelectTask={vi.fn()}
       rejectedTriggers={[
         {
           id: 'rejected-1',
@@ -91,6 +106,8 @@ test('disables the retry action while retrying a rejected trigger', () => {
           reason: 'Unsafe request rejected: instruction is not actionable',
           commentId: null,
           commentUrl: null,
+          retriedTaskId: null,
+          retriedAt: null,
           createdAt: '2026-06-20T01:03:05Z'
         }
       ]}

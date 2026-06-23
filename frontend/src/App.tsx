@@ -785,6 +785,7 @@ export default function App() {
         error={rejectedTriggerError}
         retryingRejectedTriggerId={retryingRejectedTriggerId}
         onRetryRejectedTrigger={handleRetryRejectedTrigger}
+        onSelectTask={selectTask}
       />
     </main>
   );

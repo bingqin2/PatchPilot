@@ -11,6 +11,8 @@ import io.patchpilot.backend.task.service.ManualFixTaskService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
+
 @Service
 @RequiredArgsConstructor
 public class DefaultRejectedTriggerRetryService implements RejectedTriggerRetryService {
@@ -38,6 +40,7 @@ public class DefaultRejectedTriggerRetryService implements RejectedTriggerRetryS
                 "Task retried from rejected trigger " + audit.id()
                         + " after previous rejection: " + audit.reason()
         );
+        auditService.markRetried(audit.id(), task.id(), Instant.now());
         return task;
     }
 

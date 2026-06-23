@@ -60,6 +60,11 @@ class DefaultRejectedTriggerRetryServiceTests {
                 "Task retried from rejected trigger " + audit.id()
                         + " after previous rejection: Unsafe request rejected: instruction is not actionable"
         );
+        assertThat(auditService.findRejectedTrigger(audit.id()))
+                .hasValueSatisfying(updatedAudit -> {
+                    assertThat(updatedAudit.retriedTaskId()).isEqualTo("task-1");
+                    assertThat(updatedAudit.retriedAt()).isNotNull();
+                });
     }
 
     @Test
@@ -90,6 +95,11 @@ class DefaultRejectedTriggerRetryServiceTests {
 
         assertThat(manualFixTaskService.commands()).isEmpty();
         assertThat(timelineService.eventTypes()).isEmpty();
+        assertThat(auditService.findRejectedTrigger(audit.id()))
+                .hasValueSatisfying(updatedAudit -> {
+                    assertThat(updatedAudit.retriedTaskId()).isNull();
+                    assertThat(updatedAudit.retriedAt()).isNull();
+                });
     }
 
     private static final class RecordingRejectedTriggerAuditService implements RejectedTriggerAuditService {
@@ -124,6 +134,34 @@ class DefaultRejectedTriggerRetryServiceTests {
             return audits.stream()
                     .filter(audit -> audit.id().equals(id))
                     .findFirst();
+        }
+
+        @Override
+        public RejectedTriggerAuditVo markRetried(String id, String taskId, Instant retriedAt) {
+            for (int index = 0; index < audits.size(); index++) {
+                RejectedTriggerAuditVo audit = audits.get(index);
+                if (audit.id().equals(id)) {
+                    RejectedTriggerAuditVo updated = new RejectedTriggerAuditVo(
+                            audit.id(),
+                            audit.source(),
+                            audit.deliveryId(),
+                            audit.repositoryOwner(),
+                            audit.repositoryName(),
+                            audit.issueNumber(),
+                            audit.triggerUser(),
+                            audit.triggerComment(),
+                            audit.reason(),
+                            audit.commentId(),
+                            audit.commentUrl(),
+                            taskId,
+                            retriedAt,
+                            audit.createdAt()
+                    );
+                    audits.set(index, updated);
+                    return updated;
+                }
+            }
+            throw new IllegalArgumentException("Rejected trigger not found");
         }
 
         private RejectedTriggerAuditVo add(RejectedTriggerAuditVo audit) {

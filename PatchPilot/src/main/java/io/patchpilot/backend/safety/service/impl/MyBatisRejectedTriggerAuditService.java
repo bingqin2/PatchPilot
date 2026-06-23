@@ -50,4 +50,15 @@ public class MyBatisRejectedTriggerAuditService implements RejectedTriggerAuditS
         RejectedTriggerAuditEntity entity = auditMapper.selectById(id);
         return Optional.ofNullable(entity).map(RejectedTriggerAuditConvert::toVo);
     }
+
+    @Override
+    public RejectedTriggerAuditVo markRetried(String id, String taskId, Instant retriedAt) {
+        RejectedTriggerAuditEntity updateEntity = new RejectedTriggerAuditEntity();
+        updateEntity.setId(id);
+        updateEntity.setRetriedTaskId(taskId);
+        updateEntity.setRetriedAt(retriedAt);
+        auditMapper.updateById(updateEntity);
+        return findRejectedTrigger(id)
+                .orElseThrow(() -> new IllegalArgumentException("Rejected trigger not found"));
+    }
 }

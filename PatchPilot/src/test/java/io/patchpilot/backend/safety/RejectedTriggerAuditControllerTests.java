@@ -46,6 +46,8 @@ class RejectedTriggerAuditControllerTests {
                 "Unsafe request rejected: destructive or secret-exfiltration instruction",
                 456L,
                 "https://github.com/octocat/hello-world/issues/42#issuecomment-456",
+                "task-123",
+                Instant.parse("2026-06-21T02:00:00Z"),
                 Instant.parse("2026-06-21T01:00:00Z")
         )));
 
@@ -64,6 +66,8 @@ class RejectedTriggerAuditControllerTests {
                 .andExpect(jsonPath("$.data[0].reason").value("Unsafe request rejected: destructive or secret-exfiltration instruction"))
                 .andExpect(jsonPath("$.data[0].commentId").value(456))
                 .andExpect(jsonPath("$.data[0].commentUrl").value("https://github.com/octocat/hello-world/issues/42#issuecomment-456"))
+                .andExpect(jsonPath("$.data[0].retriedTaskId").value("task-123"))
+                .andExpect(jsonPath("$.data[0].retriedAt").value("2026-06-21T02:00:00Z"))
                 .andExpect(jsonPath("$.data[0].createdAt").value("2026-06-21T01:00:00Z"));
     }
 

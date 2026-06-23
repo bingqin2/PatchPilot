@@ -285,6 +285,8 @@ export interface RejectedTriggerAudit {
   reason: string;
   commentId: number | null;
   commentUrl: string | null;
+  retriedTaskId: string | null;
+  retriedAt: string | null;
   createdAt: string;
 }
 
