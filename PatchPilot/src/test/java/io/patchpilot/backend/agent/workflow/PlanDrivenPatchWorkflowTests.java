@@ -5,6 +5,8 @@ import io.patchpilot.backend.agent.tool.FileReadTool;
 import io.patchpilot.backend.agent.workflow.domain.FileEditPlan;
 import io.patchpilot.backend.agent.workflow.domain.FixPlan;
 import io.patchpilot.backend.agent.workflow.domain.PatchWorkflowResult;
+import io.patchpilot.backend.agent.workflow.domain.PatchReview;
+import io.patchpilot.backend.agent.workflow.domain.PatchReviewDecision;
 import io.patchpilot.backend.github.client.domain.GitHubIssueContext;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
@@ -88,7 +90,8 @@ class PlanDrivenPatchWorkflowTests {
         return new PlannedPatchWorkflow(
                 new FileWriteTool(pathResolver),
                 new FileReadTool(pathResolver),
-                new RecordingFileEditPlanGenerator(FileEditPlan.empty())
+                new RecordingFileEditPlanGenerator(FileEditPlan.empty()),
+                new RecordingPatchReviewGenerator()
         );
     }
 
@@ -173,7 +176,7 @@ class PlanDrivenPatchWorkflowTests {
         private int callOrder;
 
         private RecordingPlannedPatchWorkflow(PatchWorkflowResult result) {
-            super(null, null, null);
+            super(null, null, null, null);
             this.result = result;
         }
 
@@ -219,6 +222,25 @@ class PlanDrivenPatchWorkflowTests {
             super(request -> {
                 throw new AssertionError("Model client should not be called by this test double");
             });
+        }
+    }
+
+    private static final class RecordingPatchReviewGenerator extends PatchReviewGenerator {
+
+        private RecordingPatchReviewGenerator() {
+            super(request -> {
+                throw new AssertionError("Model client should not be called by this test double");
+            });
+        }
+
+        @Override
+        public PatchReview review(
+                FixTaskVo task,
+                FixPlan fixPlan,
+                List<io.patchpilot.backend.agent.workflow.domain.FileEditContext> fileContexts,
+                List<io.patchpilot.backend.agent.workflow.domain.ProposedFileEdit> edits
+        ) {
+            return new PatchReview(PatchReviewDecision.APPROVE, "ok", "HIGH", "Run verification.");
         }
     }
 }
