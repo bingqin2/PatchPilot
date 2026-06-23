@@ -174,6 +174,13 @@ public class MyBatisTriggerQuarantineService implements TriggerQuarantineRecordS
     }
 
     @Override
+    public Optional<TriggerQuarantineVo> findQuarantineById(String id) {
+        Instant now = Instant.now();
+        return findEntityById(trimmed(id))
+                .map(entity -> TriggerQuarantineConvert.toVo(entity, now));
+    }
+
+    @Override
     public List<TriggerQuarantineVo> listQuarantines(boolean activeOnly, int limit) {
         Instant now = Instant.now();
         LambdaQueryWrapper<TriggerQuarantineEntity> queryWrapper = new LambdaQueryWrapper<>();

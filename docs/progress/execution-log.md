@@ -2939,3 +2939,26 @@ Validation so far:
 
 - `JAVA_HOME=/Library/Java/JavaVirtualMachines/openjdk-17.jdk/Contents/Home mvn -pl PatchPilot -Dtest=OperatorSafetyAuditControllerTests,InMemoryOperatorSafetyAuditServiceTests,MyBatisOperatorSafetyAuditServiceTests,OperatorSafetyAuditMigrationTests,TriggerQuarantineControllerTests test`: first failed because the operator safety audit model, service, controller, mapper, and migration did not exist; then passed after implementation, 10 tests run, 0 failures.
 - `npm test -- --run src/api.test.ts src/dashboard/components/RejectedTriggerPanel.test.tsx src/App.test.tsx`: first failed because `listOperatorSafetyAudits` and the operator safety audit panel did not exist; then passed after frontend implementation, 86 tests run, 0 failures.
+
+Implemented quarantine evidence drilldown from `docs/plans/146-quarantine-evidence-drilldown.md`.
+
+Changes:
+
+- Added `TriggerQuarantineEvidenceVo` and `TriggerQuarantineEvidenceService` as a read model for one quarantine, its matching rejected-trigger evidence, and its operator safety audit actions.
+- Exposed `GET /api/trigger-quarantines/{id}/evidence` with not-found and limit validation behavior.
+- Added in-memory and MyBatis-backed query methods for quarantine lookup by id, rejected-trigger evidence by quarantine target, and operator audit evidence by resource id.
+- Added frontend API typing and `getTriggerQuarantineEvidence`.
+- Added an `Inspect evidence` action to active quarantine rows in the rejected-trigger panel.
+- Rendered a compact evidence drilldown with matching rejected `/agent fix` attempts and manual safety actions.
+- Updated README and product docs to document the evidence endpoint and dashboard behavior.
+
+Validation so far:
+
+- `JAVA_HOME=/Library/Java/JavaVirtualMachines/openjdk-17.jdk/Contents/Home mvn -pl PatchPilot -Dtest=TriggerQuarantineControllerTests,DefaultTriggerQuarantineEvidenceServiceTests,InMemoryRejectedTriggerAuditServiceTests,InMemoryOperatorSafetyAuditServiceTests,InMemoryTriggerQuarantineServiceTests test`: first failed because `TriggerQuarantineEvidenceVo`, `TriggerQuarantineEvidenceService`, and `DefaultTriggerQuarantineEvidenceService` did not exist; then passed after backend implementation, 24 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts src/dashboard/components/RejectedTriggerPanel.test.tsx`: first failed because the new frontend API/helper props and evidence UI were not implemented; then passed after frontend implementation, 33 tests run, 0 failures.
+- `npm test -- --run src/App.test.tsx src/api.test.ts src/dashboard/components/RejectedTriggerPanel.test.tsx`: passed after App-level evidence loading, 89 tests run, 0 failures.
+- `JAVA_HOME=/Library/Java/JavaVirtualMachines/openjdk-17.jdk/Contents/Home mvn -pl PatchPilot -Dtest='*TriggerQuarantine*Tests,*RejectedTriggerAuditServiceTests,*OperatorSafetyAuditServiceTests,DefaultTriggerQuarantineEvidenceServiceTests' test`: first failed because MyBatis rejected-trigger query tests needed entity metadata initialization and the newest-first mock no longer matched SQL ordering; then passed after fixing the tests, 53 tests run, 0 failures.
+- `JAVA_HOME=/Library/Java/JavaVirtualMachines/openjdk-17.jdk/Contents/Home mvn -pl PatchPilot test`: passed after full backend verification, 557 tests run, 0 failures.
+- `npm test`: passed after full frontend verification, 125 tests run, 0 failures.
+- `npm run build`: first failed because one component test fixture omitted the new evidence props caught by TypeScript; then passed after fixing the fixture.
+- `git diff --check`: passed after whitespace verification.

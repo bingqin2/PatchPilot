@@ -2,9 +2,11 @@ package io.patchpilot.backend.safety.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.patchpilot.backend.safety.convert.RejectedTriggerAuditConvert;
+import io.patchpilot.backend.safety.convert.TriggerQuarantineConvert;
 import io.patchpilot.backend.safety.domain.RecordRejectedTriggerCommand;
 import io.patchpilot.backend.safety.domain.RejectedTriggerAuditEntity;
 import io.patchpilot.backend.safety.domain.RejectedTriggerAuditVo;
+import io.patchpilot.backend.safety.domain.TriggerQuarantineScope;
 import io.patchpilot.backend.safety.mapper.RejectedTriggerAuditMapper;
 import io.patchpilot.backend.safety.service.RejectedTriggerAuditService;
 import lombok.RequiredArgsConstructor;
@@ -48,9 +50,32 @@ public class MyBatisRejectedTriggerAuditService implements RejectedTriggerAuditS
             queryWrapper.eq(RejectedTriggerAuditEntity::getCategory, category.trim());
         }
         queryWrapper
+                .orderByDesc(RejectedTriggerAuditEntity::getCreatedAt)
                 .last("LIMIT " + limit);
         return auditMapper.selectList(queryWrapper).stream()
-                .sorted(Comparator.comparing(RejectedTriggerAuditEntity::getCreatedAt).reversed())
+                .map(RejectedTriggerAuditConvert::toVo)
+                .toList();
+    }
+
+    @Override
+    public List<RejectedTriggerAuditVo> listRejectedTriggersForQuarantine(
+            TriggerQuarantineScope scope,
+            String scopeKey,
+            int limit
+    ) {
+        LambdaQueryWrapper<RejectedTriggerAuditEntity> queryWrapper = new LambdaQueryWrapper<>();
+        if (scope == TriggerQuarantineScope.TRIGGER_USER) {
+            queryWrapper.eq(RejectedTriggerAuditEntity::getTriggerUser, TriggerQuarantineConvert.normalizedScopeKey(scopeKey));
+        } else {
+            String[] repository = TriggerQuarantineConvert.normalizedScopeKey(scopeKey).split("/", 2);
+            queryWrapper
+                    .eq(RejectedTriggerAuditEntity::getRepositoryOwner, repository.length > 0 ? repository[0] : "")
+                    .eq(RejectedTriggerAuditEntity::getRepositoryName, repository.length > 1 ? repository[1] : "");
+        }
+        queryWrapper
+                .orderByDesc(RejectedTriggerAuditEntity::getCreatedAt)
+                .last("LIMIT " + limit);
+        return auditMapper.selectList(queryWrapper).stream()
                 .map(RejectedTriggerAuditConvert::toVo)
                 .toList();
     }

@@ -552,6 +552,12 @@ const operatorSafetyAudits = [
   }
 ];
 
+const triggerQuarantineEvidence = {
+  quarantine: triggerQuarantines[0],
+  rejectedTriggers: [rejectedTriggers[0]],
+  operatorSafetyAudits: [operatorSafetyAudits[0]]
+};
+
 const supportedLanguageAdapters = [
   {
     language: 'java',
@@ -933,6 +939,9 @@ beforeEach(() => {
     }
     if (url === '/api/trigger-quarantines?activeOnly=true&limit=20') {
       return jsonResponse(triggerQuarantines);
+    }
+    if (url === '/api/trigger-quarantines/quarantine-1/evidence?limit=20') {
+      return jsonResponse(triggerQuarantineEvidence);
     }
     if (url === '/api/operator-safety-audits?limit=20') {
       return jsonResponse(operatorSafetyAudits);
@@ -1321,6 +1330,26 @@ test('creates and releases trigger quarantines from rejected trigger panel', asy
       })
     })
   );
+});
+
+test('loads trigger quarantine evidence from rejected trigger panel', async () => {
+  const user = userEvent.setup();
+  const fetchMock = vi.mocked(fetch);
+
+  render(<App />);
+
+  const rejectedTriggerPanel = await screen.findByRole('region', { name: 'Rejected triggers' });
+  await user.click(within(rejectedTriggerPanel).getByRole('button', { name: 'Inspect drive-by-user evidence' }));
+
+  await waitFor(() =>
+    expect(fetchMock).toHaveBeenCalledWith('/api/trigger-quarantines/quarantine-1/evidence?limit=20')
+  );
+  const evidencePanel = within(rejectedTriggerPanel).getByRole('group', { name: 'Trigger quarantine evidence' });
+  expect(within(evidencePanel).getByText('Quarantine evidence')).toBeInTheDocument();
+  expect(within(evidencePanel).getByText(/1 rejected trigger/)).toBeInTheDocument();
+  expect(within(evidencePanel).getByText(/1 operator action/)).toBeInTheDocument();
+  expect(within(evidencePanel).getByText('/agent fix make it better')).toBeInTheDocument();
+  expect(within(evidencePanel).getByText('Operator blocked noisy demo trigger user')).toBeInTheDocument();
 });
 
 test('prompts for admin token and reloads dashboard after saving it', async () => {

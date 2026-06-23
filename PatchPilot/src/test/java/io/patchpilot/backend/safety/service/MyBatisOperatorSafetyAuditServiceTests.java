@@ -93,4 +93,39 @@ class MyBatisOperatorSafetyAuditServiceTests {
         assertThat(audits).singleElement()
                 .satisfies(audit -> assertThat(audit.action()).isEqualTo("TRIGGER_QUARANTINE_RELEASED"));
     }
+
+    @Test
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    void should_query_operator_safety_audits_for_resource_newest_first() {
+        OperatorSafetyAuditEntity entity = new OperatorSafetyAuditEntity();
+        entity.setId("audit-1");
+        entity.setAction("MANUAL_QUARANTINE_CREATED");
+        entity.setResourceType("TRIGGER_QUARANTINE");
+        entity.setResourceId("quarantine-1");
+        entity.setScope("TRIGGER_USER");
+        entity.setScopeKey("drive-by-user");
+        entity.setOperator("local-admin");
+        entity.setReason("Operator blocked noisy demo trigger user");
+        entity.setCreatedAt(Instant.parse("2026-06-24T01:00:00Z"));
+        when(auditMapper.selectList(any())).thenReturn(List.of(entity));
+        ArgumentCaptor<LambdaQueryWrapper<OperatorSafetyAuditEntity>> queryCaptor =
+                ArgumentCaptor.forClass((Class) LambdaQueryWrapper.class);
+
+        List<OperatorSafetyAuditVo> audits = auditService.listSafetyAuditsForResource(
+                "TRIGGER_QUARANTINE",
+                "quarantine-1",
+                20
+        );
+
+        verify(auditMapper).selectList(queryCaptor.capture());
+        assertThat(queryCaptor.getValue().getSqlSegment())
+                .contains("resource_type")
+                .contains("resource_id")
+                .contains("ORDER BY")
+                .contains("created_at")
+                .contains("DESC")
+                .contains("LIMIT 20");
+        assertThat(audits).singleElement()
+                .satisfies(audit -> assertThat(audit.resourceId()).isEqualTo("quarantine-1"));
+    }
 }

@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Supplier;
@@ -42,5 +43,21 @@ public class InMemoryOperatorSafetyAuditService implements OperatorSafetyAuditSe
                 .sorted(Comparator.comparing(OperatorSafetyAuditVo::createdAt).reversed())
                 .limit(limit)
                 .toList();
+    }
+
+    @Override
+    public List<OperatorSafetyAuditVo> listSafetyAuditsForResource(String resourceType, String resourceId, int limit) {
+        String normalizedResourceType = normalized(resourceType);
+        String normalizedResourceId = normalized(resourceId);
+        return audits.stream()
+                .filter(audit -> normalized(audit.resourceType()).equals(normalizedResourceType))
+                .filter(audit -> normalized(audit.resourceId()).equals(normalizedResourceId))
+                .sorted(Comparator.comparing(OperatorSafetyAuditVo::createdAt).reversed())
+                .limit(limit)
+                .toList();
+    }
+
+    private static String normalized(String value) {
+        return value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
     }
 }

@@ -2,6 +2,8 @@ package io.patchpilot.backend.safety.service.impl;
 
 import io.patchpilot.backend.safety.domain.RecordRejectedTriggerCommand;
 import io.patchpilot.backend.safety.domain.RejectedTriggerAuditVo;
+import io.patchpilot.backend.safety.domain.TriggerQuarantineScope;
+import io.patchpilot.backend.safety.convert.TriggerQuarantineConvert;
 import io.patchpilot.backend.safety.service.RejectedTriggerAuditService;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
@@ -73,6 +75,20 @@ public class InMemoryRejectedTriggerAuditService implements RejectedTriggerAudit
     }
 
     @Override
+    public List<RejectedTriggerAuditVo> listRejectedTriggersForQuarantine(
+            TriggerQuarantineScope scope,
+            String scopeKey,
+            int limit
+    ) {
+        String normalizedScopeKey = TriggerQuarantineConvert.normalizedScopeKey(scopeKey);
+        return audits.stream()
+                .filter(audit -> matchesQuarantine(audit, scope, normalizedScopeKey))
+                .sorted(Comparator.comparing(RejectedTriggerAuditVo::createdAt).reversed())
+                .limit(limit)
+                .toList();
+    }
+
+    @Override
     public Optional<RejectedTriggerAuditVo> findRejectedTrigger(String id) {
         return audits.stream()
                 .filter(audit -> audit.id().equals(id))
@@ -106,5 +122,23 @@ public class InMemoryRejectedTriggerAuditService implements RejectedTriggerAudit
             }
         }
         throw new IllegalArgumentException("Rejected trigger not found");
+    }
+
+    private static boolean matchesQuarantine(
+            RejectedTriggerAuditVo audit,
+            TriggerQuarantineScope scope,
+            String normalizedScopeKey
+    ) {
+        if (scope == TriggerQuarantineScope.TRIGGER_USER) {
+            return TriggerQuarantineConvert.normalizedScopeKey(audit.triggerUser()).equals(normalizedScopeKey);
+        }
+        return TriggerQuarantineConvert.normalizedScopeKey(repositoryKey(audit)).equals(normalizedScopeKey);
+    }
+
+    private static String repositoryKey(RejectedTriggerAuditVo audit) {
+        if (audit.repositoryOwner() == null || audit.repositoryName() == null) {
+            return "";
+        }
+        return audit.repositoryOwner() + "/" + audit.repositoryName();
     }
 }

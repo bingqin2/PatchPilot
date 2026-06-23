@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 @Service
@@ -42,5 +43,26 @@ public class MyBatisOperatorSafetyAuditService implements OperatorSafetyAuditSer
         return auditMapper.selectList(queryWrapper).stream()
                 .map(OperatorSafetyAuditConvert::toVo)
                 .toList();
+    }
+
+    @Override
+    public List<OperatorSafetyAuditVo> listSafetyAuditsForResource(String resourceType, String resourceId, int limit) {
+        LambdaQueryWrapper<OperatorSafetyAuditEntity> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper
+                .eq(OperatorSafetyAuditEntity::getResourceType, normalizedResourceType(resourceType))
+                .eq(OperatorSafetyAuditEntity::getResourceId, trimmed(resourceId))
+                .orderByDesc(OperatorSafetyAuditEntity::getCreatedAt)
+                .last("LIMIT " + limit);
+        return auditMapper.selectList(queryWrapper).stream()
+                .map(OperatorSafetyAuditConvert::toVo)
+                .toList();
+    }
+
+    private static String normalizedResourceType(String value) {
+        return trimmed(value).toUpperCase(Locale.ROOT);
+    }
+
+    private static String trimmed(String value) {
+        return value == null ? "" : value.trim();
     }
 }

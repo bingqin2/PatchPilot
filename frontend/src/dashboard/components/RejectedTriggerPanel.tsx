@@ -7,6 +7,7 @@ import type {
   RejectedTriggerCountSummary,
   ReleaseTriggerQuarantineInput,
   TriggerQuarantine,
+  TriggerQuarantineEvidence,
   TriggerQuarantineScope
 } from '../../types';
 import { useState, type FormEvent } from 'react';
@@ -41,8 +42,11 @@ interface RejectedTriggerPanelProps {
   onSelectTask: (taskId: string) => void;
   onCreateTriggerQuarantine: (input: CreateTriggerQuarantineInput) => void;
   onReleaseTriggerQuarantine: (id: string, input: ReleaseTriggerQuarantineInput) => void;
+  onInspectTriggerQuarantine: (id: string) => void;
   creatingTriggerQuarantine: boolean;
   releasingTriggerQuarantineId: string | null;
+  inspectingTriggerQuarantineId: string | null;
+  triggerQuarantineEvidence: TriggerQuarantineEvidence | null;
 }
 
 export function RejectedTriggerPanel({
@@ -58,8 +62,11 @@ export function RejectedTriggerPanel({
   onSelectTask,
   onCreateTriggerQuarantine,
   onReleaseTriggerQuarantine,
+  onInspectTriggerQuarantine,
   creatingTriggerQuarantine,
-  releasingTriggerQuarantineId
+  releasingTriggerQuarantineId,
+  inspectingTriggerQuarantineId,
+  triggerQuarantineEvidence
 }: RejectedTriggerPanelProps) {
   const rejectionSummary =
     rejectedTriggers.length === 0
@@ -96,8 +103,11 @@ export function RejectedTriggerPanel({
         quarantines={quarantines}
         onCreateTriggerQuarantine={onCreateTriggerQuarantine}
         onReleaseTriggerQuarantine={onReleaseTriggerQuarantine}
+        onInspectTriggerQuarantine={onInspectTriggerQuarantine}
         creatingTriggerQuarantine={creatingTriggerQuarantine}
         releasingTriggerQuarantineId={releasingTriggerQuarantineId}
+        inspectingTriggerQuarantineId={inspectingTriggerQuarantineId}
+        triggerQuarantineEvidence={triggerQuarantineEvidence}
       />
       <OperatorSafetyAuditList audits={operatorSafetyAudits} />
       <div className="rejected-trigger-list" role="group" aria-label="Rejected trigger audit rows">
@@ -171,14 +181,20 @@ function TriggerQuarantineControls({
   quarantines,
   onCreateTriggerQuarantine,
   onReleaseTriggerQuarantine,
+  onInspectTriggerQuarantine,
   creatingTriggerQuarantine,
-  releasingTriggerQuarantineId
+  releasingTriggerQuarantineId,
+  inspectingTriggerQuarantineId,
+  triggerQuarantineEvidence
 }: {
   quarantines: TriggerQuarantine[];
   onCreateTriggerQuarantine: (input: CreateTriggerQuarantineInput) => void;
   onReleaseTriggerQuarantine: (id: string, input: ReleaseTriggerQuarantineInput) => void;
+  onInspectTriggerQuarantine: (id: string) => void;
   creatingTriggerQuarantine: boolean;
   releasingTriggerQuarantineId: string | null;
+  inspectingTriggerQuarantineId: string | null;
+  triggerQuarantineEvidence: TriggerQuarantineEvidence | null;
 }) {
   const [scope, setScope] = useState<TriggerQuarantineScope>('TRIGGER_USER');
   const [scopeKey, setScopeKey] = useState('');
@@ -268,8 +284,11 @@ function TriggerQuarantineControls({
         quarantines={quarantines}
         operator={operator.trim() || 'dashboard-operator'}
         releasingTriggerQuarantineId={releasingTriggerQuarantineId}
+        inspectingTriggerQuarantineId={inspectingTriggerQuarantineId}
         onReleaseTriggerQuarantine={onReleaseTriggerQuarantine}
+        onInspectTriggerQuarantine={onInspectTriggerQuarantine}
       />
+      <TriggerQuarantineEvidencePanel evidence={triggerQuarantineEvidence} />
     </div>
   );
 }
@@ -278,12 +297,16 @@ function TriggerQuarantineSummary({
   quarantines,
   operator,
   releasingTriggerQuarantineId,
-  onReleaseTriggerQuarantine
+  inspectingTriggerQuarantineId,
+  onReleaseTriggerQuarantine,
+  onInspectTriggerQuarantine
 }: {
   quarantines: TriggerQuarantine[];
   operator: string;
   releasingTriggerQuarantineId: string | null;
+  inspectingTriggerQuarantineId: string | null;
   onReleaseTriggerQuarantine: (id: string, input: ReleaseTriggerQuarantineInput) => void;
+  onInspectTriggerQuarantine: (id: string) => void;
 }) {
   if (quarantines.length === 0) {
     return <p className="empty-state compact-empty-state">No active trigger quarantines.</p>;
@@ -299,6 +322,16 @@ function TriggerQuarantineSummary({
             <span>{quarantine.evidenceCount} rejected triggers</span>
             {quarantine.createdBy ? <span>By {quarantine.createdBy}</span> : null}
             <time>Expires {compactTime(quarantine.expiresAt)}</time>
+            <button
+              type="button"
+              className="inline-action"
+              disabled={inspectingTriggerQuarantineId === quarantine.id}
+              onClick={() => onInspectTriggerQuarantine(quarantine.id)}
+            >
+              {inspectingTriggerQuarantineId === quarantine.id
+                ? 'Inspecting evidence'
+                : `Inspect ${quarantine.scopeKey} evidence`}
+            </button>
             <button
               type="button"
               className="inline-action"
@@ -318,6 +351,60 @@ function TriggerQuarantineSummary({
           <p>{quarantine.reason}</p>
         </article>
       ))}
+    </div>
+  );
+}
+
+function TriggerQuarantineEvidencePanel({ evidence }: { evidence: TriggerQuarantineEvidence | null }) {
+  if (!evidence) {
+    return null;
+  }
+  const rejectedCount = evidence.rejectedTriggers.length;
+  const operatorActionCount = evidence.operatorSafetyAudits.length;
+  return (
+    <div className="trigger-quarantine-evidence" role="group" aria-label="Trigger quarantine evidence">
+      <div className="rejected-trigger-summary-header">
+        <div>
+          <h3>Quarantine evidence</h3>
+          <p>
+            {evidence.quarantine.scopeKey} · {rejectedCount} {rejectedCount === 1 ? 'rejected trigger' : 'rejected triggers'} ·{' '}
+            {operatorActionCount} {operatorActionCount === 1 ? 'operator action' : 'operator actions'}
+          </p>
+        </div>
+      </div>
+      <div className="trigger-quarantine-evidence-grid">
+        <div>
+          <h4>Rejected trigger evidence</h4>
+          {evidence.rejectedTriggers.map((trigger) => (
+            <article className="rejected-trigger-row compact-evidence-row" key={trigger.id}>
+              <div className="rejected-trigger-main">
+                <span className="status-pill status-warning">{categoryLabel(trigger.category)}</span>
+                <div>
+                  <strong>{trigger.triggerComment ?? 'missing trigger comment'}</strong>
+                  <span>{repositoryLabel(trigger)}</span>
+                </div>
+                <time>{compactTime(trigger.createdAt)}</time>
+              </div>
+              <p>{trigger.reason}</p>
+            </article>
+          ))}
+          {evidence.rejectedTriggers.length === 0 ? <p className="empty-state compact-empty-state">No matching rejected triggers.</p> : null}
+        </div>
+        <div>
+          <h4>Operator actions</h4>
+          {evidence.operatorSafetyAudits.map((audit) => (
+            <article className="operator-safety-audit-row compact-evidence-row" key={audit.id}>
+              <div>
+                <span className="status-pill status-warning">{actionLabel(audit.action)}</span>
+                <span>{audit.operator}</span>
+                <time>{compactTime(audit.createdAt)}</time>
+              </div>
+              <p>{audit.reason}</p>
+            </article>
+          ))}
+          {evidence.operatorSafetyAudits.length === 0 ? <p className="empty-state compact-empty-state">No operator actions recorded.</p> : null}
+        </div>
+      </div>
     </div>
   );
 }

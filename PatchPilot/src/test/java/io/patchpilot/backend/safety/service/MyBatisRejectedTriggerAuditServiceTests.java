@@ -1,12 +1,18 @@
 package io.patchpilot.backend.safety.service;
 
+import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import io.patchpilot.backend.safety.domain.RecordRejectedTriggerCommand;
 import io.patchpilot.backend.safety.domain.RejectedTriggerAuditEntity;
+import io.patchpilot.backend.safety.domain.RejectedTriggerAuditVo;
 import io.patchpilot.backend.safety.domain.RejectedTriggerAuditSummaryVo;
 import io.patchpilot.backend.safety.domain.RejectedTriggerCountVo;
-import io.patchpilot.backend.safety.domain.RejectedTriggerAuditVo;
+import io.patchpilot.backend.safety.domain.TriggerQuarantineScope;
 import io.patchpilot.backend.safety.mapper.RejectedTriggerAuditMapper;
 import io.patchpilot.backend.safety.service.impl.MyBatisRejectedTriggerAuditService;
+import org.apache.ibatis.builder.MapperBuilderAssistant;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -23,6 +29,14 @@ class MyBatisRejectedTriggerAuditServiceTests {
 
     private final RejectedTriggerAuditMapper auditMapper = mock(RejectedTriggerAuditMapper.class);
     private final RejectedTriggerAuditService auditService = new MyBatisRejectedTriggerAuditService(auditMapper);
+
+    @BeforeAll
+    static void initializeMyBatisPlusMetadata() {
+        TableInfoHelper.initTableInfo(
+                new MapperBuilderAssistant(new MybatisConfiguration(), ""),
+                RejectedTriggerAuditEntity.class
+        );
+    }
 
     @Test
     void should_insert_rejected_trigger_audit() {
@@ -69,7 +83,7 @@ class MyBatisRejectedTriggerAuditServiceTests {
     void should_list_rejected_trigger_audits_newest_first() {
         RejectedTriggerAuditEntity older = entity("audit-older", Instant.parse("2026-06-21T01:00:00Z"));
         RejectedTriggerAuditEntity newer = entity("audit-newer", Instant.parse("2026-06-21T02:00:00Z"));
-        when(auditMapper.selectList(any())).thenReturn(List.of(older, newer));
+        when(auditMapper.selectList(any())).thenReturn(List.of(newer, older));
 
         List<RejectedTriggerAuditVo> audits = auditService.listRejectedTriggers(50, null);
 
@@ -90,6 +104,62 @@ class MyBatisRejectedTriggerAuditServiceTests {
                 .extracting(RejectedTriggerAuditVo::id)
                 .containsExactly("audit-dangerous");
         assertThat(audits.get(0).category()).isEqualTo("DANGEROUS_INSTRUCTION");
+    }
+
+    @Test
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    void should_query_rejected_trigger_audits_for_trigger_user_quarantine() {
+        RejectedTriggerAuditEntity entity = entity("audit-user-match", Instant.parse("2026-06-21T01:00:00Z"));
+        entity.setTriggerUser("drive-by-user");
+        when(auditMapper.selectList(any())).thenReturn(List.of(entity));
+        ArgumentCaptor<LambdaQueryWrapper<RejectedTriggerAuditEntity>> queryCaptor =
+                ArgumentCaptor.forClass((Class) LambdaQueryWrapper.class);
+
+        List<RejectedTriggerAuditVo> audits = auditService.listRejectedTriggersForQuarantine(
+                TriggerQuarantineScope.TRIGGER_USER,
+                "drive-by-user",
+                20
+        );
+
+        verify(auditMapper).selectList(queryCaptor.capture());
+        assertThat(queryCaptor.getValue().getSqlSegment())
+                .contains("trigger_user")
+                .contains("ORDER BY")
+                .contains("created_at")
+                .contains("DESC")
+                .contains("LIMIT 20");
+        assertThat(audits)
+                .extracting(RejectedTriggerAuditVo::id)
+                .containsExactly("audit-user-match");
+    }
+
+    @Test
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    void should_query_rejected_trigger_audits_for_repository_quarantine() {
+        RejectedTriggerAuditEntity entity = entity("audit-repository-match", Instant.parse("2026-06-21T01:00:00Z"));
+        entity.setRepositoryOwner("bingqin2");
+        entity.setRepositoryName("patchpilot");
+        when(auditMapper.selectList(any())).thenReturn(List.of(entity));
+        ArgumentCaptor<LambdaQueryWrapper<RejectedTriggerAuditEntity>> queryCaptor =
+                ArgumentCaptor.forClass((Class) LambdaQueryWrapper.class);
+
+        List<RejectedTriggerAuditVo> audits = auditService.listRejectedTriggersForQuarantine(
+                TriggerQuarantineScope.REPOSITORY,
+                "bingqin2/patchpilot",
+                20
+        );
+
+        verify(auditMapper).selectList(queryCaptor.capture());
+        assertThat(queryCaptor.getValue().getSqlSegment())
+                .contains("repository_owner")
+                .contains("repository_name")
+                .contains("ORDER BY")
+                .contains("created_at")
+                .contains("DESC")
+                .contains("LIMIT 20");
+        assertThat(audits)
+                .extracting(RejectedTriggerAuditVo::id)
+                .containsExactly("audit-repository-match");
     }
 
     @Test
