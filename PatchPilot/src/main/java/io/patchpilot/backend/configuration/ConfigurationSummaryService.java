@@ -3,6 +3,7 @@ package io.patchpilot.backend.configuration;
 import io.patchpilot.backend.agent.config.AgentProperties;
 import io.patchpilot.backend.github.config.GitHubProperties;
 import io.patchpilot.backend.safety.config.SafetyProperties;
+import io.patchpilot.backend.security.config.AdminApiSecurityProperties;
 import io.patchpilot.backend.task.config.ReviewApprovalProperties;
 import io.patchpilot.backend.task.config.TaskQueueProperties;
 import io.patchpilot.backend.workspace.config.WorkspaceProperties;
@@ -25,6 +26,7 @@ public class ConfigurationSummaryService {
     private final TaskQueueProperties taskQueueProperties;
     private final SafetyProperties safetyProperties;
     private final ReviewApprovalProperties reviewApprovalProperties;
+    private final AdminApiSecurityProperties adminApiSecurityProperties;
 
     @Value("${patchpilot.github.webhook-secret:}")
     private String webhookSecret;
@@ -40,6 +42,7 @@ public class ConfigurationSummaryService {
                 hasText(agentProperties.getApiKey()),
                 hasText(gitHubProperties.getToken()),
                 hasText(webhookSecret),
+                adminApiSecurityProperties.isAdminTokenConfigured(),
                 workspaceProperties.getRootDir().toString(),
                 taskQueueProperties.getMaxAttempts(),
                 taskQueueProperties.getRetryDelayMs(),

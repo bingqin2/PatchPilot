@@ -9,6 +9,7 @@ public record ConfigurationSummaryVo(
         boolean agentApiKeyConfigured,
         boolean githubTokenConfigured,
         boolean githubWebhookSecretConfigured,
+        boolean adminTokenConfigured,
         String workspaceRootDir,
         int queueMaxAttempts,
         long queueRetryDelayMs,

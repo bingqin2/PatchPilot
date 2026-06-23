@@ -42,6 +42,7 @@ export function ConfigurationPanel({ configuration, backendHealth }: Configurati
           <strong>Agent key {configured(configuration?.agentApiKeyConfigured)}</strong>
           <p>GitHub token {configured(configuration?.githubTokenConfigured)}</p>
           <p>Webhook secret {configured(configuration?.githubWebhookSecretConfigured)}</p>
+          <p>Admin API token {configured(configuration?.adminTokenConfigured)}</p>
         </div>
         <div>
           <span>Queue policy</span>
@@ -122,6 +123,9 @@ function configurationHealth(configuration: ConfigurationSummary | null) {
   }
   if (!configuration.githubWebhookSecretConfigured) {
     criticalIssues.push({ kind: 'critical', message: 'Webhook secret is missing' });
+  }
+  if (!configuration.adminTokenConfigured) {
+    advisoryIssues.push({ kind: 'advisory', message: 'Admin API token is missing' });
   }
   if (!configuration.modelCostConfigured) {
     advisoryIssues.push({ kind: 'advisory', message: 'Model cost is not configured' });

@@ -134,6 +134,7 @@ export interface ConfigurationSummary {
   agentApiKeyConfigured: boolean;
   githubTokenConfigured: boolean;
   githubWebhookSecretConfigured: boolean;
+  adminTokenConfigured: boolean;
   workspaceRootDir: string;
   queueMaxAttempts: number;
   queueRetryDelayMs: number;

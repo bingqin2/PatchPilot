@@ -67,9 +67,10 @@ Fill in at least:
 PATCHPILOT_GITHUB_WEBHOOK_SECRET=replace-with-a-random-secret
 PATCHPILOT_GITHUB_TOKEN=github_pat_or_fine_grained_token
 PATCHPILOT_AGENT_API_KEY=your_model_provider_api_key
+PATCHPILOT_ADMIN_TOKEN=replace-with-a-random-admin-token
 ```
 
-The webhook secret must match the GitHub webhook configuration. The GitHub token is used for clone, push, issue comments, and Pull Request creation. Do not commit `.env`.
+The webhook secret must match the GitHub webhook configuration. The GitHub token is used for clone, push, issue comments, and Pull Request creation. The admin token protects operator APIs such as task listing, queue inspection, manual task creation, retry, cancel, and risk-review approval when the backend is exposed through a temporary URL. Do not commit `.env`.
 
 Optional safety allowlists can restrict who and what repository may create tasks:
 
@@ -133,7 +134,7 @@ Verify the backend:
 
 ```bash
 curl http://127.0.0.1:8080/health
-curl http://127.0.0.1:8080/api/tasks
+curl -H "X-PatchPilot-Admin-Token: $PATCHPILOT_ADMIN_TOKEN" http://127.0.0.1:8080/api/tasks
 ```
 
 Expected health response includes:
@@ -169,6 +170,13 @@ Copy the generated `https://*.trycloudflare.com` URL and configure the GitHub we
 
 The temporary URL changes whenever the tunnel restarts.
 
+The GitHub webhook endpoint does not use the admin token, but operator API calls should include it when `PATCHPILOT_ADMIN_TOKEN` is configured:
+
+```bash
+curl -H "X-PatchPilot-Admin-Token: $PATCHPILOT_ADMIN_TOKEN" \
+  https://your-temp-url.trycloudflare.com/api/tasks
+```
+
 ## Trigger A Task
 
 Open a GitHub issue in the test repository and comment:
@@ -186,18 +194,20 @@ For deterministic local smoke tests, use an existing file in the target reposito
 Check task state:
 
 ```bash
-curl http://127.0.0.1:8080/api/tasks
-curl "http://127.0.0.1:8080/api/tasks?status=FAILED&limit=20"
-curl "http://127.0.0.1:8080/api/tasks?repositoryOwner=bingqin2&repositoryName=PatchPilot"
-curl http://127.0.0.1:8080/api/tasks/{taskId}
-curl http://127.0.0.1:8080/api/tasks/{taskId}/detail
-curl http://127.0.0.1:8080/api/tasks/{taskId}/report
-curl http://127.0.0.1:8080/api/tasks/{taskId}/summary
-curl http://127.0.0.1:8080/api/tasks/{taskId}/timeline
-curl http://127.0.0.1:8080/api/tasks/{taskId}/test-runs
-curl http://127.0.0.1:8080/api/tasks/{taskId}/tool-calls
-curl http://127.0.0.1:8080/api/tasks/{taskId}/model-calls
-curl "http://127.0.0.1:8080/api/rejected-triggers?limit=20"
+ADMIN_HEADER=(-H "X-PatchPilot-Admin-Token: $PATCHPILOT_ADMIN_TOKEN")
+
+curl "${ADMIN_HEADER[@]}" http://127.0.0.1:8080/api/tasks
+curl "${ADMIN_HEADER[@]}" "http://127.0.0.1:8080/api/tasks?status=FAILED&limit=20"
+curl "${ADMIN_HEADER[@]}" "http://127.0.0.1:8080/api/tasks?repositoryOwner=bingqin2&repositoryName=PatchPilot"
+curl "${ADMIN_HEADER[@]}" http://127.0.0.1:8080/api/tasks/{taskId}
+curl "${ADMIN_HEADER[@]}" http://127.0.0.1:8080/api/tasks/{taskId}/detail
+curl "${ADMIN_HEADER[@]}" http://127.0.0.1:8080/api/tasks/{taskId}/report
+curl "${ADMIN_HEADER[@]}" http://127.0.0.1:8080/api/tasks/{taskId}/summary
+curl "${ADMIN_HEADER[@]}" http://127.0.0.1:8080/api/tasks/{taskId}/timeline
+curl "${ADMIN_HEADER[@]}" http://127.0.0.1:8080/api/tasks/{taskId}/test-runs
+curl "${ADMIN_HEADER[@]}" http://127.0.0.1:8080/api/tasks/{taskId}/tool-calls
+curl "${ADMIN_HEADER[@]}" http://127.0.0.1:8080/api/tasks/{taskId}/model-calls
+curl "${ADMIN_HEADER[@]}" "http://127.0.0.1:8080/api/rejected-triggers?limit=20"
 ```
 
 Use `/detail` for dashboard-style task inspection. It returns the task audit summary, latest queue item, queue history, latest generated diff, timeline events, test runs, tool calls, and model calls in one response. Use `/report` to copy a Markdown diagnostic summary for a task, including the generated diff when one was captured. The narrower endpoints remain available for focused debugging.
@@ -207,6 +217,7 @@ If a generated diff is blocked by the risk gate, the task moves to `PENDING_REVI
 
 ```bash
 curl -X POST http://127.0.0.1:8080/api/tasks/{taskId}/approve-review \
+  -H "X-PatchPilot-Admin-Token: $PATCHPILOT_ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "operator": "release-captain",
@@ -220,6 +231,7 @@ For local demos or debugging, you can create the same queued task from the backe
 
 ```bash
 curl -X POST http://127.0.0.1:8080/api/tasks \
+  -H "X-PatchPilot-Admin-Token: $PATCHPILOT_ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "repositoryOwner": "bingqin2",
@@ -288,7 +300,7 @@ scripts/adapter-smoke.sh --backend
 Runtime configuration summary:
 
 ```bash
-curl http://127.0.0.1:8080/api/configuration/summary
+curl "${ADMIN_HEADER[@]}" http://127.0.0.1:8080/api/configuration/summary
 ```
 
 This endpoint returns only non-sensitive values and configured/missing booleans for secrets. It also returns safety policy state such as trigger-user allowlists, repository allowlists, review-approval operators, model trigger classification, and trigger rate-limit thresholds. It never returns raw API keys, GitHub tokens, or webhook secrets.
@@ -296,7 +308,7 @@ This endpoint returns only non-sensitive values and configured/missing booleans 
 Demo readiness:
 
 ```bash
-curl http://127.0.0.1:8080/api/demo/readiness
+curl "${ADMIN_HEADER[@]}" http://127.0.0.1:8080/api/demo/readiness
 ```
 
 This endpoint aggregates backend reachability, required credential flags, safety policy state, model cost configuration, adapter fixture verification, queue state, and recent completed Pull Request evidence into one `READY`, `NEEDS_ATTENTION`, or `BLOCKED` result. Use it before a live `/agent fix` demo to see the next operator action without manually checking every panel or curl endpoint.
@@ -304,25 +316,25 @@ This endpoint aggregates backend reachability, required credential flags, safety
 Queue state:
 
 ```bash
-curl http://127.0.0.1:8080/api/task-queue/summary
-curl http://127.0.0.1:8080/api/task-queue/items
+curl "${ADMIN_HEADER[@]}" http://127.0.0.1:8080/api/task-queue/summary
+curl "${ADMIN_HEADER[@]}" http://127.0.0.1:8080/api/task-queue/items
 ```
 
 Task metrics:
 
 ```bash
-curl http://127.0.0.1:8080/api/tasks/metrics/summary
-curl http://127.0.0.1:8080/api/tasks/metrics/failure-causes
-curl http://127.0.0.1:8080/api/tasks/metrics/model-usage
-curl http://127.0.0.1:8080/api/tasks/metrics/latency
+curl "${ADMIN_HEADER[@]}" http://127.0.0.1:8080/api/tasks/metrics/summary
+curl "${ADMIN_HEADER[@]}" http://127.0.0.1:8080/api/tasks/metrics/failure-causes
+curl "${ADMIN_HEADER[@]}" http://127.0.0.1:8080/api/tasks/metrics/model-usage
+curl "${ADMIN_HEADER[@]}" http://127.0.0.1:8080/api/tasks/metrics/latency
 ```
 
 Task list, status count, and metrics APIs accept the same investigation filters:
 
 ```bash
-curl "http://127.0.0.1:8080/api/tasks?language=node&buildSystem=npm"
-curl "http://127.0.0.1:8080/api/tasks/status-counts?language=node&buildSystem=npm"
-curl "http://127.0.0.1:8080/api/tasks/metrics/summary?language=node&buildSystem=npm"
+curl "${ADMIN_HEADER[@]}" "http://127.0.0.1:8080/api/tasks?language=node&buildSystem=npm"
+curl "${ADMIN_HEADER[@]}" "http://127.0.0.1:8080/api/tasks/status-counts?language=node&buildSystem=npm"
+curl "${ADMIN_HEADER[@]}" "http://127.0.0.1:8080/api/tasks/metrics/summary?language=node&buildSystem=npm"
 ```
 
 Model cost estimates default to `0`. Configure per-token prices when needed:
@@ -342,6 +354,11 @@ Status count badges and metrics use the same search, repository, adapter, and cr
 The dashboard also stores `status`, `query`, repository filters, adapter filters, created time filters, and non-default `sort` in the browser URL, so links like `/tasks/{taskId}?status=FAILED&query=maven&repositoryOwner=bingqin2&repositoryName=PatchPilot&language=node&buildSystem=npm&sort=createdAtAsc&createdAfter=2026-06-20T01:00:00Z&createdBefore=2026-06-21T01:00:00Z` reopen the same filtered investigation view. The `Clear filters` action removes `status`, `query`, `repositoryOwner`, `repositoryName`, `language`, `buildSystem`, `createdAfter`, and `createdBefore`, keeping sort, the selected task route, unrelated query parameters, and hash fragments intact.
 The selected-task panel uses the aggregate detail endpoint so opening a task needs one backend detail request instead of separate summary, timeline, test-run, tool-call, and model-call requests.
 If the backend is down or the Vite proxy target is wrong, the dashboard shows a backend/proxy guidance message instead of a raw JSON parsing error.
+If `PATCHPILOT_ADMIN_TOKEN` is configured, set the same value in your browser before opening the dashboard so API calls include `X-PatchPilot-Admin-Token`:
+
+```js
+localStorage.setItem('patchpilot.adminToken', 'replace-with-random-admin-token')
+```
 
 ```bash
 cd frontend

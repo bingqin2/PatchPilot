@@ -141,6 +141,10 @@ public class DemoReadinessService {
             gaps.add("Review approval allowlist is missing");
             envNames.add("PATCHPILOT_REVIEW_APPROVAL_ALLOWED_OPERATORS");
         }
+        if (!configuration.adminTokenConfigured()) {
+            gaps.add("Admin API token is missing");
+            envNames.add("PATCHPILOT_ADMIN_TOKEN");
+        }
         if (!gaps.isEmpty()) {
             return new DemoReadinessCheckVo(
                     "Safety policy",
@@ -152,7 +156,7 @@ public class DemoReadinessService {
         return new DemoReadinessCheckVo(
                 "Safety policy",
                 DemoReadinessStatus.READY,
-                "Trigger users, repositories, review approvers, command safety, and rate limits are configured.",
+                "Trigger users, repositories, review approvers, admin API token, command safety, and rate limits are configured.",
                 "No action needed."
         );
     }
