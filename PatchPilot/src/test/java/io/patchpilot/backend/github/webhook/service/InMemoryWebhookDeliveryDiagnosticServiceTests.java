@@ -39,6 +39,9 @@ class InMemoryWebhookDeliveryDiagnosticServiceTests {
                 .containsExactly("delivery-newer", "delivery-older");
         assertThat(diagnostics.get(0).status()).isEqualTo(WebhookDeliveryDiagnosticStatus.TASK_CREATED);
         assertThat(diagnostics.get(0).taskId()).isEqualTo("task-123");
+        assertThat(diagnostics.get(0).redeliveryRecommended()).isFalse();
+        assertThat(diagnostics.get(0).operatorAction())
+                .isEqualTo("Task was created. Do not redeliver this webhook unless you intentionally want GitHub to report a duplicate delivery.");
     }
 
     @Test
@@ -52,6 +55,20 @@ class InMemoryWebhookDeliveryDiagnosticServiceTests {
         assertThat(diagnostics)
                 .extracting(WebhookDeliveryDiagnosticVo::deliveryId)
                 .containsExactly("delivery-3", "delivery-2");
+    }
+
+    @Test
+    void should_recommend_redelivery_after_fixing_invalid_signature() {
+        WebhookDeliveryDiagnosticVo diagnostic = diagnosticService.record(command(
+                "delivery-invalid-signature",
+                WebhookDeliveryDiagnosticStatus.INVALID_SIGNATURE,
+                null,
+                "Invalid GitHub webhook signature"
+        ));
+
+        assertThat(diagnostic.redeliveryRecommended()).isTrue();
+        assertThat(diagnostic.operatorAction())
+                .isEqualTo("Fix the webhook secret or payload URL first, then use GitHub's Redeliver action for this delivery.");
     }
 
     private static RecordWebhookDeliveryDiagnosticCommand command(

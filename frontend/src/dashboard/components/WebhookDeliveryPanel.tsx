@@ -33,6 +33,10 @@ export function WebhookDeliveryPanel({ deliveries, error }: WebhookDeliveryPanel
               {delivery.taskId ? <span>task {delivery.taskId}</span> : null}
             </div>
             <p>{delivery.message}</p>
+            <div className="webhook-delivery-action">
+              {delivery.redeliveryRecommended ? <span>Redeliver after fix</span> : null}
+              <p>{delivery.operatorAction}</p>
+            </div>
           </article>
         ))}
         {deliveries.length === 0 && !error ? <p className="empty-state">No webhook deliveries recorded.</p> : null}

@@ -243,6 +243,8 @@ export interface WebhookDeliveryDiagnostic {
   triggerUser: string | null;
   triggerComment: string | null;
   message: string;
+  redeliveryRecommended: boolean;
+  operatorAction: string;
   createdAt: string;
 }
 

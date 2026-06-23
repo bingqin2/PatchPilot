@@ -199,6 +199,8 @@ test('lists recent webhook deliveries through backend API', async () => {
           triggerUser: 'bingqin2',
           triggerComment: '/agent fix touch docs/demo.md',
           message: 'Task created from /agent fix',
+          redeliveryRecommended: false,
+          operatorAction: 'Task was created. Do not redeliver this webhook unless you intentionally want GitHub to report a duplicate delivery.',
           createdAt: '2026-06-23T01:00:00Z'
         }
       ],
@@ -211,6 +213,8 @@ test('lists recent webhook deliveries through backend API', async () => {
 
   expect(fetchMock).toHaveBeenCalledWith('/api/github/webhook-deliveries?limit=20');
   expect(deliveries[0].status).toBe('TASK_CREATED');
+  expect(deliveries[0].redeliveryRecommended).toBe(false);
+  expect(deliveries[0].operatorAction).toBe('Task was created. Do not redeliver this webhook unless you intentionally want GitHub to report a duplicate delivery.');
 });
 
 test('builds backend task status count query parameters without status or pagination', async () => {
