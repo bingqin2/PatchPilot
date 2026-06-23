@@ -45,7 +45,7 @@ Reusable dashboard components live under `frontend/src/dashboard/components/`:
 - `RejectedTriggerPanel`: read-only recent `/agent fix` attempts that were refused before task creation, including command text, repository, trigger user, delivery id, and rejection reason.
 - `WebhookDeliveryPanel`: read-only recent delivery diagnostics for ignored comments, rejected triggers, duplicate deliveries, invalid signatures, bad payloads, active-task collisions, and task-created outcomes, including whether a delivery should be fixed and redelivered from GitHub.
 - `ConfigurationPanel`: read-only runtime configuration summary with backend health, provider, model, workspace, queue policy, configured/missing secret states, and setup health hints.
-- `SupportedAdaptersPanel`: read-only support matrix for Java/Maven, Java/Gradle, Node/Bun, Node/npm, Node/pnpm, Node/yarn, Python/tox, Python/nox, Python/hatch, Python/Poetry, Python/uv, and Python/pytest adapters.
+- `SupportedAdaptersPanel`: read-only support matrix for Java/Maven, Java/Gradle, Go, Node/Bun, Node/npm, Node/pnpm, Node/yarn, Python/tox, Python/nox, Python/hatch, Python/Poetry, Python/uv, and Python/pytest adapters.
 - `AdapterFixtureVerificationPanel`: read-only fixture verification matrix showing expected versus actual adapter detection for each checked-in demo fixture.
 - `FailureCausePanel`, `ModelUsagePanel`, and `LatencyPanel`: operational summary cards for failure grouping, token usage, call counts, estimated model cost, and execution latency.
 - `MetricCard`, `RecordLine`, and `SummaryItem`: small shared presentation units.

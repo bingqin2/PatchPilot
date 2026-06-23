@@ -227,13 +227,14 @@ Responsibilities:
 - Remove PatchPilot secrets from the child-process environment.
 - Return structured test results.
 
-The adapter registry selects the first supported adapter and returns a clear unsupported result when none match. `VerificationRunner` executes the selected adapter command. The first adapters are `JavaMavenLanguageAdapter`, `JavaGradleLanguageAdapter`, `NodeBunLanguageAdapter`, `NodePnpmLanguageAdapter`, `NodeYarnLanguageAdapter`, `NodeNpmLanguageAdapter`, `PythonToxLanguageAdapter`, `PythonNoxLanguageAdapter`, `PythonHatchLanguageAdapter`, `PythonPoetryLanguageAdapter`, `PythonUvLanguageAdapter`, and `PythonPytestLanguageAdapter`. MVP supported commands:
+The adapter registry selects the first supported adapter and returns a clear unsupported result when none match. `VerificationRunner` executes the selected adapter command. The first adapters are `JavaMavenLanguageAdapter`, `JavaGradleLanguageAdapter`, `GoLanguageAdapter`, `NodeBunLanguageAdapter`, `NodePnpmLanguageAdapter`, `NodeYarnLanguageAdapter`, `NodeNpmLanguageAdapter`, `PythonToxLanguageAdapter`, `PythonNoxLanguageAdapter`, `PythonHatchLanguageAdapter`, `PythonPoetryLanguageAdapter`, `PythonUvLanguageAdapter`, and `PythonPytestLanguageAdapter`. MVP supported commands:
 
 ```bash
 ./mvnw test
 mvn test
 ./gradlew test
 gradle test
+go test ./...
 bun test
 npm test
 pnpm test

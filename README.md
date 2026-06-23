@@ -16,7 +16,7 @@ PatchPilot is not a chatbot and does not auto-merge code. The current target is 
 - Dashboard visibility for rejected `/agent fix` triggers that were refused before task creation.
 - MySQL-backed task, queue, timeline, test-run, tool-call, and model-call records.
 - Local workspace clone, branch, diff, commit, push, and Pull Request creation.
-- Java/Maven, Java/Gradle, Node/Bun, Node/npm, Node/pnpm, Node/yarn, Python/tox, Python/nox, Python/hatch, Python/Poetry, Python/uv, and Python/pytest language adapters backed by an adapter-driven verification runner with command allowlists.
+- Java/Maven, Java/Gradle, Go, Node/Bun, Node/npm, Node/pnpm, Node/yarn, Python/tox, Python/nox, Python/hatch, Python/Poetry, Python/uv, and Python/pytest language adapters backed by an adapter-driven verification runner with command allowlists.
 - Generated diff risk gate that blocks sensitive files, secret-like added lines, binary patches, and overly broad patches before tests, commits, pushes, or Pull Request creation.
 - Human approval flow for generated-diff risk rejections: `PENDING_REVIEW` tasks expose the generated diff for inspection, then can be cancelled or explicitly approved to resume from the already-generated workspace and continue verification, commit, push, and Pull Request creation.
 - Unsupported repository preflight that fails before patch generation, test execution, Git mutation, or Pull Request creation.
@@ -253,12 +253,13 @@ If safety allowlists are configured, the manual task `triggerUser` and `reposito
 
 ## Supported Repositories
 
-PatchPilot currently executes fixes for Java repositories with Maven or Gradle build files, Node.js repositories with Bun, npm, pnpm, or yarn test scripts, and Python repositories with tox, nox, hatch, Poetry, uv, or pytest test signals. After cloning the task workspace, the backend runs the language adapter preflight:
+PatchPilot currently executes fixes for Java repositories with Maven or Gradle build files, Go modules, Node.js repositories with Bun, npm, pnpm, or yarn test scripts, and Python repositories with tox, nox, hatch, Poetry, uv, or pytest test signals. After cloning the task workspace, the backend runs the language adapter preflight:
 
 - supported: `pom.xml` with `mvnw`, using `./mvnw test`
 - supported: `pom.xml` without `mvnw`, using `mvn test`
 - supported: `build.gradle` or `build.gradle.kts` with `gradlew`, using `./gradlew test`
 - supported: `build.gradle` or `build.gradle.kts` without `gradlew`, using `gradle test`
+- supported: `go.mod`, using `go test ./...`
 - supported: `package.json` with `bun.lockb` or `bun.lock` and non-empty `scripts.test`, using `bun test`
 - supported: `package.json` with `pnpm-lock.yaml` and non-empty `scripts.test`, using `pnpm test`
 - supported: `package.json` with `yarn.lock` and non-empty `scripts.test`, using `yarn test`
@@ -273,7 +274,7 @@ PatchPilot currently executes fixes for Java repositories with Maven or Gradle b
 
 Unsupported repositories fail before model patch generation, tests, commit, push, or Pull Request creation.
 For supported repositories, the language adapter supplies the verification command and the generic verification runner executes that command under the existing allowlist, timeout, process-registration, and environment-sanitization rules.
-After a repository is detected, each task stores the selected `language`, `buildSystem`, `verificationCommand`, and nullable `adapterDetectionReason`. These fields are returned by the task APIs and shown in the dashboard detail view so operators can confirm whether a task used Maven, Gradle, Bun, npm, pnpm, yarn, tox, nox, hatch, Poetry, uv, or pytest, and which repository signal caused that selection, without opening raw tool-call logs.
+After a repository is detected, each task stores the selected `language`, `buildSystem`, `verificationCommand`, and nullable `adapterDetectionReason`. These fields are returned by the task APIs and shown in the dashboard detail view so operators can confirm whether a task used Maven, Gradle, Go, Bun, npm, pnpm, yarn, tox, nox, hatch, Poetry, uv, or pytest, and which repository signal caused that selection, without opening raw tool-call logs.
 
 After patch generation, PatchPilot runs a deterministic generated-diff risk gate before adapter verification or any GitHub write. The gate rejects sensitive files such as `.env`, private keys, and GitHub Actions workflows; secret-like added lines; binary patches; and diffs that exceed the configured file or line thresholds. Rejections move the task to `PENDING_REVIEW`, keep the concrete reason in `failureReason`, and store a failed `GeneratedDiffRiskGate` tool call so task reports and the dashboard can explain why execution stopped. Approval requires an operator from `PATCHPILOT_REVIEW_APPROVAL_ALLOWED_OPERATORS` and a reason, and the task keeps that approval audit metadata when it resumes.
 
@@ -430,7 +431,7 @@ PatchPilot must not:
 
 ## Current Limitations
 
-- Java/Maven, Java/Gradle, Node/Bun, Node/npm, Node/pnpm, Node/yarn, Python/tox, Python/nox, Python/hatch, Python/Poetry, Python/uv, and Python/pytest repositories are the first supported targets through explicit language adapters.
+- Java/Maven, Java/Gradle, Go, Node/Bun, Node/npm, Node/pnpm, Node/yarn, Python/tox, Python/nox, Python/hatch, Python/Poetry, Python/uv, and Python/pytest repositories are the first supported targets through explicit language adapters.
 - Custom runner adapters are future work.
 - The current runtime is single-process; API and worker separation is future work.
 - The React dashboard can create manual demo tasks, but GitHub issue comments remain the primary production trigger. It does not merge Pull Requests.

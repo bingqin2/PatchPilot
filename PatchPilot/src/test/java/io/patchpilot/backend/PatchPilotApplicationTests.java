@@ -5,6 +5,7 @@ import io.patchpilot.backend.agent.workflow.PlanDrivenPatchWorkflow;
 import io.patchpilot.backend.language.LanguageAdapter;
 import io.patchpilot.backend.language.LanguageAdapterRegistry;
 import io.patchpilot.backend.language.domain.LanguageDetectionResult;
+import io.patchpilot.backend.language.impl.GoLanguageAdapter;
 import io.patchpilot.backend.language.impl.JavaGradleLanguageAdapter;
 import io.patchpilot.backend.language.impl.JavaMavenLanguageAdapter;
 import io.patchpilot.backend.language.impl.NodeBunLanguageAdapter;
@@ -58,6 +59,7 @@ class PatchPilotApplicationTests {
         assertThat(adapters.values())
                 .hasAtLeastOneElementOfType(JavaMavenLanguageAdapter.class)
                 .hasAtLeastOneElementOfType(JavaGradleLanguageAdapter.class)
+                .hasAtLeastOneElementOfType(GoLanguageAdapter.class)
                 .hasAtLeastOneElementOfType(NodeBunLanguageAdapter.class)
                 .hasAtLeastOneElementOfType(NodeNpmLanguageAdapter.class)
                 .hasAtLeastOneElementOfType(NodePnpmLanguageAdapter.class)

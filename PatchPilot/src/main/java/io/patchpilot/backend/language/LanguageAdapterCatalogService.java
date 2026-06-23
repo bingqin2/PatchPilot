@@ -25,6 +25,13 @@ public class LanguageAdapterCatalogService {
                     "docs/demo-repositories/java-gradle"
             ),
             adapter(
+                    "go",
+                    "go",
+                    List.of("go", "test", "./..."),
+                    List.of("go.mod", "*_test.go"),
+                    "docs/demo-repositories/go-module"
+            ),
+            adapter(
                     "node",
                     "bun",
                     List.of("bun", "test"),

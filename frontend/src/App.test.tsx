@@ -455,6 +455,14 @@ const supportedLanguageAdapters = [
     status: 'SUPPORTED'
   },
   {
+    language: 'go',
+    buildSystem: 'go',
+    verificationCommand: ['go', 'test', './...'],
+    detectionSignals: ['go.mod', '*_test.go'],
+    demoFixturePath: 'docs/demo-repositories/go-module',
+    status: 'SUPPORTED'
+  },
+  {
     language: 'node',
     buildSystem: 'bun',
     verificationCommand: ['bun', 'test'],
@@ -1027,9 +1035,10 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(within(smokeChecklistPanel).getByText('delivery-created-status-comment')).toBeInTheDocument();
   expect(within(smokeChecklistPanel).getByText('Post the live /agent fix comment only after confirming the webhook URL is current.')).toBeInTheDocument();
   expect(screen.getByRole('heading', { name: 'Supported adapters' })).toBeInTheDocument();
-  expect(screen.getByText('12 supported adapters')).toBeInTheDocument();
+  expect(screen.getByText('13 supported adapters')).toBeInTheDocument();
+  expect(screen.getByRole('row', { name: /go go go test \.\/\.\.\./i })).toBeInTheDocument();
   expect(screen.getByRole('heading', { name: 'Fixture verification' })).toBeInTheDocument();
-  expect(screen.getByText('12/12 fixtures passing')).toBeInTheDocument();
+  expect(screen.getByText('13/13 fixtures passing')).toBeInTheDocument();
   expect(screen.getByRole('row', { name: /java maven mvn test/i })).toBeInTheDocument();
   expect(screen.getByRole('row', { name: /node bun bun test/i })).toBeInTheDocument();
   expect(screen.getByRole('row', { name: /python tox tox/i })).toBeInTheDocument();
@@ -1233,7 +1242,7 @@ test('summarizes operator setup readiness before a demo run', async () => {
   expect(within(setupChecklist).getByText('Safety policy')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Ready - allowlists, review approvers, and trigger rate limits are configured')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Adapter fixtures')).toBeInTheDocument();
-  expect(within(setupChecklist).getByText('Ready - 12/12 fixtures passing')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('Ready - 13/13 fixtures passing')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Queue health')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Attention - 1 failed queue item')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Recent PR evidence')).toBeInTheDocument();

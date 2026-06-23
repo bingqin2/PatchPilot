@@ -136,8 +136,8 @@ The current implementation target is local self-hosted development first. Hosted
 
 ### Test Execution
 
-- The MVP supports Java Maven, Java Gradle, Node/Bun, Node/npm, Node/pnpm, Node/yarn, Python/tox, Python/nox, Python/hatch, Python/Poetry, Python/uv, and Python/pytest repositories first.
-- The long-term system supports multiple language adapters, starting with Java/Maven, Java/Gradle, Bun, npm, pnpm, yarn, Python/tox, nox, hatch, Poetry, uv, pytest, and additional explicit runners.
+- The MVP supports Java Maven, Java Gradle, Go modules, Node/Bun, Node/npm, Node/pnpm, Node/yarn, Python/tox, Python/nox, Python/hatch, Python/Poetry, Python/uv, and Python/pytest repositories first.
+- The long-term system supports multiple language adapters, starting with Java/Maven, Java/Gradle, Go, Bun, npm, pnpm, yarn, Python/tox, nox, hatch, Poetry, uv, pytest, and additional explicit runners.
 - Each adapter defines project detection, allowed verification commands, test output capture, timeout policy, and unsupported-repository failure reasons.
 - The adapter registry selects the first adapter that supports the repository and returns a clear unsupported result when none match.
 - The verification runner executes only the selected adapter's allowlisted verification command.
@@ -148,6 +148,8 @@ The current implementation target is local self-hosted development first. Hosted
 - The Java/Gradle adapter detects `gradlew`, `build.gradle`, and `build.gradle.kts`.
 - The Java/Gradle adapter runs `./gradlew test` when a Gradle wrapper exists.
 - The Java/Gradle adapter runs `gradle test` when no wrapper exists.
+- The Go adapter detects `go.mod`.
+- The Go adapter runs `go test ./...`.
 - The Node/Bun adapter detects `package.json`, `bun.lockb` or `bun.lock`, and a non-empty `scripts.test`.
 - The Node/Bun adapter runs `bun test`.
 - The Node/npm adapter detects `package.json` files with a non-empty `scripts.test`.
@@ -206,6 +208,7 @@ The first production-like MVP supports:
 - GitHub App webhook integration.
 - `/agent fix` issue comment trigger.
 - Java repositories using Maven or Gradle.
+- Go modules using `go test ./...`.
 - Node.js repositories using Bun, npm, pnpm, or yarn with `scripts.test`.
 - Python repositories using tox, nox, hatch, Poetry, uv, or pytest directly.
 - One repository per task.
