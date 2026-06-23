@@ -813,6 +813,9 @@ beforeEach(() => {
     if (url === '/api/rejected-triggers?limit=20') {
       return jsonResponse(rejectedTriggers);
     }
+    if (url === '/api/rejected-triggers/rejected-1/retry') {
+      return jsonResponse(manuallyCreatedTask, true, null, 201);
+    }
     if (url === '/api/tasks/task-1/detail') {
       return jsonResponse(detail);
     }
@@ -2294,6 +2297,23 @@ test('approves pending review tasks and refreshes dashboard data', async () => {
   );
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks?limit=50&status=PENDING_REVIEW'));
   expect(screen.queryByRole('button', { name: 'Retry task' })).not.toBeInTheDocument();
+});
+
+test('retries rejected triggers and refreshes dashboard data', async () => {
+  const user = userEvent.setup();
+  const fetchMock = vi.mocked(fetch);
+
+  render(<App />);
+
+  const rejectedPanel = await screen.findByRole('region', { name: 'Rejected triggers' });
+  expect(within(rejectedPanel).getByText('/agent fix make it better')).toBeInTheDocument();
+
+  await user.click(within(rejectedPanel).getAllByRole('button', { name: 'Retry trigger' })[0]);
+
+  await waitFor(() =>
+    expect(fetchMock).toHaveBeenCalledWith('/api/rejected-triggers/rejected-1/retry', { method: 'POST' })
+  );
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks?limit=50'));
 });
 
 function jsonResponse(data: unknown, success = true, message: string | null = null, status = 200) {

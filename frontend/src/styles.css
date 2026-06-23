@@ -170,6 +170,23 @@ h3 {
   opacity: 0.58;
 }
 
+.inline-action {
+  background: #f8fafc;
+  border: 1px solid #c9d4de;
+  border-radius: 6px;
+  color: #263442;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+  min-height: 28px;
+  padding: 0 8px;
+}
+
+.inline-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
 .danger-button {
   border-color: #ef8a7b;
   color: #a13724;

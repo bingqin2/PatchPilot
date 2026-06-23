@@ -2617,3 +2617,21 @@ Validation:
 - `mvn -pl PatchPilot -Dtest=GitHubWebhookServiceTests,RejectedTriggerAuditControllerTests,InMemoryRejectedTriggerAuditServiceTests,MyBatisRejectedTriggerAuditServiceTests,RejectedTriggerAuditMigrationTests test`: first failed because refusal comment fields and methods did not exist.
 - `mvn -pl PatchPilot -Dtest=GitHubWebhookServiceTests,IssueCommentToolTests,RejectedTriggerAuditControllerTests,InMemoryRejectedTriggerAuditServiceTests,MyBatisRejectedTriggerAuditServiceTests,RejectedTriggerAuditMigrationTests test`: passed after backend implementation, 32 tests run, 0 failures.
 - `npm test -- RejectedTriggerPanel.test.tsx api.test.ts App.test.tsx`: first failed because the rejected triggers panel did not expose a `Refusal comment` link; then passed after frontend implementation, 71 tests run, 0 failures.
+
+Implemented operator retry for rejected triggers from `docs/plans/130-operator-retry-rejected-trigger.md`.
+
+Changes:
+
+- Added rejected-trigger lookup by audit id to in-memory and MyBatis-backed audit services.
+- Added `RejectedTriggerRetryService` and `POST /api/rejected-triggers/{id}/retry`.
+- Reused the existing manual task creation flow for retries so safety gates, active-task checks, rate limits, and model trigger classification still apply.
+- Added a task timeline `REQUEUED` event that links the new task back to the rejected trigger audit id and prior rejection reason.
+- Added a dashboard retry button for rejected trigger rows with per-row loading state and refresh after success.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=RejectedTriggerAuditControllerTests,DefaultRejectedTriggerRetryServiceTests test`: first failed because `RejectedTriggerRetryService` did not exist.
+- `mvn -pl PatchPilot -Dtest=RejectedTriggerAuditControllerTests,DefaultRejectedTriggerRetryServiceTests test`: passed after backend implementation, 7 tests run, 0 failures.
+- `mvn -pl PatchPilot -Dtest=RejectedTriggerAuditControllerTests,DefaultRejectedTriggerRetryServiceTests,InMemoryRejectedTriggerAuditServiceTests,MyBatisRejectedTriggerAuditServiceTests,GitHubWebhookServiceTests test`: passed after audit lookup coverage and legacy fake updates, 28 tests run, 0 failures.
+- `npm test -- RejectedTriggerPanel.test.tsx api.test.ts App.test.tsx`: first failed because the retry API helper and rejected-trigger retry buttons did not exist.
+- `npm test -- RejectedTriggerPanel.test.tsx api.test.ts App.test.tsx`: passed after frontend implementation, 74 tests run, 0 failures.

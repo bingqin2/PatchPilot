@@ -62,6 +62,18 @@ class InMemoryRejectedTriggerAuditServiceTests {
                 .containsExactly("manual-3", "manual-2");
     }
 
+    @Test
+    void should_find_rejected_trigger_by_id() {
+        RejectedTriggerAuditVo audit = auditService.recordRejectedTrigger(command("manual", "manual-find"));
+
+        assertThat(auditService.findRejectedTrigger(audit.id()))
+                .hasValueSatisfying(found -> {
+                    assertThat(found.id()).isEqualTo(audit.id());
+                    assertThat(found.deliveryId()).isEqualTo("manual-find");
+                });
+        assertThat(auditService.findRejectedTrigger("missing-audit")).isEmpty();
+    }
+
     private static RecordRejectedTriggerCommand command(String source, String deliveryId) {
         return command(
                 source,

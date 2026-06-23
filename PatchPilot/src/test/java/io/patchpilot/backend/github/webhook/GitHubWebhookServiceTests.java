@@ -980,6 +980,11 @@ class GitHubWebhookServiceTests {
             return List.of();
         }
 
+        @Override
+        public java.util.Optional<RejectedTriggerAuditVo> findRejectedTrigger(String id) {
+            return java.util.Optional.empty();
+        }
+
         private List<RecordRejectedTriggerCommand> commands() {
             return commands;
         }

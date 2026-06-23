@@ -4,9 +4,16 @@ import { compactTime } from '../format';
 interface RejectedTriggerPanelProps {
   rejectedTriggers: RejectedTriggerAudit[];
   error: string | null;
+  retryingRejectedTriggerId: string | null;
+  onRetryRejectedTrigger: (id: string) => void;
 }
 
-export function RejectedTriggerPanel({ rejectedTriggers, error }: RejectedTriggerPanelProps) {
+export function RejectedTriggerPanel({
+  rejectedTriggers,
+  error,
+  retryingRejectedTriggerId,
+  onRetryRejectedTrigger
+}: RejectedTriggerPanelProps) {
   const rejectionSummary =
     rejectedTriggers.length === 0
       ? 'No recent rejections'
@@ -42,6 +49,14 @@ export function RejectedTriggerPanel({ rejectedTriggers, error }: RejectedTrigge
                   Refusal comment
                 </a>
               ) : null}
+              <button
+                type="button"
+                className="inline-action"
+                disabled={retryingRejectedTriggerId === trigger.id}
+                onClick={() => onRetryRejectedTrigger(trigger.id)}
+              >
+                {retryingRejectedTriggerId === trigger.id ? 'Retrying trigger' : 'Retry trigger'}
+              </button>
             </div>
             <p>{trigger.reason}</p>
           </article>

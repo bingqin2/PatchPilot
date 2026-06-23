@@ -73,6 +73,20 @@ class MyBatisRejectedTriggerAuditServiceTests {
                 .containsExactly("audit-newer", "audit-older");
     }
 
+    @Test
+    void should_find_rejected_trigger_by_id() {
+        RejectedTriggerAuditEntity entity = entity("audit-123", Instant.parse("2026-06-21T01:00:00Z"));
+        when(auditMapper.selectById("audit-123")).thenReturn(entity);
+
+        assertThat(auditService.findRejectedTrigger("audit-123"))
+                .hasValueSatisfying(found -> {
+                    assertThat(found.id()).isEqualTo("audit-123");
+                    assertThat(found.repositoryOwner()).isEqualTo("octocat");
+                    assertThat(found.commentUrl()).isEqualTo("https://github.com/octocat/hello-world/issues/42#issuecomment-456");
+                });
+        assertThat(auditService.findRejectedTrigger("missing-audit")).isEmpty();
+    }
+
     private static RejectedTriggerAuditEntity entity(String id, Instant createdAt) {
         RejectedTriggerAuditEntity entity = new RejectedTriggerAuditEntity();
         entity.setId(id);
