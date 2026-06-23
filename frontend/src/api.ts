@@ -16,6 +16,7 @@ import type {
   FixTaskModelUsageSummary,
   FixTaskQueueItem,
   FixTaskQueueSummary,
+  WebhookDeliveryDiagnostic,
   FixTaskModelCall,
   FixTaskTestRun,
   FixTaskTimelineEvent,
@@ -147,6 +148,10 @@ export async function getQueueSummary(): Promise<FixTaskQueueSummary> {
 
 export async function listQueueItems(): Promise<FixTaskQueueItem[]> {
   return getApi<FixTaskQueueItem[]>('/api/task-queue/items');
+}
+
+export async function listWebhookDeliveries(limit = 10): Promise<WebhookDeliveryDiagnostic[]> {
+  return getApi<WebhookDeliveryDiagnostic[]>(`/api/github/webhook-deliveries?limit=${limit}`);
 }
 
 export async function getTaskSummary(taskId: string): Promise<FixTaskAuditSummary> {

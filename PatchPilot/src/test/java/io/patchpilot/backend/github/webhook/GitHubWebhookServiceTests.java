@@ -7,6 +7,10 @@ import io.patchpilot.backend.github.client.domain.CreateIssueCommentCommand;
 import io.patchpilot.backend.github.client.domain.GitHubIssueCommentException;
 import io.patchpilot.backend.github.client.domain.IssueCommentResult;
 import io.patchpilot.backend.github.config.GitHubProperties;
+import io.patchpilot.backend.github.webhook.domain.RecordWebhookDeliveryDiagnosticCommand;
+import io.patchpilot.backend.github.webhook.domain.WebhookDeliveryDiagnosticStatus;
+import io.patchpilot.backend.github.webhook.domain.WebhookDeliveryDiagnosticVo;
+import io.patchpilot.backend.github.webhook.service.WebhookDeliveryDiagnosticService;
 import io.patchpilot.backend.safety.CommandSafetyGate;
 import io.patchpilot.backend.safety.config.SafetyProperties;
 import io.patchpilot.backend.safety.domain.RecordRejectedTriggerCommand;
@@ -100,12 +104,14 @@ class GitHubWebhookServiceTests {
         RecordingFixTaskDispatcher fixTaskDispatcher = new RecordingFixTaskDispatcher();
         RecordingIssueCommentTool issueCommentTool = new RecordingIssueCommentTool();
         RecordingTimelineService timelineService = new RecordingTimelineService();
+        RecordingWebhookDeliveryDiagnosticService diagnosticService = new RecordingWebhookDeliveryDiagnosticService();
         GitHubWebhookService webhookService = new GitHubWebhookService(
                 new ObjectMapper(),
                 fixTaskService,
                 fixTaskDispatcher,
                 issueCommentTool,
-                timelineService
+                timelineService,
+                diagnosticService
         );
 
         WebhookHandleResult result = webhookService.handle(
@@ -124,6 +130,52 @@ class GitHubWebhookServiceTests {
                 .containsExactly(FixTaskTimelineEventType.TASK_CREATED, FixTaskTimelineEventType.STATUS_COMMENT_CREATED);
         assertThat(timelineService.messages())
                 .containsExactly("Task accepted from /agent fix", "Status comment created");
+        assertThat(diagnosticService.commands()).hasSize(1);
+        RecordWebhookDeliveryDiagnosticCommand diagnostic = diagnosticService.commands().get(0);
+        assertThat(diagnostic.deliveryId()).isEqualTo("delivery-created-status-comment");
+        assertThat(diagnostic.event()).isEqualTo("issue_comment");
+        assertThat(diagnostic.status()).isEqualTo(WebhookDeliveryDiagnosticStatus.TASK_CREATED);
+        assertThat(diagnostic.taskId()).isEqualTo(task.id());
+        assertThat(diagnostic.repositoryOwner()).isEqualTo("octocat");
+        assertThat(diagnostic.repositoryName()).isEqualTo("hello-world");
+        assertThat(diagnostic.issueNumber()).isEqualTo(42L);
+        assertThat(diagnostic.triggerUser()).isEqualTo("alice");
+        assertThat(diagnostic.triggerComment()).isEqualTo("/agent fix touch docs/demo.md");
+        assertThat(diagnostic.message()).isEqualTo("Task created from /agent fix");
+    }
+
+    @Test
+    void should_record_ignored_issue_comment_delivery_diagnostic() {
+        FixTaskService fixTaskService = new InMemoryFixTaskService();
+        RecordingFixTaskDispatcher fixTaskDispatcher = new RecordingFixTaskDispatcher();
+        RecordingIssueCommentTool issueCommentTool = new RecordingIssueCommentTool();
+        RecordingTimelineService timelineService = new RecordingTimelineService();
+        RecordingWebhookDeliveryDiagnosticService diagnosticService = new RecordingWebhookDeliveryDiagnosticService();
+        GitHubWebhookService webhookService = new GitHubWebhookService(
+                new ObjectMapper(),
+                fixTaskService,
+                fixTaskDispatcher,
+                issueCommentTool,
+                timelineService,
+                diagnosticService
+        );
+
+        WebhookHandleResult result = webhookService.handle(
+                "issue_comment",
+                "delivery-ignore-diagnostic",
+                issueCommentPayload("please help")
+        );
+
+        assertThat(result.status()).isEqualTo(WebhookHandleStatus.IGNORED);
+        assertThat(diagnosticService.commands()).hasSize(1);
+        RecordWebhookDeliveryDiagnosticCommand diagnostic = diagnosticService.commands().get(0);
+        assertThat(diagnostic.status()).isEqualTo(WebhookDeliveryDiagnosticStatus.IGNORED);
+        assertThat(diagnostic.deliveryId()).isEqualTo("delivery-ignore-diagnostic");
+        assertThat(diagnostic.repositoryOwner()).isEqualTo("octocat");
+        assertThat(diagnostic.repositoryName()).isEqualTo("hello-world");
+        assertThat(diagnostic.issueNumber()).isEqualTo(42L);
+        assertThat(diagnostic.triggerUser()).isEqualTo("alice");
+        assertThat(diagnostic.message()).isEqualTo("Ignored non-/agent fix comment");
     }
 
     @Test
@@ -133,13 +185,15 @@ class GitHubWebhookServiceTests {
         RecordingIssueCommentTool issueCommentTool = new RecordingIssueCommentTool();
         RecordingTimelineService timelineService = new RecordingTimelineService();
         RecordingRejectedTriggerAuditService auditService = new RecordingRejectedTriggerAuditService();
+        RecordingWebhookDeliveryDiagnosticService diagnosticService = new RecordingWebhookDeliveryDiagnosticService();
         GitHubWebhookService webhookService = new GitHubWebhookService(
                 new ObjectMapper(),
                 fixTaskService,
                 fixTaskDispatcher,
                 issueCommentTool,
                 timelineService,
-                auditService
+                auditService,
+                diagnosticService
         );
 
         WebhookHandleResult result = webhookService.handle(
@@ -162,6 +216,10 @@ class GitHubWebhookServiceTests {
         assertThat(auditService.commands().get(0).issueNumber()).isEqualTo(42L);
         assertThat(auditService.commands().get(0).triggerUser()).isEqualTo("alice");
         assertThat(auditService.commands().get(0).reason())
+                .isEqualTo("Unsafe request rejected: destructive or secret-exfiltration instruction");
+        assertThat(diagnosticService.commands()).hasSize(1);
+        assertThat(diagnosticService.commands().get(0).status()).isEqualTo(WebhookDeliveryDiagnosticStatus.REJECTED);
+        assertThat(diagnosticService.commands().get(0).message())
                 .isEqualTo("Unsafe request rejected: destructive or secret-exfiltration instruction");
     }
 
@@ -875,6 +933,39 @@ class GitHubWebhookServiceTests {
 
         private TriggerRateLimitRequest request() {
             return request;
+        }
+    }
+
+    private static final class RecordingWebhookDeliveryDiagnosticService implements WebhookDeliveryDiagnosticService {
+
+        private final List<RecordWebhookDeliveryDiagnosticCommand> commands = new java.util.concurrent.CopyOnWriteArrayList<>();
+
+        @Override
+        public WebhookDeliveryDiagnosticVo record(RecordWebhookDeliveryDiagnosticCommand command) {
+            commands.add(command);
+            return new WebhookDeliveryDiagnosticVo(
+                    "diagnostic-" + commands.size(),
+                    command.deliveryId(),
+                    command.event(),
+                    command.status(),
+                    command.taskId(),
+                    command.repositoryOwner(),
+                    command.repositoryName(),
+                    command.issueNumber(),
+                    command.triggerUser(),
+                    command.triggerComment(),
+                    command.message(),
+                    Instant.parse("2026-06-23T00:00:00Z").plusSeconds(commands.size())
+            );
+        }
+
+        @Override
+        public List<WebhookDeliveryDiagnosticVo> listRecent(int limit) {
+            return List.of();
+        }
+
+        private List<RecordWebhookDeliveryDiagnosticCommand> commands() {
+            return commands;
         }
     }
 }

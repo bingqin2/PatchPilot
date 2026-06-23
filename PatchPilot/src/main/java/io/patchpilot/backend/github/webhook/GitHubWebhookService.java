@@ -4,6 +4,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.patchpilot.backend.agent.tool.IssueCommentTool;
 import io.patchpilot.backend.github.client.domain.IssueCommentResult;
+import io.patchpilot.backend.github.webhook.domain.RecordWebhookDeliveryDiagnosticCommand;
+import io.patchpilot.backend.github.webhook.domain.WebhookDeliveryDiagnosticStatus;
+import io.patchpilot.backend.github.webhook.service.WebhookDeliveryDiagnosticService;
+import io.patchpilot.backend.github.webhook.service.impl.InMemoryWebhookDeliveryDiagnosticService;
 import io.patchpilot.backend.safety.CommandSafetyGate;
 import io.patchpilot.backend.safety.NoOpTriggerIntentClassifier;
 import io.patchpilot.backend.safety.NoOpTriggerRateLimitService;
@@ -49,6 +53,7 @@ public class GitHubWebhookService {
     private final RejectedTriggerAuditService rejectedTriggerAuditService;
     private final TriggerRateLimitService triggerRateLimitService;
     private final TriggerIntentClassifier triggerIntentClassifier;
+    private final WebhookDeliveryDiagnosticService webhookDeliveryDiagnosticService;
     private final ConcurrentMap<String, WebhookHandleResult> deliveryResults = new ConcurrentHashMap<>();
 
     public GitHubWebhookService(
@@ -67,7 +72,55 @@ public class GitHubWebhookService {
                 new InMemoryRejectedTriggerAuditService(),
                 new CommandSafetyGate(),
                 new NoOpTriggerRateLimitService(),
-                new NoOpTriggerIntentClassifier()
+                new NoOpTriggerIntentClassifier(),
+                new InMemoryWebhookDeliveryDiagnosticService()
+        );
+    }
+
+    public GitHubWebhookService(
+            ObjectMapper objectMapper,
+            FixTaskService fixTaskService,
+            FixTaskDispatcher fixTaskDispatcher,
+            IssueCommentTool issueCommentTool,
+            FixTaskTimelineService fixTaskTimelineService,
+            RejectedTriggerAuditService rejectedTriggerAuditService,
+            CommandSafetyGate commandSafetyGate,
+            TriggerRateLimitService triggerRateLimitService,
+            TriggerIntentClassifier triggerIntentClassifier
+    ) {
+        this(
+                objectMapper,
+                fixTaskService,
+                fixTaskDispatcher,
+                issueCommentTool,
+                fixTaskTimelineService,
+                rejectedTriggerAuditService,
+                commandSafetyGate,
+                triggerRateLimitService,
+                triggerIntentClassifier,
+                new InMemoryWebhookDeliveryDiagnosticService()
+        );
+    }
+
+    public GitHubWebhookService(
+            ObjectMapper objectMapper,
+            FixTaskService fixTaskService,
+            FixTaskDispatcher fixTaskDispatcher,
+            IssueCommentTool issueCommentTool,
+            FixTaskTimelineService fixTaskTimelineService,
+            WebhookDeliveryDiagnosticService webhookDeliveryDiagnosticService
+    ) {
+        this(
+                objectMapper,
+                fixTaskService,
+                fixTaskDispatcher,
+                issueCommentTool,
+                fixTaskTimelineService,
+                new InMemoryRejectedTriggerAuditService(),
+                new CommandSafetyGate(),
+                new NoOpTriggerRateLimitService(),
+                new NoOpTriggerIntentClassifier(),
+                webhookDeliveryDiagnosticService
         );
     }
 
@@ -88,7 +141,8 @@ public class GitHubWebhookService {
                 new InMemoryRejectedTriggerAuditService(),
                 commandSafetyGate,
                 new NoOpTriggerRateLimitService(),
-                new NoOpTriggerIntentClassifier()
+                new NoOpTriggerIntentClassifier(),
+                new InMemoryWebhookDeliveryDiagnosticService()
         );
     }
 
@@ -109,7 +163,31 @@ public class GitHubWebhookService {
                 rejectedTriggerAuditService,
                 new CommandSafetyGate(),
                 new NoOpTriggerRateLimitService(),
-                new NoOpTriggerIntentClassifier()
+                new NoOpTriggerIntentClassifier(),
+                new InMemoryWebhookDeliveryDiagnosticService()
+        );
+    }
+
+    public GitHubWebhookService(
+            ObjectMapper objectMapper,
+            FixTaskService fixTaskService,
+            FixTaskDispatcher fixTaskDispatcher,
+            IssueCommentTool issueCommentTool,
+            FixTaskTimelineService fixTaskTimelineService,
+            RejectedTriggerAuditService rejectedTriggerAuditService,
+            WebhookDeliveryDiagnosticService webhookDeliveryDiagnosticService
+    ) {
+        this(
+                objectMapper,
+                fixTaskService,
+                fixTaskDispatcher,
+                issueCommentTool,
+                fixTaskTimelineService,
+                rejectedTriggerAuditService,
+                new CommandSafetyGate(),
+                new NoOpTriggerRateLimitService(),
+                new NoOpTriggerIntentClassifier(),
+                webhookDeliveryDiagnosticService
         );
     }
 
@@ -131,7 +209,8 @@ public class GitHubWebhookService {
                 rejectedTriggerAuditService,
                 commandSafetyGate,
                 new NoOpTriggerRateLimitService(),
-                new NoOpTriggerIntentClassifier()
+                new NoOpTriggerIntentClassifier(),
+                new InMemoryWebhookDeliveryDiagnosticService()
         );
     }
 
@@ -154,7 +233,8 @@ public class GitHubWebhookService {
                 rejectedTriggerAuditService,
                 commandSafetyGate,
                 new NoOpTriggerRateLimitService(),
-                triggerIntentClassifier
+                triggerIntentClassifier,
+                new InMemoryWebhookDeliveryDiagnosticService()
         );
     }
 
@@ -168,7 +248,8 @@ public class GitHubWebhookService {
             RejectedTriggerAuditService rejectedTriggerAuditService,
             CommandSafetyGate commandSafetyGate,
             TriggerRateLimitService triggerRateLimitService,
-            TriggerIntentClassifier triggerIntentClassifier
+            TriggerIntentClassifier triggerIntentClassifier,
+            WebhookDeliveryDiagnosticService webhookDeliveryDiagnosticService
     ) {
         this.objectMapper = objectMapper;
         this.fixTaskService = fixTaskService;
@@ -179,14 +260,39 @@ public class GitHubWebhookService {
         this.commandSafetyGate = commandSafetyGate;
         this.triggerRateLimitService = triggerRateLimitService;
         this.triggerIntentClassifier = triggerIntentClassifier;
+        this.webhookDeliveryDiagnosticService = webhookDeliveryDiagnosticService;
     }
 
     public WebhookHandleResult handle(String event, String deliveryId, String payload) {
         if (!StringUtils.hasText(deliveryId)) {
+            recordDelivery(
+                    deliveryId,
+                    event,
+                    WebhookDeliveryDiagnosticStatus.BAD_REQUEST,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    "Missing X-GitHub-Delivery header"
+            );
             throw new InvalidWebhookPayloadException("Missing X-GitHub-Delivery header");
         }
         WebhookHandleResult existingResult = deliveryResults.get(deliveryId);
         if (existingResult != null) {
+            recordDelivery(
+                    deliveryId,
+                    event,
+                    WebhookDeliveryDiagnosticStatus.DUPLICATE_DELIVERY,
+                    existingResult.taskId(),
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    "Duplicate delivery ignored"
+            );
             return WebhookHandleResult.duplicate(existingResult.taskId());
         }
         WebhookHandleResult result = route(event, deliveryId, payload);
@@ -196,19 +302,56 @@ public class GitHubWebhookService {
 
     private WebhookHandleResult route(String event, String deliveryId, String payload) {
         if (!ISSUE_COMMENT_EVENT.equals(event)) {
+            recordDelivery(
+                    deliveryId,
+                    event,
+                    WebhookDeliveryDiagnosticStatus.IGNORED,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    "Ignored unsupported GitHub event"
+            );
             return WebhookHandleResult.ignored();
         }
         JsonNode root = parsePayload(payload);
         if (!CREATED_ACTION.equals(requiredText(root, "action"))) {
+            recordDelivery(
+                    deliveryId,
+                    event,
+                    WebhookDeliveryDiagnosticStatus.IGNORED,
+                    null,
+                    optionalText(root, "repository", "owner", "login"),
+                    optionalText(root, "repository", "name"),
+                    optionalLong(root, null, "issue", "number"),
+                    optionalText(root, "comment", "user", "login"),
+                    optionalText(root, "comment", "body"),
+                    "Ignored issue_comment action: " + requiredText(root, "action")
+            );
             return WebhookHandleResult.ignored();
         }
         String commentBody = requiredText(root, "comment", "body");
         if (!commandSafetyGate.isAgentFixCommand(commentBody)) {
+            recordDelivery(
+                    deliveryId,
+                    event,
+                    WebhookDeliveryDiagnosticStatus.IGNORED,
+                    null,
+                    optionalText(root, "repository", "owner", "login"),
+                    optionalText(root, "repository", "name"),
+                    optionalLong(root, null, "issue", "number"),
+                    optionalText(root, "comment", "user", "login"),
+                    commentBody,
+                    "Ignored non-/agent fix comment"
+            );
             return WebhookHandleResult.ignored();
         }
         String repositoryOwner = requiredText(root, "repository", "owner", "login");
         String repositoryName = requiredText(root, "repository", "name");
         String triggerUser = requiredText(root, "comment", "user", "login");
+        long issueNumber = requiredLong(root, "issue", "number");
         SafetyGateDecision safetyDecision = commandSafetyGate.evaluate(new SafetyGateRequest(
                 repositoryOwner,
                 repositoryName,
@@ -221,26 +364,60 @@ public class GitHubWebhookService {
                     deliveryId,
                     repositoryOwner,
                     repositoryName,
-                    requiredLong(root, "issue", "number"),
+                    issueNumber,
                     triggerUser,
                     commentBody,
                     safetyDecision.reason()
             ));
+            recordDelivery(
+                    deliveryId,
+                    event,
+                    WebhookDeliveryDiagnosticStatus.REJECTED,
+                    null,
+                    repositoryOwner,
+                    repositoryName,
+                    issueNumber,
+                    triggerUser,
+                    commentBody,
+                    safetyDecision.reason()
+            );
             return WebhookHandleResult.rejected();
         }
         WebhookHandleResult duplicateDeliveryResult = fixTaskService.findTaskByDeliveryId(deliveryId)
-                .map(task -> WebhookHandleResult.duplicate(task.id()))
+                .map(task -> {
+                    recordDelivery(
+                            deliveryId,
+                            event,
+                            WebhookDeliveryDiagnosticStatus.DUPLICATE_DELIVERY,
+                            task.id(),
+                            repositoryOwner,
+                            repositoryName,
+                            issueNumber,
+                            triggerUser,
+                            commentBody,
+                            "Duplicate delivery ignored"
+                    );
+                    return WebhookHandleResult.duplicate(task.id());
+                })
                 .orElse(null);
         if (duplicateDeliveryResult != null) {
             return duplicateDeliveryResult;
         }
-        long issueNumber = requiredLong(root, "issue", "number");
         WebhookHandleResult activeTaskResult = fixTaskService.findActiveTaskForIssue(
                         repositoryOwner,
                         repositoryName,
                         issueNumber
                 )
-                .map(this::handleActiveTaskExists)
+                .map((activeTask) -> handleActiveTaskExists(
+                        activeTask,
+                        deliveryId,
+                        event,
+                        repositoryOwner,
+                        repositoryName,
+                        issueNumber,
+                        triggerUser,
+                        commentBody
+                ))
                 .orElse(null);
         if (activeTaskResult != null) {
             return activeTaskResult;
@@ -263,6 +440,18 @@ public class GitHubWebhookService {
                     commentBody,
                     rateLimitDecision.reason()
             ));
+            recordDelivery(
+                    deliveryId,
+                    event,
+                    WebhookDeliveryDiagnosticStatus.REJECTED,
+                    null,
+                    repositoryOwner,
+                    repositoryName,
+                    issueNumber,
+                    triggerUser,
+                    commentBody,
+                    rateLimitDecision.reason()
+            );
             return WebhookHandleResult.rejected();
         }
         TriggerIntentDecision triggerIntentDecision = triggerIntentClassifier.classify(
@@ -287,6 +476,18 @@ public class GitHubWebhookService {
                     commentBody,
                     triggerIntentDecision.rejectionReason()
             ));
+            recordDelivery(
+                    deliveryId,
+                    event,
+                    WebhookDeliveryDiagnosticStatus.REJECTED,
+                    null,
+                    repositoryOwner,
+                    repositoryName,
+                    issueNumber,
+                    triggerUser,
+                    commentBody,
+                    triggerIntentDecision.rejectionReason()
+            );
             return WebhookHandleResult.rejected();
         }
         FixTaskCreationResult creationResult = fixTaskService.createFixTaskIfAbsent(new CreateFixTaskCommand(
@@ -301,21 +502,66 @@ public class GitHubWebhookService {
         ));
         FixTaskVo task = creationResult.task();
         if (!creationResult.created()) {
+            recordDelivery(
+                    deliveryId,
+                    event,
+                    WebhookDeliveryDiagnosticStatus.DUPLICATE_DELIVERY,
+                    task.id(),
+                    repositoryOwner,
+                    repositoryName,
+                    issueNumber,
+                    triggerUser,
+                    commentBody,
+                    "Duplicate delivery ignored"
+            );
             return WebhookHandleResult.duplicate(task.id());
         }
         recordTimelineEvent(task.id(), FixTaskTimelineEventType.TASK_CREATED, "Task accepted from /agent fix");
         createStatusComment(task);
         fixTaskDispatcher.dispatch(task.id());
+        recordDelivery(
+                deliveryId,
+                event,
+                WebhookDeliveryDiagnosticStatus.TASK_CREATED,
+                task.id(),
+                repositoryOwner,
+                repositoryName,
+                issueNumber,
+                triggerUser,
+                commentBody,
+                "Task created from /agent fix"
+        );
         return WebhookHandleResult.taskCreated(task.id());
     }
 
-    private WebhookHandleResult handleActiveTaskExists(FixTaskVo activeTask) {
+    private WebhookHandleResult handleActiveTaskExists(
+            FixTaskVo activeTask,
+            String deliveryId,
+            String event,
+            String repositoryOwner,
+            String repositoryName,
+            long issueNumber,
+            String triggerUser,
+            String commentBody
+    ) {
         recordTimelineEvent(
                 activeTask.id(),
                 FixTaskTimelineEventType.ACTIVE_TASK_EXISTS,
                 "Ignored duplicate /agent fix while task is active"
         );
         updateStatusComment(() -> issueCommentTool.updateActiveTaskExists(activeTask));
+        recordDelivery(
+                deliveryId,
+                event,
+                WebhookDeliveryDiagnosticStatus.ACTIVE_TASK_EXISTS,
+                activeTask.id(),
+                repositoryOwner,
+                repositoryName,
+                issueNumber,
+                triggerUser,
+                commentBody,
+                "Ignored duplicate /agent fix while task is active"
+        );
         return WebhookHandleResult.activeTaskExists(activeTask.id());
     }
 
@@ -357,6 +603,36 @@ public class GitHubWebhookService {
         return LogSummary.truncateFailureReason(exception.getMessage());
     }
 
+    private void recordDelivery(
+            String deliveryId,
+            String event,
+            WebhookDeliveryDiagnosticStatus status,
+            String taskId,
+            String repositoryOwner,
+            String repositoryName,
+            Long issueNumber,
+            String triggerUser,
+            String triggerComment,
+            String message
+    ) {
+        try {
+            webhookDeliveryDiagnosticService.record(new RecordWebhookDeliveryDiagnosticCommand(
+                    deliveryId,
+                    event,
+                    status,
+                    taskId,
+                    repositoryOwner,
+                    repositoryName,
+                    issueNumber,
+                    triggerUser,
+                    triggerComment,
+                    LogSummary.truncateFailureReason(message)
+            ));
+        } catch (RuntimeException exception) {
+            // Diagnostics must not block webhook handling.
+        }
+    }
+
     private static String classificationId(String deliveryId) {
         return java.util.UUID.nameUUIDFromBytes(("issue-comment:" + deliveryId).getBytes(java.nio.charset.StandardCharsets.UTF_8))
                 .toString();
@@ -395,6 +671,28 @@ public class GitHubWebhookService {
             throw new InvalidWebhookPayloadException("Expected numeric field: " + String.join(".", path));
         }
         return node.asLong();
+    }
+
+    private static Long optionalLong(JsonNode root, Long defaultValue, String... path) {
+        JsonNode node = nodeAt(root, path);
+        if (node == null || node.isNull()) {
+            return defaultValue;
+        }
+        if (!node.canConvertToLong()) {
+            throw new InvalidWebhookPayloadException("Expected numeric field: " + String.join(".", path));
+        }
+        return node.asLong();
+    }
+
+    private static String optionalText(JsonNode root, String... path) {
+        JsonNode node = nodeAt(root, path);
+        if (node == null || node.isNull()) {
+            return null;
+        }
+        if (!node.isTextual()) {
+            throw new InvalidWebhookPayloadException("Expected text field: " + String.join(".", path));
+        }
+        return node.asText();
     }
 
     private static JsonNode requiredNode(JsonNode root, String... path) {

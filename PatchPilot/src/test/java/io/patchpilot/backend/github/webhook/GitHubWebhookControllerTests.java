@@ -15,6 +15,10 @@ import io.patchpilot.backend.github.client.domain.IssueCommentResult;
 import io.patchpilot.backend.github.client.domain.PullRequestResult;
 import io.patchpilot.backend.github.client.domain.UpdateIssueCommentCommand;
 import io.patchpilot.backend.github.config.GitHubProperties;
+import io.patchpilot.backend.github.webhook.domain.RecordWebhookDeliveryDiagnosticCommand;
+import io.patchpilot.backend.github.webhook.domain.WebhookDeliveryDiagnosticStatus;
+import io.patchpilot.backend.github.webhook.domain.WebhookDeliveryDiagnosticVo;
+import io.patchpilot.backend.github.webhook.service.WebhookDeliveryDiagnosticService;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -42,10 +46,14 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -60,6 +68,9 @@ class GitHubWebhookControllerTests {
     @Autowired
     private MockMvc mockMvc;
 
+    @Autowired
+    private RecordingWebhookDeliveryDiagnosticService webhookDeliveryDiagnosticService;
+
     @Test
     void should_reject_invalid_signature() throws Exception {
         String payload = issueCommentPayload("created", "/agent fix", "octocat", "hello-world");
@@ -72,6 +83,13 @@ class GitHubWebhookControllerTests {
                         .content(payload))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.success").value(false));
+
+        List<RecordWebhookDeliveryDiagnosticCommand> diagnostics = webhookDeliveryDiagnosticService.commands();
+        RecordWebhookDeliveryDiagnosticCommand diagnostic = diagnostics.get(diagnostics.size() - 1);
+        assertThat(diagnostic.deliveryId()).isEqualTo("delivery-invalid");
+        assertThat(diagnostic.event()).isEqualTo("issue_comment");
+        assertThat(diagnostic.status()).isEqualTo(WebhookDeliveryDiagnosticStatus.INVALID_SIGNATURE);
+        assertThat(diagnostic.message()).isEqualTo("Invalid GitHub webhook signature");
     }
 
     @Test
@@ -437,6 +455,60 @@ class GitHubWebhookControllerTests {
                     return new IssueCommentResult(command.commentId(), "https://github.com/octocat/hello-world/issues/42#issuecomment-123");
                 }
             });
+        }
+
+        @Bean
+        @Primary
+        RecordingWebhookDeliveryDiagnosticService webhookDeliveryDiagnosticService() {
+            return new RecordingWebhookDeliveryDiagnosticService();
+        }
+    }
+
+    static final class RecordingWebhookDeliveryDiagnosticService implements WebhookDeliveryDiagnosticService {
+
+        private final List<RecordWebhookDeliveryDiagnosticCommand> commands = new CopyOnWriteArrayList<>();
+
+        @Override
+        public WebhookDeliveryDiagnosticVo record(RecordWebhookDeliveryDiagnosticCommand command) {
+            commands.add(command);
+            return new WebhookDeliveryDiagnosticVo(
+                    "diagnostic-" + commands.size(),
+                    command.deliveryId(),
+                    command.event(),
+                    command.status(),
+                    command.taskId(),
+                    command.repositoryOwner(),
+                    command.repositoryName(),
+                    command.issueNumber(),
+                    command.triggerUser(),
+                    command.triggerComment(),
+                    command.message(),
+                    Instant.parse("2026-06-23T00:00:00Z").plusSeconds(commands.size())
+            );
+        }
+
+        @Override
+        public List<WebhookDeliveryDiagnosticVo> listRecent(int limit) {
+            return commands.stream()
+                    .map((command) -> new WebhookDeliveryDiagnosticVo(
+                            "diagnostic-list",
+                            command.deliveryId(),
+                            command.event(),
+                            command.status(),
+                            command.taskId(),
+                            command.repositoryOwner(),
+                            command.repositoryName(),
+                            command.issueNumber(),
+                            command.triggerUser(),
+                            command.triggerComment(),
+                            command.message(),
+                            Instant.parse("2026-06-23T00:00:00Z")
+                    ))
+                    .toList();
+        }
+
+        List<RecordWebhookDeliveryDiagnosticCommand> commands() {
+            return commands;
         }
     }
 }
