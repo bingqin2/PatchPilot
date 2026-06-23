@@ -375,6 +375,37 @@ const queueItems = [
   }
 ];
 
+const webhookDeliveries = [
+  {
+    id: 'diagnostic-1',
+    deliveryId: 'delivery-created-status-comment',
+    event: 'issue_comment',
+    status: 'TASK_CREATED',
+    taskId: 'task-1',
+    repositoryOwner: 'bingqin2',
+    repositoryName: 'PatchPilot',
+    issueNumber: 1,
+    triggerUser: 'bingqin2',
+    triggerComment: '/agent fix replace docs/demo.md PatchPilot smoke test',
+    message: 'Task created from /agent fix',
+    createdAt: '2026-06-20T01:00:05Z'
+  },
+  {
+    id: 'diagnostic-2',
+    deliveryId: 'delivery-invalid-signature',
+    event: 'issue_comment',
+    status: 'INVALID_SIGNATURE',
+    taskId: null,
+    repositoryOwner: null,
+    repositoryName: null,
+    issueNumber: null,
+    triggerUser: null,
+    triggerComment: null,
+    message: 'Invalid GitHub webhook signature',
+    createdAt: '2026-06-20T01:02:05Z'
+  }
+];
+
 const supportedLanguageAdapters = [
   {
     language: 'java',
@@ -688,6 +719,9 @@ beforeEach(() => {
     if (url === '/api/task-queue/items') {
       return jsonResponse(queueItems);
     }
+    if (url === '/api/github/webhook-deliveries?limit=10') {
+      return jsonResponse(webhookDeliveries);
+    }
     if (url === '/api/tasks/task-1/detail') {
       return jsonResponse(detail);
     }
@@ -924,11 +958,17 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(screen.getByText('1 running item')).toBeInTheDocument();
   expect(screen.getByText('1 delayed')).toBeInTheDocument();
   expect(screen.getByText('maven test command timed out')).toBeInTheDocument();
+  const webhookDeliveryPanel = screen.getByRole('region', { name: 'Webhook deliveries' });
+  expect(within(webhookDeliveryPanel).getByRole('heading', { name: 'Webhook deliveries' })).toBeInTheDocument();
+  expect(within(webhookDeliveryPanel).getByText('delivery-created-status-comment')).toBeInTheDocument();
+  expect(within(webhookDeliveryPanel).getByText('bingqin2/PatchPilot #1')).toBeInTheDocument();
+  expect(within(webhookDeliveryPanel).getByText('Invalid GitHub webhook signature')).toBeInTheDocument();
 
   await waitFor(() => expect(screen.getByText('Task completed')).toBeInTheDocument());
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/language-adapters'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/language-adapters/fixtures'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/readiness'));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/github/webhook-deliveries?limit=10'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks/task-1/detail'));
   expect(screen.getByText('Pull request opened')).toBeInTheDocument();
   expect(screen.getByText('Tests run: 247, Failures: 0, Errors: 0')).toBeInTheDocument();
@@ -1261,6 +1301,9 @@ test('shows manual task creation failures without clearing the form', async () =
     }
     if (url === '/api/task-queue/items') {
       return jsonResponse(queueItems);
+    }
+    if (url === '/api/github/webhook-deliveries?limit=10') {
+      return jsonResponse([]);
     }
     if (url === '/api/tasks/task-1/detail') {
       return jsonResponse(detail);
@@ -1804,6 +1847,9 @@ test('shows dashboard refresh progress while top-level data is loading', async (
     if (url === '/api/task-queue/items') {
       return jsonResponse([]);
     }
+    if (url === '/api/github/webhook-deliveries?limit=10') {
+      return jsonResponse([]);
+    }
     return jsonResponse(null, false, 'not found', 404);
   });
   vi.stubGlobal('fetch', fetchMock);
@@ -1977,6 +2023,9 @@ test('loads the next backend task page with offset pagination', async () => {
     }
     if (url === '/api/task-queue/items') {
       return jsonResponse(queueItems);
+    }
+    if (url === '/api/github/webhook-deliveries?limit=10') {
+      return jsonResponse([]);
     }
     if (url === '/api/tasks/page-task-1/detail') {
       return jsonResponse({
@@ -2189,6 +2238,9 @@ function defaultAppResponse(input: RequestInfo | URL, init?: RequestInit) {
   }
   if (url === '/api/task-queue/items') {
     return jsonResponse(queueItems);
+  }
+  if (url === '/api/github/webhook-deliveries?limit=10') {
+    return jsonResponse(webhookDeliveries);
   }
   if (url === '/api/tasks/task-1/detail') {
     return jsonResponse(detail);

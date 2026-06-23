@@ -2490,3 +2490,23 @@ Validation:
 - `npm test`: first failed because an existing demo-readiness assertion matched the same next-action text rendered by the new setup checklist; then passed after scoping the assertion to the Demo readiness panel, 97 tests run, 0 failures.
 - `npm run build`: passed after production frontend build.
 - `git diff --check`: passed after whitespace and conflict-marker verification.
+
+Implemented webhook delivery diagnostics from `docs/plans/123-webhook-delivery-diagnostics.md`.
+
+Changes:
+
+- Added a `webhook_delivery_diagnostic` read model with in-memory and MyBatis services plus a Flyway migration.
+- Recorded delivery outcomes for invalid signatures, malformed requests, unsupported events, ignored non-commands, safety/rate/model rejections, duplicate deliveries, active-task collisions, and created tasks.
+- Exposed `GET /api/github/webhook-deliveries?limit=...` for curl and dashboard inspection without storing raw payloads or signatures.
+- Added a dashboard `WebhookDeliveryPanel` backed by the new API so operators can diagnose temporary URL, signature, ignored-event, rejection, duplicate, and task-created outcomes without relying only on GitHub's delivery page.
+- Updated README, frontend design notes, and this execution log.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=GitHubWebhookServiceTests,GitHubWebhookControllerTests,MyBatisWebhookDeliveryDiagnosticServiceTests,WebhookDeliveryDiagnosticMigrationTests test`: first failed because the webhook service did not accept a diagnostic recorder and no migration existed; then passed after backend implementation, 26 tests run, 0 failures.
+- `npm test -- App.test.tsx api.test.ts`: first failed because the dashboard had no named webhook-deliveries region; then passed after adding an accessible panel label, 67 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed after full backend verification, 447 tests run, 0 failures.
+- `npm test`: passed after full frontend verification, 98 tests run, 0 failures.
+- `npm run build`: passed after production frontend build.
+- `mvn -pl PatchPilot -Dtest=MyBatisWebhookDeliveryDiagnosticServiceTests,WebhookDeliveryDiagnosticControllerTests test`: passed after the final diagnostic list-ordering adjustment, 4 tests run, 0 failures.
+- `git diff --check`: passed after whitespace verification.

@@ -13,6 +13,7 @@ import {
   getTaskReport,
   getTaskDetail,
   getTaskStatusCounts,
+  listWebhookDeliveries,
   listTasks
 } from './api';
 
@@ -177,6 +178,39 @@ test('builds backend task search sort and pagination query parameters', async ()
     hasMore: true,
     total: 74
   });
+});
+
+test('lists recent webhook deliveries through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: [
+        {
+          id: 'diagnostic-1',
+          deliveryId: 'delivery-1',
+          event: 'issue_comment',
+          status: 'TASK_CREATED',
+          taskId: 'task-1',
+          repositoryOwner: 'bingqin2',
+          repositoryName: 'PatchPilot',
+          issueNumber: 1,
+          triggerUser: 'bingqin2',
+          triggerComment: '/agent fix touch docs/demo.md',
+          message: 'Task created from /agent fix',
+          createdAt: '2026-06-23T01:00:00Z'
+        }
+      ],
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const deliveries = await listWebhookDeliveries(20);
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/github/webhook-deliveries?limit=20');
+  expect(deliveries[0].status).toBe('TASK_CREATED');
 });
 
 test('builds backend task status count query parameters without status or pagination', async () => {

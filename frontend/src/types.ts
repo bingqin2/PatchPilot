@@ -13,6 +13,16 @@ export type TaskSort = 'createdAtDesc' | 'createdAtAsc';
 
 export type QueueItemStatus = 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
 
+export type WebhookDeliveryDiagnosticStatus =
+  | 'IGNORED'
+  | 'INVALID_SIGNATURE'
+  | 'BAD_REQUEST'
+  | 'REJECTED'
+  | 'DUPLICATE_DELIVERY'
+  | 'ACTIVE_TASK_EXISTS'
+  | 'TASK_CREATED'
+  | 'FAILED';
+
 export interface ApiResponse<T> {
   success: boolean;
   data: T;
@@ -219,6 +229,21 @@ export interface FixTaskQueueItem {
   lockedAt: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface WebhookDeliveryDiagnostic {
+  id: string;
+  deliveryId: string | null;
+  event: string;
+  status: WebhookDeliveryDiagnosticStatus;
+  taskId: string | null;
+  repositoryOwner: string | null;
+  repositoryName: string | null;
+  issueNumber: number | null;
+  triggerUser: string | null;
+  triggerComment: string | null;
+  message: string;
+  createdAt: string;
 }
 
 export interface FixTaskAuditSummary {

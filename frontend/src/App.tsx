@@ -19,6 +19,7 @@ import {
   listLanguageAdapterFixtures,
   listLanguageAdapters,
   listQueueItems,
+  listWebhookDeliveries,
   listTasks,
   retryTask
 } from './api';
@@ -36,6 +37,7 @@ import { QueuePanel } from './dashboard/components/QueuePanel';
 import { SupportedAdaptersPanel } from './dashboard/components/SupportedAdaptersPanel';
 import { TaskDetailPanel } from './dashboard/components/TaskDetailPanel';
 import { TaskListPanel } from './dashboard/components/TaskListPanel';
+import { WebhookDeliveryPanel } from './dashboard/components/WebhookDeliveryPanel';
 import { compactDateTime, duration, percent } from './dashboard/format';
 import { emptyDetail } from './dashboard/types';
 import type { TaskDetailState } from './dashboard/types';
@@ -53,6 +55,7 @@ import type {
   FixTaskModelUsageSummary,
   FixTaskQueueItem,
   FixTaskQueueSummary,
+  WebhookDeliveryDiagnostic,
   LanguageAdapterFixtureVerification,
   SupportedLanguageAdapter,
   TaskSort,
@@ -92,6 +95,8 @@ export default function App() {
   const [adapterFixtureError, setAdapterFixtureError] = useState<string | null>(null);
   const [queueSummary, setQueueSummary] = useState<FixTaskQueueSummary | null>(null);
   const [queueItems, setQueueItems] = useState<FixTaskQueueItem[]>([]);
+  const [webhookDeliveries, setWebhookDeliveries] = useState<WebhookDeliveryDiagnostic[]>([]);
+  const [webhookDeliveryError, setWebhookDeliveryError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<TaskStatusFilter>(initialFilters.status);
   const [searchQuery, setSearchQuery] = useState(initialFilters.query);
   const [repositoryOwnerFilter, setRepositoryOwnerFilter] = useState(initialFilters.repositoryOwner);
@@ -311,7 +316,8 @@ export default function App() {
         adapterListResult,
         adapterFixtureResult,
         queueSummaryData,
-        queueItemList
+        queueItemList,
+        webhookDeliveryResult
       ] = await Promise.all([
         listTasks({
           status: statusFilter,
@@ -338,7 +344,11 @@ export default function App() {
           (caught) => ({ verifications: null, error: errorMessage(caught) })
         ),
         getQueueSummary(),
-        listQueueItems()
+        listQueueItems(),
+        listWebhookDeliveries(10).then(
+          (deliveries) => ({ deliveries, error: null as string | null }),
+          (caught) => ({ deliveries: null, error: errorMessage(caught) })
+        )
       ]);
       setTasks(taskList.items);
       setStatusCounts(taskStatusCounts);
@@ -361,6 +371,10 @@ export default function App() {
       setAdapterFixtureError(adapterFixtureResult.error);
       setQueueSummary(queueSummaryData);
       setQueueItems(queueItemList);
+      if (webhookDeliveryResult.deliveries) {
+        setWebhookDeliveries(webhookDeliveryResult.deliveries);
+      }
+      setWebhookDeliveryError(webhookDeliveryResult.error);
       setCanLoadMoreTasks(taskList.hasMore);
       setTaskTotal(taskList.total);
       setSelectedTaskId((current) => selectedTaskIdFromList(taskList.items, current));
@@ -716,6 +730,8 @@ export default function App() {
       <AdapterFixtureVerificationPanel verifications={adapterFixtureVerifications} error={adapterFixtureError} />
 
       <QueuePanel summary={queueSummary} items={queueItems} />
+
+      <WebhookDeliveryPanel deliveries={webhookDeliveries} error={webhookDeliveryError} />
     </main>
   );
 }
