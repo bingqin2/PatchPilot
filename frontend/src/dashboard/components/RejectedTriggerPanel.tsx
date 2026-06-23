@@ -2,7 +2,9 @@ import type {
   RejectedTriggerAudit,
   RejectedTriggerAuditSummary,
   RejectedTriggerCategoryFilter,
-  RejectedTriggerCountSummary
+  RejectedTriggerCountSummary,
+  TriggerQuarantine,
+  TriggerQuarantineScope
 } from '../../types';
 import { compactTime } from '../format';
 
@@ -25,6 +27,7 @@ const REJECTED_TRIGGER_CATEGORY_FILTERS: RejectedTriggerCategoryFilter[] = [
 interface RejectedTriggerPanelProps {
   rejectedTriggers: RejectedTriggerAudit[];
   summary: RejectedTriggerAuditSummary | null;
+  quarantines: TriggerQuarantine[];
   categoryFilter: RejectedTriggerCategoryFilter;
   error: string | null;
   retryingRejectedTriggerId: string | null;
@@ -36,6 +39,7 @@ interface RejectedTriggerPanelProps {
 export function RejectedTriggerPanel({
   rejectedTriggers,
   summary,
+  quarantines,
   categoryFilter,
   error,
   retryingRejectedTriggerId,
@@ -74,6 +78,7 @@ export function RejectedTriggerPanel({
       </div>
       {error ? <p className="panel-error">{error}</p> : null}
       <RejectedTriggerSummary summary={summary} onCategoryFilterChange={onCategoryFilterChange} />
+      <TriggerQuarantineSummary quarantines={quarantines} />
       <div className="rejected-trigger-list" role="group" aria-label="Rejected trigger audit rows">
         {rejectedTriggers.map((trigger) => (
           <article className="rejected-trigger-row" key={trigger.id}>
@@ -110,6 +115,37 @@ export function RejectedTriggerPanel({
         {rejectedTriggers.length === 0 && !error ? <p className="empty-state">No rejected /agent fix triggers recorded.</p> : null}
       </div>
     </section>
+  );
+}
+
+function TriggerQuarantineSummary({ quarantines }: { quarantines: TriggerQuarantine[] }) {
+  if (quarantines.length === 0) {
+    return null;
+  }
+  return (
+    <div className="trigger-quarantine-summary" role="group" aria-label="Active trigger quarantines">
+      <div className="rejected-trigger-summary-header">
+        <div>
+          <h3>Active trigger quarantines</h3>
+          <p>
+            {quarantines.length} active {quarantines.length === 1 ? 'quarantine' : 'quarantines'}
+          </p>
+        </div>
+      </div>
+      <div className="trigger-quarantine-list">
+        {quarantines.map((quarantine) => (
+          <article className="trigger-quarantine-row" key={quarantine.id}>
+            <div>
+              <span className="status-pill status-warning">{scopeLabel(quarantine.scope)}</span>
+              <strong>{quarantine.scopeKey}</strong>
+              <span>{quarantine.evidenceCount} rejected triggers</span>
+              <time>Expires {compactTime(quarantine.expiresAt)}</time>
+            </div>
+            <p>{quarantine.reason}</p>
+          </article>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -200,6 +236,10 @@ function renderCountItem(
 
 function rawValueLabel(value: string) {
   return value;
+}
+
+function scopeLabel(scope: TriggerQuarantineScope) {
+  return scope === 'TRIGGER_USER' ? 'Trigger user' : 'Repository';
 }
 
 function repositoryLabel(trigger: RejectedTriggerAudit) {

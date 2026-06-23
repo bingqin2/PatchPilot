@@ -104,12 +104,13 @@ The current implementation target is local self-hosted development first. Hosted
 - The system should reject or ignore comments from unauthorized users and repositories.
 - Operators may configure trigger-user and repository allowlists for self-hosted demos and private deployments.
 - Operators may configure trigger rate limits by trigger user, repository, and issue to reject repeated `/agent fix` attempts before model calls or task creation.
-- Operators may enable rejected-trigger quarantine so repeated rejected attempts from the same trigger user or repository are refused with `ABUSE_QUARANTINED` before rate-limit checks, model calls, task creation, workspace cloning, or queueing.
+- Operators may enable rejected-trigger quarantine so repeated rejected attempts from the same trigger user or repository create or extend a durable quarantine record and are refused with `ABUSE_QUARANTINED` before rate-limit checks, model calls, task creation, workspace cloning, or queueing.
 - The system should reject unsupported repositories before model execution, patch generation, test execution, Git mutation, or Pull Request creation.
 - If project detection is possible from webhook or repository metadata before cloning, the system may reject even earlier.
 - The system must never follow user instructions that request secret exfiltration, destructive repository changes, arbitrary shell execution, or permission escalation.
 - The system should record rejected trigger decisions with clear operator-facing reasons.
 - The system should summarize recent rejected trigger decisions by category, source, trigger user, and repository so operators can detect abuse patterns and tune safety configuration.
+- The system should expose active and historical trigger quarantine records with scope, scope key, reason, category, evidence count, window, start time, expiry time, and timestamps.
 - Non-triggering comments may be ignored without creating task or rejection audit records.
 
 ### Agent Workflow

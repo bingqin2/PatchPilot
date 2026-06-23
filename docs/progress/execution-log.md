@@ -2875,3 +2875,27 @@ Validation:
 - `npm test`: passed after full frontend verification, 116 tests run, 0 failures.
 - `npm run build`: passed after production frontend build verification.
 - `git diff --check`: passed after whitespace verification.
+
+Implemented durable trigger quarantine from `docs/plans/143-durable-trigger-quarantine.md`.
+
+Changes:
+
+- Added durable trigger quarantine domain records for trigger-user and repository scopes, including reason, category, evidence count, window, start, expiry, and timestamps.
+- Added in-memory and MyBatis-backed `TriggerQuarantineRecordService` implementations plus the `trigger_quarantine` Flyway migration.
+- Updated rejected-trigger quarantine checks to consult active durable records before recomputing thresholds from rejected-trigger audit history.
+- Created or extended quarantine records when recent rejected-trigger evidence crosses the configured threshold.
+- Exposed `GET /api/trigger-quarantines` for active or historical quarantine inspection.
+- Added frontend API typing and dashboard loading for active trigger quarantines.
+- Rendered active trigger-user and repository quarantines in the rejected-trigger panel above individual audit rows.
+- Updated README and product docs to describe durable quarantine state and the new operator endpoint.
+
+Validation:
+
+- `JAVA_HOME=/Library/Java/JavaVirtualMachines/openjdk-17.jdk/Contents/Home mvn -pl PatchPilot -Dtest=InMemoryTriggerQuarantineServiceTests,TriggerQuarantineControllerTests,RejectedTriggerQuarantineServiceTests test`: first failed because quarantine domain records, persistence service, and controller did not exist.
+- `npm test -- --run src/api.test.ts src/dashboard/components/RejectedTriggerPanel.test.tsx src/App.test.tsx`: first failed because the frontend API helper and active quarantine panel did not exist.
+- `JAVA_HOME=/Library/Java/JavaVirtualMachines/openjdk-17.jdk/Contents/Home mvn -pl PatchPilot -Dtest=MyBatisTriggerQuarantineServiceTests,InMemoryTriggerQuarantineServiceTests,TriggerQuarantineControllerTests,RejectedTriggerQuarantineServiceTests,TriggerQuarantineMigrationTests test`: passed after backend implementation, including SQL ordering before quarantine list limits, 18 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts src/dashboard/components/RejectedTriggerPanel.test.tsx src/App.test.tsx`: passed after frontend implementation, 81 tests run, 0 failures.
+- `JAVA_HOME=/Library/Java/JavaVirtualMachines/openjdk-17.jdk/Contents/Home mvn -pl PatchPilot test`: passed after full backend verification, 531 tests run, 0 failures.
+- `npm test`: passed after full frontend verification, 117 tests run, 0 failures.
+- `npm run build`: passed after production frontend build verification.
+- `git diff --check`: passed after whitespace verification.

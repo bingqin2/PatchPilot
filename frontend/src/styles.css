@@ -2156,6 +2156,13 @@ pre {
   padding: 14px 16px;
 }
 
+.trigger-quarantine-summary {
+  border-top: 1px solid #edf1f5;
+  display: grid;
+  gap: 12px;
+  padding: 14px 16px;
+}
+
 .rejected-trigger-summary-header p {
   color: #64727f;
   font-size: 12px;
@@ -2221,6 +2228,56 @@ pre {
 .rejected-trigger-count-button strong {
   font-size: 13px;
   margin-left: 8px;
+}
+
+.trigger-quarantine-list {
+  display: grid;
+  gap: 8px;
+}
+
+.trigger-quarantine-row {
+  background: #fff9ed;
+  border: 1px solid #efd49a;
+  border-radius: 6px;
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+}
+
+.trigger-quarantine-row > div {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+.trigger-quarantine-row strong,
+.trigger-quarantine-row span,
+.trigger-quarantine-row time,
+.trigger-quarantine-row p {
+  overflow-wrap: anywhere;
+}
+
+.trigger-quarantine-row strong {
+  color: #17202a;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 12px;
+}
+
+.trigger-quarantine-row span,
+.trigger-quarantine-row time {
+  color: #6d5723;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.trigger-quarantine-row p {
+  color: #7a4a08;
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1.35;
+  margin: 0;
 }
 
 .rejected-trigger-row {

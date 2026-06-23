@@ -11,6 +11,22 @@ test('renders rejected trigger audit rows and retries a rejected trigger', async
   render(
     <RejectedTriggerPanel
       error={null}
+      quarantines={[
+        {
+          id: 'quarantine-1',
+          scope: 'TRIGGER_USER',
+          scopeKey: 'drive-by-user',
+          reason: 'Unsafe request rejected: trigger user is temporarily quarantined',
+          category: 'ABUSE_QUARANTINED',
+          evidenceCount: 5,
+          windowMs: 600000,
+          startedAt: '2026-06-20T01:03:00Z',
+          expiresAt: '2026-06-20T01:33:00Z',
+          createdAt: '2026-06-20T01:03:00Z',
+          updatedAt: '2026-06-20T01:08:00Z',
+          active: true
+        }
+      ]}
       summary={{
         totalCount: 4,
         categoryCounts: [
@@ -65,6 +81,11 @@ test('renders rejected trigger audit rows and retries a rejected trigger', async
   expect(within(summary).getByRole('button', { name: 'Filter by Abuse quarantined, 1 rejected trigger' })).toBeInTheDocument();
   expect(within(summary).getByText('drive-by-user')).toBeInTheDocument();
   expect(within(summary).getByText('bingqin2/PatchPilot')).toBeInTheDocument();
+  const quarantineRows = within(panel).getByRole('group', { name: 'Active trigger quarantines' });
+  expect(within(quarantineRows).getByText('Active trigger quarantines')).toBeInTheDocument();
+  expect(within(quarantineRows).getByText('drive-by-user')).toBeInTheDocument();
+  expect(within(quarantineRows).getByText('5 rejected triggers')).toBeInTheDocument();
+  expect(within(quarantineRows).getByText('Unsafe request rejected: trigger user is temporarily quarantined')).toBeInTheDocument();
   expect(within(panel).getByRole('combobox', { name: 'Filter rejected triggers by category' })).toHaveValue('ALL');
   const auditRows = within(panel).getByRole('group', { name: 'Rejected trigger audit rows' });
   expect(within(auditRows).getByText('/agent fix make it better')).toBeInTheDocument();
@@ -110,6 +131,7 @@ test('renders rejected trigger empty and error states', () => {
   const { rerender } = render(
     <RejectedTriggerPanel
       error={null}
+      quarantines={[]}
       summary={null}
       categoryFilter="ALL"
       rejectedTriggers={[]}
@@ -126,6 +148,7 @@ test('renders rejected trigger empty and error states', () => {
   rerender(
     <RejectedTriggerPanel
       error="Rejected trigger API unavailable"
+      quarantines={[]}
       summary={null}
       categoryFilter="ALL"
       rejectedTriggers={[]}
@@ -143,6 +166,7 @@ test('disables the retry action while retrying a rejected trigger', () => {
   render(
     <RejectedTriggerPanel
       error={null}
+      quarantines={[]}
       summary={null}
       categoryFilter="NOT_ACTIONABLE"
       retryingRejectedTriggerId="rejected-1"

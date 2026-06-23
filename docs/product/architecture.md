@@ -45,7 +45,7 @@ GitHub issue comment created
   -> WebhookController verifies signature
   -> WebhookEventRouter detects /agent fix
   -> CommandSafetyGate rejects unsupported, unauthorized, unsafe, or non-actionable commands
-  -> TriggerQuarantineService rejects repeated abusive rejected-trigger patterns by user or repository
+  -> TriggerQuarantineService checks active durable quarantines and rejects repeated abusive rejected-trigger patterns by user or repository
   -> TriggerRateLimitService rejects repeated attempts by issue, trigger user, or repository
   -> TriggerIntentClassifier optionally asks the configured model whether the safe request should execute
   -> RejectedTriggerAuditService records rejected triggering attempts
@@ -129,6 +129,8 @@ Responsibilities:
 - List rejected triggering attempts with optional category filtering for operator diagnosis.
 - Summarize recent rejected triggering attempts by category, source, trigger user, and repository so operators can spot abuse or bad prompt patterns without reading every row.
 - Apply rejected-trigger quarantine before rate limiting, model classification, task creation, queueing, or workspace work when recent rejected attempts from the same trigger user or repository exceed the configured threshold. Quarantined attempts are recorded as `ABUSE_QUARANTINED`.
+- Persist trigger-user and repository quarantine records through `TriggerQuarantineRecordService` so active safety state survives worker restarts in MySQL-backed profiles.
+- Expose read-only active or historical quarantine records through `GET /api/trigger-quarantines` for operator diagnosis.
 - Deduplicate delivery ids.
 - Submit work to task services.
 
@@ -297,6 +299,24 @@ Important fields:
 - `startedAt`
 - `finishedAt`
 - `pullRequestUrl`
+
+### TriggerQuarantine
+
+Represents an explicit rejected-trigger quarantine for a trigger user or repository.
+
+Important fields:
+
+- `id`
+- `scope`
+- `scopeKey`
+- `reason`
+- `category`
+- `evidenceCount`
+- `windowMs`
+- `startedAt`
+- `expiresAt`
+- `createdAt`
+- `updatedAt`
 
 ### ToolCallRecord
 

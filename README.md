@@ -125,7 +125,7 @@ PATCHPILOT_REJECTED_TRIGGER_QUARANTINE_THRESHOLD=5
 PATCHPILOT_REJECTED_TRIGGER_QUARANTINE_COOLDOWN_MS=1800000
 ```
 
-When a trigger user or repository crosses the threshold, later webhook and manual requests are rejected with the `ABUSE_QUARANTINED` category until the cooldown expires. This is an in-memory single-instance safeguard for self-hosted and private-demo usage, not a public hosted reputation system.
+When a trigger user or repository crosses the threshold, PatchPilot stores or extends a quarantine record and later webhook and manual requests are rejected with the `ABUSE_QUARANTINED` category until the cooldown expires. Active and historical quarantine records are available through `/api/trigger-quarantines`. This is a self-hosted and private-demo safeguard, not a public hosted reputation system.
 
 For a fine-grained GitHub token, grant these repository permissions:
 
@@ -223,11 +223,12 @@ curl "${ADMIN_HEADER[@]}" http://127.0.0.1:8080/api/tasks/{taskId}/tool-calls
 curl "${ADMIN_HEADER[@]}" http://127.0.0.1:8080/api/tasks/{taskId}/model-calls
 curl "${ADMIN_HEADER[@]}" "http://127.0.0.1:8080/api/rejected-triggers?limit=20"
 curl "${ADMIN_HEADER[@]}" "http://127.0.0.1:8080/api/rejected-triggers/summary?limit=100"
+curl "${ADMIN_HEADER[@]}" "http://127.0.0.1:8080/api/trigger-quarantines?activeOnly=true&limit=20"
 curl "${ADMIN_HEADER[@]}" "http://127.0.0.1:8080/api/github/webhook-deliveries?limit=20"
 ```
 
 Use `/detail` for dashboard-style task inspection. It returns the task audit summary, latest queue item, queue history, latest generated diff, timeline events, test runs, tool calls, and model calls in one response. Use `/report` to copy a Markdown diagnostic summary for a task, including the generated diff when one was captured. The narrower endpoints remain available for focused debugging.
-Use `/api/rejected-triggers` to inspect rejected `/agent fix` attempts that did not create tasks, including unsafe command text, unauthorized users, unauthorized repositories, rate-limited requests, abuse-quarantined requests, model-classifier rejections, and the rejection reason. Use `/api/rejected-triggers/summary` to see recent rejection counts by category, source, trigger user, and repository. The same records and summary appear in the dashboard's rejected-trigger panel.
+Use `/api/rejected-triggers` to inspect rejected `/agent fix` attempts that did not create tasks, including unsafe command text, unauthorized users, unauthorized repositories, rate-limited requests, abuse-quarantined requests, model-classifier rejections, and the rejection reason. Use `/api/rejected-triggers/summary` to see recent rejection counts by category, source, trigger user, and repository. Use `/api/trigger-quarantines` to inspect active or historical trigger-user and repository quarantine records, including the reason, evidence count, window, and expiry. The same rejection records, summary, and active quarantines appear in the dashboard's rejected-trigger panel.
 Use `/api/github/webhook-deliveries` to inspect recent GitHub delivery outcomes from PatchPilot itself, including temporary URL reachability, invalid signatures, malformed payloads, ignored comments, duplicate deliveries, active-task collisions, rejections, and created task ids. Each row includes an operator action and a `redeliveryRecommended` flag. For invalid signatures, bad requests, or backend processing failures, fix the underlying URL/secret/backend issue first, then use GitHub's `Redeliver` action on that delivery. Do not redeliver ignored, rejected, duplicate, active-task, or task-created deliveries unless you are intentionally validating that behavior. Raw payloads and signatures are not stored.
 
 If a generated diff is blocked by the risk gate, the task moves to `PENDING_REVIEW` instead of `FAILED`. Inspect the generated diff in the task detail or copied report first, then check the `GeneratedDiffRiskGate` tool-call output for the concrete rejection reason. If the diff is intentionally allowed, approve it through the dashboard or API with an approver from `PATCHPILOT_REVIEW_APPROVAL_ALLOWED_OPERATORS` and a reason:

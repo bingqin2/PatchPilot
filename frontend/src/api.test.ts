@@ -12,6 +12,7 @@ import {
   listLanguageAdapterFixtures,
   listLanguageAdapters,
   listRejectedTriggers,
+  listTriggerQuarantines,
   retryRejectedTrigger,
   getDemoReadiness,
   getTaskReport,
@@ -320,6 +321,41 @@ test('loads rejected trigger abuse summary through backend API', async () => {
   expect(summary.totalCount).toBe(4);
   expect(summary.categoryCounts[0]).toEqual({ value: 'NOT_ACTIONABLE', count: 2 });
   expect(summary.triggerUserCounts[0]).toEqual({ value: 'drive-by-user', count: 3 });
+});
+
+test('lists active trigger quarantines through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: [
+        {
+          id: 'quarantine-1',
+          scope: 'TRIGGER_USER',
+          scopeKey: 'drive-by-user',
+          reason: 'Unsafe request rejected: trigger user is temporarily quarantined',
+          category: 'ABUSE_QUARANTINED',
+          evidenceCount: 5,
+          windowMs: 600000,
+          startedAt: '2026-06-23T01:05:00Z',
+          expiresAt: '2026-06-23T01:35:00Z',
+          createdAt: '2026-06-23T01:05:00Z',
+          updatedAt: '2026-06-23T01:10:00Z',
+          active: true
+        }
+      ],
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const quarantines = await listTriggerQuarantines({ activeOnly: true, limit: 20 });
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/trigger-quarantines?activeOnly=true&limit=20');
+  expect(quarantines[0].scope).toBe('TRIGGER_USER');
+  expect(quarantines[0].scopeKey).toBe('drive-by-user');
+  expect(quarantines[0].active).toBe(true);
 });
 
 test('retries a rejected trigger through backend API', async () => {

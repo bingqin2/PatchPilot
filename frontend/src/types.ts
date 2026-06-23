@@ -328,6 +328,23 @@ export interface RejectedTriggerAuditSummary {
   repositoryCounts: RejectedTriggerCountSummary[];
 }
 
+export type TriggerQuarantineScope = 'TRIGGER_USER' | 'REPOSITORY';
+
+export interface TriggerQuarantine {
+  id: string;
+  scope: TriggerQuarantineScope;
+  scopeKey: string;
+  reason: string;
+  category: string;
+  evidenceCount: number;
+  windowMs: number;
+  startedAt: string;
+  expiresAt: string;
+  createdAt: string;
+  updatedAt: string;
+  active: boolean;
+}
+
 export interface FixTaskAuditSummary {
   task: FixTask;
   timelineEventCount: number;
