@@ -904,10 +904,11 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(screen.getByText('Agent key Configured')).toBeInTheDocument();
   expect(screen.getByText('Webhook secret Configured')).toBeInTheDocument();
   expect(screen.getByText('Queue attempts 3')).toBeInTheDocument();
-  expect(screen.getByRole('heading', { name: 'Demo readiness' })).toBeInTheDocument();
-  expect(screen.getByText('Needs attention')).toBeInTheDocument();
-  expect(screen.getByText('PatchPilot needs attention before a live demo.')).toBeInTheDocument();
-  expect(screen.getByText('Run one controlled issue-to-PR smoke task before a live demo.')).toBeInTheDocument();
+  const demoReadinessPanel = screen.getByRole('region', { name: 'Demo readiness' });
+  expect(within(demoReadinessPanel).getByRole('heading', { name: 'Demo readiness' })).toBeInTheDocument();
+  expect(within(demoReadinessPanel).getByText('Needs attention')).toBeInTheDocument();
+  expect(within(demoReadinessPanel).getByText('PatchPilot needs attention before a live demo.')).toBeInTheDocument();
+  expect(within(demoReadinessPanel).getByText('Run one controlled issue-to-PR smoke task before a live demo.')).toBeInTheDocument();
   expect(screen.getByRole('heading', { name: 'Supported adapters' })).toBeInTheDocument();
   expect(screen.getByText('12 supported adapters')).toBeInTheDocument();
   expect(screen.getByRole('heading', { name: 'Fixture verification' })).toBeInTheDocument();
@@ -1074,6 +1075,84 @@ test('summarizes missing admin token connectivity failures', async () => {
   expect(within(connectivity).getByText('Browser token missing')).toBeInTheDocument();
   expect(within(connectivity).getByText('Protected APIs blocked')).toBeInTheDocument();
   expect(within(connectivity).getByText('Save the dashboard admin token to retry protected API calls.')).toBeInTheDocument();
+});
+
+test('summarizes operator setup readiness before a demo run', async () => {
+  const storage = new Map<string, string>([['patchpilot.adminToken', 'existing-token']]);
+  vi.stubGlobal('localStorage', {
+    getItem: (key: string) => storage.get(key) ?? null,
+    setItem: (key: string, value: string) => storage.set(key, value),
+    removeItem: (key: string) => storage.delete(key),
+    clear: () => storage.clear()
+  });
+  vi.stubGlobal('fetch', vi.fn((input: RequestInfo | URL, init?: RequestInit) => defaultAppResponse(input, init)));
+
+  render(<App />);
+
+  const setupChecklist = await screen.findByRole('region', { name: 'Operator setup checklist' });
+  expect(within(setupChecklist).getByRole('heading', { name: 'Operator setup checklist' })).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('4/6 checks ready')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('Backend connectivity')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('Ready - /health reports UP')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('Required credentials')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('Ready - agent, GitHub, webhook, and browser admin token are configured')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('Safety policy')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('Ready - allowlists, review approvers, and trigger rate limits are configured')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('Adapter fixtures')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('Ready - 12/12 fixtures passing')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('Queue health')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('Attention - 1 failed queue item')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('Recent PR evidence')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('Attention - run one controlled issue-to-PR smoke task')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('Clear failed queue items before a live demo.')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('Run one controlled issue-to-PR smoke task before a live demo.')).toBeInTheDocument();
+});
+
+test('shows when every operator setup check is ready', async () => {
+  const storage = new Map<string, string>([['patchpilot.adminToken', 'existing-token']]);
+  vi.stubGlobal('localStorage', {
+    getItem: (key: string) => storage.get(key) ?? null,
+    setItem: (key: string, value: string) => storage.set(key, value),
+    removeItem: (key: string) => storage.delete(key),
+    clear: () => storage.clear()
+  });
+  const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+    const url = input.toString();
+    if (url === '/api/demo/readiness') {
+      return jsonResponse({
+        status: 'READY',
+        summary: 'PatchPilot is ready for a controlled issue-to-PR demo.',
+        checks: [
+          {
+            name: 'Backend',
+            status: 'READY',
+            message: 'Backend readiness endpoint is reachable.',
+            action: 'No action needed.'
+          },
+          {
+            name: 'Recent Pull Request',
+            status: 'READY',
+            message: 'Recent completed Pull Request evidence is available.',
+            action: 'No action needed.'
+          }
+        ],
+        nextActions: []
+      });
+    }
+    if (url === '/api/task-queue/summary') {
+      return jsonResponse({ ...queueSummary, failedCount: 0 });
+    }
+    return defaultAppResponse(input, init);
+  });
+  vi.stubGlobal('fetch', fetchMock);
+
+  render(<App />);
+
+  const setupChecklist = await screen.findByRole('region', { name: 'Operator setup checklist' });
+  expect(within(setupChecklist).getByText('6/6 checks ready')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('Ready - recent completed task has a Pull Request URL')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('All setup checks are ready for a controlled issue-to-PR demo.')).toBeInTheDocument();
+  expect(within(setupChecklist).queryByRole('heading', { name: 'Next setup actions' })).not.toBeInTheDocument();
 });
 
 test('copies selected task report from backend API', async () => {

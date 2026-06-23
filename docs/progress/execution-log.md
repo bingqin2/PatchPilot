@@ -2472,3 +2472,21 @@ Validation:
 - `npm test`: first failed because the existing configuration assertions matched the new connectivity `Backend UP` text as well; then passed after scoping the assertion to the Configuration panel, 95 tests run, 0 failures.
 - `npm run build`: passed after production frontend build.
 - `git diff --check`: passed after whitespace and conflict-marker verification.
+
+Implemented dashboard operator setup checklist from `docs/plans/122-dashboard-operator-setup-checklist.md`.
+
+Changes:
+
+- Added `OperatorSetupChecklistPanel` near the top of the dashboard.
+- Derived read-only setup checks from already loaded dashboard data instead of adding a new backend API.
+- Covered backend connectivity, required credentials, safety policy, adapter fixtures, queue health, and recent Pull Request evidence.
+- Added next setup actions for failed queue health and missing recent PR evidence.
+- Updated README, frontend design notes, and this execution log.
+
+Validation:
+
+- `npm test -- --run src/App.test.tsx -t "operator setup"`: first failed because the dashboard had no operator setup checklist; then failed again because recent PR evidence incorrectly preferred task-list fallback over demo readiness; then passed after checklist implementation and readiness precedence, 1 test run, 0 failures.
+- `npm test -- --run src/App.test.tsx -t "operator setup|every operator"`: passed after adding the all-ready scenario, 2 tests run, 0 failures.
+- `npm test`: first failed because an existing demo-readiness assertion matched the same next-action text rendered by the new setup checklist; then passed after scoping the assertion to the Demo readiness panel, 97 tests run, 0 failures.
+- `npm run build`: passed after production frontend build.
+- `git diff --check`: passed after whitespace and conflict-marker verification.

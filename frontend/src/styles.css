@@ -498,6 +498,77 @@ h3 {
   padding: 11px 16px 13px;
 }
 
+.operator-setup-panel {
+  margin-bottom: 16px;
+}
+
+.operator-setup-grid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding: 0 16px 16px;
+}
+
+.operator-setup-check {
+  border: 1px solid #dbe3ea;
+  border-radius: 6px;
+  min-height: 82px;
+  padding: 10px;
+}
+
+.operator-setup-check-ready {
+  background: #f0f8f5;
+  border-color: #bfded2;
+}
+
+.operator-setup-check-attention {
+  background: #fff8e5;
+  border-color: #eed38a;
+}
+
+.operator-setup-check span {
+  color: #637181;
+  display: block;
+  font-size: 12px;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+
+.operator-setup-check strong {
+  color: #202b36;
+  display: block;
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.operator-setup-actions,
+.operator-setup-ready {
+  border-top: 1px solid #e6ebef;
+  padding: 12px 16px 14px;
+}
+
+.operator-setup-actions h3 {
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.operator-setup-actions ul {
+  display: grid;
+  gap: 6px;
+}
+
+.operator-setup-actions li {
+  color: #795700;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.operator-setup-ready {
+  color: #27654d;
+  font-size: 13px;
+  font-weight: 800;
+}
+
 .supported-adapters-panel,
 .fixture-verification-panel {
   margin-bottom: 16px;
@@ -1606,6 +1677,7 @@ pre {
   .workspace-grid,
   .configuration-grid,
   .connectivity-grid,
+  .operator-setup-grid,
   .manual-task-form,
   .split-section,
   .queue-summary,
