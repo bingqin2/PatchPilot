@@ -12,6 +12,14 @@ const adapters: SupportedLanguageAdapter[] = [
     status: 'SUPPORTED'
   },
   {
+    language: 'go',
+    buildSystem: 'go',
+    verificationCommand: ['go', 'test', './...'],
+    detectionSignals: ['go.mod', '*_test.go'],
+    demoFixturePath: 'docs/demo-repositories/go-module',
+    status: 'SUPPORTED'
+  },
+  {
     language: 'node',
     buildSystem: 'bun',
     verificationCommand: ['bun', 'test'],
@@ -57,11 +65,15 @@ test('shows supported adapters with commands and demo fixtures', () => {
   render(<SupportedAdaptersPanel adapters={adapters} error={null} />);
 
   expect(screen.getByRole('heading', { name: 'Supported adapters' })).toBeInTheDocument();
-  expect(screen.getByText('6 supported adapters')).toBeInTheDocument();
+  expect(screen.getByText('7 supported adapters')).toBeInTheDocument();
 
   const mavenRow = screen.getByRole('row', { name: /java maven mvn test/i });
   expect(within(mavenRow).getByText('docs/demo-repositories/java-maven')).toBeInTheDocument();
   expect(within(mavenRow).getByText('pom.xml, mvnw')).toBeInTheDocument();
+
+  const goRow = screen.getByRole('row', { name: /go go go test \.\/\.\.\./i });
+  expect(within(goRow).getByText('docs/demo-repositories/go-module')).toBeInTheDocument();
+  expect(within(goRow).getByText('go.mod, *_test.go')).toBeInTheDocument();
 
   const bunRow = screen.getByRole('row', { name: /node bun bun test/i });
   expect(within(bunRow).getByText('docs/demo-repositories/node-bun')).toBeInTheDocument();

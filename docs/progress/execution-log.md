@@ -2567,3 +2567,23 @@ Validation:
 - `mvn -pl PatchPilot test`: passed after full backend verification, 454 tests run, 0 failures.
 - `git diff --check`: passed after whitespace verification.
 - Conflict-marker scan over README, docs, and frontend sources: no conflict markers found.
+
+Implemented Go language adapter support from `docs/plans/127-go-language-adapter.md`.
+
+Changes:
+
+- Added `GoLanguageAdapter` for `go.mod` repositories with fixed verification command `go test ./...`.
+- Added `go test ./...` to the command allowlist while rejecting arbitrary Go commands.
+- Added a minimal `docs/demo-repositories/go-module` fixture and included it in registry, catalog, fixture verification, Spring context, and dashboard supported-adapter coverage.
+- Updated README, product spec, architecture notes, frontend design notes, and this execution log.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=GoLanguageAdapterTests,LanguageAdapterRegistryTests,CommandExecutionGuardTests test`: first failed because `GoLanguageAdapter` did not exist; then passed after adapter and allowlist implementation, 12 tests run, 0 failures.
+- `mvn -pl PatchPilot -Dtest=PatchPilotApplicationTests,LanguageAdapterCatalogServiceTests,LanguageAdapterFixtureVerificationServiceTests test`: passed after catalog, fixture, and Spring context coverage, 10 tests run, 0 failures.
+- `npm test -- App.test.tsx SupportedAdaptersPanel.test.tsx`: first failed because dashboard fixture-count assertions still expected 12 adapters; then passed after updating Go visibility, 51 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: first failed because `LanguageAdapterControllerTests` still expected 12 catalog and fixture rows; then passed after controller API assertions were updated for Go, 457 tests run, 0 failures.
+- `npm test`: passed after full frontend verification, 102 tests run, 0 failures.
+- `npm run build`: passed after production frontend build.
+- `git diff --check`: passed after whitespace verification.
+- Conflict-marker scan over README, product docs, plan, progress log, demo fixtures, backend sources, backend tests, and frontend sources: no conflict markers found.

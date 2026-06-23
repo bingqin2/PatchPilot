@@ -8,9 +8,14 @@ The fixtures are intentionally small. They are not replacement sample applicatio
 | --- | --- | --- |
 | `java-maven` | Java/Maven | `mvn test` |
 | `java-gradle` | Java/Gradle | `gradle test` |
+| `go-module` | Go | `go test ./...` |
 | `node-npm` | Node/npm | `npm test` |
 | `node-pnpm` | Node/pnpm | `pnpm test` |
 | `node-yarn` | Node/yarn | `yarn test` |
+| `node-bun` | Node/Bun | `bun test` |
+| `python-tox` | Python/tox | `tox` |
+| `python-nox` | Python/nox | `nox` |
+| `python-hatch` | Python/Hatch | `hatch test` |
 | `python-pytest` | Python/pytest | `python3 -m pytest` |
 | `python-poetry` | Python/Poetry | `poetry run pytest` |
 | `python-uv` | Python/uv | `uv run pytest` |

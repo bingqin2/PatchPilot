@@ -37,6 +37,7 @@ public class CommandExecutionGuard {
                 || command.equals(List.of("mvn", "test"))
                 || command.equals(List.of("./gradlew", "test"))
                 || command.equals(List.of("gradle", "test"))
+                || command.equals(List.of("go", "test", "./..."))
                 || command.equals(List.of("npm", "test"))
                 || command.equals(List.of("pnpm", "test"))
                 || command.equals(List.of("yarn", "test"))

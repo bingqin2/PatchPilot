@@ -23,6 +23,7 @@ class CommandExecutionGuardTests {
         guard.validate(repositoryDir, List.of("mvn", "test"));
         guard.validate(repositoryDir, List.of("./gradlew", "test"));
         guard.validate(repositoryDir, List.of("gradle", "test"));
+        guard.validate(repositoryDir, List.of("go", "test", "./..."));
         guard.validate(repositoryDir, List.of("npm", "test"));
         guard.validate(repositoryDir, List.of("pnpm", "test"));
         guard.validate(repositoryDir, List.of("yarn", "test"));
@@ -78,6 +79,19 @@ class CommandExecutionGuardTests {
         assertThatThrownBy(() -> guard.validate(repositoryDir, List.of("bun", "install")))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Command is not allowlisted: bun install");
+    }
+
+    @Test
+    void should_reject_arbitrary_go_commands() {
+        CommandExecutionGuard guard = new CommandExecutionGuard(properties());
+        Path repositoryDir = tempDir.resolve("task-123").resolve("repo");
+
+        assertThatThrownBy(() -> guard.validate(repositoryDir, List.of("go", "test", "./pkg/...")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Command is not allowlisted: go test ./pkg/...");
+        assertThatThrownBy(() -> guard.validate(repositoryDir, List.of("go", "env")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Command is not allowlisted: go env");
     }
 
     @Test

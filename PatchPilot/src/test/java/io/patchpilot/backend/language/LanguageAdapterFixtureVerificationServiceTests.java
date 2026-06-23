@@ -2,6 +2,7 @@ package io.patchpilot.backend.language;
 
 import io.patchpilot.backend.language.domain.LanguageAdapterFixtureVerificationVo;
 import io.patchpilot.backend.language.domain.SupportedLanguageAdapterVo;
+import io.patchpilot.backend.language.impl.GoLanguageAdapter;
 import io.patchpilot.backend.language.impl.JavaGradleLanguageAdapter;
 import io.patchpilot.backend.language.impl.JavaMavenLanguageAdapter;
 import io.patchpilot.backend.language.impl.NodeBunLanguageAdapter;
@@ -33,6 +34,7 @@ class LanguageAdapterFixtureVerificationServiceTests {
                 .containsExactly(
                         "java-maven",
                         "java-gradle",
+                        "go-module",
                         "node-bun",
                         "node-pnpm",
                         "node-yarn",
@@ -54,6 +56,9 @@ class LanguageAdapterFixtureVerificationServiceTests {
         LanguageAdapterFixtureVerificationVo hatch = find(results, "python-hatch");
         assertThat(hatch.fixturePath()).isEqualTo("docs/demo-repositories/python-hatch");
         assertThat(hatch.expectedVerificationCommand()).containsExactly("hatch", "test");
+        LanguageAdapterFixtureVerificationVo go = find(results, "go-module");
+        assertThat(go.fixturePath()).isEqualTo("docs/demo-repositories/go-module");
+        assertThat(go.expectedVerificationCommand()).containsExactly("go", "test", "./...");
     }
 
     @Test
@@ -91,6 +96,7 @@ class LanguageAdapterFixtureVerificationServiceTests {
                 new LanguageAdapterRegistry(List.of(
                         new JavaMavenLanguageAdapter(),
                         new JavaGradleLanguageAdapter(),
+                        new GoLanguageAdapter(),
                         new NodeBunLanguageAdapter(),
                         new NodePnpmLanguageAdapter(),
                         new NodeYarnLanguageAdapter(),
