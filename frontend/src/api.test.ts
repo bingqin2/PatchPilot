@@ -108,11 +108,15 @@ test('approves pending review tasks through backend API', async () => {
         buildSystem: 'npm',
         verificationCommand: 'npm test',
         adapterDetectionReason: 'package.json contains a non-empty scripts.test',
-        statusCommentId: null,
-        statusCommentUrl: null,
-        riskReviewApprovedAt: '2026-06-20T01:09:00Z',
-        riskReviewApprovedBy: 'release-captain',
-        riskReviewApprovalReason: 'Reviewed generated diff and accepted docs-only change'
+            statusCommentId: null,
+            statusCommentUrl: null,
+            riskReviewApprovedAt: '2026-06-20T01:09:00Z',
+            riskReviewApprovedBy: 'release-captain',
+            riskReviewApprovalReason: 'Reviewed generated diff and accepted docs-only change',
+            retrySourceTaskId: 'task-review',
+            retrySourceStatus: 'FAILED',
+            retrySourceFailureReason: 'Model patch review rejected generated edits: unsafe edit',
+            retriedAt: '2026-06-20T01:09:00Z'
       },
       message: null
     })
@@ -137,6 +141,10 @@ test('approves pending review tasks through backend API', async () => {
   expect(task.riskReviewApprovedAt).toBe('2026-06-20T01:09:00Z');
   expect(task.riskReviewApprovedBy).toBe('release-captain');
   expect(task.riskReviewApprovalReason).toBe('Reviewed generated diff and accepted docs-only change');
+  expect(task.retrySourceTaskId).toBe('task-review');
+  expect(task.retrySourceStatus).toBe('FAILED');
+  expect(task.retrySourceFailureReason).toBe('Model patch review rejected generated edits: unsafe edit');
+  expect(task.retriedAt).toBe('2026-06-20T01:09:00Z');
 });
 
 test('builds backend task search sort and pagination query parameters', async () => {

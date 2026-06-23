@@ -28,7 +28,11 @@ public record FixTaskVo(
         String statusCommentUrl,
         Instant riskReviewApprovedAt,
         String riskReviewApprovedBy,
-        String riskReviewApprovalReason
+        String riskReviewApprovalReason,
+        String retrySourceTaskId,
+        String retrySourceStatus,
+        String retrySourceFailureReason,
+        Instant retriedAt
 ) {
 
     public FixTaskVo(
@@ -57,7 +61,7 @@ public record FixTaskVo(
         this(id, repositoryOwner, repositoryName, issueNumber, installationId, triggerUser, triggerComment,
                 deliveryId, commentId, status, failureReason, createdAt, pullRequestUrl, completedAt, updatedAt,
                 language, buildSystem, verificationCommand, adapterDetectionReason, statusCommentId, statusCommentUrl,
-                null, null, null);
+                null, null, null, null, null, null, null);
     }
 
     public FixTaskVo(
@@ -87,7 +91,39 @@ public record FixTaskVo(
         this(id, repositoryOwner, repositoryName, issueNumber, installationId, triggerUser, triggerComment,
                 deliveryId, commentId, status, failureReason, createdAt, pullRequestUrl, completedAt, updatedAt,
                 language, buildSystem, verificationCommand, adapterDetectionReason, statusCommentId, statusCommentUrl,
-                riskReviewApprovedAt, null, null);
+                riskReviewApprovedAt, null, null, null, null, null, null);
+    }
+
+    public FixTaskVo(
+            String id,
+            String repositoryOwner,
+            String repositoryName,
+            long issueNumber,
+            long installationId,
+            String triggerUser,
+            String triggerComment,
+            String deliveryId,
+            long commentId,
+            FixTaskStatus status,
+            String failureReason,
+            Instant createdAt,
+            String pullRequestUrl,
+            Instant completedAt,
+            Instant updatedAt,
+            String language,
+            String buildSystem,
+            String verificationCommand,
+            String adapterDetectionReason,
+            Long statusCommentId,
+            String statusCommentUrl,
+            Instant riskReviewApprovedAt,
+            String riskReviewApprovedBy,
+            String riskReviewApprovalReason
+    ) {
+        this(id, repositoryOwner, repositoryName, issueNumber, installationId, triggerUser, triggerComment,
+                deliveryId, commentId, status, failureReason, createdAt, pullRequestUrl, completedAt, updatedAt,
+                language, buildSystem, verificationCommand, adapterDetectionReason, statusCommentId, statusCommentUrl,
+                riskReviewApprovedAt, riskReviewApprovedBy, riskReviewApprovalReason, null, null, null, null);
     }
 
     public FixTaskVo(
@@ -157,7 +193,7 @@ public record FixTaskVo(
     ) {
         this(id, repositoryOwner, repositoryName, issueNumber, installationId, triggerUser, triggerComment,
                 deliveryId, commentId, status, failureReason, createdAt, null, null, createdAt, null, null, null,
-                null, null, null, null, null, null);
+                null, null, null, null, null, null, null, null, null, null);
     }
 
     public FixTaskVo withAdapterMetadata(String language, String buildSystem, String verificationCommand) {
@@ -194,7 +230,11 @@ public record FixTaskVo(
                 statusCommentUrl,
                 riskReviewApprovedAt,
                 riskReviewApprovedBy,
-                riskReviewApprovalReason
+                riskReviewApprovalReason,
+                retrySourceTaskId,
+                retrySourceStatus,
+                retrySourceFailureReason,
+                retriedAt
         );
     }
 
@@ -231,7 +271,11 @@ public record FixTaskVo(
                 statusCommentUrl,
                 riskReviewApprovedAt,
                 riskReviewApprovedBy,
-                riskReviewApprovalReason
+                riskReviewApprovalReason,
+                retrySourceTaskId,
+                retrySourceStatus,
+                retrySourceFailureReason,
+                retriedAt
         );
     }
 }

@@ -56,4 +56,16 @@ class FixTaskMigrationTests {
         assertThat(sql).contains("risk_review_approved_by varchar(255) null");
         assertThat(sql).contains("risk_review_approval_reason text null");
     }
+
+    @Test
+    void should_add_retry_lineage_columns() throws IOException {
+        String sql = Files.readString(Path.of("src/main/resources/db/migration/V20__add_fix_task_retry_lineage.sql"))
+                .toLowerCase(Locale.ROOT);
+
+        assertThat(sql).contains("alter table fix_task");
+        assertThat(sql).contains("retry_source_task_id varchar(36) null");
+        assertThat(sql).contains("retry_source_status varchar(64) null");
+        assertThat(sql).contains("retry_source_failure_reason text null");
+        assertThat(sql).contains("retried_at timestamp(6) null");
+    }
 }

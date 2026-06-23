@@ -51,11 +51,6 @@ public class InMemoryFixTaskService implements FixTaskService {
                 null,
                 createdAt,
                 null,
-                null,
-                null,
-                null,
-                null,
-                null,
                 null
         );
         tasks.put(taskId, task);
@@ -208,7 +203,11 @@ public class InMemoryFixTaskService implements FixTaskService {
                 throw new IllegalArgumentException("Task not found: " + taskId);
             }
             Instant updatedAt = Instant.now();
-            return copyTask(currentTask, FixTaskStatus.PENDING, null, null, null, updatedAt, null, null, null);
+            return copyTask(currentTask, FixTaskStatus.PENDING, null, null, null, updatedAt,
+                    currentTask.language(), currentTask.buildSystem(), currentTask.verificationCommand(),
+                    currentTask.adapterDetectionReason(), currentTask.statusCommentId(), currentTask.statusCommentUrl(),
+                    null, null, null, currentTask.id(), currentTask.status().name(), currentTask.failureReason(),
+                    updatedAt);
         });
         return updatedTask;
     }
@@ -252,7 +251,9 @@ public class InMemoryFixTaskService implements FixTaskService {
         return copyTask(currentTask, status, failureReason, pullRequestUrl, completedAt, updatedAt,
                 currentTask.language(), currentTask.buildSystem(), currentTask.verificationCommand(),
                 currentTask.adapterDetectionReason(), currentTask.statusCommentId(), currentTask.statusCommentUrl(),
-                riskReviewApprovedAt, riskReviewApprovedBy, riskReviewApprovalReason);
+                riskReviewApprovedAt, riskReviewApprovedBy, riskReviewApprovalReason,
+                currentTask.retrySourceTaskId(), currentTask.retrySourceStatus(),
+                currentTask.retrySourceFailureReason(), currentTask.retriedAt());
     }
 
     private static FixTaskVo copyTask(
@@ -271,6 +272,34 @@ public class InMemoryFixTaskService implements FixTaskService {
             Instant riskReviewApprovedAt,
             String riskReviewApprovedBy,
             String riskReviewApprovalReason
+    ) {
+        return copyTask(currentTask, status, failureReason, pullRequestUrl, completedAt, updatedAt,
+                language, buildSystem, verificationCommand, adapterDetectionReason, statusCommentId, statusCommentUrl,
+                riskReviewApprovedAt, riskReviewApprovedBy, riskReviewApprovalReason,
+                currentTask.retrySourceTaskId(), currentTask.retrySourceStatus(),
+                currentTask.retrySourceFailureReason(), currentTask.retriedAt());
+    }
+
+    private static FixTaskVo copyTask(
+            FixTaskVo currentTask,
+            FixTaskStatus status,
+            String failureReason,
+            String pullRequestUrl,
+            Instant completedAt,
+            Instant updatedAt,
+            String language,
+            String buildSystem,
+            String verificationCommand,
+            String adapterDetectionReason,
+            Long statusCommentId,
+            String statusCommentUrl,
+            Instant riskReviewApprovedAt,
+            String riskReviewApprovedBy,
+            String riskReviewApprovalReason,
+            String retrySourceTaskId,
+            String retrySourceStatus,
+            String retrySourceFailureReason,
+            Instant retriedAt
     ) {
         return new FixTaskVo(
                 currentTask.id(),
@@ -296,7 +325,11 @@ public class InMemoryFixTaskService implements FixTaskService {
                 statusCommentUrl,
                 riskReviewApprovedAt,
                 riskReviewApprovedBy,
-                riskReviewApprovalReason
+                riskReviewApprovalReason,
+                retrySourceTaskId,
+                retrySourceStatus,
+                retrySourceFailureReason,
+                retriedAt
         );
     }
 
@@ -321,7 +354,10 @@ public class InMemoryFixTaskService implements FixTaskService {
                 task.verificationCommand() == null ? "" : task.verificationCommand(),
                 task.adapterDetectionReason() == null ? "" : task.adapterDetectionReason(),
                 task.riskReviewApprovedBy() == null ? "" : task.riskReviewApprovedBy(),
-                task.riskReviewApprovalReason() == null ? "" : task.riskReviewApprovalReason()
+                task.riskReviewApprovalReason() == null ? "" : task.riskReviewApprovalReason(),
+                task.retrySourceTaskId() == null ? "" : task.retrySourceTaskId(),
+                task.retrySourceStatus() == null ? "" : task.retrySourceStatus(),
+                task.retrySourceFailureReason() == null ? "" : task.retrySourceFailureReason()
         ).toLowerCase();
         return searchable.contains(normalizedQuery);
     }

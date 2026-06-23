@@ -54,6 +54,10 @@ export interface FixTask {
   riskReviewApprovedAt: string | null;
   riskReviewApprovedBy: string | null;
   riskReviewApprovalReason: string | null;
+  retrySourceTaskId: string | null;
+  retrySourceStatus: TaskStatus | null;
+  retrySourceFailureReason: string | null;
+  retriedAt: string | null;
 }
 
 export interface FixTaskPage {

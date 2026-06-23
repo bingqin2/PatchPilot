@@ -44,6 +44,7 @@ public class FixTaskReportFormatter {
         }
 
         appendAdapter(report, task);
+        appendRetryLineage(report, task);
         appendIssueContext(report, detail.issueContext());
         appendRepositorySupportGuidance(report, detail.repositorySupportGuidance());
         appendQueue(report, detail);
@@ -54,6 +55,20 @@ public class FixTaskReportFormatter {
         appendToolCalls(report, detail.toolCalls());
         appendModelCalls(report, detail.modelCalls());
         return report.toString();
+    }
+
+    private static void appendRetryLineage(StringBuilder report, FixTaskVo task) {
+        if (task.retrySourceTaskId() == null) {
+            return;
+        }
+
+        report.append("\n## Retry Lineage\n\n")
+                .append("- Source task: `").append(task.retrySourceTaskId()).append("`\n")
+                .append("- Source status: `").append(valueOrUnknown(task.retrySourceStatus())).append("`\n");
+        if (task.retrySourceFailureReason() != null) {
+            report.append("- Source failure: ").append(task.retrySourceFailureReason()).append("\n");
+        }
+        report.append("- Retried at: `").append(task.retriedAt() == null ? "unknown" : task.retriedAt()).append("`\n");
     }
 
     private static void appendIssueContext(StringBuilder report, IssueContextVo issueContext) {

@@ -105,9 +105,31 @@ class DefaultFixTaskControlServiceTests {
 
         assertThat(retriedTask.status()).isEqualTo(FixTaskStatus.PENDING);
         assertThat(retriedTask.failureReason()).isNull();
+        assertThat(retriedTask.retrySourceTaskId()).isEqualTo(task.id());
+        assertThat(retriedTask.retrySourceStatus()).isEqualTo(FixTaskStatus.FAILED.name());
+        assertThat(retriedTask.retrySourceFailureReason()).isEqualTo("executor failed");
+        assertThat(retriedTask.retriedAt()).isNotNull();
         assertThat(fixTaskQueue.enqueuedTaskIds()).containsExactly(task.id());
         assertThat(fixTaskTimelineService.eventTypes()).containsExactly(FixTaskTimelineEventType.REQUEUED);
         assertThat(fixTaskTimelineService.messages()).containsExactly("Task requeued by user request");
+    }
+
+    @Test
+    void should_retry_patch_review_rejected_task_with_recovery_lineage() {
+        FixTaskVo task = createTask("delivery-control-retry-review-rejection");
+        String failureReason = "Model patch review rejected generated edits: unrelated authentication change";
+        fixTaskService.markFailed(task.id(), failureReason);
+
+        FixTaskVo retriedTask = controlService.retryTask(task.id());
+
+        assertThat(retriedTask.status()).isEqualTo(FixTaskStatus.PENDING);
+        assertThat(retriedTask.failureReason()).isNull();
+        assertThat(retriedTask.retrySourceTaskId()).isEqualTo(task.id());
+        assertThat(retriedTask.retrySourceStatus()).isEqualTo(FixTaskStatus.FAILED.name());
+        assertThat(retriedTask.retrySourceFailureReason()).isEqualTo(failureReason);
+        assertThat(retriedTask.retriedAt()).isNotNull();
+        assertThat(fixTaskQueue.enqueuedTaskIds()).containsExactly(task.id());
+        assertThat(fixTaskTimelineService.eventTypes()).containsExactly(FixTaskTimelineEventType.REQUEUED);
     }
 
     @Test

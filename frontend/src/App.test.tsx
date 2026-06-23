@@ -26,7 +26,11 @@ const completedTask = {
   statusCommentUrl: 'https://github.com/bingqin2/PatchPilot/issues/1#issuecomment-4756084894',
   riskReviewApprovedAt: null,
   riskReviewApprovedBy: null,
-  riskReviewApprovalReason: null
+  riskReviewApprovalReason: null,
+  retrySourceTaskId: null,
+  retrySourceStatus: null,
+  retrySourceFailureReason: null,
+  retriedAt: null
 };
 
 const failedTask = {
@@ -53,7 +57,11 @@ const failedTask = {
   statusCommentUrl: null,
   riskReviewApprovedAt: null,
   riskReviewApprovedBy: null,
-  riskReviewApprovalReason: null
+  riskReviewApprovalReason: null,
+  retrySourceTaskId: null,
+  retrySourceStatus: null,
+  retrySourceFailureReason: null,
+  retriedAt: null
 };
 
 const reviewTask = {
@@ -80,7 +88,11 @@ const reviewTask = {
   statusCommentUrl: null,
   riskReviewApprovedAt: null,
   riskReviewApprovedBy: null,
-  riskReviewApprovalReason: null
+  riskReviewApprovalReason: null,
+  retrySourceTaskId: null,
+  retrySourceStatus: null,
+  retrySourceFailureReason: null,
+  retriedAt: null
 };
 
 const runningTask = {
@@ -107,7 +119,11 @@ const runningTask = {
   statusCommentUrl: null,
   riskReviewApprovedAt: null,
   riskReviewApprovedBy: null,
-  riskReviewApprovalReason: null
+  riskReviewApprovalReason: null,
+  retrySourceTaskId: null,
+  retrySourceStatus: null,
+  retrySourceFailureReason: null,
+  retriedAt: null
 };
 
 const cancelledTask = {
@@ -131,7 +147,11 @@ const approvedReviewTask = {
   updatedAt: '2026-06-20T01:09:00Z',
   riskReviewApprovedAt: '2026-06-20T01:09:00Z',
   riskReviewApprovedBy: 'release-captain',
-  riskReviewApprovalReason: 'Reviewed generated diff and accepted docs-only change'
+  riskReviewApprovalReason: 'Reviewed generated diff and accepted docs-only change',
+  retrySourceTaskId: null,
+  retrySourceStatus: null,
+  retrySourceFailureReason: null,
+  retriedAt: null
 };
 
 const manuallyCreatedTask = {
@@ -158,7 +178,11 @@ const manuallyCreatedTask = {
   statusCommentUrl: null,
   riskReviewApprovedAt: null,
   riskReviewApprovedBy: null,
-  riskReviewApprovalReason: null
+  riskReviewApprovalReason: null,
+  retrySourceTaskId: null,
+  retrySourceStatus: null,
+  retrySourceFailureReason: null,
+  retriedAt: null
 };
 
 const summary = {
