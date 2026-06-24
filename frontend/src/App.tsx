@@ -9,6 +9,7 @@ import {
   getBackendHealth,
   getConfigurationSummary,
   getDemoEvidenceBundle,
+  getDemoRunbook,
   getDemoReadiness,
   getDemoSmokeChecklist,
   getRejectedTriggerSummary,
@@ -640,6 +641,7 @@ export default function App() {
   }, [refresh]);
 
   const handleCopyReport = useCallback((taskId: string) => getTaskReport(taskId), []);
+  const handleCopyDemoRunbook = useCallback(() => getDemoRunbook(), []);
 
   const handleCreateTask = useCallback(async (input: CreateTaskInput) => {
     setCreatingTask(true);
@@ -840,7 +842,11 @@ export default function App() {
         hasStoredAdminToken={hasStoredAdminToken}
       />
 
-      <DemoEvidenceBundlePanel bundle={demoEvidenceBundle} error={demoEvidenceBundleError} />
+      <DemoEvidenceBundlePanel
+        bundle={demoEvidenceBundle}
+        error={demoEvidenceBundleError}
+        onCopyRunbook={handleCopyDemoRunbook}
+      />
 
       <DemoReadinessPanel readiness={demoReadiness} error={demoReadinessError} />
 

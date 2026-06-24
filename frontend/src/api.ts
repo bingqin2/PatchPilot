@@ -160,6 +160,10 @@ export async function getDemoEvidenceBundle(): Promise<DemoEvidenceBundle> {
   return getApi<DemoEvidenceBundle>('/api/demo/evidence-bundle');
 }
 
+export async function getDemoRunbook(): Promise<string> {
+  return getApi<string>('/api/demo/runbook');
+}
+
 export async function getBackendHealth(): Promise<BackendHealth> {
   return getApi<BackendHealth>('/health');
 }

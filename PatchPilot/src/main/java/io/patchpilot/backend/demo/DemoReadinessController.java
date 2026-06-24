@@ -17,6 +17,7 @@ public class DemoReadinessController {
     private final DemoReadinessService demoReadinessService;
     private final DemoSmokeChecklistService demoSmokeChecklistService;
     private final DemoEvidenceBundleService demoEvidenceBundleService;
+    private final DemoRunbookService demoRunbookService;
 
     @GetMapping("/readiness")
     public ApiResponse<DemoReadinessVo> getReadiness() {
@@ -31,5 +32,10 @@ public class DemoReadinessController {
     @GetMapping("/evidence-bundle")
     public ApiResponse<DemoEvidenceBundleVo> getEvidenceBundle() {
         return ApiResponse.ok(demoEvidenceBundleService.getEvidenceBundle());
+    }
+
+    @GetMapping("/runbook")
+    public ApiResponse<String> getRunbook() {
+        return ApiResponse.ok(demoRunbookService.getRunbook());
     }
 }
