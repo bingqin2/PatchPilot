@@ -42,6 +42,7 @@ const completedTask = {
   retrySourceTaskId: null,
   retrySourceStatus: null,
   retrySourceFailureReason: null,
+  retryReason: null,
   retriedAt: null
 };
 
@@ -73,6 +74,7 @@ const failedTask = {
   retrySourceTaskId: null,
   retrySourceStatus: null,
   retrySourceFailureReason: null,
+  retryReason: null,
   retriedAt: null
 };
 
@@ -104,6 +106,7 @@ const reviewTask = {
   retrySourceTaskId: null,
   retrySourceStatus: null,
   retrySourceFailureReason: null,
+  retryReason: null,
   retriedAt: null
 };
 
@@ -135,6 +138,7 @@ const runningTask = {
   retrySourceTaskId: null,
   retrySourceStatus: null,
   retrySourceFailureReason: null,
+  retryReason: null,
   retriedAt: null
 };
 
@@ -163,6 +167,7 @@ const approvedReviewTask = {
   retrySourceTaskId: null,
   retrySourceStatus: null,
   retrySourceFailureReason: null,
+  retryReason: null,
   retriedAt: null
 };
 
@@ -194,6 +199,7 @@ const manuallyCreatedTask = {
   retrySourceTaskId: null,
   retrySourceStatus: null,
   retrySourceFailureReason: null,
+  retryReason: null,
   retriedAt: null
 };
 
@@ -2904,11 +2910,19 @@ test('retries failed tasks and refreshes dashboard data', async () => {
   expect(await screen.findByText('/agent fix replace docs/demo.md broken')).toBeInTheDocument();
   expect(await screen.findByText('Retry preflight')).toBeInTheDocument();
   expect(screen.getByText('Ready to retry')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Retry task' })).toBeDisabled();
 
+  await user.type(screen.getByLabelText('Retry reason'), 'Verified failure output and requested a clean retry');
   await user.click(await screen.findByRole('button', { name: 'Retry task' }));
 
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks/task-2/retry-preflight'));
-  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks/task-2/retry', { method: 'POST' }));
+  await waitFor(() =>
+    expect(fetchMock).toHaveBeenCalledWith('/api/tasks/task-2/retry', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason: 'Verified failure output and requested a clean retry' })
+    })
+  );
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks?limit=50&status=FAILED'));
   expect(screen.queryByRole('button', { name: 'Cancel task' })).not.toBeInTheDocument();
 });

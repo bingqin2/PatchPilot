@@ -93,6 +93,9 @@ public class FixTaskEntity {
     @TableField("retry_source_failure_reason")
     private String retrySourceFailureReason;
 
+    @TableField("retry_reason")
+    private String retryReason;
+
     @TableField("retried_at")
     private Instant retriedAt;
 

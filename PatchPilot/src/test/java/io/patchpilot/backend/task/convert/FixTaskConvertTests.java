@@ -44,6 +44,7 @@ class FixTaskConvertTests {
         assertThat(entity.getRetrySourceTaskId()).isNull();
         assertThat(entity.getRetrySourceStatus()).isNull();
         assertThat(entity.getRetrySourceFailureReason()).isNull();
+        assertThat(entity.getRetryReason()).isNull();
         assertThat(entity.getRetriedAt()).isNull();
 
         assertThat(vo.id()).isEqualTo("task-123");
@@ -70,6 +71,7 @@ class FixTaskConvertTests {
         assertThat(vo.retrySourceTaskId()).isNull();
         assertThat(vo.retrySourceStatus()).isNull();
         assertThat(vo.retrySourceFailureReason()).isNull();
+        assertThat(vo.retryReason()).isNull();
         assertThat(vo.retriedAt()).isNull();
     }
 
@@ -121,7 +123,11 @@ class FixTaskConvertTests {
         current.setCompletedAt(Instant.parse("2026-06-19T01:04:00Z"));
         current.setRiskReviewApprovedAt(Instant.parse("2026-06-19T01:04:30Z"));
 
-        FixTaskEntity retried = FixTaskConvert.replacePendingForRetry(current, updatedAt);
+        FixTaskEntity retried = FixTaskConvert.replacePendingForRetry(
+                current,
+                updatedAt,
+                "Regenerate a focused patch after reviewing the rejected edit"
+        );
         FixTaskVo vo = FixTaskConvert.toVo(retried);
 
         assertThat(retried.getStatus()).isEqualTo(FixTaskStatus.PENDING.name());
@@ -133,11 +139,13 @@ class FixTaskConvertTests {
         assertThat(retried.getRetrySourceStatus()).isEqualTo(FixTaskStatus.FAILED.name());
         assertThat(retried.getRetrySourceFailureReason())
                 .isEqualTo("Model patch review rejected generated edits: unrelated auth change");
+        assertThat(retried.getRetryReason()).isEqualTo("Regenerate a focused patch after reviewing the rejected edit");
         assertThat(retried.getRetriedAt()).isEqualTo(updatedAt);
         assertThat(vo.retrySourceTaskId()).isEqualTo("task-123");
         assertThat(vo.retrySourceStatus()).isEqualTo(FixTaskStatus.FAILED.name());
         assertThat(vo.retrySourceFailureReason())
                 .isEqualTo("Model patch review rejected generated edits: unrelated auth change");
+        assertThat(vo.retryReason()).isEqualTo("Regenerate a focused patch after reviewing the rejected edit");
         assertThat(vo.retriedAt()).isEqualTo(updatedAt);
     }
 

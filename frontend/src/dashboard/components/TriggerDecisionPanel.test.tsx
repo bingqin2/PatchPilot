@@ -30,6 +30,7 @@ const selectedTask: FixTask = {
   retrySourceTaskId: null,
   retrySourceStatus: null,
   retrySourceFailureReason: null,
+  retryReason: null,
   retriedAt: null
 };
 

@@ -29,6 +29,7 @@ import type {
   RejectedTriggerAuditSummary,
   ReleaseTriggerQuarantineInput,
   RejectedTriggerCategoryFilter,
+  RetryTaskInput,
   TriggerQuarantine,
   TriggerQuarantineEvidence,
   WebhookDeliveryDiagnostic,
@@ -316,8 +317,8 @@ export async function cancelTask(taskId: string): Promise<FixTask> {
   return postApi<FixTask>(`/api/tasks/${taskId}/cancel`);
 }
 
-export async function retryTask(taskId: string): Promise<FixTask> {
-  return postApi<FixTask>(`/api/tasks/${taskId}/retry`);
+export async function retryTask(taskId: string, input: RetryTaskInput): Promise<FixTask> {
+  return postApi<FixTask>(`/api/tasks/${taskId}/retry`, input);
 }
 
 export async function approveTaskReview(taskId: string, input: ApproveReviewInput): Promise<FixTask> {

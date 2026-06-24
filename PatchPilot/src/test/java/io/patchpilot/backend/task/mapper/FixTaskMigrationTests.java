@@ -68,4 +68,13 @@ class FixTaskMigrationTests {
         assertThat(sql).contains("retry_source_failure_reason text null");
         assertThat(sql).contains("retried_at timestamp(6) null");
     }
+
+    @Test
+    void should_add_retry_reason_column() throws IOException {
+        String sql = Files.readString(Path.of("src/main/resources/db/migration/V26__add_fix_task_retry_reason.sql"))
+                .toLowerCase(Locale.ROOT);
+
+        assertThat(sql).contains("alter table fix_task");
+        assertThat(sql).contains("retry_reason text null");
+    }
 }

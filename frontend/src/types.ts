@@ -87,6 +87,7 @@ export interface FixTask {
   retrySourceTaskId: string | null;
   retrySourceStatus: TaskStatus | null;
   retrySourceFailureReason: string | null;
+  retryReason: string | null;
   retriedAt: string | null;
 }
 
@@ -128,6 +129,10 @@ export interface CreateTaskInput {
 
 export interface ApproveReviewInput {
   operator: string;
+  reason: string;
+}
+
+export interface RetryTaskInput {
   reason: string;
 }
 

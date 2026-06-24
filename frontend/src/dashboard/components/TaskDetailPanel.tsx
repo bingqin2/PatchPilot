@@ -1,6 +1,6 @@
 import { CheckCircle2, Copy, ExternalLink, RotateCcw, XCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import type { ApproveReviewInput, FixTask } from '../../types';
+import type { ApproveReviewInput, FixTask, RetryTaskInput } from '../../types';
 import { compactTime, duration, issueUrl } from '../format';
 import type { TaskDetailState } from '../types';
 import { RecordLine } from './RecordLine';
@@ -13,7 +13,7 @@ interface TaskDetailPanelProps {
   actionInFlight: boolean;
   reviewApprovalAllowedOperators: string[];
   onCancelTask: (taskId: string) => Promise<void>;
-  onRetryTask: (taskId: string) => Promise<void>;
+  onRetryTask: (taskId: string, input: RetryTaskInput) => Promise<void>;
   onApproveReview: (taskId: string, input: ApproveReviewInput) => Promise<void>;
   onCopyReport: (taskId: string) => Promise<string>;
 }
@@ -32,12 +32,17 @@ export function TaskDetailPanel({
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
   const [approvalOperator, setApprovalOperator] = useState('');
   const [approvalReason, setApprovalReason] = useState('');
+  const [retryReason, setRetryReason] = useState('');
 
   useEffect(() => {
     if (approvalOperator && !reviewApprovalAllowedOperators.includes(approvalOperator)) {
       setApprovalOperator('');
     }
   }, [approvalOperator, reviewApprovalAllowedOperators]);
+
+  useEffect(() => {
+    setRetryReason('');
+  }, [task?.id]);
 
   if (!task) {
     return (
@@ -54,6 +59,8 @@ export function TaskDetailPanel({
     || task.status === 'PENDING_REVIEW';
   const canRetry = task.status === 'FAILED' || task.status === 'CANCELLED';
   const retryPreflightBlocksRetry = canRetry && detail.retryPreflight?.retryable === false;
+  const retryReasonRequired = canRetry && !retryPreflightBlocksRetry;
+  const retryReasonReady = retryReason.trim().length > 0;
   const canApproveReview = task.status === 'PENDING_REVIEW';
   const reviewApprovalConfigured = reviewApprovalAllowedOperators.length > 0;
   const latestTestStatus = testStatus(detail.summary?.latestTestRunExitCode);
@@ -143,8 +150,8 @@ export function TaskDetailPanel({
             <button
               className="secondary-button"
               type="button"
-              disabled={actionInFlight || retryPreflightBlocksRetry}
-              onClick={() => void onRetryTask(task.id)}
+              disabled={actionInFlight || retryPreflightBlocksRetry || (retryReasonRequired && !retryReasonReady)}
+              onClick={() => void onRetryTask(task.id, { reason: retryReason.trim() })}
             >
               <RotateCcw size={14} />
               {retryPreflightBlocksRetry ? 'Retry blocked' : 'Retry task'}
@@ -220,6 +227,12 @@ export function TaskDetailPanel({
             <code>{task.retrySourceTaskId}</code>
           </div>
           {task.retrySourceFailureReason ? <p>{task.retrySourceFailureReason}</p> : null}
+          {task.retryReason ? (
+            <div className="retry-lineage-reason">
+              <span>Retry reason</span>
+              <p>{task.retryReason}</p>
+            </div>
+          ) : null}
         </section>
       ) : null}
 
@@ -253,6 +266,18 @@ export function TaskDetailPanel({
             <span>{detail.retryPreflight.status}</span>
           </div>
           {detail.retryPreflight.reason ? <p>{detail.retryPreflight.reason}</p> : null}
+          {detail.retryPreflight.retryable ? (
+            <label className="retry-reason-field">
+              <span>Retry reason</span>
+              <textarea
+                aria-label="Retry reason"
+                value={retryReason}
+                rows={3}
+                disabled={actionInFlight}
+                onChange={(event) => setRetryReason(event.target.value)}
+              />
+            </label>
+          ) : null}
         </section>
       ) : null}
 

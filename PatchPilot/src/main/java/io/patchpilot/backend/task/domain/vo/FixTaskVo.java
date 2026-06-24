@@ -32,6 +32,7 @@ public record FixTaskVo(
         String retrySourceTaskId,
         String retrySourceStatus,
         String retrySourceFailureReason,
+        String retryReason,
         Instant retriedAt
 ) {
 
@@ -61,7 +62,7 @@ public record FixTaskVo(
         this(id, repositoryOwner, repositoryName, issueNumber, installationId, triggerUser, triggerComment,
                 deliveryId, commentId, status, failureReason, createdAt, pullRequestUrl, completedAt, updatedAt,
                 language, buildSystem, verificationCommand, adapterDetectionReason, statusCommentId, statusCommentUrl,
-                null, null, null, null, null, null, null);
+                null, null, null, null, null, null, null, null);
     }
 
     public FixTaskVo(
@@ -91,7 +92,7 @@ public record FixTaskVo(
         this(id, repositoryOwner, repositoryName, issueNumber, installationId, triggerUser, triggerComment,
                 deliveryId, commentId, status, failureReason, createdAt, pullRequestUrl, completedAt, updatedAt,
                 language, buildSystem, verificationCommand, adapterDetectionReason, statusCommentId, statusCommentUrl,
-                riskReviewApprovedAt, null, null, null, null, null, null);
+                riskReviewApprovedAt, null, null, null, null, null, null, null);
     }
 
     public FixTaskVo(
@@ -123,7 +124,7 @@ public record FixTaskVo(
         this(id, repositoryOwner, repositoryName, issueNumber, installationId, triggerUser, triggerComment,
                 deliveryId, commentId, status, failureReason, createdAt, pullRequestUrl, completedAt, updatedAt,
                 language, buildSystem, verificationCommand, adapterDetectionReason, statusCommentId, statusCommentUrl,
-                riskReviewApprovedAt, riskReviewApprovedBy, riskReviewApprovalReason, null, null, null, null);
+                riskReviewApprovedAt, riskReviewApprovedBy, riskReviewApprovalReason, null, null, null, null, null);
     }
 
     public FixTaskVo(
@@ -193,7 +194,7 @@ public record FixTaskVo(
     ) {
         this(id, repositoryOwner, repositoryName, issueNumber, installationId, triggerUser, triggerComment,
                 deliveryId, commentId, status, failureReason, createdAt, null, null, createdAt, null, null, null,
-                null, null, null, null, null, null, null, null, null, null);
+                null, null, null, null, null, null, null, null, null, null, null);
     }
 
     public FixTaskVo withAdapterMetadata(String language, String buildSystem, String verificationCommand) {
@@ -234,6 +235,7 @@ public record FixTaskVo(
                 retrySourceTaskId,
                 retrySourceStatus,
                 retrySourceFailureReason,
+                retryReason,
                 retriedAt
         );
     }
@@ -275,6 +277,7 @@ public record FixTaskVo(
                 retrySourceTaskId,
                 retrySourceStatus,
                 retrySourceFailureReason,
+                retryReason,
                 retriedAt
         );
     }
