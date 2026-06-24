@@ -441,6 +441,8 @@ export interface RejectedTriggerAudit {
   commentUrl: string | null;
   retriedTaskId: string | null;
   retriedAt: string | null;
+  retryable: boolean;
+  retryBlockedReason: string | null;
   createdAt: string;
 }
 

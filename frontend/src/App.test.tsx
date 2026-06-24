@@ -492,6 +492,8 @@ const rejectedTriggers = [
     commentUrl: 'https://github.com/bingqin2/PatchPilot/issues/1#issuecomment-456',
     retriedTaskId: 'task-2',
     retriedAt: '2026-06-20T01:08:05Z',
+    retryable: false,
+    retryBlockedReason: 'Rejected trigger has already been retried; open the linked retried task instead.',
     createdAt: '2026-06-20T01:03:05Z'
   },
   {
@@ -509,7 +511,28 @@ const rejectedTriggers = [
     commentUrl: null,
     retriedTaskId: null,
     retriedAt: null,
+    retryable: false,
+    retryBlockedReason: 'Remove destructive or secret-related instructions and ask for a specific, safe code change.',
     createdAt: '2026-06-20T01:04:05Z'
+  },
+  {
+    id: 'rejected-3',
+    source: 'webhook',
+    deliveryId: 'delivery-retryable-specific',
+    repositoryOwner: 'bingqin2',
+    repositoryName: 'PatchPilot',
+    issueNumber: 3,
+    triggerUser: 'drive-by-user',
+    triggerComment: '/agent fix touch docs/retryable.md',
+    category: 'NOT_ACTIONABLE',
+    reason: 'Unsafe request rejected: instruction is not actionable',
+    commentId: null,
+    commentUrl: null,
+    retriedTaskId: null,
+    retriedAt: null,
+    retryable: true,
+    retryBlockedReason: null,
+    createdAt: '2026-06-20T01:05:05Z'
   }
 ];
 
@@ -1139,7 +1162,7 @@ beforeEach(() => {
         active: false
       });
     }
-    if (url === '/api/rejected-triggers/rejected-1/retry') {
+    if (url === '/api/rejected-triggers/rejected-3/retry') {
       return jsonResponse(manuallyCreatedTask, true, null, 201);
     }
     if (url === '/api/tasks/task-1/detail') {
@@ -1420,12 +1443,13 @@ test('renders operational task dashboard from backend APIs', async () => {
       within(triggerDecisionPanel).getByText('Trigger accepted: safety gate accepted; issue context loaded; model accepted trigger: Issue context describes a concrete failing test')
     ).toBeInTheDocument()
   );
-  expect(within(triggerDecisionPanel).getAllByText('Not actionable')).toHaveLength(2);
-  expect(within(triggerDecisionPanel).getByText('Unsafe request rejected: instruction is not actionable')).toBeInTheDocument();
+  expect(within(triggerDecisionPanel).getAllByText('Not actionable')).toHaveLength(3);
+  expect(within(triggerDecisionPanel).getAllByText('Unsafe request rejected: instruction is not actionable')).toHaveLength(2);
   expect(within(triggerDecisionPanel).getByText('/agent fix make it better')).toBeInTheDocument();
+  expect(within(triggerDecisionPanel).getByText('/agent fix touch docs/retryable.md')).toBeInTheDocument();
   const rejectedTriggerPanel = screen.getByRole('region', { name: 'Rejected triggers' });
   expect(within(rejectedTriggerPanel).getByRole('heading', { name: 'Rejected triggers' })).toBeInTheDocument();
-  expect(within(rejectedTriggerPanel).getByText('2 recent rejections')).toBeInTheDocument();
+  expect(within(rejectedTriggerPanel).getByText('3 recent rejections')).toBeInTheDocument();
   const rejectedTriggerSummaryPanel = within(rejectedTriggerPanel).getByRole('group', { name: 'Rejected trigger summary' });
   expect(within(rejectedTriggerSummaryPanel).getByText('Rejected trigger summary')).toBeInTheDocument();
   expect(within(rejectedTriggerSummaryPanel).getByText('4 rejected triggers analyzed')).toBeInTheDocument();
@@ -1442,9 +1466,12 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(within(operatorAuditRows).getByText('False positive during demo')).toBeInTheDocument();
   const rejectedTriggerRows = within(rejectedTriggerPanel).getByRole('group', { name: 'Rejected trigger audit rows' });
   expect(within(rejectedTriggerRows).getByText('/agent fix make it better')).toBeInTheDocument();
-  expect(within(rejectedTriggerRows).getByText('Unsafe request rejected: instruction is not actionable')).toBeInTheDocument();
+  expect(within(rejectedTriggerRows).getByText('/agent fix touch docs/retryable.md')).toBeInTheDocument();
+  expect(within(rejectedTriggerRows).getAllByText('Unsafe request rejected: instruction is not actionable')).toHaveLength(2);
   expect(within(rejectedTriggerRows).getByText('bingqin2/PatchPilot #1')).toBeInTheDocument();
-  expect(within(rejectedTriggerRows).getByText('drive-by-user')).toBeInTheDocument();
+  expect(within(rejectedTriggerRows).getAllByText('drive-by-user')).toHaveLength(2);
+  expect(within(rejectedTriggerRows).getAllByRole('button', { name: 'Retry blocked' })).toHaveLength(2);
+  expect(within(rejectedTriggerRows).getByRole('button', { name: 'Retry trigger' })).toBeInTheDocument();
   expect(within(rejectedTriggerRows).getByRole('link', { name: 'Refusal comment' })).toHaveAttribute(
     'href',
     'https://github.com/bingqin2/PatchPilot/issues/1#issuecomment-456'
@@ -2607,7 +2634,7 @@ test('searches tasks with backend query parameters', async () => {
   await user.type(screen.getByRole('searchbox', { name: 'Search tasks' }), 'broken');
 
   expect(screen.queryByText('/agent fix replace docs/demo.md PatchPilot smoke test')).not.toBeInTheDocument();
-  expect(screen.getByText('/agent fix replace docs/demo.md broken')).toBeInTheDocument();
+  expect(screen.getAllByText('/agent fix replace docs/demo.md broken').length).toBeGreaterThanOrEqual(1);
   expect(await screen.findByText('Task failed')).toBeInTheDocument();
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks?limit=50&query=broken'));
 });
@@ -2883,11 +2910,13 @@ test('retries rejected triggers and refreshes dashboard data', async () => {
 
   const rejectedPanel = await screen.findByRole('region', { name: 'Rejected triggers' });
   expect(within(rejectedPanel).getByText('/agent fix make it better')).toBeInTheDocument();
+  expect(within(rejectedPanel).getByText('/agent fix touch docs/retryable.md')).toBeInTheDocument();
+  expect(within(rejectedPanel).getAllByRole('button', { name: 'Retry blocked' })).toHaveLength(2);
 
   await user.click(within(rejectedPanel).getAllByRole('button', { name: 'Retry trigger' })[0]);
 
   await waitFor(() =>
-    expect(fetchMock).toHaveBeenCalledWith('/api/rejected-triggers/rejected-1/retry', { method: 'POST' })
+    expect(fetchMock).toHaveBeenCalledWith('/api/rejected-triggers/rejected-3/retry', { method: 'POST' })
   );
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks?limit=50'));
 });

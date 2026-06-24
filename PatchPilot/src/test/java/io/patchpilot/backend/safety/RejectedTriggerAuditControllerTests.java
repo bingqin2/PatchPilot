@@ -72,6 +72,8 @@ class RejectedTriggerAuditControllerTests {
                 .andExpect(jsonPath("$.data[0].commentUrl").value("https://github.com/octocat/hello-world/issues/42#issuecomment-456"))
                 .andExpect(jsonPath("$.data[0].retriedTaskId").value("task-123"))
                 .andExpect(jsonPath("$.data[0].retriedAt").value("2026-06-21T02:00:00Z"))
+                .andExpect(jsonPath("$.data[0].retryable").value(false))
+                .andExpect(jsonPath("$.data[0].retryBlockedReason").value("Rejected trigger has already been retried; open the linked retried task instead."))
                 .andExpect(jsonPath("$.data[0].createdAt").value("2026-06-21T01:00:00Z"));
     }
 
@@ -100,7 +102,9 @@ class RejectedTriggerAuditControllerTests {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.length()").value(1))
                 .andExpect(jsonPath("$.data[0].id").value("audit-dangerous"))
-                .andExpect(jsonPath("$.data[0].category").value("DANGEROUS_INSTRUCTION"));
+                .andExpect(jsonPath("$.data[0].category").value("DANGEROUS_INSTRUCTION"))
+                .andExpect(jsonPath("$.data[0].retryable").value(false))
+                .andExpect(jsonPath("$.data[0].retryBlockedReason").value("Remove destructive or secret-related instructions and ask for a specific, safe code change."));
     }
 
     @Test
@@ -189,5 +193,18 @@ class RejectedTriggerAuditControllerTests {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.message").value("Rejected trigger not found"));
+    }
+
+    @Test
+    void should_return_conflict_when_rejected_trigger_retry_is_not_allowed() throws Exception {
+        when(retryService.retryRejectedTrigger("audit-dangerous"))
+                .thenThrow(new RejectedTriggerRetryService.RejectedTriggerRetryNotAllowedException(
+                        "Rejected trigger cannot be retried directly: Remove destructive or secret-related instructions and ask for a specific, safe code change."
+                ));
+
+        mockMvc.perform(post("/api/rejected-triggers/audit-dangerous/retry"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("Rejected trigger cannot be retried directly: Remove destructive or secret-related instructions and ask for a specific, safe code change."));
     }
 }

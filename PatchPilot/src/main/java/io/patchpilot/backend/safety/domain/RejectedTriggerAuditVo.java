@@ -17,6 +17,8 @@ public record RejectedTriggerAuditVo(
         String commentUrl,
         String retriedTaskId,
         Instant retriedAt,
+        boolean retryable,
+        String retryBlockedReason,
         Instant createdAt
 ) {
 
@@ -91,5 +93,43 @@ public record RejectedTriggerAuditVo(
     ) {
         this(id, source, deliveryId, repositoryOwner, repositoryName, issueNumber, triggerUser, triggerComment,
                 reason, RejectedTriggerCategory.UNKNOWN, commentId, commentUrl, retriedTaskId, retriedAt, createdAt);
+    }
+
+    public RejectedTriggerAuditVo(
+            String id,
+            String source,
+            String deliveryId,
+            String repositoryOwner,
+            String repositoryName,
+            Long issueNumber,
+            String triggerUser,
+            String triggerComment,
+            String reason,
+            String category,
+            Long commentId,
+            String commentUrl,
+            String retriedTaskId,
+            Instant retriedAt,
+            Instant createdAt
+    ) {
+        this(
+                id,
+                source,
+                deliveryId,
+                repositoryOwner,
+                repositoryName,
+                issueNumber,
+                triggerUser,
+                triggerComment,
+                reason,
+                category,
+                commentId,
+                commentUrl,
+                retriedTaskId,
+                retriedAt,
+                RejectedTriggerRetryPolicy.isRetryable(category, retriedTaskId),
+                RejectedTriggerRetryPolicy.retryBlockedReason(category, retriedTaskId),
+                createdAt
+        );
     }
 }

@@ -131,13 +131,20 @@ export function RejectedTriggerPanel({
                 </a>
               ) : null}
               {renderRetriedTaskLink(trigger.retriedTaskId, onSelectTask)}
+              {trigger.retryBlockedReason ? (
+                <span className="rejected-trigger-retry-guidance">{trigger.retryBlockedReason}</span>
+              ) : null}
               <button
                 type="button"
                 className="inline-action"
-                disabled={retryingRejectedTriggerId === trigger.id}
-                onClick={() => onRetryRejectedTrigger(trigger.id)}
+                disabled={!trigger.retryable || retryingRejectedTriggerId === trigger.id}
+                onClick={() => {
+                  if (trigger.retryable) {
+                    onRetryRejectedTrigger(trigger.id);
+                  }
+                }}
               >
-                {retryingRejectedTriggerId === trigger.id ? 'Retrying trigger' : 'Retry trigger'}
+                {retryButtonLabel(trigger, retryingRejectedTriggerId)}
               </button>
             </div>
             <p>{trigger.reason}</p>
@@ -147,6 +154,13 @@ export function RejectedTriggerPanel({
       </div>
     </section>
   );
+}
+
+function retryButtonLabel(trigger: RejectedTriggerAudit, retryingRejectedTriggerId: string | null) {
+  if (!trigger.retryable) {
+    return 'Retry blocked';
+  }
+  return retryingRejectedTriggerId === trigger.id ? 'Retrying trigger' : 'Retry trigger';
 }
 
 function OperatorSafetyAuditList({ audits }: { audits: OperatorSafetyAudit[] }) {

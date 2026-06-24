@@ -59,6 +59,8 @@ const rejectedTriggers: RejectedTriggerAudit[] = [
     commentUrl: 'https://github.com/bingqin2/PatchPilot/issues/17#issuecomment-201',
     retriedTaskId: null,
     retriedAt: null,
+    retryable: true,
+    retryBlockedReason: null,
     createdAt: '2026-06-20T00:58:00Z'
   }
 ];

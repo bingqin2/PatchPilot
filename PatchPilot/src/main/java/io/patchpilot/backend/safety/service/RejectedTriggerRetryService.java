@@ -12,4 +12,11 @@ public interface RejectedTriggerRetryService {
             super(message);
         }
     }
+
+    class RejectedTriggerRetryNotAllowedException extends RuntimeException {
+
+        public RejectedTriggerRetryNotAllowedException(String message) {
+            super(message);
+        }
+    }
 }

@@ -26,6 +26,7 @@ public class DefaultRejectedTriggerRetryService implements RejectedTriggerRetryS
         RejectedTriggerAuditVo audit = auditService.findRejectedTrigger(rejectedTriggerId)
                 .orElseThrow(() -> new RejectedTriggerNotFoundException("Rejected trigger not found"));
         validateRetryInputs(audit);
+        validateRetryEligibility(audit);
 
         FixTaskVo task = manualFixTaskService.createManualTask(new CreateManualFixTaskCommand(
                 audit.repositoryOwner(),
@@ -51,6 +52,14 @@ public class DefaultRejectedTriggerRetryService implements RejectedTriggerRetryS
                 || isBlank(audit.triggerUser())
                 || isBlank(audit.triggerComment())) {
             throw new IllegalArgumentException("Rejected trigger is missing required task inputs");
+        }
+    }
+
+    private static void validateRetryEligibility(RejectedTriggerAuditVo audit) {
+        if (!audit.retryable()) {
+            throw new RejectedTriggerRetryNotAllowedException(
+                    "Rejected trigger cannot be retried directly: " + audit.retryBlockedReason()
+            );
         }
     }
 

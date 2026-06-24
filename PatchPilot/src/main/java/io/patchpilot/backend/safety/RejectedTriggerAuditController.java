@@ -56,6 +56,8 @@ public class RejectedTriggerAuditController {
             return ResponseEntity.created(URI.create("/api/tasks/" + task.id())).body(ApiResponse.ok(task));
         } catch (RejectedTriggerRetryService.RejectedTriggerNotFoundException exception) {
             return ResponseEntity.status(404).body(ApiResponse.fail(exception.getMessage()));
+        } catch (RejectedTriggerRetryService.RejectedTriggerRetryNotAllowedException exception) {
+            return ResponseEntity.status(409).body(ApiResponse.fail(exception.getMessage()));
         } catch (IllegalArgumentException exception) {
             return ResponseEntity.badRequest().body(ApiResponse.fail(exception.getMessage()));
         } catch (IllegalStateException exception) {
