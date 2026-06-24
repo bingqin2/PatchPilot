@@ -32,6 +32,7 @@ import {
   getDemoReadiness,
   getTaskReport,
   getTaskDetail,
+  getTaskRetryPreflight,
   getTaskStatusCounts,
   listWebhookDeliveries,
   listTasks
@@ -1625,6 +1626,7 @@ test('loads aggregate task detail from backend API', async () => {
           ]
         },
         failureDiagnosis: null,
+        retryPreflight: null,
         repositorySupportGuidance: null
       },
       message: null
@@ -1650,6 +1652,33 @@ test('loads aggregate task detail from backend API', async () => {
   expect(detail.issueContext?.title).toBe('PatchPilot issue context');
   expect(detail.issueContext?.comments[0].author).toBe('bingqin2');
   expect(detail.failureDiagnosis).toBeNull();
+});
+
+test('loads task retry preflight from backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        taskId: 'task-1',
+        status: 'FAILED',
+        retryable: false,
+        category: 'GITHUB_OPERATION_FAILED',
+        reason: 'GitHub token is required to create Pull Requests: token=[REDACTED]',
+        operatorAction: 'Check GitHub token or App permissions, then retry the task after access is fixed.'
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const preflight = await getTaskRetryPreflight('task-1');
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/tasks/task-1/retry-preflight');
+  expect(preflight.retryable).toBe(false);
+  expect(preflight.category).toBe('GITHUB_OPERATION_FAILED');
+  expect(preflight.reason).toBe('GitHub token is required to create Pull Requests: token=[REDACTED]');
 });
 
 test('loads markdown task report from backend API', async () => {

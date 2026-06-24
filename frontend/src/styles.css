@@ -2152,6 +2152,66 @@ h3 {
   white-space: nowrap;
 }
 
+.retry-preflight-section {
+  display: grid;
+  gap: 12px;
+}
+
+.retry-preflight-ready {
+  background: #f1f8f5;
+}
+
+.retry-preflight-blocked {
+  background: #fff7f7;
+}
+
+.retry-preflight-header {
+  align-items: start;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+}
+
+.retry-preflight-header p,
+.retry-preflight-section > p {
+  color: #52606e;
+  font-size: 13px;
+  line-height: 1.5;
+  margin-top: 3px;
+}
+
+.retry-preflight-header strong,
+.retry-preflight-meta span {
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 5px 9px;
+  white-space: nowrap;
+}
+
+.retry-preflight-ready .retry-preflight-header strong {
+  background: #dff6e7;
+  color: #126b35;
+}
+
+.retry-preflight-blocked .retry-preflight-header strong {
+  background: #fde5df;
+  color: #a13724;
+}
+
+.retry-preflight-meta {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.retry-preflight-meta span {
+  background: #ffffff;
+  border: 1px solid #dfe6ec;
+  color: #52606e;
+}
+
 .repository-support-guidance {
   background: #fffaf5;
   display: grid;

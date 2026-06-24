@@ -90,6 +90,15 @@ export interface FixTask {
   retriedAt: string | null;
 }
 
+export interface FixTaskRetryPreflight {
+  taskId: string;
+  status: TaskStatus;
+  retryable: boolean;
+  category: string;
+  reason: string | null;
+  operatorAction: string;
+}
+
 export interface FixTaskPage {
   items: FixTask[];
   limit: number;
@@ -536,6 +545,7 @@ export interface FixTaskDetail {
   patchReview: FixTaskPatchReview | null;
   issueContext: IssueContext | null;
   failureDiagnosis: FixTaskFailureDiagnosis | null;
+  retryPreflight: FixTaskRetryPreflight | null;
   repositorySupportGuidance: RepositorySupportGuidance | null;
 }
 

@@ -111,6 +111,7 @@ const baseDetail: TaskDetailState = {
     ]
   },
   failureDiagnosis: null,
+  retryPreflight: null,
   repositorySupportGuidance: null
 };
 
@@ -208,6 +209,88 @@ test('shows failure diagnosis for failed tasks', () => {
   ).toBeInTheDocument();
   expect(within(diagnosis).getByText('maven tests failed: token=[REDACTED]')).toBeInTheDocument();
   expect(within(diagnosis).queryByText('ghp_123456789012345678901234567890123456')).not.toBeInTheDocument();
+});
+
+test('blocks retry when retry preflight requires operator action', () => {
+  const onRetryTask = vi.fn();
+
+  render(
+    <TaskDetailPanel
+      task={{
+        ...task,
+        status: 'FAILED',
+        failureReason: 'GitHub token is required to create Pull Requests',
+        pullRequestUrl: null,
+        completedAt: null
+      }}
+      detail={{
+        ...baseDetail,
+        retryPreflight: {
+          taskId: 'task-1',
+          status: 'FAILED',
+          retryable: false,
+          category: 'GITHUB_OPERATION_FAILED',
+          reason: 'GitHub token is required to create Pull Requests: token=[REDACTED]',
+          operatorAction: 'Check GitHub token or App permissions, then retry the task after access is fixed.'
+        }
+      }}
+      loading={false}
+      actionInFlight={false}
+      reviewApprovalAllowedOperators={['release-captain']}
+      onCancelTask={vi.fn()}
+      onRetryTask={onRetryTask}
+      onApproveReview={vi.fn()}
+      onCopyReport={vi.fn()}
+    />
+  );
+
+  const preflight = screen.getByLabelText('Retry preflight');
+  expect(within(preflight).getByText('Retry blocked')).toBeInTheDocument();
+  expect(within(preflight).getByText('GitHub operation failed')).toBeInTheDocument();
+  expect(
+    within(preflight).getByText('Check GitHub token or App permissions, then retry the task after access is fixed.')
+  ).toBeInTheDocument();
+  expect(within(preflight).getByText('GitHub token is required to create Pull Requests: token=[REDACTED]'))
+    .toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Retry blocked' })).toBeDisabled();
+  expect(onRetryTask).not.toHaveBeenCalled();
+});
+
+test('keeps retry available when retry preflight is clear', () => {
+  render(
+    <TaskDetailPanel
+      task={{
+        ...task,
+        status: 'FAILED',
+        failureReason: 'maven tests failed',
+        pullRequestUrl: null,
+        completedAt: null
+      }}
+      detail={{
+        ...baseDetail,
+        retryPreflight: {
+          taskId: 'task-1',
+          status: 'FAILED',
+          retryable: true,
+          category: 'VERIFICATION_FAILED',
+          reason: 'maven tests failed',
+          operatorAction: 'Inspect the verification output, fix the failing test or build error, then retry the task.'
+        }
+      }}
+      loading={false}
+      actionInFlight={false}
+      reviewApprovalAllowedOperators={['release-captain']}
+      onCancelTask={vi.fn()}
+      onRetryTask={vi.fn()}
+      onApproveReview={vi.fn()}
+      onCopyReport={vi.fn()}
+    />
+  );
+
+  const preflight = screen.getByLabelText('Retry preflight');
+  expect(within(preflight).getByText('Ready to retry')).toBeInTheDocument();
+  expect(within(preflight).getByText('Verification failed')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Retry task' })).toBeEnabled();
 });
 
 test('shows patch review evidence for model generated edits', () => {

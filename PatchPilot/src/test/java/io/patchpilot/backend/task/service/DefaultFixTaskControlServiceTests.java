@@ -4,6 +4,7 @@ import io.patchpilot.backend.task.domain.bo.CreateFixTaskCommand;
 import io.patchpilot.backend.task.domain.bo.ApproveReviewCommand;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.enums.FixTaskTimelineEventType;
+import io.patchpilot.backend.task.domain.vo.FixTaskRetryPreflightVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskTimelineEventVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import io.patchpilot.backend.task.config.ReviewApprovalProperties;
@@ -133,8 +134,69 @@ class DefaultFixTaskControlServiceTests {
     }
 
     @Test
+    void should_return_retry_preflight_for_verification_failure() {
+        FixTaskVo task = createTask("delivery-control-retry-preflight-verification");
+        fixTaskService.markFailed(task.id(), "maven tests failed: token=ghp_123456789012345678901234567890123456");
+
+        FixTaskRetryPreflightVo preflight = controlService.retryPreflight(task.id());
+
+        assertThat(preflight.taskId()).isEqualTo(task.id());
+        assertThat(preflight.status()).isEqualTo(FixTaskStatus.FAILED);
+        assertThat(preflight.retryable()).isTrue();
+        assertThat(preflight.category()).isEqualTo("VERIFICATION_FAILED");
+        assertThat(preflight.reason()).isEqualTo("maven tests failed: token=[REDACTED]");
+        assertThat(preflight.operatorAction())
+                .isEqualTo("Inspect the verification output, fix the failing test or build error, then retry the task.");
+    }
+
+    @Test
+    void should_block_retry_preflight_for_github_operation_failure() {
+        FixTaskVo task = createTask("delivery-control-retry-preflight-github");
+        fixTaskService.markFailed(
+                task.id(),
+                "GitHub token is required to create Pull Requests: token=ghp_123456789012345678901234567890123456"
+        );
+
+        FixTaskRetryPreflightVo preflight = controlService.retryPreflight(task.id());
+
+        assertThat(preflight.taskId()).isEqualTo(task.id());
+        assertThat(preflight.status()).isEqualTo(FixTaskStatus.FAILED);
+        assertThat(preflight.retryable()).isFalse();
+        assertThat(preflight.category()).isEqualTo("GITHUB_OPERATION_FAILED");
+        assertThat(preflight.reason()).isEqualTo("GitHub token is required to create Pull Requests: token=[REDACTED]");
+        assertThat(preflight.operatorAction())
+                .isEqualTo("Check GitHub token or App permissions, then retry the task after access is fixed.");
+
+        assertThatThrownBy(() -> controlService.retryTask(task.id()))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Check GitHub token or App permissions, then retry the task after access is fixed.");
+        assertThat(fixTaskQueue.enqueuedTaskIds()).isEmpty();
+        assertThat(fixTaskTimelineService.eventTypes()).isEmpty();
+    }
+
+    @Test
+    void should_return_retry_preflight_for_cancelled_task() {
+        FixTaskVo task = createTask("delivery-control-retry-preflight-cancelled");
+        fixTaskService.markCancelled(task.id(), "Task cancelled by user request");
+
+        FixTaskRetryPreflightVo preflight = controlService.retryPreflight(task.id());
+
+        assertThat(preflight.taskId()).isEqualTo(task.id());
+        assertThat(preflight.status()).isEqualTo(FixTaskStatus.CANCELLED);
+        assertThat(preflight.retryable()).isTrue();
+        assertThat(preflight.category()).isEqualTo("CANCELLED");
+        assertThat(preflight.reason()).isEqualTo("Task was cancelled before completion.");
+        assertThat(preflight.operatorAction()).isEqualTo("Retry creates a fresh pending task from the same issue request.");
+    }
+
+    @Test
     void should_reject_retrying_active_task() {
         FixTaskVo task = createTask("delivery-control-retry-active");
+
+        FixTaskRetryPreflightVo preflight = controlService.retryPreflight(task.id());
+        assertThat(preflight.retryable()).isFalse();
+        assertThat(preflight.category()).isEqualTo("PENDING");
+        assertThat(preflight.operatorAction()).isEqualTo("Only failed or cancelled tasks can be retried");
 
         assertThatThrownBy(() -> controlService.retryTask(task.id()))
                 .isInstanceOf(IllegalStateException.class)
@@ -147,6 +209,12 @@ class DefaultFixTaskControlServiceTests {
     void should_reject_retrying_pending_review_task_until_human_decision_exists() {
         FixTaskVo task = createTask("delivery-control-retry-pending-review");
         fixTaskService.markPendingReview(task.id(), "Generated diff rejected: binary file change");
+
+        FixTaskRetryPreflightVo preflight = controlService.retryPreflight(task.id());
+        assertThat(preflight.retryable()).isFalse();
+        assertThat(preflight.category()).isEqualTo("PENDING_REVIEW");
+        assertThat(preflight.operatorAction())
+                .isEqualTo("Pending review tasks must be cancelled or approved before retry");
 
         assertThatThrownBy(() -> controlService.retryTask(task.id()))
                 .isInstanceOf(IllegalStateException.class)

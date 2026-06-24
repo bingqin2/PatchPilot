@@ -4,12 +4,14 @@ import io.patchpilot.backend.task.config.ReviewApprovalProperties;
 import io.patchpilot.backend.task.domain.bo.ApproveReviewCommand;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.enums.FixTaskTimelineEventType;
+import io.patchpilot.backend.task.domain.vo.FixTaskRetryPreflightVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import io.patchpilot.backend.task.process.TaskProcessRegistry;
 import io.patchpilot.backend.task.service.FixTaskControlService;
 import io.patchpilot.backend.task.service.FixTaskQueue;
 import io.patchpilot.backend.task.service.FixTaskService;
 import io.patchpilot.backend.task.service.FixTaskTimelineService;
+import io.patchpilot.backend.task.service.TaskFailureFeedback;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -55,13 +57,16 @@ public class DefaultFixTaskControlService implements FixTaskControlService {
     }
 
     @Override
+    public FixTaskRetryPreflightVo retryPreflight(String taskId) {
+        return retryPreflight(currentTask(taskId));
+    }
+
+    @Override
     public FixTaskVo retryTask(String taskId) {
         FixTaskVo task = currentTask(taskId);
-        if (task.status() == FixTaskStatus.PENDING_REVIEW) {
-            throw new IllegalStateException("Pending review tasks must be cancelled or approved before retry");
-        }
-        if (task.status() != FixTaskStatus.FAILED && task.status() != FixTaskStatus.CANCELLED) {
-            throw new IllegalStateException("Only failed or cancelled tasks can be retried");
+        FixTaskRetryPreflightVo preflight = retryPreflight(task);
+        if (!preflight.retryable()) {
+            throw new IllegalStateException(preflight.operatorAction());
         }
         FixTaskVo retriedTask = fixTaskService.markPendingForRetry(taskId);
         fixTaskQueue.enqueue(taskId);
@@ -96,6 +101,64 @@ public class DefaultFixTaskControlService implements FixTaskControlService {
         if (!allowed) {
             throw new SecurityException("operator is not allowed to approve risk reviews");
         }
+    }
+
+    private FixTaskRetryPreflightVo retryPreflight(FixTaskVo task) {
+        if (task.status() == FixTaskStatus.CANCELLED) {
+            return new FixTaskRetryPreflightVo(
+                    task.id(),
+                    task.status(),
+                    true,
+                    "CANCELLED",
+                    "Task was cancelled before completion.",
+                    "Retry creates a fresh pending task from the same issue request."
+            );
+        }
+        if (task.status() == FixTaskStatus.PENDING_REVIEW) {
+            return blocked(
+                    task,
+                    "PENDING_REVIEW",
+                    task.failureReason(),
+                    "Pending review tasks must be cancelled or approved before retry"
+            );
+        }
+        if (task.status() != FixTaskStatus.FAILED) {
+            return blocked(
+                    task,
+                    task.status().name(),
+                    null,
+                    "Only failed or cancelled tasks can be retried"
+            );
+        }
+
+        TaskFailureFeedback feedback = TaskFailureFeedback.from(task.failureReason());
+        boolean retryable = !"GITHUB_OPERATION_FAILED".equals(feedback.category())
+                && !"UNSUPPORTED_REPOSITORY".equals(feedback.category());
+        return new FixTaskRetryPreflightVo(
+                task.id(),
+                task.status(),
+                retryable,
+                feedback.category(),
+                feedback.safeReason(),
+                feedback.nextAction()
+        );
+    }
+
+    private static FixTaskRetryPreflightVo blocked(
+            FixTaskVo task,
+            String category,
+            String reason,
+            String operatorAction
+    ) {
+        String safeReason = reason == null ? null : TaskFailureFeedback.from(reason).safeReason();
+        return new FixTaskRetryPreflightVo(
+                task.id(),
+                task.status(),
+                false,
+                category,
+                safeReason,
+                operatorAction
+        );
     }
 
     private FixTaskVo currentTask(String taskId) {

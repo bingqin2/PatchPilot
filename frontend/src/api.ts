@@ -20,6 +20,7 @@ import type {
   FixTaskMetricsSummary,
   FixTaskStatusCounts,
   FixTaskModelUsageSummary,
+  FixTaskRetryPreflight,
   FixTaskQueueItem,
   FixTaskQueueSummary,
   FixTaskWorkerHealth,
@@ -285,6 +286,10 @@ export async function getTaskSummary(taskId: string): Promise<FixTaskAuditSummar
 
 export async function getTaskDetail(taskId: string): Promise<FixTaskDetail> {
   return getApi<FixTaskDetail>(`/api/tasks/${taskId}/detail`);
+}
+
+export async function getTaskRetryPreflight(taskId: string): Promise<FixTaskRetryPreflight> {
+  return getApi<FixTaskRetryPreflight>(`/api/tasks/${taskId}/retry-preflight`);
 }
 
 export async function getTaskReport(taskId: string): Promise<string> {

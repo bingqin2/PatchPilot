@@ -335,6 +335,7 @@ const detail = {
     ]
   },
   failureDiagnosis: null,
+  retryPreflight: null,
   repositorySupportGuidance: null
 };
 
@@ -374,6 +375,7 @@ const manualTaskDetail = {
   generatedDiff: null,
   issueContext: null,
   failureDiagnosis: null,
+  retryPreflight: null,
   repositorySupportGuidance: null
 };
 
@@ -1238,7 +1240,18 @@ beforeEach(() => {
         generatedDiff: null,
         issueContext: null,
         failureDiagnosis: null,
+        retryPreflight: null,
         repositorySupportGuidance: null
+      });
+    }
+    if (url === '/api/tasks/task-2/retry-preflight') {
+      return jsonResponse({
+        taskId: 'task-2',
+        status: 'FAILED',
+        retryable: true,
+        category: 'VERIFICATION_FAILED',
+        reason: 'maven tests failed',
+        operatorAction: 'Inspect the verification output, fix the failing test or build error, then retry the task.'
       });
     }
     if (url === '/api/tasks/task-2/timeline') {
@@ -1296,6 +1309,7 @@ beforeEach(() => {
         generatedDiff: null,
         issueContext: null,
         failureDiagnosis: null,
+        retryPreflight: null,
         repositorySupportGuidance: null
       });
     }
@@ -2807,6 +2821,7 @@ test('loads the next backend task page with offset pagination', async () => {
         generatedDiff: null,
         issueContext: null,
         failureDiagnosis: null,
+        retryPreflight: null,
         repositorySupportGuidance: null
       });
     }
@@ -2887,9 +2902,12 @@ test('retries failed tasks and refreshes dashboard data', async () => {
 
   await user.click(await screen.findByRole('button', { name: 'FAILED' }));
   expect(await screen.findByText('/agent fix replace docs/demo.md broken')).toBeInTheDocument();
+  expect(await screen.findByText('Retry preflight')).toBeInTheDocument();
+  expect(screen.getByText('Ready to retry')).toBeInTheDocument();
 
   await user.click(await screen.findByRole('button', { name: 'Retry task' }));
 
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks/task-2/retry-preflight'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks/task-2/retry', { method: 'POST' }));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks?limit=50&status=FAILED'));
   expect(screen.queryByRole('button', { name: 'Cancel task' })).not.toBeInTheDocument();
@@ -3090,6 +3108,16 @@ function defaultAppResponse(input: RequestInfo | URL, init?: RequestInit) {
   }
   if (url === '/api/tasks/task-1/detail') {
     return jsonResponse(detail);
+  }
+  if (url === '/api/tasks/task-1/retry-preflight') {
+    return jsonResponse({
+      taskId: 'task-1',
+      status: 'FAILED',
+      retryable: true,
+      category: 'VERIFICATION_FAILED',
+      reason: 'maven tests failed',
+      operatorAction: 'Inspect the verification output, fix the failing test or build error, then retry the task.'
+    });
   }
   if (url === '/api/tasks/task-1/report') {
     return jsonResponse('# PatchPilot Task Report\n\n- Task: `task-1`');
