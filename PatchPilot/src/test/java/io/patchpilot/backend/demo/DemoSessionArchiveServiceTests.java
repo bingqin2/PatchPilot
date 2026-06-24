@@ -10,6 +10,7 @@ import io.patchpilot.backend.demo.domain.DemoSessionArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoSessionSnapshotVo;
 import io.patchpilot.backend.demo.domain.DemoSmokeChecklistStatus;
 import io.patchpilot.backend.demo.domain.DemoSmokeChecklistVo;
+import io.patchpilot.backend.demo.service.impl.InMemoryDemoSessionArchiveRepository;
 import io.patchpilot.backend.task.domain.vo.FixTaskQueueSummaryVo;
 import org.junit.jupiter.api.Test;
 
@@ -26,6 +27,7 @@ class DemoSessionArchiveServiceTests {
     void should_archive_current_demo_session_report_and_keep_recent_archives_first() {
         DemoSessionArchiveService service = new DemoSessionArchiveService(
                 new DemoSessionReportService(() -> snapshot("demo-session-1", DemoReadinessStatus.READY)),
+                new InMemoryDemoSessionArchiveRepository(),
                 () -> snapshot("demo-session-1", DemoReadinessStatus.READY),
                 Clock.fixed(Instant.parse("2026-06-24T04:00:00Z"), ZoneOffset.UTC),
                 () -> "archive-1"
@@ -48,6 +50,7 @@ class DemoSessionArchiveServiceTests {
     void should_cap_recent_archives_to_twenty_entries() {
         DemoSessionArchiveService service = new DemoSessionArchiveService(
                 new DemoSessionReportService(() -> snapshot("demo-session-latest", DemoReadinessStatus.READY)),
+                new InMemoryDemoSessionArchiveRepository(),
                 new IncrementingSnapshotSupplier(),
                 Clock.fixed(Instant.parse("2026-06-24T04:00:00Z"), ZoneOffset.UTC),
                 new IncrementingIdSupplier()
