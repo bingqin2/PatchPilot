@@ -58,6 +58,18 @@ class MyBatisDemoSessionArchiveRepositoryTests {
         verify(archiveMapper).selectList(any());
     }
 
+    @Test
+    void should_find_archive_by_id() {
+        DemoSessionArchiveEntity entity = entity("archive-1", "demo-session-1", Instant.parse("2026-06-24T04:00:00Z"));
+        when(archiveMapper.selectById("archive-1")).thenReturn(entity);
+        when(archiveMapper.selectById("missing-archive")).thenReturn(null);
+
+        assertThat(repository.findById("archive-1"))
+                .map(DemoSessionArchiveVo::sessionId)
+                .contains("demo-session-1");
+        assertThat(repository.findById("missing-archive")).isEmpty();
+    }
+
     private static DemoSessionArchiveVo archive(String id, String sessionId, Instant createdAt) {
         return new DemoSessionArchiveVo(
                 id,

@@ -13,6 +13,8 @@ import {
   listDemoSessionArchives,
   getDemoSessionSnapshot,
   getDemoSessionReport,
+  downloadDemoSessionReport,
+  downloadDemoSessionArchiveReport,
   getDemoSmokeChecklist,
   getDemoEvidenceBundle,
   getDemoRunbook,
@@ -476,6 +478,40 @@ test('loads demo session report markdown from backend API', async () => {
   expect(fetchMock).toHaveBeenCalledWith('/api/demo/session-report');
   expect(report).toContain('# PatchPilot Demo Session Report');
   expect(report).toContain('`READY`');
+});
+
+test('downloads demo session report markdown from backend API', async () => {
+  const reportBlob = new Blob(['# PatchPilot Demo Session Report\n\n- Status: `READY`'], {
+    type: 'text/markdown;charset=UTF-8'
+  });
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    blob: async () => reportBlob
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const downloadedReport = await downloadDemoSessionReport();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/session-report/download');
+  expect(downloadedReport).toBe(reportBlob);
+});
+
+test('downloads archived demo session report markdown from backend API', async () => {
+  const reportBlob = new Blob(['# PatchPilot Demo Session Report\n\n- Archive: `archive-1`'], {
+    type: 'text/markdown;charset=UTF-8'
+  });
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    blob: async () => reportBlob
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const downloadedReport = await downloadDemoSessionArchiveReport('archive-1');
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/session-archives/archive-1/report/download');
+  expect(downloadedReport).toBe(reportBlob);
 });
 
 test('archives current demo session through backend API', async () => {

@@ -7,6 +7,8 @@ import {
   cancelTask,
   createTask,
   createTriggerQuarantine,
+  downloadDemoSessionArchiveReport,
+  downloadDemoSessionReport,
   getBackendHealth,
   getConfigurationSummary,
   getDemoEvidenceBundle,
@@ -686,6 +688,10 @@ export default function App() {
   const handleCopyReport = useCallback((taskId: string) => getTaskReport(taskId), []);
   const handleCopyDemoRunbook = useCallback(() => getDemoRunbook(), []);
   const handleCopyDemoSessionReport = useCallback(() => getDemoSessionReport(), []);
+  const handleDownloadDemoSessionReport = useCallback(() => downloadDemoSessionReport(), []);
+  const handleDownloadDemoSessionArchiveReport = useCallback((archiveId: string) => (
+    downloadDemoSessionArchiveReport(archiveId)
+  ), []);
   const handleArchiveDemoSession = useCallback(async () => {
     const archive = await archiveDemoSession();
     setDemoSessionArchives((current) => [archive, ...current.filter((item) => item.id !== archive.id)].slice(0, 20));
@@ -904,7 +910,9 @@ export default function App() {
         error={demoSessionSnapshotError}
         archiveError={demoSessionArchiveError}
         onCopyReport={handleCopyDemoSessionReport}
+        onDownloadReport={handleDownloadDemoSessionReport}
         onArchiveSession={handleArchiveDemoSession}
+        onDownloadArchiveReport={handleDownloadDemoSessionArchiveReport}
       />
 
       <DemoScriptPanel script={demoScript} error={demoScriptError} />

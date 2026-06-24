@@ -8,12 +8,19 @@ import io.patchpilot.backend.demo.domain.DemoSessionArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoSessionSnapshotVo;
 import io.patchpilot.backend.demo.domain.DemoSmokeChecklistVo;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Locale;
 
 @RestController
 @RequestMapping("/api/demo")
@@ -64,6 +71,14 @@ public class DemoReadinessController {
         return ApiResponse.ok(demoSessionReportService.getSessionReport());
     }
 
+    @GetMapping(value = "/session-report/download", produces = "text/markdown;charset=UTF-8")
+    public ResponseEntity<String> downloadSessionReport() {
+        return markdownAttachment(
+                "patchpilot-demo-session-report.md",
+                demoSessionReportService.getSessionReport()
+        );
+    }
+
     @PostMapping("/session-archives")
     public ApiResponse<DemoSessionArchiveVo> archiveCurrentSession() {
         return ApiResponse.ok(demoSessionArchiveService.archiveCurrentSession());
@@ -72,5 +87,29 @@ public class DemoReadinessController {
     @GetMapping("/session-archives")
     public ApiResponse<List<DemoSessionArchiveVo>> listSessionArchives() {
         return ApiResponse.ok(demoSessionArchiveService.listRecentArchives());
+    }
+
+    @GetMapping(value = "/session-archives/{archiveId}/report/download", produces = "text/markdown;charset=UTF-8")
+    public ResponseEntity<String> downloadArchivedSessionReport(@PathVariable String archiveId) {
+        return demoSessionArchiveService.findArchive(archiveId)
+                .map(archive -> markdownAttachment(
+                        "patchpilot-demo-session-" + safeFilenamePart(archive.id()) + ".md",
+                        archive.report()
+                ))
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    private static ResponseEntity<String> markdownAttachment(String filename, String report) {
+        ContentDisposition contentDisposition = ContentDisposition.attachment()
+                .filename(filename, StandardCharsets.UTF_8)
+                .build();
+        return ResponseEntity.ok()
+                .contentType(new MediaType("text", "markdown", StandardCharsets.UTF_8))
+                .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition.toString())
+                .body(report);
+    }
+
+    private static String safeFilenamePart(String value) {
+        return value.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9._-]+", "-");
     }
 }

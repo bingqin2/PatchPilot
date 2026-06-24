@@ -1,4 +1,4 @@
-import { Archive, Copy } from 'lucide-react';
+import { Archive, Copy, Download } from 'lucide-react';
 import { useState } from 'react';
 import type { DemoReadinessStatus, DemoSessionArchive, DemoSessionSnapshot } from '../../types';
 import { compactDateTime } from '../format';
@@ -9,7 +9,9 @@ interface DemoSessionSnapshotPanelProps {
   error: string | null;
   archiveError: string | null;
   onCopyReport: () => Promise<string>;
+  onDownloadReport: () => Promise<Blob>;
   onArchiveSession: () => Promise<DemoSessionArchive>;
+  onDownloadArchiveReport: (archiveId: string) => Promise<Blob>;
 }
 
 export function DemoSessionSnapshotPanel({
@@ -18,9 +20,12 @@ export function DemoSessionSnapshotPanel({
   error,
   archiveError,
   onCopyReport,
-  onArchiveSession
+  onDownloadReport,
+  onArchiveSession,
+  onDownloadArchiveReport
 }: DemoSessionSnapshotPanelProps) {
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
+  const [downloadStatus, setDownloadStatus] = useState<string | null>(null);
   const [archiveStatus, setArchiveStatus] = useState<string | null>(null);
   const scriptStepCount = snapshot?.script.steps.length ?? 0;
 
@@ -31,6 +36,19 @@ export function DemoSessionSnapshotPanel({
       setCopyStatus('Demo session report copied');
     } catch {
       setCopyStatus('Copy failed');
+    }
+  }
+
+  async function downloadSessionReport() {
+    if (!snapshot) {
+      return;
+    }
+    try {
+      const report = await onDownloadReport();
+      downloadMarkdown(report, `patchpilot-demo-session-${snapshot.sessionId}.md`);
+      setDownloadStatus('Demo session report downloaded');
+    } catch {
+      setDownloadStatus('Download failed');
     }
   }
 
@@ -52,6 +70,16 @@ export function DemoSessionSnapshotPanel({
     }
   }
 
+  async function downloadArchivedReport(archive: DemoSessionArchive) {
+    try {
+      const report = await onDownloadArchiveReport(archive.id);
+      downloadMarkdown(report, `patchpilot-demo-session-${archive.id}.md`);
+      setDownloadStatus('Archived session report downloaded');
+    } catch {
+      setDownloadStatus('Download failed');
+    }
+  }
+
   return (
     <section className="panel demo-session-panel" aria-label="Demo session snapshot">
       <div className="panel-header">
@@ -69,11 +97,16 @@ export function DemoSessionSnapshotPanel({
               <Copy size={14} />
               Copy session report
             </button>
+            <button className="secondary-button" type="button" onClick={() => void downloadSessionReport()}>
+              <Download size={14} />
+              Download session report
+            </button>
             <button className="secondary-button" type="button" onClick={() => void archiveSession()}>
               <Archive size={14} />
               Archive session
             </button>
             {copyStatus ? <span className="copy-status">{copyStatus}</span> : null}
+            {downloadStatus ? <span className="copy-status">{downloadStatus}</span> : null}
             {archiveStatus ? <span className="copy-status">{archiveStatus}</span> : null}
           </div>
         ) : null}
@@ -157,6 +190,15 @@ export function DemoSessionSnapshotPanel({
                         <Copy size={14} />
                         Copy report
                       </button>
+                      <button
+                        className="secondary-button"
+                        type="button"
+                        onClick={() => void downloadArchivedReport(archive)}
+                        aria-label={`Download archived session report ${archive.id}`}
+                      >
+                        <Download size={14} />
+                        Download report
+                      </button>
                     </div>
                   </li>
                 ))}
@@ -225,4 +267,19 @@ function statusLabel(status: DemoReadinessStatus) {
 
 function statusClass(status: DemoReadinessStatus) {
   return status.toLowerCase().replace('_', '-');
+}
+
+function downloadMarkdown(blob: Blob, filename: string) {
+  const objectUrl = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = objectUrl;
+  anchor.download = safeFilename(filename);
+  document.body.append(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(objectUrl);
+}
+
+function safeFilename(filename: string) {
+  return filename.replace(/[^a-z0-9._-]+/gi, '-');
 }

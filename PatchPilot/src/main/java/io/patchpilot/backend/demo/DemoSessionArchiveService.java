@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Supplier;
 
@@ -69,5 +70,9 @@ public class DemoSessionArchiveService {
 
     public List<DemoSessionArchiveVo> listRecentArchives() {
         return archiveRepository.listRecentArchives(MAX_ARCHIVES);
+    }
+
+    public Optional<DemoSessionArchiveVo> findArchive(String archiveId) {
+        return archiveRepository.findById(archiveId);
     }
 }

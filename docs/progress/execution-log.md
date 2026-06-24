@@ -3162,3 +3162,23 @@ Validation so far:
 - `JAVA_HOME=/Library/Java/JavaVirtualMachines/openjdk-17.jdk/Contents/Home mvn -pl PatchPilot test`: passed after full backend verification, 590 tests run, 0 failures.
 - `npm test`: passed after full frontend verification, 151 tests run, 0 failures.
 - `npm run build`: passed after production frontend build verification.
+
+Implemented demo session report download from `docs/plans/157-demo-session-report-download.md`.
+
+Changes:
+
+- Added `GET /api/demo/session-report/download` to return the current demo session report as a Markdown attachment.
+- Added `GET /api/demo/session-archives/{archiveId}/report/download` to return one stored archived report as a Markdown attachment.
+- Added archive lookup by id behind `DemoSessionArchiveRepository` for in-memory and MyBatis-backed profiles.
+- Added frontend Blob download helpers that reuse the dashboard admin-token header path.
+- Added `Download session report` and archived `Download report` actions to `DemoSessionSnapshotPanel`.
+- Updated README, product spec, architecture notes, frontend design notes, and this execution log.
+
+Validation so far:
+
+- `mvn -pl PatchPilot -Dtest=DemoReadinessControllerTests,DemoSessionArchiveServiceTests,InMemoryDemoSessionArchiveRepositoryTests,MyBatisDemoSessionArchiveRepositoryTests test`: first failed because `findArchive`, `findById`, and the download endpoints did not exist; then passed after backend implementation, 19 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts src/dashboard/components/DemoSessionSnapshotPanel.test.tsx`: first failed because `downloadDemoSessionReport`, `downloadDemoSessionArchiveReport`, and the download buttons did not exist; then passed after frontend implementation, 44 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed after full backend verification, 595 tests run, 0 failures.
+- `npm test`: passed after full frontend verification, 155 tests run, 0 failures.
+- `npm run build`: passed after production frontend build verification.
+- `git diff --check`: passed after whitespace verification.

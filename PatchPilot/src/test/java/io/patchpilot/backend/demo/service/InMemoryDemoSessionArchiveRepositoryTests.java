@@ -28,6 +28,15 @@ class InMemoryDemoSessionArchiveRepositoryTests {
         assertThat(archives.get(19).id()).isEqualTo("archive-6");
     }
 
+    @Test
+    void should_find_archive_by_id() {
+        DemoSessionArchiveVo archive = archive("archive-1", "session-1", Instant.parse("2026-06-24T04:00:00Z"));
+        repository.save(archive);
+
+        assertThat(repository.findById("archive-1")).contains(archive);
+        assertThat(repository.findById("missing-archive")).isEmpty();
+    }
+
     private static DemoSessionArchiveVo archive(String id, String sessionId, Instant createdAt) {
         return new DemoSessionArchiveVo(
                 id,

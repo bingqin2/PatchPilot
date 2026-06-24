@@ -27,8 +27,8 @@ PatchPilot is not a chatbot and does not auto-merge code. The current target is 
 - Demo evidence bundle that combines readiness, smoke-check, configuration, adapter, queue, webhook, rejected-trigger, quarantine, and recent Pull Request evidence for one demo-ready summary.
 - Demo script endpoint and dashboard panel that turn the current evidence bundle into ordered live-demo actions, verification commands, troubleshooting panels, and a read-only health contract.
 - Copyable demo runbook Markdown that exports the evidence bundle into a concise operator handoff report.
-- Copyable demo session report Markdown that exports the full session snapshot, script, checklist, health contract, next actions, and embedded runbook.
-- Demo session archive that stores the latest copyable session reports for live-demo handoff without creating tasks or mutating GitHub; database-backed profiles persist archives across backend restarts.
+- Copyable and downloadable demo session report Markdown that exports the full session snapshot, script, checklist, health contract, next actions, and embedded runbook.
+- Demo session archive that stores the latest copyable and downloadable session reports for live-demo handoff without creating tasks or mutating GitHub; database-backed profiles persist archives across backend restarts.
 
 ## Repository Layout
 
@@ -380,8 +380,10 @@ curl "${ADMIN_HEADER[@]}" http://127.0.0.1:8080/api/demo/smoke-checklist
 curl "${ADMIN_HEADER[@]}" http://127.0.0.1:8080/api/demo/evidence-bundle
 curl "${ADMIN_HEADER[@]}" http://127.0.0.1:8080/api/demo/session-snapshot
 curl "${ADMIN_HEADER[@]}" http://127.0.0.1:8080/api/demo/session-report
+curl -OJ "${ADMIN_HEADER[@]}" http://127.0.0.1:8080/api/demo/session-report/download
 curl "${ADMIN_HEADER[@]}" http://127.0.0.1:8080/api/demo/session-archives
 curl -X POST "${ADMIN_HEADER[@]}" http://127.0.0.1:8080/api/demo/session-archives
+curl -OJ "${ADMIN_HEADER[@]}" http://127.0.0.1:8080/api/demo/session-archives/{archiveId}/report/download
 curl "${ADMIN_HEADER[@]}" http://127.0.0.1:8080/api/demo/script
 curl "${ADMIN_HEADER[@]}" http://127.0.0.1:8080/api/demo/runbook
 ```

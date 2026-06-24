@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 @Repository
@@ -28,6 +29,13 @@ public class InMemoryDemoSessionArchiveRepository implements DemoSessionArchiveR
         return archives.stream()
                 .limit(limit)
                 .toList();
+    }
+
+    @Override
+    public Optional<DemoSessionArchiveVo> findById(String archiveId) {
+        return archives.stream()
+                .filter(archive -> archive.id().equals(archiveId))
+                .findFirst();
     }
 
     private void trimArchives() {

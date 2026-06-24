@@ -11,6 +11,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 @Profile({"local", "docker", "idea"})
@@ -34,5 +35,11 @@ public class MyBatisDemoSessionArchiveRepository implements DemoSessionArchiveRe
         return archiveMapper.selectList(queryWrapper).stream()
                 .map(DemoSessionArchiveConvert::toVo)
                 .toList();
+    }
+
+    @Override
+    public Optional<DemoSessionArchiveVo> findById(String archiveId) {
+        return Optional.ofNullable(archiveMapper.selectById(archiveId))
+                .map(DemoSessionArchiveConvert::toVo);
     }
 }
