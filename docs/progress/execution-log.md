@@ -3338,3 +3338,27 @@ Validation so far:
 - `mvn -pl PatchPilot -Dtest=RejectedTriggerRetryPolicyTests,DefaultRejectedTriggerRetryServiceTests,RejectedTriggerAuditControllerTests test`: passed after backend retry policy, service, and controller coverage, 14 tests run, 0 failures.
 - `mvn -pl PatchPilot test`: passed after full backend regression verification, 617 tests run, 0 failures.
 - `GIT_OPTIONAL_LOCKS=0 git diff --check`: passed after whitespace verification.
+
+Implemented task failure issue feedback from `docs/plans/166-task-failure-issue-feedback.md`.
+
+Changes:
+
+- Added failed-task feedback creation when a task fails without an existing accepted-task status comment.
+- Attached the created failure feedback comment id and URL back to the durable task.
+- Preserved `FAILED` task status when failure feedback creation or update fails and recorded `STATUS_COMMENT_FAILED` timeline evidence.
+- Added issue-facing failure categories, next-action guidance, and common secret-like value redaction for failed-task comments.
+- Updated the dashboard so failed-task status-comment URLs are labeled `Failure feedback`, while pending-review tasks use `Review feedback` and other tasks keep `Status Comment`.
+- Updated README, product spec, frontend design notes, and this execution log.
+
+Validation so far:
+
+- `mvn -pl PatchPilot -Dtest=FixTaskWorkerTests#should_create_failure_status_comment_when_initial_status_comment_is_missing test`: first failed because the worker left `statusCommentId` empty; then passed after creating and attaching a failure feedback comment.
+- `mvn -pl PatchPilot -Dtest=FixTaskWorkerTests#should_keep_failed_status_when_failure_status_comment_creation_fails test`: passed after locking failure feedback error tolerance.
+- `mvn -pl PatchPilot -Dtest=IssueCommentToolTests#should_create_failed_status_comment_with_category_and_next_action+IssueCommentToolTests#should_redact_sensitive_values_from_failed_status_comment test`: first failed because failed comments lacked category and next action; then passed after adding `TaskFailureFeedback`.
+- `npm test -- --run src/dashboard/components/TaskDetailPanel.test.tsx`: first failed because failed tasks still rendered `Status Comment`; then passed after status-specific feedback link labels, 19 tests run, 0 failures.
+- `npm test -- --run src/App.test.tsx`: passed after dashboard integration update, 59 tests run, 0 failures.
+- `mvn -pl PatchPilot -Dtest=FixTaskWorkerTests,IssueCommentToolTests test`: passed after focused backend regression verification, 22 tests run, 0 failures.
+- `npm test`: passed after full frontend regression verification, 163 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed after full backend regression verification, 621 tests run, 0 failures.
+- `npm run build`: passed after production frontend build verification.
+- `GIT_OPTIONAL_LOCKS=0 git diff --check`: passed after whitespace verification.

@@ -1,6 +1,7 @@
 import { AlertCircle, CheckCircle2, CircleDot, ExternalLink, GitPullRequest, Terminal } from 'lucide-react';
 import type { FixTask, FixTaskStatusCounts, TaskSort, TaskStatus, TaskStatusFilter } from '../../types';
 import { compactTime, issueUrl, pullRequestNumber } from '../format';
+import { statusCommentLabel } from './TaskDetailPanel';
 
 const statusFilters: TaskStatusFilter[] = [
   'ALL',
@@ -206,7 +207,7 @@ export function TaskListPanel({
             {task.statusCommentUrl ? (
               <a className="task-link" href={task.statusCommentUrl} target="_blank" rel="noreferrer">
                 <ExternalLink size={14} />
-                Status Comment
+                {statusCommentLabel(task.status)}
               </a>
             ) : null}
             {task.pullRequestUrl ? (

@@ -123,7 +123,7 @@ export function TaskDetailPanel({
           </a>
           {task.statusCommentUrl ? (
             <a className="external-link" href={task.statusCommentUrl} target="_blank" rel="noreferrer">
-              Status Comment
+              {statusCommentLabel(task.status)}
               <ExternalLink size={14} />
             </a>
           ) : null}
@@ -521,4 +521,14 @@ export function taskLinkFor(taskId: string, href = window.location.href) {
   url.pathname = `/tasks/${encodeURIComponent(taskId)}`;
   url.searchParams.delete('taskId');
   return url.toString();
+}
+
+export function statusCommentLabel(status: string) {
+  if (status === 'FAILED') {
+    return 'Failure feedback';
+  }
+  if (status === 'PENDING_REVIEW') {
+    return 'Review feedback';
+  }
+  return 'Status Comment';
 }

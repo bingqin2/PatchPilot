@@ -100,6 +100,46 @@ class FixTaskWorkerTests {
     }
 
     @Test
+    void should_create_failure_status_comment_when_initial_status_comment_is_missing() {
+        FixTaskService fixTaskService = new InMemoryFixTaskService();
+        FailingExecutor executor = new FailingExecutor();
+        RecordingIssueCommentTool issueCommentTool = new RecordingIssueCommentTool();
+        RecordingTimelineService timelineService = new RecordingTimelineService();
+        FixTaskWorker worker = new FixTaskWorker(fixTaskService, executor, issueCommentTool, timelineService);
+        FixTaskVo task = createTaskWithoutStatusComment(fixTaskService, "delivery-worker-failed-create-comment");
+
+        worker.execute(task.id());
+
+        FixTaskVo failedTask = fixTaskService.findTask(task.id()).orElseThrow();
+        assertThat(failedTask.status()).isEqualTo(FixTaskStatus.FAILED);
+        assertThat(failedTask.statusCommentId()).isEqualTo(123);
+        assertThat(failedTask.statusCommentUrl())
+                .isEqualTo("https://github.com/octocat/hello-world/issues/42#issuecomment-123");
+        assertThat(issueCommentTool.createdFailureTaskIds()).contains(task.id());
+        assertThat(timelineService.eventTypes()).contains(FixTaskTimelineEventType.STATUS_COMMENT_CREATED);
+        assertThat(timelineService.messages()).contains("Status comment created");
+    }
+
+    @Test
+    void should_keep_failed_status_when_failure_status_comment_creation_fails() {
+        FixTaskService fixTaskService = new InMemoryFixTaskService();
+        FailingExecutor executor = new FailingExecutor();
+        FailingCreateFailureIssueCommentTool issueCommentTool = new FailingCreateFailureIssueCommentTool();
+        RecordingTimelineService timelineService = new RecordingTimelineService();
+        FixTaskWorker worker = new FixTaskWorker(fixTaskService, executor, issueCommentTool, timelineService);
+        FixTaskVo task = createTaskWithoutStatusComment(fixTaskService, "delivery-worker-failed-create-comment-fails");
+
+        worker.execute(task.id());
+
+        FixTaskVo failedTask = fixTaskService.findTask(task.id()).orElseThrow();
+        assertThat(failedTask.status()).isEqualTo(FixTaskStatus.FAILED);
+        assertThat(failedTask.failureReason()).isEqualTo("executor failed");
+        assertThat(failedTask.statusCommentId()).isNull();
+        assertThat(timelineService.eventTypes()).contains(FixTaskTimelineEventType.STATUS_COMMENT_FAILED);
+        assertThat(timelineService.messages()).contains("Status comment failed: comment create failed");
+    }
+
+    @Test
     void should_mark_pending_review_when_generated_diff_risk_gate_rejects_patch() {
         FixTaskService fixTaskService = new InMemoryFixTaskService();
         FailingExecutor executor = new FailingExecutor("Generated diff rejected: sensitive path .github/workflows/deploy.yml");
@@ -198,6 +238,19 @@ class FixTaskWorkerTests {
         );
     }
 
+    private static FixTaskVo createTaskWithoutStatusComment(FixTaskService fixTaskService, String deliveryId) {
+        return fixTaskService.createFixTask(new CreateFixTaskCommand(
+                "octocat",
+                "hello-world",
+                42,
+                0,
+                "alice",
+                "/agent fix",
+                deliveryId,
+                98765
+        ));
+    }
+
     private static final class RecordingExecutor implements FixTaskExecutor {
 
         private final AtomicReference<String> taskId = new AtomicReference<>();
@@ -250,6 +303,7 @@ class FixTaskWorkerTests {
         private final List<FixTaskStatus> updatedStatuses = new CopyOnWriteArrayList<>();
         private final List<String> updatedTaskIds = new CopyOnWriteArrayList<>();
         private final List<String> failureReasons = new CopyOnWriteArrayList<>();
+        private final List<String> createdFailureTaskIds = new CopyOnWriteArrayList<>();
 
         private RecordingIssueCommentTool() {
             super(new GitHubIssueCommentClient(new GitHubProperties()) {
@@ -291,6 +345,13 @@ class FixTaskWorkerTests {
         }
 
         @Override
+        public IssueCommentResult commentFailed(FixTaskVo task, String failureReason) {
+            createdFailureTaskIds.add(task.id());
+            failureReasons.add(failureReason);
+            return new IssueCommentResult(123, "https://github.com/octocat/hello-world/issues/42#issuecomment-123");
+        }
+
+        @Override
         public Optional<IssueCommentResult> updatePendingReview(FixTaskVo task) {
             record(task);
             failureReasons.add(task.failureReason());
@@ -307,6 +368,10 @@ class FixTaskWorkerTests {
 
         private List<String> failureReasons() {
             return failureReasons;
+        }
+
+        private List<String> createdFailureTaskIds() {
+            return createdFailureTaskIds;
         }
 
         private void record(FixTaskVo task) {
@@ -351,6 +416,28 @@ class FixTaskWorkerTests {
                 Thread.currentThread().interrupt();
                 return false;
             }
+        }
+    }
+
+    private static final class FailingCreateFailureIssueCommentTool extends IssueCommentTool {
+
+        private FailingCreateFailureIssueCommentTool() {
+            super(new GitHubIssueCommentClient(new GitHubProperties()));
+        }
+
+        @Override
+        public Optional<IssueCommentResult> updateRunning(FixTaskVo task) {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<IssueCommentResult> updateRunningTests(FixTaskVo task) {
+            return Optional.empty();
+        }
+
+        @Override
+        public IssueCommentResult commentFailed(FixTaskVo task, String failureReason) {
+            throw new IllegalStateException("comment create failed");
         }
     }
 

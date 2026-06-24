@@ -101,6 +101,39 @@ class IssueCommentToolTests {
     }
 
     @Test
+    void should_create_failed_status_comment_with_category_and_next_action() {
+        RecordingGitHubIssueCommentClient client = new RecordingGitHubIssueCommentClient();
+        IssueCommentTool tool = new IssueCommentTool(client);
+
+        IssueCommentResult result = tool.commentFailed(
+                task(FixTaskStatus.FAILED, null, null, "verification failed: npm test failed"),
+                "verification failed: npm test failed"
+        );
+
+        assertThat(result.url()).isEqualTo("https://github.com/octocat/hello-world/issues/42#issuecomment-123");
+        assertThat(client.createCommand().body()).contains("PatchPilot failed the task.");
+        assertThat(client.createCommand().body()).contains("Status: FAILED");
+        assertThat(client.createCommand().body()).contains("Failure category: VERIFICATION_FAILED");
+        assertThat(client.createCommand().body())
+                .contains("Next action: Inspect the verification output, fix the failing test or build error, then retry the task.");
+        assertThat(client.createCommand().body()).contains("Reason: verification failed: npm test failed");
+    }
+
+    @Test
+    void should_redact_sensitive_values_from_failed_status_comment() {
+        RecordingGitHubIssueCommentClient client = new RecordingGitHubIssueCommentClient();
+        IssueCommentTool tool = new IssueCommentTool(client);
+
+        tool.commentFailed(
+                task(FixTaskStatus.FAILED, null, null, "GitHub token ghp_abcdefghijklmnopqrstuvwxyz123456 leaked"),
+                "GitHub token ghp_abcdefghijklmnopqrstuvwxyz123456 leaked"
+        );
+
+        assertThat(client.createCommand().body()).contains("Reason: GitHub token [REDACTED] leaked");
+        assertThat(client.createCommand().body()).doesNotContain("ghp_abcdefghijklmnopqrstuvwxyz123456");
+    }
+
+    @Test
     void should_update_failed_status_comment_with_patch_review_recovery_guidance() {
         RecordingGitHubIssueCommentClient client = new RecordingGitHubIssueCommentClient();
         IssueCommentTool tool = new IssueCommentTool(client);
