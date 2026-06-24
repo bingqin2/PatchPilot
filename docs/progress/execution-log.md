@@ -3379,3 +3379,21 @@ Validation so far:
 - `mvn -pl PatchPilot test`: passed after full backend regression verification, 621 tests run, 0 failures.
 - `npm run build`: passed after production frontend build verification.
 - `GIT_OPTIONAL_LOCKS=0 git diff --check`: passed after whitespace verification.
+
+Implemented task failure diagnosis detail from `docs/plans/168-task-failure-diagnosis-detail.md`.
+
+Changes:
+
+- Added nullable `failureDiagnosis` to task detail responses for failed tasks.
+- Reused `TaskFailureFeedback` so task detail, copied reports, issue feedback, and failure metrics share category, next action, and sanitized reason behavior.
+- Added a `Failure Diagnosis` section to copyable Markdown task reports.
+- Added a dashboard `Failure diagnosis` section in selected-task detail, including human-readable category labels, next action, and redacted failure reason.
+- Updated README, product spec, frontend design notes, and this execution log.
+
+Validation so far:
+
+- `mvn -pl PatchPilot -Dtest=TaskControllerTests#should_include_failure_diagnosis_for_failed_task_detail+TaskControllerTests#should_get_task_report_by_task_id test`: first failed because task detail did not include `failureDiagnosis.category`; then passed after adding the detail field and report section.
+- `mvn -pl PatchPilot -Dtest=TaskControllerTests#should_get_task_report_by_task_id test`: first failed because the legacy report `Failure` line still contained the raw GitHub-style token; then passed after reusing the shared sanitized failure reason in that line.
+- `mvn -pl PatchPilot -Dtest=TaskControllerTests test`: passed after focused controller regression verification, 61 tests run, 0 failures.
+- `npm test -- --run src/dashboard/components/TaskDetailPanel.test.tsx`: first failed because the dashboard did not render `Failure diagnosis`; then passed after rendering the diagnosis section.
+- `npm test -- --run src/dashboard/components/TaskDetailPanel.test.tsx src/api.test.ts src/App.test.tsx`: passed after frontend API and dashboard fixture updates, 118 tests run, 0 failures.

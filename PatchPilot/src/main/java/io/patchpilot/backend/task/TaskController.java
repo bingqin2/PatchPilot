@@ -13,6 +13,7 @@ import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.enums.FixTaskSort;
 import io.patchpilot.backend.task.domain.vo.FixTaskFailureCauseSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskAuditSummaryVo;
+import io.patchpilot.backend.task.domain.vo.FixTaskFailureDiagnosisVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskGeneratedDiffVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskLatencySummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskMetricsSummaryVo;
@@ -41,6 +42,7 @@ import io.patchpilot.backend.task.service.FixTaskService;
 import io.patchpilot.backend.task.service.FixTaskToolCallService;
 import io.patchpilot.backend.task.service.ManualFixTaskService;
 import io.patchpilot.backend.task.service.RepositorySupportGuidanceService;
+import io.patchpilot.backend.task.service.TaskFailureFeedback;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -533,9 +535,22 @@ public class TaskController {
                 latestGeneratedDiff(toolCalls),
                 fixTaskPatchReviewService.findLatestPatchReview(taskId).orElse(null),
                 issueContext(summary.task()),
+                failureDiagnosis(summary.task()),
                 queueItems.stream().findFirst().orElse(null),
                 queueItems,
                 repositorySupportGuidanceService.guidanceFor(summary.task()).orElse(null)
+        );
+    }
+
+    private static FixTaskFailureDiagnosisVo failureDiagnosis(FixTaskVo task) {
+        if (task.status() != FixTaskStatus.FAILED || task.failureReason() == null || task.failureReason().isBlank()) {
+            return null;
+        }
+        TaskFailureFeedback feedback = TaskFailureFeedback.from(task.failureReason());
+        return new FixTaskFailureDiagnosisVo(
+                feedback.category(),
+                feedback.nextAction(),
+                feedback.safeReason()
         );
     }
 

@@ -110,6 +110,7 @@ const baseDetail: TaskDetailState = {
       }
     ]
   },
+  failureDiagnosis: null,
   repositorySupportGuidance: null
 };
 
@@ -169,6 +170,44 @@ test('labels failed task status comment as failure feedback', () => {
     'https://github.com/bingqin2/PatchPilot/issues/1#issuecomment-123'
   );
   expect(screen.queryByRole('link', { name: /Status Comment/i })).not.toBeInTheDocument();
+});
+
+test('shows failure diagnosis for failed tasks', () => {
+  render(
+    <TaskDetailPanel
+      task={{
+        ...task,
+        status: 'FAILED',
+        failureReason: 'maven tests failed: token=ghp_123456789012345678901234567890123456',
+        pullRequestUrl: null,
+        completedAt: null
+      }}
+      detail={{
+        ...baseDetail,
+        failureDiagnosis: {
+          category: 'VERIFICATION_FAILED',
+          nextAction: 'Inspect the verification output, fix the failing test or build error, then retry the task.',
+          safeReason: 'maven tests failed: token=[REDACTED]'
+        }
+      }}
+      loading={false}
+      actionInFlight={false}
+      reviewApprovalAllowedOperators={['release-captain']}
+      onCancelTask={vi.fn()}
+      onRetryTask={vi.fn()}
+      onApproveReview={vi.fn()}
+      onCopyReport={vi.fn()}
+    />
+  );
+
+  const diagnosis = screen.getByLabelText('Failure diagnosis');
+  expect(within(diagnosis).getByText('Failure diagnosis')).toBeInTheDocument();
+  expect(within(diagnosis).getByText('Verification failed')).toBeInTheDocument();
+  expect(
+    within(diagnosis).getByText('Inspect the verification output, fix the failing test or build error, then retry the task.')
+  ).toBeInTheDocument();
+  expect(within(diagnosis).getByText('maven tests failed: token=[REDACTED]')).toBeInTheDocument();
+  expect(within(diagnosis).queryByText('ghp_123456789012345678901234567890123456')).not.toBeInTheDocument();
 });
 
 test('shows patch review evidence for model generated edits', () => {

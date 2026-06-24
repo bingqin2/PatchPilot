@@ -334,6 +334,7 @@ const detail = {
       }
     ]
   },
+  failureDiagnosis: null,
   repositorySupportGuidance: null
 };
 
@@ -372,6 +373,7 @@ const manualTaskDetail = {
   modelCalls: [],
   generatedDiff: null,
   issueContext: null,
+  failureDiagnosis: null,
   repositorySupportGuidance: null
 };
 
@@ -1235,6 +1237,7 @@ beforeEach(() => {
         modelCalls: [],
         generatedDiff: null,
         issueContext: null,
+        failureDiagnosis: null,
         repositorySupportGuidance: null
       });
     }
@@ -1292,6 +1295,7 @@ beforeEach(() => {
         modelCalls: [],
         generatedDiff: null,
         issueContext: null,
+        failureDiagnosis: null,
         repositorySupportGuidance: null
       });
     }
@@ -2802,6 +2806,7 @@ test('loads the next backend task page with offset pagination', async () => {
         modelCalls: [],
         generatedDiff: null,
         issueContext: null,
+        failureDiagnosis: null,
         repositorySupportGuidance: null
       });
     }

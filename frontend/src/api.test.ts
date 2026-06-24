@@ -1624,6 +1624,7 @@ test('loads aggregate task detail from backend API', async () => {
             }
           ]
         },
+        failureDiagnosis: null,
         repositorySupportGuidance: null
       },
       message: null
@@ -1648,6 +1649,7 @@ test('loads aggregate task detail from backend API', async () => {
   expect(detail.patchReview?.editedFiles).toEqual(['docs/demo.md']);
   expect(detail.issueContext?.title).toBe('PatchPilot issue context');
   expect(detail.issueContext?.comments[0].author).toBe('bingqin2');
+  expect(detail.failureDiagnosis).toBeNull();
 });
 
 test('loads markdown task report from backend API', async () => {

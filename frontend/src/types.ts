@@ -535,7 +535,14 @@ export interface FixTaskDetail {
   generatedDiff: FixTaskGeneratedDiff | null;
   patchReview: FixTaskPatchReview | null;
   issueContext: IssueContext | null;
+  failureDiagnosis: FixTaskFailureDiagnosis | null;
   repositorySupportGuidance: RepositorySupportGuidance | null;
+}
+
+export interface FixTaskFailureDiagnosis {
+  category: string;
+  nextAction: string;
+  safeReason: string;
 }
 
 export interface IssueContext {

@@ -222,6 +222,19 @@ export function TaskDetailPanel({
         </section>
       ) : null}
 
+      {detail.failureDiagnosis ? (
+        <section className="detail-section failure-diagnosis-section" aria-label="Failure diagnosis">
+          <div className="failure-diagnosis-header">
+            <div>
+              <h3>Failure diagnosis</h3>
+              <p>{detail.failureDiagnosis.nextAction}</p>
+            </div>
+            <strong>{failureDiagnosisLabel(detail.failureDiagnosis.category)}</strong>
+          </div>
+          <p>{detail.failureDiagnosis.safeReason}</p>
+        </section>
+      ) : null}
+
       {detail.issueContext ? (
         <section className="detail-section issue-context-section" aria-label="Issue context">
           <div className="issue-context-header">
@@ -514,6 +527,21 @@ function shortText(value: string, maxLength: number) {
     return normalized;
   }
   return `${normalized.slice(0, maxLength)}...`;
+}
+
+const failureDiagnosisLabels: Record<string, string> = {
+  GITHUB_OPERATION_FAILED: 'GitHub operation failed',
+  MODEL_FAILED: 'Model failed',
+  PATCH_REVIEW_REJECTED: 'Patch review rejected',
+  REPOSITORY_OPERATION_FAILED: 'Repository operation failed',
+  TASK_FAILED: 'Task failed',
+  UNSUPPORTED_REPOSITORY: 'Unsupported repository',
+  VERIFICATION_FAILED: 'Verification failed',
+  WORKSPACE_FAILED: 'Workspace failed'
+};
+
+function failureDiagnosisLabel(category: string) {
+  return failureDiagnosisLabels[category] ?? category;
 }
 
 export function taskLinkFor(taskId: string, href = window.location.href) {
