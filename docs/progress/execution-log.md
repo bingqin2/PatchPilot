@@ -3266,3 +3266,22 @@ Validation so far:
 - `npm test`: passed after frontend regression verification, 159 tests run, 0 failures.
 - `npm run build`: passed after production frontend build verification.
 - `git diff --check`: passed after whitespace verification.
+
+Implemented trigger decision visibility from `docs/plans/162-trigger-decision-visibility.md`.
+
+Changes:
+
+- Added a `TriggerDecisionPanel` that pairs the selected task's `TRIGGER_ACCEPTED` timeline evidence with recent rejected trigger decisions.
+- Rendered accepted trigger evidence, recent rejected trigger rows, and compact rejected-trigger category counts in one dashboard region.
+- Kept the existing rejected-trigger panel as the full audit, quarantine, evidence drilldown, retry, and operator safety action surface.
+- Added integration and component coverage for the new dashboard region, accepted evidence, rejected decisions, category labels, and empty states.
+- Updated README, frontend design notes, and this execution log.
+
+Validation so far:
+
+- `npm test -- --run src/App.test.tsx src/dashboard/components/TriggerDecisionPanel.test.tsx`: first failed because the new panel did not exist, then failed because accepted trigger evidence was checked before selected-task detail finished loading, then passed after the panel implementation and async assertion fix, 61 tests run, 0 failures.
+- `npm run build`: first failed because the new `RejectedTriggerAudit` test fixture was missing `retriedAt`; then passed after completing the fixture.
+- `npm test`: first failed because task-list filtering could briefly combine a newly selected task with stale accepted-trigger detail from the previously selected task; then passed after clearing detail state immediately when selected task changes, 161 tests run, 0 failures.
+- `npm run build`: passed after final production frontend build verification.
+- `GIT_OPTIONAL_LOCKS=0 git diff --check`: passed after whitespace verification.
+- `mvn -pl PatchPilot test`: passed after full backend regression verification, 611 tests run, 0 failures.
