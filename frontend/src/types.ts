@@ -145,6 +145,7 @@ export interface FixTaskMetricsSummary {
 export interface FixTaskFailureCauseSummary {
   cause: string;
   count: number;
+  nextAction: string;
 }
 
 export interface FixTaskModelUsageSummary {

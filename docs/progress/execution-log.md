@@ -3227,6 +3227,23 @@ Validation so far:
 - `npm run build`: passed after production frontend build verification.
 - `GIT_OPTIONAL_LOCKS=0 git diff --check`: passed after whitespace verification.
 
+Implemented stable failure category metrics from `docs/plans/167-stable-failure-category-metrics.md`.
+
+Changes:
+
+- Reused `TaskFailureFeedback` as the source of truth for failed-task metrics categories.
+- Replaced metrics-only failure buckets such as `MAVEN_TESTS`, `GITHUB_AUTH`, and `MODEL_ERROR` with stable issue-facing categories such as `VERIFICATION_FAILED`, `GITHUB_OPERATION_FAILED`, `MODEL_FAILED`, and `TASK_FAILED`.
+- Added `nextAction` to `GET /api/tasks/metrics/failure-causes` rows while keeping existing `cause` and `count` fields.
+- Updated the dashboard failure-cause panel to render stable category labels and operator next-action guidance.
+- Updated README, product spec, frontend design notes, and this execution log.
+
+Validation so far:
+
+- `mvn -pl PatchPilot -Dtest=DefaultFixTaskMetricsServiceTests#should_summarize_failed_tasks_by_stable_failure_category test`: first failed because `FixTaskFailureCauseSummaryVo` did not expose `nextAction` and the service still returned `MAVEN_TESTS`; then passed after reusing `TaskFailureFeedback`.
+- `mvn -pl PatchPilot -Dtest=TaskControllerTests#should_get_task_failure_cause_summary test`: passed after API contract coverage for stable categories and next actions.
+- `npm test -- --run src/dashboard/components/FailureCausePanel.test.tsx`: first failed because the panel rendered raw `VERIFICATION_FAILED` and no guidance; then passed after stable labels and next-action rendering.
+- `npm test -- --run src/dashboard/components/FailureCausePanel.test.tsx src/api.test.ts src/App.test.tsx`: passed after frontend API and integration updates, 99 tests run, 0 failures.
+
 Implemented issue context trigger classification from `docs/plans/160-issue-context-trigger-classification.md`.
 
 Changes:

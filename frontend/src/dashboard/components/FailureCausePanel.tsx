@@ -5,11 +5,13 @@ interface FailureCausePanelProps {
 }
 
 const causeLabels: Record<string, string> = {
-  MAVEN_TESTS: 'Maven tests',
-  GITHUB_AUTH: 'GitHub auth',
-  MODEL_ERROR: 'Model error',
-  SANDBOX_REJECTION: 'Sandbox rejection',
-  UNKNOWN: 'Unknown'
+  VERIFICATION_FAILED: 'Verification failed',
+  GITHUB_OPERATION_FAILED: 'GitHub operation failed',
+  UNSUPPORTED_REPOSITORY: 'Unsupported repository',
+  MODEL_FAILED: 'Model failed',
+  WORKSPACE_FAILED: 'Workspace failed',
+  PATCH_REVIEW_REJECTED: 'Patch review rejected',
+  TASK_FAILED: 'Task failed'
 };
 
 export function FailureCausePanel({ causes }: FailureCausePanelProps) {
@@ -26,7 +28,10 @@ export function FailureCausePanel({ causes }: FailureCausePanelProps) {
           <p className="empty-state">No failed tasks recorded.</p>
         ) : causes.map((cause) => (
           <div className="failure-cause-row" key={cause.cause}>
-            <span>{causeLabels[cause.cause] ?? cause.cause}</span>
+            <div>
+              <span>{causeLabels[cause.cause] ?? cause.cause}</span>
+              <p>{cause.nextAction}</p>
+            </div>
             <strong>{cause.count}</strong>
           </div>
         ))}
