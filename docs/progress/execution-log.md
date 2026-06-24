@@ -3182,3 +3182,23 @@ Validation so far:
 - `npm test`: passed after full frontend verification, 155 tests run, 0 failures.
 - `npm run build`: passed after production frontend build verification.
 - `git diff --check`: passed after whitespace verification.
+
+Implemented worker heartbeat dashboard from `docs/plans/158-worker-heartbeat-dashboard.md`.
+
+Changes:
+
+- Added process-local `FixTaskWorkerHealthService` state for worker poll, idle, claim, completion, and failure events.
+- Wired `FixTaskQueuePoller` to update worker heartbeat state during every queue polling cycle.
+- Added `GET /api/task-queue/worker-health` for curl diagnostics and dashboard visibility.
+- Added dashboard API types/helpers and rendered worker state, poll count, claimed count, latest claimed task, and latest worker error in `QueuePanel`.
+- Updated README, product spec, architecture notes, frontend design notes, and this execution log.
+
+Validation so far:
+
+- `mvn -pl PatchPilot -Dtest=FixTaskQueuePollerTests,InMemoryFixTaskWorkerHealthServiceTests,TaskQueueControllerTests test`: first failed because worker health types, service, and endpoint did not exist; then passed after backend implementation, 9 tests run, 0 failures.
+- `mvn -pl PatchPilot -Dtest=FixTaskQueuePollerTests test`: later failed because queue polling infrastructure exceptions left worker health at `POLLING`; then passed after recording poller infrastructure failures as worker `ERROR` while preserving exception propagation, 4 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts src/dashboard/components/QueuePanel.test.tsx src/App.test.tsx`: first failed because `getWorkerHealth` and worker heartbeat rendering did not exist; then passed after frontend implementation, 104 tests run, 0 failures.
+- `JAVA_HOME=/Library/Java/JavaVirtualMachines/openjdk-17.jdk/Contents/Home mvn -pl PatchPilot test`: passed after full backend verification, 600 tests run, 0 failures.
+- `npm test`: passed after full frontend verification, 158 tests run, 0 failures.
+- `npm run build`: passed after production frontend build verification.
+- `git diff --check`: passed after whitespace verification.

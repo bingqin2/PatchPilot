@@ -226,6 +226,7 @@ The first production-like MVP supports:
 - Local workspace execution.
 - Adapter-selected test verification.
 - Audited model calls and tool calls.
+- Runtime queue worker heartbeat for local operator visibility.
 
 ## Frontend Requirements
 
@@ -262,6 +263,7 @@ Planned follow-up capabilities:
 - RAG over repository code and previous fixes.
 - Cost, latency, success-rate, and test-pass-rate dashboards.
 - Human approval for high-risk actions.
+- Durable multi-instance worker telemetry.
 
 ## Success Criteria
 
@@ -287,6 +289,7 @@ The broader product is successful when:
 - An unsupported repository fails safely with a clear reason.
 - A vague, malicious, or unauthorized `/agent` comment does not start repository execution.
 - Each successful PR includes evidence from the adapter's verification command.
+- Operators can distinguish "queued but worker idle/not started" from "queued and worker actively polling" without reading backend logs.
 
 ## Resume Target
 

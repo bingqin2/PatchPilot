@@ -416,6 +416,21 @@ const queueItems = [
   }
 ];
 
+const workerHealth = {
+  state: 'ACTIVE',
+  message: 'Worker poller is executing a queue item.',
+  startedAt: '2026-06-24T06:00:00Z',
+  lastPollAt: '2026-06-24T06:00:01Z',
+  pollCount: 12,
+  claimedCount: 3,
+  completedCount: 2,
+  failedCount: 1,
+  idlePollCount: 8,
+  lastClaimedQueueItemId: 'queue-1',
+  lastClaimedTaskId: 'task-3',
+  lastError: null
+};
+
 const webhookDeliveries = [
   {
     id: 'diagnostic-1',
@@ -1055,6 +1070,9 @@ beforeEach(() => {
     }
     if (url === '/api/task-queue/items') {
       return jsonResponse(queueItems);
+    }
+    if (url === '/api/task-queue/worker-health') {
+      return jsonResponse(workerHealth);
     }
     if (url === '/api/github/webhook-deliveries?limit=10') {
       return jsonResponse(webhookDeliveries);
@@ -1893,6 +1911,9 @@ test('shows manual task creation failures without clearing the form', async () =
     if (url === '/api/task-queue/items') {
       return jsonResponse(queueItems);
     }
+    if (url === '/api/task-queue/worker-health') {
+      return jsonResponse(workerHealth);
+    }
     if (url === '/api/github/webhook-deliveries?limit=10') {
       return jsonResponse([]);
     }
@@ -2371,9 +2392,12 @@ test('loads queue summary and items from backend APIs', async () => {
   expect(screen.getByText('queue-1')).toBeInTheDocument();
   expect(screen.getByText('task-3')).toBeInTheDocument();
   expect(screen.getByText('attempt 2')).toBeInTheDocument();
+  expect(screen.getByText('Worker active')).toBeInTheDocument();
+  expect(screen.getByText('Last task task-3')).toBeInTheDocument();
 
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/task-queue/summary'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/task-queue/items'));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/task-queue/worker-health'));
 });
 
 test('shows task creation and update times in task rows', async () => {
@@ -2488,6 +2512,9 @@ test('shows dashboard refresh progress while top-level data is loading', async (
     }
     if (url === '/api/task-queue/items') {
       return jsonResponse([]);
+    }
+    if (url === '/api/task-queue/worker-health') {
+      return jsonResponse(workerHealth);
     }
     if (url === '/api/github/webhook-deliveries?limit=10') {
       return jsonResponse([]);
@@ -2668,6 +2695,9 @@ test('loads the next backend task page with offset pagination', async () => {
     }
     if (url === '/api/task-queue/items') {
       return jsonResponse(queueItems);
+    }
+    if (url === '/api/task-queue/worker-health') {
+      return jsonResponse(workerHealth);
     }
     if (url === '/api/github/webhook-deliveries?limit=10') {
       return jsonResponse([]);
@@ -2924,6 +2954,9 @@ function defaultAppResponse(input: RequestInfo | URL, init?: RequestInit) {
   }
   if (url === '/api/task-queue/items') {
     return jsonResponse(queueItems);
+  }
+  if (url === '/api/task-queue/worker-health') {
+    return jsonResponse(workerHealth);
   }
   if (url === '/api/github/webhook-deliveries?limit=10') {
     return jsonResponse(webhookDeliveries);

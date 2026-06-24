@@ -1,0 +1,198 @@
+package io.patchpilot.backend.task.service.impl;
+
+import io.patchpilot.backend.task.domain.vo.FixTaskQueueItemVo;
+import io.patchpilot.backend.task.domain.vo.FixTaskWorkerHealthVo;
+import io.patchpilot.backend.task.service.FixTaskWorkerHealthService;
+import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+
+import java.time.Clock;
+import java.time.Instant;
+import java.util.concurrent.atomic.AtomicReference;
+
+@Service
+public class InMemoryFixTaskWorkerHealthService implements FixTaskWorkerHealthService {
+
+    private final Clock clock;
+    private final AtomicReference<State> state = new AtomicReference<>(State.notStarted());
+
+    public InMemoryFixTaskWorkerHealthService() {
+        this(Clock.systemUTC());
+    }
+
+    public InMemoryFixTaskWorkerHealthService(Clock clock) {
+        this.clock = clock;
+    }
+
+    @Override
+    public FixTaskWorkerHealthVo getHealth() {
+        State snapshot = state.get();
+        return new FixTaskWorkerHealthVo(
+                snapshot.state,
+                snapshot.message,
+                snapshot.startedAt,
+                snapshot.lastPollAt,
+                snapshot.pollCount,
+                snapshot.claimedCount,
+                snapshot.completedCount,
+                snapshot.failedCount,
+                snapshot.idlePollCount,
+                snapshot.lastClaimedQueueItemId,
+                snapshot.lastClaimedTaskId,
+                snapshot.lastError
+        );
+    }
+
+    @Override
+    public void recordPollStarted() {
+        state.updateAndGet(current -> current.pollStarted(now()));
+    }
+
+    @Override
+    public void recordIdlePoll() {
+        state.updateAndGet(current -> current.idle());
+    }
+
+    @Override
+    public void recordClaimed(FixTaskQueueItemVo queueItem) {
+        state.updateAndGet(current -> current.claimed(queueItem));
+    }
+
+    @Override
+    public void recordCompleted(FixTaskQueueItemVo queueItem) {
+        state.updateAndGet(current -> current.completed());
+    }
+
+    @Override
+    public void recordFailed(FixTaskQueueItemVo queueItem, String failureReason) {
+        state.updateAndGet(current -> current.failed(failureReason));
+    }
+
+    @Override
+    public void recordPollingFailed(String failureReason) {
+        state.updateAndGet(current -> current.failed(failureReason));
+    }
+
+    private Instant now() {
+        return Instant.now(clock);
+    }
+
+    private record State(
+            String state,
+            String message,
+            Instant startedAt,
+            Instant lastPollAt,
+            long pollCount,
+            long claimedCount,
+            long completedCount,
+            long failedCount,
+            long idlePollCount,
+            String lastClaimedQueueItemId,
+            String lastClaimedTaskId,
+            String lastError
+    ) {
+
+        private static State notStarted() {
+            return new State(
+                    "NOT_STARTED",
+                    "Worker poller has not reported a heartbeat yet.",
+                    null,
+                    null,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    null,
+                    null,
+                    null
+            );
+        }
+
+        private State pollStarted(Instant timestamp) {
+            return new State(
+                    "POLLING",
+                    "Worker poller is checking for available queue items.",
+                    startedAt == null ? timestamp : startedAt,
+                    timestamp,
+                    pollCount + 1,
+                    claimedCount,
+                    completedCount,
+                    failedCount,
+                    idlePollCount,
+                    lastClaimedQueueItemId,
+                    lastClaimedTaskId,
+                    lastError
+            );
+        }
+
+        private State idle() {
+            return new State(
+                    "IDLE",
+                    "Worker poller is active but no queue item was available.",
+                    startedAt,
+                    lastPollAt,
+                    pollCount,
+                    claimedCount,
+                    completedCount,
+                    failedCount,
+                    idlePollCount + 1,
+                    lastClaimedQueueItemId,
+                    lastClaimedTaskId,
+                    lastError
+            );
+        }
+
+        private State claimed(FixTaskQueueItemVo queueItem) {
+            return new State(
+                    "ACTIVE",
+                    "Worker poller is executing a queue item.",
+                    startedAt,
+                    lastPollAt,
+                    pollCount,
+                    claimedCount + 1,
+                    completedCount,
+                    failedCount,
+                    idlePollCount,
+                    queueItem.id(),
+                    queueItem.taskId(),
+                    null
+            );
+        }
+
+        private State completed() {
+            return new State(
+                    "IDLE",
+                    "Worker poller completed the latest queue item.",
+                    startedAt,
+                    lastPollAt,
+                    pollCount,
+                    claimedCount,
+                    completedCount + 1,
+                    failedCount,
+                    idlePollCount,
+                    lastClaimedQueueItemId,
+                    lastClaimedTaskId,
+                    null
+            );
+        }
+
+        private State failed(String failureReason) {
+            String normalizedFailureReason = StringUtils.hasText(failureReason) ? failureReason : "Unknown worker failure";
+            return new State(
+                    "ERROR",
+                    "Worker poller recorded a task failure: " + normalizedFailureReason,
+                    startedAt,
+                    lastPollAt,
+                    pollCount,
+                    claimedCount,
+                    completedCount,
+                    failedCount + 1,
+                    idlePollCount,
+                    lastClaimedQueueItemId,
+                    lastClaimedTaskId,
+                    normalizedFailureReason
+            );
+        }
+    }
+}

@@ -22,6 +22,7 @@ import type {
   FixTaskModelUsageSummary,
   FixTaskQueueItem,
   FixTaskQueueSummary,
+  FixTaskWorkerHealth,
   OperatorSafetyAudit,
   RejectedTriggerAudit,
   RejectedTriggerAuditSummary,
@@ -217,6 +218,10 @@ export async function getQueueSummary(): Promise<FixTaskQueueSummary> {
 
 export async function listQueueItems(): Promise<FixTaskQueueItem[]> {
   return getApi<FixTaskQueueItem[]>('/api/task-queue/items');
+}
+
+export async function getWorkerHealth(): Promise<FixTaskWorkerHealth> {
+  return getApi<FixTaskWorkerHealth>('/api/task-queue/worker-health');
 }
 
 export async function listWebhookDeliveries(limit = 10): Promise<WebhookDeliveryDiagnostic[]> {

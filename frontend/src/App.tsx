@@ -28,6 +28,7 @@ import {
   getTaskDetail,
   getTaskReport,
   getTaskStatusCounts,
+  getWorkerHealth,
   listLanguageAdapterFixtures,
   listLanguageAdapters,
   listDemoSessionArchives,
@@ -86,6 +87,7 @@ import type {
   FixTaskModelUsageSummary,
   FixTaskQueueItem,
   FixTaskQueueSummary,
+  FixTaskWorkerHealth,
   OperatorSafetyAudit,
   RejectedTriggerCategoryFilter,
   RejectedTriggerAudit,
@@ -162,6 +164,7 @@ export default function App() {
   const [repositoryPreflightError, setRepositoryPreflightError] = useState<string | null>(null);
   const [repositoryPreflightLoading, setRepositoryPreflightLoading] = useState(false);
   const [queueSummary, setQueueSummary] = useState<FixTaskQueueSummary | null>(null);
+  const [workerHealth, setWorkerHealth] = useState<FixTaskWorkerHealth | null>(null);
   const [queueItems, setQueueItems] = useState<FixTaskQueueItem[]>([]);
   const [webhookDeliveries, setWebhookDeliveries] = useState<WebhookDeliveryDiagnostic[]>([]);
   const [webhookDeliveryError, setWebhookDeliveryError] = useState<string | null>(null);
@@ -421,6 +424,7 @@ export default function App() {
         adapterFixtureResult,
         queueSummaryData,
         queueItemList,
+        workerHealthData,
         webhookDeliveryResult,
         rejectedTriggerResult,
         rejectedTriggerSummaryResult,
@@ -473,6 +477,7 @@ export default function App() {
         ),
         getQueueSummary(),
         listQueueItems(),
+        getWorkerHealth(),
         listWebhookDeliveries(10).then(
           (deliveries) => ({ deliveries, error: null as string | null }),
           (caught) => ({ deliveries: null, error: errorMessage(caught) })
@@ -535,6 +540,7 @@ export default function App() {
       setAdapterFixtureError(adapterFixtureResult.error);
       setQueueSummary(queueSummaryData);
       setQueueItems(queueItemList);
+      setWorkerHealth(workerHealthData);
       if (webhookDeliveryResult.deliveries) {
         setWebhookDeliveries(webhookDeliveryResult.deliveries);
       }
@@ -1010,7 +1016,7 @@ export default function App() {
 
       <AdapterFixtureVerificationPanel verifications={adapterFixtureVerifications} error={adapterFixtureError} />
 
-      <QueuePanel summary={queueSummary} items={queueItems} />
+      <QueuePanel summary={queueSummary} items={queueItems} workerHealth={workerHealth} />
 
       <WebhookDeliveryPanel deliveries={webhookDeliveries} error={webhookDeliveryError} />
 
