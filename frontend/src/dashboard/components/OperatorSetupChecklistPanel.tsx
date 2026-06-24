@@ -92,6 +92,7 @@ function setupChecks({
     backendCheck(backendHealth),
     credentialCheck(configuration, hasStoredAdminToken),
     safetyPolicyCheck(configuration),
+    repositoryPreflightScopeCheck(configuration, demoReadiness),
     adapterFixtureCheck(adapterFixtureVerifications),
     queueHealthCheck(queueSummary),
     recentPullRequestCheck(demoReadiness, tasks)
@@ -139,6 +140,27 @@ function safetyPolicyCheck(configuration: ConfigurationSummary | null): SetupChe
       ? 'allowlists, review approvers, and trigger rate limits are configured'
       : 'allowlists, review approvers, or trigger rate limits need attention',
     action: 'Configure trigger allowlists, repository allowlists, review approvers, and trigger rate limits.'
+  };
+}
+
+function repositoryPreflightScopeCheck(configuration: ConfigurationSummary | null, demoReadiness: DemoReadiness | null): SetupCheck {
+  const demoReadinessCheck = demoReadiness?.checks.find((check) => check.name === 'Repository preflight scope');
+  if (demoReadinessCheck) {
+    return {
+      name: 'Repository preflight scope',
+      ready: demoReadinessCheck.status === 'READY',
+      message: demoReadinessCheck.message,
+      action: demoReadinessCheck.action
+    };
+  }
+
+  const allowedRootDirs = configuration?.repositoryPreflightAllowedRootDirs ?? [];
+  const ready = allowedRootDirs.some((rootDir) => rootDir.includes('docs/demo-repositories'));
+  return {
+    name: 'Repository preflight scope',
+    ready,
+    message: ready ? 'demo fixture preflight paths are allowed' : 'demo fixture preflight path is not allowed',
+    action: 'Add docs/demo-repositories or the project root to PATCHPILOT_REPOSITORY_PREFLIGHT_ALLOWED_ROOT_DIRS.'
   };
 }
 

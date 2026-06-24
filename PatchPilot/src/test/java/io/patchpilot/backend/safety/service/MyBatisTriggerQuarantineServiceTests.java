@@ -40,6 +40,7 @@ class MyBatisTriggerQuarantineServiceTests {
     void should_insert_new_trigger_quarantine() {
         when(quarantineMapper.selectList(any())).thenReturn(List.of());
         when(quarantineMapper.insert(any(TriggerQuarantineEntity.class))).thenReturn(1);
+        Instant expiresAt = Instant.now().plusSeconds(1800);
         ArgumentCaptor<TriggerQuarantineEntity> entityCaptor =
                 ArgumentCaptor.forClass(TriggerQuarantineEntity.class);
 
@@ -50,7 +51,7 @@ class MyBatisTriggerQuarantineServiceTests {
                 "ABUSE_QUARANTINED",
                 5,
                 600_000,
-                Instant.parse("2026-06-24T00:30:00Z")
+                expiresAt
         ));
 
         verify(quarantineMapper).insert(entityCaptor.capture());
@@ -62,14 +63,15 @@ class MyBatisTriggerQuarantineServiceTests {
         assertThat(entity.getCategory()).isEqualTo("ABUSE_QUARANTINED");
         assertThat(entity.getEvidenceCount()).isEqualTo(5);
         assertThat(entity.getWindowMs()).isEqualTo(600_000L);
-        assertThat(entity.getExpiresAt()).isEqualTo(Instant.parse("2026-06-24T00:30:00Z"));
+        assertThat(entity.getExpiresAt()).isEqualTo(expiresAt);
         assertThat(quarantine.scopeKey()).isEqualTo("alice");
         assertThat(quarantine.active()).isTrue();
     }
 
     @Test
     void should_extend_existing_trigger_quarantine() {
-        TriggerQuarantineEntity existing = entity("quarantine-1", Instant.parse("2026-06-24T00:30:00Z"));
+        Instant expiresAt = Instant.now().plusSeconds(3600);
+        TriggerQuarantineEntity existing = entity("quarantine-1", Instant.now().plusSeconds(1800));
         when(quarantineMapper.selectList(any())).thenReturn(List.of(existing));
         when(quarantineMapper.updateById(any(TriggerQuarantineEntity.class))).thenReturn(1);
         ArgumentCaptor<TriggerQuarantineEntity> entityCaptor =
@@ -82,14 +84,14 @@ class MyBatisTriggerQuarantineServiceTests {
                 "ABUSE_QUARANTINED",
                 7,
                 900_000,
-                Instant.parse("2026-06-24T01:00:00Z")
+                expiresAt
         ));
 
         verify(quarantineMapper).updateById(entityCaptor.capture());
         assertThat(entityCaptor.getValue().getId()).isEqualTo("quarantine-1");
         assertThat(entityCaptor.getValue().getEvidenceCount()).isEqualTo(7);
         assertThat(entityCaptor.getValue().getWindowMs()).isEqualTo(900_000L);
-        assertThat(entityCaptor.getValue().getExpiresAt()).isEqualTo(Instant.parse("2026-06-24T01:00:00Z"));
+        assertThat(entityCaptor.getValue().getExpiresAt()).isEqualTo(expiresAt);
         assertThat(quarantine.id()).isEqualTo("quarantine-1");
         assertThat(quarantine.evidenceCount()).isEqualTo(7);
     }

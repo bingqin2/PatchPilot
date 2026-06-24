@@ -9,6 +9,7 @@ import io.patchpilot.backend.task.domain.vo.FixTaskQueueSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import org.junit.jupiter.api.Test;
 
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
 
@@ -35,6 +36,7 @@ class DemoReadinessServiceTests {
                         "Backend",
                         "Credentials",
                         "Safety policy",
+                        "Repository preflight scope",
                         "Adapter fixtures",
                         "Queue",
                         "Recent Pull Request"
@@ -165,6 +167,64 @@ class DemoReadinessServiceTests {
         assertThat(readiness.nextActions()).contains("Configure PATCHPILOT_ADMIN_TOKEN before a live demo.");
     }
 
+    @Test
+    void should_report_preflight_scope_attention_when_demo_fixtures_are_not_allowed() {
+        DemoReadinessService service = new DemoReadinessService(
+                () -> configuration(
+                        true,
+                        true,
+                        true,
+                        true,
+                        List.of("bingqin2"),
+                        List.of("bingqin2/PatchPilot"),
+                        List.of("release-captain"),
+                        List.of("/tmp/patchpilot/workspaces")
+                ),
+                () -> List.of(fixture("java-maven", "PASS")),
+                () -> FixTaskQueueSummaryVo.empty(),
+                () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/12"))
+        );
+
+        DemoReadinessVo readiness = service.getReadiness();
+
+        assertThat(readiness.status()).isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
+        assertThat(readiness.checks())
+                .filteredOn(check -> check.name().equals("Repository preflight scope"))
+                .singleElement()
+                .satisfies(check -> {
+                    assertThat(check.status()).isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
+                    assertThat(check.message()).contains("do not include docs/demo-repositories");
+                    assertThat(check.action()).contains("PATCHPILOT_REPOSITORY_PREFLIGHT_ALLOWED_ROOT_DIRS");
+                });
+    }
+
+    @Test
+    void should_not_treat_sibling_preflight_root_prefix_as_allowed() {
+        DemoReadinessService service = new DemoReadinessService(
+                () -> configuration(
+                        true,
+                        true,
+                        true,
+                        true,
+                        List.of("bingqin2"),
+                        List.of("bingqin2/PatchPilot"),
+                        List.of("release-captain"),
+                        List.of(Path.of("..").resolve("docs/demo").toAbsolutePath().normalize().toString())
+                ),
+                () -> List.of(fixture("java-maven", "PASS")),
+                () -> FixTaskQueueSummaryVo.empty(),
+                () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/12"))
+        );
+
+        DemoReadinessVo readiness = service.getReadiness();
+
+        assertThat(readiness.status()).isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
+        assertThat(readiness.checks())
+                .filteredOn(check -> check.name().equals("Repository preflight scope"))
+                .singleElement()
+                .satisfies(check -> assertThat(check.status()).isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION));
+    }
+
     private static ConfigurationSummaryVo configuration(
             boolean agentApiKeyConfigured,
             boolean githubTokenConfigured,
@@ -218,7 +278,10 @@ class DemoReadinessServiceTests {
                 List.of("bingqin2"),
                 List.of("bingqin2/PatchPilot"),
                 List.of("release-captain"),
-                List.of("/tmp/patchpilot/workspaces")
+                List.of(
+                        "/tmp/patchpilot/workspaces",
+                        Path.of("..").resolve("docs/demo-repositories").toAbsolutePath().normalize().toString()
+                )
         );
     }
 
@@ -230,6 +293,31 @@ class DemoReadinessServiceTests {
             List<String> allowedTriggerUsers,
             List<String> allowedRepositories,
             List<String> reviewApprovalAllowedOperators
+    ) {
+        return configuration(
+                agentApiKeyConfigured,
+                githubTokenConfigured,
+                githubWebhookSecretConfigured,
+                modelCostConfigured,
+                allowedTriggerUsers,
+                allowedRepositories,
+                reviewApprovalAllowedOperators,
+                List.of(
+                        "/tmp/patchpilot/workspaces",
+                        Path.of("..").resolve("docs/demo-repositories").toAbsolutePath().normalize().toString()
+                )
+        );
+    }
+
+    private static ConfigurationSummaryVo configuration(
+            boolean agentApiKeyConfigured,
+            boolean githubTokenConfigured,
+            boolean githubWebhookSecretConfigured,
+            boolean modelCostConfigured,
+            List<String> allowedTriggerUsers,
+            List<String> allowedRepositories,
+            List<String> reviewApprovalAllowedOperators,
+            List<String> repositoryPreflightAllowedRootDirs
     ) {
         return new ConfigurationSummaryVo(
                 "openai-compatible",
@@ -262,7 +350,7 @@ class DemoReadinessServiceTests {
                 allowedTriggerUsers,
                 allowedRepositories,
                 reviewApprovalAllowedOperators,
-                List.of("/tmp/patchpilot/workspaces")
+                repositoryPreflightAllowedRootDirs
         );
     }
 

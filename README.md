@@ -350,7 +350,7 @@ curl -X POST http://127.0.0.1:8080/api/repository-preflight \
   -d '{"repositoryPath":"docs/demo-repositories/java-maven"}'
 ```
 
-The preflight checks only whether the configured language adapter registry can detect the local path, and only for paths under `PATCHPILOT_REPOSITORY_PREFLIGHT_ALLOWED_ROOT_DIRS`. It does not create a task, call the model, run tests, mutate Git, or open a Pull Request. The dashboard exposes the same check in the `Repository preflight` panel so operators can verify a repository shape before posting `/agent fix`.
+The preflight checks only whether the configured language adapter registry can detect the local path, and only for paths under `PATCHPILOT_REPOSITORY_PREFLIGHT_ALLOWED_ROOT_DIRS`. It does not create a task, call the model, run tests, mutate Git, or open a Pull Request. The dashboard exposes the same check in the `Repository preflight` panel, shows the configured allowed roots next to the form, and includes repository-preflight scope in demo readiness and the operator setup checklist.
 
 Run the safe local adapter smoke when you want to demonstrate supported repository detection without GitHub, model credentials, Docker, or PR creation:
 

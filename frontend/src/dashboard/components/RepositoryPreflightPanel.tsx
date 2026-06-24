@@ -5,6 +5,7 @@ interface RepositoryPreflightPanelProps {
   result: RepositoryPreflightResult | null;
   error: string | null;
   loading: boolean;
+  allowedRootDirs: string[];
   onRunPreflight: (input: RepositoryPreflightInput) => void | Promise<void>;
 }
 
@@ -14,6 +15,7 @@ export function RepositoryPreflightPanel({
   result,
   error,
   loading,
+  allowedRootDirs,
   onRunPreflight
 }: RepositoryPreflightPanelProps) {
   const [repositoryPath, setRepositoryPath] = useState(DEFAULT_REPOSITORY_PATH);
@@ -45,6 +47,14 @@ export function RepositoryPreflightPanel({
           {loading ? 'Running' : 'Run preflight'}
         </button>
       </form>
+      <div className="repository-preflight-roots">
+        <strong>Allowed roots</strong>
+        {allowedRootDirs.length > 0 ? (
+          <p>{allowedRootDirs.join(', ')}</p>
+        ) : (
+          <p>No repository preflight allowed roots configured</p>
+        )}
+      </div>
       {error ? (
         <div className="adapter-api-error">
           <strong>Preflight failed</strong>
