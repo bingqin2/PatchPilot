@@ -65,6 +65,22 @@ GitHub issue comment created
   -> FixTaskService marks the task completed or failed
 ```
 
+## Worker Runtime Health
+
+The single-process backend records queue worker heartbeat state in memory through
+`FixTaskWorkerHealthService`. `FixTaskQueuePoller` updates this read model when
+each poll starts, when no queue item is available, when a queue item is claimed,
+when execution completes, and when worker execution fails.
+`GET /api/task-queue/worker-health` exposes this runtime state for the dashboard
+and curl diagnostics.
+
+This heartbeat is intentionally process-local. Durable task and queue facts
+remain in MySQL-backed task and queue records; the heartbeat only answers
+whether this backend process's poller is active, idle, not started, or most
+recently errored. If PatchPilot later splits API and worker processes or runs
+multiple workers, this signal should move to durable or instance-scoped worker
+telemetry.
+
 ## Backend Modules
 
 Recommended package layout:

@@ -20,6 +20,7 @@ import {
   getDemoRunbook,
   getRejectedTriggerSummary,
   getTriggerQuarantineEvidence,
+  getWorkerHealth,
   listLanguageAdapterFixtures,
   listLanguageAdapters,
   listOperatorSafetyAudits,
@@ -569,6 +570,38 @@ test('lists demo session archives through backend API', async () => {
 
   expect(fetchMock).toHaveBeenCalledWith('/api/demo/session-archives');
   expect(archives[0].sessionId).toBe('demo-session-20260624T003000Z');
+});
+
+test('gets worker health through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        state: 'ACTIVE',
+        message: 'Worker poller is executing a queue item.',
+        startedAt: '2026-06-24T06:00:00Z',
+        lastPollAt: '2026-06-24T06:00:01Z',
+        pollCount: 12,
+        claimedCount: 3,
+        completedCount: 2,
+        failedCount: 1,
+        idlePollCount: 8,
+        lastClaimedQueueItemId: 'queue-123',
+        lastClaimedTaskId: 'task-123',
+        lastError: null
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const workerHealth = await getWorkerHealth();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/task-queue/worker-health');
+  expect(workerHealth.state).toBe('ACTIVE');
+  expect(workerHealth.lastClaimedTaskId).toBe('task-123');
 });
 
 test('lists recent rejected triggers through backend API', async () => {

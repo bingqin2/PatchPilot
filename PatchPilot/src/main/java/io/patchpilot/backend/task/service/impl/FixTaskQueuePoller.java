@@ -1,6 +1,7 @@
 package io.patchpilot.backend.task.service.impl;
 
 import io.patchpilot.backend.task.domain.vo.FixTaskQueueItemVo;
+import io.patchpilot.backend.task.service.FixTaskWorkerHealthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -14,19 +15,30 @@ public class FixTaskQueuePoller {
 
     private final MyBatisFixTaskQueue fixTaskQueue;
     private final FixTaskWorker fixTaskWorker;
+    private final FixTaskWorkerHealthService workerHealthService;
 
     @Scheduled(fixedDelayString = "${patchpilot.task.queue.poll-delay-ms:1000}")
     public void pollOnce() {
-        fixTaskQueue.recoverTimedOutRunningItems();
-        fixTaskQueue.claimNext().ifPresent(this::execute);
+        workerHealthService.recordPollStarted();
+        try {
+            fixTaskQueue.recoverTimedOutRunningItems();
+            fixTaskQueue.claimNext().ifPresentOrElse(this::execute, workerHealthService::recordIdlePoll);
+        } catch (RuntimeException exception) {
+            workerHealthService.recordPollingFailed(failureReason(exception));
+            throw exception;
+        }
     }
 
     private void execute(FixTaskQueueItemVo queueItem) {
+        workerHealthService.recordClaimed(queueItem);
         try {
             fixTaskWorker.execute(queueItem.taskId());
             fixTaskQueue.markCompleted(queueItem.id());
+            workerHealthService.recordCompleted(queueItem);
         } catch (RuntimeException exception) {
-            fixTaskQueue.markFailed(queueItem.id(), failureReason(exception));
+            String failureReason = failureReason(exception);
+            fixTaskQueue.markFailed(queueItem.id(), failureReason);
+            workerHealthService.recordFailed(queueItem, failureReason);
         }
     }
 

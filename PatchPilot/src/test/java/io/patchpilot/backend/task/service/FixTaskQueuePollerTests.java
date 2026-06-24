@@ -4,9 +4,11 @@ import io.patchpilot.backend.task.domain.enums.FixTaskQueueItemStatus;
 import io.patchpilot.backend.task.domain.vo.FixTaskQueueItemVo;
 import io.patchpilot.backend.task.service.impl.FixTaskQueuePoller;
 import io.patchpilot.backend.task.service.impl.FixTaskWorker;
+import io.patchpilot.backend.task.service.impl.InMemoryFixTaskWorkerHealthService;
 import io.patchpilot.backend.task.service.impl.MyBatisFixTaskQueue;
 import org.junit.jupiter.api.Test;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
@@ -19,7 +21,8 @@ class FixTaskQueuePollerTests {
     void should_exit_when_no_queue_item_is_available() {
         RecordingQueue queue = new RecordingQueue(Optional.empty());
         RecordingWorker worker = new RecordingWorker(false);
-        FixTaskQueuePoller poller = new FixTaskQueuePoller(queue, worker);
+        InMemoryFixTaskWorkerHealthService workerHealthService = workerHealthService();
+        FixTaskQueuePoller poller = new FixTaskQueuePoller(queue, worker, workerHealthService);
 
         poller.pollOnce();
 
@@ -28,13 +31,17 @@ class FixTaskQueuePollerTests {
         assertThat(worker.taskId()).isNull();
         assertThat(queue.completedQueueItemId()).isNull();
         assertThat(queue.failedQueueItemId()).isNull();
+        assertThat(workerHealthService.getHealth().pollCount()).isEqualTo(1);
+        assertThat(workerHealthService.getHealth().idlePollCount()).isEqualTo(1);
+        assertThat(workerHealthService.getHealth().lastClaimedQueueItemId()).isNull();
     }
 
     @Test
     void should_execute_claimed_item_and_mark_completed() {
         RecordingQueue queue = new RecordingQueue(Optional.of(queueItem()));
         RecordingWorker worker = new RecordingWorker(false);
-        FixTaskQueuePoller poller = new FixTaskQueuePoller(queue, worker);
+        InMemoryFixTaskWorkerHealthService workerHealthService = workerHealthService();
+        FixTaskQueuePoller poller = new FixTaskQueuePoller(queue, worker, workerHealthService);
 
         poller.pollOnce();
 
@@ -43,13 +50,19 @@ class FixTaskQueuePollerTests {
         assertThat(worker.taskId()).isEqualTo("task-123");
         assertThat(queue.completedQueueItemId()).isEqualTo("queue-123");
         assertThat(queue.failedQueueItemId()).isNull();
+        assertThat(workerHealthService.getHealth().pollCount()).isEqualTo(1);
+        assertThat(workerHealthService.getHealth().claimedCount()).isEqualTo(1);
+        assertThat(workerHealthService.getHealth().completedCount()).isEqualTo(1);
+        assertThat(workerHealthService.getHealth().lastClaimedQueueItemId()).isEqualTo("queue-123");
+        assertThat(workerHealthService.getHealth().lastClaimedTaskId()).isEqualTo("task-123");
     }
 
     @Test
     void should_mark_failed_when_worker_throws() {
         RecordingQueue queue = new RecordingQueue(Optional.of(queueItem()));
         RecordingWorker worker = new RecordingWorker(true);
-        FixTaskQueuePoller poller = new FixTaskQueuePoller(queue, worker);
+        InMemoryFixTaskWorkerHealthService workerHealthService = workerHealthService();
+        FixTaskQueuePoller poller = new FixTaskQueuePoller(queue, worker, workerHealthService);
 
         poller.pollOnce();
 
@@ -57,6 +70,32 @@ class FixTaskQueuePollerTests {
         assertThat(queue.completedQueueItemId()).isNull();
         assertThat(queue.failedQueueItemId()).isEqualTo("queue-123");
         assertThat(queue.failureReason()).isEqualTo("worker failed");
+        assertThat(workerHealthService.getHealth().claimedCount()).isEqualTo(1);
+        assertThat(workerHealthService.getHealth().failedCount()).isEqualTo(1);
+        assertThat(workerHealthService.getHealth().lastError()).isEqualTo("worker failed");
+    }
+
+    @Test
+    void should_record_worker_error_when_queue_polling_fails() {
+        RecordingQueue queue = new RecordingQueue(Optional.empty());
+        queue.failOnClaim();
+        RecordingWorker worker = new RecordingWorker(false);
+        InMemoryFixTaskWorkerHealthService workerHealthService = workerHealthService();
+        FixTaskQueuePoller poller = new FixTaskQueuePoller(queue, worker, workerHealthService);
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(poller::pollOnce)
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("claim failed");
+
+        assertThat(worker.taskId()).isNull();
+        assertThat(workerHealthService.getHealth().state()).isEqualTo("ERROR");
+        assertThat(workerHealthService.getHealth().pollCount()).isEqualTo(1);
+        assertThat(workerHealthService.getHealth().failedCount()).isEqualTo(1);
+        assertThat(workerHealthService.getHealth().lastError()).isEqualTo("claim failed");
+    }
+
+    private static InMemoryFixTaskWorkerHealthService workerHealthService() {
+        return new InMemoryFixTaskWorkerHealthService(Clock.fixed(Instant.parse("2026-06-24T06:00:00Z"), java.time.ZoneOffset.UTC));
     }
 
     private static FixTaskQueueItemVo queueItem() {
@@ -83,6 +122,7 @@ class FixTaskQueuePollerTests {
         private String completedQueueItemId;
         private String failedQueueItemId;
         private String failureReason;
+        private boolean failOnClaim;
 
         private RecordingQueue(Optional<FixTaskQueueItemVo> nextItem) {
             super(null, null);
@@ -99,6 +139,9 @@ class FixTaskQueuePollerTests {
         public Optional<FixTaskQueueItemVo> claimNext() {
             recoveredBeforeClaim = recovered;
             claimed = true;
+            if (failOnClaim) {
+                throw new IllegalStateException("claim failed");
+            }
             return nextItem;
         }
 
@@ -135,6 +178,10 @@ class FixTaskQueuePollerTests {
 
         private String failureReason() {
             return failureReason;
+        }
+
+        private void failOnClaim() {
+            this.failOnClaim = true;
         }
     }
 

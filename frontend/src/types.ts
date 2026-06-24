@@ -360,6 +360,23 @@ export interface FixTaskQueueSummary {
   cancelledCount: number;
 }
 
+export type FixTaskWorkerState = 'NOT_STARTED' | 'POLLING' | 'IDLE' | 'ACTIVE' | 'ERROR';
+
+export interface FixTaskWorkerHealth {
+  state: FixTaskWorkerState;
+  message: string;
+  startedAt: string | null;
+  lastPollAt: string | null;
+  pollCount: number;
+  claimedCount: number;
+  completedCount: number;
+  failedCount: number;
+  idlePollCount: number;
+  lastClaimedQueueItemId: string | null;
+  lastClaimedTaskId: string | null;
+  lastError: string | null;
+}
+
 export interface FixTaskQueueItem {
   id: string;
   taskId: string;

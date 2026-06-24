@@ -1,14 +1,16 @@
-import type { FixTaskQueueItem, FixTaskQueueSummary } from '../../types';
+import type { FixTaskQueueItem, FixTaskQueueSummary, FixTaskWorkerHealth } from '../../types';
 import { compactTime } from '../format';
 import { SummaryItem } from './SummaryItem';
 
 interface QueuePanelProps {
   summary: FixTaskQueueSummary | null;
   items: FixTaskQueueItem[];
+  workerHealth: FixTaskWorkerHealth | null;
 }
 
-export function QueuePanel({ summary, items }: QueuePanelProps) {
+export function QueuePanel({ summary, items, workerHealth }: QueuePanelProps) {
   const health = queueHealth(summary);
+  const worker = workerHealthState(workerHealth);
 
   return (
     <section className="panel queue-panel">
@@ -23,6 +25,14 @@ export function QueuePanel({ summary, items }: QueuePanelProps) {
         {health.details.map((detail) => (
           <span key={detail}>{detail}</span>
         ))}
+      </div>
+      <div className={`queue-health queue-health-${worker.level}`}>
+        <strong>{worker.title}</strong>
+        <span>{worker.message}</span>
+        <span>{workerHealth ? `${workerHealth.pollCount} polls` : 'No poll count yet'}</span>
+        <span>{workerHealth ? `${workerHealth.claimedCount} claimed` : 'No claimed task yet'}</span>
+        {workerHealth?.lastClaimedTaskId ? <span>Last task {workerHealth.lastClaimedTaskId}</span> : null}
+        {workerHealth?.lastError ? <span>Last error {workerHealth.lastError}</span> : null}
       </div>
       <div className="queue-summary">
         <SummaryItem label="Pending" value={`${summary?.pendingCount ?? 0} pending`} />
@@ -93,6 +103,44 @@ function queueHealth(summary: FixTaskQueueSummary | null) {
     title: 'Queue idle',
     details: ['No queue items need attention.']
   };
+}
+
+function workerHealthState(workerHealth: FixTaskWorkerHealth | null) {
+  if (!workerHealth) {
+    return {
+      level: 'loading',
+      title: 'Worker loading',
+      message: 'Loading worker heartbeat'
+    };
+  }
+
+  switch (workerHealth.state) {
+    case 'ACTIVE':
+    case 'POLLING':
+      return {
+        level: 'active',
+        title: 'Worker active',
+        message: workerHealth.message
+      };
+    case 'ERROR':
+      return {
+        level: 'critical',
+        title: 'Worker error',
+        message: workerHealth.message
+      };
+    case 'IDLE':
+      return {
+        level: 'idle',
+        title: 'Worker idle',
+        message: workerHealth.message
+      };
+    case 'NOT_STARTED':
+      return {
+        level: 'advisory',
+        title: 'Worker not started',
+        message: workerHealth.message
+      };
+  }
 }
 
 function countLabel(count: number, label: string) {

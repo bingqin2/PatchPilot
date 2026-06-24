@@ -4,7 +4,9 @@ import io.patchpilot.backend.common.response.ApiResponse;
 import io.patchpilot.backend.task.domain.enums.FixTaskQueueItemStatus;
 import io.patchpilot.backend.task.domain.vo.FixTaskQueueItemVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskQueueSummaryVo;
+import io.patchpilot.backend.task.domain.vo.FixTaskWorkerHealthVo;
 import io.patchpilot.backend.task.service.FixTaskQueueQueryService;
+import io.patchpilot.backend.task.service.FixTaskWorkerHealthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -19,6 +21,7 @@ import java.util.List;
 public class TaskQueueController {
 
     private final FixTaskQueueQueryService fixTaskQueueQueryService;
+    private final FixTaskWorkerHealthService fixTaskWorkerHealthService;
 
     @GetMapping("/items")
     public ApiResponse<List<FixTaskQueueItemVo>> listItems(
@@ -30,5 +33,10 @@ public class TaskQueueController {
     @GetMapping("/summary")
     public ApiResponse<FixTaskQueueSummaryVo> summary() {
         return ApiResponse.ok(fixTaskQueueQueryService.summary());
+    }
+
+    @GetMapping("/worker-health")
+    public ApiResponse<FixTaskWorkerHealthVo> workerHealth() {
+        return ApiResponse.ok(fixTaskWorkerHealthService.getHealth());
     }
 }
