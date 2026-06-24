@@ -3022,3 +3022,23 @@ Validation:
 - `npm test`: passed after full frontend verification, 133 tests run, 0 failures.
 - `npm run build`: first failed because the new checklist fixture used `FixTaskStatusCounts` fields in a `FixTaskQueueSummary`; then passed after fixing the fixture.
 - `git diff --check`: passed after whitespace verification.
+
+Implemented demo evidence bundle from `docs/plans/150-demo-evidence-bundle.md`.
+
+Changes:
+
+- Added `GET /api/demo/evidence-bundle` as a read-only aggregate over demo readiness, smoke checklist, non-sensitive configuration, adapter fixture verification, queue summary, recent tasks, webhook delivery diagnostics, rejected-trigger summary, and active trigger quarantines.
+- Added demo evidence response models with summary counts, latest evidence records, recent Pull Request URL, generated timestamp, and next actions.
+- Added a dashboard `DemoEvidenceBundlePanel` near the existing setup/readiness area.
+- Wired frontend refresh loading to fetch and render the evidence bundle without blocking the rest of the dashboard when the endpoint fails.
+- Updated README, product spec, architecture notes, frontend design notes, and this execution log.
+
+Validation so far:
+
+- `JAVA_HOME=/Library/Java/JavaVirtualMachines/openjdk-17.jdk/Contents/Home mvn -pl PatchPilot -Dtest=DemoEvidenceBundleServiceTests,DemoReadinessControllerTests test`: first failed because the evidence bundle service, response models, and endpoint did not exist; then passed after backend implementation, 5 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts src/dashboard/components/DemoEvidenceBundlePanel.test.tsx`: first failed because the frontend API and component did not exist; then passed after frontend implementation, 32 tests run, 0 failures.
+- `npm test -- --run src/App.test.tsx src/api.test.ts src/dashboard/components/DemoEvidenceBundlePanel.test.tsx`: passed after App-level dashboard wiring, 89 tests run, 0 failures.
+- `JAVA_HOME=/Library/Java/JavaVirtualMachines/openjdk-17.jdk/Contents/Home mvn -pl PatchPilot test`: passed after full backend verification, 570 tests run, 0 failures.
+- `npm test`: passed after full frontend verification, 136 tests run, 0 failures.
+- `npm run build`: passed after production frontend build verification.
+- `git diff --check`: passed after whitespace verification.

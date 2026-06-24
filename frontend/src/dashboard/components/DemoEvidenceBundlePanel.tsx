@@ -1,0 +1,125 @@
+import type { DemoEvidenceBundle, DemoReadinessStatus } from '../../types';
+import { compactDateTime } from '../format';
+
+interface DemoEvidenceBundlePanelProps {
+  bundle: DemoEvidenceBundle | null;
+  error: string | null;
+}
+
+export function DemoEvidenceBundlePanel({ bundle, error }: DemoEvidenceBundlePanelProps) {
+  return (
+    <section className="panel demo-evidence-panel" aria-label="Demo evidence bundle">
+      <div className="panel-header">
+        <div>
+          <h2>Demo evidence bundle</h2>
+          <p>{bundle?.summary ?? 'Loading demo evidence bundle'}</p>
+        </div>
+        {bundle ? (
+          <span className={`demo-readiness-status demo-readiness-status-${statusClass(bundle.status)}`}>
+            {statusLabel(bundle.status)}
+          </span>
+        ) : null}
+      </div>
+
+      {error ? (
+        <div className="adapter-api-error">
+          <strong>Demo evidence bundle unavailable</strong>
+          <span>{error}</span>
+        </div>
+      ) : null}
+
+      {bundle ? (
+        <>
+          <div className="demo-evidence-grid">
+            <EvidenceStat
+              label="Adapter fixtures"
+              value={bundle.summaryCounts.adapterFixtureCount}
+              detail={`${bundle.summaryCounts.failedAdapterFixtureCount} failed`}
+            />
+            <EvidenceStat
+              label="Recent tasks"
+              value={bundle.summaryCounts.recentTaskCount}
+              detail={`${bundle.queueSummary.failedCount} failed queue items`}
+            />
+            <EvidenceStat
+              label="Rejected triggers"
+              value={bundle.rejectedTriggerSummary?.totalCount ?? 0}
+              detail={`${bundle.summaryCounts.activeQuarantineCount} active quarantines`}
+            />
+            <EvidenceStat
+              label="Pull Request"
+              value={bundle.summaryCounts.recentPullRequestAvailable ? 'Ready' : 'Missing'}
+              detail={bundle.summaryCounts.recentPullRequestAvailable ? 'Recent PR available' : 'Run smoke task'}
+            />
+          </div>
+
+          <div className="demo-evidence-records">
+            <div>
+              <span>Latest webhook delivery</span>
+              <strong>{bundle.latestWebhookDelivery?.deliveryId ?? 'No delivery evidence'}</strong>
+              <small>{bundle.latestWebhookDelivery?.status ?? 'No webhook status'}</small>
+            </div>
+            <div>
+              <span>Recent task</span>
+              <strong>{bundle.recentTask?.id ?? 'No recent task'}</strong>
+              <small>{bundle.recentTask?.status ?? 'No task status'}</small>
+            </div>
+            <div>
+              <span>Generated</span>
+              <strong>{compactDateTime(bundle.generatedAt)}</strong>
+              <small>Evidence snapshot</small>
+            </div>
+          </div>
+
+          {bundle.recentPullRequestUrl ? (
+            <a className="external-link" href={bundle.recentPullRequestUrl} target="_blank" rel="noreferrer">
+              Open recent Pull Request
+            </a>
+          ) : null}
+
+          <div className="demo-evidence-actions">
+            <h3>Evidence next actions</h3>
+            <ul>
+              {bundle.nextActions.map((action) => (
+                <li key={action}>{action}</li>
+              ))}
+            </ul>
+          </div>
+        </>
+      ) : (
+        <div className="empty-state">Demo evidence bundle has not loaded yet.</div>
+      )}
+    </section>
+  );
+}
+
+interface EvidenceStatProps {
+  label: string;
+  value: number | string;
+  detail: string;
+}
+
+function EvidenceStat({ label, value, detail }: EvidenceStatProps) {
+  return (
+    <div className="demo-evidence-stat">
+      <span>{label}</span>
+      <strong>{value}</strong>
+      <small>{detail}</small>
+    </div>
+  );
+}
+
+function statusLabel(status: DemoReadinessStatus) {
+  switch (status) {
+    case 'READY':
+      return 'Ready';
+    case 'NEEDS_ATTENTION':
+      return 'Needs attention';
+    case 'BLOCKED':
+      return 'Blocked';
+  }
+}
+
+function statusClass(status: DemoReadinessStatus) {
+  return status.toLowerCase().replace('_', '-');
+}

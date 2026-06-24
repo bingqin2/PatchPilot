@@ -275,11 +275,12 @@ Responsibilities:
 - Surface required credential gaps without exposing secret values.
 - Surface safety policy gaps for trigger-user allowlists, repository allowlists, and review-approval approvers.
 - Surface generated-diff policy state without exposing secrets or editable policy internals.
+- Expose a demo evidence bundle that joins readiness, smoke-check, configuration, adapter fixture, queue, webhook, rejected-trigger, quarantine, and recent Pull Request evidence.
 - Treat adapter fixture drift as blocking because repository support may be misdetected.
 - Treat queue failures, delayed work, running work, missing model cost configuration, or missing recent PR evidence as operator attention items.
 - Return concrete next actions for the dashboard and curl users.
 
-This layer must not create tasks, call the model, clone repositories, execute tests, mutate queue state, or weaken safety gates. It is a read model over configuration, fixture verification, queue state, and recent task history.
+This layer must not create tasks, call the model, clone repositories, execute tests, mutate queue state, or weaken safety gates. It is a read model over configuration, fixture verification, queue state, rejected-trigger safety state, webhook diagnostics, and recent task history.
 
 ## Data Model
 

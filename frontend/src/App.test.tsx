@@ -810,6 +810,33 @@ const demoSmokeChecklist = {
   nextActions: ['Run one controlled issue-to-PR smoke task before a live demo.']
 };
 
+const demoEvidenceBundle = {
+  status: 'NEEDS_ATTENTION',
+  summary: 'Demo evidence bundle needs attention.',
+  summaryCounts: {
+    adapterFixtureCount: adapterFixtureVerifications.length,
+    failedAdapterFixtureCount: 0,
+    recentTaskCount: 3,
+    activeQuarantineCount: triggerQuarantines.length,
+    recentPullRequestAvailable: true
+  },
+  readiness: demoReadiness,
+  smokeChecklist: demoSmokeChecklist,
+  configuration: configurationSummary,
+  adapterFixtures: {
+    totalCount: adapterFixtureVerifications.length,
+    failedCount: 0
+  },
+  queueSummary,
+  recentTask: completedTask,
+  recentPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+  latestWebhookDelivery: webhookDeliveries[0],
+  rejectedTriggerSummary,
+  activeQuarantineCount: triggerQuarantines.length,
+  generatedAt: '2026-06-21T08:15:00Z',
+  nextActions: ['Run one controlled issue-to-PR smoke task before a live demo.']
+};
+
 beforeEach(() => {
   let manualTaskCreated = false;
   vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -920,6 +947,9 @@ beforeEach(() => {
     }
     if (url === '/api/demo/smoke-checklist') {
       return jsonResponse(demoSmokeChecklist);
+    }
+    if (url === '/api/demo/evidence-bundle') {
+      return jsonResponse(demoEvidenceBundle);
     }
     if (url === '/health') {
       return jsonResponse({
@@ -1225,6 +1255,15 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(within(smokeChecklistPanel).getByText('Webhook delivery')).toBeInTheDocument();
   expect(within(smokeChecklistPanel).getByText('delivery-created-status-comment')).toBeInTheDocument();
   expect(within(smokeChecklistPanel).getByText('Post the live /agent fix comment only after confirming the webhook URL is current.')).toBeInTheDocument();
+  const evidenceBundlePanel = screen.getByRole('region', { name: 'Demo evidence bundle' });
+  expect(within(evidenceBundlePanel).getByRole('heading', { name: 'Demo evidence bundle' })).toBeInTheDocument();
+  expect(within(evidenceBundlePanel).getByText('Demo evidence bundle needs attention.')).toBeInTheDocument();
+  expect(within(evidenceBundlePanel).getByText('Recent PR available')).toBeInTheDocument();
+  expect(within(evidenceBundlePanel).getByText('delivery-created-status-comment')).toBeInTheDocument();
+  expect(within(evidenceBundlePanel).getByRole('link', { name: 'Open recent Pull Request' })).toHaveAttribute(
+    'href',
+    'https://github.com/bingqin2/PatchPilot/pull/8'
+  );
   expect(screen.getByRole('heading', { name: 'Supported adapters' })).toBeInTheDocument();
   expect(screen.getByText('13 supported adapters')).toBeInTheDocument();
   expect(screen.getByRole('row', { name: /go go go test \.\/\.\.\./i })).toBeInTheDocument();
@@ -1278,6 +1317,7 @@ test('renders operational task dashboard from backend APIs', async () => {
   await waitFor(() => expect(screen.getByText('Task completed')).toBeInTheDocument());
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/language-adapters'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/language-adapters/fixtures'));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/evidence-bundle'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/readiness'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/smoke-checklist'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/github/webhook-deliveries?limit=10'));

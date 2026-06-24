@@ -3,15 +3,20 @@ package io.patchpilot.backend.demo;
 import io.patchpilot.backend.demo.domain.DemoReadinessCheckVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessStatus;
 import io.patchpilot.backend.demo.domain.DemoReadinessVo;
+import io.patchpilot.backend.demo.domain.DemoEvidenceBundleSummaryVo;
+import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
+import io.patchpilot.backend.demo.domain.DemoAdapterFixtureEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoSmokeChecklistStatus;
 import io.patchpilot.backend.demo.domain.DemoSmokeChecklistStepVo;
 import io.patchpilot.backend.demo.domain.DemoSmokeChecklistVo;
+import io.patchpilot.backend.task.domain.vo.FixTaskQueueSummaryVo;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.Instant;
 import java.util.List;
 
 import static org.mockito.Mockito.when;
@@ -30,6 +35,9 @@ class DemoReadinessControllerTests {
 
     @MockitoBean
     private DemoSmokeChecklistService demoSmokeChecklistService;
+
+    @MockitoBean
+    private DemoEvidenceBundleService demoEvidenceBundleService;
 
     @Test
     void should_return_demo_readiness_summary() throws Exception {
@@ -91,5 +99,53 @@ class DemoReadinessControllerTests {
                 .andExpect(jsonPath("$.data.steps[0].status").value("NEEDS_ATTENTION"))
                 .andExpect(jsonPath("$.data.steps[0].evidence").value("delivery-invalid"))
                 .andExpect(jsonPath("$.data.nextActions[0]").value("Fix the webhook secret or URL, then use GitHub Redeliver before the live demo."));
+    }
+
+    @Test
+    void should_return_demo_evidence_bundle() throws Exception {
+        when(demoEvidenceBundleService.getEvidenceBundle()).thenReturn(new DemoEvidenceBundleVo(
+                DemoReadinessStatus.NEEDS_ATTENTION,
+                "Demo evidence bundle needs attention.",
+                new DemoEvidenceBundleSummaryVo(
+                        2,
+                        1,
+                        1,
+                        1,
+                        true
+                ),
+                new DemoReadinessVo(
+                        DemoReadinessStatus.READY,
+                        "PatchPilot is ready for a controlled demo.",
+                        List.of(),
+                        List.of()
+                ),
+                new DemoSmokeChecklistVo(
+                        DemoSmokeChecklistStatus.NEEDS_ATTENTION,
+                        "Live demo smoke checklist needs attention.",
+                        List.of(),
+                        List.of("Run one controlled issue-to-PR smoke task before a live demo.")
+                ),
+                null,
+                new DemoAdapterFixtureEvidenceVo(2, 1),
+                new FixTaskQueueSummaryVo(1, 0, 0, 0, 0, 1, 0, 0),
+                null,
+                "https://github.com/bingqin2/PatchPilot/pull/42",
+                null,
+                null,
+                1,
+                Instant.parse("2026-06-24T00:00:00Z"),
+                List.of("Run one controlled issue-to-PR smoke task before a live demo.")
+        ));
+
+        mockMvc.perform(get("/api/demo/evidence-bundle"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.status").value("NEEDS_ATTENTION"))
+                .andExpect(jsonPath("$.data.summary").value("Demo evidence bundle needs attention."))
+                .andExpect(jsonPath("$.data.summaryCounts.adapterFixtureCount").value(2))
+                .andExpect(jsonPath("$.data.summaryCounts.failedAdapterFixtureCount").value(1))
+                .andExpect(jsonPath("$.data.summaryCounts.activeQuarantineCount").value(1))
+                .andExpect(jsonPath("$.data.recentPullRequestUrl").value("https://github.com/bingqin2/PatchPilot/pull/42"))
+                .andExpect(jsonPath("$.data.nextActions[0]").value("Run one controlled issue-to-PR smoke task before a live demo."));
     }
 }

@@ -223,6 +223,37 @@ export interface DemoSmokeChecklist {
   nextActions: string[];
 }
 
+export interface DemoEvidenceBundleSummary {
+  adapterFixtureCount: number;
+  failedAdapterFixtureCount: number;
+  recentTaskCount: number;
+  activeQuarantineCount: number;
+  recentPullRequestAvailable: boolean;
+}
+
+export interface DemoAdapterFixtureEvidence {
+  totalCount: number;
+  failedCount: number;
+}
+
+export interface DemoEvidenceBundle {
+  status: DemoReadinessStatus;
+  summary: string;
+  summaryCounts: DemoEvidenceBundleSummary;
+  readiness: DemoReadiness;
+  smokeChecklist: DemoSmokeChecklist;
+  configuration: ConfigurationSummary | null;
+  adapterFixtures: DemoAdapterFixtureEvidence;
+  queueSummary: FixTaskQueueSummary;
+  recentTask: FixTask | null;
+  recentPullRequestUrl: string | null;
+  latestWebhookDelivery: WebhookDeliveryDiagnostic | null;
+  rejectedTriggerSummary: RejectedTriggerAuditSummary | null;
+  activeQuarantineCount: number;
+  generatedAt: string;
+  nextActions: string[];
+}
+
 export interface BackendHealth {
   status: string;
   service: string;

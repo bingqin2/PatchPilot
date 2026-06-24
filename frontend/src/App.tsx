@@ -8,6 +8,7 @@ import {
   createTriggerQuarantine,
   getBackendHealth,
   getConfigurationSummary,
+  getDemoEvidenceBundle,
   getDemoReadiness,
   getDemoSmokeChecklist,
   getRejectedTriggerSummary,
@@ -37,6 +38,7 @@ import { AdapterFixtureVerificationPanel } from './dashboard/components/AdapterF
 import { ConfigurationPanel } from './dashboard/components/ConfigurationPanel';
 import { ConnectivityPanel } from './dashboard/components/ConnectivityPanel';
 import { DemoReadinessPanel } from './dashboard/components/DemoReadinessPanel';
+import { DemoEvidenceBundlePanel } from './dashboard/components/DemoEvidenceBundlePanel';
 import { DemoSmokeChecklistPanel } from './dashboard/components/DemoSmokeChecklistPanel';
 import { FailureCausePanel } from './dashboard/components/FailureCausePanel';
 import { LatencyPanel } from './dashboard/components/LatencyPanel';
@@ -61,6 +63,7 @@ import type {
   CreateTaskInput,
   CreateTriggerQuarantineInput,
   DemoReadiness,
+  DemoEvidenceBundle,
   DemoSmokeChecklist,
   FixTask,
   FixTaskFailureCauseSummary,
@@ -128,6 +131,8 @@ export default function App() {
   const [backendHealth, setBackendHealth] = useState<BackendHealth | null>(null);
   const [demoReadiness, setDemoReadiness] = useState<DemoReadiness | null>(null);
   const [demoReadinessError, setDemoReadinessError] = useState<string | null>(null);
+  const [demoEvidenceBundle, setDemoEvidenceBundle] = useState<DemoEvidenceBundle | null>(null);
+  const [demoEvidenceBundleError, setDemoEvidenceBundleError] = useState<string | null>(null);
   const [demoSmokeChecklist, setDemoSmokeChecklist] = useState<DemoSmokeChecklist | null>(null);
   const [demoSmokeChecklistError, setDemoSmokeChecklistError] = useState<string | null>(null);
   const [supportedAdapters, setSupportedAdapters] = useState<SupportedLanguageAdapter[]>([]);
@@ -387,6 +392,7 @@ export default function App() {
         modelUsageSummary,
         latencySummary,
         configurationSummary,
+        demoEvidenceBundleResult,
         demoReadinessResult,
         demoSmokeChecklistResult,
         adapterListResult,
@@ -411,6 +417,10 @@ export default function App() {
         getModelUsageSummary(taskFilters),
         getLatencySummary(taskFilters),
         getConfigurationSummary(),
+        getDemoEvidenceBundle().then(
+          (bundle) => ({ bundle, error: null as string | null }),
+          (caught) => ({ bundle: null, error: errorMessage(caught) })
+        ),
         getDemoReadiness().then(
           (readiness) => ({ readiness, error: null as string | null }),
           (caught) => ({ readiness: null, error: errorMessage(caught) })
@@ -457,6 +467,10 @@ export default function App() {
       setModelUsage(modelUsageSummary);
       setLatency(latencySummary);
       setConfiguration(configurationSummary);
+      if (demoEvidenceBundleResult.bundle) {
+        setDemoEvidenceBundle(demoEvidenceBundleResult.bundle);
+      }
+      setDemoEvidenceBundleError(demoEvidenceBundleResult.error);
       if (demoReadinessResult.readiness) {
         setDemoReadiness(demoReadinessResult.readiness);
       }
@@ -825,6 +839,8 @@ export default function App() {
         tasks={tasks}
         hasStoredAdminToken={hasStoredAdminToken}
       />
+
+      <DemoEvidenceBundlePanel bundle={demoEvidenceBundle} error={demoEvidenceBundleError} />
 
       <DemoReadinessPanel readiness={demoReadiness} error={demoReadinessError} />
 
