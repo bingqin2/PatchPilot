@@ -2766,11 +2766,21 @@ pre {
 }
 
 .trigger-decision-meta span:not(.status-pill),
-.trigger-decision-meta time {
+.trigger-decision-meta time,
+.trigger-decision-meta a {
   color: #64727f;
   font-size: 12px;
   font-weight: 800;
   overflow-wrap: anywhere;
+}
+
+.trigger-decision-meta a {
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.trigger-decision-meta a:hover {
+  text-decoration: underline;
 }
 
 .trigger-decision-accepted-row strong,
