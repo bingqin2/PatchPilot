@@ -91,6 +91,25 @@ class CommandSafetyGateTests {
     }
 
     @Test
+    void should_reject_short_agent_fix_trigger_user_not_in_allowlist_before_actionability() {
+        CommandSafetyGate safetyGate = new CommandSafetyGate(safetyProperties(
+                List.of("maintainer"),
+                List.of("octocat/hello-world")
+        ));
+
+        SafetyGateDecision decision = safetyGate.evaluate(request(
+                "octocat",
+                "hello-world",
+                "alice",
+                "/agent fix"
+        ));
+
+        assertThat(decision.allowed()).isFalse();
+        assertThat(decision.reason()).isEqualTo("Unsafe request rejected: trigger user is not allowed");
+        assertThat(decision.category()).isEqualTo("TRIGGER_USER_NOT_ALLOWED");
+    }
+
+    @Test
     void should_reject_repository_not_in_allowlist() {
         CommandSafetyGate safetyGate = new CommandSafetyGate(safetyProperties(
                 List.of("alice"),
@@ -102,6 +121,25 @@ class CommandSafetyGateTests {
                 "hello-world",
                 "alice",
                 "/agent fix touch docs/demo.md"
+        ));
+
+        assertThat(decision.allowed()).isFalse();
+        assertThat(decision.reason()).isEqualTo("Unsafe request rejected: repository is not allowed");
+        assertThat(decision.category()).isEqualTo("REPOSITORY_NOT_ALLOWED");
+    }
+
+    @Test
+    void should_reject_short_agent_fix_repository_not_in_allowlist_before_actionability() {
+        CommandSafetyGate safetyGate = new CommandSafetyGate(safetyProperties(
+                List.of("alice"),
+                List.of("octocat/allowed-repo")
+        ));
+
+        SafetyGateDecision decision = safetyGate.evaluate(request(
+                "octocat",
+                "hello-world",
+                "alice",
+                "/agent fix"
         ));
 
         assertThat(decision.allowed()).isFalse();

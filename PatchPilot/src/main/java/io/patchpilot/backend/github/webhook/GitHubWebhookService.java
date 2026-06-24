@@ -3,7 +3,11 @@ package io.patchpilot.backend.github.webhook;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.patchpilot.backend.agent.tool.IssueCommentTool;
+import io.patchpilot.backend.github.IssueContextService;
+import io.patchpilot.backend.github.client.GitHubIssueContextClient;
+import io.patchpilot.backend.github.client.domain.GitHubIssueContext;
 import io.patchpilot.backend.github.client.domain.IssueCommentResult;
+import io.patchpilot.backend.github.config.GitHubProperties;
 import io.patchpilot.backend.github.webhook.domain.RecordWebhookDeliveryDiagnosticCommand;
 import io.patchpilot.backend.github.webhook.domain.WebhookDeliveryDiagnosticStatus;
 import io.patchpilot.backend.github.webhook.service.WebhookDeliveryDiagnosticService;
@@ -12,11 +16,13 @@ import io.patchpilot.backend.safety.CommandSafetyGate;
 import io.patchpilot.backend.safety.NoOpTriggerIntentClassifier;
 import io.patchpilot.backend.safety.NoOpTriggerQuarantineService;
 import io.patchpilot.backend.safety.NoOpTriggerRateLimitService;
+import io.patchpilot.backend.safety.domain.RejectedTriggerCategory;
 import io.patchpilot.backend.safety.domain.RecordRejectedTriggerCommand;
 import io.patchpilot.backend.safety.domain.SafetyGateDecision;
 import io.patchpilot.backend.safety.domain.SafetyGateRequest;
 import io.patchpilot.backend.safety.domain.TriggerIntentClassificationRequest;
 import io.patchpilot.backend.safety.domain.TriggerIntentDecision;
+import io.patchpilot.backend.safety.domain.TriggerIntentIssueComment;
 import io.patchpilot.backend.safety.domain.TriggerQuarantineDecision;
 import io.patchpilot.backend.safety.domain.TriggerQuarantineRequest;
 import io.patchpilot.backend.safety.domain.TriggerRateLimitDecision;
@@ -39,6 +45,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -59,6 +66,7 @@ public class GitHubWebhookService {
     private final TriggerQuarantineService triggerQuarantineService;
     private final TriggerIntentClassifier triggerIntentClassifier;
     private final WebhookDeliveryDiagnosticService webhookDeliveryDiagnosticService;
+    private final IssueContextService issueContextService;
     private final ConcurrentMap<String, WebhookHandleResult> deliveryResults = new ConcurrentHashMap<>();
 
     public GitHubWebhookService(
@@ -278,7 +286,35 @@ public class GitHubWebhookService {
         );
     }
 
-    @Autowired
+    public GitHubWebhookService(
+            ObjectMapper objectMapper,
+            FixTaskService fixTaskService,
+            FixTaskDispatcher fixTaskDispatcher,
+            IssueCommentTool issueCommentTool,
+            FixTaskTimelineService fixTaskTimelineService,
+            RejectedTriggerAuditService rejectedTriggerAuditService,
+            CommandSafetyGate commandSafetyGate,
+            TriggerQuarantineService triggerQuarantineService,
+            TriggerRateLimitService triggerRateLimitService,
+            TriggerIntentClassifier triggerIntentClassifier,
+            IssueContextService issueContextService
+    ) {
+        this(
+                objectMapper,
+                fixTaskService,
+                fixTaskDispatcher,
+                issueCommentTool,
+                fixTaskTimelineService,
+                rejectedTriggerAuditService,
+                commandSafetyGate,
+                triggerQuarantineService,
+                triggerRateLimitService,
+                triggerIntentClassifier,
+                new InMemoryWebhookDeliveryDiagnosticService(),
+                issueContextService
+        );
+    }
+
     public GitHubWebhookService(
             ObjectMapper objectMapper,
             FixTaskService fixTaskService,
@@ -292,6 +328,37 @@ public class GitHubWebhookService {
             TriggerIntentClassifier triggerIntentClassifier,
             WebhookDeliveryDiagnosticService webhookDeliveryDiagnosticService
     ) {
+        this(
+                objectMapper,
+                fixTaskService,
+                fixTaskDispatcher,
+                issueCommentTool,
+                fixTaskTimelineService,
+                rejectedTriggerAuditService,
+                commandSafetyGate,
+                triggerQuarantineService,
+                triggerRateLimitService,
+                triggerIntentClassifier,
+                webhookDeliveryDiagnosticService,
+                defaultIssueContextService()
+        );
+    }
+
+    @Autowired
+    public GitHubWebhookService(
+            ObjectMapper objectMapper,
+            FixTaskService fixTaskService,
+            FixTaskDispatcher fixTaskDispatcher,
+            IssueCommentTool issueCommentTool,
+            FixTaskTimelineService fixTaskTimelineService,
+            RejectedTriggerAuditService rejectedTriggerAuditService,
+            CommandSafetyGate commandSafetyGate,
+            TriggerQuarantineService triggerQuarantineService,
+            TriggerRateLimitService triggerRateLimitService,
+            TriggerIntentClassifier triggerIntentClassifier,
+            WebhookDeliveryDiagnosticService webhookDeliveryDiagnosticService,
+            IssueContextService issueContextService
+    ) {
         this.objectMapper = objectMapper;
         this.fixTaskService = fixTaskService;
         this.fixTaskDispatcher = fixTaskDispatcher;
@@ -303,6 +370,7 @@ public class GitHubWebhookService {
         this.triggerRateLimitService = triggerRateLimitService;
         this.triggerIntentClassifier = triggerIntentClassifier;
         this.webhookDeliveryDiagnosticService = webhookDeliveryDiagnosticService;
+        this.issueContextService = issueContextService;
     }
 
     public WebhookHandleResult handle(String event, String deliveryId, String payload) {
@@ -400,7 +468,7 @@ public class GitHubWebhookService {
                 triggerUser,
                 commentBody
         ));
-        if (!safetyDecision.allowed()) {
+        if (!safetyDecision.allowed() && !canClassifyWithIssueContext(safetyDecision)) {
             recordRejectedTrigger(
                     deliveryId,
                     repositoryOwner,
@@ -528,16 +596,13 @@ public class GitHubWebhookService {
             );
             return WebhookHandleResult.rejected();
         }
-        TriggerIntentDecision triggerIntentDecision = triggerIntentClassifier.classify(
-                new TriggerIntentClassificationRequest(
-                        classificationId(deliveryId),
-                        "issue_comment",
-                        repositoryOwner,
-                        repositoryName,
-                        issueNumber,
-                        triggerUser,
-                        commentBody
-                )
+        TriggerIntentDecision triggerIntentDecision = classifyTriggerIntent(
+                deliveryId,
+                repositoryOwner,
+                repositoryName,
+                issueNumber,
+                triggerUser,
+                commentBody
         );
         if (!triggerIntentDecision.shouldExecute()) {
             recordRejectedTrigger(
@@ -637,6 +702,55 @@ public class GitHubWebhookService {
                 "Ignored duplicate /agent fix while task is active"
         );
         return WebhookHandleResult.activeTaskExists(activeTask.id());
+    }
+
+    private TriggerIntentDecision classifyTriggerIntent(
+            String deliveryId,
+            String repositoryOwner,
+            String repositoryName,
+            long issueNumber,
+            String triggerUser,
+            String commentBody
+    ) {
+        try {
+            GitHubIssueContext issueContext = loadIssueContextForClassification(
+                    repositoryOwner,
+                    repositoryName,
+                    issueNumber
+            );
+            return triggerIntentClassifier.classify(new TriggerIntentClassificationRequest(
+                    classificationId(deliveryId),
+                    "issue_comment",
+                    repositoryOwner,
+                    repositoryName,
+                    issueNumber,
+                    triggerUser,
+                    commentBody,
+                    issueContext.title(),
+                    issueContext.body(),
+                    issueComments(issueContext)
+            ));
+        } catch (RuntimeException exception) {
+            return TriggerIntentDecision.rejected(
+                    "Model trigger classification failed: unable to load issue context: " + failureReason(exception)
+            );
+        }
+    }
+
+    private GitHubIssueContext loadIssueContextForClassification(
+            String repositoryOwner,
+            String repositoryName,
+            long issueNumber
+    ) {
+        if (!triggerIntentClassifier.supportsIssueContextClassification()) {
+            return new GitHubIssueContext("", "", "", List.of());
+        }
+        return issueContextService.loadIssueContext(repositoryOwner, repositoryName, issueNumber);
+    }
+
+    private boolean canClassifyWithIssueContext(SafetyGateDecision safetyDecision) {
+        return RejectedTriggerCategory.NOT_ACTIONABLE.equals(safetyDecision.category())
+                && triggerIntentClassifier.supportsIssueContextClassification();
     }
 
     private void recordRejectedTrigger(
@@ -765,6 +879,20 @@ public class GitHubWebhookService {
     private static String classificationId(String deliveryId) {
         return java.util.UUID.nameUUIDFromBytes(("issue-comment:" + deliveryId).getBytes(java.nio.charset.StandardCharsets.UTF_8))
                 .toString();
+    }
+
+    private static List<TriggerIntentIssueComment> issueComments(GitHubIssueContext issueContext) {
+        return issueContext.comments().stream()
+                .map(comment -> new TriggerIntentIssueComment(comment.author(), comment.body()))
+                .toList();
+    }
+
+    private static String failureReason(RuntimeException exception) {
+        return exception.getMessage() == null ? exception.getClass().getSimpleName() : exception.getMessage();
+    }
+
+    private static IssueContextService defaultIssueContextService() {
+        return new IssueContextService(new GitHubIssueContextClient(new GitHubProperties()));
     }
 
     private JsonNode parsePayload(String payload) {

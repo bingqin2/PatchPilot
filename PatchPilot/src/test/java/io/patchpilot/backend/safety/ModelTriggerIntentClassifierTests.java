@@ -10,6 +10,8 @@ import io.patchpilot.backend.safety.domain.TriggerIntentDecision;
 import io.patchpilot.backend.safety.domain.TriggerIntentDecisionStatus;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 class ModelTriggerIntentClassifierTests {
@@ -49,6 +51,10 @@ class ModelTriggerIntentClassifierTests {
         assertThat(modelClient.request().userPrompt()).contains("Issue number: 42");
         assertThat(modelClient.request().userPrompt()).contains("Trigger user: alice");
         assertThat(modelClient.request().userPrompt()).contains("Trigger comment: /agent fix touch docs/demo.md");
+        assertThat(modelClient.request().userPrompt()).contains("Issue title: Calculator total is wrong");
+        assertThat(modelClient.request().userPrompt()).contains("Issue body: The add endpoint returns 5 for 2 + 2.");
+        assertThat(modelClient.request().userPrompt())
+                .contains("alice: The failing test is CalculatorControllerTests#addsNumbers.");
     }
 
     @Test
@@ -104,7 +110,13 @@ class ModelTriggerIntentClassifierTests {
                 "hello-world",
                 42,
                 "alice",
-                "/agent fix touch docs/demo.md"
+                "/agent fix touch docs/demo.md",
+                "Calculator total is wrong",
+                "The add endpoint returns 5 for 2 + 2.",
+                List.of(new io.patchpilot.backend.safety.domain.TriggerIntentIssueComment(
+                        "alice",
+                        "The failing test is CalculatorControllerTests#addsNumbers."
+                ))
         );
     }
 

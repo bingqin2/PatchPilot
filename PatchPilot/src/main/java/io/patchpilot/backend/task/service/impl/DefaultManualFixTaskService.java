@@ -1,14 +1,20 @@
 package io.patchpilot.backend.task.service.impl;
 
+import io.patchpilot.backend.github.IssueContextService;
+import io.patchpilot.backend.github.client.GitHubIssueContextClient;
+import io.patchpilot.backend.github.client.domain.GitHubIssueContext;
+import io.patchpilot.backend.github.config.GitHubProperties;
 import io.patchpilot.backend.safety.CommandSafetyGate;
 import io.patchpilot.backend.safety.NoOpTriggerIntentClassifier;
 import io.patchpilot.backend.safety.NoOpTriggerQuarantineService;
 import io.patchpilot.backend.safety.NoOpTriggerRateLimitService;
+import io.patchpilot.backend.safety.domain.RejectedTriggerCategory;
 import io.patchpilot.backend.safety.domain.RecordRejectedTriggerCommand;
 import io.patchpilot.backend.safety.domain.SafetyGateDecision;
 import io.patchpilot.backend.safety.domain.SafetyGateRequest;
 import io.patchpilot.backend.safety.domain.TriggerIntentClassificationRequest;
 import io.patchpilot.backend.safety.domain.TriggerIntentDecision;
+import io.patchpilot.backend.safety.domain.TriggerIntentIssueComment;
 import io.patchpilot.backend.safety.domain.TriggerQuarantineDecision;
 import io.patchpilot.backend.safety.domain.TriggerQuarantineRequest;
 import io.patchpilot.backend.safety.domain.TriggerRateLimitDecision;
@@ -29,6 +35,7 @@ import io.patchpilot.backend.task.service.ManualFixTaskService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -42,6 +49,7 @@ public class DefaultManualFixTaskService implements ManualFixTaskService {
     private final TriggerQuarantineService triggerQuarantineService;
     private final TriggerRateLimitService triggerRateLimitService;
     private final TriggerIntentClassifier triggerIntentClassifier;
+    private final IssueContextService issueContextService;
 
     public DefaultManualFixTaskService(
             FixTaskService fixTaskService,
@@ -56,7 +64,8 @@ public class DefaultManualFixTaskService implements ManualFixTaskService {
                 new CommandSafetyGate(),
                 new NoOpTriggerQuarantineService(),
                 new NoOpTriggerRateLimitService(),
-                new NoOpTriggerIntentClassifier()
+                new NoOpTriggerIntentClassifier(),
+                defaultIssueContextService()
         );
     }
 
@@ -74,7 +83,8 @@ public class DefaultManualFixTaskService implements ManualFixTaskService {
                 commandSafetyGate,
                 new NoOpTriggerQuarantineService(),
                 new NoOpTriggerRateLimitService(),
-                new NoOpTriggerIntentClassifier()
+                new NoOpTriggerIntentClassifier(),
+                defaultIssueContextService()
         );
     }
 
@@ -93,7 +103,8 @@ public class DefaultManualFixTaskService implements ManualFixTaskService {
                 commandSafetyGate,
                 new NoOpTriggerQuarantineService(),
                 new NoOpTriggerRateLimitService(),
-                new NoOpTriggerIntentClassifier()
+                new NoOpTriggerIntentClassifier(),
+                defaultIssueContextService()
         );
     }
 
@@ -113,7 +124,8 @@ public class DefaultManualFixTaskService implements ManualFixTaskService {
                 commandSafetyGate,
                 new NoOpTriggerQuarantineService(),
                 new NoOpTriggerRateLimitService(),
-                triggerIntentClassifier
+                triggerIntentClassifier,
+                defaultIssueContextService()
         );
     }
 
@@ -126,7 +138,8 @@ public class DefaultManualFixTaskService implements ManualFixTaskService {
             CommandSafetyGate commandSafetyGate,
             TriggerQuarantineService triggerQuarantineService,
             TriggerRateLimitService triggerRateLimitService,
-            TriggerIntentClassifier triggerIntentClassifier
+            TriggerIntentClassifier triggerIntentClassifier,
+            IssueContextService issueContextService
     ) {
         this.fixTaskService = fixTaskService;
         this.fixTaskTimelineService = fixTaskTimelineService;
@@ -136,6 +149,30 @@ public class DefaultManualFixTaskService implements ManualFixTaskService {
         this.triggerQuarantineService = triggerQuarantineService;
         this.triggerRateLimitService = triggerRateLimitService;
         this.triggerIntentClassifier = triggerIntentClassifier;
+        this.issueContextService = issueContextService;
+    }
+
+    public DefaultManualFixTaskService(
+            FixTaskService fixTaskService,
+            FixTaskTimelineService fixTaskTimelineService,
+            FixTaskDispatcher fixTaskDispatcher,
+            RejectedTriggerAuditService rejectedTriggerAuditService,
+            CommandSafetyGate commandSafetyGate,
+            TriggerQuarantineService triggerQuarantineService,
+            TriggerRateLimitService triggerRateLimitService,
+            TriggerIntentClassifier triggerIntentClassifier
+    ) {
+        this(
+                fixTaskService,
+                fixTaskTimelineService,
+                fixTaskDispatcher,
+                rejectedTriggerAuditService,
+                commandSafetyGate,
+                triggerQuarantineService,
+                triggerRateLimitService,
+                triggerIntentClassifier,
+                defaultIssueContextService()
+        );
     }
 
     @Override
@@ -146,7 +183,7 @@ public class DefaultManualFixTaskService implements ManualFixTaskService {
                 command.triggerUser(),
                 command.triggerComment()
         ));
-        if (!safetyDecision.allowed()) {
+        if (!safetyDecision.allowed() && !canClassifyWithIssueContext(safetyDecision)) {
             rejectedTriggerAuditService.recordRejectedTrigger(new RecordRejectedTriggerCommand(
                     "manual",
                     "manual-rejected-" + UUID.randomUUID(),
@@ -212,17 +249,7 @@ public class DefaultManualFixTaskService implements ManualFixTaskService {
             ));
             throw new IllegalArgumentException(rateLimitDecision.reason());
         }
-        TriggerIntentDecision triggerIntentDecision = triggerIntentClassifier.classify(
-                new TriggerIntentClassificationRequest(
-                        classificationId(),
-                        "manual",
-                        command.repositoryOwner(),
-                        command.repositoryName(),
-                        command.issueNumber(),
-                        command.triggerUser(),
-                        command.triggerComment()
-                )
-        );
+        TriggerIntentDecision triggerIntentDecision = classifyTriggerIntent(command);
         if (!triggerIntentDecision.shouldExecute()) {
             rejectedTriggerAuditService.recordRejectedTrigger(new RecordRejectedTriggerCommand(
                     "manual",
@@ -257,7 +284,59 @@ public class DefaultManualFixTaskService implements ManualFixTaskService {
         return task;
     }
 
+    private TriggerIntentDecision classifyTriggerIntent(CreateManualFixTaskCommand command) {
+        try {
+            GitHubIssueContext issueContext = loadIssueContextForClassification(command);
+            return triggerIntentClassifier.classify(new TriggerIntentClassificationRequest(
+                    classificationId(),
+                    "manual",
+                    command.repositoryOwner(),
+                    command.repositoryName(),
+                    command.issueNumber(),
+                    command.triggerUser(),
+                    command.triggerComment(),
+                    issueContext.title(),
+                    issueContext.body(),
+                    issueComments(issueContext)
+            ));
+        } catch (RuntimeException exception) {
+            return TriggerIntentDecision.rejected(
+                    "Model trigger classification failed: unable to load issue context: " + failureReason(exception)
+            );
+        }
+    }
+
+    private GitHubIssueContext loadIssueContextForClassification(CreateManualFixTaskCommand command) {
+        if (!triggerIntentClassifier.supportsIssueContextClassification()) {
+            return new GitHubIssueContext("", "", "", List.of());
+        }
+        return issueContextService.loadIssueContext(
+                command.repositoryOwner(),
+                command.repositoryName(),
+                command.issueNumber()
+        );
+    }
+
+    private boolean canClassifyWithIssueContext(SafetyGateDecision safetyDecision) {
+        return RejectedTriggerCategory.NOT_ACTIONABLE.equals(safetyDecision.category())
+                && triggerIntentClassifier.supportsIssueContextClassification();
+    }
+
     private static String classificationId() {
         return UUID.randomUUID().toString();
+    }
+
+    private static List<TriggerIntentIssueComment> issueComments(GitHubIssueContext issueContext) {
+        return issueContext.comments().stream()
+                .map(comment -> new TriggerIntentIssueComment(comment.author(), comment.body()))
+                .toList();
+    }
+
+    private static String failureReason(RuntimeException exception) {
+        return exception.getMessage() == null ? exception.getClass().getSimpleName() : exception.getMessage();
+    }
+
+    private static IssueContextService defaultIssueContextService() {
+        return new IssueContextService(new GitHubIssueContextClient(new GitHubProperties()));
     }
 }

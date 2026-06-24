@@ -2,8 +2,13 @@ package io.patchpilot.backend.github.webhook;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.patchpilot.backend.agent.tool.IssueCommentTool;
+import io.patchpilot.backend.github.IssueContextService;
 import io.patchpilot.backend.github.client.GitHubIssueCommentClient;
+import io.patchpilot.backend.github.client.GitHubIssueContextClient;
 import io.patchpilot.backend.github.client.domain.CreateIssueCommentCommand;
+import io.patchpilot.backend.github.client.domain.GetIssueContextCommand;
+import io.patchpilot.backend.github.client.domain.GitHubIssueContext;
+import io.patchpilot.backend.github.client.domain.GitHubIssueContextComment;
 import io.patchpilot.backend.github.client.domain.GitHubIssueCommentException;
 import io.patchpilot.backend.github.client.domain.IssueCommentResult;
 import io.patchpilot.backend.github.config.GitHubProperties;
@@ -333,6 +338,48 @@ class GitHubWebhookServiceTests {
     }
 
     @Test
+    void should_reject_short_agent_fix_from_unauthorized_user_before_issue_context_classification() {
+        FixTaskService fixTaskService = new InMemoryFixTaskService();
+        RecordingFixTaskDispatcher fixTaskDispatcher = new RecordingFixTaskDispatcher();
+        RecordingIssueCommentTool issueCommentTool = new RecordingIssueCommentTool();
+        RecordingTimelineService timelineService = new RecordingTimelineService();
+        RecordingRejectedTriggerAuditService auditService = new RecordingRejectedTriggerAuditService();
+        RecordingTriggerIntentClassifier triggerIntentClassifier = new RecordingTriggerIntentClassifier(
+                TriggerIntentDecision.shouldExecute("should not be called"),
+                true
+        );
+        RecordingIssueContextService issueContextService = new RecordingIssueContextService(issueContext());
+        GitHubWebhookService webhookService = new GitHubWebhookService(
+                new ObjectMapper(),
+                fixTaskService,
+                fixTaskDispatcher,
+                issueCommentTool,
+                timelineService,
+                auditService,
+                new CommandSafetyGate(safetyProperties(List.of("maintainer"), List.of("octocat/hello-world"))),
+                new io.patchpilot.backend.safety.NoOpTriggerQuarantineService(),
+                new io.patchpilot.backend.safety.NoOpTriggerRateLimitService(),
+                triggerIntentClassifier,
+                issueContextService
+        );
+
+        WebhookHandleResult result = webhookService.handle(
+                "issue_comment",
+                "delivery-short-command-unauthorized",
+                issueCommentPayload("/agent fix", "alice", "octocat", "hello-world")
+        );
+
+        assertThat(result.status()).isEqualTo(WebhookHandleStatus.REJECTED);
+        assertThat(issueContextService.command()).isNull();
+        assertThat(triggerIntentClassifier.request()).isNull();
+        assertThat(fixTaskService.listTasks()).isEmpty();
+        assertThat(fixTaskDispatcher.dispatchCount()).isZero();
+        assertThat(issueCommentTool.acceptedCount()).isZero();
+        assertThat(auditService.commands()).hasSize(1);
+        assertThat(auditService.commands().get(0).category()).isEqualTo("TRIGGER_USER_NOT_ALLOWED");
+    }
+
+    @Test
     void should_reject_agent_fix_for_unauthorized_repository_before_task_creation() {
         FixTaskService fixTaskService = new InMemoryFixTaskService();
         RecordingFixTaskDispatcher fixTaskDispatcher = new RecordingFixTaskDispatcher();
@@ -403,6 +450,59 @@ class GitHubWebhookServiceTests {
         assertThat(auditService.commands().get(0).reason())
                 .isEqualTo("Model trigger classification needs clarification: The requested change is too vague for an automated patch.");
         assertThat(auditService.commands().get(0).category()).isEqualTo("MODEL_NEEDS_CLARIFICATION");
+    }
+
+    @Test
+    void should_use_issue_context_to_classify_short_agent_fix_comment_before_task_creation() {
+        FixTaskService fixTaskService = new InMemoryFixTaskService();
+        RecordingFixTaskDispatcher fixTaskDispatcher = new RecordingFixTaskDispatcher();
+        RecordingIssueCommentTool issueCommentTool = new RecordingIssueCommentTool();
+        RecordingTimelineService timelineService = new RecordingTimelineService();
+        RecordingRejectedTriggerAuditService auditService = new RecordingRejectedTriggerAuditService();
+        RecordingTriggerIntentClassifier triggerIntentClassifier = new RecordingTriggerIntentClassifier(
+                TriggerIntentDecision.shouldExecute("Issue context describes a concrete failing test."),
+                true
+        );
+        RecordingIssueContextService issueContextService = new RecordingIssueContextService(issueContext());
+        GitHubWebhookService webhookService = new GitHubWebhookService(
+                new ObjectMapper(),
+                fixTaskService,
+                fixTaskDispatcher,
+                issueCommentTool,
+                timelineService,
+                auditService,
+                new CommandSafetyGate(),
+                new io.patchpilot.backend.safety.NoOpTriggerQuarantineService(),
+                new io.patchpilot.backend.safety.NoOpTriggerRateLimitService(),
+                triggerIntentClassifier,
+                issueContextService
+        );
+
+        WebhookHandleResult result = webhookService.handle(
+                "issue_comment",
+                "delivery-short-command-context",
+                issueCommentPayload("/agent fix")
+        );
+
+        FixTaskVo task = fixTaskService.findTask(result.taskId()).orElseThrow();
+        assertThat(result.status()).isEqualTo(WebhookHandleStatus.TASK_CREATED);
+        assertThat(task.triggerComment()).isEqualTo("/agent fix");
+        assertThat(issueContextService.command().owner()).isEqualTo("octocat");
+        assertThat(issueContextService.command().repository()).isEqualTo("hello-world");
+        assertThat(issueContextService.command().issueNumber()).isEqualTo(42L);
+        assertThat(triggerIntentClassifier.request().source()).isEqualTo("issue_comment");
+        assertThat(triggerIntentClassifier.request().triggerComment()).isEqualTo("/agent fix");
+        assertThat(triggerIntentClassifier.request().issueTitle()).isEqualTo("Dashboard filter returns empty results");
+        assertThat(triggerIntentClassifier.request().issueBody())
+                .isEqualTo("The dashboard calls /api/tasks?status=FAILED and renders no rows even though failed tasks exist.");
+        assertThat(triggerIntentClassifier.request().recentIssueComments())
+                .extracting(comment -> comment.author() + ": " + comment.body())
+                .containsExactly("alice: Reproduce with the failed status filter and task #123.");
+        assertThat(issueCommentTool.acceptedCount()).isEqualTo(1);
+        assertThat(fixTaskDispatcher.dispatchCount()).isEqualTo(1);
+        assertThat(timelineService.eventTypes())
+                .containsExactly(FixTaskTimelineEventType.TASK_CREATED, FixTaskTimelineEventType.STATUS_COMMENT_CREATED);
+        assertThat(auditService.commands()).isEmpty();
     }
 
     @Test
@@ -693,6 +793,21 @@ class GitHubWebhookServiceTests {
         properties.setAllowedTriggerUsers(allowedTriggerUsers);
         properties.setAllowedRepositories(allowedRepositories);
         return properties;
+    }
+
+    private static GitHubIssueContext issueContext() {
+        return new GitHubIssueContext(
+                "Dashboard filter returns empty results",
+                "The dashboard calls /api/tasks?status=FAILED and renders no rows even though failed tasks exist.",
+                "https://github.com/octocat/hello-world/issues/42",
+                List.of(new GitHubIssueContextComment(
+                        123,
+                        "alice",
+                        "Reproduce with the failed status filter and task #123.",
+                        "2026-06-24T00:00:00Z",
+                        "https://github.com/octocat/hello-world/issues/42#issuecomment-123"
+                ))
+        );
     }
 
     private static final class ExistingDeliveryFixTaskService implements FixTaskService {
@@ -1065,8 +1180,18 @@ class GitHubWebhookServiceTests {
         private final TriggerIntentDecision decision;
         private TriggerIntentClassificationRequest request;
 
+        private final boolean supportsIssueContextClassification;
+
         private RecordingTriggerIntentClassifier(TriggerIntentDecision decision) {
+            this(decision, false);
+        }
+
+        private RecordingTriggerIntentClassifier(
+                TriggerIntentDecision decision,
+                boolean supportsIssueContextClassification
+        ) {
             this.decision = decision;
+            this.supportsIssueContextClassification = supportsIssueContextClassification;
         }
 
         @Override
@@ -1075,8 +1200,39 @@ class GitHubWebhookServiceTests {
             return decision;
         }
 
+        @Override
+        public boolean supportsIssueContextClassification() {
+            return supportsIssueContextClassification;
+        }
+
         private TriggerIntentClassificationRequest request() {
             return request;
+        }
+    }
+
+    private static final class RecordingIssueContextService extends IssueContextService {
+
+        private final GitHubIssueContext context;
+        private GetIssueContextCommand command;
+
+        private RecordingIssueContextService(GitHubIssueContext context) {
+            super(new GitHubIssueContextClient(new GitHubProperties()) {
+                @Override
+                public GitHubIssueContext getIssueContext(GetIssueContextCommand command) {
+                    return context;
+                }
+            });
+            this.context = context;
+        }
+
+        @Override
+        public GitHubIssueContext loadIssueContext(String repositoryOwner, String repositoryName, long issueNumber) {
+            command = new GetIssueContextCommand(repositoryOwner, repositoryName, issueNumber, 5);
+            return context;
+        }
+
+        private GetIssueContextCommand command() {
+            return command;
         }
     }
 

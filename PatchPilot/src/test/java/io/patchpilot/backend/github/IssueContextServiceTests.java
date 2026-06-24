@@ -41,6 +41,25 @@ class IssueContextServiceTests {
         assertThat(client.command().commentLimit()).isEqualTo(5);
     }
 
+    @Test
+    void should_load_issue_context_for_repository_issue_pair() {
+        RecordingIssueContextClient client = new RecordingIssueContextClient(new GitHubIssueContext(
+                "Fix the dashboard filter",
+                "The failed task filter renders an empty list.",
+                "https://github.com/bingqin2/PatchPilot/issues/7",
+                List.of()
+        ));
+        IssueContextService service = new IssueContextService(client);
+
+        GitHubIssueContext context = service.loadIssueContext("bingqin2", "PatchPilot", 7);
+
+        assertThat(context.title()).isEqualTo("Fix the dashboard filter");
+        assertThat(client.command().owner()).isEqualTo("bingqin2");
+        assertThat(client.command().repository()).isEqualTo("PatchPilot");
+        assertThat(client.command().issueNumber()).isEqualTo(7);
+        assertThat(client.command().commentLimit()).isEqualTo(5);
+    }
+
     private static FixTaskVo task() {
         return new FixTaskVo(
                 "task-123",
