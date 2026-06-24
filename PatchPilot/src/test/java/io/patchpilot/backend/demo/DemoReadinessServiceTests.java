@@ -7,6 +7,7 @@ import io.patchpilot.backend.language.domain.LanguageAdapterFixtureVerificationV
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.vo.FixTaskQueueSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
+import io.patchpilot.backend.task.domain.vo.FixTaskWorkerHealthVo;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
@@ -23,6 +24,7 @@ class DemoReadinessServiceTests {
                 () -> configuration(true, true, true, true),
                 () -> List.of(fixture("java-maven", "PASS"), fixture("python-hatch", "PASS")),
                 () -> new FixTaskQueueSummaryVo(3, 0, 0, 0, 0, 3, 0, 0),
+                DemoReadinessServiceTests::readyWorker,
                 () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/12"))
         );
 
@@ -39,6 +41,7 @@ class DemoReadinessServiceTests {
                         "Repository preflight scope",
                         "Adapter fixtures",
                         "Queue",
+                        "Worker heartbeat",
                         "Recent Pull Request"
                 );
         assertThat(readiness.checks())
@@ -60,6 +63,7 @@ class DemoReadinessServiceTests {
                 ),
                 () -> List.of(fixture("java-maven", "PASS")),
                 () -> FixTaskQueueSummaryVo.empty(),
+                DemoReadinessServiceTests::readyWorker,
                 () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/12"))
         );
 
@@ -86,6 +90,7 @@ class DemoReadinessServiceTests {
                 () -> configuration(false, false, false, false),
                 () -> List.of(fixture("java-maven", "PASS"), fixture("python-hatch", "FAIL")),
                 () -> FixTaskQueueSummaryVo.empty(),
+                DemoReadinessServiceTests::readyWorker,
                 List::of
         );
 
@@ -119,6 +124,7 @@ class DemoReadinessServiceTests {
                 () -> configuration(true, true, true, false),
                 () -> List.of(fixture("java-maven", "PASS")),
                 () -> new FixTaskQueueSummaryVo(5, 1, 1, 0, 1, 1, 2, 0),
+                DemoReadinessServiceTests::readyWorker,
                 () -> List.of(task("task-2", FixTaskStatus.FAILED, null))
         );
 
@@ -150,6 +156,7 @@ class DemoReadinessServiceTests {
                 () -> configuration(true, true, true, true, false),
                 () -> List.of(fixture("java-maven", "PASS")),
                 () -> FixTaskQueueSummaryVo.empty(),
+                DemoReadinessServiceTests::readyWorker,
                 () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/12"))
         );
 
@@ -182,6 +189,7 @@ class DemoReadinessServiceTests {
                 ),
                 () -> List.of(fixture("java-maven", "PASS")),
                 () -> FixTaskQueueSummaryVo.empty(),
+                DemoReadinessServiceTests::readyWorker,
                 () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/12"))
         );
 
@@ -213,6 +221,7 @@ class DemoReadinessServiceTests {
                 ),
                 () -> List.of(fixture("java-maven", "PASS")),
                 () -> FixTaskQueueSummaryVo.empty(),
+                DemoReadinessServiceTests::readyWorker,
                 () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/12"))
         );
 
@@ -223,6 +232,46 @@ class DemoReadinessServiceTests {
                 .filteredOn(check -> check.name().equals("Repository preflight scope"))
                 .singleElement()
                 .satisfies(check -> assertThat(check.status()).isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION));
+    }
+
+    @Test
+    void should_report_worker_attention_when_worker_heartbeat_is_not_ready() {
+        DemoReadinessService service = new DemoReadinessService(
+                () -> configuration(true, true, true, true),
+                () -> List.of(fixture("java-maven", "PASS")),
+                () -> FixTaskQueueSummaryVo.empty(),
+                () -> new FixTaskWorkerHealthVo(
+                        "NOT_STARTED",
+                        "Worker poller has not reported a heartbeat yet.",
+                        null,
+                        null,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        null,
+                        null,
+                        null,
+                        -1,
+                        "NEEDS_ATTENTION",
+                        "Wait for the queue worker poller to start or check the active Spring profile."
+                ),
+                () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/12"))
+        );
+
+        DemoReadinessVo readiness = service.getReadiness();
+
+        assertThat(readiness.status()).isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
+        assertThat(readiness.checks())
+                .filteredOn(check -> check.name().equals("Worker heartbeat"))
+                .singleElement()
+                .satisfies(check -> {
+                    assertThat(check.status()).isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
+                    assertThat(check.message()).contains("Worker poller has not reported a heartbeat yet.");
+                    assertThat(check.action()).contains("queue worker poller");
+                });
+        assertThat(readiness.nextActions()).contains("Wait for the queue worker poller to start or check the active Spring profile.");
     }
 
     private static ConfigurationSummaryVo configuration(
@@ -259,6 +308,7 @@ class DemoReadinessServiceTests {
                 3,
                 1000,
                 30000,
+                25000,
                 modelCostConfigured,
                 true,
                 true,
@@ -331,6 +381,7 @@ class DemoReadinessServiceTests {
                 3,
                 1000,
                 30000,
+                25000,
                 modelCostConfigured,
                 true,
                 true,
@@ -366,6 +417,26 @@ class DemoReadinessServiceTests {
                 List.of("mvn", "test"),
                 "Detected fixture",
                 status
+        );
+    }
+
+    private static FixTaskWorkerHealthVo readyWorker() {
+        return new FixTaskWorkerHealthVo(
+                "IDLE",
+                "Worker poller is active but no queue item was available.",
+                Instant.parse("2026-06-24T06:00:00Z"),
+                Instant.parse("2026-06-24T06:00:01Z"),
+                12,
+                3,
+                2,
+                0,
+                8,
+                "queue-123",
+                "task-123",
+                null,
+                1000,
+                "READY",
+                "No action needed."
         );
     }
 

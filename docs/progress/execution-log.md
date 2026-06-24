@@ -3202,3 +3202,27 @@ Validation so far:
 - `npm test`: passed after full frontend verification, 158 tests run, 0 failures.
 - `npm run build`: passed after production frontend build verification.
 - `git diff --check`: passed after whitespace verification.
+
+Implemented worker health readiness gate from `docs/plans/159-worker-health-readiness-gate.md`.
+
+Changes:
+
+- Added `patchpilot.task.queue.worker-heartbeat-stale-ms` configuration and exposed it through the non-sensitive configuration summary.
+- Extended worker health with `lastPollAgeMs`, `readinessStatus`, and `operatorAction`.
+- Derived worker readiness as `READY` only when the poller has reported a fresh poll and is not in `ERROR`.
+- Added `Worker heartbeat` to demo readiness so stale, missing, or errored worker state blocks live-demo readiness before a GitHub trigger is posted.
+- Added worker readiness, last poll age, and operator action to the queue panel.
+- Added worker heartbeat to the operator setup checklist.
+- Added heartbeat stale-threshold visibility and configuration health hints to the configuration panel.
+- Updated README, product spec, architecture notes, frontend design notes, and this execution log.
+
+Validation so far:
+
+- `mvn -pl PatchPilot -Dtest=InMemoryFixTaskWorkerHealthServiceTests,TaskQueueControllerTests test`: first failed because worker health did not yet expose readiness fields or stale-threshold behavior; then passed after adding readiness derivation and controller serialization.
+- `mvn -pl PatchPilot -Dtest=ConfigurationSummaryServiceTests,ConfigurationControllerTests,DemoReadinessServiceTests,DemoEvidenceBundleServiceTests test`: first failed because configuration and demo-readiness fixtures did not yet include the worker stale threshold and worker-health supplier; then passed after wiring the new fields.
+- `mvn -pl PatchPilot -Dtest=ConfigurationSummaryServiceTests,ConfigurationControllerTests,DemoReadinessServiceTests,DemoEvidenceBundleServiceTests,InMemoryFixTaskWorkerHealthServiceTests,TaskQueueControllerTests test`: passed after backend integration, 19 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts src/dashboard/components/QueuePanel.test.tsx src/dashboard/components/OperatorSetupChecklistPanel.test.tsx src/dashboard/components/ConfigurationPanel.test.tsx src/App.test.tsx`: first failed because two App-level checklist count assertions still expected the old 7-check model; then passed after updating the integration expectations, 111 tests run, 0 failures.
+- `JAVA_HOME=/Library/Java/JavaVirtualMachines/openjdk-17.jdk/Contents/Home mvn -pl PatchPilot test`: passed after full backend verification, 602 tests run, 0 failures.
+- `npm test`: passed after full frontend verification, 159 tests run, 0 failures.
+- `npm run build`: passed after production frontend build verification.
+- `GIT_OPTIONAL_LOCKS=0 git diff --check`: passed after whitespace verification.

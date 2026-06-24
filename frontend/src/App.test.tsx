@@ -428,7 +428,10 @@ const workerHealth = {
   idlePollCount: 8,
   lastClaimedQueueItemId: 'queue-1',
   lastClaimedTaskId: 'task-3',
-  lastError: null
+  lastError: null,
+  lastPollAgeMs: 1000,
+  readinessStatus: 'READY',
+  operatorAction: 'No action needed.'
 };
 
 const webhookDeliveries = [
@@ -743,6 +746,7 @@ const configurationSummary = {
   queueMaxAttempts: 3,
   queueRetryDelayMs: 30000,
   queueVisibilityTimeoutMs: 300000,
+  queueWorkerHeartbeatStaleMs: 10000,
   modelCostConfigured: true,
   modelTriggerClassificationEnabled: true,
   triggerRateLimitEnabled: true,
@@ -773,6 +777,12 @@ const demoReadiness = {
       name: 'Backend',
       status: 'READY',
       message: 'Backend readiness endpoint is reachable.',
+      action: 'No action needed.'
+    },
+    {
+      name: 'Worker heartbeat',
+      status: 'READY',
+      message: 'Worker poller is executing a queue item.',
       action: 'No action needed.'
     },
     {
@@ -1663,7 +1673,7 @@ test('summarizes operator setup readiness before a demo run', async () => {
 
   const setupChecklist = await screen.findByRole('region', { name: 'Operator setup checklist' });
   expect(within(setupChecklist).getByRole('heading', { name: 'Operator setup checklist' })).toBeInTheDocument();
-  expect(within(setupChecklist).getByText('5/7 checks ready')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('6/8 checks ready')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Backend connectivity')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Ready - /health reports UP')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Required credentials')).toBeInTheDocument();
@@ -1676,6 +1686,8 @@ test('summarizes operator setup readiness before a demo run', async () => {
   expect(within(setupChecklist).getByText('Ready - 13/13 fixtures passing')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Queue health')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Attention - 1 failed queue item')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('Worker heartbeat')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('Ready - Worker poller is executing a queue item.')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Recent PR evidence')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Attention - run one controlled issue-to-PR smoke task')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Clear failed queue items before a live demo.')).toBeInTheDocument();
@@ -1732,7 +1744,7 @@ test('shows when every operator setup check is ready', async () => {
   render(<App />);
 
   const setupChecklist = await screen.findByRole('region', { name: 'Operator setup checklist' });
-  expect(within(setupChecklist).getByText('7/7 checks ready')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('8/8 checks ready')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Ready - recent completed task has a Pull Request URL')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('All setup checks are ready for a controlled issue-to-PR demo.')).toBeInTheDocument();
   expect(within(setupChecklist).queryByRole('heading', { name: 'Next setup actions' })).not.toBeInTheDocument();
@@ -2393,6 +2405,8 @@ test('loads queue summary and items from backend APIs', async () => {
   expect(screen.getByText('task-3')).toBeInTheDocument();
   expect(screen.getByText('attempt 2')).toBeInTheDocument();
   expect(screen.getByText('Worker active')).toBeInTheDocument();
+  expect(screen.getByText('READY readiness')).toBeInTheDocument();
+  expect(screen.getByText('1.0s last poll age')).toBeInTheDocument();
   expect(screen.getByText('Last task task-3')).toBeInTheDocument();
 
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/task-queue/summary'));

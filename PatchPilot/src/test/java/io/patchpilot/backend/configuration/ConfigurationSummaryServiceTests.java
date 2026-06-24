@@ -28,6 +28,7 @@ class ConfigurationSummaryServiceTests {
         WorkspaceProperties workspaceProperties = new WorkspaceProperties();
         workspaceProperties.setRootDir(Path.of("/tmp/patchpilot/workspaces"));
         TaskQueueProperties taskQueueProperties = new TaskQueueProperties();
+        taskQueueProperties.setWorkerHeartbeatStaleMs(25_000);
         SafetyProperties safetyProperties = new SafetyProperties();
         safetyProperties.setAllowedTriggerUsers(List.of(" bingqin2 ", "BINGQIN2", "local-operator", ""));
         safetyProperties.setAllowedRepositories(List.of(" bingqin2/PatchPilot ", "BINGQIN2/PATCHPILOT", "octocat/hello-world"));
@@ -71,6 +72,7 @@ class ConfigurationSummaryServiceTests {
         assertThat(summary.rejectedTriggerQuarantineWindowMs()).isEqualTo(900_000);
         assertThat(summary.rejectedTriggerQuarantineThreshold()).isEqualTo(4);
         assertThat(summary.rejectedTriggerQuarantineCooldownMs()).isEqualTo(1_800_000);
+        assertThat(summary.queueWorkerHeartbeatStaleMs()).isEqualTo(25_000);
         assertThat(summary.repositoryPreflightAllowedRootDirs()).containsExactly(
                 "/tmp/patchpilot/workspaces",
                 Path.of("..").resolve("docs/demo-repositories").toAbsolutePath().normalize().toString()

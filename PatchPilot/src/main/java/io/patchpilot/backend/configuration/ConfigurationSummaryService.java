@@ -51,6 +51,7 @@ public class ConfigurationSummaryService {
                 taskQueueProperties.getMaxAttempts(),
                 taskQueueProperties.getRetryDelayMs(),
                 taskQueueProperties.getVisibilityTimeoutMs(),
+                taskQueueProperties.getWorkerHeartbeatStaleMs(),
                 modelCostConfigured(),
                 safetyProperties.isModelTriggerClassificationEnabled(),
                 safetyProperties.isTriggerRateLimitEnabled(),

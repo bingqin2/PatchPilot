@@ -1,5 +1,5 @@
 import type { FixTaskQueueItem, FixTaskQueueSummary, FixTaskWorkerHealth } from '../../types';
-import { compactTime } from '../format';
+import { compactTime, duration } from '../format';
 import { SummaryItem } from './SummaryItem';
 
 interface QueuePanelProps {
@@ -29,6 +29,9 @@ export function QueuePanel({ summary, items, workerHealth }: QueuePanelProps) {
       <div className={`queue-health queue-health-${worker.level}`}>
         <strong>{worker.title}</strong>
         <span>{worker.message}</span>
+        <span>{workerHealth ? `${workerHealth.readinessStatus} readiness` : 'Readiness loading'}</span>
+        <span>{workerHealth ? `${lastPollAge(workerHealth.lastPollAgeMs)} last poll age` : 'No poll age yet'}</span>
+        {workerHealth?.operatorAction ? <span>{workerHealth.operatorAction}</span> : null}
         <span>{workerHealth ? `${workerHealth.pollCount} polls` : 'No poll count yet'}</span>
         <span>{workerHealth ? `${workerHealth.claimedCount} claimed` : 'No claimed task yet'}</span>
         {workerHealth?.lastClaimedTaskId ? <span>Last task {workerHealth.lastClaimedTaskId}</span> : null}
@@ -148,4 +151,11 @@ function countLabel(count: number, label: string) {
     return '';
   }
   return `${count} ${label}${count === 1 ? '' : 's'}`;
+}
+
+function lastPollAge(lastPollAgeMs: number) {
+  if (lastPollAgeMs < 0) {
+    return 'No heartbeat';
+  }
+  return duration(lastPollAgeMs);
 }

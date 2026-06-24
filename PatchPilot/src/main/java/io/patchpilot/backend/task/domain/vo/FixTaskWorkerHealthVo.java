@@ -14,6 +14,9 @@ public record FixTaskWorkerHealthVo(
         long idlePollCount,
         String lastClaimedQueueItemId,
         String lastClaimedTaskId,
-        String lastError
+        String lastError,
+        long lastPollAgeMs,
+        String readinessStatus,
+        String operatorAction
 ) {
 }

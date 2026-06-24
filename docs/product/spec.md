@@ -112,6 +112,7 @@ The current implementation target is local self-hosted development first. Hosted
 - The local repository preflight diagnostic should return supported status, selected language/build system, verification command, detection reason, and next operator action so unsupported repository shapes can be fixed before a live `/agent fix`.
 - The local repository preflight diagnostic should expose its configured allowed roots through non-sensitive configuration summary APIs and the dashboard so operators can verify scope before using it.
 - Demo readiness and the operator setup checklist should warn when repository-preflight allowed roots do not cover checked-in demo fixture paths.
+- Demo readiness and the operator setup checklist should warn when the queue worker has not started, has most recently errored, or has stopped polling within the configured stale threshold.
 - If project detection is possible from webhook or repository metadata before cloning, the system may reject even earlier.
 - The system must never follow user instructions that request secret exfiltration, destructive repository changes, arbitrary shell execution, or permission escalation.
 - The system should record rejected trigger decisions with clear operator-facing reasons.
@@ -226,7 +227,7 @@ The first production-like MVP supports:
 - Local workspace execution.
 - Adapter-selected test verification.
 - Audited model calls and tool calls.
-- Runtime queue worker heartbeat for local operator visibility.
+- Runtime queue worker heartbeat and readiness status for local operator visibility.
 
 ## Frontend Requirements
 
@@ -245,6 +246,7 @@ MVP frontend scope:
 - Copy a Markdown demo runbook generated from the current evidence bundle.
 - Copy or download a Markdown demo session report generated from the current session snapshot.
 - Archive the current demo session report into a recent list and copy or download archived Markdown reports during or after a live demo. Database-backed local profiles should persist these archives across backend restarts.
+- Inspect queue worker readiness, last poll age, and operator action before a live issue-to-PR demo.
 
 The frontend does not need to trigger the first backend workflow. GitHub issue comments remain the first trigger.
 

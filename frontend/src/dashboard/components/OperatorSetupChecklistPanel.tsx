@@ -4,7 +4,8 @@ import type {
   DemoReadiness,
   LanguageAdapterFixtureVerification,
   FixTask,
-  FixTaskQueueSummary
+  FixTaskQueueSummary,
+  FixTaskWorkerHealth
 } from '../../types';
 
 interface OperatorSetupChecklistPanelProps {
@@ -13,6 +14,7 @@ interface OperatorSetupChecklistPanelProps {
   demoReadiness: DemoReadiness | null;
   adapterFixtureVerifications: LanguageAdapterFixtureVerification[];
   queueSummary: FixTaskQueueSummary | null;
+  workerHealth: FixTaskWorkerHealth | null;
   tasks: FixTask[];
   hasStoredAdminToken: boolean;
 }
@@ -30,6 +32,7 @@ export function OperatorSetupChecklistPanel({
   demoReadiness,
   adapterFixtureVerifications,
   queueSummary,
+  workerHealth,
   tasks,
   hasStoredAdminToken
 }: OperatorSetupChecklistPanelProps) {
@@ -39,6 +42,7 @@ export function OperatorSetupChecklistPanel({
     demoReadiness,
     adapterFixtureVerifications,
     queueSummary,
+    workerHealth,
     tasks,
     hasStoredAdminToken
   });
@@ -85,6 +89,7 @@ function setupChecks({
   demoReadiness,
   adapterFixtureVerifications,
   queueSummary,
+  workerHealth,
   tasks,
   hasStoredAdminToken
 }: OperatorSetupChecklistPanelProps): SetupCheck[] {
@@ -95,6 +100,7 @@ function setupChecks({
     repositoryPreflightScopeCheck(configuration, demoReadiness),
     adapterFixtureCheck(adapterFixtureVerifications),
     queueHealthCheck(queueSummary),
+    workerHeartbeatCheck(demoReadiness, workerHealth),
     recentPullRequestCheck(demoReadiness, tasks)
   ];
 }
@@ -184,6 +190,26 @@ function queueHealthCheck(queueSummary: FixTaskQueueSummary | null): SetupCheck 
     ready: failedCount === 0,
     message: failedCount === 0 ? 'no failed queue items' : `${failedCount} failed queue item${failedCount === 1 ? '' : 's'}`,
     action: 'Clear failed queue items before a live demo.'
+  };
+}
+
+function workerHeartbeatCheck(demoReadiness: DemoReadiness | null, workerHealth: FixTaskWorkerHealth | null): SetupCheck {
+  const demoReadinessCheck = demoReadiness?.checks.find((check) => check.name === 'Worker heartbeat');
+  if (demoReadinessCheck) {
+    return {
+      name: 'Worker heartbeat',
+      ready: demoReadinessCheck.status === 'READY',
+      message: demoReadinessCheck.message,
+      action: demoReadinessCheck.action
+    };
+  }
+
+  const ready = workerHealth?.readinessStatus === 'READY';
+  return {
+    name: 'Worker heartbeat',
+    ready,
+    message: workerHealth?.message ?? 'worker heartbeat has not loaded',
+    action: workerHealth?.operatorAction ?? 'Confirm the queue worker endpoint loads before a live demo.'
   };
 }
 

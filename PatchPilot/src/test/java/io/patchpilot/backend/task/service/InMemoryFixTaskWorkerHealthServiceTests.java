@@ -14,7 +14,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 class InMemoryFixTaskWorkerHealthServiceTests {
 
     private final InMemoryFixTaskWorkerHealthService service = new InMemoryFixTaskWorkerHealthService(
-            Clock.fixed(Instant.parse("2026-06-24T06:00:00Z"), ZoneOffset.UTC)
+            Clock.fixed(Instant.parse("2026-06-24T06:00:00Z"), ZoneOffset.UTC),
+            5000
     );
 
     @Test
@@ -23,6 +24,8 @@ class InMemoryFixTaskWorkerHealthServiceTests {
         assertThat(service.getHealth().pollCount()).isZero();
         assertThat(service.getHealth().lastPollAt()).isNull();
         assertThat(service.getHealth().message()).isEqualTo("Worker poller has not reported a heartbeat yet.");
+        assertThat(service.getHealth().readinessStatus()).isEqualTo("NEEDS_ATTENTION");
+        assertThat(service.getHealth().operatorAction()).isEqualTo("Wait for the queue worker poller to start or check the active Spring profile.");
     }
 
     @Test
@@ -35,6 +38,9 @@ class InMemoryFixTaskWorkerHealthServiceTests {
         assertThat(service.getHealth().idlePollCount()).isEqualTo(1);
         assertThat(service.getHealth().lastPollAt()).isEqualTo(Instant.parse("2026-06-24T06:00:00Z"));
         assertThat(service.getHealth().message()).isEqualTo("Worker poller is active but no queue item was available.");
+        assertThat(service.getHealth().readinessStatus()).isEqualTo("READY");
+        assertThat(service.getHealth().lastPollAgeMs()).isZero();
+        assertThat(service.getHealth().operatorAction()).isEqualTo("No action needed.");
     }
 
     @Test
@@ -52,6 +58,22 @@ class InMemoryFixTaskWorkerHealthServiceTests {
         assertThat(service.getHealth().lastClaimedTaskId()).isEqualTo("task-123");
         assertThat(service.getHealth().lastError()).isEqualTo("worker failed");
         assertThat(service.getHealth().message()).isEqualTo("Worker poller recorded a task failure: worker failed");
+        assertThat(service.getHealth().readinessStatus()).isEqualTo("NEEDS_ATTENTION");
+        assertThat(service.getHealth().operatorAction()).isEqualTo("Inspect worker logs and the latest failed queue item before starting a demo.");
+    }
+
+    @Test
+    void should_report_stale_when_last_poll_is_older_than_threshold() {
+        MutableClock clock = new MutableClock(Instant.parse("2026-06-24T06:00:00Z"));
+        InMemoryFixTaskWorkerHealthService staleService = new InMemoryFixTaskWorkerHealthService(clock, 5000);
+
+        staleService.recordPollStarted();
+        staleService.recordIdlePoll();
+        clock.setInstant(Instant.parse("2026-06-24T06:00:06Z"));
+
+        assertThat(staleService.getHealth().readinessStatus()).isEqualTo("NEEDS_ATTENTION");
+        assertThat(staleService.getHealth().lastPollAgeMs()).isEqualTo(6000);
+        assertThat(staleService.getHealth().operatorAction()).isEqualTo("Check whether the queue worker scheduler is still running.");
     }
 
     private static FixTaskQueueItemVo queueItem() {
@@ -67,5 +89,33 @@ class InMemoryFixTaskWorkerHealthServiceTests {
                 now,
                 now
         );
+    }
+
+    private static final class MutableClock extends Clock {
+
+        private Instant instant;
+
+        private MutableClock(Instant instant) {
+            this.instant = instant;
+        }
+
+        private void setInstant(Instant instant) {
+            this.instant = instant;
+        }
+
+        @Override
+        public ZoneOffset getZone() {
+            return ZoneOffset.UTC;
+        }
+
+        @Override
+        public Clock withZone(java.time.ZoneId zone) {
+            return this;
+        }
+
+        @Override
+        public Instant instant() {
+            return instant;
+        }
     }
 }

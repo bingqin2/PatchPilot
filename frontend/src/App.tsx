@@ -900,6 +900,7 @@ export default function App() {
         demoReadiness={demoReadiness}
         adapterFixtureVerifications={adapterFixtureVerifications}
         queueSummary={queueSummary}
+        workerHealth={workerHealth}
         tasks={tasks}
         hasStoredAdminToken={hasStoredAdminToken}
       />

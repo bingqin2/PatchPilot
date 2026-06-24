@@ -1,8 +1,10 @@
 package io.patchpilot.backend.task.service.impl;
 
+import io.patchpilot.backend.task.config.TaskQueueProperties;
 import io.patchpilot.backend.task.domain.vo.FixTaskQueueItemVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskWorkerHealthVo;
 import io.patchpilot.backend.task.service.FixTaskWorkerHealthService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -14,19 +16,27 @@ import java.util.concurrent.atomic.AtomicReference;
 public class InMemoryFixTaskWorkerHealthService implements FixTaskWorkerHealthService {
 
     private final Clock clock;
+    private final long workerHeartbeatStaleMs;
     private final AtomicReference<State> state = new AtomicReference<>(State.notStarted());
 
-    public InMemoryFixTaskWorkerHealthService() {
-        this(Clock.systemUTC());
+    @Autowired
+    public InMemoryFixTaskWorkerHealthService(TaskQueueProperties taskQueueProperties) {
+        this(Clock.systemUTC(), taskQueueProperties.getWorkerHeartbeatStaleMs());
     }
 
     public InMemoryFixTaskWorkerHealthService(Clock clock) {
+        this(clock, 10000);
+    }
+
+    public InMemoryFixTaskWorkerHealthService(Clock clock, long workerHeartbeatStaleMs) {
         this.clock = clock;
+        this.workerHeartbeatStaleMs = workerHeartbeatStaleMs;
     }
 
     @Override
     public FixTaskWorkerHealthVo getHealth() {
         State snapshot = state.get();
+        RuntimeReadiness readiness = runtimeReadiness(snapshot, now());
         return new FixTaskWorkerHealthVo(
                 snapshot.state,
                 snapshot.message,
@@ -39,7 +49,10 @@ public class InMemoryFixTaskWorkerHealthService implements FixTaskWorkerHealthSe
                 snapshot.idlePollCount,
                 snapshot.lastClaimedQueueItemId,
                 snapshot.lastClaimedTaskId,
-                snapshot.lastError
+                snapshot.lastError,
+                readiness.lastPollAgeMs,
+                readiness.status,
+                readiness.operatorAction
         );
     }
 
@@ -75,6 +88,39 @@ public class InMemoryFixTaskWorkerHealthService implements FixTaskWorkerHealthSe
 
     private Instant now() {
         return Instant.now(clock);
+    }
+
+    private RuntimeReadiness runtimeReadiness(State snapshot, Instant timestamp) {
+        if ("NOT_STARTED".equals(snapshot.state)) {
+            return new RuntimeReadiness(
+                    -1,
+                    "NEEDS_ATTENTION",
+                    "Wait for the queue worker poller to start or check the active Spring profile."
+            );
+        }
+        long lastPollAgeMs = snapshot.lastPollAt == null ? -1 : Math.max(0, timestamp.toEpochMilli() - snapshot.lastPollAt.toEpochMilli());
+        if ("ERROR".equals(snapshot.state)) {
+            return new RuntimeReadiness(
+                    lastPollAgeMs,
+                    "NEEDS_ATTENTION",
+                    "Inspect worker logs and the latest failed queue item before starting a demo."
+            );
+        }
+        if (lastPollAgeMs > workerHeartbeatStaleMs) {
+            return new RuntimeReadiness(
+                    lastPollAgeMs,
+                    "NEEDS_ATTENTION",
+                    "Check whether the queue worker scheduler is still running."
+            );
+        }
+        return new RuntimeReadiness(
+                lastPollAgeMs,
+                "READY",
+                "No action needed."
+        );
+    }
+
+    private record RuntimeReadiness(long lastPollAgeMs, String status, String operatorAction) {
     }
 
     private record State(

@@ -40,7 +40,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "patchpilot.workspace.root-dir=/tmp/patchpilot/test-workspaces",
         "patchpilot.task.queue.max-attempts=5",
         "patchpilot.task.queue.retry-delay-ms=15000",
-        "patchpilot.task.queue.visibility-timeout-ms=120000"
+        "patchpilot.task.queue.visibility-timeout-ms=120000",
+        "patchpilot.task.queue.worker-heartbeat-stale-ms=25000"
 })
 class ConfigurationControllerTests {
 
@@ -64,6 +65,7 @@ class ConfigurationControllerTests {
                 .andExpect(jsonPath("$.data.queueMaxAttempts").value(5))
                 .andExpect(jsonPath("$.data.queueRetryDelayMs").value(15000))
                 .andExpect(jsonPath("$.data.queueVisibilityTimeoutMs").value(120000))
+                .andExpect(jsonPath("$.data.queueWorkerHeartbeatStaleMs").value(25000))
                 .andExpect(jsonPath("$.data.modelCostConfigured").value(true))
                 .andExpect(jsonPath("$.data.modelTriggerClassificationEnabled").value(true))
                 .andExpect(jsonPath("$.data.triggerRateLimitEnabled").value(true))

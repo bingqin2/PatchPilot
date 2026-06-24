@@ -11,6 +11,8 @@ public class TaskQueueProperties {
 
     private long visibilityTimeoutMs = 300000;
 
+    private long workerHeartbeatStaleMs = 10000;
+
     public int getMaxAttempts() {
         return maxAttempts;
     }
@@ -33,5 +35,13 @@ public class TaskQueueProperties {
 
     public void setVisibilityTimeoutMs(long visibilityTimeoutMs) {
         this.visibilityTimeoutMs = visibilityTimeoutMs;
+    }
+
+    public long getWorkerHeartbeatStaleMs() {
+        return workerHeartbeatStaleMs;
+    }
+
+    public void setWorkerHeartbeatStaleMs(long workerHeartbeatStaleMs) {
+        this.workerHeartbeatStaleMs = workerHeartbeatStaleMs;
     }
 }

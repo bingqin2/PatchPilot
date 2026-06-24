@@ -14,6 +14,7 @@ public record ConfigurationSummaryVo(
         int queueMaxAttempts,
         long queueRetryDelayMs,
         long queueVisibilityTimeoutMs,
+        long queueWorkerHeartbeatStaleMs,
         boolean modelCostConfigured,
         boolean modelTriggerClassificationEnabled,
         boolean triggerRateLimitEnabled,

@@ -74,6 +74,14 @@ when execution completes, and when worker execution fails.
 `GET /api/task-queue/worker-health` exposes this runtime state for the dashboard
 and curl diagnostics.
 
+The worker-health response also derives `lastPollAgeMs`, `readinessStatus`, and
+`operatorAction` from the process-local heartbeat. A worker is demo-ready when it
+has reported a recent poll and is not in `ERROR`. It needs attention when it has
+not started, has most recently failed, or the last poll is older than
+`patchpilot.task.queue.worker-heartbeat-stale-ms`. `DemoReadinessService` uses
+this same read model as the `Worker heartbeat` readiness check so a live smoke
+run is blocked by stale worker state before the operator posts a GitHub trigger.
+
 This heartbeat is intentionally process-local. Durable task and queue facts
 remain in MySQL-backed task and queue records; the heartbeat only answers
 whether this backend process's poller is active, idle, not started, or most
@@ -276,7 +284,7 @@ Future adapters should add their own detection and allowlisted verification comm
 
 `GET /api/language-adapters` exposes the supported adapter catalog for operators and demos. `GET /api/language-adapters/fixtures` runs each checked-in demo fixture through the same registry and returns expected versus actual language, build system, command, detection reason, and pass/fail status. Fixture failures are reported as rows, not controller failures, so one missing fixture does not hide the rest of the support matrix.
 
-`POST /api/repository-preflight` accepts a local repository path, resolves it from the backend working directory when relative, verifies that the resolved path is under `patchpilot.repository-preflight.allowed-root-dirs`, and runs only adapter detection. It returns supported status, language, build system, verification command, detection reason, operator action, and the supported adapter catalog for unsupported results. This endpoint is an operator diagnostic for local fixtures and workspaces; it does not create a task, run verification commands, mutate Git, call the model, or write to GitHub. `GET /api/configuration/summary` exposes the normalized allowed roots without exposing secrets so operators can see which local paths the diagnostic may inspect.
+`POST /api/repository-preflight` accepts a local repository path, resolves it from the backend working directory when relative, verifies that the resolved path is under `patchpilot.repository-preflight.allowed-root-dirs`, and runs only adapter detection. It returns supported status, language, build system, verification command, detection reason, operator action, and the supported adapter catalog for unsupported results. This endpoint is an operator diagnostic for local fixtures and workspaces; it does not create a task, run verification commands, mutate Git, call the model, or write to GitHub. `GET /api/configuration/summary` exposes the normalized allowed roots and queue worker heartbeat stale threshold without exposing secrets so operators can see which local paths the diagnostic may inspect and how quickly stale worker polling is flagged.
 
 Real task records also persist the selected adapter metadata and nullable detection reason. The executor stores the `LanguageDetectionResult.reason()` alongside `language`, `buildSystem`, and `verificationCommand` after workspace preflight. Task list and detail APIs return those fields so operators can explain which repository signal selected the verification path without replaying detection or reading logs.
 

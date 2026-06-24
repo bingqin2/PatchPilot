@@ -101,7 +101,10 @@ class TaskQueueControllerTests {
                 8,
                 "queue-123",
                 "task-123",
-                null
+                null,
+                1000,
+                "READY",
+                "No action needed."
         ));
 
         mockMvc.perform(get("/api/task-queue/worker-health"))
@@ -118,6 +121,9 @@ class TaskQueueControllerTests {
                 .andExpect(jsonPath("$.data.idlePollCount").value(8))
                 .andExpect(jsonPath("$.data.lastClaimedQueueItemId").value("queue-123"))
                 .andExpect(jsonPath("$.data.lastClaimedTaskId").value("task-123"))
-                .andExpect(jsonPath("$.data.lastError").doesNotExist());
+                .andExpect(jsonPath("$.data.lastError").doesNotExist())
+                .andExpect(jsonPath("$.data.lastPollAgeMs").value(1000))
+                .andExpect(jsonPath("$.data.readinessStatus").value("READY"))
+                .andExpect(jsonPath("$.data.operatorAction").value("No action needed."));
     }
 }
