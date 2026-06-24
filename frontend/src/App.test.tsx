@@ -678,6 +678,17 @@ const adapterFixtureVerifications = supportedLanguageAdapters.map((adapter) => (
   status: 'PASS'
 }));
 
+const supportedRepositoryPreflightResult = {
+  supported: true,
+  language: 'java',
+  buildSystem: 'maven',
+  verificationCommand: ['mvn', 'test'],
+  reason: 'Detected Maven project',
+  operatorAction: 'Repository is supported. PatchPilot can run the detected verification command after patch generation.',
+  repositoryPath: 'docs/demo-repositories/java-maven',
+  supportedAdapters: []
+};
+
 function fixtureName(fixturePath: string) {
   const segments = fixturePath.split('/');
   return segments[segments.length - 1] ?? fixturePath;
@@ -921,6 +932,9 @@ beforeEach(() => {
     }
     if (url === '/api/language-adapters/fixtures') {
       return jsonResponse(adapterFixtureVerifications);
+    }
+    if (url === '/api/repository-preflight' && init?.method === 'POST') {
+      return jsonResponse(supportedRepositoryPreflightResult);
     }
     if (url === '/api/task-queue/summary') {
       return jsonResponse(queueSummary);
@@ -1616,6 +1630,29 @@ test('creates a manual task from the dashboard and refreshes task data', async (
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks?limit=50'));
   expect(await screen.findByText('Manual task queued')).toBeInTheDocument();
   expect(screen.getByLabelText('Command')).toHaveValue('');
+});
+
+test('runs repository preflight from the dashboard', async () => {
+  const user = userEvent.setup();
+  const fetchMock = vi.mocked(fetch);
+
+  render(<App />);
+
+  const preflightPanel = await screen.findByRole('region', { name: 'Repository preflight' });
+  await user.clear(within(preflightPanel).getByLabelText('Repository path'));
+  await user.type(within(preflightPanel).getByLabelText('Repository path'), 'docs/demo-repositories/java-maven');
+  await user.click(within(preflightPanel).getByRole('button', { name: 'Run preflight' }));
+
+  await waitFor(() =>
+    expect(fetchMock).toHaveBeenCalledWith('/api/repository-preflight', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ repositoryPath: 'docs/demo-repositories/java-maven' })
+    })
+  );
+  expect(within(preflightPanel).getByText('SUPPORTED')).toBeInTheDocument();
+  expect(within(preflightPanel).getByText('mvn test')).toBeInTheDocument();
+  expect(within(preflightPanel).getByText('Detected Maven project')).toBeInTheDocument();
 });
 
 test('shows manual task creation failures without clearing the form', async () => {
@@ -2702,6 +2739,9 @@ function defaultAppResponse(input: RequestInfo | URL, init?: RequestInit) {
   }
   if (url === '/api/language-adapters/fixtures') {
     return jsonResponse(adapterFixtureVerifications);
+  }
+  if (url === '/api/repository-preflight' && init?.method === 'POST') {
+    return jsonResponse(supportedRepositoryPreflightResult);
   }
   if (url === '/api/task-queue/summary') {
     return jsonResponse(queueSummary);

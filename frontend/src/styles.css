@@ -587,6 +587,7 @@ h3 {
 }
 
 .supported-adapters-panel,
+.repository-preflight-panel,
 .fixture-verification-panel {
   margin-bottom: 16px;
 }
@@ -990,6 +991,127 @@ h3 {
 .fixture-command-stack {
   display: grid;
   gap: 5px;
+}
+
+.repository-preflight-form {
+  align-items: end;
+  border-top: 1px solid #e6ebef;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(260px, 1fr) auto;
+  padding: 12px 16px;
+}
+
+.repository-preflight-form label {
+  color: #52606e;
+  display: grid;
+  font-size: 12px;
+  font-weight: 800;
+  gap: 5px;
+}
+
+.repository-preflight-form input {
+  background: #f7f9fb;
+  border: 1px solid #c9d4de;
+  border-radius: 6px;
+  color: #17202a;
+  font: inherit;
+  min-height: 36px;
+  padding: 0 10px;
+}
+
+.repository-preflight-result {
+  border-top: 1px solid #e6ebef;
+  display: grid;
+  gap: 12px;
+  padding: 14px 16px 16px;
+}
+
+.repository-preflight-summary {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.repository-preflight-summary strong {
+  color: #17202a;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.repository-preflight-grid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.repository-preflight-grid div,
+.repository-preflight-adapters div {
+  background: #f7f9fb;
+  border: 1px solid #dbe3ea;
+  border-radius: 6px;
+  min-height: 72px;
+  padding: 10px;
+}
+
+.repository-preflight-grid span,
+.repository-preflight-adapters span {
+  color: #637181;
+  display: block;
+  font-size: 12px;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+
+.repository-preflight-grid strong {
+  color: #202b36;
+  display: block;
+  font-size: 16px;
+}
+
+.repository-preflight-grid p {
+  color: #52606e;
+  font-size: 13px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.repository-preflight-grid code,
+.repository-preflight-adapters code {
+  background: #eef3f6;
+  border: 1px solid #d6dee6;
+  border-radius: 6px;
+  color: #17202a;
+  display: inline-block;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 12px;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+  padding: 6px 8px;
+}
+
+.repository-preflight-action {
+  background: #eef6f6;
+  border: 1px solid #b9d8d5;
+  border-radius: 6px;
+  color: #146c69;
+  font-size: 13px;
+  font-weight: 800;
+  padding: 10px;
+}
+
+.repository-preflight-adapters {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.repository-preflight-adapters strong {
+  color: #202b36;
+  display: block;
+  font-size: 13px;
+  margin-bottom: 6px;
 }
 
 .workspace-grid {

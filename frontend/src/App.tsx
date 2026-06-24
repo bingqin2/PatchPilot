@@ -28,6 +28,7 @@ import {
   listTriggerQuarantines,
   listWebhookDeliveries,
   listTasks,
+  preflightRepository,
   retryRejectedTrigger,
   releaseTriggerQuarantine,
   retryTask
@@ -45,6 +46,7 @@ import { ManualTaskForm } from './dashboard/components/ManualTaskForm';
 import { OperatorSetupChecklistPanel } from './dashboard/components/OperatorSetupChecklistPanel';
 import { QueuePanel } from './dashboard/components/QueuePanel';
 import { RejectedTriggerPanel } from './dashboard/components/RejectedTriggerPanel';
+import { RepositoryPreflightPanel } from './dashboard/components/RepositoryPreflightPanel';
 import { SupportedAdaptersPanel } from './dashboard/components/SupportedAdaptersPanel';
 import { TaskDetailPanel } from './dashboard/components/TaskDetailPanel';
 import { TaskListPanel } from './dashboard/components/TaskListPanel';
@@ -77,6 +79,8 @@ import type {
   TriggerQuarantineEvidence,
   WebhookDeliveryDiagnostic,
   LanguageAdapterFixtureVerification,
+  RepositoryPreflightInput,
+  RepositoryPreflightResult,
   SupportedLanguageAdapter,
   TaskSort,
   TaskStatusFilter
@@ -130,6 +134,9 @@ export default function App() {
   const [adapterError, setAdapterError] = useState<string | null>(null);
   const [adapterFixtureVerifications, setAdapterFixtureVerifications] = useState<LanguageAdapterFixtureVerification[]>([]);
   const [adapterFixtureError, setAdapterFixtureError] = useState<string | null>(null);
+  const [repositoryPreflightResult, setRepositoryPreflightResult] = useState<RepositoryPreflightResult | null>(null);
+  const [repositoryPreflightError, setRepositoryPreflightError] = useState<string | null>(null);
+  const [repositoryPreflightLoading, setRepositoryPreflightLoading] = useState(false);
   const [queueSummary, setQueueSummary] = useState<FixTaskQueueSummary | null>(null);
   const [queueItems, setQueueItems] = useState<FixTaskQueueItem[]>([]);
   const [webhookDeliveries, setWebhookDeliveries] = useState<WebhookDeliveryDiagnostic[]>([]);
@@ -342,6 +349,19 @@ export default function App() {
   const handleRejectedTriggerCategoryFilterChange = useCallback((category: RejectedTriggerCategoryFilter) => {
     setRejectedTriggerCategoryFilter(category);
     writeRejectedTriggerStateToUrl(category);
+  }, []);
+
+  const handleRepositoryPreflight = useCallback(async (input: RepositoryPreflightInput) => {
+    setRepositoryPreflightLoading(true);
+    setRepositoryPreflightError(null);
+    try {
+      const result = await preflightRepository(input);
+      setRepositoryPreflightResult(result);
+    } catch (caught) {
+      setRepositoryPreflightError(errorMessage(caught));
+    } finally {
+      setRepositoryPreflightLoading(false);
+    }
   }, []);
 
   const refresh = useCallback(async () => {
@@ -888,6 +908,13 @@ export default function App() {
       <ConfigurationPanel configuration={configuration} backendHealth={backendHealth} />
 
       <SupportedAdaptersPanel adapters={supportedAdapters} error={adapterError} />
+
+      <RepositoryPreflightPanel
+        result={repositoryPreflightResult}
+        error={repositoryPreflightError}
+        loading={repositoryPreflightLoading}
+        onRunPreflight={handleRepositoryPreflight}
+      />
 
       <AdapterFixtureVerificationPanel verifications={adapterFixtureVerifications} error={adapterFixtureError} />
 

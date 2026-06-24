@@ -334,6 +334,16 @@ curl http://127.0.0.1:8080/api/language-adapters/fixtures
 
 This endpoint runs each checked-in demo fixture through the real adapter registry and returns expected versus actual language, build system, verification command, detection reason, and `PASS` or `FAIL`. Missing or drifting fixtures are returned as failed rows instead of hiding the rest of the matrix. The backend Docker image copies `docs/demo-repositories/` into `/app/docs/demo-repositories`, so the same endpoint works in Docker Compose.
 
+Operators can run a local repository preflight before creating a real task:
+
+```bash
+curl -X POST http://127.0.0.1:8080/api/repository-preflight \
+  -H "Content-Type: application/json" \
+  -d '{"repositoryPath":"docs/demo-repositories/java-maven"}'
+```
+
+The preflight checks only whether the configured language adapter registry can detect the local path. It does not create a task, call the model, run tests, mutate Git, or open a Pull Request. The dashboard exposes the same check in the `Repository preflight` panel so operators can verify a repository shape before posting `/agent fix`.
+
 Run the safe local adapter smoke when you want to demonstrate supported repository detection without GitHub, model credentials, Docker, or PR creation:
 
 ```bash
