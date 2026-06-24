@@ -1042,8 +1042,16 @@ test('loads failure cause summary from backend metrics API', async () => {
     json: async () => ({
       success: true,
       data: [
-        { cause: 'MAVEN_TESTS', count: 2 },
-        { cause: 'GITHUB_AUTH', count: 1 }
+        {
+          cause: 'VERIFICATION_FAILED',
+          count: 2,
+          nextAction: 'Inspect the verification output, fix the failing test or build error, then retry the task.'
+        },
+        {
+          cause: 'GITHUB_OPERATION_FAILED',
+          count: 1,
+          nextAction: 'Check GitHub token or App permissions, then retry the task after access is fixed.'
+        }
       ],
       message: null
     })
@@ -1054,8 +1062,16 @@ test('loads failure cause summary from backend metrics API', async () => {
 
   expect(fetchMock).toHaveBeenCalledWith('/api/tasks/metrics/failure-causes');
   expect(causes).toEqual([
-    { cause: 'MAVEN_TESTS', count: 2 },
-    { cause: 'GITHUB_AUTH', count: 1 }
+    {
+      cause: 'VERIFICATION_FAILED',
+      count: 2,
+      nextAction: 'Inspect the verification output, fix the failing test or build error, then retry the task.'
+    },
+    {
+      cause: 'GITHUB_OPERATION_FAILED',
+      count: 1,
+      nextAction: 'Check GitHub token or App permissions, then retry the task after access is fixed.'
+    }
   ]);
 });
 

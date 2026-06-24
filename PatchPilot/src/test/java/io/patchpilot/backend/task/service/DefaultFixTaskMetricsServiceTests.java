@@ -166,15 +166,17 @@ class DefaultFixTaskMetricsServiceTests {
     }
 
     @Test
-    void should_summarize_failed_tasks_by_failure_cause() {
+    void should_summarize_failed_tasks_by_stable_failure_category() {
         FixTaskMetricsService metricsService = new DefaultFixTaskMetricsService(
                 new StaticFixTaskService(List.of(
                         failedTask("maven-tests", "maven tests failed: compilation error"),
-                        failedTask("github-auth", "GitHub issue comment creation failed: HTTP 403"),
+                        failedTask("npm-tests", "npm test failed: vitest assertion failed"),
+                        failedTask("github-auth", "GitHub issue comment creation failed: HTTP 403 forbidden"),
                         failedTask("model-error", "OpenAI-compatible model call failed: invalid API key"),
                         failedTask("patch-review", "Model patch review rejected generated edits: unrelated authentication change"),
-                        failedTask("sandbox", "Command rejected by allowlist: rm -rf /tmp/repo"),
-                        failedTask("unknown", "unexpected executor failure"),
+                        failedTask("unsupported", "unsupported repository: no supported language adapter"),
+                        failedTask("workspace", "workspace clone failed: git fetch exited 128"),
+                        failedTask("unknown", "unexpected executor failure token=ghp_123456789012345678901234567890123456"),
                         task("completed", FixTaskStatus.COMPLETED,
                                 Instant.parse("2026-06-20T01:06:00Z"),
                                 Instant.parse("2026-06-20T01:06:10Z"))
@@ -186,14 +188,43 @@ class DefaultFixTaskMetricsServiceTests {
         );
 
         assertThat(metricsService.failureCauses())
-                .extracting("cause", "count")
+                .extracting("cause", "count", "nextAction")
                 .containsExactly(
-                        org.assertj.core.groups.Tuple.tuple("MAVEN_TESTS", 1L),
-                        org.assertj.core.groups.Tuple.tuple("GITHUB_AUTH", 1L),
-                        org.assertj.core.groups.Tuple.tuple("MODEL_ERROR", 1L),
-                        org.assertj.core.groups.Tuple.tuple("PATCH_REVIEW_REJECTION", 1L),
-                        org.assertj.core.groups.Tuple.tuple("SANDBOX_REJECTION", 1L),
-                        org.assertj.core.groups.Tuple.tuple("UNKNOWN", 1L)
+                        org.assertj.core.groups.Tuple.tuple(
+                                "VERIFICATION_FAILED",
+                                2L,
+                                "Inspect the verification output, fix the failing test or build error, then retry the task."
+                        ),
+                        org.assertj.core.groups.Tuple.tuple(
+                                "GITHUB_OPERATION_FAILED",
+                                1L,
+                                "Check GitHub token or App permissions, then retry the task after access is fixed."
+                        ),
+                        org.assertj.core.groups.Tuple.tuple(
+                                "UNSUPPORTED_REPOSITORY",
+                                1L,
+                                "Run repository preflight, add a supported adapter shape, then create a new task."
+                        ),
+                        org.assertj.core.groups.Tuple.tuple(
+                                "MODEL_FAILED",
+                                1L,
+                                "Check model provider configuration and availability, then retry the task."
+                        ),
+                        org.assertj.core.groups.Tuple.tuple(
+                                "WORKSPACE_FAILED",
+                                1L,
+                                "Check workspace and Git access, clean stale task workspaces if needed, then retry the task."
+                        ),
+                        org.assertj.core.groups.Tuple.tuple(
+                                "PATCH_REVIEW_REJECTED",
+                                1L,
+                                "Retrying this task will ask the model to generate a new patch."
+                        ),
+                        org.assertj.core.groups.Tuple.tuple(
+                                "TASK_FAILED",
+                                1L,
+                                "Inspect the task detail timeline and tool calls, then retry after the underlying problem is fixed."
+                        )
                 );
     }
 

@@ -201,6 +201,7 @@ The current implementation target is local self-hosted development first. Hosted
 - Any task can move to `FAILED`.
 - User-actionable failures should be posted as issue comments.
 - Failed-task issue comments should include a failure category, next action, and a sanitized reason.
+- Failure metrics should reuse the same stable failure categories and next-action guidance as failed-task issue comments, so dashboard summaries and GitHub feedback stay consistent.
 - If a task has an accepted-task status comment, failure reporting should update that same comment.
 - If the accepted-task status comment is missing, failure reporting should create a new issue comment and store its id and URL on the task.
 - Failure feedback comment creation or update failures must not change the durable task status.

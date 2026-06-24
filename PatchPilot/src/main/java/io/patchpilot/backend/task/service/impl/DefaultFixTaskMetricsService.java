@@ -16,14 +16,14 @@ import io.patchpilot.backend.task.service.FixTaskModelCallService;
 import io.patchpilot.backend.task.service.FixTaskService;
 import io.patchpilot.backend.task.service.FixTaskTestRunService;
 import io.patchpilot.backend.task.service.FixTaskToolCallService;
-import io.patchpilot.backend.task.service.PatchReviewFailureClassifier;
+import io.patchpilot.backend.task.service.TaskFailureFeedback;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 @Service
@@ -31,12 +31,13 @@ import java.util.Map;
 public class DefaultFixTaskMetricsService implements FixTaskMetricsService {
 
     private static final List<String> FAILURE_CAUSE_ORDER = List.of(
-            "MAVEN_TESTS",
-            "GITHUB_AUTH",
-            "MODEL_ERROR",
-            "PATCH_REVIEW_REJECTION",
-            "SANDBOX_REJECTION",
-            "UNKNOWN"
+            "VERIFICATION_FAILED",
+            "GITHUB_OPERATION_FAILED",
+            "UNSUPPORTED_REPOSITORY",
+            "MODEL_FAILED",
+            "WORKSPACE_FAILED",
+            "PATCH_REVIEW_REJECTED",
+            "TASK_FAILED"
     );
 
     private final FixTaskService fixTaskService;
@@ -99,14 +100,24 @@ public class DefaultFixTaskMetricsService implements FixTaskMetricsService {
 
     @Override
     public List<FixTaskFailureCauseSummaryVo> failureCauses(FixTaskListQuery query) {
-        Map<String, Long> counts = new LinkedHashMap<>();
+        Map<String, FailureCauseMetrics> metrics = new LinkedHashMap<>();
         fixTaskService.listTasks(query).stream()
                 .filter(task -> task.status() == FixTaskStatus.FAILED)
-                .map(task -> classifyFailureCause(task.failureReason()))
-                .forEach(cause -> counts.merge(cause, 1L, Long::sum));
-        return FAILURE_CAUSE_ORDER.stream()
-                .filter(cause -> counts.getOrDefault(cause, 0L) > 0)
-                .map(cause -> new FixTaskFailureCauseSummaryVo(cause, counts.get(cause)))
+                .map(task -> TaskFailureFeedback.from(task.failureReason()))
+                .forEach(feedback -> metrics.merge(
+                        feedback.category(),
+                        new FailureCauseMetrics(1L, feedback.nextAction()),
+                        FailureCauseMetrics::increment
+                ));
+        return metrics.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey(Comparator.comparingInt(entry -> FAILURE_CAUSE_ORDER.indexOf(entry) < 0
+                        ? FAILURE_CAUSE_ORDER.size()
+                        : FAILURE_CAUSE_ORDER.indexOf(entry))))
+                .map(entry -> new FixTaskFailureCauseSummaryVo(
+                        entry.getKey(),
+                        entry.getValue().count(),
+                        entry.getValue().nextAction()
+                ))
                 .toList();
     }
 
@@ -200,31 +211,6 @@ public class DefaultFixTaskMetricsService implements FixTaskMetricsService {
                 .count();
     }
 
-    private static String classifyFailureCause(String failureReason) {
-        if (failureReason == null || failureReason.isBlank()) {
-            return "UNKNOWN";
-        }
-        String normalizedReason = failureReason.toLowerCase(Locale.ROOT);
-        if (PatchReviewFailureClassifier.isPatchReviewRejection(failureReason)) {
-            return "PATCH_REVIEW_REJECTION";
-        }
-        if (normalizedReason.contains("maven") || normalizedReason.contains("test command") || normalizedReason.contains("tests failed")) {
-            return "MAVEN_TESTS";
-        }
-        if (normalizedReason.contains("github") || normalizedReason.contains("token") || normalizedReason.contains("permission")
-                || normalizedReason.contains("http 401") || normalizedReason.contains("http 403")
-                || normalizedReason.contains("auth")) {
-            return "GITHUB_AUTH";
-        }
-        if (normalizedReason.contains("model") || normalizedReason.contains("openai")) {
-            return "MODEL_ERROR";
-        }
-        if (normalizedReason.contains("allowlist") || normalizedReason.contains("sandbox") || normalizedReason.contains("command rejected")) {
-            return "SANDBOX_REJECTION";
-        }
-        return "UNKNOWN";
-    }
-
     private static long averageCompletionDurationMs(List<FixTaskVo> tasks) {
         return (long) tasks.stream()
                 .filter(task -> task.status() == FixTaskStatus.COMPLETED)
@@ -306,6 +292,13 @@ public class DefaultFixTaskMetricsService implements FixTaskMetricsService {
                     .max()
                     .orElse(0);
             return new DurationMetrics(count, averageMs, maxMs);
+        }
+    }
+
+    private record FailureCauseMetrics(long count, String nextAction) {
+
+        private FailureCauseMetrics increment(FailureCauseMetrics other) {
+            return new FailureCauseMetrics(count + other.count(), nextAction);
         }
     }
 }

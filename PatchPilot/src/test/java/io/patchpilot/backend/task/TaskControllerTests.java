@@ -1428,10 +1428,12 @@ class TaskControllerTests {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.length()").value(greaterThanOrEqualTo(2)))
-                .andExpect(jsonPath("$.data[0].cause").value("MAVEN_TESTS"))
+                .andExpect(jsonPath("$.data[0].cause").value("VERIFICATION_FAILED"))
                 .andExpect(jsonPath("$.data[0].count").value(greaterThanOrEqualTo(1)))
-                .andExpect(jsonPath("$.data[1].cause").value("GITHUB_AUTH"))
-                .andExpect(jsonPath("$.data[1].count").value(greaterThanOrEqualTo(1)));
+                .andExpect(jsonPath("$.data[0].nextAction").value("Inspect the verification output, fix the failing test or build error, then retry the task."))
+                .andExpect(jsonPath("$.data[1].cause").value("GITHUB_OPERATION_FAILED"))
+                .andExpect(jsonPath("$.data[1].count").value(greaterThanOrEqualTo(1)))
+                .andExpect(jsonPath("$.data[1].nextAction").value("Check GitHub token or App permissions, then retry the task after access is fixed."));
     }
 
     @Test

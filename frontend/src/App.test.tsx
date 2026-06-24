@@ -2,6 +2,18 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from './App';
 
+const verificationFailureCause = {
+  cause: 'VERIFICATION_FAILED',
+  count: 1,
+  nextAction: 'Inspect the verification output, fix the failing test or build error, then retry the task.'
+};
+
+const githubOperationFailureCause = {
+  cause: 'GITHUB_OPERATION_FAILED',
+  count: 1,
+  nextAction: 'Check GitHub token or App permissions, then retry the task after access is fixed.'
+};
+
 const completedTask = {
   id: 'task-1',
   repositoryOwner: 'bingqin2',
@@ -1049,8 +1061,8 @@ beforeEach(() => {
     }
     if (url === '/api/tasks/metrics/failure-causes' || url.startsWith('/api/tasks/metrics/failure-causes?')) {
       return jsonResponse([
-        { cause: 'MAVEN_TESTS', count: 1 },
-        { cause: 'GITHUB_AUTH', count: 1 }
+        verificationFailureCause,
+        githubOperationFailureCause
       ]);
     }
     if (url === '/api/tasks/metrics/model-usage' || url.startsWith('/api/tasks/metrics/model-usage?')) {
@@ -1366,8 +1378,10 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(screen.getByText('Test pass')).toBeInTheDocument();
   expect(screen.getByText('100%')).toBeInTheDocument();
   expect(screen.getByText('Failure causes')).toBeInTheDocument();
-  expect(screen.getByText('Maven tests')).toBeInTheDocument();
-  expect(screen.getByText('GitHub auth')).toBeInTheDocument();
+  expect(screen.getByText('Verification failed')).toBeInTheDocument();
+  expect(screen.getByText('Inspect the verification output, fix the failing test or build error, then retry the task.')).toBeInTheDocument();
+  expect(screen.getByText('GitHub operation failed')).toBeInTheDocument();
+  expect(screen.getByText('Check GitHub token or App permissions, then retry the task after access is fixed.')).toBeInTheDocument();
   expect(screen.getByText('Model usage')).toBeInTheDocument();
   expect(screen.getByText('2,150')).toBeInTheDocument();
   expect(screen.getByText('2 successful')).toBeInTheDocument();
@@ -2733,7 +2747,7 @@ test('loads the next backend task page with offset pagination', async () => {
       });
     }
     if (url === '/api/tasks/metrics/failure-causes' || url.startsWith('/api/tasks/metrics/failure-causes?')) {
-      return jsonResponse([{ cause: 'MAVEN_TESTS', count: 1 }]);
+      return jsonResponse([verificationFailureCause]);
     }
     if (url === '/api/tasks/metrics/model-usage' || url.startsWith('/api/tasks/metrics/model-usage?')) {
       return jsonResponse(modelUsageSummary);
@@ -2980,8 +2994,8 @@ function defaultAppResponse(input: RequestInfo | URL, init?: RequestInit) {
   }
   if (url === '/api/tasks/metrics/failure-causes' || url.startsWith('/api/tasks/metrics/failure-causes?')) {
     return jsonResponse([
-      { cause: 'MAVEN_TESTS', count: 1 },
-      { cause: 'GITHUB_AUTH', count: 1 }
+      verificationFailureCause,
+      githubOperationFailureCause
     ]);
   }
   if (url === '/api/tasks/metrics/model-usage' || url.startsWith('/api/tasks/metrics/model-usage?')) {

@@ -53,7 +53,7 @@ Reusable dashboard components live under `frontend/src/dashboard/components/`:
 - `SupportedAdaptersPanel`: read-only support matrix for Java/Maven, Java/Gradle, Go, Node/Bun, Node/npm, Node/pnpm, Node/yarn, Python/tox, Python/nox, Python/hatch, Python/Poetry, Python/uv, and Python/pytest adapters.
 - `RepositoryPreflightPanel`: local diagnostic form that runs adapter detection against a backend-local repository path before an operator creates a real task. It shows supported status, selected adapter metadata, verification command, detection reason, and unsupported adapter guidance without running tests or mutating Git.
 - `AdapterFixtureVerificationPanel`: read-only fixture verification matrix showing expected versus actual adapter detection for each checked-in demo fixture.
-- `FailureCausePanel`, `ModelUsagePanel`, and `LatencyPanel`: operational summary cards for failure grouping, token usage, call counts, estimated model cost, and execution latency.
+- `FailureCausePanel`, `ModelUsagePanel`, and `LatencyPanel`: operational summary cards for failure grouping, token usage, call counts, estimated model cost, and execution latency. Failure grouping uses the same stable categories and next-action guidance as failed-task issue feedback.
 - `MetricCard`, `RecordLine`, and `SummaryItem`: small shared presentation units.
 
 Formatting helpers live in `frontend/src/dashboard/format.ts`.
@@ -69,7 +69,7 @@ The first screen is the working dashboard:
 - The smoke checklist turns readiness, webhook delivery, task execution, and Pull Request evidence into ordered final checks before the operator posts the live `/agent fix` comment.
 - Metrics summarize task health.
 - A compact refresh status tells operators when top-level dashboard data is still loading, and the title area shows when the dashboard last refreshed successfully.
-- Operational summaries highlight failure causes, model usage, and latency without requiring terminal inspection.
+- Operational summaries highlight failure causes, model usage, and latency without requiring terminal inspection. Failure causes show stable categories such as `VERIFICATION_FAILED` and `GITHUB_OPERATION_FAILED` with the next action returned by the backend metrics API.
 - A manual task form can enqueue a local demo/debug task through the same backend task and queue path used by webhook-created tasks.
 - The task list supports URL-backed status filters with scoped count badges, repository owner/name filters, language/build-system adapter filters, created time range filters, backend-backed search over task history, newest/oldest sorting, one-click filter reset, loaded-versus-total counts, and incremental loading.
 - Status count badges come from `GET /api/tasks/status-counts`. They follow search, repository, adapter, and created-time filters, but ignore the active status, sort, limit, and offset so operators can see the distribution before switching status tabs.
