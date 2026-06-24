@@ -66,13 +66,14 @@ public class IssueCommentTool {
             long issueNumber,
             String triggerUser,
             String triggerComment,
-            String reason
+            String reason,
+            String category
     ) {
         return gitHubIssueCommentClient.createIssueComment(new CreateIssueCommentCommand(
                 repositoryOwner,
                 repositoryName,
                 issueNumber,
-                rejectionBody(repositoryOwner, repositoryName, issueNumber, triggerUser, reason)
+                rejectionBody(repositoryOwner, repositoryName, issueNumber, triggerUser, reason, category)
         ));
     }
 
@@ -162,7 +163,8 @@ public class IssueCommentTool {
             String repositoryName,
             long issueNumber,
             String triggerUser,
-            String reason
+            String reason,
+            String category
     ) {
         StringBuilder body = new StringBuilder();
         body.append("PatchPilot did not start a task for this request.\n\n");
@@ -170,12 +172,42 @@ public class IssueCommentTool {
         body.append("Repository: ").append(repositoryOwner).append("/").append(repositoryName).append("\n");
         body.append("Issue: #").append(issueNumber).append("\n");
         body.append("Triggered by: ").append(triggerUser).append("\n");
+        if (StringUtils.hasText(category)) {
+            body.append("Category: ").append(category).append("\n");
+        }
         if (StringUtils.hasText(reason)) {
             body.append("Reason: ").append(reason).append("\n");
         }
+        body.append("Next action: ").append(rejectionNextAction(category)).append("\n");
         body.append("\n");
         body.append("No repository changes, commands, tests, commits, or pull requests were attempted. ");
         body.append("Update the request so it is specific, safe, authorized, and within rate limits, then comment `/agent fix ...` again.");
         return body.toString();
+    }
+
+    private static String rejectionNextAction(String category) {
+        if (!StringUtils.hasText(category)) {
+            return "Update the request so it is specific, safe, authorized, and within rate limits.";
+        }
+        return switch (category) {
+            case "EMPTY_COMMAND", "UNSUPPORTED_COMMAND" ->
+                    "Use `/agent fix <specific maintenance request>` on a GitHub issue.";
+            case "NOT_ACTIONABLE", "MODEL_NEEDS_CLARIFICATION", "MODEL_REJECTED" ->
+                    "Describe the concrete bug, failing test, file path, or expected code change.";
+            case "DANGEROUS_INSTRUCTION" ->
+                    "Remove destructive or secret-related instructions and ask for a specific, safe code change.";
+            case "TRIGGER_USER_NOT_ALLOWED" ->
+                    "Ask the PatchPilot operator to add this GitHub user to the trigger allowlist, or have an allowed maintainer retry.";
+            case "REPOSITORY_NOT_ALLOWED" ->
+                    "Ask the PatchPilot operator to add this repository to the allowlist, or retry in an allowed repository.";
+            case "RATE_LIMITED" ->
+                    "Wait for the configured rate-limit window to reset before retrying.";
+            case "ABUSE_QUARANTINED" ->
+                    "Ask the PatchPilot operator to inspect or release the active trigger quarantine before retrying.";
+            case "MODEL_CLASSIFICATION_FAILED" ->
+                    "Retry after the model provider is healthy, or make the request more explicit so deterministic checks can accept it.";
+            default ->
+                    "Update the request so it is specific, safe, authorized, and within rate limits.";
+        };
     }
 }

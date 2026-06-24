@@ -116,6 +116,8 @@ The current implementation target is local self-hosted development first. Hosted
 - If project detection is possible from webhook or repository metadata before cloning, the system may reject even earlier.
 - The system must never follow user instructions that request secret exfiltration, destructive repository changes, arbitrary shell execution, or permission escalation.
 - The system should record rejected trigger decisions with clear operator-facing reasons.
+- GitHub webhook trigger rejections should post a safe issue comment with the rejection category, reason, and next action, without echoing unsafe trigger text.
+- GitHub refusal comment failures must not create a task or hide the rejected-trigger audit record.
 - Accepted trigger decisions should record concise task timeline evidence that explains the safety-gate result, whether issue context was loaded, and the model trigger-classification outcome.
 - The system should summarize recent rejected trigger decisions by category, source, trigger user, and repository so operators can detect abuse patterns and tune safety configuration.
 - The system should expose active and historical trigger quarantine records with scope, scope key, reason, category, evidence count, window, start time, expiry time, and timestamps.

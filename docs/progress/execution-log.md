@@ -3285,3 +3285,20 @@ Validation so far:
 - `npm run build`: passed after final production frontend build verification.
 - `GIT_OPTIONAL_LOCKS=0 git diff --check`: passed after whitespace verification.
 - `mvn -pl PatchPilot test`: passed after full backend regression verification, 611 tests run, 0 failures.
+
+Implemented rejected trigger issue feedback from `docs/plans/163-rejected-trigger-issue-feedback.md`.
+
+Changes:
+
+- Extended GitHub issue refusal comments for rejected `/agent fix` webhook triggers with the stable rejection category and a category-specific next action.
+- Kept unsafe trigger bodies out of refusal comments while preserving the rejection reason, repository, issue, and trigger user.
+- Passed the rejection category from webhook safety decisions into the refusal comment tool.
+- Kept rejected-trigger audit recording failure-tolerant when GitHub refusal comment creation fails.
+- Added null-category fallback guidance so refusal comment creation cannot crash on incomplete rejection metadata.
+- Updated README, product spec, and this execution log.
+
+Validation so far:
+
+- `mvn -pl PatchPilot -Dtest=IssueCommentToolTests#should_create_safe_rejection_comment_without_echoing_trigger_body test`: first failed because the refusal comment did not include `Category: DANGEROUS_INSTRUCTION`; then passed after adding category and next-action copy.
+- `mvn -pl PatchPilot -Dtest=IssueCommentToolTests#should_create_generic_rejection_comment_when_category_is_missing test`: first failed with a `NullPointerException` in category next-action selection; then passed after adding generic fallback guidance.
+- `mvn -pl PatchPilot -Dtest=IssueCommentToolTests,GitHubWebhookServiceTests test`: passed after wiring category through webhook rejection handling, 29 tests run, 0 failures.
