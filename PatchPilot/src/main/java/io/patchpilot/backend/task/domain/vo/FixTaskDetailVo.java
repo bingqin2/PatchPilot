@@ -11,6 +11,7 @@ public record FixTaskDetailVo(
         FixTaskGeneratedDiffVo generatedDiff,
         FixTaskPatchReviewVo patchReview,
         IssueContextVo issueContext,
+        FixTaskFailureDiagnosisVo failureDiagnosis,
         FixTaskQueueItemVo queueItem,
         List<FixTaskQueueItemVo> queueItems,
         RepositorySupportGuidanceVo repositorySupportGuidance

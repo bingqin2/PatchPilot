@@ -7,6 +7,7 @@ import type {
   FixTaskToolCall,
   FixTaskGeneratedDiff,
   FixTaskPatchReview,
+  FixTaskFailureDiagnosis,
   IssueContext,
   RepositorySupportGuidance
 } from '../types';
@@ -22,6 +23,7 @@ export interface TaskDetailState {
   generatedDiff: FixTaskGeneratedDiff | null;
   patchReview: FixTaskPatchReview | null;
   issueContext: IssueContext | null;
+  failureDiagnosis: FixTaskFailureDiagnosis | null;
   repositorySupportGuidance: RepositorySupportGuidance | null;
 }
 
@@ -36,5 +38,6 @@ export const emptyDetail: TaskDetailState = {
   generatedDiff: null,
   patchReview: null,
   issueContext: null,
+  failureDiagnosis: null,
   repositorySupportGuidance: null
 };

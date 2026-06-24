@@ -2123,6 +2123,35 @@ h3 {
   text-decoration: none;
 }
 
+.failure-diagnosis-section {
+  background: #fff7f7;
+  display: grid;
+  gap: 12px;
+}
+
+.failure-diagnosis-header {
+  align-items: start;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+}
+
+.failure-diagnosis-header p,
+.failure-diagnosis-section > p {
+  color: #52606e;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.failure-diagnosis-header strong {
+  background: #fde5df;
+  border-radius: 999px;
+  color: #a13724;
+  font-size: 12px;
+  padding: 5px 9px;
+  white-space: nowrap;
+}
+
 .repository-support-guidance {
   background: #fffaf5;
   display: grid;

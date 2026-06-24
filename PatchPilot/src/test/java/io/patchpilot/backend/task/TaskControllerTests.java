@@ -1069,6 +1069,24 @@ class TaskControllerTests {
     }
 
     @Test
+    void should_include_failure_diagnosis_for_failed_task_detail() throws Exception {
+        FixTaskVo task = createTask("delivery-failure-diagnosis-detail");
+        fixTaskService.markFailed(
+                task.id(),
+                "maven tests failed: token=ghp_123456789012345678901234567890123456"
+        );
+
+        mockMvc.perform(get("/api/tasks/{id}/detail", task.id()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.failureDiagnosis.category").value("VERIFICATION_FAILED"))
+                .andExpect(jsonPath("$.data.failureDiagnosis.nextAction")
+                        .value("Inspect the verification output, fix the failing test or build error, then retry the task."))
+                .andExpect(jsonPath("$.data.failureDiagnosis.safeReason")
+                        .value("maven tests failed: token=[REDACTED]"));
+    }
+
+    @Test
     void should_get_task_report_by_task_id() throws Exception {
         FixTaskVo task = createTask("delivery-report");
         fixTaskService.recordAdapterMetadata(
@@ -1078,7 +1096,7 @@ class TaskControllerTests {
                 "./mvnw test",
                 "pom.xml detected with mvnw wrapper"
         );
-        fixTaskService.markFailed(task.id(), "maven tests failed");
+        fixTaskService.markFailed(task.id(), "maven tests failed: token=ghp_123456789012345678901234567890123456");
         fixTaskTimelineService.recordEvent(task.id(), FixTaskTimelineEventType.TASK_CREATED, "Task accepted");
         fixTaskTimelineService.recordEvent(task.id(), FixTaskTimelineEventType.FAILED, "Task failed");
         fixTaskTestRunService.recordTestRun(
@@ -1147,7 +1165,12 @@ class TaskControllerTests {
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("# PatchPilot Task Report")))
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Task: `" + task.id() + "`")))
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Status: `FAILED`")))
-                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Failure: maven tests failed")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Failure: maven tests failed: token=[REDACTED]")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("## Failure Diagnosis")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Category: `VERIFICATION_FAILED`")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Next action: Inspect the verification output, fix the failing test or build error, then retry the task.")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Safe reason: maven tests failed: token=[REDACTED]")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("ghp_123456789012345678901234567890123456"))))
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("## Adapter")))
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Language: `java`")))
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Build system: `maven`")))

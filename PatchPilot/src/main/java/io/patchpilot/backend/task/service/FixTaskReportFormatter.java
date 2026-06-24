@@ -27,7 +27,7 @@ public class FixTaskReportFormatter {
                 .append("- Status: `").append(task.status()).append("`\n")
                 .append("- Trigger: ").append(task.triggerComment()).append("\n");
         if (task.failureReason() != null) {
-            report.append("- Failure: ").append(task.failureReason()).append("\n");
+            report.append("- Failure: ").append(TaskFailureFeedback.from(task.failureReason()).safeReason()).append("\n");
         }
         if (task.pullRequestUrl() != null) {
             report.append("- Pull Request: ").append(task.pullRequestUrl()).append("\n");
@@ -45,6 +45,7 @@ public class FixTaskReportFormatter {
 
         appendAdapter(report, task);
         appendRetryLineage(report, task);
+        appendFailureDiagnosis(report, detail);
         appendIssueContext(report, detail.issueContext());
         appendRepositorySupportGuidance(report, detail.repositorySupportGuidance());
         appendQueue(report, detail);
@@ -55,6 +56,17 @@ public class FixTaskReportFormatter {
         appendToolCalls(report, detail.toolCalls());
         appendModelCalls(report, detail.modelCalls());
         return report.toString();
+    }
+
+    private static void appendFailureDiagnosis(StringBuilder report, FixTaskDetailVo detail) {
+        if (detail.failureDiagnosis() == null) {
+            return;
+        }
+
+        report.append("\n## Failure Diagnosis\n\n")
+                .append("- Category: `").append(detail.failureDiagnosis().category()).append("`\n")
+                .append("- Next action: ").append(detail.failureDiagnosis().nextAction()).append("\n")
+                .append("- Safe reason: ").append(detail.failureDiagnosis().safeReason()).append("\n");
     }
 
     private static void appendRetryLineage(StringBuilder report, FixTaskVo task) {
