@@ -187,7 +187,7 @@ const manuallyCreatedTask = {
 
 const summary = {
   task: completedTask,
-  timelineEventCount: 4,
+  timelineEventCount: 5,
   testRunCount: 1,
   toolCallCount: 3,
   modelCallCount: 2,
@@ -204,6 +204,13 @@ const summary = {
 };
 
 const timeline = [
+  {
+    id: 'timeline-trigger-accepted',
+    taskId: 'task-1',
+    eventType: 'TRIGGER_ACCEPTED',
+    message: 'Trigger accepted: safety gate accepted; issue context loaded; model accepted trigger: Issue context describes a concrete failing test',
+    createdAt: '2026-06-20T00:59:58Z'
+  },
   {
     id: 'timeline-1',
     taskId: 'task-1',
@@ -1404,6 +1411,18 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(within(webhookDeliveryPanel).getByText('Invalid GitHub webhook signature')).toBeInTheDocument();
   expect(within(webhookDeliveryPanel).getByText('Redeliver after fix')).toBeInTheDocument();
   expect(within(webhookDeliveryPanel).getByText("Fix the webhook secret or payload URL first, then use GitHub's Redeliver action for this delivery.")).toBeInTheDocument();
+  const triggerDecisionPanel = screen.getByRole('region', { name: 'Trigger decisions' });
+  expect(within(triggerDecisionPanel).getByRole('heading', { name: 'Trigger decisions' })).toBeInTheDocument();
+  expect(within(triggerDecisionPanel).getByText('Accepted trigger evidence')).toBeInTheDocument();
+  expect(within(triggerDecisionPanel).getByText('Rejected trigger decisions')).toBeInTheDocument();
+  await waitFor(() =>
+    expect(
+      within(triggerDecisionPanel).getByText('Trigger accepted: safety gate accepted; issue context loaded; model accepted trigger: Issue context describes a concrete failing test')
+    ).toBeInTheDocument()
+  );
+  expect(within(triggerDecisionPanel).getAllByText('Not actionable')).toHaveLength(2);
+  expect(within(triggerDecisionPanel).getByText('Unsafe request rejected: instruction is not actionable')).toBeInTheDocument();
+  expect(within(triggerDecisionPanel).getByText('/agent fix make it better')).toBeInTheDocument();
   const rejectedTriggerPanel = screen.getByRole('region', { name: 'Rejected triggers' });
   expect(within(rejectedTriggerPanel).getByRole('heading', { name: 'Rejected triggers' })).toBeInTheDocument();
   expect(within(rejectedTriggerPanel).getByText('2 recent rejections')).toBeInTheDocument();

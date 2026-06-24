@@ -63,6 +63,7 @@ import { RepositoryPreflightPanel } from './dashboard/components/RepositoryPrefl
 import { SupportedAdaptersPanel } from './dashboard/components/SupportedAdaptersPanel';
 import { TaskDetailPanel } from './dashboard/components/TaskDetailPanel';
 import { TaskListPanel } from './dashboard/components/TaskListPanel';
+import { TriggerDecisionPanel } from './dashboard/components/TriggerDecisionPanel';
 import { WebhookDeliveryPanel } from './dashboard/components/WebhookDeliveryPanel';
 import { compactDateTime, duration, percent } from './dashboard/format';
 import { emptyDetail } from './dashboard/types';
@@ -612,6 +613,7 @@ export default function App() {
     }
 
     let cancelled = false;
+    setDetail(emptyDetail);
     setDetailLoading(true);
     setError(null);
     getTaskDetail(selectedTask.id)
@@ -1002,6 +1004,13 @@ export default function App() {
           onCopyReport={handleCopyReport}
         />
       </section>
+
+      <TriggerDecisionPanel
+        task={selectedTask}
+        timeline={detail.timeline}
+        rejectedTriggers={rejectedTriggers}
+        summary={rejectedTriggerSummary}
+      />
 
       <ConfigurationPanel configuration={configuration} backendHealth={backendHealth} />
 
