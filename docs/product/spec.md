@@ -93,6 +93,7 @@ The current implementation target is local self-hosted development first. Hosted
 - A task can be queried by id for status and result.
 - Task creation must pass authorization, command parsing, actionability, and rate-limit checks before expensive execution begins.
 - Task execution must pass a repository language-adapter preflight after workspace preparation and before model patch generation.
+- Operators should be able to run a local repository preflight diagnostic that uses the same language adapter registry without creating a task, running tests, mutating Git, or opening a Pull Request.
 
 ### Safety Gate
 
@@ -107,6 +108,7 @@ The current implementation target is local self-hosted development first. Hosted
 - Operators may enable rejected-trigger quarantine so repeated rejected attempts from the same trigger user or repository create or extend a durable quarantine record and are refused with `ABUSE_QUARANTINED` before rate-limit checks, model calls, task creation, workspace cloning, or queueing.
 - Operators should be able to inspect one quarantine and see the rejected-trigger audit rows and manual safety actions that explain it.
 - The system should reject unsupported repositories before model execution, patch generation, test execution, Git mutation, or Pull Request creation.
+- The local repository preflight diagnostic should return supported status, selected language/build system, verification command, detection reason, and next operator action so unsupported repository shapes can be fixed before a live `/agent fix`.
 - If project detection is possible from webhook or repository metadata before cloning, the system may reject even earlier.
 - The system must never follow user instructions that request secret exfiltration, destructive repository changes, arbitrary shell execution, or permission escalation.
 - The system should record rejected trigger decisions with clear operator-facing reasons.

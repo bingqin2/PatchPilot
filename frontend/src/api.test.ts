@@ -16,6 +16,7 @@ import {
   listOperatorSafetyAudits,
   listRejectedTriggers,
   listTriggerQuarantines,
+  preflightRepository,
   releaseTriggerQuarantine,
   retryRejectedTrigger,
   getDemoReadiness,
@@ -994,6 +995,46 @@ test('loads language adapter fixture verifications from backend API', async () =
       status: 'PASS'
     }
   ]);
+});
+
+test('runs repository preflight through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        supported: true,
+        language: 'java',
+        buildSystem: 'maven',
+        verificationCommand: ['mvn', 'test'],
+        reason: 'Detected Maven project',
+        operatorAction: 'Repository is supported. PatchPilot can run the detected verification command after patch generation.',
+        repositoryPath: 'docs/demo-repositories/java-maven',
+        supportedAdapters: []
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const result = await preflightRepository({ repositoryPath: 'docs/demo-repositories/java-maven' });
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/repository-preflight', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ repositoryPath: 'docs/demo-repositories/java-maven' })
+  });
+  expect(result).toEqual({
+    supported: true,
+    language: 'java',
+    buildSystem: 'maven',
+    verificationCommand: ['mvn', 'test'],
+    reason: 'Detected Maven project',
+    operatorAction: 'Repository is supported. PatchPilot can run the detected verification command after patch generation.',
+    repositoryPath: 'docs/demo-repositories/java-maven',
+    supportedAdapters: []
+  });
 });
 
 test('loads demo readiness from backend API', async () => {

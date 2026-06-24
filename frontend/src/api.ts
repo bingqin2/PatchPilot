@@ -31,6 +31,8 @@ import type {
   FixTaskTimelineEvent,
   FixTaskToolCall,
   LanguageAdapterFixtureVerification,
+  RepositoryPreflightInput,
+  RepositoryPreflightResult,
   SupportedLanguageAdapter,
   TaskSort,
   TaskStatusFilter
@@ -163,6 +165,10 @@ export async function listLanguageAdapters(): Promise<SupportedLanguageAdapter[]
 
 export async function listLanguageAdapterFixtures(): Promise<LanguageAdapterFixtureVerification[]> {
   return getApi<LanguageAdapterFixtureVerification[]>('/api/language-adapters/fixtures');
+}
+
+export async function preflightRepository(input: RepositoryPreflightInput): Promise<RepositoryPreflightResult> {
+  return postApi<RepositoryPreflightResult>('/api/repository-preflight', input);
 }
 
 export async function getQueueSummary(): Promise<FixTaskQueueSummary> {

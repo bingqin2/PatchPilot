@@ -2962,3 +2962,23 @@ Validation so far:
 - `npm test`: passed after full frontend verification, 125 tests run, 0 failures.
 - `npm run build`: first failed because one component test fixture omitted the new evidence props caught by TypeScript; then passed after fixing the fixture.
 - `git diff --check`: passed after whitespace verification.
+
+Implemented repository preflight diagnostics from `docs/plans/147-repository-preflight-diagnostics.md`.
+
+Changes:
+
+- Added `POST /api/repository-preflight` as a local adapter-detection diagnostic that does not create tasks, call the model, run tests, mutate Git, or write to GitHub.
+- Returned supported status, language, build system, verification command, detection reason, operator action, and adapter guidance for unsupported repository paths.
+- Added frontend API typing and `preflightRepository`.
+- Added a dashboard `RepositoryPreflightPanel` so operators can run the real language adapter registry against a local path before posting `/agent fix`.
+- Updated README, product spec, architecture notes, frontend design notes, and this execution log.
+
+Validation so far:
+
+- `JAVA_HOME=/Library/Java/JavaVirtualMachines/openjdk-17.jdk/Contents/Home mvn -pl PatchPilot -Dtest=RepositoryPreflightServiceTests,RepositoryPreflightControllerTests test`: first failed because the repository preflight request, response, service, and controller did not exist; then passed after backend implementation, 6 tests run, 0 failures.
+- `npm test -- --run src/dashboard/components/RepositoryPreflightPanel.test.tsx src/api.test.ts`: first failed because the dashboard preflight panel did not exist; then passed after frontend implementation.
+- `npm test -- --run src/dashboard/components/RepositoryPreflightPanel.test.tsx src/api.test.ts src/App.test.tsx`: passed after App-level dashboard wiring, 89 tests run, 0 failures.
+- `JAVA_HOME=/Library/Java/JavaVirtualMachines/openjdk-17.jdk/Contents/Home mvn -pl PatchPilot test`: passed after full backend verification, 563 tests run, 0 failures.
+- `npm test`: passed after full frontend verification, 130 tests run, 0 failures.
+- `npm run build`: passed after production frontend build verification.
+- `git diff --check`: passed after whitespace verification.

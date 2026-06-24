@@ -237,6 +237,21 @@ export interface SupportedLanguageAdapter {
   status: 'SUPPORTED';
 }
 
+export interface RepositoryPreflightInput {
+  repositoryPath: string;
+}
+
+export interface RepositoryPreflightResult {
+  supported: boolean;
+  language: string;
+  buildSystem: string;
+  verificationCommand: string[];
+  reason: string;
+  operatorAction: string;
+  repositoryPath: string;
+  supportedAdapters: SupportedLanguageAdapter[];
+}
+
 export interface RepositorySupportGuidance {
   status: 'UNSUPPORTED';
   reason: string;
