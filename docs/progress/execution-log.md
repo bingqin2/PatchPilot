@@ -3318,3 +3318,23 @@ Validation so far:
 - `npm test`: passed after full frontend regression verification, 161 tests run, 0 failures.
 - `npm run build`: passed after production frontend build verification.
 - `GIT_OPTIONAL_LOCKS=0 git diff --check`: passed after whitespace verification.
+
+Implemented rejected trigger retry preflight from `docs/plans/165-rejected-trigger-retry-preflight.md`.
+
+Changes:
+
+- Added a derived rejected-trigger retry policy that marks safe actionability/model-classification rows as directly retryable.
+- Blocked direct retry for dangerous instructions, unauthorized users, unauthorized repositories, rate limits, active abuse quarantines, unsupported commands, unknown categories, and already-retried audit rows.
+- Exposed `retryable` and `retryBlockedReason` on rejected-trigger API rows.
+- Returned `409 Conflict` from rejected-trigger retry when the row requires a new safe request, allowlist change, cooldown wait, quarantine release, or linked retried-task inspection instead of a new task.
+- Updated the rejected-trigger dashboard panel so blocked rows show inline guidance and a disabled `Retry blocked` action, while safe rows still expose `Retry trigger`.
+- Updated README, product spec, frontend design notes, and this execution log.
+
+Validation so far:
+
+- `npm test -- --run src/dashboard/components/RejectedTriggerPanel.test.tsx`: first failed because retry-blocked guidance was not rendered; then passed after adding UI guidance and retry-button preflight, 6 tests run, 0 failures.
+- `npm test`: passed after full frontend regression verification, 162 tests run, 0 failures.
+- `npm run build`: passed after production frontend build verification.
+- `mvn -pl PatchPilot -Dtest=RejectedTriggerRetryPolicyTests,DefaultRejectedTriggerRetryServiceTests,RejectedTriggerAuditControllerTests test`: passed after backend retry policy, service, and controller coverage, 14 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed after full backend regression verification, 617 tests run, 0 failures.
+- `GIT_OPTIONAL_LOCKS=0 git diff --check`: passed after whitespace verification.

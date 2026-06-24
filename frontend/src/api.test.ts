@@ -631,6 +631,8 @@ test('lists recent rejected triggers through backend API', async () => {
           commentUrl: 'https://github.com/bingqin2/PatchPilot/issues/1#issuecomment-456',
           retriedTaskId: 'task-from-rejected-1',
           retriedAt: '2026-06-23T01:06:00Z',
+          retryable: false,
+          retryBlockedReason: 'Rejected trigger has already been retried; open the linked retried task instead.',
           createdAt: '2026-06-23T01:05:00Z'
         }
       ],
@@ -648,6 +650,8 @@ test('lists recent rejected triggers through backend API', async () => {
   expect(rejectedTriggers[0].commentUrl).toBe('https://github.com/bingqin2/PatchPilot/issues/1#issuecomment-456');
   expect(rejectedTriggers[0].retriedTaskId).toBe('task-from-rejected-1');
   expect(rejectedTriggers[0].retriedAt).toBe('2026-06-23T01:06:00Z');
+  expect(rejectedTriggers[0].retryable).toBe(false);
+  expect(rejectedTriggers[0].retryBlockedReason).toBe('Rejected trigger has already been retried; open the linked retried task instead.');
 });
 
 test('lists recent rejected triggers by category through backend API', async () => {
@@ -778,6 +782,8 @@ test('gets trigger quarantine evidence through backend API', async () => {
             commentUrl: 'https://github.com/bingqin2/PatchPilot/issues/1#issuecomment-456',
             retriedTaskId: null,
             retriedAt: null,
+            retryable: false,
+            retryBlockedReason: 'Release the active quarantine before retrying.',
             createdAt: '2026-06-23T01:06:00Z'
           }
         ],

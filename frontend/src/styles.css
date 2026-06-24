@@ -3161,6 +3161,14 @@ pre {
   text-decoration: underline;
 }
 
+.rejected-trigger-retry-guidance {
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 6px;
+  color: #9a3412;
+  padding: 4px 6px;
+}
+
 .rejected-trigger-row p {
   background: #fff4f2;
   border: 1px solid #efc2b7;

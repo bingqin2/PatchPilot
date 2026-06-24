@@ -118,6 +118,7 @@ The current implementation target is local self-hosted development first. Hosted
 - The system should record rejected trigger decisions with clear operator-facing reasons.
 - GitHub webhook trigger rejections should post a safe issue comment with the rejection category, reason, and next action, without echoing unsafe trigger text.
 - GitHub refusal comment failures must not create a task or hide the rejected-trigger audit record.
+- Rejected-trigger retry should be preflighted before task creation. Only actionability or model-classification rejections may be retried directly; dangerous instructions, unauthorized users, unauthorized repositories, rate limits, active abuse quarantines, unsupported commands, unknown categories, and already-retried audit rows must return a clear blocked reason.
 - Accepted trigger decisions should record concise task timeline evidence that explains the safety-gate result, whether issue context was loaded, and the model trigger-classification outcome.
 - The system should summarize recent rejected trigger decisions by category, source, trigger user, and repository so operators can detect abuse patterns and tune safety configuration.
 - The system should expose active and historical trigger quarantine records with scope, scope key, reason, category, evidence count, window, start time, expiry time, and timestamps.
