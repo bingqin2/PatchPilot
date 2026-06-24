@@ -3397,3 +3397,20 @@ Validation so far:
 - `mvn -pl PatchPilot -Dtest=TaskControllerTests test`: passed after focused controller regression verification, 61 tests run, 0 failures.
 - `npm test -- --run src/dashboard/components/TaskDetailPanel.test.tsx`: first failed because the dashboard did not render `Failure diagnosis`; then passed after rendering the diagnosis section.
 - `npm test -- --run src/dashboard/components/TaskDetailPanel.test.tsx src/api.test.ts src/App.test.tsx`: passed after frontend API and dashboard fixture updates, 118 tests run, 0 failures.
+
+Implemented task retry preflight from `docs/plans/169-task-retry-preflight.md`.
+
+Changes:
+
+- Added `GET /api/tasks/{id}/retry-preflight` with retry eligibility, task status, stable failure category, sanitized reason, and operator action.
+- Reused retry preflight inside `POST /api/tasks/{id}/retry`, returning `409 Conflict` when a task requires setup or repository support work before another attempt.
+- Kept verification, model, workspace, patch-review, generic failed, and cancelled tasks retryable while blocking blind retries for GitHub operation failures and unsupported repositories.
+- Added dashboard retry-preflight loading for failed and cancelled task detail.
+- Added a `Retry preflight` detail section and disabled the retry button as `Retry blocked` when backend preflight marks the task blocked.
+- Updated README, product spec, frontend design notes, and this execution log.
+
+Validation so far:
+
+- `mvn -pl PatchPilot -Dtest=DefaultFixTaskControlServiceTests,TaskControllerTests test`: first failed because `FixTaskRetryPreflightVo` did not exist; then passed after adding the retry preflight read model, service policy, controller endpoint, and retry guard, 79 tests run, 0 failures.
+- `npm test -- --run src/dashboard/components/TaskDetailPanel.test.tsx src/api.test.ts`: first failed because the dashboard did not render `Retry preflight`; then passed after adding the detail section, disabled retry state, and API client coverage, 62 tests run, 0 failures.
+- `npm test -- --run src/App.test.tsx -t "retries failed tasks"`: passed after page-level retry-preflight loading and display coverage.

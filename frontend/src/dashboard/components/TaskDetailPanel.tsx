@@ -53,6 +53,7 @@ export function TaskDetailPanel({
     || task.status === 'RUNNING_TESTS'
     || task.status === 'PENDING_REVIEW';
   const canRetry = task.status === 'FAILED' || task.status === 'CANCELLED';
+  const retryPreflightBlocksRetry = canRetry && detail.retryPreflight?.retryable === false;
   const canApproveReview = task.status === 'PENDING_REVIEW';
   const reviewApprovalConfigured = reviewApprovalAllowedOperators.length > 0;
   const latestTestStatus = testStatus(detail.summary?.latestTestRunExitCode);
@@ -142,11 +143,11 @@ export function TaskDetailPanel({
             <button
               className="secondary-button"
               type="button"
-              disabled={actionInFlight}
+              disabled={actionInFlight || retryPreflightBlocksRetry}
               onClick={() => void onRetryTask(task.id)}
             >
               <RotateCcw size={14} />
-              Retry task
+              {retryPreflightBlocksRetry ? 'Retry blocked' : 'Retry task'}
             </button>
           ) : null}
           {task.pullRequestUrl ? (
@@ -232,6 +233,26 @@ export function TaskDetailPanel({
             <strong>{failureDiagnosisLabel(detail.failureDiagnosis.category)}</strong>
           </div>
           <p>{detail.failureDiagnosis.safeReason}</p>
+        </section>
+      ) : null}
+
+      {canRetry && detail.retryPreflight ? (
+        <section
+          className={`detail-section retry-preflight-section retry-preflight-${detail.retryPreflight.retryable ? 'ready' : 'blocked'}`}
+          aria-label="Retry preflight"
+        >
+          <div className="retry-preflight-header">
+            <div>
+              <h3>Retry preflight</h3>
+              <p>{detail.retryPreflight.operatorAction}</p>
+            </div>
+            <strong>{detail.retryPreflight.retryable ? 'Ready to retry' : 'Retry blocked'}</strong>
+          </div>
+          <div className="retry-preflight-meta">
+            <span>{failureDiagnosisLabel(detail.retryPreflight.category)}</span>
+            <span>{detail.retryPreflight.status}</span>
+          </div>
+          {detail.retryPreflight.reason ? <p>{detail.retryPreflight.reason}</p> : null}
         </section>
       ) : null}
 

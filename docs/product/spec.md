@@ -203,6 +203,9 @@ The current implementation target is local self-hosted development first. Hosted
 - Failed-task issue comments should include a failure category, next action, and a sanitized reason.
 - Failure metrics should reuse the same stable failure categories and next-action guidance as failed-task issue comments, so dashboard summaries and GitHub feedback stay consistent.
 - Task detail APIs and copied task reports should expose the same failure category, next action, and sanitized reason for failed tasks, so per-task investigation and aggregate metrics use one taxonomy.
+- Failed and cancelled tasks should expose retry preflight that returns retry eligibility, stable category, sanitized reason, and next operator action before an operator queues another attempt.
+- Retry preflight should block blind retries when the failure category indicates setup or repository support work is required first, such as GitHub credential/permission failures or unsupported repository shapes.
+- The retry API should enforce the same retry-preflight policy used by the dashboard.
 - If a task has an accepted-task status comment, failure reporting should update that same comment.
 - If the accepted-task status comment is missing, failure reporting should create a new issue comment and store its id and URL on the task.
 - Failure feedback comment creation or update failures must not change the durable task status.

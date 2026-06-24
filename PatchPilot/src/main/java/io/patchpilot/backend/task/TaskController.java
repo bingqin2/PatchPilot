@@ -22,6 +22,7 @@ import io.patchpilot.backend.task.domain.vo.FixTaskModelCallVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskModelUsageSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskPageVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskQueueItemVo;
+import io.patchpilot.backend.task.domain.vo.FixTaskRetryPreflightVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskStatusCountsVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskTestRunVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskTimelineEventVo;
@@ -283,6 +284,15 @@ public class TaskController {
             return ResponseEntity.status(404).body(ApiResponse.fail("Task not found"));
         }
         return ResponseEntity.ok(ApiResponse.ok(fixTaskModelCallService.listModelCalls(id)));
+    }
+
+    @GetMapping("/{id}/retry-preflight")
+    public ResponseEntity<ApiResponse<FixTaskRetryPreflightVo>> getRetryPreflight(@PathVariable String id) {
+        try {
+            return ResponseEntity.ok(ApiResponse.ok(fixTaskControlService.retryPreflight(id)));
+        } catch (IllegalArgumentException exception) {
+            return ResponseEntity.status(404).body(ApiResponse.fail("Task not found"));
+        }
     }
 
     @PostMapping("/{id}/cancel")

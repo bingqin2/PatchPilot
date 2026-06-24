@@ -1294,6 +1294,44 @@ class TaskControllerTests {
     }
 
     @Test
+    void should_return_retry_preflight_for_failed_task() throws Exception {
+        FixTaskVo task = createTask("delivery-retry-preflight-http");
+        fixTaskService.markFailed(task.id(), "maven tests failed: token=ghp_123456789012345678901234567890123456");
+
+        mockMvc.perform(get("/api/tasks/{id}/retry-preflight", task.id()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.taskId").value(task.id()))
+                .andExpect(jsonPath("$.data.status").value("FAILED"))
+                .andExpect(jsonPath("$.data.retryable").value(true))
+                .andExpect(jsonPath("$.data.category").value("VERIFICATION_FAILED"))
+                .andExpect(jsonPath("$.data.reason").value("maven tests failed: token=[REDACTED]"))
+                .andExpect(jsonPath("$.data.operatorAction")
+                        .value("Inspect the verification output, fix the failing test or build error, then retry the task."));
+    }
+
+    @Test
+    void should_block_retry_when_retry_preflight_requires_operator_action() throws Exception {
+        FixTaskVo task = createTask("delivery-retry-preflight-blocked-http");
+        fixTaskService.markFailed(task.id(), "GitHub token is required to create Pull Requests");
+
+        mockMvc.perform(get("/api/tasks/{id}/retry-preflight", task.id()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.taskId").value(task.id()))
+                .andExpect(jsonPath("$.data.retryable").value(false))
+                .andExpect(jsonPath("$.data.category").value("GITHUB_OPERATION_FAILED"))
+                .andExpect(jsonPath("$.data.operatorAction")
+                        .value("Check GitHub token or App permissions, then retry the task after access is fixed."));
+
+        mockMvc.perform(post("/api/tasks/{id}/retry", task.id()))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message")
+                        .value("Check GitHub token or App permissions, then retry the task after access is fixed."));
+    }
+
+    @Test
     void should_include_retry_lineage_in_task_report() throws Exception {
         FixTaskVo task = createTask("delivery-retry-lineage-report");
         String failureReason = "Model patch review rejected generated edits: unrelated authentication change";
@@ -1314,6 +1352,14 @@ class TaskControllerTests {
     @Test
     void should_return_404_when_retrying_missing_task() throws Exception {
         mockMvc.perform(post("/api/tasks/{id}/retry", "missing-task"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("Task not found"));
+    }
+
+    @Test
+    void should_return_404_for_missing_retry_preflight() throws Exception {
+        mockMvc.perform(get("/api/tasks/{id}/retry-preflight", "missing-task"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.message").value("Task not found"));

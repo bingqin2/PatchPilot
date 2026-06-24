@@ -26,6 +26,7 @@ import {
   getModelUsageSummary,
   getQueueSummary,
   getTaskDetail,
+  getTaskRetryPreflight,
   getTaskReport,
   getTaskStatusCounts,
   getWorkerHealth,
@@ -616,10 +617,16 @@ export default function App() {
     setDetail(emptyDetail);
     setDetailLoading(true);
     setError(null);
-    getTaskDetail(selectedTask.id)
-      .then((taskDetail) => {
+    const retryPreflightRequest = selectedTask.status === 'FAILED' || selectedTask.status === 'CANCELLED'
+      ? getTaskRetryPreflight(selectedTask.id)
+      : Promise.resolve(null);
+    Promise.all([getTaskDetail(selectedTask.id), retryPreflightRequest])
+      .then(([taskDetail, retryPreflight]) => {
         if (!cancelled) {
-          setDetail(taskDetail);
+          setDetail({
+            ...taskDetail,
+            retryPreflight
+          });
         }
       })
       .catch((caught) => {

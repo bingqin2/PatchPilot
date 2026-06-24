@@ -26,6 +26,7 @@ PatchPilot is not a chatbot and does not auto-merge code. The current target is 
 - Unsupported repository preflight that fails before patch generation, test execution, Git mutation, or Pull Request creation.
 - OpenAI-compatible model client and plan-driven patch workflow.
 - Issue comment status updates for accepted, running, verification, success, and failure states, including best-effort failure feedback creation when the original status comment is missing.
+- Failed and cancelled task retry preflight that explains whether retry is safe, shows sanitized failure context, and blocks blind retries when GitHub permissions or repository support must be fixed first.
 - Demo readiness gate that summarizes credentials, adapter fixtures, queue health, worker heartbeat readiness, and recent PR evidence before a live smoke run.
 - Live demo smoke checklist that turns readiness, webhook delivery, task execution, and Pull Request evidence into ordered operator steps.
 - Demo evidence bundle that combines readiness, smoke-check, configuration, adapter, queue, webhook, rejected-trigger, quarantine, and recent Pull Request evidence for one demo-ready summary.
