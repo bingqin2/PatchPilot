@@ -465,6 +465,39 @@ export interface WebhookDeliveryDiagnostic {
   createdAt: string;
 }
 
+export type WebhookPayloadDiagnosticStatus =
+  | 'READY_FOR_WEBHOOK'
+  | 'INVALID_SIGNATURE'
+  | 'MALFORMED_PAYLOAD'
+  | 'UNSUPPORTED_EVENT'
+  | 'UNSUPPORTED_ACTION'
+  | 'IGNORED_COMMENT';
+
+export type WebhookSignatureDiagnosticStatus = 'NOT_PROVIDED' | 'VALID' | 'INVALID';
+
+export interface WebhookPayloadDiagnosticInput {
+  event: string;
+  deliveryId: string;
+  signature: string;
+  payload: string;
+}
+
+export interface WebhookPayloadDiagnosticResult {
+  status: WebhookPayloadDiagnosticStatus;
+  signatureStatus: WebhookSignatureDiagnosticStatus;
+  validJson: boolean;
+  supportedEvent: boolean;
+  supportedAction: boolean;
+  agentFixCommand: boolean;
+  repositoryOwner: string | null;
+  repositoryName: string | null;
+  issueNumber: number | null;
+  triggerUser: string | null;
+  triggerComment: string | null;
+  message: string;
+  nextAction: string;
+}
+
 export interface RejectedTriggerAudit {
   id: string;
   source: string;

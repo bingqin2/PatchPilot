@@ -1148,6 +1148,23 @@ beforeEach(() => {
     if (url === '/api/github/webhook-deliveries?limit=10') {
       return jsonResponse(webhookDeliveries);
     }
+    if (url === '/api/github/webhook-diagnostics/evaluate-payload' && init?.method === 'POST') {
+      return jsonResponse({
+        status: 'READY_FOR_WEBHOOK',
+        signatureStatus: 'VALID',
+        validJson: true,
+        supportedEvent: true,
+        supportedAction: true,
+        agentFixCommand: true,
+        repositoryOwner: 'octocat',
+        repositoryName: 'hello-world',
+        issueNumber: 42,
+        triggerUser: 'alice',
+        triggerComment: '/agent fix touch docs/webhook-diagnostic.md',
+        message: 'Payload is an issue_comment.created /agent fix trigger.',
+        nextAction: 'The payload shape is ready. Use GitHub redeliver.'
+      });
+    }
     if (url === '/api/rejected-triggers?limit=20') {
       return jsonResponse(rejectedTriggers);
     }
@@ -1372,6 +1389,7 @@ afterEach(() => {
 test('renders operational task dashboard from backend APIs', async () => {
   vi.useFakeTimers({ shouldAdvanceTime: true });
   vi.setSystemTime(new Date('2026-06-21T08:15:30Z'));
+  const user = userEvent.setup();
   const fetchMock = vi.mocked(fetch);
   render(<App />);
 
@@ -1487,6 +1505,27 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(within(webhookDeliveryPanel).getByText('Invalid GitHub webhook signature')).toBeInTheDocument();
   expect(within(webhookDeliveryPanel).getByText('Redeliver after fix')).toBeInTheDocument();
   expect(within(webhookDeliveryPanel).getByText("Fix the webhook secret or payload URL first, then use GitHub's Redeliver action for this delivery.")).toBeInTheDocument();
+  await user.type(within(webhookDeliveryPanel).getByLabelText('GitHub event'), 'issue_comment');
+  await user.type(within(webhookDeliveryPanel).getByLabelText('Delivery id'), 'diagnostic-delivery');
+  await user.type(within(webhookDeliveryPanel).getByLabelText('Signature'), 'sha256=test');
+  await user.click(within(webhookDeliveryPanel).getByLabelText('Payload'));
+  await user.paste('{"action":"created"}');
+  await user.click(within(webhookDeliveryPanel).getByRole('button', { name: 'Evaluate payload' }));
+  await waitFor(() =>
+    expect(fetchMock).toHaveBeenCalledWith('/api/github/webhook-diagnostics/evaluate-payload', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        event: 'issue_comment',
+        deliveryId: 'diagnostic-delivery',
+        signature: 'sha256=test',
+        payload: '{"action":"created"}'
+      })
+    })
+  );
+  const payloadDiagnostic = within(webhookDeliveryPanel).getByLabelText('Webhook payload diagnostic result');
+  expect(within(payloadDiagnostic).getByText('READY_FOR_WEBHOOK')).toBeInTheDocument();
+  expect(within(payloadDiagnostic).getByText('octocat/hello-world #42')).toBeInTheDocument();
   const triggerDecisionPanel = screen.getByRole('region', { name: 'Trigger decisions' });
   expect(within(triggerDecisionPanel).getByRole('heading', { name: 'Trigger decisions' })).toBeInTheDocument();
   expect(within(triggerDecisionPanel).getByText('Accepted trigger evidence')).toBeInTheDocument();

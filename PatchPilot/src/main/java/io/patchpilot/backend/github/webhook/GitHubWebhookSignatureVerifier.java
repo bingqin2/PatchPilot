@@ -31,6 +31,15 @@ public class GitHubWebhookSignatureVerifier {
         );
     }
 
+    public WebhookSignatureDiagnosticStatus diagnose(String payload, String signatureHeader) {
+        if (!StringUtils.hasText(signatureHeader)) {
+            return WebhookSignatureDiagnosticStatus.NOT_PROVIDED;
+        }
+        return isValid(payload, signatureHeader)
+                ? WebhookSignatureDiagnosticStatus.VALID
+                : WebhookSignatureDiagnosticStatus.INVALID;
+    }
+
     private String hmacSha256Hex(String payload) {
         try {
             Mac mac = Mac.getInstance("HmacSHA256");

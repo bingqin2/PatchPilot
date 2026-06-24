@@ -10,6 +10,7 @@ import {
   downloadDemoSessionArchiveReport,
   downloadDemoSessionReport,
   evaluateTrigger,
+  evaluateWebhookPayloadDiagnostic,
   getBackendHealth,
   getConfigurationSummary,
   getDemoEvidenceBundle,
@@ -99,6 +100,8 @@ import type {
   TriggerQuarantine,
   TriggerQuarantineEvidence,
   WebhookDeliveryDiagnostic,
+  WebhookPayloadDiagnosticInput,
+  WebhookPayloadDiagnosticResult,
   LanguageAdapterFixtureVerification,
   RepositoryPreflightInput,
   RepositoryPreflightResult,
@@ -173,6 +176,9 @@ export default function App() {
   const [queueItems, setQueueItems] = useState<FixTaskQueueItem[]>([]);
   const [webhookDeliveries, setWebhookDeliveries] = useState<WebhookDeliveryDiagnostic[]>([]);
   const [webhookDeliveryError, setWebhookDeliveryError] = useState<string | null>(null);
+  const [webhookPayloadDiagnostic, setWebhookPayloadDiagnostic] = useState<WebhookPayloadDiagnosticResult | null>(null);
+  const [webhookPayloadDiagnosticError, setWebhookPayloadDiagnosticError] = useState<string | null>(null);
+  const [evaluatingWebhookPayload, setEvaluatingWebhookPayload] = useState(false);
   const [rejectedTriggers, setRejectedTriggers] = useState<RejectedTriggerAudit[]>([]);
   const [rejectedTriggerSummary, setRejectedTriggerSummary] = useState<RejectedTriggerAuditSummary | null>(null);
   const [triggerQuarantines, setTriggerQuarantines] = useState<TriggerQuarantine[]>([]);
@@ -754,6 +760,21 @@ export default function App() {
     }
   }, []);
 
+  const handleEvaluateWebhookPayload = useCallback(async (input: WebhookPayloadDiagnosticInput) => {
+    setEvaluatingWebhookPayload(true);
+    setWebhookPayloadDiagnosticError(null);
+    try {
+      const result = await evaluateWebhookPayloadDiagnostic(input);
+      setWebhookPayloadDiagnostic(result);
+      return result;
+    } catch (caught) {
+      setWebhookPayloadDiagnosticError(errorMessage(caught));
+      throw caught;
+    } finally {
+      setEvaluatingWebhookPayload(false);
+    }
+  }, []);
+
   const handleCreateTriggerQuarantine = useCallback(async (input: CreateTriggerQuarantineInput) => {
     setCreatingTriggerQuarantine(true);
     setError(null);
@@ -1060,7 +1081,14 @@ export default function App() {
 
       <QueuePanel summary={queueSummary} items={queueItems} workerHealth={workerHealth} />
 
-      <WebhookDeliveryPanel deliveries={webhookDeliveries} error={webhookDeliveryError} />
+      <WebhookDeliveryPanel
+        deliveries={webhookDeliveries}
+        error={webhookDeliveryError}
+        evaluatingPayload={evaluatingWebhookPayload}
+        payloadDiagnostic={webhookPayloadDiagnostic}
+        payloadDiagnosticError={webhookPayloadDiagnosticError}
+        onEvaluatePayload={handleEvaluateWebhookPayload}
+      />
 
       <RejectedTriggerPanel
         rejectedTriggers={rejectedTriggers}

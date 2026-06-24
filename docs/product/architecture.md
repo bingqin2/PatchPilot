@@ -76,6 +76,15 @@ accepts a source of `MANUAL` or `ISSUE_COMMENT`; `MANUAL` is the default for
 older clients, while `ISSUE_COMMENT` previews the same downstream gate source as
 GitHub issue-comment handling without replaying a signed webhook request.
 
+Webhook payload diagnostics are separate from real webhook handling.
+`POST /api/github/webhook-diagnostics/evaluate-payload` parses a pasted payload
+and optional `sha256=...` signature as an admin-protected read-only operator
+check. It reports signature status, JSON validity, supported event/action,
+`/agent fix` recognition, parsed repository/issue fields, and a next action, but
+it must not call `GitHubWebhookService.handle`, create tasks, queue work, record
+delivery diagnostics, record rejected triggers, post GitHub comments, consume
+rate-limit quota, or call the model.
+
 ## Worker Runtime Health
 
 The single-process backend records queue worker heartbeat state in memory through
@@ -322,7 +331,7 @@ Responsibilities:
 - Treat queue failures, delayed work, running work, missing model cost configuration, or missing recent PR evidence as operator attention items.
 - Return concrete next actions for the dashboard and curl users.
 
-This layer must not create tasks, call the model, clone repositories, execute tests, mutate queue state, write comments, or weaken safety gates. Its evidence bundle, session snapshot, session report, session report download, archived report download, demo script, and runbook endpoints are read models over configuration, fixture verification, queue state, rejected-trigger safety state, webhook diagnostics, recent task history, and stored demo archives.
+This layer must not create tasks, call the model, clone repositories, execute tests, mutate queue state, write comments, or weaken safety gates. Its evidence bundle, session snapshot, session report, session report download, archived report download, demo script, runbook, and webhook payload diagnostic endpoints are read models over configuration, fixture verification, queue state, rejected-trigger safety state, webhook diagnostics, recent task history, pasted payload metadata, and stored demo archives.
 Creating a session archive is the only local write in this layer. It captures the generated session report in the configured archive store and still does not create tasks, call the model, run tests, mutate Git, write GitHub comments, or open Pull Requests.
 
 ## Data Model
