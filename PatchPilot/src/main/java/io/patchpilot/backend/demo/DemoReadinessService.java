@@ -16,6 +16,7 @@ import io.patchpilot.backend.task.service.FixTaskService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
@@ -74,6 +75,7 @@ public class DemoReadinessService {
                 backendCheck(),
                 credentialsCheck(configuration),
                 safetyPolicyCheck(configuration),
+                repositoryPreflightScopeCheck(configuration),
                 adapterFixtureCheck(fixtures),
                 queueCheck(queueSummary),
                 recentPullRequestCheck(recentTasks)
@@ -161,6 +163,37 @@ public class DemoReadinessService {
                 "Safety policy",
                 DemoReadinessStatus.READY,
                 "Trigger users, repositories, review approvers, admin API token, command safety, rate limits, and rejected-trigger quarantine are configured.",
+                "No action needed."
+        );
+    }
+
+    private static DemoReadinessCheckVo repositoryPreflightScopeCheck(ConfigurationSummaryVo configuration) {
+        if (configuration.repositoryPreflightAllowedRootDirs().isEmpty()) {
+            return new DemoReadinessCheckVo(
+                    "Repository preflight scope",
+                    DemoReadinessStatus.NEEDS_ATTENTION,
+                    "Repository preflight allowed roots are not configured.",
+                    "Configure PATCHPILOT_REPOSITORY_PREFLIGHT_ALLOWED_ROOT_DIRS before using local repository preflight."
+            );
+        }
+
+        Path fixtureRoot = Path.of("..").resolve("docs/demo-repositories").toAbsolutePath().normalize();
+        boolean demoFixtureRootAllowed = configuration.repositoryPreflightAllowedRootDirs().stream()
+                .map(rootDir -> Path.of(rootDir).toAbsolutePath().normalize())
+                .anyMatch(fixtureRoot::startsWith);
+        if (!demoFixtureRootAllowed) {
+            return new DemoReadinessCheckVo(
+                    "Repository preflight scope",
+                    DemoReadinessStatus.NEEDS_ATTENTION,
+                    "Repository preflight allowed roots do not include docs/demo-repositories.",
+                    "Configure PATCHPILOT_REPOSITORY_PREFLIGHT_ALLOWED_ROOT_DIRS to include docs/demo-repositories or the project root before a live demo."
+            );
+        }
+
+        return new DemoReadinessCheckVo(
+                "Repository preflight scope",
+                DemoReadinessStatus.READY,
+                "Repository preflight can inspect demo fixture paths.",
                 "No action needed."
         );
     }

@@ -913,6 +913,7 @@ export default function App() {
         result={repositoryPreflightResult}
         error={repositoryPreflightError}
         loading={repositoryPreflightLoading}
+        allowedRootDirs={configuration?.repositoryPreflightAllowedRootDirs ?? []}
         onRunPreflight={handleRepositoryPreflight}
       />
 

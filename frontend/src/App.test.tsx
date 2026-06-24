@@ -1512,13 +1512,15 @@ test('summarizes operator setup readiness before a demo run', async () => {
 
   const setupChecklist = await screen.findByRole('region', { name: 'Operator setup checklist' });
   expect(within(setupChecklist).getByRole('heading', { name: 'Operator setup checklist' })).toBeInTheDocument();
-  expect(within(setupChecklist).getByText('4/6 checks ready')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('5/7 checks ready')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Backend connectivity')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Ready - /health reports UP')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Required credentials')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Ready - agent, GitHub, webhook, and browser admin token are configured')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Safety policy')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Ready - allowlists, review approvers, and trigger rate limits are configured')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('Repository preflight scope')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('Ready - demo fixture preflight paths are allowed')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Adapter fixtures')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Ready - 13/13 fixtures passing')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Queue health')).toBeInTheDocument();
@@ -1579,7 +1581,7 @@ test('shows when every operator setup check is ready', async () => {
   render(<App />);
 
   const setupChecklist = await screen.findByRole('region', { name: 'Operator setup checklist' });
-  expect(within(setupChecklist).getByText('6/6 checks ready')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('7/7 checks ready')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Ready - recent completed task has a Pull Request URL')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('All setup checks are ready for a controlled issue-to-PR demo.')).toBeInTheDocument();
   expect(within(setupChecklist).queryByRole('heading', { name: 'Next setup actions' })).not.toBeInTheDocument();
@@ -1640,6 +1642,8 @@ test('runs repository preflight from the dashboard', async () => {
   render(<App />);
 
   const preflightPanel = await screen.findByRole('region', { name: 'Repository preflight' });
+  expect(within(preflightPanel).getByText('Allowed roots')).toBeInTheDocument();
+  expect(within(preflightPanel).getByText('/tmp/patchpilot/workspaces, docs/demo-repositories')).toBeInTheDocument();
   await user.clear(within(preflightPanel).getByLabelText('Repository path'));
   await user.type(within(preflightPanel).getByLabelText('Repository path'), 'docs/demo-repositories/java-maven');
   await user.click(within(preflightPanel).getByRole('button', { name: 'Run preflight' }));

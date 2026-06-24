@@ -3001,3 +3001,24 @@ Validation so far:
 - `JAVA_HOME=/Library/Java/JavaVirtualMachines/openjdk-17.jdk/Contents/Home mvn -pl PatchPilot test`: passed after full backend verification, 565 tests run, 0 failures.
 - `npm test`: passed after full frontend verification, 130 tests run, 0 failures.
 - `npm run build`: passed after production frontend build verification.
+
+Implemented repository preflight scope readiness from `docs/plans/149-repository-preflight-scope-readiness.md`.
+
+Changes:
+
+- Added a `Repository preflight scope` check to demo readiness.
+- Flagged readiness attention when `PATCHPILOT_REPOSITORY_PREFLIGHT_ALLOWED_ROOT_DIRS` does not cover checked-in demo fixtures.
+- Added repository-preflight scope to the operator setup checklist.
+- Displayed configured repository-preflight allowed roots directly in the dashboard preflight panel.
+- Updated README, product spec, frontend design notes, and this execution log.
+
+Validation:
+
+- `JAVA_HOME=/Library/Java/JavaVirtualMachines/openjdk-17.jdk/Contents/Home mvn -pl PatchPilot -Dtest=DemoReadinessServiceTests test`: first failed because demo readiness did not include the repository-preflight scope check and a sibling root prefix was incorrectly treated as allowed; then passed after backend implementation, 7 tests run, 0 failures.
+- `npm test -- --run src/dashboard/components/OperatorSetupChecklistPanel.test.tsx src/dashboard/components/RepositoryPreflightPanel.test.tsx`: first failed because the checklist and preflight panel did not show scope readiness or allowed roots; then passed after frontend implementation, 6 tests run, 0 failures.
+- `npm test -- --run src/dashboard/components/OperatorSetupChecklistPanel.test.tsx`: first failed because the checklist ignored the backend readiness result for repository-preflight scope; then passed after using the backend readiness check when available, 3 tests run, 0 failures.
+- `JAVA_HOME=/Library/Java/JavaVirtualMachines/openjdk-17.jdk/Contents/Home mvn -pl PatchPilot -Dtest=MyBatisTriggerQuarantineServiceTests,InMemoryTriggerQuarantineServiceTests test`: passed after replacing stale fixed-date quarantine expirations with future instants, 14 tests run, 0 failures.
+- `JAVA_HOME=/Library/Java/JavaVirtualMachines/openjdk-17.jdk/Contents/Home mvn -pl PatchPilot test`: passed after full backend verification, 567 tests run, 0 failures.
+- `npm test`: passed after full frontend verification, 133 tests run, 0 failures.
+- `npm run build`: first failed because the new checklist fixture used `FixTaskStatusCounts` fields in a `FixTaskQueueSummary`; then passed after fixing the fixture.
+- `git diff --check`: passed after whitespace verification.

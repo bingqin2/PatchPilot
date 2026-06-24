@@ -43,6 +43,7 @@ test('runs repository preflight for a local path', async () => {
       result={null}
       error={null}
       loading={false}
+      allowedRootDirs={['/Users/demo/agent/docs/demo-repositories']}
       onRunPreflight={onRunPreflight}
     />
   );
@@ -60,11 +61,14 @@ test('shows supported repository detection details', () => {
       result={supportedResult}
       error={null}
       loading={false}
+      allowedRootDirs={['/Users/demo/agent/docs/demo-repositories']}
       onRunPreflight={vi.fn()}
     />
   );
 
   const panel = screen.getByRole('region', { name: 'Repository preflight' });
+  expect(within(panel).getByText('Allowed roots')).toBeInTheDocument();
+  expect(within(panel).getByText('/Users/demo/agent/docs/demo-repositories')).toBeInTheDocument();
   expect(within(panel).getByText('SUPPORTED')).toBeInTheDocument();
   expect(within(panel).getByText('java')).toBeInTheDocument();
   expect(within(panel).getByText('maven')).toBeInTheDocument();
@@ -78,10 +82,12 @@ test('shows unsupported guidance and adapter options', () => {
       result={unsupportedResult}
       error="Backend request failed"
       loading={false}
+      allowedRootDirs={[]}
       onRunPreflight={vi.fn()}
     />
   );
 
+  expect(screen.getByText('No repository preflight allowed roots configured')).toBeInTheDocument();
   expect(screen.getByText('Preflight failed')).toBeInTheDocument();
   expect(screen.getByText('Backend request failed')).toBeInTheDocument();
   expect(screen.getByText('UNSUPPORTED')).toBeInTheDocument();
