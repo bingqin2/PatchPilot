@@ -3414,3 +3414,19 @@ Validation so far:
 - `mvn -pl PatchPilot -Dtest=DefaultFixTaskControlServiceTests,TaskControllerTests test`: first failed because `FixTaskRetryPreflightVo` did not exist; then passed after adding the retry preflight read model, service policy, controller endpoint, and retry guard, 79 tests run, 0 failures.
 - `npm test -- --run src/dashboard/components/TaskDetailPanel.test.tsx src/api.test.ts`: first failed because the dashboard did not render `Retry preflight`; then passed after adding the detail section, disabled retry state, and API client coverage, 62 tests run, 0 failures.
 - `npm test -- --run src/App.test.tsx -t "retries failed tasks"`: passed after page-level retry-preflight loading and display coverage.
+
+Implemented task retry reason audit from `docs/plans/170-task-retry-reason-audit.md`.
+
+Changes:
+
+- Changed `POST /api/tasks/{id}/retry` to require a JSON retry reason and return `400 Bad Request` when the request body or reason is missing.
+- Stored `retryReason` on MySQL and in-memory task records alongside retry lineage.
+- Added retry reason to requeue timeline evidence and copied Markdown task reports.
+- Added dashboard retry reason input in task retry preflight and disabled `Retry task` until the operator provides a reason.
+- Rendered stored retry reasons in dashboard retry lineage.
+- Updated README, product spec, frontend design notes, migration coverage, and this execution log.
+
+Validation so far:
+
+- `mvn -pl PatchPilot -Dtest=DefaultFixTaskControlServiceTests,TaskControllerTests,FixTaskConvertTests,MyBatisFixTaskServiceTests test`: passed after backend retry reason service/controller/persistence coverage, 107 tests run, 0 failures, 0 errors.
+- `npm test -- --run src/dashboard/components/TaskDetailPanel.test.tsx src/api.test.ts src/App.test.tsx`: first failed because retry was still enabled without an operator reason and retry lineage omitted the reason; then passed after adding the reason input, POST body, and retry-lineage display, 122 tests run, 0 failures.

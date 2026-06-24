@@ -2212,6 +2212,33 @@ h3 {
   color: #52606e;
 }
 
+.retry-reason-field {
+  background: #ffffff;
+  border: 1px solid #dfe6ec;
+  border-radius: 6px;
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+}
+
+.retry-reason-field span,
+.retry-lineage-reason span {
+  color: #637181;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.retry-reason-field textarea {
+  background: #ffffff;
+  border: 1px solid #cfd8e3;
+  border-radius: 6px;
+  color: #1d2733;
+  font: inherit;
+  min-width: 0;
+  padding: 8px 9px;
+  resize: vertical;
+}
+
 .repository-support-guidance {
   background: #fffaf5;
   display: grid;
@@ -2419,7 +2446,8 @@ h3 {
 }
 
 .retry-lineage-header p,
-.retry-lineage-section > p {
+.retry-lineage-section > p,
+.retry-lineage-reason p {
   color: #52606e;
   font-size: 13px;
   margin: 3px 0 0;
@@ -2448,6 +2476,15 @@ h3 {
   color: #637181;
   font-size: 12px;
   font-weight: 800;
+}
+
+.retry-lineage-reason {
+  background: #f8fafc;
+  border: 1px solid #dfe6ec;
+  border-radius: 6px;
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
 }
 
 .review-approval-grid {

@@ -96,7 +96,12 @@ public class InMemoryFixTaskService implements FixTaskService {
 
     @Override
     public FixTaskVo markPendingForRetry(String id) {
-        return replaceForRetry(id);
+        return markPendingForRetry(id, null);
+    }
+
+    @Override
+    public FixTaskVo markPendingForRetry(String id, String retryReason) {
+        return replaceForRetry(id, retryReason);
     }
 
     @Override
@@ -197,7 +202,7 @@ public class InMemoryFixTaskService implements FixTaskService {
         return updatedTask;
     }
 
-    private FixTaskVo replaceForRetry(String id) {
+    private FixTaskVo replaceForRetry(String id, String retryReason) {
         FixTaskVo updatedTask = tasks.compute(id, (taskId, currentTask) -> {
             if (currentTask == null) {
                 throw new IllegalArgumentException("Task not found: " + taskId);
@@ -207,7 +212,7 @@ public class InMemoryFixTaskService implements FixTaskService {
                     currentTask.language(), currentTask.buildSystem(), currentTask.verificationCommand(),
                     currentTask.adapterDetectionReason(), currentTask.statusCommentId(), currentTask.statusCommentUrl(),
                     null, null, null, currentTask.id(), currentTask.status().name(), currentTask.failureReason(),
-                    updatedAt);
+                    retryReason, updatedAt);
         });
         return updatedTask;
     }
@@ -253,7 +258,7 @@ public class InMemoryFixTaskService implements FixTaskService {
                 currentTask.adapterDetectionReason(), currentTask.statusCommentId(), currentTask.statusCommentUrl(),
                 riskReviewApprovedAt, riskReviewApprovedBy, riskReviewApprovalReason,
                 currentTask.retrySourceTaskId(), currentTask.retrySourceStatus(),
-                currentTask.retrySourceFailureReason(), currentTask.retriedAt());
+                currentTask.retrySourceFailureReason(), currentTask.retryReason(), currentTask.retriedAt());
     }
 
     private static FixTaskVo copyTask(
@@ -277,7 +282,7 @@ public class InMemoryFixTaskService implements FixTaskService {
                 language, buildSystem, verificationCommand, adapterDetectionReason, statusCommentId, statusCommentUrl,
                 riskReviewApprovedAt, riskReviewApprovedBy, riskReviewApprovalReason,
                 currentTask.retrySourceTaskId(), currentTask.retrySourceStatus(),
-                currentTask.retrySourceFailureReason(), currentTask.retriedAt());
+                currentTask.retrySourceFailureReason(), currentTask.retryReason(), currentTask.retriedAt());
     }
 
     private static FixTaskVo copyTask(
@@ -299,6 +304,7 @@ public class InMemoryFixTaskService implements FixTaskService {
             String retrySourceTaskId,
             String retrySourceStatus,
             String retrySourceFailureReason,
+            String retryReason,
             Instant retriedAt
     ) {
         return new FixTaskVo(
@@ -329,6 +335,7 @@ public class InMemoryFixTaskService implements FixTaskService {
                 retrySourceTaskId,
                 retrySourceStatus,
                 retrySourceFailureReason,
+                retryReason,
                 retriedAt
         );
     }
@@ -357,7 +364,8 @@ public class InMemoryFixTaskService implements FixTaskService {
                 task.riskReviewApprovalReason() == null ? "" : task.riskReviewApprovalReason(),
                 task.retrySourceTaskId() == null ? "" : task.retrySourceTaskId(),
                 task.retrySourceStatus() == null ? "" : task.retrySourceStatus(),
-                task.retrySourceFailureReason() == null ? "" : task.retrySourceFailureReason()
+                task.retrySourceFailureReason() == null ? "" : task.retrySourceFailureReason(),
+                task.retryReason() == null ? "" : task.retryReason()
         ).toLowerCase();
         return searchable.contains(normalizedQuery);
     }

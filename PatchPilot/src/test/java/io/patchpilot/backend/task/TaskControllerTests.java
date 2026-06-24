@@ -1281,7 +1281,13 @@ class TaskControllerTests {
         FixTaskVo task = createTask("delivery-retry-http");
         fixTaskService.markFailed(task.id(), "executor failed");
 
-        mockMvc.perform(post("/api/tasks/{id}/retry", task.id()))
+        mockMvc.perform(post("/api/tasks/{id}/retry", task.id())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "reason": "Verified the failure cause and want a clean rerun"
+                                }
+                                """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.id").value(task.id()))
@@ -1290,7 +1296,25 @@ class TaskControllerTests {
                 .andExpect(jsonPath("$.data.retrySourceTaskId").value(task.id()))
                 .andExpect(jsonPath("$.data.retrySourceStatus").value("FAILED"))
                 .andExpect(jsonPath("$.data.retrySourceFailureReason").value("executor failed"))
+                .andExpect(jsonPath("$.data.retryReason").value("Verified the failure cause and want a clean rerun"))
                 .andExpect(jsonPath("$.data.retriedAt").value(not(nullValue())));
+    }
+
+    @Test
+    void should_return_400_when_retry_reason_is_blank() throws Exception {
+        FixTaskVo task = createTask("delivery-retry-blank-reason-http");
+        fixTaskService.markFailed(task.id(), "executor failed");
+
+        mockMvc.perform(post("/api/tasks/{id}/retry", task.id())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "reason": " "
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("retry reason must not be blank"));
     }
 
     @Test
@@ -1324,7 +1348,13 @@ class TaskControllerTests {
                 .andExpect(jsonPath("$.data.operatorAction")
                         .value("Check GitHub token or App permissions, then retry the task after access is fixed."));
 
-        mockMvc.perform(post("/api/tasks/{id}/retry", task.id()))
+        mockMvc.perform(post("/api/tasks/{id}/retry", task.id())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "reason": "Retry after fixing GitHub token permissions"
+                                }
+                                """))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.message")
@@ -1336,7 +1366,13 @@ class TaskControllerTests {
         FixTaskVo task = createTask("delivery-retry-lineage-report");
         String failureReason = "Model patch review rejected generated edits: unrelated authentication change";
         fixTaskService.markFailed(task.id(), failureReason);
-        mockMvc.perform(post("/api/tasks/{id}/retry", task.id()))
+        mockMvc.perform(post("/api/tasks/{id}/retry", task.id())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "reason": "Regenerate a focused patch after reviewing the rejection"
+                                }
+                                """))
                 .andExpect(status().isOk());
 
         mockMvc.perform(get("/api/tasks/{id}/report", task.id()))
@@ -1346,12 +1382,19 @@ class TaskControllerTests {
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Source task: `" + task.id() + "`")))
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Source status: `FAILED`")))
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Source failure: " + failureReason)))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Retry reason: Regenerate a focused patch after reviewing the rejection")))
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Retried at: `")));
     }
 
     @Test
     void should_return_404_when_retrying_missing_task() throws Exception {
-        mockMvc.perform(post("/api/tasks/{id}/retry", "missing-task"))
+        mockMvc.perform(post("/api/tasks/{id}/retry", "missing-task")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "reason": "Retry after investigation"
+                                }
+                                """))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.message").value("Task not found"));
@@ -1369,7 +1412,13 @@ class TaskControllerTests {
     void should_return_409_when_retrying_active_task() throws Exception {
         FixTaskVo task = createTask("delivery-retry-active-http");
 
-        mockMvc.perform(post("/api/tasks/{id}/retry", task.id()))
+        mockMvc.perform(post("/api/tasks/{id}/retry", task.id())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "reason": "Retry after investigation"
+                                }
+                                """))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.message").value("Only failed or cancelled tasks can be retried"));

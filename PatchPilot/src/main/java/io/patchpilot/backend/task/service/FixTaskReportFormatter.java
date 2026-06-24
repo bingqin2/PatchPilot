@@ -80,6 +80,9 @@ public class FixTaskReportFormatter {
         if (task.retrySourceFailureReason() != null) {
             report.append("- Source failure: ").append(task.retrySourceFailureReason()).append("\n");
         }
+        if (task.retryReason() != null) {
+            report.append("- Retry reason: ").append(task.retryReason()).append("\n");
+        }
         report.append("- Retried at: `").append(task.retriedAt() == null ? "unknown" : task.retriedAt()).append("`\n");
     }
 

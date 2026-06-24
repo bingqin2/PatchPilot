@@ -101,6 +101,7 @@ import type {
   LanguageAdapterFixtureVerification,
   RepositoryPreflightInput,
   RepositoryPreflightResult,
+  RetryTaskInput,
   SupportedLanguageAdapter,
   TaskSort,
   TaskStatusFilter
@@ -659,11 +660,11 @@ export default function App() {
     }
   }, [refresh]);
 
-  const handleRetryTask = useCallback(async (taskId: string) => {
+  const handleRetryTask = useCallback(async (taskId: string, input: RetryTaskInput) => {
     setActionTaskId(taskId);
     setError(null);
     try {
-      await retryTask(taskId);
+      await retryTask(taskId, input);
       await refresh();
     } catch (caught) {
       setError(errorMessage(caught));

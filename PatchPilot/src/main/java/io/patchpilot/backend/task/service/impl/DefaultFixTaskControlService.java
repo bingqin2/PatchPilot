@@ -2,6 +2,7 @@ package io.patchpilot.backend.task.service.impl;
 
 import io.patchpilot.backend.task.config.ReviewApprovalProperties;
 import io.patchpilot.backend.task.domain.bo.ApproveReviewCommand;
+import io.patchpilot.backend.task.domain.bo.RetryTaskCommand;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.enums.FixTaskTimelineEventType;
 import io.patchpilot.backend.task.domain.vo.FixTaskRetryPreflightVo;
@@ -13,6 +14,7 @@ import io.patchpilot.backend.task.service.FixTaskService;
 import io.patchpilot.backend.task.service.FixTaskTimelineService;
 import io.patchpilot.backend.task.service.TaskFailureFeedback;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 @Service
 public class DefaultFixTaskControlService implements FixTaskControlService {
@@ -63,14 +65,24 @@ public class DefaultFixTaskControlService implements FixTaskControlService {
 
     @Override
     public FixTaskVo retryTask(String taskId) {
+        return retryTask(taskId, new RetryTaskCommand("Task requeued by user request"));
+    }
+
+    @Override
+    public FixTaskVo retryTask(String taskId, RetryTaskCommand command) {
+        String reason = retryReason(command);
         FixTaskVo task = currentTask(taskId);
         FixTaskRetryPreflightVo preflight = retryPreflight(task);
         if (!preflight.retryable()) {
             throw new IllegalStateException(preflight.operatorAction());
         }
-        FixTaskVo retriedTask = fixTaskService.markPendingForRetry(taskId);
+        FixTaskVo retriedTask = fixTaskService.markPendingForRetry(taskId, reason);
         fixTaskQueue.enqueue(taskId);
-        fixTaskTimelineService.recordEvent(taskId, FixTaskTimelineEventType.REQUEUED, "Task requeued by user request");
+        fixTaskTimelineService.recordEvent(
+                taskId,
+                FixTaskTimelineEventType.REQUEUED,
+                "Task requeued by user request: " + reason
+        );
         return retriedTask;
     }
 
@@ -101,6 +113,14 @@ public class DefaultFixTaskControlService implements FixTaskControlService {
         if (!allowed) {
             throw new SecurityException("operator is not allowed to approve risk reviews");
         }
+    }
+
+    private static String retryReason(RetryTaskCommand command) {
+        String reason = command == null ? null : command.reason();
+        if (!StringUtils.hasText(reason)) {
+            throw new IllegalArgumentException("retry reason must not be blank");
+        }
+        return reason.trim();
     }
 
     private FixTaskRetryPreflightVo retryPreflight(FixTaskVo task) {

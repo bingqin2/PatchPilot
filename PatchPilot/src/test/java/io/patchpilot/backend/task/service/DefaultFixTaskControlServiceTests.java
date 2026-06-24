@@ -2,6 +2,7 @@ package io.patchpilot.backend.task.service;
 
 import io.patchpilot.backend.task.domain.bo.CreateFixTaskCommand;
 import io.patchpilot.backend.task.domain.bo.ApproveReviewCommand;
+import io.patchpilot.backend.task.domain.bo.RetryTaskCommand;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.enums.FixTaskTimelineEventType;
 import io.patchpilot.backend.task.domain.vo.FixTaskRetryPreflightVo;
@@ -102,17 +103,23 @@ class DefaultFixTaskControlServiceTests {
         FixTaskVo task = createTask("delivery-control-retry");
         fixTaskService.markFailed(task.id(), "executor failed");
 
-        FixTaskVo retriedTask = controlService.retryTask(task.id());
+        FixTaskVo retriedTask = controlService.retryTask(
+                task.id(),
+                new RetryTaskCommand("Fixed missing GitHub permissions and want a clean rerun")
+        );
 
         assertThat(retriedTask.status()).isEqualTo(FixTaskStatus.PENDING);
         assertThat(retriedTask.failureReason()).isNull();
         assertThat(retriedTask.retrySourceTaskId()).isEqualTo(task.id());
         assertThat(retriedTask.retrySourceStatus()).isEqualTo(FixTaskStatus.FAILED.name());
         assertThat(retriedTask.retrySourceFailureReason()).isEqualTo("executor failed");
+        assertThat(retriedTask.retryReason()).isEqualTo("Fixed missing GitHub permissions and want a clean rerun");
         assertThat(retriedTask.retriedAt()).isNotNull();
         assertThat(fixTaskQueue.enqueuedTaskIds()).containsExactly(task.id());
         assertThat(fixTaskTimelineService.eventTypes()).containsExactly(FixTaskTimelineEventType.REQUEUED);
-        assertThat(fixTaskTimelineService.messages()).containsExactly("Task requeued by user request");
+        assertThat(fixTaskTimelineService.messages()).containsExactly(
+                "Task requeued by user request: Fixed missing GitHub permissions and want a clean rerun"
+        );
     }
 
     @Test
@@ -121,16 +128,33 @@ class DefaultFixTaskControlServiceTests {
         String failureReason = "Model patch review rejected generated edits: unrelated authentication change";
         fixTaskService.markFailed(task.id(), failureReason);
 
-        FixTaskVo retriedTask = controlService.retryTask(task.id());
+        FixTaskVo retriedTask = controlService.retryTask(
+                task.id(),
+                new RetryTaskCommand("Regenerate a focused patch after reviewing the rejected diff")
+        );
 
         assertThat(retriedTask.status()).isEqualTo(FixTaskStatus.PENDING);
         assertThat(retriedTask.failureReason()).isNull();
         assertThat(retriedTask.retrySourceTaskId()).isEqualTo(task.id());
         assertThat(retriedTask.retrySourceStatus()).isEqualTo(FixTaskStatus.FAILED.name());
         assertThat(retriedTask.retrySourceFailureReason()).isEqualTo(failureReason);
+        assertThat(retriedTask.retryReason()).isEqualTo("Regenerate a focused patch after reviewing the rejected diff");
         assertThat(retriedTask.retriedAt()).isNotNull();
         assertThat(fixTaskQueue.enqueuedTaskIds()).containsExactly(task.id());
         assertThat(fixTaskTimelineService.eventTypes()).containsExactly(FixTaskTimelineEventType.REQUEUED);
+    }
+
+    @Test
+    void should_reject_retry_without_operator_reason() {
+        FixTaskVo task = createTask("delivery-control-retry-no-reason");
+        fixTaskService.markFailed(task.id(), "executor failed");
+
+        assertThatThrownBy(() -> controlService.retryTask(task.id(), new RetryTaskCommand(" ")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("retry reason must not be blank");
+
+        assertThat(fixTaskQueue.enqueuedTaskIds()).isEmpty();
+        assertThat(fixTaskTimelineService.eventTypes()).isEmpty();
     }
 
     @Test
@@ -167,7 +191,7 @@ class DefaultFixTaskControlServiceTests {
         assertThat(preflight.operatorAction())
                 .isEqualTo("Check GitHub token or App permissions, then retry the task after access is fixed.");
 
-        assertThatThrownBy(() -> controlService.retryTask(task.id()))
+        assertThatThrownBy(() -> controlService.retryTask(task.id(), new RetryTaskCommand("Retry after investigation")))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("Check GitHub token or App permissions, then retry the task after access is fixed.");
         assertThat(fixTaskQueue.enqueuedTaskIds()).isEmpty();
@@ -198,7 +222,7 @@ class DefaultFixTaskControlServiceTests {
         assertThat(preflight.category()).isEqualTo("PENDING");
         assertThat(preflight.operatorAction()).isEqualTo("Only failed or cancelled tasks can be retried");
 
-        assertThatThrownBy(() -> controlService.retryTask(task.id()))
+        assertThatThrownBy(() -> controlService.retryTask(task.id(), new RetryTaskCommand("Retry after investigation")))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("Only failed or cancelled tasks can be retried");
 
@@ -216,7 +240,7 @@ class DefaultFixTaskControlServiceTests {
         assertThat(preflight.operatorAction())
                 .isEqualTo("Pending review tasks must be cancelled or approved before retry");
 
-        assertThatThrownBy(() -> controlService.retryTask(task.id()))
+        assertThatThrownBy(() -> controlService.retryTask(task.id(), new RetryTaskCommand("Retry after investigation")))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("Pending review tasks must be cancelled or approved before retry");
 

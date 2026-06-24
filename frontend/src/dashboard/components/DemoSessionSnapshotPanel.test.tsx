@@ -73,6 +73,7 @@ const snapshot: DemoSessionSnapshot = {
       retrySourceTaskId: null,
       retrySourceStatus: null,
       retrySourceFailureReason: null,
+      retryReason: null,
       retriedAt: null
     },
     recentPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',

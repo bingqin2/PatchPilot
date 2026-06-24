@@ -32,6 +32,7 @@ const task: FixTask = {
   retrySourceTaskId: null,
   retrySourceStatus: null,
   retrySourceFailureReason: null,
+  retryReason: null,
   retriedAt: null
 };
 
@@ -256,7 +257,10 @@ test('blocks retry when retry preflight requires operator action', () => {
   expect(onRetryTask).not.toHaveBeenCalled();
 });
 
-test('keeps retry available when retry preflight is clear', () => {
+test('keeps retry available when retry preflight is clear', async () => {
+  const onRetryTask = vi.fn();
+  const user = userEvent.setup();
+
   render(
     <TaskDetailPanel
       task={{
@@ -281,7 +285,7 @@ test('keeps retry available when retry preflight is clear', () => {
       actionInFlight={false}
       reviewApprovalAllowedOperators={['release-captain']}
       onCancelTask={vi.fn()}
-      onRetryTask={vi.fn()}
+      onRetryTask={onRetryTask}
       onApproveReview={vi.fn()}
       onCopyReport={vi.fn()}
     />
@@ -290,7 +294,14 @@ test('keeps retry available when retry preflight is clear', () => {
   const preflight = screen.getByLabelText('Retry preflight');
   expect(within(preflight).getByText('Ready to retry')).toBeInTheDocument();
   expect(within(preflight).getByText('Verification failed')).toBeInTheDocument();
-  expect(screen.getByRole('button', { name: 'Retry task' })).toBeEnabled();
+  expect(screen.getByRole('button', { name: 'Retry task' })).toBeDisabled();
+
+  await user.type(screen.getByLabelText('Retry reason'), 'Verified failing test and want a clean rerun');
+  await user.click(screen.getByRole('button', { name: 'Retry task' }));
+
+  expect(onRetryTask).toHaveBeenCalledWith('task-1', {
+    reason: 'Verified failing test and want a clean rerun'
+  });
 });
 
 test('shows patch review evidence for model generated edits', () => {
@@ -375,6 +386,7 @@ test('shows retry lineage for tasks recovered from patch review rejection', () =
         retrySourceTaskId: 'task-1',
         retrySourceStatus: 'FAILED',
         retrySourceFailureReason: 'Model patch review rejected generated edits: unrelated authentication change',
+        retryReason: 'Regenerate a focused patch after reviewing the rejected edit',
         retriedAt: '2026-06-20T01:05:00Z'
       }}
       detail={baseDetail}
@@ -393,6 +405,9 @@ test('shows retry lineage for tasks recovered from patch review rejection', () =
   expect(within(retryLineage).getByText('Recovered from FAILED')).toBeInTheDocument();
   expect(
     within(retryLineage).getByText('Model patch review rejected generated edits: unrelated authentication change')
+  ).toBeInTheDocument();
+  expect(
+    within(retryLineage).getByText('Regenerate a focused patch after reviewing the rejected edit')
   ).toBeInTheDocument();
 });
 
@@ -712,6 +727,7 @@ test('shows review approval audit metadata after a task is approved', () => {
         retrySourceTaskId: null,
         retrySourceStatus: null,
         retrySourceFailureReason: null,
+        retryReason: null,
         retriedAt: null
       }}
       detail={baseDetail}

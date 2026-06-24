@@ -87,9 +87,14 @@ public class MyBatisFixTaskService implements FixTaskService {
 
     @Override
     public FixTaskVo markPendingForRetry(String id) {
+        return markPendingForRetry(id, null);
+    }
+
+    @Override
+    public FixTaskVo markPendingForRetry(String id, String retryReason) {
         FixTaskEntity currentTask = Optional.ofNullable(fixTaskMapper.selectById(id))
                 .orElseThrow(() -> new IllegalArgumentException("Task not found: " + id));
-        FixTaskEntity updatedTask = FixTaskConvert.replacePendingForRetry(currentTask, Instant.now());
+        FixTaskEntity updatedTask = FixTaskConvert.replacePendingForRetry(currentTask, Instant.now(), retryReason);
         fixTaskMapper.updateById(updatedTask);
         return FixTaskConvert.toVo(updatedTask);
     }

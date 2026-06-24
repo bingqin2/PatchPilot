@@ -7,8 +7,10 @@ import io.patchpilot.backend.github.client.domain.GitHubIssueContextComment;
 import io.patchpilot.backend.task.domain.bo.ApproveReviewCommand;
 import io.patchpilot.backend.task.domain.bo.CreateManualFixTaskCommand;
 import io.patchpilot.backend.task.domain.bo.FixTaskListQuery;
+import io.patchpilot.backend.task.domain.bo.RetryTaskCommand;
 import io.patchpilot.backend.task.domain.dto.ApproveReviewDto;
 import io.patchpilot.backend.task.domain.dto.CreateFixTaskDto;
+import io.patchpilot.backend.task.domain.dto.RetryTaskDto;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.enums.FixTaskSort;
 import io.patchpilot.backend.task.domain.vo.FixTaskFailureCauseSummaryVo;
@@ -307,9 +309,18 @@ public class TaskController {
     }
 
     @PostMapping("/{id}/retry")
-    public ResponseEntity<ApiResponse<FixTaskVo>> retryTask(@PathVariable String id) {
+    public ResponseEntity<ApiResponse<FixTaskVo>> retryTask(
+            @PathVariable String id,
+            @RequestBody(required = false) RetryTaskDto request
+    ) {
+        RetryTaskCommand command;
         try {
-            return ResponseEntity.ok(ApiResponse.ok(fixTaskControlService.retryTask(id)));
+            command = retryTaskCommand(request);
+        } catch (IllegalArgumentException exception) {
+            return ResponseEntity.badRequest().body(ApiResponse.fail(exception.getMessage()));
+        }
+        try {
+            return ResponseEntity.ok(ApiResponse.ok(fixTaskControlService.retryTask(id, command)));
         } catch (IllegalArgumentException exception) {
             return ResponseEntity.status(404).body(ApiResponse.fail("Task not found"));
         } catch (IllegalStateException exception) {
@@ -657,6 +668,17 @@ public class TaskController {
             return null;
         }
         return value.trim();
+    }
+
+    private static RetryTaskCommand retryTaskCommand(RetryTaskDto request) {
+        if (request == null) {
+            throw new IllegalArgumentException("retry request body is required");
+        }
+        String reason = blankToNull(request.reason());
+        if (reason == null) {
+            throw new IllegalArgumentException("retry reason must not be blank");
+        }
+        return new RetryTaskCommand(reason);
     }
 
     private static String requiredText(String value, String message) {

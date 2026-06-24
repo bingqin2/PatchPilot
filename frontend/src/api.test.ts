@@ -35,7 +35,8 @@ import {
   getTaskRetryPreflight,
   getTaskStatusCounts,
   listWebhookDeliveries,
-  listTasks
+  listTasks,
+  retryTask
 } from './api';
 
 afterEach(() => {
@@ -134,6 +135,7 @@ test('approves pending review tasks through backend API', async () => {
             retrySourceTaskId: 'task-review',
             retrySourceStatus: 'FAILED',
             retrySourceFailureReason: 'Model patch review rejected generated edits: unsafe edit',
+            retryReason: null,
             retriedAt: '2026-06-20T01:09:00Z'
       },
       message: null
@@ -1679,6 +1681,62 @@ test('loads task retry preflight from backend API', async () => {
   expect(preflight.retryable).toBe(false);
   expect(preflight.category).toBe('GITHUB_OPERATION_FAILED');
   expect(preflight.reason).toBe('GitHub token is required to create Pull Requests: token=[REDACTED]');
+});
+
+test('retries task with operator reason', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        id: 'task-1',
+        repositoryOwner: 'bingqin2',
+        repositoryName: 'PatchPilot',
+        issueNumber: 1,
+        installationId: 0,
+        triggerUser: 'bingqin2',
+        triggerComment: '/agent fix demo',
+        deliveryId: 'delivery-1',
+        commentId: 101,
+        status: 'PENDING',
+        failureReason: null,
+        createdAt: '2026-06-20T01:00:00Z',
+        pullRequestUrl: null,
+        completedAt: null,
+        updatedAt: '2026-06-20T01:09:00Z',
+        language: 'java',
+        buildSystem: 'maven',
+        verificationCommand: './mvnw test',
+        adapterDetectionReason: 'pom.xml detected with mvnw wrapper',
+        statusCommentId: null,
+        statusCommentUrl: null,
+        riskReviewApprovedAt: null,
+        riskReviewApprovedBy: null,
+        riskReviewApprovalReason: null,
+        retrySourceTaskId: 'task-1',
+        retrySourceStatus: 'FAILED',
+        retrySourceFailureReason: 'executor failed',
+        retryReason: 'Operator confirmed credentials and requested a rerun',
+        retriedAt: '2026-06-20T01:09:00Z'
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const retried = await retryTask('task-1', {
+    reason: 'Operator confirmed credentials and requested a rerun'
+  });
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/tasks/task-1/retry', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      reason: 'Operator confirmed credentials and requested a rerun'
+    })
+  });
+  expect(retried.retryReason).toBe('Operator confirmed credentials and requested a rerun');
 });
 
 test('loads markdown task report from backend API', async () => {

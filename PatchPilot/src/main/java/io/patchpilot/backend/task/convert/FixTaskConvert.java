@@ -41,6 +41,7 @@ public final class FixTaskConvert {
                 entity.getRetrySourceTaskId(),
                 entity.getRetrySourceStatus(),
                 entity.getRetrySourceFailureReason(),
+                entity.getRetryReason(),
                 entity.getRetriedAt()
         );
     }
@@ -74,6 +75,7 @@ public final class FixTaskConvert {
         entity.setRetrySourceTaskId(null);
         entity.setRetrySourceStatus(null);
         entity.setRetrySourceFailureReason(null);
+        entity.setRetryReason(null);
         entity.setRetriedAt(null);
         return entity;
     }
@@ -112,6 +114,7 @@ public final class FixTaskConvert {
         entity.setRetrySourceTaskId(current.getRetrySourceTaskId());
         entity.setRetrySourceStatus(current.getRetrySourceStatus());
         entity.setRetrySourceFailureReason(current.getRetrySourceFailureReason());
+        entity.setRetryReason(current.getRetryReason());
         entity.setRetriedAt(current.getRetriedAt());
         if (status == FixTaskStatus.PENDING_REVIEW) {
             clearRiskReviewApproval(entity);
@@ -127,13 +130,14 @@ public final class FixTaskConvert {
         return entity;
     }
 
-    public static FixTaskEntity replacePendingForRetry(FixTaskEntity current, Instant updatedAt) {
+    public static FixTaskEntity replacePendingForRetry(FixTaskEntity current, Instant updatedAt, String retryReason) {
         FixTaskEntity entity = replaceStatus(current, FixTaskStatus.PENDING, null, updatedAt);
         entity.setPullRequestUrl(null);
         entity.setCompletedAt(null);
         entity.setRetrySourceTaskId(current.getId());
         entity.setRetrySourceStatus(current.getStatus());
         entity.setRetrySourceFailureReason(current.getFailureReason());
+        entity.setRetryReason(retryReason);
         entity.setRetriedAt(updatedAt);
         clearRiskReviewApproval(entity);
         return entity;

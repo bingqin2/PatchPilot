@@ -139,7 +139,10 @@ class MyBatisFixTaskServiceTests {
         when(fixTaskMapper.updateById(any(FixTaskEntity.class))).thenReturn(1);
         ArgumentCaptor<FixTaskEntity> entityCaptor = ArgumentCaptor.forClass(FixTaskEntity.class);
 
-        FixTaskVo retriedTask = fixTaskService.markPendingForRetry("task-123");
+        FixTaskVo retriedTask = fixTaskService.markPendingForRetry(
+                "task-123",
+                "Operator confirmed credentials and requested a rerun"
+        );
 
         verify(fixTaskMapper).updateById(entityCaptor.capture());
         FixTaskEntity updatedEntity = entityCaptor.getValue();
@@ -151,12 +154,14 @@ class MyBatisFixTaskServiceTests {
         assertThat(updatedEntity.getRetrySourceTaskId()).isEqualTo("task-123");
         assertThat(updatedEntity.getRetrySourceStatus()).isEqualTo(FixTaskStatus.FAILED.name());
         assertThat(updatedEntity.getRetrySourceFailureReason()).isEqualTo("executor failed");
+        assertThat(updatedEntity.getRetryReason()).isEqualTo("Operator confirmed credentials and requested a rerun");
         assertThat(updatedEntity.getRetriedAt()).isNotNull();
         assertThat(updatedEntity.getUpdatedAt()).isAfter(current.getUpdatedAt());
         assertThat(retriedTask.status()).isEqualTo(FixTaskStatus.PENDING);
         assertThat(retriedTask.retrySourceTaskId()).isEqualTo("task-123");
         assertThat(retriedTask.retrySourceStatus()).isEqualTo(FixTaskStatus.FAILED.name());
         assertThat(retriedTask.retrySourceFailureReason()).isEqualTo("executor failed");
+        assertThat(retriedTask.retryReason()).isEqualTo("Operator confirmed credentials and requested a rerun");
         assertThat(retriedTask.retriedAt()).isEqualTo(updatedEntity.getRetriedAt());
     }
 
