@@ -95,6 +95,7 @@ const baseDetail: TaskDetailState = {
   testRuns: [],
   toolCalls: [],
   modelCalls: [],
+  triggerIntentAudit: null,
   generatedDiff: null,
   patchReview: null,
   issueContext: {
@@ -142,6 +143,41 @@ test('shows execution evidence summary for selected task', () => {
     screen.getByText('Detection pyproject.toml declares pytest as the verification command')
   ).toBeInTheDocument();
   expect(screen.getByText('Verify python3 -m pytest')).toBeInTheDocument();
+});
+
+test('shows trigger intent audit for accepted tasks', () => {
+  render(
+    <TaskDetailPanel
+      task={task}
+      detail={{
+        ...baseDetail,
+        triggerIntentAudit: {
+          eventId: 'timeline-trigger',
+          summary: 'Trigger accepted',
+          safetyDecision: 'safety gate accepted',
+          issueContextStatus: 'issue context loaded',
+          modelDecision: 'model accepted trigger: Issue context describes a concrete failing test',
+          createdAt: '2026-06-20T01:00:30Z'
+        }
+      }}
+      loading={false}
+      actionInFlight={false}
+      reviewApprovalAllowedOperators={['release-captain']}
+      onCancelTask={vi.fn()}
+      onRetryTask={vi.fn()}
+      onApproveReview={vi.fn()}
+      onCopyReport={vi.fn()}
+    />
+  );
+
+  const audit = screen.getByLabelText('Trigger intent');
+  expect(within(audit).getByText('Trigger intent')).toBeInTheDocument();
+  expect(within(audit).getByText('Trigger accepted')).toBeInTheDocument();
+  expect(within(audit).getByText('safety gate accepted')).toBeInTheDocument();
+  expect(within(audit).getByText('issue context loaded')).toBeInTheDocument();
+  expect(
+    within(audit).getByText('model accepted trigger: Issue context describes a concrete failing test')
+  ).toBeInTheDocument();
 });
 
 test('labels failed task status comment as failure feedback', () => {

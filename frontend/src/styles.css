@@ -2123,6 +2123,66 @@ h3 {
   text-decoration: none;
 }
 
+.trigger-intent-section {
+  background: #f7fbff;
+  display: grid;
+  gap: 12px;
+}
+
+.trigger-intent-header {
+  align-items: start;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+}
+
+.trigger-intent-header p {
+  color: #202b36;
+  font-size: 14px;
+  font-weight: 800;
+  margin-top: 3px;
+}
+
+.trigger-intent-header time {
+  background: #edf5ff;
+  border: 1px solid #c9ddf5;
+  border-radius: 999px;
+  color: #24527c;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 5px 9px;
+  white-space: nowrap;
+}
+
+.trigger-intent-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.trigger-intent-grid div {
+  background: #ffffff;
+  border: 1px solid #dfe6ec;
+  border-radius: 6px;
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  padding: 10px 12px;
+}
+
+.trigger-intent-grid span {
+  color: #637181;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.trigger-intent-grid p {
+  color: #202b36;
+  font-size: 13px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
 .failure-diagnosis-section {
   background: #fff7f7;
   display: grid;

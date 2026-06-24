@@ -3430,3 +3430,22 @@ Validation so far:
 
 - `mvn -pl PatchPilot -Dtest=DefaultFixTaskControlServiceTests,TaskControllerTests,FixTaskConvertTests,MyBatisFixTaskServiceTests test`: passed after backend retry reason service/controller/persistence coverage, 107 tests run, 0 failures, 0 errors.
 - `npm test -- --run src/dashboard/components/TaskDetailPanel.test.tsx src/api.test.ts src/App.test.tsx`: first failed because retry was still enabled without an operator reason and retry lineage omitted the reason; then passed after adding the reason input, POST body, and retry-lineage display, 122 tests run, 0 failures.
+
+Implemented trigger execution intent audit from `docs/plans/171-trigger-execution-intent-audit.md`.
+
+Changes:
+
+- Added a nullable `triggerIntentAudit` read model to task detail responses, derived from the latest `TRIGGER_ACCEPTED` timeline event.
+- Included accepted-trigger intent in copied Markdown task reports with safety-gate, issue-context, and model-decision fields.
+- Rendered a `Trigger intent` section in selected-task detail before raw timeline evidence.
+- Updated frontend API/types/tests and product documentation without adding new tables, migrations, or model calls.
+
+Validation so far:
+
+- `mvn -pl PatchPilot -Dtest=TaskControllerTests test`: first failed because task detail and report output did not expose `triggerIntentAudit`; then passed after backend implementation, 65 tests run, 0 failures.
+- `npm test -- --run src/dashboard/components/TaskDetailPanel.test.tsx`: first failed because the dashboard did not render `Trigger intent`; then passed after adding the detail section, 23 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts src/dashboard/components/TaskDetailPanel.test.tsx src/App.test.tsx`: passed after frontend API and dashboard fixture updates, 123 tests run, 0 failures.
+- `npm test`: passed after full frontend regression verification, 170 tests run, 0 failures.
+- `npm run build`: passed after production frontend build verification.
+- `mvn -pl PatchPilot test`: passed after full backend regression verification, 631 tests run, 0 failures.
+- `git diff --check`: passed after whitespace verification.

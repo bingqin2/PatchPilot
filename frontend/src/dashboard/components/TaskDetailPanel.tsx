@@ -196,6 +196,34 @@ export function TaskDetailPanel({
         ) : null}
       </div>
 
+      {detail.triggerIntentAudit ? (
+        <section className="detail-section trigger-intent-section" aria-label="Trigger intent">
+          <div className="trigger-intent-header">
+            <div>
+              <h3>Trigger intent</h3>
+              <p>{detail.triggerIntentAudit.summary}</p>
+            </div>
+            <time dateTime={detail.triggerIntentAudit.createdAt}>
+              {compactTime(detail.triggerIntentAudit.createdAt)}
+            </time>
+          </div>
+          <div className="trigger-intent-grid">
+            <div>
+              <span>Safety</span>
+              <p>{detail.triggerIntentAudit.safetyDecision}</p>
+            </div>
+            <div>
+              <span>Issue context</span>
+              <p>{detail.triggerIntentAudit.issueContextStatus}</p>
+            </div>
+            <div>
+              <span>Model</span>
+              <p>{detail.triggerIntentAudit.modelDecision}</p>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
       {task.riskReviewApprovedAt ? (
         <section className="detail-section review-approval-detail" aria-label="Review approval">
           <h3>Review approval</h3>
