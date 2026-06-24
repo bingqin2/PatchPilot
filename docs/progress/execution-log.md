@@ -3140,3 +3140,25 @@ Validation so far:
 - `JAVA_HOME=/Library/Java/JavaVirtualMachines/openjdk-17.jdk/Contents/Home mvn -pl PatchPilot test`: passed after full backend verification, 586 tests run, 0 failures.
 - `npm test`: passed after full frontend verification, 151 tests run, 0 failures.
 - `npm run build`: passed after production frontend build verification.
+
+Implemented persistent demo session archive from `docs/plans/156-persistent-demo-session-archive.md`.
+
+Changes:
+
+- Added Flyway migration `V25__create_demo_session_archive.sql`.
+- Added `DemoSessionArchiveEntity`, `DemoSessionArchiveMapper`, and `DemoSessionArchiveConvert`.
+- Introduced `DemoSessionArchiveRepository` as the storage boundary behind `DemoSessionArchiveService`.
+- Kept `InMemoryDemoSessionArchiveRepository` for the default database-free profile.
+- Added `MyBatisDemoSessionArchiveRepository` for `local`, `docker`, and `idea` profiles so archived demo reports survive backend restarts.
+- Kept the existing archive API and dashboard contract unchanged.
+- Updated README, product spec, architecture notes, frontend design notes, and this execution log.
+
+Validation so far:
+
+- `JAVA_HOME=/Library/Java/JavaVirtualMachines/openjdk-17.jdk/Contents/Home mvn -pl PatchPilot -Dtest=DemoSessionArchiveMigrationTests,InMemoryDemoSessionArchiveRepositoryTests,MyBatisDemoSessionArchiveRepositoryTests test`: first failed because the migration, entity, mapper, and repository implementations did not exist.
+- `JAVA_HOME=/Library/Java/JavaVirtualMachines/openjdk-17.jdk/Contents/Home mvn -pl PatchPilot -Dtest=DemoSessionArchiveMigrationTests,InMemoryDemoSessionArchiveRepositoryTests,MyBatisDemoSessionArchiveRepositoryTests,DemoSessionArchiveServiceTests,DemoReadinessControllerTests test`: passed after backend implementation, 15 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts src/dashboard/components/DemoSessionSnapshotPanel.test.tsx src/App.test.tsx`: passed after confirming the frontend contract did not need changes, 99 tests run, 0 failures.
+- `GIT_OPTIONAL_LOCKS=0 git diff --check`: passed after whitespace verification.
+- `JAVA_HOME=/Library/Java/JavaVirtualMachines/openjdk-17.jdk/Contents/Home mvn -pl PatchPilot test`: passed after full backend verification, 590 tests run, 0 failures.
+- `npm test`: passed after full frontend verification, 151 tests run, 0 failures.
+- `npm run build`: passed after production frontend build verification.

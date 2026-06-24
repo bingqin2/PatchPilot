@@ -280,13 +280,13 @@ Responsibilities:
 - Expose a demo script that turns the current evidence bundle into ordered operator actions, verification commands, success criteria, troubleshooting panels, and a health contract.
 - Format the evidence bundle as copyable Markdown for operator handoff without adding side effects.
 - Format the session snapshot as copyable Markdown for review notes, issue comments, or handoff messages without adding side effects.
-- Store a capped process-local archive of recent demo session reports so an operator can keep copyable handoff records during a live demo.
+- Store a capped archive of recent demo session reports so an operator can keep copyable handoff records during a live demo. The default profile may keep archives in memory, while database-backed profiles persist them through MySQL.
 - Treat adapter fixture drift as blocking because repository support may be misdetected.
 - Treat queue failures, delayed work, running work, missing model cost configuration, or missing recent PR evidence as operator attention items.
 - Return concrete next actions for the dashboard and curl users.
 
 This layer must not create tasks, call the model, clone repositories, execute tests, mutate queue state, write comments, or weaken safety gates. Its evidence bundle, session snapshot, session report, demo script, and runbook endpoints are read models over configuration, fixture verification, queue state, rejected-trigger safety state, webhook diagnostics, and recent task history.
-Creating a session archive is the only local write in this layer. It captures the generated session report in process memory and still does not create tasks, call the model, run tests, mutate Git, write GitHub comments, or open Pull Requests.
+Creating a session archive is the only local write in this layer. It captures the generated session report in the configured archive store and still does not create tasks, call the model, run tests, mutate Git, write GitHub comments, or open Pull Requests.
 
 ## Data Model
 
