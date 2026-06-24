@@ -254,6 +254,26 @@ export interface DemoEvidenceBundle {
   nextActions: string[];
 }
 
+export interface DemoScriptStep {
+  order: number;
+  name: string;
+  status: DemoReadinessStatus;
+  operatorAction: string;
+  verificationCommand: string;
+  successCriteria: string;
+  troubleshootingPanel: string;
+  evidence: string;
+}
+
+export interface DemoScript {
+  status: DemoReadinessStatus;
+  summary: string;
+  steps: DemoScriptStep[];
+  healthContract: string[];
+  nextActions: string[];
+  generatedAt: string;
+}
+
 export interface BackendHealth {
   status: string;
   service: string;

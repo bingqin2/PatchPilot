@@ -8,6 +8,7 @@ import {
   getFailureCauseSummary,
   getLatencySummary,
   getModelUsageSummary,
+  getDemoScript,
   getDemoSmokeChecklist,
   getDemoEvidenceBundle,
   getDemoRunbook,
@@ -305,6 +306,47 @@ test('gets demo evidence bundle through backend API', async () => {
   expect(bundle.status).toBe('READY');
   expect(bundle.summaryCounts.adapterFixtureCount).toBe(12);
   expect(bundle.recentPullRequestUrl).toBe('https://github.com/bingqin2/PatchPilot/pull/42');
+});
+
+test('gets demo script through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        status: 'READY',
+        summary: 'Demo script is ready.',
+        steps: [
+          {
+            order: 1,
+            name: 'Confirm backend and dashboard access',
+            status: 'READY',
+            operatorAction: 'Open the dashboard and confirm protected APIs load.',
+            verificationCommand: 'curl http://127.0.0.1:8080/health',
+            successCriteria: 'Backend reports UP and dashboard data loads.',
+            troubleshootingPanel: 'Connectivity panel',
+            evidence: 'Backend readiness endpoint is reachable.'
+          }
+        ],
+        healthContract: [
+          'GET /api/demo/script is read-only: it does not create tasks, call the model, run tests, mutate Git, or write to GitHub.'
+        ],
+        nextActions: ['Follow the script from step 1 through Pull Request review.'],
+        generatedAt: '2026-06-24T00:00:00Z'
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const script = await getDemoScript();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/script');
+  expect(script.status).toBe('READY');
+  expect(script.steps[0].name).toBe('Confirm backend and dashboard access');
+  expect(script.steps[0].verificationCommand).toBe('curl http://127.0.0.1:8080/health');
+  expect(script.healthContract[0]).toContain('read-only');
 });
 
 test('loads demo runbook markdown from backend API', async () => {

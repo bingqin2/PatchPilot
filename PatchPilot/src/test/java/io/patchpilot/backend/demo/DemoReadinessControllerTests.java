@@ -9,6 +9,8 @@ import io.patchpilot.backend.demo.domain.DemoAdapterFixtureEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoSmokeChecklistStatus;
 import io.patchpilot.backend.demo.domain.DemoSmokeChecklistStepVo;
 import io.patchpilot.backend.demo.domain.DemoSmokeChecklistVo;
+import io.patchpilot.backend.demo.domain.DemoScriptStepVo;
+import io.patchpilot.backend.demo.domain.DemoScriptVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskQueueSummaryVo;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,6 +43,9 @@ class DemoReadinessControllerTests {
 
     @MockitoBean
     private DemoRunbookService demoRunbookService;
+
+    @MockitoBean
+    private DemoScriptService demoScriptService;
 
     @Test
     void should_return_demo_readiness_summary() throws Exception {
@@ -167,5 +172,35 @@ class DemoReadinessControllerTests {
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("# PatchPilot Demo Runbook")))
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("`NEEDS_ATTENTION`")))
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("https://github.com/bingqin2/PatchPilot/pull/42")));
+    }
+
+    @Test
+    void should_return_demo_script() throws Exception {
+        when(demoScriptService.getScript()).thenReturn(new DemoScriptVo(
+                DemoReadinessStatus.READY,
+                "Demo script is ready.",
+                List.of(new DemoScriptStepVo(
+                        1,
+                        "Confirm backend and dashboard access",
+                        DemoReadinessStatus.READY,
+                        "Open the dashboard and confirm protected APIs load.",
+                        "curl http://127.0.0.1:8080/health",
+                        "Backend reports UP and dashboard data loads.",
+                        "Connectivity panel",
+                        "Backend readiness endpoint is reachable."
+                )),
+                List.of("The script endpoint is read-only."),
+                List.of("Follow the script from step 1 through Pull Request review."),
+                Instant.parse("2026-06-24T00:00:00Z")
+        ));
+
+        mockMvc.perform(get("/api/demo/script"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.steps[0].order").value(1))
+                .andExpect(jsonPath("$.data.steps[0].name").value("Confirm backend and dashboard access"))
+                .andExpect(jsonPath("$.data.steps[0].verificationCommand").value("curl http://127.0.0.1:8080/health"))
+                .andExpect(jsonPath("$.data.healthContract[0]").value("The script endpoint is read-only."));
     }
 }

@@ -3062,3 +3062,23 @@ Validation so far:
 - `npm test`: passed after full frontend verification, 139 tests run, 0 failures.
 - `npm run build`: passed after production frontend build verification.
 - `git diff --check`: passed after whitespace verification.
+
+Implemented demo script and health contract from `docs/plans/152-demo-script-and-health-contract.md`.
+
+Changes:
+
+- Added `GET /api/demo/script` as a read-only script read model over the existing demo evidence bundle.
+- Added `DemoScriptService`, `DemoScriptVo`, and `DemoScriptStepVo` to return ordered operator actions for backend/dashboard access, configuration and safety posture, repository support, controlled `/agent fix` triggering, task execution tracking, and Pull Request evidence review.
+- Included verification commands, success criteria, troubleshooting panel names, current evidence, next actions, generated time, and a health contract stating the endpoint does not create tasks, call the model, run tests, mutate Git, or write to GitHub.
+- Added frontend `getDemoScript`, typed `DemoScript` models, and `DemoScriptPanel`.
+- Wired the dashboard to load and render the script near the existing demo evidence/readiness panels without blocking the rest of the dashboard when the script endpoint fails.
+- Updated README, product spec, architecture notes, frontend design notes, and this execution log.
+
+Validation so far:
+
+- `JAVA_HOME=/Library/Java/JavaVirtualMachines/openjdk-17.jdk/Contents/Home mvn -pl PatchPilot -Dtest=DemoScriptServiceTests,DemoReadinessControllerTests test`: first failed because the script service, response models, and endpoint did not exist; then passed after backend implementation, 7 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts src/dashboard/components/DemoScriptPanel.test.tsx src/App.test.tsx`: first failed because `getDemoScript`, `DemoScriptPanel`, and App-level rendering did not exist; then passed after frontend implementation, 92 tests run, 0 failures.
+- `JAVA_HOME=/Library/Java/JavaVirtualMachines/openjdk-17.jdk/Contents/Home mvn -pl PatchPilot test`: passed after full backend verification, 576 tests run, 0 failures.
+- `npm test`: passed after full frontend verification, 142 tests run, 0 failures.
+- `npm run build`: passed after production frontend build verification.
+- `git diff --check`: passed after whitespace verification.

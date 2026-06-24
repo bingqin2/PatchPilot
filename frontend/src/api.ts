@@ -7,6 +7,7 @@ import type {
   CreateTaskInput,
   DemoEvidenceBundle,
   DemoReadiness,
+  DemoScript,
   DemoSmokeChecklist,
   FixTask,
   FixTaskFailureCauseSummary,
@@ -158,6 +159,10 @@ export async function getDemoSmokeChecklist(): Promise<DemoSmokeChecklist> {
 
 export async function getDemoEvidenceBundle(): Promise<DemoEvidenceBundle> {
   return getApi<DemoEvidenceBundle>('/api/demo/evidence-bundle');
+}
+
+export async function getDemoScript(): Promise<DemoScript> {
+  return getApi<DemoScript>('/api/demo/script');
 }
 
 export async function getDemoRunbook(): Promise<string> {
