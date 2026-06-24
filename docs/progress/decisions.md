@@ -113,3 +113,11 @@ Decision: Add Poetry and uv as explicit Python project-runner adapters instead o
 Reason: Poetry and uv are common Python project managers, but allowing their install or dependency-management commands would widen execution risk. Separate adapters can require pytest signals and return fixed verification commands.
 
 Impact: Python repositories with Poetry or uv plus pytest configuration or dependency can pass repository preflight and run `poetry run pytest` or `uv run pytest`. The command guard still rejects install, sync, pip, lock, and arbitrary Python runner commands.
+
+## 2026-06-24
+
+Decision: Scope local repository preflight to configured backend-local roots.
+
+Reason: Repository preflight is intentionally an operator diagnostic, but it accepts local paths. Limiting it to configured roots keeps demos and prepared workspaces usable without exposing broad filesystem inspection through the dashboard or API.
+
+Impact: `POST /api/repository-preflight` rejects paths outside `patchpilot.repository-preflight.allowed-root-dirs` before adapter detection. Operators can see normalized allowed roots in `/api/configuration/summary` and the dashboard configuration panel.

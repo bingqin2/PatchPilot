@@ -2,6 +2,7 @@ package io.patchpilot.backend.configuration;
 
 import io.patchpilot.backend.agent.config.AgentProperties;
 import io.patchpilot.backend.github.config.GitHubProperties;
+import io.patchpilot.backend.language.config.RepositoryPreflightProperties;
 import io.patchpilot.backend.safety.GeneratedDiffSafetyPolicy;
 import io.patchpilot.backend.safety.config.SafetyProperties;
 import io.patchpilot.backend.security.config.AdminApiSecurityProperties;
@@ -29,6 +30,7 @@ public class ConfigurationSummaryService {
     private final ReviewApprovalProperties reviewApprovalProperties;
     private final AdminApiSecurityProperties adminApiSecurityProperties;
     private final GeneratedDiffSafetyPolicy generatedDiffSafetyPolicy;
+    private final RepositoryPreflightProperties repositoryPreflightProperties;
 
     @Value("${patchpilot.github.webhook-secret:}")
     private String webhookSecret;
@@ -67,8 +69,15 @@ public class ConfigurationSummaryService {
                 generatedDiffSafetyPolicy.protectedPathCount(),
                 allowedTriggerUsers,
                 allowedRepositories,
-                reviewApprovalAllowedOperators
+                reviewApprovalAllowedOperators,
+                repositoryPreflightAllowedRootDirs()
         );
+    }
+
+    private List<String> repositoryPreflightAllowedRootDirs() {
+        return repositoryPreflightProperties.normalizedAllowedRootDirs().stream()
+                .map(path -> path.toString())
+                .toList();
     }
 
     private boolean modelCostConfigured() {

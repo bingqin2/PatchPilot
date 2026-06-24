@@ -186,6 +186,7 @@ export interface ConfigurationSummary {
   allowedTriggerUsers: string[];
   allowedRepositories: string[];
   reviewApprovalAllowedOperators: string[];
+  repositoryPreflightAllowedRootDirs: string[];
 }
 
 export type DemoReadinessStatus = 'READY' | 'NEEDS_ATTENTION' | 'BLOCKED';

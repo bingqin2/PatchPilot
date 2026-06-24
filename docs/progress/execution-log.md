@@ -2982,3 +2982,22 @@ Validation so far:
 - `npm test`: passed after full frontend verification, 130 tests run, 0 failures.
 - `npm run build`: passed after production frontend build verification.
 - `git diff --check`: passed after whitespace verification.
+
+Implemented repository preflight scope policy from `docs/plans/148-repository-preflight-scope-policy.md`.
+
+Changes:
+
+- Added `patchpilot.repository-preflight.allowed-root-dirs` and `PATCHPILOT_REPOSITORY_PREFLIGHT_ALLOWED_ROOT_DIRS`.
+- Limited `POST /api/repository-preflight` to resolved paths under configured allowed roots before adapter detection.
+- Kept relative root handling compatible with both repository-root and `PatchPilot/` Maven module working directories.
+- Exposed normalized repository-preflight allowed roots through `GET /api/configuration/summary`.
+- Added dashboard configuration visibility for repository-preflight allowed roots and a health advisory when the list is empty.
+- Updated README, product spec, architecture notes, frontend design notes, decisions, and this execution log.
+
+Validation so far:
+
+- `JAVA_HOME=/Library/Java/JavaVirtualMachines/openjdk-17.jdk/Contents/Home mvn -pl PatchPilot -Dtest=RepositoryPreflightServiceTests,RepositoryPreflightControllerTests,ConfigurationSummaryServiceTests,DemoReadinessServiceTests test`: first failed because the configuration-summary test expected the non-module relative path; then passed after updating the expected module-friendly fallback path, 14 tests run, 0 failures.
+- `npm test -- --run src/dashboard/components/ConfigurationPanel.test.tsx src/api.test.ts src/App.test.tsx`: first failed because the configuration panel did not render repository-preflight roots or the empty-root advisory; then passed after frontend implementation, 89 tests run, 0 failures.
+- `JAVA_HOME=/Library/Java/JavaVirtualMachines/openjdk-17.jdk/Contents/Home mvn -pl PatchPilot test`: passed after full backend verification, 565 tests run, 0 failures.
+- `npm test`: passed after full frontend verification, 130 tests run, 0 failures.
+- `npm run build`: passed after production frontend build verification.

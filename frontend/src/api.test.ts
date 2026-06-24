@@ -768,6 +768,7 @@ test('loads non-sensitive configuration summary from backend API', async () => {
         agentApiKeyConfigured: true,
         githubTokenConfigured: true,
         githubWebhookSecretConfigured: false,
+        adminTokenConfigured: true,
         workspaceRootDir: '/tmp/patchpilot/workspaces',
         queueMaxAttempts: 3,
         queueRetryDelayMs: 30000,
@@ -790,7 +791,8 @@ test('loads non-sensitive configuration summary from backend API', async () => {
         generatedDiffProtectedPathCount: 15,
         allowedTriggerUsers: ['bingqin2', 'local-operator'],
         allowedRepositories: ['bingqin2/PatchPilot'],
-        reviewApprovalAllowedOperators: ['release-captain', 'local-operator']
+        reviewApprovalAllowedOperators: ['release-captain', 'local-operator'],
+        repositoryPreflightAllowedRootDirs: ['/tmp/patchpilot/workspaces', 'docs/demo-repositories']
       },
       message: null
     })
@@ -807,6 +809,7 @@ test('loads non-sensitive configuration summary from backend API', async () => {
     agentApiKeyConfigured: true,
     githubTokenConfigured: true,
     githubWebhookSecretConfigured: false,
+    adminTokenConfigured: true,
     workspaceRootDir: '/tmp/patchpilot/workspaces',
     queueMaxAttempts: 3,
     queueRetryDelayMs: 30000,
@@ -829,7 +832,8 @@ test('loads non-sensitive configuration summary from backend API', async () => {
     generatedDiffProtectedPathCount: 15,
     allowedTriggerUsers: ['bingqin2', 'local-operator'],
     allowedRepositories: ['bingqin2/PatchPilot'],
-    reviewApprovalAllowedOperators: ['release-captain', 'local-operator']
+    reviewApprovalAllowedOperators: ['release-captain', 'local-operator'],
+    repositoryPreflightAllowedRootDirs: ['/tmp/patchpilot/workspaces', 'docs/demo-repositories']
   });
 });
 

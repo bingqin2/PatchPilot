@@ -75,6 +75,14 @@ PATCHPILOT_ADMIN_TOKEN=replace-with-a-random-admin-token
 
 The webhook secret must match the GitHub webhook configuration. The GitHub token is used for clone, push, issue comments, and Pull Request creation. The admin token protects operator APIs such as task listing, queue inspection, manual task creation, retry, cancel, and risk-review approval when the backend is exposed through a temporary URL. Do not commit `.env`.
 
+Local repository preflight is limited to configured backend-local root directories:
+
+```bash
+PATCHPILOT_REPOSITORY_PREFLIGHT_ALLOWED_ROOT_DIRS=.,docs/demo-repositories,/tmp/patchpilot/workspaces
+```
+
+Keep this list narrow. `POST /api/repository-preflight` rejects paths outside these roots before adapter detection.
+
 Optional safety allowlists can restrict who and what repository may create tasks:
 
 ```bash
@@ -342,7 +350,7 @@ curl -X POST http://127.0.0.1:8080/api/repository-preflight \
   -d '{"repositoryPath":"docs/demo-repositories/java-maven"}'
 ```
 
-The preflight checks only whether the configured language adapter registry can detect the local path. It does not create a task, call the model, run tests, mutate Git, or open a Pull Request. The dashboard exposes the same check in the `Repository preflight` panel so operators can verify a repository shape before posting `/agent fix`.
+The preflight checks only whether the configured language adapter registry can detect the local path, and only for paths under `PATCHPILOT_REPOSITORY_PREFLIGHT_ALLOWED_ROOT_DIRS`. It does not create a task, call the model, run tests, mutate Git, or open a Pull Request. The dashboard exposes the same check in the `Repository preflight` panel so operators can verify a repository shape before posting `/agent fix`.
 
 Run the safe local adapter smoke when you want to demonstrate supported repository detection without GitHub, model credentials, Docker, or PR creation:
 
@@ -357,7 +365,7 @@ Runtime configuration summary:
 curl "${ADMIN_HEADER[@]}" http://127.0.0.1:8080/api/configuration/summary
 ```
 
-This endpoint returns only non-sensitive values and configured/missing booleans for secrets. It also returns safety policy state such as trigger-user allowlists, repository allowlists, review-approval operators, model trigger classification, trigger rate-limit thresholds, and rejected-trigger quarantine thresholds. It never returns raw API keys, GitHub tokens, or webhook secrets.
+This endpoint returns only non-sensitive values and configured/missing booleans for secrets. It also returns safety policy state such as trigger-user allowlists, repository allowlists, review-approval operators, model trigger classification, trigger rate-limit thresholds, rejected-trigger quarantine thresholds, generated-diff policy state, and repository-preflight allowed roots. It never returns raw API keys, GitHub tokens, or webhook secrets.
 
 Demo readiness:
 
