@@ -11,6 +11,7 @@ import io.patchpilot.backend.demo.domain.DemoSmokeChecklistStepVo;
 import io.patchpilot.backend.demo.domain.DemoSmokeChecklistVo;
 import io.patchpilot.backend.demo.domain.DemoScriptStepVo;
 import io.patchpilot.backend.demo.domain.DemoScriptVo;
+import io.patchpilot.backend.demo.domain.DemoSessionSnapshotVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskQueueSummaryVo;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,6 +47,9 @@ class DemoReadinessControllerTests {
 
     @MockitoBean
     private DemoScriptService demoScriptService;
+
+    @MockitoBean
+    private DemoSessionSnapshotService demoSessionSnapshotService;
 
     @Test
     void should_return_demo_readiness_summary() throws Exception {
@@ -202,5 +206,86 @@ class DemoReadinessControllerTests {
                 .andExpect(jsonPath("$.data.steps[0].name").value("Confirm backend and dashboard access"))
                 .andExpect(jsonPath("$.data.steps[0].verificationCommand").value("curl http://127.0.0.1:8080/health"))
                 .andExpect(jsonPath("$.data.healthContract[0]").value("The script endpoint is read-only."));
+    }
+
+    @Test
+    void should_return_demo_session_snapshot() throws Exception {
+        DemoEvidenceBundleVo bundle = new DemoEvidenceBundleVo(
+                DemoReadinessStatus.READY,
+                "Demo evidence bundle is ready.",
+                new DemoEvidenceBundleSummaryVo(
+                        12,
+                        0,
+                        2,
+                        0,
+                        true
+                ),
+                new DemoReadinessVo(
+                        DemoReadinessStatus.READY,
+                        "PatchPilot is ready for a controlled demo.",
+                        List.of(),
+                        List.of()
+                ),
+                new DemoSmokeChecklistVo(
+                        DemoSmokeChecklistStatus.READY,
+                        "Live demo smoke checklist is ready.",
+                        List.of(),
+                        List.of()
+                ),
+                null,
+                new DemoAdapterFixtureEvidenceVo(12, 0),
+                new FixTaskQueueSummaryVo(2, 0, 0, 0, 0, 2, 0, 0),
+                null,
+                "https://github.com/bingqin2/PatchPilot/pull/42",
+                null,
+                null,
+                0,
+                Instant.parse("2026-06-24T00:00:00Z"),
+                List.of("Follow the script from step 1 through Pull Request review.")
+        );
+        DemoScriptVo script = new DemoScriptVo(
+                DemoReadinessStatus.READY,
+                "Demo script is ready.",
+                List.of(new DemoScriptStepVo(
+                        1,
+                        "Confirm backend and dashboard access",
+                        DemoReadinessStatus.READY,
+                        "Open the dashboard and confirm protected APIs load.",
+                        "curl http://127.0.0.1:8080/health",
+                        "Backend reports UP and dashboard data loads.",
+                        "Connectivity panel",
+                        "Backend readiness endpoint is reachable."
+                )),
+                List.of("The script endpoint is read-only."),
+                List.of("Follow the script from step 1 through Pull Request review."),
+                Instant.parse("2026-06-24T00:30:00Z")
+        );
+        when(demoSessionSnapshotService.getSessionSnapshot()).thenReturn(new DemoSessionSnapshotVo(
+                "demo-session-20260624T003000Z",
+                DemoReadinessStatus.READY,
+                "Demo session snapshot is ready.",
+                Instant.parse("2026-06-24T00:30:00Z"),
+                bundle,
+                script,
+                "# PatchPilot Demo Runbook\n\n- Status: `READY`",
+                List.of("Open the dashboard and confirm the demo session snapshot status."),
+                List.of("GET /api/demo/session-snapshot is read-only: it does not create tasks, call the model, run tests, mutate Git, or write to GitHub."),
+                "Status READY; recent PR https://github.com/bingqin2/PatchPilot/pull/42.",
+                List.of("Follow the script from step 1 through Pull Request review.")
+        ));
+
+        mockMvc.perform(get("/api/demo/session-snapshot"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.sessionId").value("demo-session-20260624T003000Z"))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.summary").value("Demo session snapshot is ready."))
+                .andExpect(jsonPath("$.data.evidenceBundle.recentPullRequestUrl").value("https://github.com/bingqin2/PatchPilot/pull/42"))
+                .andExpect(jsonPath("$.data.script.steps[0].name").value("Confirm backend and dashboard access"))
+                .andExpect(jsonPath("$.data.runbook").value(org.hamcrest.Matchers.containsString("# PatchPilot Demo Runbook")))
+                .andExpect(jsonPath("$.data.operatorChecklist[0]").value("Open the dashboard and confirm the demo session snapshot status."))
+                .andExpect(jsonPath("$.data.healthContract[0]").value("GET /api/demo/session-snapshot is read-only: it does not create tasks, call the model, run tests, mutate Git, or write to GitHub."))
+                .andExpect(jsonPath("$.data.shareSummary").value(org.hamcrest.Matchers.containsString("READY")))
+                .andExpect(jsonPath("$.data.nextActions[0]").value("Follow the script from step 1 through Pull Request review."));
     }
 }

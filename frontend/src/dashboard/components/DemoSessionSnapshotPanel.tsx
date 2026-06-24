@@ -1,0 +1,137 @@
+import type { DemoReadinessStatus, DemoSessionSnapshot } from '../../types';
+import { compactDateTime } from '../format';
+
+interface DemoSessionSnapshotPanelProps {
+  snapshot: DemoSessionSnapshot | null;
+  error: string | null;
+}
+
+export function DemoSessionSnapshotPanel({ snapshot, error }: DemoSessionSnapshotPanelProps) {
+  const scriptStepCount = snapshot?.script.steps.length ?? 0;
+
+  return (
+    <section className="panel demo-session-panel" aria-label="Demo session snapshot">
+      <div className="panel-header">
+        <div>
+          <h2>Demo session snapshot</h2>
+          <p>{snapshot?.summary ?? 'Loading demo session snapshot'}</p>
+        </div>
+        {snapshot ? (
+          <div className="demo-session-header-meta">
+            <span className={`demo-readiness-status demo-readiness-status-${statusClass(snapshot.status)}`}>
+              {statusLabel(snapshot.status)}
+            </span>
+            <time dateTime={snapshot.generatedAt}>{compactDateTime(snapshot.generatedAt)}</time>
+          </div>
+        ) : null}
+      </div>
+
+      {error ? (
+        <div className="adapter-api-error">
+          <strong>Demo session snapshot unavailable</strong>
+          <span>{error}</span>
+        </div>
+      ) : null}
+
+      {snapshot ? (
+        <>
+          <div className="demo-session-summary">
+            <div>
+              <span>Session</span>
+              <strong>{snapshot.sessionId}</strong>
+            </div>
+            <div>
+              <span>Share summary</span>
+              <strong>{snapshot.shareSummary}</strong>
+            </div>
+          </div>
+
+          <div className="demo-session-grid">
+            <SnapshotFact
+              label="Evidence status"
+              value={statusLabel(snapshot.evidenceBundle.status)}
+              detail={snapshot.evidenceBundle.summary}
+            />
+            <SnapshotFact
+              label="Recent task"
+              value={snapshot.evidenceBundle.recentTask?.id ?? 'None'}
+              detail={snapshot.evidenceBundle.recentTask?.status ?? 'No task evidence'}
+            />
+            <SnapshotFact
+              label="Recent Pull Request"
+              value={snapshot.evidenceBundle.recentPullRequestUrl ?? 'Missing'}
+              detail={snapshot.evidenceBundle.recentPullRequestUrl ? 'PR evidence available' : 'Run smoke task'}
+            />
+            <SnapshotFact
+              label="Script"
+              value={`${scriptStepCount} ${scriptStepCount === 1 ? 'step' : 'steps'}`}
+              detail={snapshot.script.summary}
+            />
+          </div>
+
+          <div className="demo-session-lists">
+            <SnapshotList title="Operator checklist" items={snapshot.operatorChecklist} />
+            <SnapshotList title="Health contract" items={snapshot.healthContract} />
+            <SnapshotList title="Next actions" items={snapshot.nextActions} emptyText="No next actions recorded." />
+          </div>
+        </>
+      ) : (
+        <div className="empty-state">Demo session snapshot has not loaded yet.</div>
+      )}
+    </section>
+  );
+}
+
+interface SnapshotFactProps {
+  label: string;
+  value: string;
+  detail: string;
+}
+
+function SnapshotFact({ label, value, detail }: SnapshotFactProps) {
+  return (
+    <div className="demo-session-fact">
+      <span>{label}</span>
+      <strong>{value}</strong>
+      <small>{detail}</small>
+    </div>
+  );
+}
+
+interface SnapshotListProps {
+  title: string;
+  items: string[];
+  emptyText?: string;
+}
+
+function SnapshotList({ title, items, emptyText = 'No entries recorded.' }: SnapshotListProps) {
+  return (
+    <div>
+      <h3>{title}</h3>
+      {items.length ? (
+        <ul>
+          {items.map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+        </ul>
+      ) : (
+        <p className="empty-state">{emptyText}</p>
+      )}
+    </div>
+  );
+}
+
+function statusLabel(status: DemoReadinessStatus) {
+  switch (status) {
+    case 'READY':
+      return 'Ready';
+    case 'NEEDS_ATTENTION':
+      return 'Needs attention';
+    case 'BLOCKED':
+      return 'Blocked';
+  }
+}
+
+function statusClass(status: DemoReadinessStatus) {
+  return status.toLowerCase().replace('_', '-');
+}

@@ -8,6 +8,7 @@ import type {
   DemoEvidenceBundle,
   DemoReadiness,
   DemoScript,
+  DemoSessionSnapshot,
   DemoSmokeChecklist,
   FixTask,
   FixTaskFailureCauseSummary,
@@ -163,6 +164,10 @@ export async function getDemoEvidenceBundle(): Promise<DemoEvidenceBundle> {
 
 export async function getDemoScript(): Promise<DemoScript> {
   return getApi<DemoScript>('/api/demo/script');
+}
+
+export async function getDemoSessionSnapshot(): Promise<DemoSessionSnapshot> {
+  return getApi<DemoSessionSnapshot>('/api/demo/session-snapshot');
 }
 
 export async function getDemoRunbook(): Promise<string> {

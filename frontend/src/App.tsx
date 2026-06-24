@@ -9,6 +9,7 @@ import {
   getBackendHealth,
   getConfigurationSummary,
   getDemoEvidenceBundle,
+  getDemoSessionSnapshot,
   getDemoScript,
   getDemoRunbook,
   getDemoReadiness,
@@ -41,6 +42,7 @@ import { ConfigurationPanel } from './dashboard/components/ConfigurationPanel';
 import { ConnectivityPanel } from './dashboard/components/ConnectivityPanel';
 import { DemoReadinessPanel } from './dashboard/components/DemoReadinessPanel';
 import { DemoEvidenceBundlePanel } from './dashboard/components/DemoEvidenceBundlePanel';
+import { DemoSessionSnapshotPanel } from './dashboard/components/DemoSessionSnapshotPanel';
 import { DemoScriptPanel } from './dashboard/components/DemoScriptPanel';
 import { DemoSmokeChecklistPanel } from './dashboard/components/DemoSmokeChecklistPanel';
 import { FailureCausePanel } from './dashboard/components/FailureCausePanel';
@@ -68,6 +70,7 @@ import type {
   DemoReadiness,
   DemoEvidenceBundle,
   DemoScript,
+  DemoSessionSnapshot,
   DemoSmokeChecklist,
   FixTask,
   FixTaskFailureCauseSummary,
@@ -137,6 +140,8 @@ export default function App() {
   const [demoReadinessError, setDemoReadinessError] = useState<string | null>(null);
   const [demoEvidenceBundle, setDemoEvidenceBundle] = useState<DemoEvidenceBundle | null>(null);
   const [demoEvidenceBundleError, setDemoEvidenceBundleError] = useState<string | null>(null);
+  const [demoSessionSnapshot, setDemoSessionSnapshot] = useState<DemoSessionSnapshot | null>(null);
+  const [demoSessionSnapshotError, setDemoSessionSnapshotError] = useState<string | null>(null);
   const [demoScript, setDemoScript] = useState<DemoScript | null>(null);
   const [demoScriptError, setDemoScriptError] = useState<string | null>(null);
   const [demoSmokeChecklist, setDemoSmokeChecklist] = useState<DemoSmokeChecklist | null>(null);
@@ -399,6 +404,7 @@ export default function App() {
         latencySummary,
         configurationSummary,
         demoEvidenceBundleResult,
+        demoSessionSnapshotResult,
         demoScriptResult,
         demoReadinessResult,
         demoSmokeChecklistResult,
@@ -427,6 +433,10 @@ export default function App() {
         getDemoEvidenceBundle().then(
           (bundle) => ({ bundle, error: null as string | null }),
           (caught) => ({ bundle: null, error: errorMessage(caught) })
+        ),
+        getDemoSessionSnapshot().then(
+          (snapshot) => ({ snapshot, error: null as string | null }),
+          (caught) => ({ snapshot: null, error: errorMessage(caught) })
         ),
         getDemoScript().then(
           (script) => ({ script, error: null as string | null }),
@@ -482,6 +492,10 @@ export default function App() {
         setDemoEvidenceBundle(demoEvidenceBundleResult.bundle);
       }
       setDemoEvidenceBundleError(demoEvidenceBundleResult.error);
+      if (demoSessionSnapshotResult.snapshot) {
+        setDemoSessionSnapshot(demoSessionSnapshotResult.snapshot);
+      }
+      setDemoSessionSnapshotError(demoSessionSnapshotResult.error);
       if (demoScriptResult.script) {
         setDemoScript(demoScriptResult.script);
       }
@@ -861,6 +875,8 @@ export default function App() {
         error={demoEvidenceBundleError}
         onCopyRunbook={handleCopyDemoRunbook}
       />
+
+      <DemoSessionSnapshotPanel snapshot={demoSessionSnapshot} error={demoSessionSnapshotError} />
 
       <DemoScriptPanel script={demoScript} error={demoScriptError} />
 
