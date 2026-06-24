@@ -1,6 +1,6 @@
 import { SearchCheck, Send } from 'lucide-react';
 import { FormEvent, useState } from 'react';
-import type { CreateTaskInput, TriggerEvaluationResult } from '../../types';
+import type { CreateTaskInput, TriggerEvaluationResult, TriggerEvaluationSource } from '../../types';
 
 interface ManualTaskFormProps {
   creating: boolean;
@@ -24,9 +24,11 @@ export function ManualTaskForm({
   const [issueNumber, setIssueNumber] = useState('');
   const [triggerUser, setTriggerUser] = useState('local-operator');
   const [triggerComment, setTriggerComment] = useState('');
+  const [source, setSource] = useState<TriggerEvaluationSource>('MANUAL');
 
-  function input(): CreateTaskInput {
+  function input(sourceOverride?: TriggerEvaluationSource): CreateTaskInput {
     return {
+      ...(sourceOverride ? { source: sourceOverride } : {}),
       repositoryOwner: repositoryOwner.trim(),
       repositoryName: repositoryName.trim(),
       issueNumber: Number(issueNumber),
@@ -46,7 +48,7 @@ export function ManualTaskForm({
   }
 
   async function evaluate() {
-    await onEvaluateTrigger(input());
+    await onEvaluateTrigger(input(source));
   }
 
   return (
@@ -107,6 +109,27 @@ export function ManualTaskForm({
             required
           />
         </label>
+        <fieldset className="manual-task-source" aria-label="Trigger source">
+          <legend>Preview source</legend>
+          <label>
+            <input
+              type="radio"
+              name="manual-trigger-source"
+              checked={source === 'MANUAL'}
+              onChange={() => setSource('MANUAL')}
+            />
+            Manual API
+          </label>
+          <label>
+            <input
+              type="radio"
+              name="manual-trigger-source"
+              checked={source === 'ISSUE_COMMENT'}
+              onChange={() => setSource('ISSUE_COMMENT')}
+            />
+            GitHub issue comment
+          </label>
+        </fieldset>
         <div className="manual-task-actions">
           <button
             className="secondary-button"
@@ -136,7 +159,10 @@ function TriggerEvaluationSummary({ evaluation }: { evaluation: TriggerEvaluatio
     >
       <div className="trigger-evaluation-heading">
         <strong>{evaluation.wouldCreateTask ? 'Would create task' : 'Blocked'}</strong>
-        {evaluation.blockedCategory ? <span>{evaluation.blockedCategory}</span> : null}
+        <div>
+          <span>{sourceLabel(evaluation.source)}</span>
+          {evaluation.blockedCategory ? <span>{evaluation.blockedCategory}</span> : null}
+        </div>
       </div>
       <p>{evaluation.wouldCreateTask ? 'Ready to create task.' : 'Review the gate details below before retrying.'}</p>
       <div className="trigger-evaluation-grid">
@@ -153,6 +179,10 @@ function TriggerEvaluationSummary({ evaluation }: { evaluation: TriggerEvaluatio
       <p className="trigger-evaluation-next-action">{evaluation.nextAction}</p>
     </section>
   );
+}
+
+function sourceLabel(source: TriggerEvaluationResult['source']) {
+  return source === 'ISSUE_COMMENT' ? 'GitHub issue comment' : 'Manual API';
 }
 
 function DecisionItem({

@@ -120,6 +120,7 @@ export interface FixTaskStatusCounts {
 }
 
 export interface CreateTaskInput {
+  source?: TriggerEvaluationSource;
   repositoryOwner: string;
   repositoryName: string;
   issueNumber: number;
@@ -127,8 +128,11 @@ export interface CreateTaskInput {
   triggerComment: string;
 }
 
+export type TriggerEvaluationSource = 'MANUAL' | 'ISSUE_COMMENT';
+
 export interface TriggerEvaluationResult {
   status: 'WOULD_CREATE_TASK' | 'BLOCKED';
+  source: TriggerEvaluationSource;
   wouldCreateTask: boolean;
   blockedReason: string | null;
   blockedCategory: string | null;

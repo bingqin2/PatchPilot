@@ -110,6 +110,7 @@ test('evaluates trigger without creating manual task through backend API', async
       success: true,
       data: {
         status: 'WOULD_CREATE_TASK',
+        source: 'ISSUE_COMMENT',
         wouldCreateTask: true,
         blockedReason: null,
         blockedCategory: null,
@@ -147,6 +148,7 @@ test('evaluates trigger without creating manual task through backend API', async
   vi.stubGlobal('fetch', fetchMock);
 
   const result = await evaluateTrigger({
+    source: 'ISSUE_COMMENT',
     repositoryOwner: 'bingqin2',
     repositoryName: 'PatchPilot',
     issueNumber: 7,
@@ -158,6 +160,7 @@ test('evaluates trigger without creating manual task through backend API', async
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
+      source: 'ISSUE_COMMENT',
       repositoryOwner: 'bingqin2',
       repositoryName: 'PatchPilot',
       issueNumber: 7,
@@ -166,6 +169,7 @@ test('evaluates trigger without creating manual task through backend API', async
     })
   });
   expect(result.status).toBe('WOULD_CREATE_TASK');
+  expect(result.source).toBe('ISSUE_COMMENT');
   expect(result.wouldCreateTask).toBe(true);
   expect(result.triggerIntentDecision?.reason).toBe('Model trigger classification is disabled');
 });

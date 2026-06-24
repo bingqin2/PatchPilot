@@ -1599,6 +1599,38 @@ h3 {
   gap: 8px;
 }
 
+.manual-task-source {
+  border: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin: 0;
+  min-width: 180px;
+  padding: 0;
+}
+
+.manual-task-source legend {
+  color: #52606e;
+  font-size: 12px;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+
+.manual-task-source label {
+  align-items: center;
+  color: #202b36;
+  display: flex;
+  font-size: 12px;
+  font-weight: 800;
+  gap: 6px;
+}
+
+.manual-task-source input {
+  accent-color: #187b78;
+  min-height: 0;
+  width: auto;
+}
+
 .trigger-evaluation-result {
   border-top: 1px solid #dce3e9;
   display: grid;
@@ -1619,6 +1651,13 @@ h3 {
   display: flex;
   gap: 10px;
   justify-content: space-between;
+}
+
+.trigger-evaluation-heading div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
 }
 
 .trigger-evaluation-heading strong {
