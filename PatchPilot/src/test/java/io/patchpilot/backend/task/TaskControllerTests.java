@@ -891,6 +891,11 @@ class TaskControllerTests {
                 "pom.xml detected with mvnw wrapper"
         );
         fixTaskTimelineService.recordEvent(task.id(), FixTaskTimelineEventType.TASK_CREATED, "Task accepted");
+        fixTaskTimelineService.recordEvent(
+                task.id(),
+                FixTaskTimelineEventType.TRIGGER_ACCEPTED,
+                "Trigger accepted: safety gate accepted; issue context loaded; model accepted trigger: Issue context describes a concrete failing test"
+        );
         fixTaskTimelineService.recordEvent(task.id(), FixTaskTimelineEventType.COMPLETED, "Task completed");
         FixTaskTestRunVo testRun = fixTaskTestRunService.recordTestRun(
                 task.id(),
@@ -964,14 +969,21 @@ class TaskControllerTests {
                 .andExpect(jsonPath("$.data.summary.task.buildSystem").value("maven"))
                 .andExpect(jsonPath("$.data.summary.task.verificationCommand").value("./mvnw test"))
                 .andExpect(jsonPath("$.data.summary.task.adapterDetectionReason").value("pom.xml detected with mvnw wrapper"))
-                .andExpect(jsonPath("$.data.summary.timelineEventCount").value(2))
+                .andExpect(jsonPath("$.data.summary.timelineEventCount").value(3))
                 .andExpect(jsonPath("$.data.summary.testRunCount").value(1))
                 .andExpect(jsonPath("$.data.summary.toolCallCount").value(1))
                 .andExpect(jsonPath("$.data.summary.modelCallCount").value(1))
                 .andExpect(jsonPath("$.data.summary.totalModelTokens").value(200))
-                .andExpect(jsonPath("$.data.timeline.length()").value(2))
+                .andExpect(jsonPath("$.data.triggerIntentAudit.eventId").value(not(nullValue())))
+                .andExpect(jsonPath("$.data.triggerIntentAudit.summary").value("Trigger accepted"))
+                .andExpect(jsonPath("$.data.triggerIntentAudit.safetyDecision").value("safety gate accepted"))
+                .andExpect(jsonPath("$.data.triggerIntentAudit.issueContextStatus").value("issue context loaded"))
+                .andExpect(jsonPath("$.data.triggerIntentAudit.modelDecision").value("model accepted trigger: Issue context describes a concrete failing test"))
+                .andExpect(jsonPath("$.data.timeline.length()").value(3))
                 .andExpect(jsonPath("$.data.timeline[0].message").value("Task accepted"))
-                .andExpect(jsonPath("$.data.timeline[1].message").value("Task completed"))
+                .andExpect(jsonPath("$.data.timeline[1].message")
+                        .value("Trigger accepted: safety gate accepted; issue context loaded; model accepted trigger: Issue context describes a concrete failing test"))
+                .andExpect(jsonPath("$.data.timeline[2].message").value("Task completed"))
                 .andExpect(jsonPath("$.data.testRuns[0].id").value(testRun.id()))
                 .andExpect(jsonPath("$.data.toolCalls[0].id").value(toolCall.id()))
                 .andExpect(jsonPath("$.data.modelCalls[0].id").value(modelCall.id()))
@@ -1097,6 +1109,11 @@ class TaskControllerTests {
                 "pom.xml detected with mvnw wrapper"
         );
         fixTaskService.markFailed(task.id(), "maven tests failed: token=ghp_123456789012345678901234567890123456");
+        fixTaskTimelineService.recordEvent(
+                task.id(),
+                FixTaskTimelineEventType.TRIGGER_ACCEPTED,
+                "Trigger accepted: safety gate accepted; issue context loaded; model accepted trigger: Issue context describes a concrete failing test"
+        );
         fixTaskTimelineService.recordEvent(task.id(), FixTaskTimelineEventType.TASK_CREATED, "Task accepted");
         fixTaskTimelineService.recordEvent(task.id(), FixTaskTimelineEventType.FAILED, "Task failed");
         fixTaskTestRunService.recordTestRun(
@@ -1176,6 +1193,10 @@ class TaskControllerTests {
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Build system: `maven`")))
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Verification: `./mvnw test`")))
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Detection reason: pom.xml detected with mvnw wrapper")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("## Trigger Intent Audit")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Safety: safety gate accepted")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Issue context: issue context loaded")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Model: model accepted trigger: Issue context describes a concrete failing test")))
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("## Issue Context")))
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Title: Issue context fixture title")))
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- URL: https://github.com/octocat/hello-world/issues/42")))

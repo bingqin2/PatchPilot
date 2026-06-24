@@ -1598,6 +1598,14 @@ test('loads aggregate task detail from backend API', async () => {
         testRuns: [],
         toolCalls: [],
         modelCalls: [],
+        triggerIntentAudit: {
+          eventId: 'timeline-trigger',
+          summary: 'Trigger accepted',
+          safetyDecision: 'safety gate accepted',
+          issueContextStatus: 'issue context loaded',
+          modelDecision: 'model accepted trigger: Issue context describes a concrete failing test',
+          createdAt: '2026-06-20T01:00:30Z'
+        },
         generatedDiff: {
           toolCallId: 'tool-diff',
           diff: 'diff --git a/docs/demo.md b/docs/demo.md\n+PatchPilot smoke test',
@@ -1643,6 +1651,11 @@ test('loads aggregate task detail from backend API', async () => {
   expect(detail.summary.task.adapterDetectionReason).toBe('pom.xml detected with mvnw wrapper');
   expect(detail.queueItem?.status).toBe('FAILED');
   expect(detail.queueItem?.attemptCount).toBe(3);
+  expect(detail.triggerIntentAudit?.safetyDecision).toBe('safety gate accepted');
+  expect(detail.triggerIntentAudit?.issueContextStatus).toBe('issue context loaded');
+  expect(detail.triggerIntentAudit?.modelDecision).toBe(
+    'model accepted trigger: Issue context describes a concrete failing test'
+  );
   expect(detail.queueItems.map((item) => item.id)).toEqual(['queue-1', 'queue-older']);
   expect(detail.timeline).toEqual([]);
   expect(detail.testRuns).toEqual([]);

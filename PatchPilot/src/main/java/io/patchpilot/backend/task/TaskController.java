@@ -11,6 +11,7 @@ import io.patchpilot.backend.task.domain.bo.RetryTaskCommand;
 import io.patchpilot.backend.task.domain.dto.ApproveReviewDto;
 import io.patchpilot.backend.task.domain.dto.CreateFixTaskDto;
 import io.patchpilot.backend.task.domain.dto.RetryTaskDto;
+import io.patchpilot.backend.task.domain.enums.FixTaskTimelineEventType;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.enums.FixTaskSort;
 import io.patchpilot.backend.task.domain.vo.FixTaskFailureCauseSummaryVo;
@@ -29,6 +30,7 @@ import io.patchpilot.backend.task.domain.vo.FixTaskStatusCountsVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskTestRunVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskTimelineEventVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskToolCallVo;
+import io.patchpilot.backend.task.domain.vo.FixTaskTriggerIntentAuditVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import io.patchpilot.backend.task.domain.vo.IssueContextCommentVo;
 import io.patchpilot.backend.task.domain.vo.IssueContextVo;
@@ -60,6 +62,7 @@ import java.net.URI;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/tasks")
@@ -547,12 +550,14 @@ public class TaskController {
     private FixTaskDetailVo buildTaskDetail(String taskId, FixTaskAuditSummaryVo summary) {
         List<FixTaskQueueItemVo> queueItems = fixTaskQueueQueryService.listByTaskId(taskId);
         List<FixTaskToolCallVo> toolCalls = fixTaskToolCallService.listToolCalls(taskId);
+        List<FixTaskTimelineEventVo> timeline = fixTaskTimelineService.listEvents(taskId);
         return new FixTaskDetailVo(
                 summary,
-                fixTaskTimelineService.listEvents(taskId),
+                timeline,
                 fixTaskTestRunService.listTestRuns(taskId),
                 toolCalls,
                 fixTaskModelCallService.listModelCalls(taskId),
+                triggerIntentAudit(timeline),
                 latestGeneratedDiff(toolCalls),
                 fixTaskPatchReviewService.findLatestPatchReview(taskId).orElse(null),
                 issueContext(summary.task()),
@@ -561,6 +566,35 @@ public class TaskController {
                 queueItems,
                 repositorySupportGuidanceService.guidanceFor(summary.task()).orElse(null)
         );
+    }
+
+    private static FixTaskTriggerIntentAuditVo triggerIntentAudit(List<FixTaskTimelineEventVo> timeline) {
+        return timeline.stream()
+                .filter(event -> event.eventType() == FixTaskTimelineEventType.TRIGGER_ACCEPTED)
+                .reduce((first, second) -> second)
+                .flatMap(TaskController::parseTriggerIntentAudit)
+                .orElse(null);
+    }
+
+    private static Optional<FixTaskTriggerIntentAuditVo> parseTriggerIntentAudit(FixTaskTimelineEventVo event) {
+        String message = event.message();
+        if (message == null || !message.startsWith("Trigger accepted: ")) {
+            return Optional.empty();
+        }
+
+        String[] parts = message.substring("Trigger accepted: ".length()).split("; ", 3);
+        if (parts.length != 3) {
+            return Optional.empty();
+        }
+
+        return Optional.of(new FixTaskTriggerIntentAuditVo(
+                event.id(),
+                "Trigger accepted",
+                parts[0],
+                parts[1],
+                parts[2],
+                event.createdAt()
+        ));
     }
 
     private static FixTaskFailureDiagnosisVo failureDiagnosis(FixTaskVo task) {

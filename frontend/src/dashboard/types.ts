@@ -9,6 +9,7 @@ import type {
   FixTaskPatchReview,
   FixTaskFailureDiagnosis,
   FixTaskRetryPreflight,
+  FixTaskTriggerIntentAudit,
   IssueContext,
   RepositorySupportGuidance
 } from '../types';
@@ -21,6 +22,7 @@ export interface TaskDetailState {
   testRuns: FixTaskTestRun[];
   toolCalls: FixTaskToolCall[];
   modelCalls: FixTaskModelCall[];
+  triggerIntentAudit: FixTaskTriggerIntentAudit | null;
   generatedDiff: FixTaskGeneratedDiff | null;
   patchReview: FixTaskPatchReview | null;
   issueContext: IssueContext | null;
@@ -37,6 +39,7 @@ export const emptyDetail: TaskDetailState = {
   testRuns: [],
   toolCalls: [],
   modelCalls: [],
+  triggerIntentAudit: null,
   generatedDiff: null,
   patchReview: null,
   issueContext: null,

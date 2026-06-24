@@ -120,6 +120,7 @@ The current implementation target is local self-hosted development first. Hosted
 - GitHub refusal comment failures must not create a task or hide the rejected-trigger audit record.
 - Rejected-trigger retry should be preflighted before task creation. Only actionability or model-classification rejections may be retried directly; dangerous instructions, unauthorized users, unauthorized repositories, rate limits, active abuse quarantines, unsupported commands, unknown categories, and already-retried audit rows must return a clear blocked reason.
 - Accepted trigger decisions should record concise task timeline evidence that explains the safety-gate result, whether issue context was loaded, and the model trigger-classification outcome.
+- Accepted trigger decisions should be exposed as structured task detail and copied report evidence so operators can inspect why a task was allowed to execute without parsing raw timeline text.
 - The system should summarize recent rejected trigger decisions by category, source, trigger user, and repository so operators can detect abuse patterns and tune safety configuration.
 - The system should expose active and historical trigger quarantine records with scope, scope key, reason, category, evidence count, window, start time, expiry time, and timestamps.
 - The system should record manual safety mutations, including trigger quarantine creation and release, with operator, reason, target, and timestamp.
@@ -202,7 +203,7 @@ The current implementation target is local self-hosted development first. Hosted
 - User-actionable failures should be posted as issue comments.
 - Failed-task issue comments should include a failure category, next action, and a sanitized reason.
 - Failure metrics should reuse the same stable failure categories and next-action guidance as failed-task issue comments, so dashboard summaries and GitHub feedback stay consistent.
-- Task detail APIs and copied task reports should expose the same failure category, next action, and sanitized reason for failed tasks, so per-task investigation and aggregate metrics use one taxonomy.
+- Task detail APIs and copied task reports should expose accepted-trigger intent audit, failure category, next action, and sanitized reason for failed tasks, so per-task investigation and aggregate metrics use one taxonomy.
 - Failed and cancelled tasks should expose retry preflight that returns retry eligibility, stable category, sanitized reason, and next operator action before an operator queues another attempt.
 - Retry preflight should block blind retries when the failure category indicates setup or repository support work is required first, such as GitHub credential/permission failures or unsupported repository shapes.
 - The retry API should enforce the same retry-preflight policy used by the dashboard.

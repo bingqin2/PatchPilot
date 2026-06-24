@@ -44,6 +44,7 @@ public class FixTaskReportFormatter {
         }
 
         appendAdapter(report, task);
+        appendTriggerIntentAudit(report, detail);
         appendRetryLineage(report, task);
         appendFailureDiagnosis(report, detail);
         appendIssueContext(report, detail.issueContext());
@@ -56,6 +57,17 @@ public class FixTaskReportFormatter {
         appendToolCalls(report, detail.toolCalls());
         appendModelCalls(report, detail.modelCalls());
         return report.toString();
+    }
+
+    private static void appendTriggerIntentAudit(StringBuilder report, FixTaskDetailVo detail) {
+        if (detail.triggerIntentAudit() == null) {
+            return;
+        }
+
+        report.append("\n## Trigger Intent Audit\n\n")
+                .append("- Safety: ").append(detail.triggerIntentAudit().safetyDecision()).append("\n")
+                .append("- Issue context: ").append(detail.triggerIntentAudit().issueContextStatus()).append("\n")
+                .append("- Model: ").append(detail.triggerIntentAudit().modelDecision()).append("\n");
     }
 
     private static void appendFailureDiagnosis(StringBuilder report, FixTaskDetailVo detail) {

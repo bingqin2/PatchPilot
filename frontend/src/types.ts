@@ -546,12 +546,22 @@ export interface FixTaskDetail {
   testRuns: FixTaskTestRun[];
   toolCalls: FixTaskToolCall[];
   modelCalls: FixTaskModelCall[];
+  triggerIntentAudit: FixTaskTriggerIntentAudit | null;
   generatedDiff: FixTaskGeneratedDiff | null;
   patchReview: FixTaskPatchReview | null;
   issueContext: IssueContext | null;
   failureDiagnosis: FixTaskFailureDiagnosis | null;
   retryPreflight: FixTaskRetryPreflight | null;
   repositorySupportGuidance: RepositorySupportGuidance | null;
+}
+
+export interface FixTaskTriggerIntentAudit {
+  eventId: string;
+  summary: string;
+  safetyDecision: string;
+  issueContextStatus: string;
+  modelDecision: string;
+  createdAt: string;
 }
 
 export interface FixTaskFailureDiagnosis {
