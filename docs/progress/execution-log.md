@@ -3247,3 +3247,22 @@ Validation so far:
 - `mvn -pl PatchPilot -Dtest=ModelTriggerIntentClassifierTests,DefaultManualFixTaskServiceTests,GitHubWebhookServiceTests,IssueContextServiceTests test`: passed after issue-context integration, 33 tests run, 0 failures.
 - `mvn -pl PatchPilot test`: passed after full backend verification, 609 tests run, 0 failures.
 - `git diff --check`: passed after whitespace verification.
+
+Implemented trigger decision evidence from `docs/plans/161-trigger-decision-evidence.md`.
+
+Changes:
+
+- Added a `TRIGGER_ACCEPTED` task timeline event for accepted `/agent fix` triggers.
+- Recorded safety-gate outcome, issue-context load status, and model trigger-classification outcome in the accepted trigger evidence message.
+- Applied the evidence event to both GitHub webhook triggers and dashboard manual task creation.
+- Kept existing rejection order unchanged so dangerous, unauthorized, quarantined, and rate-limited triggers still stop before task creation.
+- Updated frontend task timeline event typing for the new backend event type.
+
+Validation so far:
+
+- `mvn -pl PatchPilot -Dtest=GitHubWebhookServiceTests,DefaultManualFixTaskServiceTests test`: first failed because `TRIGGER_ACCEPTED` did not exist; then failed because accepted evidence exposed the internal `NOT_ACTIONABLE` rejection text; then passed after adding accepted-trigger evidence formatting, 28 tests run, 0 failures.
+- `mvn -pl PatchPilot -Dtest=TriggerDecisionEvidenceFormatterTests,GitHubWebhookServiceTests,DefaultManualFixTaskServiceTests test`: passed after locking formatter behavior, 30 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed after full backend verification, 611 tests run, 0 failures.
+- `npm test`: passed after frontend regression verification, 159 tests run, 0 failures.
+- `npm run build`: passed after production frontend build verification.
+- `git diff --check`: passed after whitespace verification.

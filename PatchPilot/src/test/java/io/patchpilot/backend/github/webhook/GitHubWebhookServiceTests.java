@@ -135,9 +135,17 @@ class GitHubWebhookServiceTests {
         assertThat(task.statusCommentUrl()).isEqualTo("https://github.com/octocat/hello-world/issues/42#issuecomment-123");
         assertThat(fixTaskDispatcher.dispatchedTaskId()).isEqualTo(task.id());
         assertThat(timelineService.eventTypes())
-                .containsExactly(FixTaskTimelineEventType.TASK_CREATED, FixTaskTimelineEventType.STATUS_COMMENT_CREATED);
+                .containsExactly(
+                        FixTaskTimelineEventType.TRIGGER_ACCEPTED,
+                        FixTaskTimelineEventType.TASK_CREATED,
+                        FixTaskTimelineEventType.STATUS_COMMENT_CREATED
+                );
         assertThat(timelineService.messages())
-                .containsExactly("Task accepted from /agent fix", "Status comment created");
+                .containsExactly(
+                        "Trigger accepted: safety gate accepted; issue context not loaded; model trigger classification disabled",
+                        "Task accepted from /agent fix",
+                        "Status comment created"
+                );
         assertThat(diagnosticService.commands()).hasSize(1);
         RecordWebhookDeliveryDiagnosticCommand diagnostic = diagnosticService.commands().get(0);
         assertThat(diagnostic.deliveryId()).isEqualTo("delivery-created-status-comment");
@@ -501,7 +509,13 @@ class GitHubWebhookServiceTests {
         assertThat(issueCommentTool.acceptedCount()).isEqualTo(1);
         assertThat(fixTaskDispatcher.dispatchCount()).isEqualTo(1);
         assertThat(timelineService.eventTypes())
-                .containsExactly(FixTaskTimelineEventType.TASK_CREATED, FixTaskTimelineEventType.STATUS_COMMENT_CREATED);
+                .containsExactly(
+                        FixTaskTimelineEventType.TRIGGER_ACCEPTED,
+                        FixTaskTimelineEventType.TASK_CREATED,
+                        FixTaskTimelineEventType.STATUS_COMMENT_CREATED
+                );
+        assertThat(timelineService.messages().get(0))
+                .isEqualTo("Trigger accepted: safety gate requested issue-context classification because command is too short to describe a concrete code change; issue context loaded; model accepted trigger: Issue context describes a concrete failing test");
         assertThat(auditService.commands()).isEmpty();
     }
 
@@ -567,7 +581,13 @@ class GitHubWebhookServiceTests {
         assertThat(fixTaskDispatcher.dispatchCount()).isEqualTo(1);
         assertThat(issueCommentTool.acceptedCount()).isEqualTo(1);
         assertThat(timelineService.eventTypes())
-                .containsExactly(FixTaskTimelineEventType.TASK_CREATED, FixTaskTimelineEventType.STATUS_COMMENT_CREATED);
+                .containsExactly(
+                        FixTaskTimelineEventType.TRIGGER_ACCEPTED,
+                        FixTaskTimelineEventType.TASK_CREATED,
+                        FixTaskTimelineEventType.STATUS_COMMENT_CREATED
+                );
+        assertThat(timelineService.messages().get(0))
+                .isEqualTo("Trigger accepted: safety gate accepted; issue context not loaded; model trigger classification disabled");
     }
 
     @Test
@@ -700,9 +720,17 @@ class GitHubWebhookServiceTests {
         assertThat(task.statusCommentId()).isNull();
         assertThat(fixTaskDispatcher.dispatchedTaskId()).isEqualTo(task.id());
         assertThat(timelineService.eventTypes())
-                .containsExactly(FixTaskTimelineEventType.TASK_CREATED, FixTaskTimelineEventType.STATUS_COMMENT_FAILED);
+                .containsExactly(
+                        FixTaskTimelineEventType.TRIGGER_ACCEPTED,
+                        FixTaskTimelineEventType.TASK_CREATED,
+                        FixTaskTimelineEventType.STATUS_COMMENT_FAILED
+                );
         assertThat(timelineService.messages())
-                .containsExactly("Task accepted from /agent fix", "Status comment failed: comment failed");
+                .containsExactly(
+                        "Trigger accepted: safety gate accepted; issue context not loaded; model trigger classification disabled",
+                        "Task accepted from /agent fix",
+                        "Status comment failed: comment failed"
+                );
     }
 
     @Test

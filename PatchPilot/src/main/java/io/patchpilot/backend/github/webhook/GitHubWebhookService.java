@@ -16,6 +16,7 @@ import io.patchpilot.backend.safety.CommandSafetyGate;
 import io.patchpilot.backend.safety.NoOpTriggerIntentClassifier;
 import io.patchpilot.backend.safety.NoOpTriggerQuarantineService;
 import io.patchpilot.backend.safety.NoOpTriggerRateLimitService;
+import io.patchpilot.backend.safety.TriggerDecisionEvidenceFormatter;
 import io.patchpilot.backend.safety.domain.RejectedTriggerCategory;
 import io.patchpilot.backend.safety.domain.RecordRejectedTriggerCommand;
 import io.patchpilot.backend.safety.domain.SafetyGateDecision;
@@ -596,7 +597,7 @@ public class GitHubWebhookService {
             );
             return WebhookHandleResult.rejected();
         }
-        TriggerIntentDecision triggerIntentDecision = classifyTriggerIntent(
+        TriggerClassificationResult triggerClassificationResult = classifyTriggerIntent(
                 deliveryId,
                 repositoryOwner,
                 repositoryName,
@@ -604,6 +605,7 @@ public class GitHubWebhookService {
                 triggerUser,
                 commentBody
         );
+        TriggerIntentDecision triggerIntentDecision = triggerClassificationResult.decision();
         if (!triggerIntentDecision.shouldExecute()) {
             recordRejectedTrigger(
                     deliveryId,
@@ -655,6 +657,15 @@ public class GitHubWebhookService {
             );
             return WebhookHandleResult.duplicate(task.id());
         }
+        recordTimelineEvent(
+                task.id(),
+                FixTaskTimelineEventType.TRIGGER_ACCEPTED,
+                TriggerDecisionEvidenceFormatter.accepted(
+                        safetyDecision,
+                        triggerIntentDecision,
+                        triggerClassificationResult.issueContextLoaded()
+                )
+        );
         recordTimelineEvent(task.id(), FixTaskTimelineEventType.TASK_CREATED, "Task accepted from /agent fix");
         createStatusComment(task);
         fixTaskDispatcher.dispatch(task.id());
@@ -704,7 +715,7 @@ public class GitHubWebhookService {
         return WebhookHandleResult.activeTaskExists(activeTask.id());
     }
 
-    private TriggerIntentDecision classifyTriggerIntent(
+    private TriggerClassificationResult classifyTriggerIntent(
             String deliveryId,
             String repositoryOwner,
             String repositoryName,
@@ -713,39 +724,33 @@ public class GitHubWebhookService {
             String commentBody
     ) {
         try {
-            GitHubIssueContext issueContext = loadIssueContextForClassification(
-                    repositoryOwner,
-                    repositoryName,
-                    issueNumber
+            boolean issueContextLoaded = triggerIntentClassifier.supportsIssueContextClassification();
+            GitHubIssueContext issueContext = issueContextLoaded
+                    ? issueContextService.loadIssueContext(repositoryOwner, repositoryName, issueNumber)
+                    : new GitHubIssueContext("", "", "", List.of());
+            return new TriggerClassificationResult(
+                    triggerIntentClassifier.classify(new TriggerIntentClassificationRequest(
+                            classificationId(deliveryId),
+                            "issue_comment",
+                            repositoryOwner,
+                            repositoryName,
+                            issueNumber,
+                            triggerUser,
+                            commentBody,
+                            issueContext.title(),
+                            issueContext.body(),
+                            issueComments(issueContext)
+                    )),
+                    issueContextLoaded
             );
-            return triggerIntentClassifier.classify(new TriggerIntentClassificationRequest(
-                    classificationId(deliveryId),
-                    "issue_comment",
-                    repositoryOwner,
-                    repositoryName,
-                    issueNumber,
-                    triggerUser,
-                    commentBody,
-                    issueContext.title(),
-                    issueContext.body(),
-                    issueComments(issueContext)
-            ));
         } catch (RuntimeException exception) {
-            return TriggerIntentDecision.rejected(
-                    "Model trigger classification failed: unable to load issue context: " + failureReason(exception)
+            return new TriggerClassificationResult(
+                    TriggerIntentDecision.rejected(
+                            "Model trigger classification failed: unable to load issue context: " + failureReason(exception)
+                    ),
+                    false
             );
         }
-    }
-
-    private GitHubIssueContext loadIssueContextForClassification(
-            String repositoryOwner,
-            String repositoryName,
-            long issueNumber
-    ) {
-        if (!triggerIntentClassifier.supportsIssueContextClassification()) {
-            return new GitHubIssueContext("", "", "", List.of());
-        }
-        return issueContextService.loadIssueContext(repositoryOwner, repositoryName, issueNumber);
     }
 
     private boolean canClassifyWithIssueContext(SafetyGateDecision safetyDecision) {
@@ -966,5 +971,8 @@ public class GitHubWebhookService {
             current = current == null ? null : current.get(segment);
         }
         return current;
+    }
+
+    private record TriggerClassificationResult(TriggerIntentDecision decision, boolean issueContextLoaded) {
     }
 }
