@@ -2735,6 +2735,25 @@ Validation:
 - `npm run build`: passed after production frontend build verification.
 - `git diff --check`: passed after whitespace verification.
 
+Implemented demo session report export from `docs/plans/154-demo-session-report-export.md`.
+
+Changes:
+
+- Added `GET /api/demo/session-report` as a read-only Markdown export over the current demo session snapshot.
+- Added `DemoSessionReportService` to format session id, status, summary, generated time, share summary, recent Pull Request, recent task, operator checklist, script steps, health contract, next actions, and embedded runbook.
+- Added frontend `getDemoSessionReport` and a `Copy session report` action to `DemoSessionSnapshotPanel`.
+- Wired `App.tsx` to fetch the session report only when the operator clicks the copy action.
+- Updated README, product spec, architecture notes, frontend design notes, and this execution log.
+
+Validation so far:
+
+- `JAVA_HOME=/Library/Java/JavaVirtualMachines/openjdk-17.jdk/Contents/Home mvn -pl PatchPilot -Dtest=DemoSessionReportServiceTests,DemoReadinessControllerTests test`: first failed because `DemoSessionReportService` did not exist; then passed after backend implementation, 9 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts src/dashboard/components/DemoSessionSnapshotPanel.test.tsx src/App.test.tsx`: first failed because `getDemoSessionReport` and the copy button did not exist; then passed after frontend implementation, 96 tests run, 0 failures.
+- `JAVA_HOME=/Library/Java/JavaVirtualMachines/openjdk-17.jdk/Contents/Home mvn -pl PatchPilot test`: passed after full backend verification, 582 tests run, 0 failures.
+- `npm test`: passed after full frontend verification, 148 tests run, 0 failures.
+- `npm run build`: passed after production frontend build verification.
+- `git diff --check`: passed after whitespace verification.
+
 Implemented demo session snapshot from `docs/plans/153-demo-session-snapshot.md`.
 
 Changes:

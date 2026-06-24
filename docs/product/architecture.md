@@ -279,11 +279,12 @@ Responsibilities:
 - Expose a demo session snapshot that combines one current evidence bundle, script, runbook, operator checklist, health contract, share summary, and next actions.
 - Expose a demo script that turns the current evidence bundle into ordered operator actions, verification commands, success criteria, troubleshooting panels, and a health contract.
 - Format the evidence bundle as copyable Markdown for operator handoff without adding side effects.
+- Format the session snapshot as copyable Markdown for review notes, issue comments, or handoff messages without adding side effects.
 - Treat adapter fixture drift as blocking because repository support may be misdetected.
 - Treat queue failures, delayed work, running work, missing model cost configuration, or missing recent PR evidence as operator attention items.
 - Return concrete next actions for the dashboard and curl users.
 
-This layer must not create tasks, call the model, clone repositories, execute tests, mutate queue state, write comments, or weaken safety gates. Its evidence bundle, session snapshot, demo script, and runbook endpoints are read models over configuration, fixture verification, queue state, rejected-trigger safety state, webhook diagnostics, and recent task history.
+This layer must not create tasks, call the model, clone repositories, execute tests, mutate queue state, write comments, or weaken safety gates. Its evidence bundle, session snapshot, session report, demo script, and runbook endpoints are read models over configuration, fixture verification, queue state, rejected-trigger safety state, webhook diagnostics, and recent task history.
 
 ## Data Model
 
