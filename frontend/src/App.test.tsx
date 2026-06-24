@@ -870,6 +870,27 @@ const demoScript = {
   generatedAt: '2026-06-24T00:00:00Z'
 };
 
+const demoSessionSnapshot = {
+  sessionId: 'demo-session-20260624T003000Z',
+  status: 'READY',
+  summary: 'Demo session snapshot is ready.',
+  generatedAt: '2026-06-24T00:30:00Z',
+  evidenceBundle: demoEvidenceBundle,
+  script: demoScript,
+  runbook: '# PatchPilot Demo Runbook\n\n- Status: `READY`',
+  operatorChecklist: [
+    'Open the dashboard and confirm the demo session snapshot status.',
+    'Verify the latest webhook delivery and recent task before posting a live trigger.',
+    'Copy the runbook after Pull Request evidence is visible.'
+  ],
+  healthContract: [
+    'GET /api/demo/session-snapshot is read-only: it does not create tasks, call the model, run tests, mutate Git, or write to GitHub.',
+    'The snapshot only combines existing demo evidence, script, and runbook read models.'
+  ],
+  shareSummary: 'Status READY; recent task task-1; recent PR https://github.com/bingqin2/PatchPilot/pull/8.',
+  nextActions: ['Follow the script from step 1 through Pull Request review.']
+};
+
 beforeEach(() => {
   let manualTaskCreated = false;
   vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -983,6 +1004,9 @@ beforeEach(() => {
     }
     if (url === '/api/demo/evidence-bundle') {
       return jsonResponse(demoEvidenceBundle);
+    }
+    if (url === '/api/demo/session-snapshot') {
+      return jsonResponse(demoSessionSnapshot);
     }
     if (url === '/api/demo/script') {
       return jsonResponse(demoScript);
@@ -1363,6 +1387,7 @@ test('renders operational task dashboard from backend APIs', async () => {
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/language-adapters'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/language-adapters/fixtures'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/evidence-bundle'));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/session-snapshot'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/script'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/readiness'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/smoke-checklist'));
@@ -1372,6 +1397,8 @@ test('renders operational task dashboard from backend APIs', async () => {
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/operator-safety-audits?limit=20'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks/task-1/detail'));
   expect(screen.getByText('Pull request opened')).toBeInTheDocument();
+  expect(screen.getByText('demo-session-20260624T003000Z')).toBeInTheDocument();
+  expect(screen.getByText('Status READY; recent task task-1; recent PR https://github.com/bingqin2/PatchPilot/pull/8.')).toBeInTheDocument();
   expect(screen.getByText('Tests run: 247, Failures: 0, Errors: 0')).toBeInTheDocument();
   expect(screen.getByText('replace')).toBeInTheDocument();
   expect(screen.getAllByText('gpt-5.5')).toHaveLength(2);

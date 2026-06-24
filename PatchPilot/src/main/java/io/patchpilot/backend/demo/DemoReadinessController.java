@@ -4,6 +4,7 @@ import io.patchpilot.backend.common.response.ApiResponse;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessVo;
 import io.patchpilot.backend.demo.domain.DemoScriptVo;
+import io.patchpilot.backend.demo.domain.DemoSessionSnapshotVo;
 import io.patchpilot.backend.demo.domain.DemoSmokeChecklistVo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,6 +21,7 @@ public class DemoReadinessController {
     private final DemoEvidenceBundleService demoEvidenceBundleService;
     private final DemoRunbookService demoRunbookService;
     private final DemoScriptService demoScriptService;
+    private final DemoSessionSnapshotService demoSessionSnapshotService;
 
     @GetMapping("/readiness")
     public ApiResponse<DemoReadinessVo> getReadiness() {
@@ -44,5 +46,10 @@ public class DemoReadinessController {
     @GetMapping("/script")
     public ApiResponse<DemoScriptVo> getScript() {
         return ApiResponse.ok(demoScriptService.getScript());
+    }
+
+    @GetMapping("/session-snapshot")
+    public ApiResponse<DemoSessionSnapshotVo> getSessionSnapshot() {
+        return ApiResponse.ok(demoSessionSnapshotService.getSessionSnapshot());
     }
 }

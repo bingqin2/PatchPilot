@@ -274,6 +274,20 @@ export interface DemoScript {
   generatedAt: string;
 }
 
+export interface DemoSessionSnapshot {
+  sessionId: string;
+  status: DemoReadinessStatus;
+  summary: string;
+  generatedAt: string;
+  evidenceBundle: DemoEvidenceBundle;
+  script: DemoScript;
+  runbook: string;
+  operatorChecklist: string[];
+  healthContract: string[];
+  shareSummary: string;
+  nextActions: string[];
+}
+
 export interface BackendHealth {
   status: string;
   service: string;

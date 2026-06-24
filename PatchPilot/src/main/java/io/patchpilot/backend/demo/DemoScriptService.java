@@ -18,14 +18,20 @@ import java.util.function.Supplier;
 public class DemoScriptService {
 
     private final Supplier<DemoEvidenceBundleVo> bundleSupplier;
+    private final Supplier<Instant> nowSupplier;
 
     @Autowired
     public DemoScriptService(DemoEvidenceBundleService demoEvidenceBundleService) {
-        this(demoEvidenceBundleService::getEvidenceBundle);
+        this(demoEvidenceBundleService::getEvidenceBundle, Instant::now);
     }
 
     DemoScriptService(Supplier<DemoEvidenceBundleVo> bundleSupplier) {
+        this(bundleSupplier, Instant::now);
+    }
+
+    DemoScriptService(Supplier<DemoEvidenceBundleVo> bundleSupplier, Supplier<Instant> nowSupplier) {
         this.bundleSupplier = bundleSupplier;
+        this.nowSupplier = nowSupplier;
     }
 
     public DemoScriptVo getScript() {
@@ -44,7 +50,7 @@ public class DemoScriptService {
                 steps,
                 healthContract(),
                 bundle.nextActions(),
-                Instant.now()
+                nowSupplier.get()
         );
     }
 

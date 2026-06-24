@@ -9,6 +9,7 @@ import {
   getLatencySummary,
   getModelUsageSummary,
   getDemoScript,
+  getDemoSessionSnapshot,
   getDemoSmokeChecklist,
   getDemoEvidenceBundle,
   getDemoRunbook,
@@ -347,6 +348,93 @@ test('gets demo script through backend API', async () => {
   expect(script.steps[0].name).toBe('Confirm backend and dashboard access');
   expect(script.steps[0].verificationCommand).toBe('curl http://127.0.0.1:8080/health');
   expect(script.healthContract[0]).toContain('read-only');
+});
+
+test('gets demo session snapshot through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        sessionId: 'demo-session-20260624T003000Z',
+        status: 'READY',
+        summary: 'Demo session snapshot is ready.',
+        generatedAt: '2026-06-24T00:30:00Z',
+        evidenceBundle: {
+          status: 'READY',
+          summary: 'Demo evidence bundle is ready.',
+          summaryCounts: {
+            adapterFixtureCount: 12,
+            failedAdapterFixtureCount: 0,
+            recentTaskCount: 2,
+            activeQuarantineCount: 0,
+            recentPullRequestAvailable: true
+          },
+          readiness: {
+            status: 'READY',
+            summary: 'PatchPilot is ready for a controlled demo.',
+            checks: [],
+            nextActions: []
+          },
+          smokeChecklist: {
+            status: 'READY',
+            summary: 'Live demo smoke checklist is ready.',
+            steps: [],
+            nextActions: []
+          },
+          configuration: null,
+          adapterFixtures: {
+            totalCount: 12,
+            failedCount: 0
+          },
+          queueSummary: {
+            totalCount: 2,
+            pendingCount: 0,
+            availablePendingCount: 0,
+            delayedPendingCount: 0,
+            runningCount: 0,
+            completedCount: 2,
+            failedCount: 0,
+            cancelledCount: 0
+          },
+          recentTask: null,
+          recentPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+          latestWebhookDelivery: null,
+          rejectedTriggerSummary: null,
+          activeQuarantineCount: 0,
+          generatedAt: '2026-06-24T00:00:00Z',
+          nextActions: ['Follow the script from step 1 through Pull Request review.']
+        },
+        script: {
+          status: 'READY',
+          summary: 'Demo script is ready.',
+          steps: [],
+          healthContract: ['The script endpoint is read-only.'],
+          nextActions: ['Follow the script from step 1 through Pull Request review.'],
+          generatedAt: '2026-06-24T00:30:00Z'
+        },
+        runbook: '# PatchPilot Demo Runbook\n\n- Status: `READY`',
+        operatorChecklist: ['Open the dashboard and confirm the demo session snapshot status.'],
+        healthContract: [
+          'GET /api/demo/session-snapshot is read-only: it does not create tasks, call the model, run tests, mutate Git, or write to GitHub.'
+        ],
+        shareSummary: 'Status READY; recent PR https://github.com/bingqin2/PatchPilot/pull/42.',
+        nextActions: ['Follow the script from step 1 through Pull Request review.']
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const snapshot = await getDemoSessionSnapshot();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/session-snapshot');
+  expect(snapshot.sessionId).toBe('demo-session-20260624T003000Z');
+  expect(snapshot.status).toBe('READY');
+  expect(snapshot.evidenceBundle.recentPullRequestUrl).toBe('https://github.com/bingqin2/PatchPilot/pull/42');
+  expect(snapshot.operatorChecklist[0]).toContain('demo session snapshot status');
+  expect(snapshot.healthContract[0]).toContain('read-only');
 });
 
 test('loads demo runbook markdown from backend API', async () => {

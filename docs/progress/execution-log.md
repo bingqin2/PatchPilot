@@ -2735,6 +2735,25 @@ Validation:
 - `npm run build`: passed after production frontend build verification.
 - `git diff --check`: passed after whitespace verification.
 
+Implemented demo session snapshot from `docs/plans/153-demo-session-snapshot.md`.
+
+Changes:
+
+- Added `GET /api/demo/session-snapshot` as a read-only aggregate over one current demo evidence bundle, derived script, derived runbook, operator checklist, health contract, share summary, and next actions.
+- Added `DemoSessionSnapshotService` and `DemoSessionSnapshotVo`, with deterministic session ids based on generated time and a health contract stating the endpoint does not create tasks, call the model, run tests, mutate Git, or write to GitHub.
+- Added frontend `getDemoSessionSnapshot`, typed `DemoSessionSnapshot` models, and `DemoSessionSnapshotPanel`.
+- Wired the dashboard to load and render the snapshot near the existing demo evidence and script panels without blocking the rest of the dashboard when the snapshot endpoint fails.
+- Updated README, product spec, architecture notes, frontend design notes, and this execution log.
+
+Validation so far:
+
+- `JAVA_HOME=/Library/Java/JavaVirtualMachines/openjdk-17.jdk/Contents/Home mvn -pl PatchPilot -Dtest=DemoSessionSnapshotServiceTests,DemoReadinessControllerTests test`: first failed because `DemoSessionSnapshotService`, `DemoSessionSnapshotVo`, and the endpoint did not exist; then passed after backend implementation, 8 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts src/dashboard/components/DemoSessionSnapshotPanel.test.tsx src/App.test.tsx`: first failed because `getDemoSessionSnapshot`, `DemoSessionSnapshotPanel`, and App-level loading did not exist; then passed after frontend implementation, 93 tests run, 0 failures.
+- `JAVA_HOME=/Library/Java/JavaVirtualMachines/openjdk-17.jdk/Contents/Home mvn -pl PatchPilot test`: passed after full backend verification, 579 tests run, 0 failures.
+- `npm test`: passed after full frontend verification, 145 tests run, 0 failures.
+- `npm run build`: passed after production frontend build verification.
+- `git diff --check`: passed after whitespace verification.
+
 Implemented review rejection recovery from `docs/plans/136-review-rejection-recovery.md`.
 
 Changes:
