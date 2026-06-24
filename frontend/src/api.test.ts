@@ -30,6 +30,7 @@ import {
   preflightRepository,
   releaseTriggerQuarantine,
   retryRejectedTrigger,
+  evaluateWebhookPayloadDiagnostic,
   getDemoReadiness,
   getTaskReport,
   getTaskDetail,
@@ -319,6 +320,53 @@ test('lists recent webhook deliveries through backend API', async () => {
   expect(deliveries[0].status).toBe('TASK_CREATED');
   expect(deliveries[0].redeliveryRecommended).toBe(false);
   expect(deliveries[0].operatorAction).toBe('Task was created. Do not redeliver this webhook unless you intentionally want GitHub to report a duplicate delivery.');
+});
+
+test('evaluates webhook payload diagnostics through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        status: 'READY_FOR_WEBHOOK',
+        signatureStatus: 'VALID',
+        validJson: true,
+        supportedEvent: true,
+        supportedAction: true,
+        agentFixCommand: true,
+        repositoryOwner: 'octocat',
+        repositoryName: 'hello-world',
+        issueNumber: 42,
+        triggerUser: 'alice',
+        triggerComment: '/agent fix touch docs/webhook-diagnostic.md',
+        message: 'Payload is an issue_comment.created /agent fix trigger.',
+        nextAction: 'Use GitHub redeliver.'
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const result = await evaluateWebhookPayloadDiagnostic({
+    event: 'issue_comment',
+    deliveryId: 'diagnostic-delivery',
+    signature: 'sha256=test',
+    payload: '{"action":"created"}'
+  });
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/github/webhook-diagnostics/evaluate-payload', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      event: 'issue_comment',
+      deliveryId: 'diagnostic-delivery',
+      signature: 'sha256=test',
+      payload: '{"action":"created"}'
+    })
+  });
+  expect(result.status).toBe('READY_FOR_WEBHOOK');
+  expect(result.repositoryOwner).toBe('octocat');
 });
 
 test('gets demo evidence bundle through backend API', async () => {

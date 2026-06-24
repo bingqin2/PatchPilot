@@ -3485,3 +3485,21 @@ Validation so far:
 - `mvn -pl PatchPilot -Dtest=DefaultTriggerEvaluationServiceTests,TaskControllerTests#should_evaluate_manual_trigger_without_creating_task+TaskControllerTests#should_evaluate_issue_comment_trigger_without_creating_task test`: first failed because trigger evaluation had no source field and always used manual gate source; then passed after backend implementation.
 - `npm test -- --run src/api.test.ts src/dashboard/components/ManualTaskForm.test.tsx`: first failed because the form did not send a source, had no GitHub issue-comment source control, and did not render the evaluated source; then passed after frontend implementation, 45 tests run, 0 failures.
 - `mvn -pl PatchPilot -Dtest=TaskControllerTests,DefaultTriggerEvaluationServiceTests test`: passed after focused backend regression verification, 71 tests run, 0 failures.
+
+Implemented webhook payload diagnostic replay from `docs/plans/174-webhook-payload-diagnostic-replay.md`.
+
+Changes:
+
+- Added `POST /api/github/webhook-diagnostics/evaluate-payload` as an admin-protected read-only operator diagnostic endpoint.
+- Returned payload diagnostic status, signature status, JSON validity, supported event/action flags, `/agent fix` recognition, parsed repository/issue/user/comment fields, and a next operator action.
+- Kept diagnostics isolated from real webhook handling: no task creation, queue dispatch, rejected-trigger audit row, delivery diagnostic record, GitHub comment, rate-limit mutation, or model call.
+- Added dashboard webhook payload diagnostic controls to the webhook delivery panel.
+- Added frontend API types/helper and result rendering for signature status, parsed target, message, and next action.
+- Updated README, product spec, architecture, frontend design notes, and this execution log.
+
+Validation so far:
+
+- `mvn -pl PatchPilot -Dtest=WebhookPayloadDiagnosticControllerTests test`: first failed with `404` because the diagnostic endpoint did not exist; then passed after adding the controller, service, DTO, VO, and signature diagnostic status, 3 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts`: first failed because `evaluateWebhookPayloadDiagnostic` was not exported; then passed after adding the API helper.
+- `npm test -- --run src/api.test.ts src/dashboard/components/WebhookDeliveryPanel.test.tsx`: first failed because the webhook delivery panel had no payload diagnostic form or result region; then passed after adding the panel UI, 45 tests run, 0 failures.
+- `npm test -- --run src/App.test.tsx src/api.test.ts src/dashboard/components/WebhookDeliveryPanel.test.tsx -t "renders operational task dashboard|evaluates webhook payload|WebhookDeliveryPanel"`: passed after wiring dashboard state and API calls, 4 tests run, 0 failures.

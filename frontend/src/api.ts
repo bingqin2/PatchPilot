@@ -33,6 +33,8 @@ import type {
   TriggerQuarantine,
   TriggerQuarantineEvidence,
   WebhookDeliveryDiagnostic,
+  WebhookPayloadDiagnosticInput,
+  WebhookPayloadDiagnosticResult,
   FixTaskModelCall,
   FixTaskTestRun,
   FixTaskTimelineEvent,
@@ -233,6 +235,12 @@ export async function getWorkerHealth(): Promise<FixTaskWorkerHealth> {
 
 export async function listWebhookDeliveries(limit = 10): Promise<WebhookDeliveryDiagnostic[]> {
   return getApi<WebhookDeliveryDiagnostic[]>(`/api/github/webhook-deliveries?limit=${limit}`);
+}
+
+export async function evaluateWebhookPayloadDiagnostic(
+  input: WebhookPayloadDiagnosticInput
+): Promise<WebhookPayloadDiagnosticResult> {
+  return postApi<WebhookPayloadDiagnosticResult>('/api/github/webhook-diagnostics/evaluate-payload', input);
 }
 
 export async function listRejectedTriggers(options: number | ListRejectedTriggersOptions = 20): Promise<RejectedTriggerAudit[]> {

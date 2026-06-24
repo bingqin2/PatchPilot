@@ -84,6 +84,7 @@ The current implementation target is local self-hosted development first. Hosted
 - The trigger must include an actionable instruction such as a supported patch operation, a file path, or a concrete failure signal.
 - Non-triggering webhook events should return success and be ignored without creating work.
 - Webhook delivery ids should be tracked to support idempotency.
+- Operators should be able to paste a GitHub delivery payload into an admin-protected read-only diagnostic endpoint and see signature status, JSON validity, event/action support, `/agent fix` recognition, parsed repository/issue fields, and the next operator action without creating tasks or delivery records.
 
 ### Fix Task Creation
 
@@ -265,6 +266,7 @@ MVP frontend scope:
 - Archive the current demo session report into a recent list and copy or download archived Markdown reports during or after a live demo. Database-backed local profiles should persist these archives across backend restarts.
 - Inspect queue worker readiness, last poll age, and operator action before a live issue-to-PR demo.
 - Evaluate a manual `/agent fix` trigger before creating a task and see the gate decisions plus next operator action.
+- Evaluate a pasted GitHub webhook payload before redelivery and see whether the temporary URL, webhook secret, event type, action, and `/agent fix` comment shape look correct.
 
 The frontend does not need to trigger the first backend workflow. GitHub issue comments remain the first trigger.
 
