@@ -60,8 +60,14 @@ class DefaultManualFixTaskServiceTests {
         assertThat(task.triggerUser()).isEqualTo("local-operator");
         assertThat(task.triggerComment()).isEqualTo("/agent fix touch docs/manual-task.md");
         assertThat(task.deliveryId()).startsWith("manual-");
-        assertThat(fixTaskTimelineService.eventTypes()).containsExactly(FixTaskTimelineEventType.TASK_CREATED);
-        assertThat(fixTaskTimelineService.messages()).containsExactly("Task accepted from dashboard manual creation");
+        assertThat(fixTaskTimelineService.eventTypes()).containsExactly(
+                FixTaskTimelineEventType.TRIGGER_ACCEPTED,
+                FixTaskTimelineEventType.TASK_CREATED
+        );
+        assertThat(fixTaskTimelineService.messages()).containsExactly(
+                "Trigger accepted: safety gate accepted; issue context not loaded; model trigger classification disabled",
+                "Task accepted from dashboard manual creation"
+        );
         assertThat(fixTaskDispatcher.taskIds()).containsExactly(task.id());
     }
 
@@ -225,7 +231,7 @@ class DefaultManualFixTaskServiceTests {
     @Test
     void should_use_issue_context_to_classify_short_manual_agent_fix_command() {
         RecordingTriggerIntentClassifier triggerIntentClassifier = new RecordingTriggerIntentClassifier(
-                TriggerIntentDecision.shouldExecute("Issue context describes a concrete test failure."),
+                TriggerIntentDecision.shouldExecute("Issue context describes a concrete failing test."),
                 true
         );
         RecordingIssueContextService issueContextService = new RecordingIssueContextService(issueContext());
@@ -261,7 +267,12 @@ class DefaultManualFixTaskServiceTests {
         assertThat(triggerIntentClassifier.request().recentIssueComments())
                 .extracting(comment -> comment.author() + ": " + comment.body())
                 .containsExactly("alice: Reproduce with the failed status filter and task #123.");
-        assertThat(fixTaskTimelineService.eventTypes()).containsExactly(FixTaskTimelineEventType.TASK_CREATED);
+        assertThat(fixTaskTimelineService.eventTypes()).containsExactly(
+                FixTaskTimelineEventType.TRIGGER_ACCEPTED,
+                FixTaskTimelineEventType.TASK_CREATED
+        );
+        assertThat(fixTaskTimelineService.messages().get(0))
+                .isEqualTo("Trigger accepted: safety gate requested issue-context classification because command is too short to describe a concrete code change; issue context loaded; model accepted trigger: Issue context describes a concrete failing test");
         assertThat(fixTaskDispatcher.taskIds()).containsExactly(task.id());
     }
 

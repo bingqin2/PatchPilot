@@ -1,6 +1,7 @@
 package io.patchpilot.backend.task.domain.enums;
 
 public enum FixTaskTimelineEventType {
+    TRIGGER_ACCEPTED,
     TASK_CREATED,
     STATUS_COMMENT_CREATED,
     STATUS_COMMENT_FAILED,

@@ -8,6 +8,7 @@ import io.patchpilot.backend.safety.CommandSafetyGate;
 import io.patchpilot.backend.safety.NoOpTriggerIntentClassifier;
 import io.patchpilot.backend.safety.NoOpTriggerQuarantineService;
 import io.patchpilot.backend.safety.NoOpTriggerRateLimitService;
+import io.patchpilot.backend.safety.TriggerDecisionEvidenceFormatter;
 import io.patchpilot.backend.safety.domain.RejectedTriggerCategory;
 import io.patchpilot.backend.safety.domain.RecordRejectedTriggerCommand;
 import io.patchpilot.backend.safety.domain.SafetyGateDecision;
@@ -249,7 +250,8 @@ public class DefaultManualFixTaskService implements ManualFixTaskService {
             ));
             throw new IllegalArgumentException(rateLimitDecision.reason());
         }
-        TriggerIntentDecision triggerIntentDecision = classifyTriggerIntent(command);
+        TriggerClassificationResult triggerClassificationResult = classifyTriggerIntent(command);
+        TriggerIntentDecision triggerIntentDecision = triggerClassificationResult.decision();
         if (!triggerIntentDecision.shouldExecute()) {
             rejectedTriggerAuditService.recordRejectedTrigger(new RecordRejectedTriggerCommand(
                     "manual",
@@ -277,6 +279,15 @@ public class DefaultManualFixTaskService implements ManualFixTaskService {
         ));
         fixTaskTimelineService.recordEvent(
                 task.id(),
+                FixTaskTimelineEventType.TRIGGER_ACCEPTED,
+                TriggerDecisionEvidenceFormatter.accepted(
+                        safetyDecision,
+                        triggerIntentDecision,
+                        triggerClassificationResult.issueContextLoaded()
+                )
+        );
+        fixTaskTimelineService.recordEvent(
+                task.id(),
                 FixTaskTimelineEventType.TASK_CREATED,
                 "Task accepted from dashboard manual creation"
         );
@@ -284,37 +295,39 @@ public class DefaultManualFixTaskService implements ManualFixTaskService {
         return task;
     }
 
-    private TriggerIntentDecision classifyTriggerIntent(CreateManualFixTaskCommand command) {
+    private TriggerClassificationResult classifyTriggerIntent(CreateManualFixTaskCommand command) {
         try {
-            GitHubIssueContext issueContext = loadIssueContextForClassification(command);
-            return triggerIntentClassifier.classify(new TriggerIntentClassificationRequest(
-                    classificationId(),
-                    "manual",
-                    command.repositoryOwner(),
-                    command.repositoryName(),
-                    command.issueNumber(),
-                    command.triggerUser(),
-                    command.triggerComment(),
-                    issueContext.title(),
-                    issueContext.body(),
-                    issueComments(issueContext)
-            ));
+            boolean issueContextLoaded = triggerIntentClassifier.supportsIssueContextClassification();
+            GitHubIssueContext issueContext = issueContextLoaded
+                    ? issueContextService.loadIssueContext(
+                            command.repositoryOwner(),
+                            command.repositoryName(),
+                            command.issueNumber()
+                    )
+                    : new GitHubIssueContext("", "", "", List.of());
+            return new TriggerClassificationResult(
+                    triggerIntentClassifier.classify(new TriggerIntentClassificationRequest(
+                            classificationId(),
+                            "manual",
+                            command.repositoryOwner(),
+                            command.repositoryName(),
+                            command.issueNumber(),
+                            command.triggerUser(),
+                            command.triggerComment(),
+                            issueContext.title(),
+                            issueContext.body(),
+                            issueComments(issueContext)
+                    )),
+                    issueContextLoaded
+            );
         } catch (RuntimeException exception) {
-            return TriggerIntentDecision.rejected(
-                    "Model trigger classification failed: unable to load issue context: " + failureReason(exception)
+            return new TriggerClassificationResult(
+                    TriggerIntentDecision.rejected(
+                            "Model trigger classification failed: unable to load issue context: " + failureReason(exception)
+                    ),
+                    false
             );
         }
-    }
-
-    private GitHubIssueContext loadIssueContextForClassification(CreateManualFixTaskCommand command) {
-        if (!triggerIntentClassifier.supportsIssueContextClassification()) {
-            return new GitHubIssueContext("", "", "", List.of());
-        }
-        return issueContextService.loadIssueContext(
-                command.repositoryOwner(),
-                command.repositoryName(),
-                command.issueNumber()
-        );
     }
 
     private boolean canClassifyWithIssueContext(SafetyGateDecision safetyDecision) {
@@ -338,5 +351,8 @@ public class DefaultManualFixTaskService implements ManualFixTaskService {
 
     private static IssueContextService defaultIssueContextService() {
         return new IssueContextService(new GitHubIssueContextClient(new GitHubProperties()));
+    }
+
+    private record TriggerClassificationResult(TriggerIntentDecision decision, boolean issueContextLoaded) {
     }
 }

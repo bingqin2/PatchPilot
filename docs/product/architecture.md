@@ -50,6 +50,7 @@ GitHub issue comment created
   -> TriggerIntentClassifier optionally asks the configured model whether the safe request should execute
   -> RejectedTriggerAuditService records rejected triggering attempts
   -> FixTaskService creates a task
+  -> FixTaskTimelineService records accepted trigger decision evidence
   -> TaskWorker runs asynchronously
   -> WorkspaceService clones the repository
   -> LanguageAdapterRegistry rejects unsupported repositories before model patching
@@ -159,6 +160,7 @@ Responsibilities:
 - Allow operators to create and release trigger quarantines through admin-token-protected `/api/trigger-quarantines` write endpoints.
 - Record manual safety mutations through `OperatorSafetyAuditService` and expose recent rows through `GET /api/operator-safety-audits`.
 - Deduplicate delivery ids.
+- Record accepted trigger evidence on task timelines, including safety-gate outcome, issue-context load status, and model trigger-classification outcome.
 - Submit work to task services.
 
 The webhook layer must not run model calls, clone repositories, or execute tests.

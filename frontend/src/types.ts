@@ -37,6 +37,22 @@ export type WebhookDeliveryDiagnosticStatus =
   | 'TASK_CREATED'
   | 'FAILED';
 
+export type FixTaskTimelineEventType =
+  | 'TRIGGER_ACCEPTED'
+  | 'TASK_CREATED'
+  | 'STATUS_COMMENT_CREATED'
+  | 'STATUS_COMMENT_FAILED'
+  | 'ACTIVE_TASK_EXISTS'
+  | 'RUNNING'
+  | 'RUNNING_TESTS'
+  | 'PENDING_REVIEW'
+  | 'REVIEW_APPROVED'
+  | 'PR_CREATED'
+  | 'COMPLETED'
+  | 'FAILED'
+  | 'CANCELLED'
+  | 'REQUEUED';
+
 export interface ApiResponse<T> {
   success: boolean;
   data: T;
@@ -554,7 +570,7 @@ export interface FixTaskPatchReview {
 export interface FixTaskTimelineEvent {
   id: string;
   taskId: string;
-  eventType: string;
+  eventType: FixTaskTimelineEventType;
   message: string;
   createdAt: string;
 }
