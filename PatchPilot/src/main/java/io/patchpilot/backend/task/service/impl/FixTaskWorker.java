@@ -1,6 +1,7 @@
 package io.patchpilot.backend.task.service.impl;
 
 import io.patchpilot.backend.agent.tool.IssueCommentTool;
+import io.patchpilot.backend.github.client.domain.IssueCommentResult;
 import io.patchpilot.backend.task.domain.enums.FixTaskTimelineEventType;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import io.patchpilot.backend.task.executor.TaskCancellationException;
@@ -45,13 +46,25 @@ public class FixTaskWorker {
             }
             FixTaskVo failedTask = fixTaskService.markFailed(taskId, failureReason);
             recordTimelineEvent(taskId, FixTaskTimelineEventType.FAILED, failureReason);
-            updateStatusComment(taskId, () -> issueCommentTool.updateFailed(failedTask));
+            publishFailureStatusComment(failedTask);
             return;
         }
         recordTimelineEvent(taskId, FixTaskTimelineEventType.PR_CREATED, executionResult.pullRequestUrl());
         FixTaskVo completedTask = fixTaskService.markCompleted(taskId, executionResult.pullRequestUrl());
         recordTimelineEvent(taskId, FixTaskTimelineEventType.COMPLETED, "Task completed");
         updateStatusComment(taskId, () -> issueCommentTool.updateCompleted(completedTask));
+    }
+
+    private void publishFailureStatusComment(FixTaskVo failedTask) {
+        if (failedTask.statusCommentId() != null) {
+            updateStatusComment(failedTask.id(), () -> issueCommentTool.updateFailed(failedTask));
+            return;
+        }
+        updateStatusComment(failedTask.id(), () -> {
+            IssueCommentResult commentResult = issueCommentTool.commentFailed(failedTask, failedTask.failureReason());
+            fixTaskService.attachStatusComment(failedTask.id(), commentResult.id(), commentResult.url());
+            recordTimelineEvent(failedTask.id(), FixTaskTimelineEventType.STATUS_COMMENT_CREATED, "Status comment created");
+        });
     }
 
     private void updateStatusComment(String taskId, Runnable update) {

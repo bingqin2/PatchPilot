@@ -7,6 +7,7 @@ import io.patchpilot.backend.github.client.domain.UpdateIssueCommentCommand;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import io.patchpilot.backend.task.service.PatchReviewFailureClassifier;
+import io.patchpilot.backend.task.service.TaskFailureFeedback;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -146,7 +147,10 @@ public class IssueCommentTool {
             body.append(PatchReviewFailureClassifier.STATUS_COMMENT_RECOVERY).append("\n");
         }
         if (StringUtils.hasText(failureReason)) {
-            body.append("Reason: ").append(failureReason).append("\n");
+            TaskFailureFeedback feedback = TaskFailureFeedback.from(failureReason);
+            body.append("Failure category: ").append(feedback.category()).append("\n");
+            body.append("Next action: ").append(feedback.nextAction()).append("\n");
+            body.append("Reason: ").append(feedback.safeReason()).append("\n");
         }
         return body.toString();
     }

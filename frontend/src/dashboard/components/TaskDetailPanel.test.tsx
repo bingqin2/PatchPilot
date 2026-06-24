@@ -141,6 +141,36 @@ test('shows execution evidence summary for selected task', () => {
   expect(screen.getByText('Verify python3 -m pytest')).toBeInTheDocument();
 });
 
+test('labels failed task status comment as failure feedback', () => {
+  render(
+    <TaskDetailPanel
+      task={{
+        ...task,
+        status: 'FAILED',
+        failureReason: 'verification failed: npm test failed',
+        pullRequestUrl: null,
+        completedAt: null,
+        statusCommentId: 123,
+        statusCommentUrl: 'https://github.com/bingqin2/PatchPilot/issues/1#issuecomment-123'
+      }}
+      detail={baseDetail}
+      loading={false}
+      actionInFlight={false}
+      reviewApprovalAllowedOperators={['release-captain']}
+      onCancelTask={vi.fn()}
+      onRetryTask={vi.fn()}
+      onApproveReview={vi.fn()}
+      onCopyReport={vi.fn()}
+    />
+  );
+
+  expect(screen.getByRole('link', { name: /Failure feedback/i })).toHaveAttribute(
+    'href',
+    'https://github.com/bingqin2/PatchPilot/issues/1#issuecomment-123'
+  );
+  expect(screen.queryByRole('link', { name: /Status Comment/i })).not.toBeInTheDocument();
+});
+
 test('shows patch review evidence for model generated edits', () => {
   render(
     <TaskDetailPanel

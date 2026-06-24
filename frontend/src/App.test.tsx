@@ -53,8 +53,8 @@ const failedTask = {
   buildSystem: 'npm',
   verificationCommand: 'npm test',
   adapterDetectionReason: 'package.json contains a non-empty scripts.test',
-  statusCommentId: null,
-  statusCommentUrl: null,
+  statusCommentId: 202,
+  statusCommentUrl: 'https://github.com/bingqin2/PatchPilot/issues/2#issuecomment-202',
   riskReviewApprovedAt: null,
   riskReviewApprovedBy: null,
   riskReviewApprovalReason: null,
@@ -1355,6 +1355,10 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(statusCommentLinks[1]).toHaveAttribute(
     'href',
     'https://github.com/bingqin2/PatchPilot/issues/1#issuecomment-4756084894'
+  );
+  expect(screen.getByRole('link', { name: 'Failure feedback' })).toHaveAttribute(
+    'href',
+    'https://github.com/bingqin2/PatchPilot/issues/2#issuecomment-202'
   );
 
   expect(screen.getByText('Completion')).toBeInTheDocument();

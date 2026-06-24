@@ -25,7 +25,7 @@ PatchPilot is not a chatbot and does not auto-merge code. The current target is 
 - Human approval flow for generated-diff risk rejections: `PENDING_REVIEW` tasks expose the generated diff for inspection, then can be cancelled or explicitly approved to resume from the already-generated workspace and continue verification, commit, push, and Pull Request creation.
 - Unsupported repository preflight that fails before patch generation, test execution, Git mutation, or Pull Request creation.
 - OpenAI-compatible model client and plan-driven patch workflow.
-- Issue comment status updates for accepted, running, verification, success, and failure states.
+- Issue comment status updates for accepted, running, verification, success, and failure states, including best-effort failure feedback creation when the original status comment is missing.
 - Demo readiness gate that summarizes credentials, adapter fixtures, queue health, worker heartbeat readiness, and recent PR evidence before a live smoke run.
 - Live demo smoke checklist that turns readiness, webhook delivery, task execution, and Pull Request evidence into ordered operator steps.
 - Demo evidence bundle that combines readiness, smoke-check, configuration, adapter, queue, webhook, rejected-trigger, quarantine, and recent Pull Request evidence for one demo-ready summary.
