@@ -170,6 +170,10 @@ export async function getDemoSessionSnapshot(): Promise<DemoSessionSnapshot> {
   return getApi<DemoSessionSnapshot>('/api/demo/session-snapshot');
 }
 
+export async function getDemoSessionReport(): Promise<string> {
+  return getApi<string>('/api/demo/session-report');
+}
+
 export async function getDemoRunbook(): Promise<string> {
   return getApi<string>('/api/demo/runbook');
 }

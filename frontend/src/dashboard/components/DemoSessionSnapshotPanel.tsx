@@ -1,13 +1,27 @@
+import { Copy } from 'lucide-react';
+import { useState } from 'react';
 import type { DemoReadinessStatus, DemoSessionSnapshot } from '../../types';
 import { compactDateTime } from '../format';
 
 interface DemoSessionSnapshotPanelProps {
   snapshot: DemoSessionSnapshot | null;
   error: string | null;
+  onCopyReport: () => Promise<string>;
 }
 
-export function DemoSessionSnapshotPanel({ snapshot, error }: DemoSessionSnapshotPanelProps) {
+export function DemoSessionSnapshotPanel({ snapshot, error, onCopyReport }: DemoSessionSnapshotPanelProps) {
+  const [copyStatus, setCopyStatus] = useState<string | null>(null);
   const scriptStepCount = snapshot?.script.steps.length ?? 0;
+
+  async function copySessionReport() {
+    try {
+      const report = await onCopyReport();
+      await navigator.clipboard.writeText(report);
+      setCopyStatus('Demo session report copied');
+    } catch {
+      setCopyStatus('Copy failed');
+    }
+  }
 
   return (
     <section className="panel demo-session-panel" aria-label="Demo session snapshot">
@@ -22,6 +36,11 @@ export function DemoSessionSnapshotPanel({ snapshot, error }: DemoSessionSnapsho
               {statusLabel(snapshot.status)}
             </span>
             <time dateTime={snapshot.generatedAt}>{compactDateTime(snapshot.generatedAt)}</time>
+            <button className="secondary-button" type="button" onClick={() => void copySessionReport()}>
+              <Copy size={14} />
+              Copy session report
+            </button>
+            {copyStatus ? <span className="copy-status">{copyStatus}</span> : null}
           </div>
         ) : null}
       </div>

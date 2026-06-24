@@ -10,6 +10,7 @@ import {
   getConfigurationSummary,
   getDemoEvidenceBundle,
   getDemoSessionSnapshot,
+  getDemoSessionReport,
   getDemoScript,
   getDemoRunbook,
   getDemoReadiness,
@@ -670,6 +671,7 @@ export default function App() {
 
   const handleCopyReport = useCallback((taskId: string) => getTaskReport(taskId), []);
   const handleCopyDemoRunbook = useCallback(() => getDemoRunbook(), []);
+  const handleCopyDemoSessionReport = useCallback(() => getDemoSessionReport(), []);
 
   const handleCreateTask = useCallback(async (input: CreateTaskInput) => {
     setCreatingTask(true);
@@ -876,7 +878,11 @@ export default function App() {
         onCopyRunbook={handleCopyDemoRunbook}
       />
 
-      <DemoSessionSnapshotPanel snapshot={demoSessionSnapshot} error={demoSessionSnapshotError} />
+      <DemoSessionSnapshotPanel
+        snapshot={demoSessionSnapshot}
+        error={demoSessionSnapshotError}
+        onCopyReport={handleCopyDemoSessionReport}
+      />
 
       <DemoScriptPanel script={demoScript} error={demoScriptError} />
 

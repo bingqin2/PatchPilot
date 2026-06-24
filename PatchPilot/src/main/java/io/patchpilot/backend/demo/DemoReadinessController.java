@@ -22,6 +22,7 @@ public class DemoReadinessController {
     private final DemoRunbookService demoRunbookService;
     private final DemoScriptService demoScriptService;
     private final DemoSessionSnapshotService demoSessionSnapshotService;
+    private final DemoSessionReportService demoSessionReportService;
 
     @GetMapping("/readiness")
     public ApiResponse<DemoReadinessVo> getReadiness() {
@@ -51,5 +52,10 @@ public class DemoReadinessController {
     @GetMapping("/session-snapshot")
     public ApiResponse<DemoSessionSnapshotVo> getSessionSnapshot() {
         return ApiResponse.ok(demoSessionSnapshotService.getSessionSnapshot());
+    }
+
+    @GetMapping("/session-report")
+    public ApiResponse<String> getSessionReport() {
+        return ApiResponse.ok(demoSessionReportService.getSessionReport());
     }
 }

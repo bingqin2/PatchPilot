@@ -10,6 +10,7 @@ import {
   getModelUsageSummary,
   getDemoScript,
   getDemoSessionSnapshot,
+  getDemoSessionReport,
   getDemoSmokeChecklist,
   getDemoEvidenceBundle,
   getDemoRunbook,
@@ -454,6 +455,25 @@ test('loads demo runbook markdown from backend API', async () => {
   expect(fetchMock).toHaveBeenCalledWith('/api/demo/runbook');
   expect(runbook).toContain('# PatchPilot Demo Runbook');
   expect(runbook).toContain('`READY`');
+});
+
+test('loads demo session report markdown from backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: '# PatchPilot Demo Session Report\n\n- Status: `READY`',
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const report = await getDemoSessionReport();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/session-report');
+  expect(report).toContain('# PatchPilot Demo Session Report');
+  expect(report).toContain('`READY`');
 });
 
 test('lists recent rejected triggers through backend API', async () => {

@@ -51,6 +51,9 @@ class DemoReadinessControllerTests {
     @MockitoBean
     private DemoSessionSnapshotService demoSessionSnapshotService;
 
+    @MockitoBean
+    private DemoSessionReportService demoSessionReportService;
+
     @Test
     void should_return_demo_readiness_summary() throws Exception {
         when(demoReadinessService.getReadiness()).thenReturn(new DemoReadinessVo(
@@ -287,5 +290,22 @@ class DemoReadinessControllerTests {
                 .andExpect(jsonPath("$.data.healthContract[0]").value("GET /api/demo/session-snapshot is read-only: it does not create tasks, call the model, run tests, mutate Git, or write to GitHub."))
                 .andExpect(jsonPath("$.data.shareSummary").value(org.hamcrest.Matchers.containsString("READY")))
                 .andExpect(jsonPath("$.data.nextActions[0]").value("Follow the script from step 1 through Pull Request review."));
+    }
+
+    @Test
+    void should_return_demo_session_report_markdown() throws Exception {
+        when(demoSessionReportService.getSessionReport()).thenReturn("""
+                # PatchPilot Demo Session Report
+
+                - Session: `demo-session-20260624T003000Z`
+                - Status: `READY`
+                """);
+
+        mockMvc.perform(get("/api/demo/session-report"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("# PatchPilot Demo Session Report")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("demo-session-20260624T003000Z")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("`READY`")));
     }
 }

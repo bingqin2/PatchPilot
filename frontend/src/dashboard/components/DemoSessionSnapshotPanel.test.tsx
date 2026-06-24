@@ -1,4 +1,5 @@
 import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import type { DemoSessionSnapshot } from '../../types';
 import { DemoSessionSnapshotPanel } from './DemoSessionSnapshotPanel';
 
@@ -113,7 +114,7 @@ const snapshot: DemoSessionSnapshot = {
 };
 
 test('renders demo session snapshot summary, evidence, checklist, and contract', () => {
-  render(<DemoSessionSnapshotPanel snapshot={snapshot} error={null} />);
+  render(<DemoSessionSnapshotPanel snapshot={snapshot} error={null} onCopyReport={vi.fn()} />);
 
   const panel = screen.getByRole('region', { name: 'Demo session snapshot' });
   expect(within(panel).getByRole('heading', { name: 'Demo session snapshot' })).toBeInTheDocument();
@@ -129,13 +130,30 @@ test('renders demo session snapshot summary, evidence, checklist, and contract',
 });
 
 test('shows loading and API errors without hiding snapshot data', () => {
-  const { rerender } = render(<DemoSessionSnapshotPanel snapshot={null} error={null} />);
+  const { rerender } = render(<DemoSessionSnapshotPanel snapshot={null} error={null} onCopyReport={vi.fn()} />);
 
   expect(screen.getByText('Demo session snapshot has not loaded yet.')).toBeInTheDocument();
 
-  rerender(<DemoSessionSnapshotPanel snapshot={snapshot} error="Backend request failed" />);
+  rerender(<DemoSessionSnapshotPanel snapshot={snapshot} error="Backend request failed" onCopyReport={vi.fn()} />);
 
   expect(screen.getByText('Demo session snapshot unavailable')).toBeInTheDocument();
   expect(screen.getByText('Backend request failed')).toBeInTheDocument();
   expect(screen.getByText('demo-session-20260624T003000Z')).toBeInTheDocument();
+});
+
+test('copies demo session report markdown', async () => {
+  const writeText = vi.fn().mockResolvedValue(undefined);
+  const onCopyReport = vi.fn().mockResolvedValue('# PatchPilot Demo Session Report\n\n- Status: `READY`');
+  Object.defineProperty(navigator, 'clipboard', {
+    configurable: true,
+    value: { writeText }
+  });
+
+  render(<DemoSessionSnapshotPanel snapshot={snapshot} error={null} onCopyReport={onCopyReport} />);
+
+  await userEvent.click(screen.getByRole('button', { name: 'Copy session report' }));
+
+  expect(onCopyReport).toHaveBeenCalledTimes(1);
+  expect(writeText).toHaveBeenCalledWith('# PatchPilot Demo Session Report\n\n- Status: `READY`');
+  expect(screen.getByText('Demo session report copied')).toBeInTheDocument();
 });
