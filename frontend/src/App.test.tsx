@@ -746,7 +746,8 @@ const configurationSummary = {
   generatedDiffProtectedPathCount: 15,
   allowedTriggerUsers: ['bingqin2', 'local-operator'],
   allowedRepositories: ['bingqin2/PatchPilot'],
-  reviewApprovalAllowedOperators: ['release-captain', 'local-operator']
+  reviewApprovalAllowedOperators: ['release-captain', 'local-operator'],
+  repositoryPreflightAllowedRootDirs: ['/tmp/patchpilot/workspaces', 'docs/demo-repositories']
 };
 
 const demoReadiness = {

@@ -1,6 +1,7 @@
 package io.patchpilot.backend.language;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.patchpilot.backend.language.config.RepositoryPreflightProperties;
 import io.patchpilot.backend.language.domain.LanguageDetectionResult;
 import io.patchpilot.backend.language.domain.RepositoryPreflightRequest;
 import org.junit.jupiter.api.Test;
@@ -34,7 +35,8 @@ class RepositoryPreflightControllerTests {
                                 List.of("mvn", "test"),
                                 "Detected Maven project"
                         ))),
-                        new LanguageAdapterCatalogService()
+                        new LanguageAdapterCatalogService(),
+                        preflightProperties(repositoryDir)
                 )))
                 .build();
 
@@ -58,7 +60,8 @@ class RepositoryPreflightControllerTests {
         MockMvc mockMvc = MockMvcBuilders
                 .standaloneSetup(new RepositoryPreflightController(new RepositoryPreflightService(
                         new LanguageAdapterRegistry(List.of()),
-                        new LanguageAdapterCatalogService()
+                        new LanguageAdapterCatalogService(),
+                        preflightProperties(repositoryDir)
                 )))
                 .build();
 
@@ -68,5 +71,34 @@ class RepositoryPreflightControllerTests {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.message").value("repositoryPath is required"));
+    }
+
+    @Test
+    void should_return_bad_request_for_repository_path_outside_allowed_roots(@TempDir Path outsideDir) throws Exception {
+        MockMvc mockMvc = MockMvcBuilders
+                .standaloneSetup(new RepositoryPreflightController(new RepositoryPreflightService(
+                        new LanguageAdapterRegistry(List.of(path -> LanguageDetectionResult.supported(
+                                "java",
+                                "maven",
+                                List.of("mvn", "test"),
+                                "Detected Maven project"
+                        ))),
+                        new LanguageAdapterCatalogService(),
+                        preflightProperties(repositoryDir)
+                )))
+                .build();
+
+        mockMvc.perform(post("/api/repository-preflight")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new RepositoryPreflightRequest(outsideDir.toString()))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("Repository preflight path is outside allowed roots"));
+    }
+
+    private static RepositoryPreflightProperties preflightProperties(Path allowedRoot) {
+        RepositoryPreflightProperties properties = new RepositoryPreflightProperties();
+        properties.setAllowedRootDirs(List.of(allowedRoot));
+        return properties;
     }
 }

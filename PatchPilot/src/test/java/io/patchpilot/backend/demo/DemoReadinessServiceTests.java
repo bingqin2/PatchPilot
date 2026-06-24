@@ -217,7 +217,8 @@ class DemoReadinessServiceTests {
                 15,
                 List.of("bingqin2"),
                 List.of("bingqin2/PatchPilot"),
-                List.of("release-captain")
+                List.of("release-captain"),
+                List.of("/tmp/patchpilot/workspaces")
         );
     }
 
@@ -260,7 +261,8 @@ class DemoReadinessServiceTests {
                 15,
                 allowedTriggerUsers,
                 allowedRepositories,
-                reviewApprovalAllowedOperators
+                reviewApprovalAllowedOperators,
+                List.of("/tmp/patchpilot/workspaces")
         );
     }
 

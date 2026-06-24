@@ -32,6 +32,7 @@ public record ConfigurationSummaryVo(
         int generatedDiffProtectedPathCount,
         List<String> allowedTriggerUsers,
         List<String> allowedRepositories,
-        List<String> reviewApprovalAllowedOperators
+        List<String> reviewApprovalAllowedOperators,
+        List<String> repositoryPreflightAllowedRootDirs
 ) {
 }

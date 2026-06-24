@@ -3,9 +3,12 @@ package io.patchpilot.backend.language;
 import io.patchpilot.backend.language.domain.LanguageDetectionResult;
 import io.patchpilot.backend.language.domain.RepositoryPreflightRequest;
 import io.patchpilot.backend.language.domain.RepositoryPreflightVo;
+import io.patchpilot.backend.language.config.RepositoryPreflightProperties;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -18,7 +21,7 @@ class RepositoryPreflightServiceTests {
     private Path repositoryDir;
 
     @Test
-    void should_return_supported_preflight_when_registry_detects_repository() {
+    void should_return_supported_preflight_when_registry_detects_allowed_repository() {
         RepositoryPreflightService service = new RepositoryPreflightService(
                 new LanguageAdapterRegistry(List.of(path -> LanguageDetectionResult.supported(
                         "java",
@@ -26,7 +29,8 @@ class RepositoryPreflightServiceTests {
                         List.of("mvn", "test"),
                         "Detected Maven project"
                 ))),
-                new LanguageAdapterCatalogService()
+                new LanguageAdapterCatalogService(),
+                preflightProperties(repositoryDir)
         );
 
         RepositoryPreflightVo result = service.preflight(new RepositoryPreflightRequest(repositoryDir.toString()));
@@ -45,7 +49,8 @@ class RepositoryPreflightServiceTests {
     void should_return_unsupported_preflight_with_adapter_guidance() {
         RepositoryPreflightService service = new RepositoryPreflightService(
                 new LanguageAdapterRegistry(List.of()),
-                new LanguageAdapterCatalogService()
+                new LanguageAdapterCatalogService(),
+                preflightProperties(repositoryDir)
         );
 
         RepositoryPreflightVo result = service.preflight(new RepositoryPreflightRequest(repositoryDir.toString()));
@@ -68,7 +73,8 @@ class RepositoryPreflightServiceTests {
                         List.of("mvn", "test"),
                         "Detected Maven project"
                 ))),
-                new LanguageAdapterCatalogService()
+                new LanguageAdapterCatalogService(),
+                preflightProperties(repositoryDir)
         );
         Path missingPath = repositoryDir.resolve("missing");
 
@@ -84,11 +90,37 @@ class RepositoryPreflightServiceTests {
     void should_reject_blank_repository_path() {
         RepositoryPreflightService service = new RepositoryPreflightService(
                 new LanguageAdapterRegistry(List.of()),
-                new LanguageAdapterCatalogService()
+                new LanguageAdapterCatalogService(),
+                preflightProperties(repositoryDir)
         );
 
         assertThatThrownBy(() -> service.preflight(new RepositoryPreflightRequest(" ")))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("repositoryPath is required");
+    }
+
+    @Test
+    void should_reject_repository_path_outside_allowed_preflight_roots(@TempDir Path outsideDir) throws IOException {
+        Files.createFile(outsideDir.resolve("pom.xml"));
+        RepositoryPreflightService service = new RepositoryPreflightService(
+                new LanguageAdapterRegistry(List.of(path -> LanguageDetectionResult.supported(
+                        "java",
+                        "maven",
+                        List.of("mvn", "test"),
+                        "Detected Maven project"
+                ))),
+                new LanguageAdapterCatalogService(),
+                preflightProperties(repositoryDir)
+        );
+
+        assertThatThrownBy(() -> service.preflight(new RepositoryPreflightRequest(outsideDir.toString())))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Repository preflight path is outside allowed roots");
+    }
+
+    private static RepositoryPreflightProperties preflightProperties(Path allowedRoot) {
+        RepositoryPreflightProperties properties = new RepositoryPreflightProperties();
+        properties.setAllowedRootDirs(List.of(allowedRoot));
+        return properties;
     }
 }

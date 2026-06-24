@@ -2,6 +2,7 @@ package io.patchpilot.backend.configuration;
 
 import io.patchpilot.backend.agent.config.AgentProperties;
 import io.patchpilot.backend.github.config.GitHubProperties;
+import io.patchpilot.backend.language.config.RepositoryPreflightProperties;
 import io.patchpilot.backend.safety.GeneratedDiffSafetyPolicy;
 import io.patchpilot.backend.safety.config.SafetyProperties;
 import io.patchpilot.backend.security.config.AdminApiSecurityProperties;
@@ -38,6 +39,12 @@ class ConfigurationSummaryServiceTests {
         reviewApprovalProperties.setAllowedOperators(List.of(" release-captain ", "RELEASE-CAPTAIN", "local-operator", ""));
         AdminApiSecurityProperties adminApiSecurityProperties = new AdminApiSecurityProperties();
         adminApiSecurityProperties.setAdminToken("test-admin-token");
+        RepositoryPreflightProperties repositoryPreflightProperties = new RepositoryPreflightProperties();
+        repositoryPreflightProperties.setAllowedRootDirs(List.of(
+                Path.of("/tmp/patchpilot/workspaces"),
+                Path.of("docs/demo-repositories"),
+                Path.of("/tmp/patchpilot/workspaces")
+        ));
 
         ConfigurationSummaryVo summary = new ConfigurationSummaryService(
                 agentProperties,
@@ -47,7 +54,8 @@ class ConfigurationSummaryServiceTests {
                 safetyProperties,
                 reviewApprovalProperties,
                 adminApiSecurityProperties,
-                new GeneratedDiffSafetyPolicy()
+                new GeneratedDiffSafetyPolicy(),
+                repositoryPreflightProperties
         ).getConfigurationSummary();
 
         assertThat(summary.reviewApprovalAllowedOperators()).containsExactly("release-captain", "local-operator");
@@ -63,5 +71,9 @@ class ConfigurationSummaryServiceTests {
         assertThat(summary.rejectedTriggerQuarantineWindowMs()).isEqualTo(900_000);
         assertThat(summary.rejectedTriggerQuarantineThreshold()).isEqualTo(4);
         assertThat(summary.rejectedTriggerQuarantineCooldownMs()).isEqualTo(1_800_000);
+        assertThat(summary.repositoryPreflightAllowedRootDirs()).containsExactly(
+                "/tmp/patchpilot/workspaces",
+                Path.of("..").resolve("docs/demo-repositories").toAbsolutePath().normalize().toString()
+        );
     }
 }

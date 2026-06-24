@@ -1,5 +1,6 @@
 package io.patchpilot.backend.language;
 
+import io.patchpilot.backend.language.config.RepositoryPreflightProperties;
 import io.patchpilot.backend.language.domain.LanguageDetectionResult;
 import io.patchpilot.backend.language.domain.RepositoryPreflightRequest;
 import io.patchpilot.backend.language.domain.RepositoryPreflightVo;
@@ -23,10 +24,12 @@ public class RepositoryPreflightService {
 
     private final LanguageAdapterRegistry languageAdapterRegistry;
     private final LanguageAdapterCatalogService languageAdapterCatalogService;
+    private final RepositoryPreflightProperties repositoryPreflightProperties;
 
     public RepositoryPreflightVo preflight(RepositoryPreflightRequest request) {
         String repositoryPath = normalizeInputPath(request);
         Path resolvedRepositoryPath = resolveRepositoryPath(repositoryPath);
+        validateAllowedRoot(resolvedRepositoryPath);
         if (!Files.isDirectory(resolvedRepositoryPath)) {
             return unsupported(
                     repositoryPath,
@@ -82,5 +85,14 @@ public class RepositoryPreflightService {
             return currentDirectoryPath;
         }
         return Path.of("..").resolve(inputPath).toAbsolutePath().normalize();
+    }
+
+    private void validateAllowedRoot(Path resolvedRepositoryPath) {
+        List<Path> allowedRootDirs = repositoryPreflightProperties.normalizedAllowedRootDirs();
+        boolean allowed = allowedRootDirs.stream()
+                .anyMatch(resolvedRepositoryPath::startsWith);
+        if (!allowed) {
+            throw new IllegalArgumentException("Repository preflight path is outside allowed roots");
+        }
     }
 }
