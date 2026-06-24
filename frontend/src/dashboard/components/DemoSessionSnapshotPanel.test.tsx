@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { DemoSessionSnapshot } from '../../types';
+import type { DemoSessionArchive, DemoSessionSnapshot } from '../../types';
 import { DemoSessionSnapshotPanel } from './DemoSessionSnapshotPanel';
 
 const snapshot: DemoSessionSnapshot = {
@@ -113,32 +113,77 @@ const snapshot: DemoSessionSnapshot = {
   nextActions: ['Follow the script from step 1 through Pull Request review.']
 };
 
-test('renders demo session snapshot summary, evidence, checklist, and contract', () => {
-  render(<DemoSessionSnapshotPanel snapshot={snapshot} error={null} onCopyReport={vi.fn()} />);
+const archives: DemoSessionArchive[] = [
+  {
+    id: 'archive-1',
+    sessionId: 'demo-session-20260624T003000Z',
+    status: 'READY',
+    summary: 'Demo session snapshot is ready.',
+    shareSummary: 'Status READY; recent task task-1; recent PR https://github.com/bingqin2/PatchPilot/pull/42.',
+    recentPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+    createdAt: '2026-06-24T04:00:00Z',
+    report: '# PatchPilot Demo Session Report\n\n- Status: `READY`'
+  }
+];
+
+test('renders demo session snapshot summary, evidence, checklist, contract, and archives', () => {
+  render(
+    <DemoSessionSnapshotPanel
+      snapshot={snapshot}
+      archives={archives}
+      error={null}
+      archiveError={null}
+      onCopyReport={vi.fn()}
+      onArchiveSession={vi.fn()}
+    />
+  );
 
   const panel = screen.getByRole('region', { name: 'Demo session snapshot' });
   expect(within(panel).getByRole('heading', { name: 'Demo session snapshot' })).toBeInTheDocument();
-  expect(within(panel).getByText('demo-session-20260624T003000Z')).toBeInTheDocument();
+  expect(within(panel).getAllByText('demo-session-20260624T003000Z')).toHaveLength(2);
   expect(within(panel).getByText('Demo session snapshot is ready.')).toBeInTheDocument();
   expect(within(panel).getAllByText('Ready')).toHaveLength(2);
-  expect(within(panel).getByText('Status READY; recent task task-1; recent PR https://github.com/bingqin2/PatchPilot/pull/42.')).toBeInTheDocument();
+  expect(
+    within(panel).getAllByText('Status READY; recent task task-1; recent PR https://github.com/bingqin2/PatchPilot/pull/42.')
+  ).toHaveLength(2);
   expect(within(panel).getByText('https://github.com/bingqin2/PatchPilot/pull/42')).toBeInTheDocument();
   expect(within(panel).getByText('task-1')).toBeInTheDocument();
   expect(within(panel).getByText('1 step')).toBeInTheDocument();
   expect(within(panel).getByText('Open the dashboard and confirm the demo session snapshot status.')).toBeInTheDocument();
   expect(within(panel).getByText(/does not create tasks, call the model, run tests, mutate Git, or write to GitHub/)).toBeInTheDocument();
+  expect(within(panel).getByRole('heading', { name: 'Recent session archives' })).toBeInTheDocument();
+  expect(within(panel).getByText('archive-1')).toBeInTheDocument();
 });
 
 test('shows loading and API errors without hiding snapshot data', () => {
-  const { rerender } = render(<DemoSessionSnapshotPanel snapshot={null} error={null} onCopyReport={vi.fn()} />);
+  const { rerender } = render(
+    <DemoSessionSnapshotPanel
+      snapshot={null}
+      archives={[]}
+      error={null}
+      archiveError={null}
+      onCopyReport={vi.fn()}
+      onArchiveSession={vi.fn()}
+    />
+  );
 
   expect(screen.getByText('Demo session snapshot has not loaded yet.')).toBeInTheDocument();
 
-  rerender(<DemoSessionSnapshotPanel snapshot={snapshot} error="Backend request failed" onCopyReport={vi.fn()} />);
+  rerender(
+    <DemoSessionSnapshotPanel
+      snapshot={snapshot}
+      archives={archives}
+      error="Backend request failed"
+      archiveError="Archive request failed"
+      onCopyReport={vi.fn()}
+      onArchiveSession={vi.fn()}
+    />
+  );
 
   expect(screen.getByText('Demo session snapshot unavailable')).toBeInTheDocument();
   expect(screen.getByText('Backend request failed')).toBeInTheDocument();
-  expect(screen.getByText('demo-session-20260624T003000Z')).toBeInTheDocument();
+  expect(screen.getByText('Archive request failed')).toBeInTheDocument();
+  expect(screen.getAllByText('demo-session-20260624T003000Z')).toHaveLength(2);
 });
 
 test('copies demo session report markdown', async () => {
@@ -149,11 +194,48 @@ test('copies demo session report markdown', async () => {
     value: { writeText }
   });
 
-  render(<DemoSessionSnapshotPanel snapshot={snapshot} error={null} onCopyReport={onCopyReport} />);
+  render(
+    <DemoSessionSnapshotPanel
+      snapshot={snapshot}
+      archives={[]}
+      error={null}
+      archiveError={null}
+      onCopyReport={onCopyReport}
+      onArchiveSession={vi.fn()}
+    />
+  );
 
   await userEvent.click(screen.getByRole('button', { name: 'Copy session report' }));
 
   expect(onCopyReport).toHaveBeenCalledTimes(1);
   expect(writeText).toHaveBeenCalledWith('# PatchPilot Demo Session Report\n\n- Status: `READY`');
   expect(screen.getByText('Demo session report copied')).toBeInTheDocument();
+});
+
+test('archives current demo session and copies archived report markdown', async () => {
+  const writeText = vi.fn().mockResolvedValue(undefined);
+  const onArchiveSession = vi.fn().mockResolvedValue(archives[0]);
+  Object.defineProperty(navigator, 'clipboard', {
+    configurable: true,
+    value: { writeText }
+  });
+
+  render(
+    <DemoSessionSnapshotPanel
+      snapshot={snapshot}
+      archives={archives}
+      error={null}
+      archiveError={null}
+      onCopyReport={vi.fn()}
+      onArchiveSession={onArchiveSession}
+    />
+  );
+
+  await userEvent.click(screen.getByRole('button', { name: 'Archive session' }));
+  await userEvent.click(screen.getByRole('button', { name: 'Copy archived session report archive-1' }));
+
+  expect(onArchiveSession).toHaveBeenCalledTimes(1);
+  expect(screen.getByText('Demo session archived')).toBeInTheDocument();
+  expect(writeText).toHaveBeenCalledWith('# PatchPilot Demo Session Report\n\n- Status: `READY`');
+  expect(screen.getByText('Archived session report copied')).toBeInTheDocument();
 });

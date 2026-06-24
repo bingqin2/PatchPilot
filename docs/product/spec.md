@@ -243,6 +243,7 @@ MVP frontend scope:
 - Follow a read-only demo script that gives ordered operator actions, verification commands, troubleshooting targets, and health-contract guarantees before and during a live smoke run.
 - Copy a Markdown demo runbook generated from the current evidence bundle.
 - Copy a Markdown demo session report generated from the current session snapshot.
+- Archive the current demo session report into a recent, process-local list and copy archived Markdown reports during or after a live demo.
 
 The frontend does not need to trigger the first backend workflow. GitHub issue comments remain the first trigger.
 

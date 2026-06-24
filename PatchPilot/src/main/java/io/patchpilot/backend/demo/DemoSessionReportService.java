@@ -25,6 +25,10 @@ public class DemoSessionReportService {
 
     public String getSessionReport() {
         DemoSessionSnapshotVo snapshot = snapshotSupplier.get();
+        return formatSessionReport(snapshot);
+    }
+
+    String formatSessionReport(DemoSessionSnapshotVo snapshot) {
         StringBuilder report = new StringBuilder()
                 .append("# PatchPilot Demo Session Report\n\n")
                 .append("- Session: `").append(snapshot.sessionId()).append("`\n")

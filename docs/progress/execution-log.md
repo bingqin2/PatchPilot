@@ -3120,3 +3120,23 @@ Validation so far:
 - `npm test`: passed after full frontend verification, 142 tests run, 0 failures.
 - `npm run build`: passed after production frontend build verification.
 - `git diff --check`: passed after whitespace verification.
+
+Implemented demo session archive from `docs/plans/155-demo-session-archive.md`.
+
+Changes:
+
+- Added process-local demo session archives capped to the latest 20 entries.
+- Added `POST /api/demo/session-archives` to archive the current demo session snapshot and Markdown report.
+- Added `GET /api/demo/session-archives` to list recent archived session reports.
+- Reused the same snapshot for archive metadata and Markdown report generation.
+- Added frontend API helpers, archive loading, an `Archive session` dashboard action, archive error handling, and recent archive copy actions in the demo session snapshot panel.
+- Updated README, product spec, architecture notes, frontend design notes, and this execution log.
+
+Validation so far:
+
+- `JAVA_HOME=/Library/Java/JavaVirtualMachines/openjdk-17.jdk/Contents/Home mvn -pl PatchPilot -Dtest=DemoSessionArchiveServiceTests,DemoReadinessControllerTests test`: first failed because archive service/models/endpoints did not exist; then failed because equal timestamps were sorted by string id; then passed after preserving newest-first insertion order and capping the in-memory archive, 11 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts src/dashboard/components/DemoSessionSnapshotPanel.test.tsx src/App.test.tsx`: first failed because archive API helpers and panel actions did not exist; then failed because the new archive list intentionally duplicated session id/share-summary text from the current snapshot; then passed after updating the assertions to match current-plus-archive rendering, 99 tests run, 0 failures.
+- `GIT_OPTIONAL_LOCKS=0 git diff --check`: passed after whitespace verification.
+- `JAVA_HOME=/Library/Java/JavaVirtualMachines/openjdk-17.jdk/Contents/Home mvn -pl PatchPilot test`: passed after full backend verification, 586 tests run, 0 failures.
+- `npm test`: passed after full frontend verification, 151 tests run, 0 failures.
+- `npm run build`: passed after production frontend build verification.
