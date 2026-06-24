@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react
 import {
   ADMIN_TOKEN_STORAGE_KEY,
   approveTaskReview,
+  archiveDemoSession,
   cancelTask,
   createTask,
   createTriggerQuarantine,
@@ -27,6 +28,7 @@ import {
   getTaskStatusCounts,
   listLanguageAdapterFixtures,
   listLanguageAdapters,
+  listDemoSessionArchives,
   listOperatorSafetyAudits,
   listQueueItems,
   listRejectedTriggers,
@@ -71,6 +73,7 @@ import type {
   DemoReadiness,
   DemoEvidenceBundle,
   DemoScript,
+  DemoSessionArchive,
   DemoSessionSnapshot,
   DemoSmokeChecklist,
   FixTask,
@@ -143,6 +146,8 @@ export default function App() {
   const [demoEvidenceBundleError, setDemoEvidenceBundleError] = useState<string | null>(null);
   const [demoSessionSnapshot, setDemoSessionSnapshot] = useState<DemoSessionSnapshot | null>(null);
   const [demoSessionSnapshotError, setDemoSessionSnapshotError] = useState<string | null>(null);
+  const [demoSessionArchives, setDemoSessionArchives] = useState<DemoSessionArchive[]>([]);
+  const [demoSessionArchiveError, setDemoSessionArchiveError] = useState<string | null>(null);
   const [demoScript, setDemoScript] = useState<DemoScript | null>(null);
   const [demoScriptError, setDemoScriptError] = useState<string | null>(null);
   const [demoSmokeChecklist, setDemoSmokeChecklist] = useState<DemoSmokeChecklist | null>(null);
@@ -406,6 +411,7 @@ export default function App() {
         configurationSummary,
         demoEvidenceBundleResult,
         demoSessionSnapshotResult,
+        demoSessionArchiveResult,
         demoScriptResult,
         demoReadinessResult,
         demoSmokeChecklistResult,
@@ -438,6 +444,10 @@ export default function App() {
         getDemoSessionSnapshot().then(
           (snapshot) => ({ snapshot, error: null as string | null }),
           (caught) => ({ snapshot: null, error: errorMessage(caught) })
+        ),
+        listDemoSessionArchives().then(
+          (archives) => ({ archives, error: null as string | null }),
+          (caught) => ({ archives: null, error: errorMessage(caught) })
         ),
         getDemoScript().then(
           (script) => ({ script, error: null as string | null }),
@@ -497,6 +507,10 @@ export default function App() {
         setDemoSessionSnapshot(demoSessionSnapshotResult.snapshot);
       }
       setDemoSessionSnapshotError(demoSessionSnapshotResult.error);
+      if (demoSessionArchiveResult.archives) {
+        setDemoSessionArchives(demoSessionArchiveResult.archives);
+      }
+      setDemoSessionArchiveError(demoSessionArchiveResult.error);
       if (demoScriptResult.script) {
         setDemoScript(demoScriptResult.script);
       }
@@ -672,6 +686,12 @@ export default function App() {
   const handleCopyReport = useCallback((taskId: string) => getTaskReport(taskId), []);
   const handleCopyDemoRunbook = useCallback(() => getDemoRunbook(), []);
   const handleCopyDemoSessionReport = useCallback(() => getDemoSessionReport(), []);
+  const handleArchiveDemoSession = useCallback(async () => {
+    const archive = await archiveDemoSession();
+    setDemoSessionArchives((current) => [archive, ...current.filter((item) => item.id !== archive.id)].slice(0, 20));
+    setDemoSessionArchiveError(null);
+    return archive;
+  }, []);
 
   const handleCreateTask = useCallback(async (input: CreateTaskInput) => {
     setCreatingTask(true);
@@ -880,8 +900,11 @@ export default function App() {
 
       <DemoSessionSnapshotPanel
         snapshot={demoSessionSnapshot}
+        archives={demoSessionArchives}
         error={demoSessionSnapshotError}
+        archiveError={demoSessionArchiveError}
         onCopyReport={handleCopyDemoSessionReport}
+        onArchiveSession={handleArchiveDemoSession}
       />
 
       <DemoScriptPanel script={demoScript} error={demoScriptError} />

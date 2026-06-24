@@ -4,12 +4,16 @@ import io.patchpilot.backend.common.response.ApiResponse;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessVo;
 import io.patchpilot.backend.demo.domain.DemoScriptVo;
+import io.patchpilot.backend.demo.domain.DemoSessionArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoSessionSnapshotVo;
 import io.patchpilot.backend.demo.domain.DemoSmokeChecklistVo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/demo")
@@ -23,6 +27,7 @@ public class DemoReadinessController {
     private final DemoScriptService demoScriptService;
     private final DemoSessionSnapshotService demoSessionSnapshotService;
     private final DemoSessionReportService demoSessionReportService;
+    private final DemoSessionArchiveService demoSessionArchiveService;
 
     @GetMapping("/readiness")
     public ApiResponse<DemoReadinessVo> getReadiness() {
@@ -57,5 +62,15 @@ public class DemoReadinessController {
     @GetMapping("/session-report")
     public ApiResponse<String> getSessionReport() {
         return ApiResponse.ok(demoSessionReportService.getSessionReport());
+    }
+
+    @PostMapping("/session-archives")
+    public ApiResponse<DemoSessionArchiveVo> archiveCurrentSession() {
+        return ApiResponse.ok(demoSessionArchiveService.archiveCurrentSession());
+    }
+
+    @GetMapping("/session-archives")
+    public ApiResponse<List<DemoSessionArchiveVo>> listSessionArchives() {
+        return ApiResponse.ok(demoSessionArchiveService.listRecentArchives());
     }
 }

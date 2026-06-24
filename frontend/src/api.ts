@@ -8,6 +8,7 @@ import type {
   DemoEvidenceBundle,
   DemoReadiness,
   DemoScript,
+  DemoSessionArchive,
   DemoSessionSnapshot,
   DemoSmokeChecklist,
   FixTask,
@@ -172,6 +173,14 @@ export async function getDemoSessionSnapshot(): Promise<DemoSessionSnapshot> {
 
 export async function getDemoSessionReport(): Promise<string> {
   return getApi<string>('/api/demo/session-report');
+}
+
+export async function archiveDemoSession(): Promise<DemoSessionArchive> {
+  return postApi<DemoSessionArchive>('/api/demo/session-archives');
+}
+
+export async function listDemoSessionArchives(): Promise<DemoSessionArchive[]> {
+  return getApi<DemoSessionArchive[]>('/api/demo/session-archives');
 }
 
 export async function getDemoRunbook(): Promise<string> {

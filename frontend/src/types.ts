@@ -288,6 +288,17 @@ export interface DemoSessionSnapshot {
   nextActions: string[];
 }
 
+export interface DemoSessionArchive {
+  id: string;
+  sessionId: string;
+  status: DemoReadinessStatus;
+  summary: string;
+  shareSummary: string;
+  recentPullRequestUrl: string | null;
+  createdAt: string;
+  report: string;
+}
+
 export interface BackendHealth {
   status: string;
   service: string;

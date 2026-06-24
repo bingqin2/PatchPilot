@@ -891,6 +891,17 @@ const demoSessionSnapshot = {
   nextActions: ['Follow the script from step 1 through Pull Request review.']
 };
 
+const demoSessionArchive = {
+  id: 'archive-1',
+  sessionId: 'demo-session-20260624T003000Z',
+  status: 'READY',
+  summary: 'Demo session snapshot is ready.',
+  shareSummary: 'Status READY; recent task task-1; recent PR https://github.com/bingqin2/PatchPilot/pull/8.',
+  recentPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+  createdAt: '2026-06-24T04:00:00Z',
+  report: '# PatchPilot Demo Session Report\n\n- Status: `READY`'
+};
+
 beforeEach(() => {
   let manualTaskCreated = false;
   vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -1016,6 +1027,12 @@ beforeEach(() => {
     }
     if (url === '/api/demo/session-report') {
       return jsonResponse('# PatchPilot Demo Session Report\n\n- Status: `READY`');
+    }
+    if (url === '/api/demo/session-archives' && init?.method === 'POST') {
+      return jsonResponse(demoSessionArchive);
+    }
+    if (url === '/api/demo/session-archives') {
+      return jsonResponse([demoSessionArchive]);
     }
     if (url === '/health') {
       return jsonResponse({
@@ -1400,8 +1417,8 @@ test('renders operational task dashboard from backend APIs', async () => {
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/operator-safety-audits?limit=20'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks/task-1/detail'));
   expect(screen.getByText('Pull request opened')).toBeInTheDocument();
-  expect(screen.getByText('demo-session-20260624T003000Z')).toBeInTheDocument();
-  expect(screen.getByText('Status READY; recent task task-1; recent PR https://github.com/bingqin2/PatchPilot/pull/8.')).toBeInTheDocument();
+  expect(screen.getAllByText('demo-session-20260624T003000Z')).toHaveLength(2);
+  expect(screen.getAllByText('Status READY; recent task task-1; recent PR https://github.com/bingqin2/PatchPilot/pull/8.')).toHaveLength(2);
   expect(screen.getByText('Tests run: 247, Failures: 0, Errors: 0')).toBeInTheDocument();
   expect(screen.getByText('replace')).toBeInTheDocument();
   expect(screen.getAllByText('gpt-5.5')).toHaveLength(2);

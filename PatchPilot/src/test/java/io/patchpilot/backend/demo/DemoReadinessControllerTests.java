@@ -11,6 +11,7 @@ import io.patchpilot.backend.demo.domain.DemoSmokeChecklistStepVo;
 import io.patchpilot.backend.demo.domain.DemoSmokeChecklistVo;
 import io.patchpilot.backend.demo.domain.DemoScriptStepVo;
 import io.patchpilot.backend.demo.domain.DemoScriptVo;
+import io.patchpilot.backend.demo.domain.DemoSessionArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoSessionSnapshotVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskQueueSummaryVo;
 import org.junit.jupiter.api.Test;
@@ -24,6 +25,7 @@ import java.util.List;
 
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -53,6 +55,9 @@ class DemoReadinessControllerTests {
 
     @MockitoBean
     private DemoSessionReportService demoSessionReportService;
+
+    @MockitoBean
+    private DemoSessionArchiveService demoSessionArchiveService;
 
     @Test
     void should_return_demo_readiness_summary() throws Exception {
@@ -307,5 +312,49 @@ class DemoReadinessControllerTests {
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("# PatchPilot Demo Session Report")))
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("demo-session-20260624T003000Z")))
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("`READY`")));
+    }
+
+    @Test
+    void should_archive_current_demo_session_report() throws Exception {
+        when(demoSessionArchiveService.archiveCurrentSession()).thenReturn(new DemoSessionArchiveVo(
+                "archive-1",
+                "demo-session-20260624T003000Z",
+                DemoReadinessStatus.READY,
+                "Demo session snapshot is ready.",
+                "Status READY; recent PR https://github.com/bingqin2/PatchPilot/pull/42.",
+                "https://github.com/bingqin2/PatchPilot/pull/42",
+                Instant.parse("2026-06-24T04:00:00Z"),
+                "# PatchPilot Demo Session Report\n\n- Status: `READY`"
+        ));
+
+        mockMvc.perform(post("/api/demo/session-archives"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value("archive-1"))
+                .andExpect(jsonPath("$.data.sessionId").value("demo-session-20260624T003000Z"))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.recentPullRequestUrl").value("https://github.com/bingqin2/PatchPilot/pull/42"))
+                .andExpect(jsonPath("$.data.report").value(org.hamcrest.Matchers.containsString("# PatchPilot Demo Session Report")));
+    }
+
+    @Test
+    void should_return_recent_demo_session_archives() throws Exception {
+        when(demoSessionArchiveService.listRecentArchives()).thenReturn(List.of(new DemoSessionArchiveVo(
+                "archive-1",
+                "demo-session-20260624T003000Z",
+                DemoReadinessStatus.READY,
+                "Demo session snapshot is ready.",
+                "Status READY; recent PR https://github.com/bingqin2/PatchPilot/pull/42.",
+                "https://github.com/bingqin2/PatchPilot/pull/42",
+                Instant.parse("2026-06-24T04:00:00Z"),
+                "# PatchPilot Demo Session Report\n\n- Status: `READY`"
+        )));
+
+        mockMvc.perform(get("/api/demo/session-archives"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].id").value("archive-1"))
+                .andExpect(jsonPath("$.data[0].sessionId").value("demo-session-20260624T003000Z"))
+                .andExpect(jsonPath("$.data[0].shareSummary").value(org.hamcrest.Matchers.containsString("READY")));
     }
 }

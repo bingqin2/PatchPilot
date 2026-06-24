@@ -1,16 +1,27 @@
-import { Copy } from 'lucide-react';
+import { Archive, Copy } from 'lucide-react';
 import { useState } from 'react';
-import type { DemoReadinessStatus, DemoSessionSnapshot } from '../../types';
+import type { DemoReadinessStatus, DemoSessionArchive, DemoSessionSnapshot } from '../../types';
 import { compactDateTime } from '../format';
 
 interface DemoSessionSnapshotPanelProps {
   snapshot: DemoSessionSnapshot | null;
+  archives: DemoSessionArchive[];
   error: string | null;
+  archiveError: string | null;
   onCopyReport: () => Promise<string>;
+  onArchiveSession: () => Promise<DemoSessionArchive>;
 }
 
-export function DemoSessionSnapshotPanel({ snapshot, error, onCopyReport }: DemoSessionSnapshotPanelProps) {
+export function DemoSessionSnapshotPanel({
+  snapshot,
+  archives,
+  error,
+  archiveError,
+  onCopyReport,
+  onArchiveSession
+}: DemoSessionSnapshotPanelProps) {
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
+  const [archiveStatus, setArchiveStatus] = useState<string | null>(null);
   const scriptStepCount = snapshot?.script.steps.length ?? 0;
 
   async function copySessionReport() {
@@ -18,6 +29,24 @@ export function DemoSessionSnapshotPanel({ snapshot, error, onCopyReport }: Demo
       const report = await onCopyReport();
       await navigator.clipboard.writeText(report);
       setCopyStatus('Demo session report copied');
+    } catch {
+      setCopyStatus('Copy failed');
+    }
+  }
+
+  async function archiveSession() {
+    try {
+      await onArchiveSession();
+      setArchiveStatus('Demo session archived');
+    } catch {
+      setArchiveStatus('Archive failed');
+    }
+  }
+
+  async function copyArchivedReport(archive: DemoSessionArchive) {
+    try {
+      await navigator.clipboard.writeText(archive.report);
+      setCopyStatus('Archived session report copied');
     } catch {
       setCopyStatus('Copy failed');
     }
@@ -40,7 +69,12 @@ export function DemoSessionSnapshotPanel({ snapshot, error, onCopyReport }: Demo
               <Copy size={14} />
               Copy session report
             </button>
+            <button className="secondary-button" type="button" onClick={() => void archiveSession()}>
+              <Archive size={14} />
+              Archive session
+            </button>
             {copyStatus ? <span className="copy-status">{copyStatus}</span> : null}
+            {archiveStatus ? <span className="copy-status">{archiveStatus}</span> : null}
           </div>
         ) : null}
       </div>
@@ -49,6 +83,13 @@ export function DemoSessionSnapshotPanel({ snapshot, error, onCopyReport }: Demo
         <div className="adapter-api-error">
           <strong>Demo session snapshot unavailable</strong>
           <span>{error}</span>
+        </div>
+      ) : null}
+
+      {archiveError ? (
+        <div className="adapter-api-error">
+          <strong>Demo session archive unavailable</strong>
+          <span>{archiveError}</span>
         </div>
       ) : null}
 
@@ -92,6 +133,37 @@ export function DemoSessionSnapshotPanel({ snapshot, error, onCopyReport }: Demo
             <SnapshotList title="Operator checklist" items={snapshot.operatorChecklist} />
             <SnapshotList title="Health contract" items={snapshot.healthContract} />
             <SnapshotList title="Next actions" items={snapshot.nextActions} emptyText="No next actions recorded." />
+          </div>
+
+          <div className="demo-session-archives">
+            <h3>Recent session archives</h3>
+            {archives.length ? (
+              <ul>
+                {archives.map((archive) => (
+                  <li key={archive.id}>
+                    <div>
+                      <strong>{archive.id}</strong>
+                      <span>{archive.sessionId}</span>
+                      <small>{archive.shareSummary}</small>
+                    </div>
+                    <div className="demo-session-archive-actions">
+                      <time dateTime={archive.createdAt}>{compactDateTime(archive.createdAt)}</time>
+                      <button
+                        className="secondary-button"
+                        type="button"
+                        onClick={() => void copyArchivedReport(archive)}
+                        aria-label={`Copy archived session report ${archive.id}`}
+                      >
+                        <Copy size={14} />
+                        Copy report
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="empty-state">No demo session archives recorded.</p>
+            )}
           </div>
         </>
       ) : (

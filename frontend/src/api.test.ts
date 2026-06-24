@@ -9,6 +9,8 @@ import {
   getLatencySummary,
   getModelUsageSummary,
   getDemoScript,
+  archiveDemoSession,
+  listDemoSessionArchives,
   getDemoSessionSnapshot,
   getDemoSessionReport,
   getDemoSmokeChecklist,
@@ -474,6 +476,63 @@ test('loads demo session report markdown from backend API', async () => {
   expect(fetchMock).toHaveBeenCalledWith('/api/demo/session-report');
   expect(report).toContain('# PatchPilot Demo Session Report');
   expect(report).toContain('`READY`');
+});
+
+test('archives current demo session through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        id: 'archive-1',
+        sessionId: 'demo-session-20260624T003000Z',
+        status: 'READY',
+        summary: 'Demo session snapshot is ready.',
+        shareSummary: 'Status READY; recent PR https://github.com/bingqin2/PatchPilot/pull/42.',
+        recentPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+        createdAt: '2026-06-24T04:00:00Z',
+        report: '# PatchPilot Demo Session Report\n\n- Status: `READY`'
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const archive = await archiveDemoSession();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/session-archives', { method: 'POST' });
+  expect(archive.id).toBe('archive-1');
+  expect(archive.report).toContain('# PatchPilot Demo Session Report');
+});
+
+test('lists demo session archives through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: [
+        {
+          id: 'archive-1',
+          sessionId: 'demo-session-20260624T003000Z',
+          status: 'READY',
+          summary: 'Demo session snapshot is ready.',
+          shareSummary: 'Status READY; recent PR https://github.com/bingqin2/PatchPilot/pull/42.',
+          recentPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+          createdAt: '2026-06-24T04:00:00Z',
+          report: '# PatchPilot Demo Session Report\n\n- Status: `READY`'
+        }
+      ],
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const archives = await listDemoSessionArchives();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/session-archives');
+  expect(archives[0].sessionId).toBe('demo-session-20260624T003000Z');
 });
 
 test('lists recent rejected triggers through backend API', async () => {
