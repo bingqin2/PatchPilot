@@ -24,7 +24,10 @@ const activeWorkerHealth = {
   idlePollCount: 8,
   lastClaimedQueueItemId: 'queue-123',
   lastClaimedTaskId: 'task-123',
-  lastError: null
+  lastError: null,
+  lastPollAgeMs: 1000,
+  readinessStatus: 'READY',
+  operatorAction: 'No action needed.'
 } as const;
 
 test('shows idle queue health when no work is active', () => {
@@ -92,6 +95,9 @@ test('shows worker heartbeat and last claimed task', () => {
 
   expect(screen.getByText('Worker active')).toBeInTheDocument();
   expect(screen.getByText('Worker poller is executing a queue item.')).toBeInTheDocument();
+  expect(screen.getByText('READY readiness')).toBeInTheDocument();
+  expect(screen.getByText('1.0s last poll age')).toBeInTheDocument();
+  expect(screen.getByText('No action needed.')).toBeInTheDocument();
   expect(screen.getByText('12 polls')).toBeInTheDocument();
   expect(screen.getByText('3 claimed')).toBeInTheDocument();
   expect(screen.getByText('Last task task-123')).toBeInTheDocument();
@@ -106,12 +112,16 @@ test('shows worker error with last failure reason', () => {
         ...activeWorkerHealth,
         state: 'ERROR',
         message: 'Worker poller recorded a task failure: worker failed',
-        lastError: 'worker failed'
+        lastError: 'worker failed',
+        readinessStatus: 'NEEDS_ATTENTION',
+        operatorAction: 'Inspect worker logs and the latest failed queue item before starting a demo.'
       }}
     />
   );
 
   expect(screen.getByText('Worker error')).toBeInTheDocument();
   expect(screen.getByText('Worker poller recorded a task failure: worker failed')).toBeInTheDocument();
+  expect(screen.getByText('NEEDS_ATTENTION readiness')).toBeInTheDocument();
+  expect(screen.getByText('Inspect worker logs and the latest failed queue item before starting a demo.')).toBeInTheDocument();
   expect(screen.getByText('Last error worker failed')).toBeInTheDocument();
 });

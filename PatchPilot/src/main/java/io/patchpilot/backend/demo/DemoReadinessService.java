@@ -11,8 +11,10 @@ import io.patchpilot.backend.task.domain.bo.FixTaskListQuery;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.vo.FixTaskQueueSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
+import io.patchpilot.backend.task.domain.vo.FixTaskWorkerHealthVo;
 import io.patchpilot.backend.task.service.FixTaskQueueQueryService;
 import io.patchpilot.backend.task.service.FixTaskService;
+import io.patchpilot.backend.task.service.FixTaskWorkerHealthService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -27,6 +29,7 @@ public class DemoReadinessService {
     private final Supplier<ConfigurationSummaryVo> configurationSupplier;
     private final Supplier<List<LanguageAdapterFixtureVerificationVo>> fixtureSupplier;
     private final Supplier<FixTaskQueueSummaryVo> queueSummarySupplier;
+    private final Supplier<FixTaskWorkerHealthVo> workerHealthSupplier;
     private final Supplier<List<FixTaskVo>> recentTasksSupplier;
 
     @Autowired
@@ -34,12 +37,14 @@ public class DemoReadinessService {
             ConfigurationSummaryService configurationSummaryService,
             LanguageAdapterFixtureVerificationService fixtureVerificationService,
             FixTaskQueueQueryService fixTaskQueueQueryService,
+            FixTaskWorkerHealthService fixTaskWorkerHealthService,
             FixTaskService fixTaskService
     ) {
         this(
                 configurationSummaryService::getConfigurationSummary,
                 fixtureVerificationService::listFixtureVerifications,
                 fixTaskQueueQueryService::summary,
+                fixTaskWorkerHealthService::getHealth,
                 () -> fixTaskService.listTasks(new FixTaskListQuery(
                         null,
                         null,
@@ -57,11 +62,13 @@ public class DemoReadinessService {
             Supplier<ConfigurationSummaryVo> configurationSupplier,
             Supplier<List<LanguageAdapterFixtureVerificationVo>> fixtureSupplier,
             Supplier<FixTaskQueueSummaryVo> queueSummarySupplier,
+            Supplier<FixTaskWorkerHealthVo> workerHealthSupplier,
             Supplier<List<FixTaskVo>> recentTasksSupplier
     ) {
         this.configurationSupplier = configurationSupplier;
         this.fixtureSupplier = fixtureSupplier;
         this.queueSummarySupplier = queueSummarySupplier;
+        this.workerHealthSupplier = workerHealthSupplier;
         this.recentTasksSupplier = recentTasksSupplier;
     }
 
@@ -69,6 +76,7 @@ public class DemoReadinessService {
         ConfigurationSummaryVo configuration = configurationSupplier.get();
         List<LanguageAdapterFixtureVerificationVo> fixtures = fixtureSupplier.get();
         FixTaskQueueSummaryVo queueSummary = queueSummarySupplier.get();
+        FixTaskWorkerHealthVo workerHealth = workerHealthSupplier.get();
         List<FixTaskVo> recentTasks = recentTasksSupplier.get();
 
         List<DemoReadinessCheckVo> checks = List.of(
@@ -78,6 +86,7 @@ public class DemoReadinessService {
                 repositoryPreflightScopeCheck(configuration),
                 adapterFixtureCheck(fixtures),
                 queueCheck(queueSummary),
+                workerHeartbeatCheck(workerHealth),
                 recentPullRequestCheck(recentTasks)
         );
         DemoReadinessStatus status = aggregateStatus(checks);
@@ -242,6 +251,26 @@ public class DemoReadinessService {
                 DemoReadinessStatus.READY,
                 "Queue has no failed, running, or delayed items.",
                 "No action needed."
+        );
+    }
+
+    private static DemoReadinessCheckVo workerHeartbeatCheck(FixTaskWorkerHealthVo workerHealth) {
+        DemoReadinessStatus status = "READY".equals(workerHealth.readinessStatus())
+                ? DemoReadinessStatus.READY
+                : DemoReadinessStatus.NEEDS_ATTENTION;
+        if (status == DemoReadinessStatus.READY) {
+            return new DemoReadinessCheckVo(
+                    "Worker heartbeat",
+                    DemoReadinessStatus.READY,
+                    workerHealth.message(),
+                    "No action needed."
+            );
+        }
+        return new DemoReadinessCheckVo(
+                "Worker heartbeat",
+                DemoReadinessStatus.NEEDS_ATTENTION,
+                workerHealth.message(),
+                workerHealth.operatorAction()
         );
     }
 

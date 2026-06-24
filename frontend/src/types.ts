@@ -167,6 +167,7 @@ export interface ConfigurationSummary {
   queueMaxAttempts: number;
   queueRetryDelayMs: number;
   queueVisibilityTimeoutMs: number;
+  queueWorkerHeartbeatStaleMs: number;
   modelCostConfigured: boolean;
   modelTriggerClassificationEnabled: boolean;
   triggerRateLimitEnabled: boolean;
@@ -375,6 +376,9 @@ export interface FixTaskWorkerHealth {
   lastClaimedQueueItemId: string | null;
   lastClaimedTaskId: string | null;
   lastError: string | null;
+  lastPollAgeMs: number;
+  readinessStatus: 'READY' | 'NEEDS_ATTENTION';
+  operatorAction: string;
 }
 
 export interface FixTaskQueueItem {

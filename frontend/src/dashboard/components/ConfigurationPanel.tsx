@@ -49,6 +49,7 @@ export function ConfigurationPanel({ configuration, backendHealth }: Configurati
           <strong>Queue attempts {number(configuration?.queueMaxAttempts)}</strong>
           <p>{duration(configuration?.queueRetryDelayMs)} retry delay</p>
           <p>{duration(configuration?.queueVisibilityTimeoutMs)} visibility timeout</p>
+          <p>{duration(configuration?.queueWorkerHeartbeatStaleMs)} worker heartbeat stale threshold</p>
         </div>
         <div>
           <span>Cost</span>
@@ -160,6 +161,9 @@ function configurationHealth(configuration: ConfigurationSummary | null) {
   }
   if (configuration.queueVisibilityTimeoutMs < 1000) {
     advisoryIssues.push({ kind: 'advisory', message: 'Queue visibility timeout is below 1.0s' });
+  }
+  if (configuration.queueWorkerHeartbeatStaleMs < 1000) {
+    advisoryIssues.push({ kind: 'advisory', message: 'Queue worker heartbeat stale threshold is below 1.0s' });
   }
   if (configuration.triggerRateLimitWindowMs < 1000) {
     advisoryIssues.push({ kind: 'advisory', message: 'Trigger rate limit window is below 1.0s' });

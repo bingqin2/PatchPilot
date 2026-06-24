@@ -4,6 +4,7 @@ import type {
   ConfigurationSummary,
   DemoReadiness,
   FixTask,
+  FixTaskWorkerHealth,
   FixTaskQueueSummary,
   LanguageAdapterFixtureVerification
 } from '../../types';
@@ -27,6 +28,7 @@ const configuration: ConfigurationSummary = {
   queueMaxAttempts: 3,
   queueRetryDelayMs: 30000,
   queueVisibilityTimeoutMs: 300000,
+  queueWorkerHeartbeatStaleMs: 10000,
   modelCostConfigured: true,
   modelTriggerClassificationEnabled: true,
   triggerRateLimitEnabled: true,
@@ -89,15 +91,35 @@ const queueSummary: FixTaskQueueSummary = {
   cancelledCount: 0
 };
 
+const workerHealth: FixTaskWorkerHealth = {
+  state: 'IDLE',
+  message: 'Worker poller is active but no queue item was available.',
+  startedAt: '2026-06-24T00:00:00Z',
+  lastPollAt: '2026-06-24T00:00:01Z',
+  pollCount: 12,
+  claimedCount: 3,
+  completedCount: 2,
+  failedCount: 1,
+  idlePollCount: 8,
+  lastClaimedQueueItemId: 'queue-123',
+  lastClaimedTaskId: 'task-123',
+  lastError: null,
+  lastPollAgeMs: 1000,
+  readinessStatus: 'READY',
+  operatorAction: 'No action needed.'
+};
+
 const tasks: FixTask[] = [];
 
 test('shows repository preflight scope as ready when demo fixtures are allowed', () => {
   renderChecklist(configuration);
 
   const panel = screen.getByRole('region', { name: 'Operator setup checklist' });
-  expect(within(panel).getByText('7/7 checks ready')).toBeInTheDocument();
+  expect(within(panel).getByText('8/8 checks ready')).toBeInTheDocument();
   expect(within(panel).getByText('Repository preflight scope')).toBeInTheDocument();
   expect(within(panel).getByText('Ready - demo fixture preflight paths are allowed')).toBeInTheDocument();
+  expect(within(panel).getByText('Worker heartbeat')).toBeInTheDocument();
+  expect(within(panel).getByText('Ready - Worker poller is active but no queue item was available.')).toBeInTheDocument();
 });
 
 test('shows repository preflight scope setup action when demo fixtures are outside allowed roots', () => {
@@ -107,7 +129,7 @@ test('shows repository preflight scope setup action when demo fixtures are outsi
   });
 
   const panel = screen.getByRole('region', { name: 'Operator setup checklist' });
-  expect(within(panel).getByText('6/7 checks ready')).toBeInTheDocument();
+  expect(within(panel).getByText('7/8 checks ready')).toBeInTheDocument();
   expect(within(panel).getByText('Repository preflight scope')).toBeInTheDocument();
   expect(within(panel).getByText('Attention - demo fixture preflight path is not allowed')).toBeInTheDocument();
   expect(within(panel).getByText('Add docs/demo-repositories or the project root to PATCHPILOT_REPOSITORY_PREFLIGHT_ALLOWED_ROOT_DIRS.')).toBeInTheDocument();
@@ -132,9 +154,31 @@ test('uses demo readiness preflight scope result when backend reports a scope wa
   });
 
   const panel = screen.getByRole('region', { name: 'Operator setup checklist' });
-  expect(within(panel).getByText('6/7 checks ready')).toBeInTheDocument();
+  expect(within(panel).getByText('7/8 checks ready')).toBeInTheDocument();
   expect(within(panel).getByText('Attention - Repository preflight allowed roots do not include docs/demo-repositories.')).toBeInTheDocument();
   expect(within(panel).getByText('Configure PATCHPILOT_REPOSITORY_PREFLIGHT_ALLOWED_ROOT_DIRS to include docs/demo-repositories or the project root before a live demo.')).toBeInTheDocument();
+});
+
+test('uses demo readiness worker heartbeat result when backend reports a stale worker', () => {
+  renderChecklist(configuration, {
+    ...demoReadiness,
+    status: 'NEEDS_ATTENTION',
+    checks: [
+      {
+        name: 'Worker heartbeat',
+        status: 'NEEDS_ATTENTION',
+        message: 'Worker heartbeat is stale.',
+        action: 'Check whether the queue worker scheduler is still running.'
+      },
+      ...demoReadiness.checks
+    ],
+    nextActions: ['Check whether the queue worker scheduler is still running.']
+  });
+
+  const panel = screen.getByRole('region', { name: 'Operator setup checklist' });
+  expect(within(panel).getByText('7/8 checks ready')).toBeInTheDocument();
+  expect(within(panel).getByText('Attention - Worker heartbeat is stale.')).toBeInTheDocument();
+  expect(within(panel).getByText('Check whether the queue worker scheduler is still running.')).toBeInTheDocument();
 });
 
 function renderChecklist(config: ConfigurationSummary, readiness: DemoReadiness = demoReadiness) {
@@ -145,6 +189,7 @@ function renderChecklist(config: ConfigurationSummary, readiness: DemoReadiness 
       demoReadiness={readiness}
       adapterFixtureVerifications={fixtures}
       queueSummary={queueSummary}
+      workerHealth={workerHealth}
       tasks={tasks}
       hasStoredAdminToken
     />

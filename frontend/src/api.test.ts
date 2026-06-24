@@ -590,7 +590,10 @@ test('gets worker health through backend API', async () => {
         idlePollCount: 8,
         lastClaimedQueueItemId: 'queue-123',
         lastClaimedTaskId: 'task-123',
-        lastError: null
+        lastError: null,
+        lastPollAgeMs: 1000,
+        readinessStatus: 'READY',
+        operatorAction: 'No action needed.'
       },
       message: null
     })
@@ -602,6 +605,8 @@ test('gets worker health through backend API', async () => {
   expect(fetchMock).toHaveBeenCalledWith('/api/task-queue/worker-health');
   expect(workerHealth.state).toBe('ACTIVE');
   expect(workerHealth.lastClaimedTaskId).toBe('task-123');
+  expect(workerHealth.readinessStatus).toBe('READY');
+  expect(workerHealth.operatorAction).toBe('No action needed.');
 });
 
 test('lists recent rejected triggers through backend API', async () => {
@@ -1142,6 +1147,7 @@ test('loads non-sensitive configuration summary from backend API', async () => {
         queueMaxAttempts: 3,
         queueRetryDelayMs: 30000,
         queueVisibilityTimeoutMs: 300000,
+        queueWorkerHeartbeatStaleMs: 10000,
         modelCostConfigured: true,
         modelTriggerClassificationEnabled: true,
         triggerRateLimitEnabled: true,
@@ -1183,6 +1189,7 @@ test('loads non-sensitive configuration summary from backend API', async () => {
     queueMaxAttempts: 3,
     queueRetryDelayMs: 30000,
     queueVisibilityTimeoutMs: 300000,
+    queueWorkerHeartbeatStaleMs: 10000,
     modelCostConfigured: true,
     modelTriggerClassificationEnabled: true,
     triggerRateLimitEnabled: true,
@@ -1258,6 +1265,7 @@ test('sends stored admin token with operator API requests', async () => {
         queueMaxAttempts: 3,
         queueRetryDelayMs: 30000,
         queueVisibilityTimeoutMs: 300000,
+        queueWorkerHeartbeatStaleMs: 10000,
         modelCostConfigured: true,
         modelTriggerClassificationEnabled: true,
         triggerRateLimitEnabled: true,
