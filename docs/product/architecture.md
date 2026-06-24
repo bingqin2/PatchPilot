@@ -71,7 +71,10 @@ Manual dashboard task creation follows the same trigger gate sequence. The
 the gate decisions as a read-only dry run: it may inspect safety, active-task
 state, quarantine state, rate-limit state, and model trigger classification, but
 it must not create tasks, queue items, rejected-trigger audit rows, GitHub
-comments, or rate-limit records.
+comments, webhook delivery diagnostics, or rate-limit records. Evaluation
+accepts a source of `MANUAL` or `ISSUE_COMMENT`; `MANUAL` is the default for
+older clients, while `ISSUE_COMMENT` previews the same downstream gate source as
+GitHub issue-comment handling without replaying a signed webhook request.
 
 ## Worker Runtime Health
 

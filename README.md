@@ -313,6 +313,7 @@ curl -X POST http://127.0.0.1:8080/api/tasks/evaluate-trigger \
   -H "X-PatchPilot-Admin-Token: $PATCHPILOT_ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
+    "source": "ISSUE_COMMENT",
     "repositoryOwner": "bingqin2",
     "repositoryName": "PatchPilot",
     "issueNumber": 1,
@@ -321,7 +322,7 @@ curl -X POST http://127.0.0.1:8080/api/tasks/evaluate-trigger \
   }'
 ```
 
-The response reports `WOULD_CREATE_TASK` or `BLOCKED`, the gate decisions that were evaluated, whether issue context was loaded for model classification, and the next operator action.
+The optional `source` is `MANUAL` by default. Use `ISSUE_COMMENT` when you want to preview the same gate source used by GitHub issue-comment triggers without replaying a full webhook payload or signature. The response reports `WOULD_CREATE_TASK` or `BLOCKED`, the evaluated source, the gate decisions that were evaluated, whether issue context was loaded for model classification, and the next operator action.
 
 ```bash
 curl -X POST http://127.0.0.1:8080/api/tasks \

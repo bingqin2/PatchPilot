@@ -130,6 +130,7 @@ class TaskControllerTests {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.status").value("WOULD_CREATE_TASK"))
+                .andExpect(jsonPath("$.data.source").value("MANUAL"))
                 .andExpect(jsonPath("$.data.wouldCreateTask").value(true))
                 .andExpect(jsonPath("$.data.blockedReason").value(nullValue()))
                 .andExpect(jsonPath("$.data.blockedCategory").value(nullValue()))
@@ -145,6 +146,36 @@ class TaskControllerTests {
 
         assertThat(fixTaskService.listTasks())
                 .filteredOn(task -> "/agent fix touch docs/evaluate-dry-run.md".equals(task.triggerComment()))
+                .isEmpty();
+    }
+
+    @Test
+    void should_evaluate_issue_comment_trigger_without_creating_task() throws Exception {
+        mockMvc.perform(post("/api/tasks/evaluate-trigger")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "source": "ISSUE_COMMENT",
+                                  "repositoryOwner": "bingqin2",
+                                  "repositoryName": "PatchPilot",
+                                  "issueNumber": 702,
+                                  "triggerUser": "alice",
+                                  "triggerComment": "/agent fix touch docs/webhook-preview.md"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.status").value("WOULD_CREATE_TASK"))
+                .andExpect(jsonPath("$.data.source").value("ISSUE_COMMENT"))
+                .andExpect(jsonPath("$.data.wouldCreateTask").value(true))
+                .andExpect(jsonPath("$.data.safetyDecision.allowed").value(true))
+                .andExpect(jsonPath("$.data.activeTaskDecision.allowed").value(true))
+                .andExpect(jsonPath("$.data.quarantineDecision.allowed").value(true))
+                .andExpect(jsonPath("$.data.rateLimitDecision.allowed").value(true))
+                .andExpect(jsonPath("$.data.triggerIntentDecision.allowed").value(true));
+
+        assertThat(fixTaskService.listTasks())
+                .filteredOn(task -> "/agent fix touch docs/webhook-preview.md".equals(task.triggerComment()))
                 .isEmpty();
     }
 

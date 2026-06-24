@@ -6,6 +6,7 @@ import type { TriggerEvaluationResult } from '../../types';
 
 const allowedEvaluation: TriggerEvaluationResult = {
   status: 'WOULD_CREATE_TASK',
+  source: 'MANUAL',
   wouldCreateTask: true,
   blockedReason: null,
   blockedCategory: null,
@@ -63,6 +64,7 @@ describe('ManualTaskForm', () => {
     await user.click(screen.getByRole('button', { name: /evaluate trigger/i }));
 
     expect(onEvaluateTrigger).toHaveBeenCalledWith({
+      source: 'MANUAL',
       repositoryOwner: 'bingqin2',
       repositoryName: 'PatchPilot',
       issueNumber: 7,
@@ -71,10 +73,48 @@ describe('ManualTaskForm', () => {
     });
   });
 
+  test('evaluates a GitHub issue comment preview source', async () => {
+    const user = userEvent.setup();
+    const onEvaluateTrigger = vi.fn(async () => ({
+      ...allowedEvaluation,
+      source: 'ISSUE_COMMENT' as const
+    }));
+
+    render(
+      <ManualTaskForm
+        creating={false}
+        evaluating={false}
+        evaluation={null}
+        successMessage={null}
+        onCreateTask={vi.fn()}
+        onEvaluateTrigger={onEvaluateTrigger}
+      />
+    );
+
+    await user.click(screen.getByRole('radio', { name: /github issue comment/i }));
+    await user.type(screen.getByLabelText('Repository owner'), 'bingqin2');
+    await user.type(screen.getByLabelText('Repository name'), 'PatchPilot');
+    await user.type(screen.getByLabelText('Issue number'), '7');
+    await user.clear(screen.getByLabelText('Trigger user'));
+    await user.type(screen.getByLabelText('Trigger user'), 'alice');
+    await user.type(screen.getByLabelText('Command'), '/agent fix touch docs/webhook-preview.md');
+    await user.click(screen.getByRole('button', { name: /evaluate trigger/i }));
+
+    expect(onEvaluateTrigger).toHaveBeenCalledWith({
+      source: 'ISSUE_COMMENT',
+      repositoryOwner: 'bingqin2',
+      repositoryName: 'PatchPilot',
+      issueNumber: 7,
+      triggerUser: 'alice',
+      triggerComment: '/agent fix touch docs/webhook-preview.md'
+    });
+  });
+
   test('renders allowed and blocked evaluation results', () => {
     const blockedEvaluation: TriggerEvaluationResult = {
       ...allowedEvaluation,
       status: 'BLOCKED',
+      source: 'ISSUE_COMMENT',
       wouldCreateTask: false,
       blockedReason: 'Unsafe request rejected: destructive or secret-exfiltration instruction',
       blockedCategory: 'DANGEROUS_INSTRUCTION',
@@ -103,6 +143,7 @@ describe('ManualTaskForm', () => {
 
     const allowedRegion = screen.getByLabelText('Trigger evaluation result');
     expect(within(allowedRegion).getByText('Would create task')).toBeInTheDocument();
+    expect(within(allowedRegion).getByText('Manual API')).toBeInTheDocument();
     expect(within(allowedRegion).getByText('Create task is allowed for this trigger.')).toBeInTheDocument();
     expect(within(allowedRegion).getByText('Model trigger classification is disabled')).toBeInTheDocument();
 
@@ -119,6 +160,7 @@ describe('ManualTaskForm', () => {
 
     const blockedRegion = screen.getByLabelText('Trigger evaluation result');
     expect(within(blockedRegion).getByText('Blocked')).toBeInTheDocument();
+    expect(within(blockedRegion).getByText('GitHub issue comment')).toBeInTheDocument();
     expect(
       within(blockedRegion).getByText('Unsafe request rejected: destructive or secret-exfiltration instruction')
     ).toBeInTheDocument();

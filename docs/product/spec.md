@@ -92,7 +92,7 @@ The current implementation target is local self-hosted development first. Hosted
 - Task creation must return quickly and must not run repository analysis or model calls inline with webhook handling.
 - A task can be queried by id for status and result.
 - Task creation must pass authorization, command parsing, actionability, and rate-limit checks before expensive execution begins.
-- Operators should be able to dry-run a proposed manual `/agent fix` trigger and see whether it would create a task or be blocked without creating tasks, queue work, rejected-trigger audit rows, GitHub comments, or rate-limit records.
+- Operators should be able to dry-run a proposed `/agent fix` trigger as either a manual API source or a GitHub issue-comment source and see whether it would create a task or be blocked without creating tasks, queue work, rejected-trigger audit rows, GitHub comments, webhook delivery diagnostics, or rate-limit records.
 - Task execution must pass a repository language-adapter preflight after workspace preparation and before model patch generation.
 - Operators should be able to run a local repository preflight diagnostic that uses the same language adapter registry without creating a task, running tests, mutating Git, or opening a Pull Request.
 - Local repository preflight diagnostics must reject paths outside configured allowed roots before adapter detection.
@@ -108,7 +108,7 @@ The current implementation target is local self-hosted development first. Hosted
 - Operators may configure trigger-user and repository allowlists for self-hosted demos and private deployments.
 - Operators may configure trigger rate limits by trigger user, repository, and issue to reject repeated `/agent fix` attempts before model calls or task creation.
 - Operators may enable rejected-trigger quarantine so repeated rejected attempts from the same trigger user or repository create or extend a durable quarantine record and are refused with `ABUSE_QUARANTINED` before rate-limit checks, model calls, task creation, workspace cloning, or queueing.
-- Trigger dry runs should use the same safety, active-task, quarantine, rate-limit, and model-classification order as manual task creation, but rate-limit checks must be read-only and rejected dry runs must not create rejected-trigger audit rows.
+- Trigger dry runs should use the same safety, active-task, quarantine, rate-limit, and model-classification order as task creation, but rate-limit checks must be read-only and rejected dry runs must not create rejected-trigger audit rows.
 - Operators should be able to inspect one quarantine and see the rejected-trigger audit rows and manual safety actions that explain it.
 - The system should reject unsupported repositories before model execution, patch generation, test execution, Git mutation, or Pull Request creation.
 - The local repository preflight diagnostic should return supported status, selected language/build system, verification command, detection reason, and next operator action so unsupported repository shapes can be fixed before a live `/agent fix`.

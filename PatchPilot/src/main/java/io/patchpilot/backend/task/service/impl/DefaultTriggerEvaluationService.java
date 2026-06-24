@@ -51,6 +51,7 @@ public class DefaultTriggerEvaluationService implements TriggerEvaluationService
         ));
         if (!safetyDecision.allowed() && !canClassifyWithIssueContext(safetyDecision)) {
             return blocked(
+                    command.source().name(),
                     decision(safetyDecision.allowed(), safetyDecision.reason(), safetyDecision.category()),
                     null,
                     null,
@@ -72,6 +73,7 @@ public class DefaultTriggerEvaluationService implements TriggerEvaluationService
                 : decision(true, "No active task exists for this issue", RejectedTriggerCategory.UNKNOWN);
         if (hasActiveTask) {
             return blocked(
+                    command.source().name(),
                     decision(safetyDecision.allowed(), safetyDecision.reason(), safetyDecision.category()),
                     activeTaskDecision,
                     null,
@@ -84,7 +86,7 @@ public class DefaultTriggerEvaluationService implements TriggerEvaluationService
         }
 
         TriggerQuarantineDecision quarantineDecision = triggerQuarantineService.check(new TriggerQuarantineRequest(
-                "manual",
+                command.source().gateSource(),
                 command.repositoryOwner(),
                 command.repositoryName(),
                 command.issueNumber(),
@@ -92,6 +94,7 @@ public class DefaultTriggerEvaluationService implements TriggerEvaluationService
         ));
         if (!quarantineDecision.allowed()) {
             return blocked(
+                    command.source().name(),
                     decision(safetyDecision.allowed(), safetyDecision.reason(), safetyDecision.category()),
                     activeTaskDecision,
                     decision(quarantineDecision.allowed(), quarantineDecision.reason(), quarantineDecision.category()),
@@ -104,7 +107,7 @@ public class DefaultTriggerEvaluationService implements TriggerEvaluationService
         }
 
         TriggerRateLimitDecision rateLimitDecision = triggerRateLimitService.check(new TriggerRateLimitRequest(
-                "manual",
+                command.source().gateSource(),
                 command.repositoryOwner(),
                 command.repositoryName(),
                 command.issueNumber(),
@@ -112,6 +115,7 @@ public class DefaultTriggerEvaluationService implements TriggerEvaluationService
         ));
         if (!rateLimitDecision.allowed()) {
             return blocked(
+                    command.source().name(),
                     decision(safetyDecision.allowed(), safetyDecision.reason(), safetyDecision.category()),
                     activeTaskDecision,
                     decision(quarantineDecision.allowed(), quarantineDecision.reason(), quarantineDecision.category()),
@@ -132,6 +136,7 @@ public class DefaultTriggerEvaluationService implements TriggerEvaluationService
         );
         if (!triggerIntentDecision.shouldExecute()) {
             return blocked(
+                    command.source().name(),
                     decision(safetyDecision.allowed(), safetyDecision.reason(), safetyDecision.category()),
                     activeTaskDecision,
                     decision(quarantineDecision.allowed(), quarantineDecision.reason(), quarantineDecision.category()),
@@ -145,6 +150,7 @@ public class DefaultTriggerEvaluationService implements TriggerEvaluationService
 
         return new TriggerEvaluationResultVo(
                 STATUS_WOULD_CREATE_TASK,
+                command.source().name(),
                 true,
                 null,
                 null,
@@ -171,7 +177,7 @@ public class DefaultTriggerEvaluationService implements TriggerEvaluationService
             return new TriggerClassificationResult(
                     triggerIntentClassifier.classify(new TriggerIntentClassificationRequest(
                             UUID.randomUUID().toString(),
-                            "manual",
+                            command.source().gateSource(),
                             command.repositoryOwner(),
                             command.repositoryName(),
                             command.issueNumber(),
@@ -194,6 +200,7 @@ public class DefaultTriggerEvaluationService implements TriggerEvaluationService
     }
 
     private static TriggerEvaluationResultVo blocked(
+            String source,
             TriggerEvaluationDecisionVo safetyDecision,
             TriggerEvaluationDecisionVo activeTaskDecision,
             TriggerEvaluationDecisionVo quarantineDecision,
@@ -205,6 +212,7 @@ public class DefaultTriggerEvaluationService implements TriggerEvaluationService
     ) {
         return new TriggerEvaluationResultVo(
                 STATUS_BLOCKED,
+                source,
                 false,
                 blockedReason,
                 blockedCategory,

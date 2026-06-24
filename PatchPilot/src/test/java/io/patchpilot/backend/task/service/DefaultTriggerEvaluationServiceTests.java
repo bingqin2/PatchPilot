@@ -10,12 +10,16 @@ import io.patchpilot.backend.safety.CommandSafetyGate;
 import io.patchpilot.backend.safety.NoOpTriggerQuarantineService;
 import io.patchpilot.backend.safety.domain.TriggerIntentClassificationRequest;
 import io.patchpilot.backend.safety.domain.TriggerIntentDecision;
+import io.patchpilot.backend.safety.domain.TriggerQuarantineDecision;
+import io.patchpilot.backend.safety.domain.TriggerQuarantineRequest;
 import io.patchpilot.backend.safety.domain.TriggerRateLimitDecision;
 import io.patchpilot.backend.safety.domain.TriggerRateLimitRequest;
 import io.patchpilot.backend.safety.service.TriggerIntentClassifier;
+import io.patchpilot.backend.safety.service.TriggerQuarantineService;
 import io.patchpilot.backend.safety.service.TriggerRateLimitService;
 import io.patchpilot.backend.task.domain.bo.CreateFixTaskCommand;
 import io.patchpilot.backend.task.domain.bo.EvaluateTriggerCommand;
+import io.patchpilot.backend.task.domain.enums.TriggerEvaluationSource;
 import io.patchpilot.backend.task.domain.vo.TriggerEvaluationResultVo;
 import io.patchpilot.backend.task.service.impl.DefaultTriggerEvaluationService;
 import io.patchpilot.backend.task.service.impl.InMemoryFixTaskService;
@@ -108,8 +112,47 @@ class DefaultTriggerEvaluationServiceTests {
         assertThat(fixTaskService.listTasks()).isEmpty();
     }
 
+    @Test
+    void should_evaluate_issue_comment_source_without_recording_or_creating_task() {
+        RecordingTriggerQuarantineService quarantineService = new RecordingTriggerQuarantineService(
+                TriggerQuarantineDecision.accepted()
+        );
+        RecordingTriggerRateLimitService rateLimitService = new RecordingTriggerRateLimitService(
+                TriggerRateLimitDecision.accepted()
+        );
+        RecordingTriggerIntentClassifier triggerIntentClassifier = new RecordingTriggerIntentClassifier(
+                TriggerIntentDecision.shouldExecute("Webhook issue comment is concrete.")
+        );
+        TriggerEvaluationService service = new DefaultTriggerEvaluationService(
+                fixTaskService,
+                new CommandSafetyGate(),
+                quarantineService,
+                rateLimitService,
+                triggerIntentClassifier,
+                new RecordingIssueContextService(issueContext())
+        );
+
+        TriggerEvaluationResultVo result = service.evaluate(new EvaluateTriggerCommand(
+                TriggerEvaluationSource.ISSUE_COMMENT,
+                "bingqin2",
+                "PatchPilot",
+                7,
+                "alice",
+                "/agent fix touch docs/webhook-preview.md"
+        ));
+
+        assertThat(result.status()).isEqualTo("WOULD_CREATE_TASK");
+        assertThat(result.source()).isEqualTo("ISSUE_COMMENT");
+        assertThat(quarantineService.request().source()).isEqualTo("issue_comment");
+        assertThat(rateLimitService.checkRequest().source()).isEqualTo("issue_comment");
+        assertThat(rateLimitService.recordRequest()).isNull();
+        assertThat(triggerIntentClassifier.request().source()).isEqualTo("issue_comment");
+        assertThat(fixTaskService.listTasks()).isEmpty();
+    }
+
     private static EvaluateTriggerCommand command(String triggerComment) {
         return new EvaluateTriggerCommand(
+                TriggerEvaluationSource.MANUAL,
                 "bingqin2",
                 "PatchPilot",
                 7,
@@ -216,6 +259,26 @@ class DefaultTriggerEvaluationServiceTests {
 
         private TriggerRateLimitRequest recordRequest() {
             return recordRequest;
+        }
+    }
+
+    private static final class RecordingTriggerQuarantineService implements TriggerQuarantineService {
+
+        private final TriggerQuarantineDecision decision;
+        private TriggerQuarantineRequest request;
+
+        private RecordingTriggerQuarantineService(TriggerQuarantineDecision decision) {
+            this.decision = decision;
+        }
+
+        @Override
+        public TriggerQuarantineDecision check(TriggerQuarantineRequest request) {
+            this.request = request;
+            return decision;
+        }
+
+        private TriggerQuarantineRequest request() {
+            return request;
         }
     }
 }

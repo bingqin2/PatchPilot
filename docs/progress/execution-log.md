@@ -3468,3 +3468,20 @@ Validation so far:
 - `mvn -pl PatchPilot -Dtest=TaskControllerTests#should_evaluate_manual_trigger_without_creating_task+TaskControllerTests#should_evaluate_unsafe_manual_trigger_without_recording_rejected_audit,DefaultTriggerEvaluationServiceTests,InMemoryTriggerRateLimitServiceTests#should_check_without_recording_rate_limit_hit test`: passed after backend dry-run service and read-only rate-limit coverage, 4 tests run, 0 failures.
 - `npm test -- --run src/api.test.ts src/dashboard/components/ManualTaskForm.test.tsx`: first failed because the frontend API and manual form dry-run control did not exist; later failed because the blocked reason was duplicated in the summary and gate detail; then passed after rendering one summary and one gate-specific reason, 44 tests run, 0 failures.
 - `npm test -- --run src/App.test.tsx src/api.test.ts src/dashboard/components/ManualTaskForm.test.tsx`: passed after dashboard integration verification, 103 tests run, 0 failures.
+
+Implemented webhook trigger evaluation preview from `docs/plans/173-webhook-trigger-evaluation-preview.md`.
+
+Changes:
+
+- Added `source` to trigger evaluation input and output with `MANUAL` default behavior for existing clients.
+- Added `ISSUE_COMMENT` evaluation source so dry runs can preview the same downstream gate source used by GitHub issue-comment triggers.
+- Reused the existing read-only safety, active-task, quarantine, rate-limit, issue-context, and model-classification order without creating tasks, queue items, rejected-trigger audits, GitHub comments, webhook diagnostics, or rate-limit records.
+- Updated the dashboard manual-task form with a source selector for `Manual API` versus `GitHub issue comment` preview.
+- Rendered the evaluated source in the dry-run result summary.
+- Updated README, product spec, architecture, frontend design notes, and this execution log.
+
+Validation so far:
+
+- `mvn -pl PatchPilot -Dtest=DefaultTriggerEvaluationServiceTests,TaskControllerTests#should_evaluate_manual_trigger_without_creating_task+TaskControllerTests#should_evaluate_issue_comment_trigger_without_creating_task test`: first failed because trigger evaluation had no source field and always used manual gate source; then passed after backend implementation.
+- `npm test -- --run src/api.test.ts src/dashboard/components/ManualTaskForm.test.tsx`: first failed because the form did not send a source, had no GitHub issue-comment source control, and did not render the evaluated source; then passed after frontend implementation, 45 tests run, 0 failures.
+- `mvn -pl PatchPilot -Dtest=TaskControllerTests,DefaultTriggerEvaluationServiceTests test`: passed after focused backend regression verification, 71 tests run, 0 failures.

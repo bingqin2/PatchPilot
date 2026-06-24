@@ -16,6 +16,7 @@ import io.patchpilot.backend.task.domain.dto.RetryTaskDto;
 import io.patchpilot.backend.task.domain.enums.FixTaskTimelineEventType;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.enums.FixTaskSort;
+import io.patchpilot.backend.task.domain.enums.TriggerEvaluationSource;
 import io.patchpilot.backend.task.domain.vo.FixTaskFailureCauseSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskAuditSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskFailureDiagnosisVo;
@@ -562,6 +563,7 @@ public class TaskController {
                 request.triggerComment()
         );
         return new EvaluateTriggerCommand(
+                TriggerEvaluationSource.parse(request.source()),
                 parts.repositoryOwner(),
                 parts.repositoryName(),
                 parts.issueNumber(),
