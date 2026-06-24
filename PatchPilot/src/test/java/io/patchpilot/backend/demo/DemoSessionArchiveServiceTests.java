@@ -44,6 +44,7 @@ class DemoSessionArchiveServiceTests {
         assertThat(archive.createdAt()).isEqualTo(Instant.parse("2026-06-24T04:00:00Z"));
         assertThat(archive.report()).contains("# PatchPilot Demo Session Report");
         assertThat(service.listRecentArchives()).containsExactly(archive);
+        assertThat(service.findArchive("archive-1")).contains(archive);
     }
 
     @Test

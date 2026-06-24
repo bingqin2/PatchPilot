@@ -175,12 +175,20 @@ export async function getDemoSessionReport(): Promise<string> {
   return getApi<string>('/api/demo/session-report');
 }
 
+export async function downloadDemoSessionReport(): Promise<Blob> {
+  return getBlobApi('/api/demo/session-report/download');
+}
+
 export async function archiveDemoSession(): Promise<DemoSessionArchive> {
   return postApi<DemoSessionArchive>('/api/demo/session-archives');
 }
 
 export async function listDemoSessionArchives(): Promise<DemoSessionArchive[]> {
   return getApi<DemoSessionArchive[]>('/api/demo/session-archives');
+}
+
+export async function downloadDemoSessionArchiveReport(archiveId: string): Promise<Blob> {
+  return getBlobApi(`/api/demo/session-archives/${encodeURIComponent(archiveId)}/report/download`);
 }
 
 export async function getDemoRunbook(): Promise<string> {
@@ -312,6 +320,20 @@ async function getApi<T>(path: string): Promise<T> {
 
 async function postApi<T>(path: string, body?: unknown): Promise<T> {
   return requestApi<T>(path, postRequest(body));
+}
+
+async function getBlobApi(path: string): Promise<Blob> {
+  let response: Response;
+  const securedInit = withAdminToken();
+  try {
+    response = securedInit ? await fetch(path, securedInit) : await fetch(path);
+  } catch {
+    throw new Error(backendConnectionError);
+  }
+  if (!response.ok) {
+    throw new Error(`Request failed: ${response.status}`);
+  }
+  return response.blob();
 }
 
 async function requestApi<T>(path: string, init?: RequestInit): Promise<T> {

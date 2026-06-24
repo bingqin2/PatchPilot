@@ -17,15 +17,20 @@ import io.patchpilot.backend.task.domain.vo.FixTaskQueueSummaryVo;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.http.HttpHeaders;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -315,6 +320,24 @@ class DemoReadinessControllerTests {
     }
 
     @Test
+    void should_download_demo_session_report_as_markdown_attachment() throws Exception {
+        when(demoSessionReportService.getSessionReport()).thenReturn("""
+                # PatchPilot Demo Session Report
+
+                - Session: `demo-session-20260624T003000Z`
+                - Status: `READY`
+                """);
+
+        mockMvc.perform(get("/api/demo/session-report/download"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("attachment;")))
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("patchpilot-demo-session-report.md")))
+                .andExpect(content().contentTypeCompatibleWith("text/markdown"))
+                .andExpect(content().string(containsString("# PatchPilot Demo Session Report")))
+                .andExpect(content().string(containsString("demo-session-20260624T003000Z")));
+    }
+
+    @Test
     void should_archive_current_demo_session_report() throws Exception {
         when(demoSessionArchiveService.archiveCurrentSession()).thenReturn(new DemoSessionArchiveVo(
                 "archive-1",
@@ -356,5 +379,35 @@ class DemoReadinessControllerTests {
                 .andExpect(jsonPath("$.data[0].id").value("archive-1"))
                 .andExpect(jsonPath("$.data[0].sessionId").value("demo-session-20260624T003000Z"))
                 .andExpect(jsonPath("$.data[0].shareSummary").value(org.hamcrest.Matchers.containsString("READY")));
+    }
+
+    @Test
+    void should_download_archived_demo_session_report_as_markdown_attachment() throws Exception {
+        when(demoSessionArchiveService.findArchive("archive-1")).thenReturn(Optional.of(new DemoSessionArchiveVo(
+                "archive-1",
+                "demo-session-20260624T003000Z",
+                DemoReadinessStatus.READY,
+                "Demo session snapshot is ready.",
+                "Status READY; recent PR https://github.com/bingqin2/PatchPilot/pull/42.",
+                "https://github.com/bingqin2/PatchPilot/pull/42",
+                Instant.parse("2026-06-24T04:00:00Z"),
+                "# PatchPilot Demo Session Report\n\n- Status: `READY`"
+        )));
+
+        mockMvc.perform(get("/api/demo/session-archives/archive-1/report/download"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("attachment;")))
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("patchpilot-demo-session-archive-1.md")))
+                .andExpect(content().contentTypeCompatibleWith("text/markdown"))
+                .andExpect(content().string(containsString("# PatchPilot Demo Session Report")))
+                .andExpect(content().string(containsString("`READY`")));
+    }
+
+    @Test
+    void should_return_not_found_when_archived_demo_session_report_is_missing() throws Exception {
+        when(demoSessionArchiveService.findArchive("missing-archive")).thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/api/demo/session-archives/missing-archive/report/download"))
+                .andExpect(status().isNotFound());
     }
 }

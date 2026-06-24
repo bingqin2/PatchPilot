@@ -126,6 +126,11 @@ const archives: DemoSessionArchive[] = [
   }
 ];
 
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+});
+
 test('renders demo session snapshot summary, evidence, checklist, contract, and archives', () => {
   render(
     <DemoSessionSnapshotPanel
@@ -134,7 +139,9 @@ test('renders demo session snapshot summary, evidence, checklist, contract, and 
       error={null}
       archiveError={null}
       onCopyReport={vi.fn()}
+      onDownloadReport={vi.fn()}
       onArchiveSession={vi.fn()}
+      onDownloadArchiveReport={vi.fn()}
     />
   );
 
@@ -163,7 +170,9 @@ test('shows loading and API errors without hiding snapshot data', () => {
       error={null}
       archiveError={null}
       onCopyReport={vi.fn()}
+      onDownloadReport={vi.fn()}
       onArchiveSession={vi.fn()}
+      onDownloadArchiveReport={vi.fn()}
     />
   );
 
@@ -176,7 +185,9 @@ test('shows loading and API errors without hiding snapshot data', () => {
       error="Backend request failed"
       archiveError="Archive request failed"
       onCopyReport={vi.fn()}
+      onDownloadReport={vi.fn()}
       onArchiveSession={vi.fn()}
+      onDownloadArchiveReport={vi.fn()}
     />
   );
 
@@ -201,7 +212,9 @@ test('copies demo session report markdown', async () => {
       error={null}
       archiveError={null}
       onCopyReport={onCopyReport}
+      onDownloadReport={vi.fn()}
       onArchiveSession={vi.fn()}
+      onDownloadArchiveReport={vi.fn()}
     />
   );
 
@@ -210,6 +223,40 @@ test('copies demo session report markdown', async () => {
   expect(onCopyReport).toHaveBeenCalledTimes(1);
   expect(writeText).toHaveBeenCalledWith('# PatchPilot Demo Session Report\n\n- Status: `READY`');
   expect(screen.getByText('Demo session report copied')).toBeInTheDocument();
+});
+
+test('downloads demo session report markdown', async () => {
+  const reportBlob = new Blob(['# PatchPilot Demo Session Report'], { type: 'text/markdown;charset=UTF-8' });
+  const onDownloadReport = vi.fn().mockResolvedValue(reportBlob);
+  const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+  const createObjectURL = vi.fn(() => 'blob:demo-session-report');
+  const revokeObjectURL = vi.fn();
+  vi.stubGlobal('URL', {
+    ...globalThis.URL,
+    createObjectURL,
+    revokeObjectURL
+  });
+
+  render(
+    <DemoSessionSnapshotPanel
+      snapshot={snapshot}
+      archives={[]}
+      error={null}
+      archiveError={null}
+      onCopyReport={vi.fn()}
+      onDownloadReport={onDownloadReport}
+      onArchiveSession={vi.fn()}
+      onDownloadArchiveReport={vi.fn()}
+    />
+  );
+
+  await userEvent.click(screen.getByRole('button', { name: 'Download session report' }));
+
+  expect(onDownloadReport).toHaveBeenCalledTimes(1);
+  expect(createObjectURL).toHaveBeenCalledWith(reportBlob);
+  expect(click).toHaveBeenCalledTimes(1);
+  expect(revokeObjectURL).toHaveBeenCalledWith('blob:demo-session-report');
+  expect(screen.getByText('Demo session report downloaded')).toBeInTheDocument();
 });
 
 test('archives current demo session and copies archived report markdown', async () => {
@@ -227,7 +274,9 @@ test('archives current demo session and copies archived report markdown', async 
       error={null}
       archiveError={null}
       onCopyReport={vi.fn()}
+      onDownloadReport={vi.fn()}
       onArchiveSession={onArchiveSession}
+      onDownloadArchiveReport={vi.fn()}
     />
   );
 
@@ -238,4 +287,38 @@ test('archives current demo session and copies archived report markdown', async 
   expect(screen.getByText('Demo session archived')).toBeInTheDocument();
   expect(writeText).toHaveBeenCalledWith('# PatchPilot Demo Session Report\n\n- Status: `READY`');
   expect(screen.getByText('Archived session report copied')).toBeInTheDocument();
+});
+
+test('downloads archived demo session report markdown', async () => {
+  const reportBlob = new Blob(['# PatchPilot Demo Session Report'], { type: 'text/markdown;charset=UTF-8' });
+  const onDownloadArchiveReport = vi.fn().mockResolvedValue(reportBlob);
+  const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+  const createObjectURL = vi.fn(() => 'blob:demo-session-archive-report');
+  const revokeObjectURL = vi.fn();
+  vi.stubGlobal('URL', {
+    ...globalThis.URL,
+    createObjectURL,
+    revokeObjectURL
+  });
+
+  render(
+    <DemoSessionSnapshotPanel
+      snapshot={snapshot}
+      archives={archives}
+      error={null}
+      archiveError={null}
+      onCopyReport={vi.fn()}
+      onDownloadReport={vi.fn()}
+      onArchiveSession={vi.fn()}
+      onDownloadArchiveReport={onDownloadArchiveReport}
+    />
+  );
+
+  await userEvent.click(screen.getByRole('button', { name: 'Download archived session report archive-1' }));
+
+  expect(onDownloadArchiveReport).toHaveBeenCalledWith('archive-1');
+  expect(createObjectURL).toHaveBeenCalledWith(reportBlob);
+  expect(click).toHaveBeenCalledTimes(1);
+  expect(revokeObjectURL).toHaveBeenCalledWith('blob:demo-session-archive-report');
+  expect(screen.getByText('Archived session report downloaded')).toBeInTheDocument();
 });
