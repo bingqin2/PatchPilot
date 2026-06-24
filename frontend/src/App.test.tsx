@@ -837,6 +837,39 @@ const demoEvidenceBundle = {
   nextActions: ['Run one controlled issue-to-PR smoke task before a live demo.']
 };
 
+const demoScript = {
+  status: 'READY',
+  summary: 'Demo script is ready.',
+  steps: [
+    {
+      order: 1,
+      name: 'Confirm backend and dashboard access',
+      status: 'READY',
+      operatorAction: 'Open the dashboard and confirm protected APIs load.',
+      verificationCommand: 'curl http://127.0.0.1:8080/health',
+      successCriteria: 'Backend reports UP and dashboard data loads.',
+      troubleshootingPanel: 'Connectivity panel',
+      evidence: 'Backend readiness endpoint is reachable.'
+    },
+    {
+      order: 4,
+      name: 'Create controlled /agent fix trigger',
+      status: 'READY',
+      operatorAction: 'Post `/agent fix replace docs/demo.md PatchPilot smoke test` on the demo issue.',
+      verificationCommand: 'curl ${ADMIN_HEADER[@]} http://127.0.0.1:8080/api/github/webhook-deliveries?limit=10',
+      successCriteria: 'Webhook delivery creates exactly one task.',
+      troubleshootingPanel: 'Webhook delivery panel',
+      evidence: 'delivery-created-status-comment'
+    }
+  ],
+  healthContract: [
+    'GET /api/demo/script is read-only: it does not create tasks, call the model, run tests, mutate Git, or write to GitHub.',
+    'Live execution still starts from a controlled GitHub issue comment or manual task creation.'
+  ],
+  nextActions: ['Follow the script from step 1 through Pull Request review.'],
+  generatedAt: '2026-06-24T00:00:00Z'
+};
+
 beforeEach(() => {
   let manualTaskCreated = false;
   vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -950,6 +983,9 @@ beforeEach(() => {
     }
     if (url === '/api/demo/evidence-bundle') {
       return jsonResponse(demoEvidenceBundle);
+    }
+    if (url === '/api/demo/script') {
+      return jsonResponse(demoScript);
     }
     if (url === '/api/demo/runbook') {
       return jsonResponse('# PatchPilot Demo Runbook\n\n- Status: `READY`');
@@ -1267,6 +1303,12 @@ test('renders operational task dashboard from backend APIs', async () => {
     'href',
     'https://github.com/bingqin2/PatchPilot/pull/8'
   );
+  const demoScriptPanel = screen.getByRole('region', { name: 'Demo script' });
+  expect(within(demoScriptPanel).getByRole('heading', { name: 'Demo script' })).toBeInTheDocument();
+  expect(within(demoScriptPanel).getByText('Demo script is ready.')).toBeInTheDocument();
+  expect(within(demoScriptPanel).getByText('Create controlled /agent fix trigger')).toBeInTheDocument();
+  expect(within(demoScriptPanel).getByText('curl http://127.0.0.1:8080/health')).toBeInTheDocument();
+  expect(within(demoScriptPanel).getByText(/does not create tasks, call the model, run tests, mutate Git, or write to GitHub/)).toBeInTheDocument();
   expect(screen.getByRole('heading', { name: 'Supported adapters' })).toBeInTheDocument();
   expect(screen.getByText('13 supported adapters')).toBeInTheDocument();
   expect(screen.getByRole('row', { name: /go go go test \.\/\.\.\./i })).toBeInTheDocument();
@@ -1321,6 +1363,7 @@ test('renders operational task dashboard from backend APIs', async () => {
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/language-adapters'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/language-adapters/fixtures'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/evidence-bundle'));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/script'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/readiness'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/smoke-checklist'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/github/webhook-deliveries?limit=10'));

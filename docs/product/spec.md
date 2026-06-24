@@ -239,6 +239,7 @@ MVP frontend scope:
 - Inspect tool-call summaries.
 - Inspect verification output.
 - Inspect a single demo evidence bundle before posting a live `/agent fix` comment.
+- Follow a read-only demo script that gives ordered operator actions, verification commands, troubleshooting targets, and health-contract guarantees before and during a live smoke run.
 - Copy a Markdown demo runbook generated from the current evidence bundle.
 
 The frontend does not need to trigger the first backend workflow. GitHub issue comments remain the first trigger.
@@ -271,6 +272,7 @@ PatchPilot MVP is successful when:
 - Adapter-selected verification runs and the result is recorded.
 - A successful task creates a Pull Request.
 - An operator can verify demo readiness through a single evidence bundle covering setup, safety, queue, webhook, and recent PR signals.
+- An operator can follow an ordered demo script whose endpoint is explicitly read-only and whose steps point to dashboard evidence and curl verification commands.
 - An operator can copy a Markdown runbook that explains the current demo status and next actions without manually assembling API responses.
 - A failed task records and reports a clear failure reason.
 

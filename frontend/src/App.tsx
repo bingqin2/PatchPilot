@@ -9,6 +9,7 @@ import {
   getBackendHealth,
   getConfigurationSummary,
   getDemoEvidenceBundle,
+  getDemoScript,
   getDemoRunbook,
   getDemoReadiness,
   getDemoSmokeChecklist,
@@ -40,6 +41,7 @@ import { ConfigurationPanel } from './dashboard/components/ConfigurationPanel';
 import { ConnectivityPanel } from './dashboard/components/ConnectivityPanel';
 import { DemoReadinessPanel } from './dashboard/components/DemoReadinessPanel';
 import { DemoEvidenceBundlePanel } from './dashboard/components/DemoEvidenceBundlePanel';
+import { DemoScriptPanel } from './dashboard/components/DemoScriptPanel';
 import { DemoSmokeChecklistPanel } from './dashboard/components/DemoSmokeChecklistPanel';
 import { FailureCausePanel } from './dashboard/components/FailureCausePanel';
 import { LatencyPanel } from './dashboard/components/LatencyPanel';
@@ -65,6 +67,7 @@ import type {
   CreateTriggerQuarantineInput,
   DemoReadiness,
   DemoEvidenceBundle,
+  DemoScript,
   DemoSmokeChecklist,
   FixTask,
   FixTaskFailureCauseSummary,
@@ -134,6 +137,8 @@ export default function App() {
   const [demoReadinessError, setDemoReadinessError] = useState<string | null>(null);
   const [demoEvidenceBundle, setDemoEvidenceBundle] = useState<DemoEvidenceBundle | null>(null);
   const [demoEvidenceBundleError, setDemoEvidenceBundleError] = useState<string | null>(null);
+  const [demoScript, setDemoScript] = useState<DemoScript | null>(null);
+  const [demoScriptError, setDemoScriptError] = useState<string | null>(null);
   const [demoSmokeChecklist, setDemoSmokeChecklist] = useState<DemoSmokeChecklist | null>(null);
   const [demoSmokeChecklistError, setDemoSmokeChecklistError] = useState<string | null>(null);
   const [supportedAdapters, setSupportedAdapters] = useState<SupportedLanguageAdapter[]>([]);
@@ -394,6 +399,7 @@ export default function App() {
         latencySummary,
         configurationSummary,
         demoEvidenceBundleResult,
+        demoScriptResult,
         demoReadinessResult,
         demoSmokeChecklistResult,
         adapterListResult,
@@ -421,6 +427,10 @@ export default function App() {
         getDemoEvidenceBundle().then(
           (bundle) => ({ bundle, error: null as string | null }),
           (caught) => ({ bundle: null, error: errorMessage(caught) })
+        ),
+        getDemoScript().then(
+          (script) => ({ script, error: null as string | null }),
+          (caught) => ({ script: null, error: errorMessage(caught) })
         ),
         getDemoReadiness().then(
           (readiness) => ({ readiness, error: null as string | null }),
@@ -472,6 +482,10 @@ export default function App() {
         setDemoEvidenceBundle(demoEvidenceBundleResult.bundle);
       }
       setDemoEvidenceBundleError(demoEvidenceBundleResult.error);
+      if (demoScriptResult.script) {
+        setDemoScript(demoScriptResult.script);
+      }
+      setDemoScriptError(demoScriptResult.error);
       if (demoReadinessResult.readiness) {
         setDemoReadiness(demoReadinessResult.readiness);
       }
@@ -847,6 +861,8 @@ export default function App() {
         error={demoEvidenceBundleError}
         onCopyRunbook={handleCopyDemoRunbook}
       />
+
+      <DemoScriptPanel script={demoScript} error={demoScriptError} />
 
       <DemoReadinessPanel readiness={demoReadiness} error={demoReadinessError} />
 
