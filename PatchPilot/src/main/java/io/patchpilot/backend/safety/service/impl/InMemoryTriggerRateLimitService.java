@@ -44,23 +44,35 @@ public class InMemoryTriggerRateLimitService implements TriggerRateLimitService 
         }
 
         Instant now = clock.get();
-        String issueKey = issueKey(request);
-        String triggerUserKey = triggerUserKey(request);
-        String repositoryKey = repositoryKey(request);
+        TriggerRateLimitDecision decision = evaluate(request, now);
+        if (!decision.allowed()) {
+            return decision;
+        }
 
-        if (limitExceeded(issueKey, safetyProperties.getTriggerRateLimitMaxPerIssue(), now)) {
+        record(issueKey(request), now);
+        record(triggerUserKey(request), now);
+        record(repositoryKey(request), now);
+        return TriggerRateLimitDecision.accepted();
+    }
+
+    @Override
+    public synchronized TriggerRateLimitDecision check(TriggerRateLimitRequest request) {
+        if (!safetyProperties.isTriggerRateLimitEnabled()) {
+            return TriggerRateLimitDecision.accepted();
+        }
+        return evaluate(request, clock.get());
+    }
+
+    private TriggerRateLimitDecision evaluate(TriggerRateLimitRequest request, Instant now) {
+        if (limitExceeded(issueKey(request), safetyProperties.getTriggerRateLimitMaxPerIssue(), now)) {
             return TriggerRateLimitDecision.rejected(ISSUE_LIMIT_REASON);
         }
-        if (limitExceeded(triggerUserKey, safetyProperties.getTriggerRateLimitMaxPerTriggerUser(), now)) {
+        if (limitExceeded(triggerUserKey(request), safetyProperties.getTriggerRateLimitMaxPerTriggerUser(), now)) {
             return TriggerRateLimitDecision.rejected(TRIGGER_USER_LIMIT_REASON);
         }
-        if (limitExceeded(repositoryKey, safetyProperties.getTriggerRateLimitMaxPerRepository(), now)) {
+        if (limitExceeded(repositoryKey(request), safetyProperties.getTriggerRateLimitMaxPerRepository(), now)) {
             return TriggerRateLimitDecision.rejected(REPOSITORY_LIMIT_REASON);
         }
-
-        record(issueKey, now);
-        record(triggerUserKey, now);
-        record(repositoryKey, now);
         return TriggerRateLimitDecision.accepted();
     }
 

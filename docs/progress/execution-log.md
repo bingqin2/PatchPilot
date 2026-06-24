@@ -3449,3 +3449,22 @@ Validation so far:
 - `npm run build`: passed after production frontend build verification.
 - `mvn -pl PatchPilot test`: passed after full backend regression verification, 631 tests run, 0 failures.
 - `git diff --check`: passed after whitespace verification.
+
+Implemented trigger evaluation dry run from `docs/plans/172-trigger-evaluation-dry-run.md`.
+
+Changes:
+
+- Added `POST /api/tasks/evaluate-trigger` so operators can check whether a proposed manual `/agent fix` would create a task before pressing `Create task`.
+- Reused the manual task creation gate order: command safety, active-task check, rejected-trigger quarantine, read-only trigger rate-limit check, optional issue-context model trigger classification.
+- Added read-only rate-limit checking so dry runs do not consume quota.
+- Kept dry runs non-mutating: no task, queue item, rejected-trigger audit row, GitHub comment, or rate-limit record is created.
+- Added structured dry-run output with `WOULD_CREATE_TASK` or `BLOCKED`, per-gate decisions, issue-context load state, and next operator action.
+- Added dashboard manual-task evaluation controls and an inline allowed/blocked gate summary.
+- Updated README, product spec, architecture, frontend design notes, and this execution log.
+
+Validation so far:
+
+- `mvn -pl PatchPilot -Dtest=TaskControllerTests#should_evaluate_manual_trigger_without_creating_task+TaskControllerTests#should_evaluate_unsafe_manual_trigger_without_recording_rejected_audit test`: first failed with `405` because the dry-run endpoint did not exist; later passed after adding the controller and service.
+- `mvn -pl PatchPilot -Dtest=TaskControllerTests#should_evaluate_manual_trigger_without_creating_task+TaskControllerTests#should_evaluate_unsafe_manual_trigger_without_recording_rejected_audit,DefaultTriggerEvaluationServiceTests,InMemoryTriggerRateLimitServiceTests#should_check_without_recording_rate_limit_hit test`: passed after backend dry-run service and read-only rate-limit coverage, 4 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts src/dashboard/components/ManualTaskForm.test.tsx`: first failed because the frontend API and manual form dry-run control did not exist; later failed because the blocked reason was duplicated in the summary and gate detail; then passed after rendering one summary and one gate-specific reason, 44 tests run, 0 failures.
+- `npm test -- --run src/App.test.tsx src/api.test.ts src/dashboard/components/ManualTaskForm.test.tsx`: passed after dashboard integration verification, 103 tests run, 0 failures.

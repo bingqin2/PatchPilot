@@ -66,6 +66,13 @@ GitHub issue comment created
   -> FixTaskService marks the task completed or failed
 ```
 
+Manual dashboard task creation follows the same trigger gate sequence. The
+`POST /api/tasks/evaluate-trigger` path stops before task creation and returns
+the gate decisions as a read-only dry run: it may inspect safety, active-task
+state, quarantine state, rate-limit state, and model trigger classification, but
+it must not create tasks, queue items, rejected-trigger audit rows, GitHub
+comments, or rate-limit records.
+
 ## Worker Runtime Health
 
 The single-process backend records queue worker heartbeat state in memory through
@@ -162,6 +169,7 @@ Responsibilities:
 - Deduplicate delivery ids.
 - Record accepted trigger evidence on task timelines, including safety-gate outcome, issue-context load status, and model trigger-classification outcome.
 - Submit work to task services.
+- Expose a read-only trigger evaluation path for manual/dashboard checks that reuses the task-creation gates without mutating tasks, GitHub, rejected-trigger audits, queue state, or rate-limit counters.
 
 The webhook layer must not run model calls, clone repositories, or execute tests.
 

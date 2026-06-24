@@ -127,6 +127,26 @@ export interface CreateTaskInput {
   triggerComment: string;
 }
 
+export interface TriggerEvaluationResult {
+  status: 'WOULD_CREATE_TASK' | 'BLOCKED';
+  wouldCreateTask: boolean;
+  blockedReason: string | null;
+  blockedCategory: string | null;
+  safetyDecision: TriggerEvaluationDecision | null;
+  activeTaskDecision: TriggerEvaluationDecision | null;
+  quarantineDecision: TriggerEvaluationDecision | null;
+  rateLimitDecision: TriggerEvaluationDecision | null;
+  triggerIntentDecision: TriggerEvaluationDecision | null;
+  issueContextLoaded: boolean;
+  nextAction: string;
+}
+
+export interface TriggerEvaluationDecision {
+  allowed: boolean;
+  reason: string;
+  category: string;
+}
+
 export interface ApproveReviewInput {
   operator: string;
   reason: string;

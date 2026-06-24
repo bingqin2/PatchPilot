@@ -6,10 +6,12 @@ import io.patchpilot.backend.github.client.domain.GitHubIssueContext;
 import io.patchpilot.backend.github.client.domain.GitHubIssueContextComment;
 import io.patchpilot.backend.task.domain.bo.ApproveReviewCommand;
 import io.patchpilot.backend.task.domain.bo.CreateManualFixTaskCommand;
+import io.patchpilot.backend.task.domain.bo.EvaluateTriggerCommand;
 import io.patchpilot.backend.task.domain.bo.FixTaskListQuery;
 import io.patchpilot.backend.task.domain.bo.RetryTaskCommand;
 import io.patchpilot.backend.task.domain.dto.ApproveReviewDto;
 import io.patchpilot.backend.task.domain.dto.CreateFixTaskDto;
+import io.patchpilot.backend.task.domain.dto.EvaluateTriggerDto;
 import io.patchpilot.backend.task.domain.dto.RetryTaskDto;
 import io.patchpilot.backend.task.domain.enums.FixTaskTimelineEventType;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
@@ -48,6 +50,8 @@ import io.patchpilot.backend.task.service.FixTaskToolCallService;
 import io.patchpilot.backend.task.service.ManualFixTaskService;
 import io.patchpilot.backend.task.service.RepositorySupportGuidanceService;
 import io.patchpilot.backend.task.service.TaskFailureFeedback;
+import io.patchpilot.backend.task.service.TriggerEvaluationService;
+import io.patchpilot.backend.task.domain.vo.TriggerEvaluationResultVo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -81,6 +85,7 @@ public class TaskController {
     private final FixTaskQueueQueryService fixTaskQueueQueryService;
     private final FixTaskReportFormatter fixTaskReportFormatter;
     private final ManualFixTaskService manualFixTaskService;
+    private final TriggerEvaluationService triggerEvaluationService;
     private final RepositorySupportGuidanceService repositorySupportGuidanceService;
     private final IssueContextService issueContextService;
 
@@ -94,6 +99,16 @@ public class TaskController {
             return ResponseEntity.badRequest().body(ApiResponse.fail(exception.getMessage()));
         } catch (IllegalStateException exception) {
             return ResponseEntity.status(409).body(ApiResponse.fail(exception.getMessage()));
+        }
+    }
+
+    @PostMapping("/evaluate-trigger")
+    public ResponseEntity<ApiResponse<TriggerEvaluationResultVo>> evaluateTrigger(@RequestBody EvaluateTriggerDto request) {
+        try {
+            EvaluateTriggerCommand command = evaluateTriggerCommand(request);
+            return ResponseEntity.ok(ApiResponse.ok(triggerEvaluationService.evaluate(command)));
+        } catch (IllegalArgumentException exception) {
+            return ResponseEntity.badRequest().body(ApiResponse.fail(exception.getMessage()));
         }
     }
 
@@ -519,23 +534,60 @@ public class TaskController {
         if (request == null) {
             throw new IllegalArgumentException("request body is required");
         }
-        String repositoryOwner = requiredText(request.repositoryOwner(), "repositoryOwner must not be blank");
-        String repositoryName = requiredText(request.repositoryName(), "repositoryName must not be blank");
-        if (request.issueNumber() == null || request.issueNumber() < 1) {
+        TriggerRequestParts parts = triggerRequestParts(
+                request.repositoryOwner(),
+                request.repositoryName(),
+                request.issueNumber(),
+                request.triggerUser(),
+                request.triggerComment()
+        );
+        return new CreateManualFixTaskCommand(
+                parts.repositoryOwner(),
+                parts.repositoryName(),
+                parts.issueNumber(),
+                parts.triggerUser(),
+                parts.triggerComment()
+        );
+    }
+
+    private static EvaluateTriggerCommand evaluateTriggerCommand(EvaluateTriggerDto request) {
+        if (request == null) {
+            throw new IllegalArgumentException("request body is required");
+        }
+        TriggerRequestParts parts = triggerRequestParts(
+                request.repositoryOwner(),
+                request.repositoryName(),
+                request.issueNumber(),
+                request.triggerUser(),
+                request.triggerComment()
+        );
+        return new EvaluateTriggerCommand(
+                parts.repositoryOwner(),
+                parts.repositoryName(),
+                parts.issueNumber(),
+                parts.triggerUser(),
+                parts.triggerComment()
+        );
+    }
+
+    private static TriggerRequestParts triggerRequestParts(
+            String repositoryOwnerValue,
+            String repositoryNameValue,
+            Long issueNumberValue,
+            String triggerUserValue,
+            String triggerCommentValue
+    ) {
+        String repositoryOwner = requiredText(repositoryOwnerValue, "repositoryOwner must not be blank");
+        String repositoryName = requiredText(repositoryNameValue, "repositoryName must not be blank");
+        if (issueNumberValue == null || issueNumberValue < 1) {
             throw new IllegalArgumentException("issueNumber must be positive");
         }
-        String triggerUser = requiredText(request.triggerUser(), "triggerUser must not be blank");
-        String triggerComment = requiredText(request.triggerComment(), "triggerComment must not be blank");
+        String triggerUser = requiredText(triggerUserValue, "triggerUser must not be blank");
+        String triggerComment = requiredText(triggerCommentValue, "triggerComment must not be blank");
         if (!triggerComment.equals("/agent fix") && !triggerComment.startsWith("/agent fix ")) {
             throw new IllegalArgumentException("triggerComment must start with /agent fix");
         }
-        return new CreateManualFixTaskCommand(
-                repositoryOwner,
-                repositoryName,
-                request.issueNumber(),
-                triggerUser,
-                triggerComment
-        );
+        return new TriggerRequestParts(repositoryOwner, repositoryName, issueNumberValue, triggerUser, triggerComment);
     }
 
     private static ApproveReviewCommand approveReviewCommand(ApproveReviewDto request) {
@@ -720,5 +772,14 @@ public class TaskController {
             throw new IllegalArgumentException(message);
         }
         return value.trim();
+    }
+
+    private record TriggerRequestParts(
+            String repositoryOwner,
+            String repositoryName,
+            long issueNumber,
+            String triggerUser,
+            String triggerComment
+    ) {
     }
 }
