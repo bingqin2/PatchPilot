@@ -951,6 +951,9 @@ beforeEach(() => {
     if (url === '/api/demo/evidence-bundle') {
       return jsonResponse(demoEvidenceBundle);
     }
+    if (url === '/api/demo/runbook') {
+      return jsonResponse('# PatchPilot Demo Runbook\n\n- Status: `READY`');
+    }
     if (url === '/health') {
       return jsonResponse({
         status: 'UP',
@@ -1643,6 +1646,25 @@ test('copies selected task report from backend API', async () => {
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks/task-1/report'));
   expect(writeText).toHaveBeenCalledWith('# PatchPilot Task Report\n\n- Task: `task-1`');
   expect(screen.getByText('Task report copied')).toBeInTheDocument();
+});
+
+test('copies demo runbook from backend API', async () => {
+  const user = userEvent.setup();
+  const fetchMock = vi.mocked(fetch);
+  const writeText = vi.fn().mockResolvedValue(undefined);
+  Object.defineProperty(navigator, 'clipboard', {
+    configurable: true,
+    value: { writeText }
+  });
+
+  render(<App />);
+
+  const evidenceBundlePanel = await screen.findByRole('region', { name: 'Demo evidence bundle' });
+  await user.click(within(evidenceBundlePanel).getByRole('button', { name: 'Copy runbook' }));
+
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/runbook'));
+  expect(writeText).toHaveBeenCalledWith('# PatchPilot Demo Runbook\n\n- Status: `READY`');
+  expect(within(evidenceBundlePanel).getByText('Demo runbook copied')).toBeInTheDocument();
 });
 
 test('creates a manual task from the dashboard and refreshes task data', async () => {

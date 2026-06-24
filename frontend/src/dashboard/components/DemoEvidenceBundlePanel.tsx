@@ -1,12 +1,27 @@
+import { Copy } from 'lucide-react';
+import { useState } from 'react';
 import type { DemoEvidenceBundle, DemoReadinessStatus } from '../../types';
 import { compactDateTime } from '../format';
 
 interface DemoEvidenceBundlePanelProps {
   bundle: DemoEvidenceBundle | null;
   error: string | null;
+  onCopyRunbook: () => Promise<string>;
 }
 
-export function DemoEvidenceBundlePanel({ bundle, error }: DemoEvidenceBundlePanelProps) {
+export function DemoEvidenceBundlePanel({ bundle, error, onCopyRunbook }: DemoEvidenceBundlePanelProps) {
+  const [copyStatus, setCopyStatus] = useState<string | null>(null);
+
+  async function copyRunbook() {
+    try {
+      const runbook = await onCopyRunbook();
+      await navigator.clipboard.writeText(runbook);
+      setCopyStatus('Demo runbook copied');
+    } catch {
+      setCopyStatus('Copy failed');
+    }
+  }
+
   return (
     <section className="panel demo-evidence-panel" aria-label="Demo evidence bundle">
       <div className="panel-header">
@@ -14,11 +29,18 @@ export function DemoEvidenceBundlePanel({ bundle, error }: DemoEvidenceBundlePan
           <h2>Demo evidence bundle</h2>
           <p>{bundle?.summary ?? 'Loading demo evidence bundle'}</p>
         </div>
-        {bundle ? (
-          <span className={`demo-readiness-status demo-readiness-status-${statusClass(bundle.status)}`}>
-            {statusLabel(bundle.status)}
-          </span>
-        ) : null}
+        <div className="demo-evidence-header-actions">
+          {bundle ? (
+            <span className={`demo-readiness-status demo-readiness-status-${statusClass(bundle.status)}`}>
+              {statusLabel(bundle.status)}
+            </span>
+          ) : null}
+          <button className="secondary-button" type="button" onClick={() => void copyRunbook()}>
+            <Copy size={14} />
+            Copy runbook
+          </button>
+          {copyStatus ? <span className="copy-status">{copyStatus}</span> : null}
+        </div>
       </div>
 
       {error ? (

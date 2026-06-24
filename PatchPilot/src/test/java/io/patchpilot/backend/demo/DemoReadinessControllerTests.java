@@ -39,6 +39,9 @@ class DemoReadinessControllerTests {
     @MockitoBean
     private DemoEvidenceBundleService demoEvidenceBundleService;
 
+    @MockitoBean
+    private DemoRunbookService demoRunbookService;
+
     @Test
     void should_return_demo_readiness_summary() throws Exception {
         when(demoReadinessService.getReadiness()).thenReturn(new DemoReadinessVo(
@@ -147,5 +150,22 @@ class DemoReadinessControllerTests {
                 .andExpect(jsonPath("$.data.summaryCounts.activeQuarantineCount").value(1))
                 .andExpect(jsonPath("$.data.recentPullRequestUrl").value("https://github.com/bingqin2/PatchPilot/pull/42"))
                 .andExpect(jsonPath("$.data.nextActions[0]").value("Run one controlled issue-to-PR smoke task before a live demo."));
+    }
+
+    @Test
+    void should_return_demo_runbook_markdown() throws Exception {
+        when(demoRunbookService.getRunbook()).thenReturn("""
+                # PatchPilot Demo Runbook
+
+                - Status: `NEEDS_ATTENTION`
+                - Recent Pull Request: https://github.com/bingqin2/PatchPilot/pull/42
+                """);
+
+        mockMvc.perform(get("/api/demo/runbook"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("# PatchPilot Demo Runbook")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("`NEEDS_ATTENTION`")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("https://github.com/bingqin2/PatchPilot/pull/42")));
     }
 }

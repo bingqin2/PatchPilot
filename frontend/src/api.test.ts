@@ -10,6 +10,7 @@ import {
   getModelUsageSummary,
   getDemoSmokeChecklist,
   getDemoEvidenceBundle,
+  getDemoRunbook,
   getRejectedTriggerSummary,
   getTriggerQuarantineEvidence,
   listLanguageAdapterFixtures,
@@ -304,6 +305,25 @@ test('gets demo evidence bundle through backend API', async () => {
   expect(bundle.status).toBe('READY');
   expect(bundle.summaryCounts.adapterFixtureCount).toBe(12);
   expect(bundle.recentPullRequestUrl).toBe('https://github.com/bingqin2/PatchPilot/pull/42');
+});
+
+test('loads demo runbook markdown from backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: '# PatchPilot Demo Runbook\n\n- Status: `READY`',
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const runbook = await getDemoRunbook();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/runbook');
+  expect(runbook).toContain('# PatchPilot Demo Runbook');
+  expect(runbook).toContain('`READY`');
 });
 
 test('lists recent rejected triggers through backend API', async () => {

@@ -3042,3 +3042,23 @@ Validation so far:
 - `npm test`: passed after full frontend verification, 136 tests run, 0 failures.
 - `npm run build`: passed after production frontend build verification.
 - `git diff --check`: passed after whitespace verification.
+
+Implemented demo runbook export from `docs/plans/151-demo-runbook-export.md`.
+
+Changes:
+
+- Added `GET /api/demo/runbook` as a read-only Markdown export over the existing demo evidence bundle.
+- Added `DemoRunbookService` to format status, summary, generated time, recent PR, recent task, latest webhook delivery, adapter fixture counts, queue counts, rejected-trigger counts, active quarantines, readiness checks, smoke checklist steps, and next actions.
+- Added `getDemoRunbook` to the frontend API layer.
+- Added a `Copy runbook` action to `DemoEvidenceBundlePanel` that fetches the Markdown only on click and copies it to the clipboard.
+- Updated README, product spec, architecture notes, frontend design notes, and this execution log.
+
+Validation so far:
+
+- `JAVA_HOME=/Library/Java/JavaVirtualMachines/openjdk-17.jdk/Contents/Home mvn -pl PatchPilot -Dtest=DemoRunbookServiceTests,DemoReadinessControllerTests test`: first failed because `DemoRunbookService` did not exist; then failed on a stale readiness field name and webhook fixture constructor; then passed after backend implementation, 6 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts src/dashboard/components/DemoEvidenceBundlePanel.test.tsx`: first failed because `getDemoRunbook` and the `Copy runbook` button did not exist; then passed after frontend implementation, 34 tests run, 0 failures.
+- `npm test -- --run src/App.test.tsx src/api.test.ts src/dashboard/components/DemoEvidenceBundlePanel.test.tsx`: passed after App-level copy wiring, 92 tests run, 0 failures.
+- `JAVA_HOME=/Library/Java/JavaVirtualMachines/openjdk-17.jdk/Contents/Home mvn -pl PatchPilot test`: passed after full backend verification, 573 tests run, 0 failures.
+- `npm test`: passed after full frontend verification, 139 tests run, 0 failures.
+- `npm run build`: passed after production frontend build verification.
+- `git diff --check`: passed after whitespace verification.

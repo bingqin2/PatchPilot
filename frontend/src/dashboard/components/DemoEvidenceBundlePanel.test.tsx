@@ -1,4 +1,5 @@
 import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import type { DemoEvidenceBundle } from '../../types';
 import { DemoEvidenceBundlePanel } from './DemoEvidenceBundlePanel';
 
@@ -99,7 +100,7 @@ const bundle: DemoEvidenceBundle = {
 };
 
 test('summarizes demo evidence bundle for operators', () => {
-  render(<DemoEvidenceBundlePanel bundle={bundle} error={null} />);
+  render(<DemoEvidenceBundlePanel bundle={bundle} error={null} onCopyRunbook={vi.fn()} />);
 
   const panel = screen.getByRole('region', { name: 'Demo evidence bundle' });
   expect(within(panel).getByRole('heading', { name: 'Demo evidence bundle' })).toBeInTheDocument();
@@ -119,13 +120,30 @@ test('summarizes demo evidence bundle for operators', () => {
 });
 
 test('shows loading and API errors without hiding existing bundle data', () => {
-  const { rerender } = render(<DemoEvidenceBundlePanel bundle={null} error={null} />);
+  const { rerender } = render(<DemoEvidenceBundlePanel bundle={null} error={null} onCopyRunbook={vi.fn()} />);
 
   expect(screen.getByText('Demo evidence bundle has not loaded yet.')).toBeInTheDocument();
 
-  rerender(<DemoEvidenceBundlePanel bundle={bundle} error="Backend request failed" />);
+  rerender(<DemoEvidenceBundlePanel bundle={bundle} error="Backend request failed" onCopyRunbook={vi.fn()} />);
 
   expect(screen.getByText('Demo evidence bundle unavailable')).toBeInTheDocument();
   expect(screen.getByText('Backend request failed')).toBeInTheDocument();
   expect(screen.getByText('Demo evidence bundle needs attention.')).toBeInTheDocument();
+});
+
+test('copies demo runbook markdown', async () => {
+  const writeText = vi.fn().mockResolvedValue(undefined);
+  const onCopyRunbook = vi.fn().mockResolvedValue('# PatchPilot Demo Runbook\n\n- Status: `READY`');
+  Object.defineProperty(navigator, 'clipboard', {
+    configurable: true,
+    value: { writeText }
+  });
+
+  render(<DemoEvidenceBundlePanel bundle={bundle} error={null} onCopyRunbook={onCopyRunbook} />);
+
+  await userEvent.click(screen.getByRole('button', { name: 'Copy runbook' }));
+
+  expect(onCopyRunbook).toHaveBeenCalledTimes(1);
+  expect(writeText).toHaveBeenCalledWith('# PatchPilot Demo Runbook\n\n- Status: `READY`');
+  expect(screen.getByText('Demo runbook copied')).toBeInTheDocument();
 });
