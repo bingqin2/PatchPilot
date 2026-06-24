@@ -3,6 +3,7 @@ import {
   createTask,
   createTriggerQuarantine,
   ADMIN_TOKEN_STORAGE_KEY,
+  evaluateTrigger,
   getBackendHealth,
   getConfigurationSummary,
   getFailureCauseSummary,
@@ -99,6 +100,74 @@ test('creates manual task through backend API', async () => {
   });
   expect(task.id).toBe('manual-task-1');
   expect(task.status).toBe('PENDING');
+});
+
+test('evaluates trigger without creating manual task through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        status: 'WOULD_CREATE_TASK',
+        wouldCreateTask: true,
+        blockedReason: null,
+        blockedCategory: null,
+        safetyDecision: {
+          allowed: true,
+          reason: 'Accepted',
+          category: 'UNKNOWN'
+        },
+        activeTaskDecision: {
+          allowed: true,
+          reason: 'No active task exists for this issue',
+          category: 'UNKNOWN'
+        },
+        quarantineDecision: {
+          allowed: true,
+          reason: 'Trigger quarantine accepted',
+          category: 'UNKNOWN'
+        },
+        rateLimitDecision: {
+          allowed: true,
+          reason: 'Trigger rate limit accepted',
+          category: 'UNKNOWN'
+        },
+        triggerIntentDecision: {
+          allowed: true,
+          reason: 'Model trigger classification is disabled',
+          category: 'UNKNOWN'
+        },
+        issueContextLoaded: false,
+        nextAction: 'Create task is allowed for this trigger.'
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const result = await evaluateTrigger({
+    repositoryOwner: 'bingqin2',
+    repositoryName: 'PatchPilot',
+    issueNumber: 7,
+    triggerUser: 'local-operator',
+    triggerComment: '/agent fix touch docs/manual-task.md'
+  });
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/tasks/evaluate-trigger', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      repositoryOwner: 'bingqin2',
+      repositoryName: 'PatchPilot',
+      issueNumber: 7,
+      triggerUser: 'local-operator',
+      triggerComment: '/agent fix touch docs/manual-task.md'
+    })
+  });
+  expect(result.status).toBe('WOULD_CREATE_TASK');
+  expect(result.wouldCreateTask).toBe(true);
+  expect(result.triggerIntentDecision?.reason).toBe('Model trigger classification is disabled');
 });
 
 test('approves pending review tasks through backend API', async () => {

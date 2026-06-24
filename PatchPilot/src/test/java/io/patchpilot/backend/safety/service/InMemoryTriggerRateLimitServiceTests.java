@@ -47,6 +47,22 @@ class InMemoryTriggerRateLimitServiceTests {
     }
 
     @Test
+    void should_check_without_recording_rate_limit_hit() {
+        InMemoryTriggerRateLimitService rateLimitService = new InMemoryTriggerRateLimitService(
+                properties(true, 60_000, 100, 100, 1),
+                () -> Instant.parse("2026-06-22T00:00:00Z")
+        );
+
+        assertThat(rateLimitService.check(request()).allowed()).isTrue();
+        assertThat(rateLimitService.check(request()).allowed()).isTrue();
+        assertThat(rateLimitService.checkAndRecord(request()).allowed()).isTrue();
+
+        TriggerRateLimitDecision secondRecordedDecision = rateLimitService.checkAndRecord(request());
+        assertThat(secondRecordedDecision.allowed()).isFalse();
+        assertThat(secondRecordedDecision.reason()).isEqualTo("Unsafe request rejected: trigger rate limit exceeded for issue");
+    }
+
+    @Test
     void should_allow_all_requests_when_rate_limit_is_disabled() {
         InMemoryTriggerRateLimitService rateLimitService = new InMemoryTriggerRateLimitService(
                 properties(false, 60_000, 1, 1, 1),

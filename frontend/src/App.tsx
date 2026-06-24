@@ -9,6 +9,7 @@ import {
   createTriggerQuarantine,
   downloadDemoSessionArchiveReport,
   downloadDemoSessionReport,
+  evaluateTrigger,
   getBackendHealth,
   getConfigurationSummary,
   getDemoEvidenceBundle,
@@ -104,7 +105,8 @@ import type {
   RetryTaskInput,
   SupportedLanguageAdapter,
   TaskSort,
-  TaskStatusFilter
+  TaskStatusFilter,
+  TriggerEvaluationResult
 } from './types';
 
 const TASK_PAGE_SIZE = 50;
@@ -204,6 +206,8 @@ export default function App() {
   const [taskTotal, setTaskTotal] = useState(0);
   const [lastRefreshedAt, setLastRefreshedAt] = useState<string | null>(null);
   const [creatingTask, setCreatingTask] = useState(false);
+  const [evaluatingTrigger, setEvaluatingTrigger] = useState(false);
+  const [triggerEvaluation, setTriggerEvaluation] = useState<TriggerEvaluationResult | null>(null);
   const [createTaskStatus, setCreateTaskStatus] = useState<string | null>(null);
   const [creatingTriggerQuarantine, setCreatingTriggerQuarantine] = useState(false);
   const [releasingTriggerQuarantineId, setReleasingTriggerQuarantineId] = useState<string | null>(null);
@@ -718,6 +722,7 @@ export default function App() {
   const handleCreateTask = useCallback(async (input: CreateTaskInput) => {
     setCreatingTask(true);
     setCreateTaskStatus(null);
+    setTriggerEvaluation(null);
     setError(null);
     try {
       const task = await createTask(input);
@@ -732,6 +737,22 @@ export default function App() {
       setCreatingTask(false);
     }
   }, [refresh]);
+
+  const handleEvaluateTrigger = useCallback(async (input: CreateTaskInput) => {
+    setEvaluatingTrigger(true);
+    setCreateTaskStatus(null);
+    setError(null);
+    try {
+      const result = await evaluateTrigger(input);
+      setTriggerEvaluation(result);
+      return result;
+    } catch (caught) {
+      setError(errorMessage(caught));
+      throw caught;
+    } finally {
+      setEvaluatingTrigger(false);
+    }
+  }, []);
 
   const handleCreateTriggerQuarantine = useCallback(async (input: CreateTriggerQuarantineInput) => {
     setCreatingTriggerQuarantine(true);
@@ -954,8 +975,11 @@ export default function App() {
 
       <ManualTaskForm
         creating={creatingTask}
+        evaluating={evaluatingTrigger}
+        evaluation={triggerEvaluation}
         successMessage={createTaskStatus}
         onCreateTask={handleCreateTask}
+        onEvaluateTrigger={handleEvaluateTrigger}
       />
 
       <section className="workspace-grid">

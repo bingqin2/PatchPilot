@@ -42,7 +42,8 @@ import type {
   RepositoryPreflightResult,
   SupportedLanguageAdapter,
   TaskSort,
-  TaskStatusFilter
+  TaskStatusFilter,
+  TriggerEvaluationResult
 } from './types';
 
 interface ListTasksOptions {
@@ -76,6 +77,10 @@ export const ADMIN_TOKEN_STORAGE_KEY = 'patchpilot.adminToken';
 
 export async function createTask(input: CreateTaskInput): Promise<FixTask> {
   return postApi<FixTask>('/api/tasks', input);
+}
+
+export async function evaluateTrigger(input: CreateTaskInput): Promise<TriggerEvaluationResult> {
+  return postApi<TriggerEvaluationResult>('/api/tasks/evaluate-trigger', input);
 }
 
 export async function listTasks(options: TaskStatusFilter | ListTasksOptions = 'ALL'): Promise<FixTaskPage> {
