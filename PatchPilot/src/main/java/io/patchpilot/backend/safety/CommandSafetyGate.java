@@ -65,9 +65,9 @@ public class CommandSafetyGate {
     }
 
     public SafetyGateDecision evaluate(SafetyGateRequest request) {
-        SafetyGateDecision commandDecision = evaluate(request.triggerComment());
-        if (!commandDecision.allowed()) {
-            return commandDecision;
+        SafetyGateDecision syntaxDecision = evaluateSyntaxAndDanger(request.triggerComment());
+        if (!syntaxDecision.allowed()) {
+            return syntaxDecision;
         }
         if (!isTriggerUserAllowed(request.triggerUser())) {
             return SafetyGateDecision.rejected(
@@ -81,7 +81,7 @@ public class CommandSafetyGate {
                     RejectedTriggerCategory.REPOSITORY_NOT_ALLOWED
             );
         }
-        return SafetyGateDecision.accepted();
+        return evaluateActionability(request.triggerComment());
     }
 
     public boolean isAgentFixCommand(String triggerComment) {
@@ -97,6 +97,37 @@ public class CommandSafetyGate {
                 || containsAny(normalizedCommand, "leak secret", "leak secrets", "print secret", "print secrets")
                 || containsAny(normalizedCommand, "exfiltrate", "steal token", "steal tokens", "dump env", "dump environment")
                 || containsAny(normalizedCommand, "rm -rf", "curl ", "wget ", "chmod 777", "sudo ");
+    }
+
+    private static SafetyGateDecision evaluateSyntaxAndDanger(String triggerComment) {
+        if (!StringUtils.hasText(triggerComment)) {
+            return SafetyGateDecision.rejected(
+                    "Unsafe request rejected: empty command",
+                    RejectedTriggerCategory.EMPTY_COMMAND
+            );
+        }
+        String normalized = normalize(triggerComment);
+        if (!isAgentFixCommandValue(normalized)) {
+            return SafetyGateDecision.rejected(
+                    "Unsafe request rejected: unsupported command",
+                    RejectedTriggerCategory.UNSUPPORTED_COMMAND
+            );
+        }
+        if (containsDangerousInstruction(normalized)) {
+            return SafetyGateDecision.rejected(
+                    "Unsafe request rejected: destructive or secret-exfiltration instruction",
+                    RejectedTriggerCategory.DANGEROUS_INSTRUCTION
+            );
+        }
+        return SafetyGateDecision.accepted();
+    }
+
+    private static SafetyGateDecision evaluateActionability(String triggerComment) {
+        String normalized = normalize(triggerComment);
+        if (!isActionableInstruction(normalized)) {
+            return SafetyGateDecision.rejected(NOT_ACTIONABLE_REASON, RejectedTriggerCategory.NOT_ACTIONABLE);
+        }
+        return SafetyGateDecision.accepted();
     }
 
     private static boolean isActionableInstruction(String normalizedCommand) {
@@ -155,6 +186,10 @@ public class CommandSafetyGate {
 
     private static String normalize(String value) {
         return value.trim().replaceAll("\\s+", " ").toLowerCase(Locale.ROOT);
+    }
+
+    private static boolean isAgentFixCommandValue(String normalized) {
+        return AGENT_FIX_COMMAND.equals(normalized) || normalized.startsWith(AGENT_FIX_COMMAND + " ");
     }
 
     private boolean isTriggerUserAllowed(String triggerUser) {

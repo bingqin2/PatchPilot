@@ -16,10 +16,14 @@ public class IssueContextService {
     private final GitHubIssueContextClient gitHubIssueContextClient;
 
     public GitHubIssueContext loadIssueContext(FixTaskVo task) {
+        return loadIssueContext(task.repositoryOwner(), task.repositoryName(), task.issueNumber());
+    }
+
+    public GitHubIssueContext loadIssueContext(String repositoryOwner, String repositoryName, long issueNumber) {
         return gitHubIssueContextClient.getIssueContext(new GetIssueContextCommand(
-                task.repositoryOwner(),
-                task.repositoryName(),
-                task.issueNumber(),
+                repositoryOwner,
+                repositoryName,
+                issueNumber,
                 DEFAULT_COMMENT_LIMIT
         ));
     }

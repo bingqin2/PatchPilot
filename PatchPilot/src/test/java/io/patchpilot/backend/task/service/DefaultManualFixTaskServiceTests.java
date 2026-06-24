@@ -1,5 +1,11 @@
 package io.patchpilot.backend.task.service;
 
+import io.patchpilot.backend.github.IssueContextService;
+import io.patchpilot.backend.github.client.GitHubIssueContextClient;
+import io.patchpilot.backend.github.client.domain.GetIssueContextCommand;
+import io.patchpilot.backend.github.client.domain.GitHubIssueContext;
+import io.patchpilot.backend.github.client.domain.GitHubIssueContextComment;
+import io.patchpilot.backend.github.config.GitHubProperties;
 import io.patchpilot.backend.safety.CommandSafetyGate;
 import io.patchpilot.backend.safety.config.SafetyProperties;
 import io.patchpilot.backend.safety.domain.TriggerIntentClassificationRequest;
@@ -127,6 +133,41 @@ class DefaultManualFixTaskServiceTests {
     }
 
     @Test
+    void should_reject_short_manual_task_from_disallowed_user_before_issue_context_classification() {
+        RecordingTriggerIntentClassifier triggerIntentClassifier = new RecordingTriggerIntentClassifier(
+                TriggerIntentDecision.shouldExecute("should not be called"),
+                true
+        );
+        RecordingIssueContextService issueContextService = new RecordingIssueContextService(issueContext());
+        ManualFixTaskService restrictedManualFixTaskService = new DefaultManualFixTaskService(
+                fixTaskService,
+                fixTaskTimelineService,
+                fixTaskDispatcher,
+                new io.patchpilot.backend.safety.service.impl.InMemoryRejectedTriggerAuditService(),
+                new CommandSafetyGate(safetyProperties(List.of("maintainer"), List.of("bingqin2/PatchPilot"))),
+                new io.patchpilot.backend.safety.NoOpTriggerQuarantineService(),
+                new io.patchpilot.backend.safety.NoOpTriggerRateLimitService(),
+                triggerIntentClassifier,
+                issueContextService
+        );
+
+        assertThatThrownBy(() -> restrictedManualFixTaskService.createManualTask(new CreateManualFixTaskCommand(
+                "bingqin2",
+                "PatchPilot",
+                7,
+                "local-operator",
+                "/agent fix"
+        )))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Unsafe request rejected: trigger user is not allowed");
+
+        assertThat(issueContextService.command()).isNull();
+        assertThat(triggerIntentClassifier.request()).isNull();
+        assertThat(fixTaskService.listTasks()).isEmpty();
+        assertThat(fixTaskDispatcher.taskIds()).isEmpty();
+    }
+
+    @Test
     void should_reject_manual_task_when_repository_is_not_allowed() {
         ManualFixTaskService restrictedManualFixTaskService = new DefaultManualFixTaskService(
                 fixTaskService,
@@ -179,6 +220,49 @@ class DefaultManualFixTaskServiceTests {
         assertThat(fixTaskService.listTasks()).isEmpty();
         assertThat(fixTaskTimelineService.eventTypes()).isEmpty();
         assertThat(fixTaskDispatcher.taskIds()).isEmpty();
+    }
+
+    @Test
+    void should_use_issue_context_to_classify_short_manual_agent_fix_command() {
+        RecordingTriggerIntentClassifier triggerIntentClassifier = new RecordingTriggerIntentClassifier(
+                TriggerIntentDecision.shouldExecute("Issue context describes a concrete test failure."),
+                true
+        );
+        RecordingIssueContextService issueContextService = new RecordingIssueContextService(issueContext());
+        ManualFixTaskService classifiedManualFixTaskService = new DefaultManualFixTaskService(
+                fixTaskService,
+                fixTaskTimelineService,
+                fixTaskDispatcher,
+                new io.patchpilot.backend.safety.service.impl.InMemoryRejectedTriggerAuditService(),
+                new CommandSafetyGate(),
+                new io.patchpilot.backend.safety.NoOpTriggerQuarantineService(),
+                new io.patchpilot.backend.safety.NoOpTriggerRateLimitService(),
+                triggerIntentClassifier,
+                issueContextService
+        );
+
+        FixTaskVo task = classifiedManualFixTaskService.createManualTask(new CreateManualFixTaskCommand(
+                "bingqin2",
+                "PatchPilot",
+                7,
+                "local-operator",
+                "/agent fix"
+        ));
+
+        assertThat(task.triggerComment()).isEqualTo("/agent fix");
+        assertThat(issueContextService.command().owner()).isEqualTo("bingqin2");
+        assertThat(issueContextService.command().repository()).isEqualTo("PatchPilot");
+        assertThat(issueContextService.command().issueNumber()).isEqualTo(7L);
+        assertThat(triggerIntentClassifier.request().source()).isEqualTo("manual");
+        assertThat(triggerIntentClassifier.request().triggerComment()).isEqualTo("/agent fix");
+        assertThat(triggerIntentClassifier.request().issueTitle()).isEqualTo("Dashboard filter returns empty results");
+        assertThat(triggerIntentClassifier.request().issueBody())
+                .isEqualTo("The dashboard calls /api/tasks?status=FAILED and renders no rows even though failed tasks exist.");
+        assertThat(triggerIntentClassifier.request().recentIssueComments())
+                .extracting(comment -> comment.author() + ": " + comment.body())
+                .containsExactly("alice: Reproduce with the failed status filter and task #123.");
+        assertThat(fixTaskTimelineService.eventTypes()).containsExactly(FixTaskTimelineEventType.TASK_CREATED);
+        assertThat(fixTaskDispatcher.taskIds()).containsExactly(task.id());
     }
 
     @Test
@@ -269,6 +353,21 @@ class DefaultManualFixTaskServiceTests {
         return properties;
     }
 
+    private static GitHubIssueContext issueContext() {
+        return new GitHubIssueContext(
+                "Dashboard filter returns empty results",
+                "The dashboard calls /api/tasks?status=FAILED and renders no rows even though failed tasks exist.",
+                "https://github.com/bingqin2/PatchPilot/issues/7",
+                List.of(new GitHubIssueContextComment(
+                        123,
+                        "alice",
+                        "Reproduce with the failed status filter and task #123.",
+                        "2026-06-24T00:00:00Z",
+                        "https://github.com/bingqin2/PatchPilot/issues/7#issuecomment-123"
+                ))
+        );
+    }
+
     private static final class RecordingTimelineService implements FixTaskTimelineService {
 
         private final List<FixTaskTimelineEventType> eventTypes = new CopyOnWriteArrayList<>();
@@ -320,8 +419,18 @@ class DefaultManualFixTaskServiceTests {
         private final TriggerIntentDecision decision;
         private TriggerIntentClassificationRequest request;
 
+        private final boolean supportsIssueContextClassification;
+
         private RecordingTriggerIntentClassifier(TriggerIntentDecision decision) {
+            this(decision, false);
+        }
+
+        private RecordingTriggerIntentClassifier(
+                TriggerIntentDecision decision,
+                boolean supportsIssueContextClassification
+        ) {
             this.decision = decision;
+            this.supportsIssueContextClassification = supportsIssueContextClassification;
         }
 
         @Override
@@ -330,8 +439,39 @@ class DefaultManualFixTaskServiceTests {
             return decision;
         }
 
+        @Override
+        public boolean supportsIssueContextClassification() {
+            return supportsIssueContextClassification;
+        }
+
         private TriggerIntentClassificationRequest request() {
             return request;
+        }
+    }
+
+    private static final class RecordingIssueContextService extends IssueContextService {
+
+        private final GitHubIssueContext context;
+        private GetIssueContextCommand command;
+
+        private RecordingIssueContextService(GitHubIssueContext context) {
+            super(new GitHubIssueContextClient(new GitHubProperties()) {
+                @Override
+                public GitHubIssueContext getIssueContext(GetIssueContextCommand command) {
+                    return context;
+                }
+            });
+            this.context = context;
+        }
+
+        @Override
+        public GitHubIssueContext loadIssueContext(String repositoryOwner, String repositoryName, long issueNumber) {
+            command = new GetIssueContextCommand(repositoryOwner, repositoryName, issueNumber, 5);
+            return context;
+        }
+
+        private GetIssueContextCommand command() {
+            return command;
         }
     }
 

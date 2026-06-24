@@ -6,4 +6,8 @@ import io.patchpilot.backend.safety.domain.TriggerIntentDecision;
 public interface TriggerIntentClassifier {
 
     TriggerIntentDecision classify(TriggerIntentClassificationRequest request);
+
+    default boolean supportsIssueContextClassification() {
+        return false;
+    }
 }

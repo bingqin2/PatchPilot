@@ -8,12 +8,15 @@ import io.patchpilot.backend.agent.provider.domain.ModelProviderResponse;
 import io.patchpilot.backend.safety.config.SafetyProperties;
 import io.patchpilot.backend.safety.domain.TriggerIntentClassificationRequest;
 import io.patchpilot.backend.safety.domain.TriggerIntentDecision;
+import io.patchpilot.backend.safety.domain.TriggerIntentIssueComment;
 import io.patchpilot.backend.safety.service.TriggerIntentClassifier;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.util.List;
 import java.util.Locale;
+import java.util.stream.Collectors;
 
 @Service
 public class ModelTriggerIntentClassifier implements TriggerIntentClassifier {
@@ -67,6 +70,11 @@ public class ModelTriggerIntentClassifier implements TriggerIntentClassifier {
         }
     }
 
+    @Override
+    public boolean supportsIssueContextClassification() {
+        return safetyProperties.isModelTriggerClassificationEnabled();
+    }
+
     private TriggerIntentDecision parseDecision(String content) {
         try {
             JsonNode root = objectMapper.readTree(content);
@@ -96,6 +104,10 @@ public class ModelTriggerIntentClassifier implements TriggerIntentClassifier {
                 Source: %s
                 Repository: %s/%s
                 Issue number: %d
+                Issue title: %s
+                Issue body: %s
+                Recent issue comments:
+                %s
                 Trigger user: %s
                 Trigger comment: %s
                 """.formatted(
@@ -103,9 +115,28 @@ public class ModelTriggerIntentClassifier implements TriggerIntentClassifier {
                 request.repositoryOwner(),
                 request.repositoryName(),
                 request.issueNumber(),
+                clean(request.issueTitle()),
+                clean(request.issueBody()),
+                recentIssueComments(request.recentIssueComments()),
                 request.triggerUser(),
                 request.triggerComment()
         );
+    }
+
+    private static String recentIssueComments(List<TriggerIntentIssueComment> comments) {
+        if (comments == null || comments.isEmpty()) {
+            return "None";
+        }
+        return comments.stream()
+                .map(comment -> "- " + clean(comment.author()) + ": " + clean(comment.body()))
+                .collect(Collectors.joining("\n"));
+    }
+
+    private static String clean(String value) {
+        if (!StringUtils.hasText(value)) {
+            return "";
+        }
+        return value.trim();
     }
 
     private static String failureReason(RuntimeException exception) {

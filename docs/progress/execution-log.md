@@ -3226,3 +3226,24 @@ Validation so far:
 - `npm test`: passed after full frontend verification, 159 tests run, 0 failures.
 - `npm run build`: passed after production frontend build verification.
 - `GIT_OPTIONAL_LOCKS=0 git diff --check`: passed after whitespace verification.
+
+Implemented issue context trigger classification from `docs/plans/160-issue-context-trigger-classification.md`.
+
+Changes:
+
+- Added issue title, issue body, and recent issue comments to trigger intent classification requests.
+- Updated the model trigger-classification prompt to evaluate the trigger comment together with GitHub issue context.
+- Added an explicit classifier capability flag so short `NOT_ACTIONABLE` comments only proceed when model-backed issue-context classification is enabled.
+- Wired webhook and manual task creation to load issue context after deterministic safety, duplicate, active-task, quarantine, and rate-limit checks.
+- Kept dangerous commands, unsupported comments, unauthorized users, unauthorized repositories, quarantined users, and rate-limited requests rejected before issue context is loaded.
+- Added repository/issue based issue-context loading to `IssueContextService`.
+- Moved trigger-user and repository allowlist checks ahead of command actionability when evaluating full trigger requests, so short `/agent fix` comments cannot use issue-context classification to bypass authorization.
+
+Validation so far:
+
+- `mvn -pl PatchPilot -Dtest=ModelTriggerIntentClassifierTests,DefaultManualFixTaskServiceTests,GitHubWebhookServiceTests test`: first failed because issue-context request fields, classifier capability, context loading, and service constructors did not exist; then passed after backend implementation, 31 tests run, 0 failures.
+- `mvn -pl PatchPilot -Dtest=CommandSafetyGateTests test`: first failed because short `/agent fix` returned `NOT_ACTIONABLE` before allowlist decisions; then passed after splitting syntax/danger checks from actionability, 10 tests run, 0 failures.
+- `mvn -pl PatchPilot -Dtest=CommandSafetyGateTests,DefaultManualFixTaskServiceTests,GitHubWebhookServiceTests test`: passed after service-level safety regression coverage, 38 tests run, 0 failures.
+- `mvn -pl PatchPilot -Dtest=ModelTriggerIntentClassifierTests,DefaultManualFixTaskServiceTests,GitHubWebhookServiceTests,IssueContextServiceTests test`: passed after issue-context integration, 33 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed after full backend verification, 609 tests run, 0 failures.
+- `git diff --check`: passed after whitespace verification.
