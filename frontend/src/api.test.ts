@@ -9,6 +9,7 @@ import {
   getLatencySummary,
   getModelUsageSummary,
   getDemoSmokeChecklist,
+  getDemoEvidenceBundle,
   getRejectedTriggerSummary,
   getTriggerQuarantineEvidence,
   listLanguageAdapterFixtures,
@@ -233,6 +234,76 @@ test('lists recent webhook deliveries through backend API', async () => {
   expect(deliveries[0].status).toBe('TASK_CREATED');
   expect(deliveries[0].redeliveryRecommended).toBe(false);
   expect(deliveries[0].operatorAction).toBe('Task was created. Do not redeliver this webhook unless you intentionally want GitHub to report a duplicate delivery.');
+});
+
+test('gets demo evidence bundle through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        status: 'READY',
+        summary: 'Demo evidence bundle is ready.',
+        summaryCounts: {
+          adapterFixtureCount: 12,
+          failedAdapterFixtureCount: 0,
+          recentTaskCount: 1,
+          activeQuarantineCount: 0,
+          recentPullRequestAvailable: true
+        },
+        readiness: {
+          status: 'READY',
+          summary: 'PatchPilot is ready for a controlled demo.',
+          checks: [],
+          nextActions: []
+        },
+        smokeChecklist: {
+          status: 'READY',
+          summary: 'Live demo smoke checklist is ready.',
+          steps: [],
+          nextActions: []
+        },
+        configuration: null,
+        adapterFixtures: {
+          totalCount: 12,
+          failedCount: 0
+        },
+        queueSummary: {
+          totalCount: 0,
+          pendingCount: 0,
+          availablePendingCount: 0,
+          delayedPendingCount: 0,
+          runningCount: 0,
+          completedCount: 0,
+          failedCount: 0,
+          cancelledCount: 0
+        },
+        recentTask: null,
+        recentPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+        latestWebhookDelivery: null,
+        rejectedTriggerSummary: {
+          totalCount: 0,
+          categoryCounts: [],
+          sourceCounts: [],
+          triggerUserCounts: [],
+          repositoryCounts: []
+        },
+        activeQuarantineCount: 0,
+        generatedAt: '2026-06-24T00:10:00Z',
+        nextActions: ['Use this evidence bundle as the live demo baseline.']
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const bundle = await getDemoEvidenceBundle();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/evidence-bundle');
+  expect(bundle.status).toBe('READY');
+  expect(bundle.summaryCounts.adapterFixtureCount).toBe(12);
+  expect(bundle.recentPullRequestUrl).toBe('https://github.com/bingqin2/PatchPilot/pull/42');
 });
 
 test('lists recent rejected triggers through backend API', async () => {

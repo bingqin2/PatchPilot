@@ -5,6 +5,7 @@ import type {
   ConfigurationSummary,
   CreateTriggerQuarantineInput,
   CreateTaskInput,
+  DemoEvidenceBundle,
   DemoReadiness,
   DemoSmokeChecklist,
   FixTask,
@@ -153,6 +154,10 @@ export async function getDemoReadiness(): Promise<DemoReadiness> {
 
 export async function getDemoSmokeChecklist(): Promise<DemoSmokeChecklist> {
   return getApi<DemoSmokeChecklist>('/api/demo/smoke-checklist');
+}
+
+export async function getDemoEvidenceBundle(): Promise<DemoEvidenceBundle> {
+  return getApi<DemoEvidenceBundle>('/api/demo/evidence-bundle');
 }
 
 export async function getBackendHealth(): Promise<BackendHealth> {

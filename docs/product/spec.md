@@ -238,6 +238,7 @@ MVP frontend scope:
 - Open linked GitHub issue and Pull Request.
 - Inspect tool-call summaries.
 - Inspect verification output.
+- Inspect a single demo evidence bundle before posting a live `/agent fix` comment.
 
 The frontend does not need to trigger the first backend workflow. GitHub issue comments remain the first trigger.
 
@@ -268,6 +269,7 @@ PatchPilot MVP is successful when:
 - PatchPilot generates a patch for a simple supported Java, Node.js, or Python bug.
 - Adapter-selected verification runs and the result is recorded.
 - A successful task creates a Pull Request.
+- An operator can verify demo readiness through a single evidence bundle covering setup, safety, queue, webhook, and recent PR signals.
 - A failed task records and reports a clear failure reason.
 
 The broader product is successful when:
