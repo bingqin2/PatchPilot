@@ -3302,3 +3302,19 @@ Validation so far:
 - `mvn -pl PatchPilot -Dtest=IssueCommentToolTests#should_create_safe_rejection_comment_without_echoing_trigger_body test`: first failed because the refusal comment did not include `Category: DANGEROUS_INSTRUCTION`; then passed after adding category and next-action copy.
 - `mvn -pl PatchPilot -Dtest=IssueCommentToolTests#should_create_generic_rejection_comment_when_category_is_missing test`: first failed with a `NullPointerException` in category next-action selection; then passed after adding generic fallback guidance.
 - `mvn -pl PatchPilot -Dtest=IssueCommentToolTests,GitHubWebhookServiceTests test`: passed after wiring category through webhook rejection handling, 29 tests run, 0 failures.
+
+Implemented rejected trigger refusal comment visibility from `docs/plans/164-rejected-trigger-refusal-comment-visibility.md`.
+
+Changes:
+
+- Added `Refusal comment` links to rejected rows in `TriggerDecisionPanel` when rejected-trigger audit rows include a GitHub refusal comment URL.
+- Kept rejected rows without comment URLs unchanged.
+- Styled trigger-decision metadata links consistently with the full rejected-trigger audit panel.
+- Updated README, frontend design notes, and this execution log.
+
+Validation so far:
+
+- `npm test -- --run src/dashboard/components/TriggerDecisionPanel.test.tsx`: first failed because the trigger-decision rejected row did not expose the `Refusal comment` link; then passed after rendering the link, 2 tests run, 0 failures.
+- `npm test`: passed after full frontend regression verification, 161 tests run, 0 failures.
+- `npm run build`: passed after production frontend build verification.
+- `GIT_OPTIONAL_LOCKS=0 git diff --check`: passed after whitespace verification.

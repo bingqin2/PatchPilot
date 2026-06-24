@@ -86,6 +86,11 @@ export function TriggerDecisionPanel({
                   <span className="status-pill status-warning">{categoryLabel(trigger.category)}</span>
                   <span>{repositoryLabel(trigger)}</span>
                   <time dateTime={trigger.createdAt}>{compactTime(trigger.createdAt)}</time>
+                  {trigger.commentUrl ? (
+                    <a href={trigger.commentUrl} target="_blank" rel="noreferrer">
+                      Refusal comment
+                    </a>
+                  ) : null}
                 </div>
                 <strong>{trigger.triggerComment ?? 'missing trigger comment'}</strong>
                 <p>{trigger.reason}</p>

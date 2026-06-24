@@ -56,7 +56,7 @@ const rejectedTriggers: RejectedTriggerAudit[] = [
     triggerComment: '/agent fix make it better',
     deliveryId: 'delivery-rejected',
     commentId: 201,
-    commentUrl: null,
+    commentUrl: 'https://github.com/bingqin2/PatchPilot/issues/17#issuecomment-201',
     retriedTaskId: null,
     retriedAt: null,
     createdAt: '2026-06-20T00:58:00Z'
@@ -91,6 +91,10 @@ describe('TriggerDecisionPanel', () => {
     expect(within(panel).getAllByText('Not actionable')).toHaveLength(2);
     expect(within(panel).getByText('Unsafe request rejected: instruction is not actionable')).toBeInTheDocument();
     expect(within(panel).getByText('/agent fix make it better')).toBeInTheDocument();
+    expect(within(panel).getByRole('link', { name: 'Refusal comment' })).toHaveAttribute(
+      'href',
+      'https://github.com/bingqin2/PatchPilot/issues/17#issuecomment-201'
+    );
   });
 
   it('keeps the accepted side actionable when no task is selected', () => {
