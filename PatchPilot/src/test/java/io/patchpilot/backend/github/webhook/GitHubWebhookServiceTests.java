@@ -226,6 +226,7 @@ class GitHubWebhookServiceTests {
         assertThat(issueCommentTool.rejectedCount()).isEqualTo(1);
         assertThat(issueCommentTool.rejectedReason())
                 .isEqualTo("Unsafe request rejected: destructive or secret-exfiltration instruction");
+        assertThat(issueCommentTool.rejectedCategory()).isEqualTo("DANGEROUS_INSTRUCTION");
         assertThat(issueCommentTool.rejectedRepository()).isEqualTo("octocat/hello-world#42");
         assertThat(timelineService.eventTypes()).isEmpty();
         assertThat(auditService.commands()).hasSize(1);
@@ -1029,6 +1030,7 @@ class GitHubWebhookServiceTests {
         private final AtomicReference<String> acceptedTaskId = new AtomicReference<>();
         private final AtomicReference<String> activeTaskExistsTaskId = new AtomicReference<>();
         private final AtomicReference<String> rejectedReason = new AtomicReference<>();
+        private final AtomicReference<String> rejectedCategory = new AtomicReference<>();
         private final AtomicReference<String> rejectedRepository = new AtomicReference<>();
 
         private RecordingIssueCommentTool() {
@@ -1061,10 +1063,12 @@ class GitHubWebhookServiceTests {
                 long issueNumber,
                 String triggerUser,
                 String triggerComment,
-                String reason
+                String reason,
+                String category
         ) {
             rejectedCount.incrementAndGet();
             rejectedReason.set(reason);
+            rejectedCategory.set(category);
             rejectedRepository.set(repositoryOwner + "/" + repositoryName + "#" + issueNumber);
             return new IssueCommentResult(456, "https://github.com/octocat/hello-world/issues/42#issuecomment-456");
         }
@@ -1093,6 +1097,10 @@ class GitHubWebhookServiceTests {
             return rejectedReason.get();
         }
 
+        String rejectedCategory() {
+            return rejectedCategory.get();
+        }
+
         String rejectedRepository() {
             return rejectedRepository.get();
         }
@@ -1116,9 +1124,10 @@ class GitHubWebhookServiceTests {
                 long issueNumber,
                 String triggerUser,
                 String triggerComment,
-                String reason
+                String reason,
+                String category
         ) {
-            super.commentRejected(repositoryOwner, repositoryName, issueNumber, triggerUser, triggerComment, reason);
+            super.commentRejected(repositoryOwner, repositoryName, issueNumber, triggerUser, triggerComment, reason, category);
             throw new GitHubIssueCommentException("rejection comment failed");
         }
     }

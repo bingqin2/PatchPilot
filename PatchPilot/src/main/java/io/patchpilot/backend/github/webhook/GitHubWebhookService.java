@@ -774,7 +774,8 @@ public class GitHubWebhookService {
                 issueNumber,
                 triggerUser,
                 triggerComment,
-                reason
+                reason,
+                category
         );
         rejectedTriggerAuditService.recordRejectedTrigger(new RecordRejectedTriggerCommand(
                 "issue_comment",
@@ -797,7 +798,8 @@ public class GitHubWebhookService {
             long issueNumber,
             String triggerUser,
             String triggerComment,
-            String reason
+            String reason,
+            String category
     ) {
         try {
             return issueCommentTool.commentRejected(
@@ -806,7 +808,8 @@ public class GitHubWebhookService {
                     issueNumber,
                     triggerUser,
                     triggerComment,
-                    reason
+                    reason,
+                    category
             );
         } catch (RuntimeException exception) {
             return null;
