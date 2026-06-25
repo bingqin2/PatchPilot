@@ -113,6 +113,7 @@ The current implementation target is local self-hosted development first. Hosted
 - Trigger dry runs should use the same safety, active-task, quarantine, rate-limit, and model-classification order as task creation, but rate-limit checks must be read-only and rejected dry runs must not create rejected-trigger audit rows.
 - Operators should be able to inspect one quarantine and see the rejected-trigger audit rows and manual safety actions that explain it.
 - The system should reject unsupported repositories before model execution, patch generation, test execution, Git mutation, or Pull Request creation.
+- Unsupported repository task failures should post issue-facing feedback that says execution stopped before model patch generation, tests, commits, pushes, or Pull Request creation, then lists supported language/build shapes and a safe next action.
 - The local repository preflight diagnostic should return supported status, selected language/build system, verification command, detection reason, and next operator action so unsupported repository shapes can be fixed before a live `/agent fix`.
 - The local repository preflight diagnostic should expose its configured allowed roots through non-sensitive configuration summary APIs and the dashboard so operators can verify scope before using it.
 - Demo readiness and the operator setup checklist should warn when repository-preflight allowed roots do not cover checked-in demo fixture paths.
@@ -310,6 +311,7 @@ PatchPilot MVP is successful when:
 - An operator can copy an adapter readiness report that proves current multi-language coverage and highlights fixture drift before a live run.
 - An operator can copy a repository preflight report that shows whether a local path is supported and which allowlisted command would run.
 - A failed task records and reports a clear failure reason.
+- An unsupported repository failure reports the supported adapter matrix back to the GitHub issue without attempting model, test, Git, or Pull Request work.
 
 The broader product is successful when:
 

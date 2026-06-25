@@ -120,6 +120,29 @@ class IssueCommentToolTests {
     }
 
     @Test
+    void should_create_unsupported_repository_failure_comment_with_supported_adapter_guidance() {
+        RecordingGitHubIssueCommentClient client = new RecordingGitHubIssueCommentClient();
+        IssueCommentTool tool = new IssueCommentTool(client);
+
+        tool.commentFailed(
+                task(FixTaskStatus.FAILED, null, null, "Unsupported repository: no supported language adapter detected"),
+                "Unsupported repository: no supported language adapter detected"
+        );
+
+        assertThat(client.createCommand().body()).contains("PatchPilot stopped before modifying this repository.");
+        assertThat(client.createCommand().body()).contains("Failure category: UNSUPPORTED_REPOSITORY");
+        assertThat(client.createCommand().body())
+                .contains("No model patch generation, tests, commits, pushes, or Pull Request creation were attempted.");
+        assertThat(client.createCommand().body()).contains("Supported repository shapes:");
+        assertThat(client.createCommand().body()).contains("- java/maven: `mvn test`");
+        assertThat(client.createCommand().body()).contains("- node/npm: `npm test`");
+        assertThat(client.createCommand().body()).contains("- python/pytest: `python3 -m pytest`");
+        assertThat(client.createCommand().body())
+                .contains("Add one supported project marker and deterministic test command, then trigger `/agent fix ...` again.");
+        assertThat(client.createCommand().body()).doesNotContain("Run arbitrary commands");
+    }
+
+    @Test
     void should_redact_sensitive_values_from_failed_status_comment() {
         RecordingGitHubIssueCommentClient client = new RecordingGitHubIssueCommentClient();
         IssueCommentTool tool = new IssueCommentTool(client);

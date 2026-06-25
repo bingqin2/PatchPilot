@@ -4,6 +4,27 @@ This file records dated implementation progress, validation commands, and import
 
 ## 2026-06-25
 
+Implemented unsupported repository issue feedback from `docs/plans/181-unsupported-repository-issue-feedback.md`.
+
+Changes:
+
+- Extended failed task issue comments for `UNSUPPORTED_REPOSITORY` with a safe-stop headline.
+- Added issue-facing guidance that no model patch generation, tests, commits, pushes, or Pull Request creation were attempted.
+- Listed supported repository shapes from the existing language adapter catalog instead of a separate hardcoded issue-comment matrix.
+- Covered direct issue comment formatting and worker failure feedback paths with backend tests.
+- Updated README and product spec documentation.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=IssueCommentToolTests test`: first failed because unsupported repository comments still used generic failure text, then passed after implementation.
+- `mvn -pl PatchPilot -Dtest=IssueCommentToolTests,FixTaskWorkerTests test`: passed, 25 tests run.
+- `mvn -pl PatchPilot test`: passed, 649 tests run.
+- `npm test`: passed, 193 tests run.
+- `npm run build`: passed.
+- `git diff --check`: passed.
+
+## 2026-06-25
+
 Implemented manual trigger evaluation evidence reports from `docs/plans/180-manual-trigger-evaluation-report.md`.
 
 Changes:
