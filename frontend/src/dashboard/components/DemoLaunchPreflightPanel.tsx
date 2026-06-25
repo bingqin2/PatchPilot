@@ -1,11 +1,17 @@
-import { Copy, SearchCheck } from 'lucide-react';
+import { Copy, FileText, SearchCheck } from 'lucide-react';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import type { DemoLaunchPreflight, DemoLaunchPreflightInput, DemoReadinessStatus } from '../../types';
+import type {
+  DemoLaunchPreflight,
+  DemoLaunchPreflightInput,
+  DemoPreparedLaunchCommand,
+  DemoReadinessStatus
+} from '../../types';
 
 interface DemoLaunchPreflightPanelProps {
   result: DemoLaunchPreflight | null;
   error: string | null;
   pending: boolean;
+  preparedLaunchCommands: DemoPreparedLaunchCommand[];
   composedPreflightInput?: DemoLaunchPreflightInput | null;
   onRunPreflight: (input: DemoLaunchPreflightInput) => Promise<DemoLaunchPreflight> | Promise<void> | void;
 }
@@ -14,6 +20,7 @@ export function DemoLaunchPreflightPanel({
   result,
   error,
   pending,
+  preparedLaunchCommands,
   composedPreflightInput,
   onRunPreflight
 }: DemoLaunchPreflightPanelProps) {
@@ -62,6 +69,13 @@ export function DemoLaunchPreflightPanel({
     await navigator.clipboard?.writeText(buildDemoLaunchPreflightReport(input(), result, error));
   }
 
+  async function copyLaunchPackage() {
+    if (!result) {
+      return;
+    }
+    await navigator.clipboard?.writeText(buildDemoLaunchPackage(input(), result, preparedLaunchCommands, error));
+  }
+
   return (
     <section className="panel demo-launch-preflight-panel" aria-label="Demo launch preflight">
       <div className="panel-header">
@@ -70,10 +84,16 @@ export function DemoLaunchPreflightPanel({
           <p>Dry-run the exact GitHub issue comment before posting it.</p>
         </div>
         {result ? (
-          <button className="secondary-button" type="button" onClick={() => void copyReport()}>
-            <Copy size={16} />
-            Copy launch preflight report
-          </button>
+          <div className="demo-launch-preflight-header-actions">
+            <button className="secondary-button" type="button" onClick={() => void copyReport()}>
+              <Copy size={16} />
+              Copy launch preflight report
+            </button>
+            <button className="secondary-button" type="button" onClick={() => void copyLaunchPackage()}>
+              <FileText size={16} />
+              Copy launch package
+            </button>
+          </div>
         ) : null}
       </div>
 
@@ -228,6 +248,66 @@ function buildDemoLaunchPreflightReport(
     result.nextActions.length === 1 ? `- Next action: ${result.nextActions[0]}` : null,
     ...result.nextActions.map((action) => `- ${action}`)
   ].filter((line): line is string => line !== null).join('\n');
+}
+
+function buildDemoLaunchPackage(
+  input: DemoLaunchPreflightInput,
+  result: DemoLaunchPreflight,
+  preparedLaunchCommands: DemoPreparedLaunchCommand[],
+  error: string | null
+) {
+  return [
+    '# PatchPilot Demo Launch Package',
+    '',
+    `- Status: \`${result.status}\``,
+    `- Ready to post: \`${result.readyToPost ? 'YES' : 'NO'}\``,
+    `- GitHub issue: ${githubIssueUrl(input)}`,
+    `- Repository: \`${inlineCode(`${input.repositoryOwner}/${input.repositoryName}`)}\``,
+    `- Issue: \`#${input.issueNumber}\``,
+    `- Trigger user: \`${inlineCode(input.triggerUser)}\``,
+    `- Comment: \`${inlineCode(input.triggerComment)}\``,
+    '',
+    '## Preflight Evidence',
+    '',
+    `- Readiness: \`${result.readiness.status}\``,
+    `- Trigger evaluation: \`${result.triggerEvaluation.status}\``,
+    `- Source: \`${result.triggerEvaluation.source}\``,
+    `- Issue context: \`${result.triggerEvaluation.issueContextLoaded ? 'LOADED' : 'NOT_LOADED'}\``,
+    result.triggerEvaluation.blockedCategory
+      ? `- Blocked category: \`${inlineCode(result.triggerEvaluation.blockedCategory)}\``
+      : null,
+    result.triggerEvaluation.blockedReason ? `- Blocked reason: ${result.triggerEvaluation.blockedReason}` : null,
+    error ? `- Error: ${error}` : null,
+    '',
+    '## Prepared Commands In This Browser',
+    '',
+    ...formatPreparedLaunchCommands(preparedLaunchCommands),
+    '',
+    '## Next Actions',
+    '',
+    ...result.nextActions.map((action) => `- ${action}`)
+  ].filter((line): line is string => line !== null).join('\n');
+}
+
+function formatPreparedLaunchCommands(commands: DemoPreparedLaunchCommand[]) {
+  const nonEmptyCommands = commands.filter((command) => command.triggerComment.trim().length > 0).slice(0, 5);
+  if (!nonEmptyCommands.length) {
+    return ['- No prepared launch commands recorded in this browser.'];
+  }
+  return nonEmptyCommands.flatMap((command) => [
+    `- \`${inlineCode(command.triggerComment)}\``,
+    `  - Repository: \`${inlineCode(`${command.repositoryOwner}/${command.repositoryName}`)}\``,
+    `  - Issue: \`#${command.issueNumber}\``,
+    `  - Trigger user: \`${inlineCode(command.triggerUser)}\``,
+    `  - Operation: \`${command.operation}\``,
+    `  - Target: \`${inlineCode(command.targetPath)}\``,
+    command.replacementText ? `  - Replacement: \`${inlineCode(command.replacementText)}\`` : null,
+    `  - Saved at: \`${inlineCode(command.savedAt)}\``
+  ].filter((line): line is string => line !== null));
+}
+
+function githubIssueUrl(input: DemoLaunchPreflightInput) {
+  return `https://github.com/${encodeURIComponent(input.repositoryOwner)}/${encodeURIComponent(input.repositoryName)}/issues/${input.issueNumber}`;
 }
 
 function statusLabel(status: DemoReadinessStatus) {

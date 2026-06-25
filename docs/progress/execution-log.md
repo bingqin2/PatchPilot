@@ -4,6 +4,27 @@ This file records dated implementation progress, validation commands, and import
 
 ## 2026-06-26
 
+Implemented demo launch package from `docs/plans/205-demo-launch-package.md`.
+
+Changes:
+
+- Added `Copy launch package` to the demo launch preflight panel after a preflight result exists.
+- Included the exact GitHub issue URL, `/agent fix` comment, trigger user, readiness status, trigger evaluation, issue-context evidence, blocked category/reason, and next actions in the copied Markdown package.
+- Included up to five browser-local prepared launch commands from `patchpilot.demoLaunchCommandHistory` in the launch package.
+- Wired App-level prepared command history into the launch preflight panel without adding backend endpoints or creating tasks.
+- Updated README, product spec, frontend design docs, and this execution log.
+
+Validation:
+
+- `npm test -- --run src/dashboard/components/DemoLaunchPreflightPanel.test.tsx --reporter=basic`: first failed because the `Copy launch package` button did not exist; this confirmed the RED test.
+- `npm test -- --run src/dashboard/components/DemoLaunchPreflightPanel.test.tsx src/App.test.tsx --reporter=basic`: passed after adding the launch package action and App wiring, 70 tests run.
+- `npm test -- --reporter=basic`: passed after full frontend regression verification, 228 tests run.
+- `npm run build`: passed after TypeScript and production Vite build verification.
+- `mvn -pl PatchPilot test`: passed after full backend regression verification, 719 tests run.
+- `git diff --check`: passed.
+
+## 2026-06-26
+
 Implemented demo command history session reports from `docs/plans/204-demo-command-history-session-report.md`.
 
 Changes:

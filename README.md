@@ -154,7 +154,7 @@ curl -sS http://127.0.0.1:8080/api/demo/launch-command \
 ```
 
 This endpoint is read-only. It returns the generated `triggerComment`, GitHub issue URL, and `preflightInput` for `/api/demo/launch-preflight`; it does not create tasks, post comments, mutate GitHub, or touch the queue.
-The dashboard stores the five most recent generated demo commands in this browser under `patchpilot.demoLaunchCommandHistory` so operators can copy, refill, or preflight a recent command during repeated demo practice. This history is local browser state only. When an operator copies, downloads, or archives a demo session report from the dashboard, the current browser's prepared commands are included in that report for handoff evidence.
+The dashboard stores the five most recent generated demo commands in this browser under `patchpilot.demoLaunchCommandHistory` so operators can copy, refill, or preflight a recent command during repeated demo practice. This history is local browser state only. When an operator copies, downloads, or archives a demo session report from the dashboard, the current browser's prepared commands are included in that report for handoff evidence. After launch preflight runs, the dashboard can also copy a demo launch package that combines the exact GitHub issue URL, the `/agent fix` comment to post, readiness and trigger-gate evidence, prepared command evidence, and next actions.
 
 You can also enable model-assisted trigger classification after the deterministic safety gate:
 
@@ -226,7 +226,7 @@ curl -X POST http://127.0.0.1:8080/api/demo/launch-preflight \
   }'
 ```
 
-This endpoint is read-only. It does not create a task, write GitHub comments, mutate Git, open a Pull Request, or write rejected-trigger audit records.
+This endpoint is read-only. It does not create a task, write GitHub comments, mutate Git, open a Pull Request, or write rejected-trigger audit records. In the dashboard, run launch preflight after composing or pasting the exact comment, then use `Copy launch package` to capture the final issue URL, comment, preflight evidence, prepared command context, and next actions before posting the live GitHub issue comment.
 
 Expected health response includes:
 

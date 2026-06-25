@@ -1137,6 +1137,7 @@ export default function App() {
         result={demoLaunchPreflight}
         error={demoLaunchPreflightError}
         pending={demoLaunchPreflightPending}
+        preparedLaunchCommands={preparedDemoLaunchCommands}
         composedPreflightInput={composedPreflightInput}
         onRunPreflight={handleDemoLaunchPreflight}
       />
