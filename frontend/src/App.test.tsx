@@ -1509,8 +1509,9 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(screen.getByRole('heading', { name: 'Supported adapters' })).toBeInTheDocument();
   expect(screen.getByText('13 supported adapters')).toBeInTheDocument();
   expect(screen.getByRole('row', { name: /go go go test \.\/\.\.\./i })).toBeInTheDocument();
-  expect(screen.getByRole('heading', { name: 'Fixture verification' })).toBeInTheDocument();
-  expect(screen.getByText('13/13 fixtures passing')).toBeInTheDocument();
+  const fixtureVerificationPanel = screen.getByRole('region', { name: 'Adapter fixture verification' });
+  expect(within(fixtureVerificationPanel).getByRole('heading', { name: 'Fixture verification' })).toBeInTheDocument();
+  expect(within(fixtureVerificationPanel).getByText('13/13 fixtures passing')).toBeInTheDocument();
   expect(screen.getByRole('row', { name: /java maven mvn test/i })).toBeInTheDocument();
   expect(screen.getByRole('row', { name: /node bun bun test/i })).toBeInTheDocument();
   expect(screen.getByRole('row', { name: /python tox tox/i })).toBeInTheDocument();
@@ -1600,6 +1601,9 @@ test('renders operational task dashboard from backend APIs', async () => {
   await waitFor(() => expect(screen.getByText('Task completed')).toBeInTheDocument());
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/language-adapters'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/language-adapters/fixtures'));
+  const adapterReadinessReport = screen.getByRole('region', { name: 'Adapter readiness report' });
+  expect(adapterReadinessReport).toBeInTheDocument();
+  expect(within(adapterReadinessReport).getByText('Ready - 13/13 fixtures passing')).toBeInTheDocument();
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/evidence-bundle'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/session-snapshot'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/script'));
