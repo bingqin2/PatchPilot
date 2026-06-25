@@ -27,6 +27,7 @@ PatchPilot is not a chatbot and does not auto-merge code. The current target is 
 - Generated diff risk gate that blocks sensitive files, secret-like added lines, binary patches, and overly broad patches before tests, commits, pushes, or Pull Request creation.
 - Human approval flow for generated-diff risk rejections: `PENDING_REVIEW` tasks expose the generated diff for inspection, then can be cancelled or explicitly approved to resume from the already-generated workspace and continue verification, commit, push, and Pull Request creation.
 - Unsupported repository preflight that fails before patch generation, test execution, Git mutation, or Pull Request creation.
+- Issue-facing unsupported repository feedback that states no model patch generation, tests, commits, pushes, or Pull Request creation were attempted and lists the supported adapter shapes.
 - OpenAI-compatible model client and plan-driven patch workflow.
 - Issue comment status updates for accepted, running, verification, success, and failure states, including best-effort failure feedback creation when the original status comment is missing.
 - Failed and cancelled task retry preflight that explains whether retry is safe, shows sanitized failure context, blocks blind retries when GitHub permissions or repository support must be fixed first, and requires an operator reason before requeueing.
@@ -367,7 +368,7 @@ PatchPilot currently executes fixes for Java repositories with Maven or Gradle b
 - supported: `pytest.ini`, `pyproject.toml` with `[tool.pytest.ini_options]`, or `requirements.txt` with pytest, using `python3 -m pytest`
 - unsupported: no registered adapter detects the repository
 
-Unsupported repositories fail before model patch generation, tests, commit, push, or Pull Request creation.
+Unsupported repositories fail before model patch generation, tests, commit, push, or Pull Request creation. The task failure comment on the GitHub issue uses the same adapter catalog to list supported repository shapes and tells the author to add a supported project marker plus deterministic test command before triggering `/agent fix ...` again. PatchPilot does not run arbitrary commands for unsupported repositories.
 For supported repositories, the language adapter supplies the verification command and the generic verification runner executes that command under the existing allowlist, timeout, process-registration, and environment-sanitization rules.
 After a repository is detected, each task stores the selected `language`, `buildSystem`, `verificationCommand`, and nullable `adapterDetectionReason`. These fields are returned by the task APIs and shown in the dashboard detail view so operators can confirm whether a task used Maven, Gradle, Go, Bun, npm, pnpm, yarn, tox, nox, hatch, Poetry, uv, or pytest, and which repository signal caused that selection, without opening raw tool-call logs.
 
@@ -460,7 +461,7 @@ curl "${ADMIN_HEADER[@]}" http://127.0.0.1:8080/api/tasks/metrics/model-usage
 curl "${ADMIN_HEADER[@]}" http://127.0.0.1:8080/api/tasks/metrics/latency
 ```
 
-Failure-cause metrics, failed-task issue feedback, task detail responses, copied task reports, and dashboard failure diagnosis use the same stable categories and next-action guidance, so repeated failures are grouped as `VERIFICATION_FAILED`, `GITHUB_OPERATION_FAILED`, `MODEL_FAILED`, `WORKSPACE_FAILED`, `UNSUPPORTED_REPOSITORY`, `PATCH_REVIEW_REJECTED`, or `TASK_FAILED` instead of ad hoc exception text.
+Failure-cause metrics, failed-task issue feedback, task detail responses, copied task reports, and dashboard failure diagnosis use the same stable categories and next-action guidance, so repeated failures are grouped as `VERIFICATION_FAILED`, `GITHUB_OPERATION_FAILED`, `MODEL_FAILED`, `WORKSPACE_FAILED`, `UNSUPPORTED_REPOSITORY`, `PATCH_REVIEW_REJECTED`, or `TASK_FAILED` instead of ad hoc exception text. `UNSUPPORTED_REPOSITORY` issue comments include a safe-stop explanation and supported adapter matrix so the issue author can fix repository shape without asking the agent to run arbitrary commands.
 
 Task list, status count, and metrics APIs accept the same investigation filters:
 

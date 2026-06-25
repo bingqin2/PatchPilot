@@ -121,6 +121,49 @@ class FixTaskWorkerTests {
     }
 
     @Test
+    void should_create_unsupported_repository_failure_feedback_before_any_pr_work() {
+        FixTaskService fixTaskService = new InMemoryFixTaskService();
+        FailingExecutor executor = new FailingExecutor("Unsupported repository: no supported language adapter detected");
+        RecordingIssueCommentTool issueCommentTool = new RecordingIssueCommentTool();
+        RecordingTimelineService timelineService = new RecordingTimelineService();
+        FixTaskWorker worker = new FixTaskWorker(fixTaskService, executor, issueCommentTool, timelineService);
+        FixTaskVo task = createTaskWithoutStatusComment(fixTaskService, "delivery-worker-unsupported-repository");
+
+        worker.execute(task.id());
+
+        FixTaskVo failedTask = fixTaskService.findTask(task.id()).orElseThrow();
+        assertThat(failedTask.status()).isEqualTo(FixTaskStatus.FAILED);
+        assertThat(failedTask.failureReason()).isEqualTo("Unsupported repository: no supported language adapter detected");
+        assertThat(issueCommentTool.createdFailureTaskIds()).contains(task.id());
+        assertThat(issueCommentTool.failureReasons()).contains("Unsupported repository: no supported language adapter detected");
+        assertThat(timelineService.eventTypes())
+                .containsSequence(
+                        FixTaskTimelineEventType.RUNNING,
+                        FixTaskTimelineEventType.RUNNING_TESTS,
+                        FixTaskTimelineEventType.FAILED,
+                        FixTaskTimelineEventType.STATUS_COMMENT_CREATED
+                );
+    }
+
+    @Test
+    void should_update_unsupported_repository_status_comment_when_status_comment_exists() {
+        FixTaskService fixTaskService = new InMemoryFixTaskService();
+        FailingExecutor executor = new FailingExecutor("Unsupported repository: no supported language adapter detected");
+        RecordingIssueCommentTool issueCommentTool = new RecordingIssueCommentTool();
+        RecordingTimelineService timelineService = new RecordingTimelineService();
+        FixTaskWorker worker = new FixTaskWorker(fixTaskService, executor, issueCommentTool, timelineService);
+        FixTaskVo task = createTask(fixTaskService, "delivery-worker-unsupported-repository-update");
+
+        worker.execute(task.id());
+
+        FixTaskVo failedTask = fixTaskService.findTask(task.id()).orElseThrow();
+        assertThat(failedTask.status()).isEqualTo(FixTaskStatus.FAILED);
+        assertThat(issueCommentTool.updatedStatuses())
+                .containsSequence(FixTaskStatus.RUNNING, FixTaskStatus.RUNNING_TESTS, FixTaskStatus.FAILED);
+        assertThat(issueCommentTool.failureReasons()).contains("Unsupported repository: no supported language adapter detected");
+    }
+
+    @Test
     void should_keep_failed_status_when_failure_status_comment_creation_fails() {
         FixTaskService fixTaskService = new InMemoryFixTaskService();
         FailingExecutor executor = new FailingExecutor();

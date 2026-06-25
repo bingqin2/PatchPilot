@@ -4,21 +4,40 @@ import io.patchpilot.backend.github.client.GitHubIssueCommentClient;
 import io.patchpilot.backend.github.client.domain.CreateIssueCommentCommand;
 import io.patchpilot.backend.github.client.domain.IssueCommentResult;
 import io.patchpilot.backend.github.client.domain.UpdateIssueCommentCommand;
+import io.patchpilot.backend.language.LanguageAdapterCatalogService;
+import io.patchpilot.backend.language.domain.SupportedLanguageAdapterVo;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import io.patchpilot.backend.task.service.PatchReviewFailureClassifier;
 import io.patchpilot.backend.task.service.TaskFailureFeedback;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import java.util.Optional;
 
 @Component
-@RequiredArgsConstructor
 public class IssueCommentTool {
 
+    private static final String UNSUPPORTED_REPOSITORY_CATEGORY = "UNSUPPORTED_REPOSITORY";
+    private static final String UNSUPPORTED_REPOSITORY_ACTION = "Add one supported project marker and "
+            + "deterministic test command, then trigger `/agent fix ...` again.";
+
     private final GitHubIssueCommentClient gitHubIssueCommentClient;
+    private final LanguageAdapterCatalogService languageAdapterCatalogService;
+
+    public IssueCommentTool(GitHubIssueCommentClient gitHubIssueCommentClient) {
+        this(gitHubIssueCommentClient, new LanguageAdapterCatalogService());
+    }
+
+    @Autowired
+    public IssueCommentTool(
+            GitHubIssueCommentClient gitHubIssueCommentClient,
+            LanguageAdapterCatalogService languageAdapterCatalogService
+    ) {
+        this.gitHubIssueCommentClient = gitHubIssueCommentClient;
+        this.languageAdapterCatalogService = languageAdapterCatalogService;
+    }
 
     public IssueCommentResult commentAccepted(FixTaskVo task) {
         return gitHubIssueCommentClient.createIssueComment(command(task, body(
@@ -125,7 +144,7 @@ public class IssueCommentTool {
         )));
     }
 
-    private static String body(
+    private String body(
             String headline,
             FixTaskVo task,
             FixTaskStatus status,
@@ -133,7 +152,9 @@ public class IssueCommentTool {
             String failureReason
     ) {
         StringBuilder body = new StringBuilder();
-        body.append(headline).append("\n\n");
+        TaskFailureFeedback feedback = TaskFailureFeedback.from(failureReason);
+        body.append(unsupportedRepository(feedback) ? "PatchPilot stopped before modifying this repository." : headline)
+                .append("\n\n");
         body.append("Status: ").append(status).append("\n");
         body.append("Task: ").append(task.id()).append("\n");
         body.append("Repository: ").append(task.repositoryOwner()).append("/").append(task.repositoryName()).append("\n");
@@ -147,12 +168,41 @@ public class IssueCommentTool {
             body.append(PatchReviewFailureClassifier.STATUS_COMMENT_RECOVERY).append("\n");
         }
         if (StringUtils.hasText(failureReason)) {
-            TaskFailureFeedback feedback = TaskFailureFeedback.from(failureReason);
             body.append("Failure category: ").append(feedback.category()).append("\n");
-            body.append("Next action: ").append(feedback.nextAction()).append("\n");
+            body.append("Next action: ")
+                    .append(unsupportedRepository(feedback) ? UNSUPPORTED_REPOSITORY_ACTION : feedback.nextAction())
+                    .append("\n");
             body.append("Reason: ").append(feedback.safeReason()).append("\n");
+            if (unsupportedRepository(feedback)) {
+                appendUnsupportedRepositoryGuidance(body, languageAdapterCatalogService);
+            }
         }
         return body.toString();
+    }
+
+    private static boolean unsupportedRepository(TaskFailureFeedback feedback) {
+        return UNSUPPORTED_REPOSITORY_CATEGORY.equals(feedback.category());
+    }
+
+    private static void appendUnsupportedRepositoryGuidance(
+            StringBuilder body,
+            LanguageAdapterCatalogService languageAdapterCatalogService
+    ) {
+        body.append("\n");
+        body.append("No model patch generation, tests, commits, pushes, or Pull Request creation were attempted.\n");
+        body.append("Supported repository shapes:\n");
+        for (SupportedLanguageAdapterVo adapter : languageAdapterCatalogService.listSupportedAdapters()) {
+            body.append("- ")
+                    .append(adapter.language())
+                    .append("/")
+                    .append(adapter.buildSystem())
+                    .append(": `")
+                    .append(String.join(" ", adapter.verificationCommand()))
+                    .append("`\n");
+        }
+        body.append("\n");
+        body.append("PatchPilot only runs allowlisted verification commands for detected repository shapes. ");
+        body.append("It will not run arbitrary commands for unsupported repositories.\n");
     }
 
     private static String failedHeadline(String failureReason) {
