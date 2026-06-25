@@ -211,6 +211,9 @@ The current implementation target is local self-hosted development first. Hosted
 - Any task can move to `FAILED`.
 - User-actionable failures should be posted as issue comments.
 - Failed-task issue comments should include a failure category, next action, and a sanitized reason.
+- Failed-task issue comments should include detected language, selected build system, allowlisted verification command, and adapter detection reason when that repository evidence is available.
+- `PENDING_REVIEW` issue comments should include the same adapter evidence when available, so the issue author can distinguish a risk-gate pause from an unsupported repository or test failure.
+- Non-success issue comments with adapter evidence should state that PatchPilot selects verification commands from repository adapter allowlists and does not run arbitrary shell commands from issue comments.
 - Failure metrics should reuse the same stable failure categories and next-action guidance as failed-task issue comments, so dashboard summaries and GitHub feedback stay consistent.
 - Task detail APIs and copied task reports should expose accepted-trigger intent audit, failure category, next action, and sanitized reason for failed tasks, so per-task investigation and aggregate metrics use one taxonomy.
 - Failed and cancelled tasks should expose retry preflight that returns retry eligibility, stable category, sanitized reason, and next operator action before an operator queues another attempt.

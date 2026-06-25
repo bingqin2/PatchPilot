@@ -106,12 +106,25 @@ class IssueCommentToolTests {
                 123L,
                 null,
                 "maven tests failed"
+        ).withAdapterMetadata(
+                "java",
+                "maven",
+                "./mvnw test",
+                "pom.xml detected with mvnw wrapper"
         ));
 
         assertThat(result).isPresent();
         assertThat(client.updateCommand().commentId()).isEqualTo(123);
         assertThat(client.updateCommand().body()).contains("PatchPilot failed the task.");
         assertThat(client.updateCommand().body()).contains("Status: FAILED");
+        assertThat(client.updateCommand().body()).contains("Language: `java`");
+        assertThat(client.updateCommand().body()).contains("Build system: `maven`");
+        assertThat(client.updateCommand().body()).contains("Verification: `./mvnw test`");
+        assertThat(client.updateCommand().body()).contains("Detection reason: pom.xml detected with mvnw wrapper");
+        assertThat(client.updateCommand().body())
+                .contains("PatchPilot selected this verification command from the repository adapter allowlist.");
+        assertThat(client.updateCommand().body())
+                .contains("PatchPilot does not run arbitrary shell commands from issue comments.");
         assertThat(client.updateCommand().body()).contains("Reason: maven tests failed");
     }
 
@@ -202,12 +215,26 @@ class IssueCommentToolTests {
                 123L,
                 null,
                 "Generated diff rejected: sensitive path .env"
+        ).withAdapterMetadata(
+                "node",
+                "npm",
+                "npm test",
+                "package.json detected with a non-empty test script"
         ));
 
         assertThat(result).isPresent();
         assertThat(client.updateCommand().commentId()).isEqualTo(123);
         assertThat(client.updateCommand().body()).contains("PatchPilot paused this task for human review.");
         assertThat(client.updateCommand().body()).contains("Status: PENDING_REVIEW");
+        assertThat(client.updateCommand().body()).contains("Language: `node`");
+        assertThat(client.updateCommand().body()).contains("Build system: `npm`");
+        assertThat(client.updateCommand().body()).contains("Verification: `npm test`");
+        assertThat(client.updateCommand().body())
+                .contains("Detection reason: package.json detected with a non-empty test script");
+        assertThat(client.updateCommand().body())
+                .contains("PatchPilot selected this verification command from the repository adapter allowlist.");
+        assertThat(client.updateCommand().body())
+                .contains("PatchPilot does not run arbitrary shell commands from issue comments.");
         assertThat(client.updateCommand().body()).contains("Reason: Generated diff rejected: sensitive path .env");
     }
 
