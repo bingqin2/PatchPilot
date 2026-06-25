@@ -4,6 +4,24 @@ This file records dated implementation progress, validation commands, and import
 
 ## 2026-06-25
 
+Implemented demo launch preflight from `docs/plans/201-demo-launch-preflight.md`.
+
+Changes:
+
+- Added `POST /api/demo/launch-preflight` to combine current demo readiness with a read-only `ISSUE_COMMENT` trigger evaluation for the exact `/agent fix` comment an operator plans to post on GitHub.
+- Kept the launch preflight endpoint read-only: it creates no task, queue item, GitHub comment, webhook diagnostic, rejected-trigger audit row, rate-limit record, Git commit, push, or Pull Request.
+- Added frontend API types and client support for demo launch preflight.
+- Added `DemoLaunchPreflightPanel` to the dashboard with exact launch-comment inputs, ready/blocked status, trigger evaluation status, issue-context evidence, blocked reason, next actions, and copyable Markdown evidence.
+- Updated README and product/frontend docs with the final pre-GitHub-comment launch gate.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=DemoLaunchPreflightServiceTests,DemoReadinessControllerTests test`: first failed because the launch preflight service, request DTO, and response VO did not exist; then passed after adding the backend service and controller integration, 18 tests run.
+- `npm test -- --run src/api.test.ts src/dashboard/components/DemoLaunchPreflightPanel.test.tsx --reporter=basic`: first failed because `preflightDemoLaunch` and `DemoLaunchPreflightPanel` did not exist; then passed after adding the client, types, component, and report copy behavior, 55 tests run.
+- `npm test -- --run src/App.test.tsx src/dashboard/components/DemoLaunchPreflightPanel.test.tsx --reporter=basic`: first exposed App-level label conflicts with the existing manual task form; then passed after scoping existing Manual Task tests to their panel and wiring launch preflight into the dashboard, 66 tests run.
+
+## 2026-06-25
+
 Implemented demo target policy alignment from `docs/plans/200-demo-target-policy-alignment.md`.
 
 Changes:

@@ -976,6 +976,53 @@ const demoReadiness = {
   nextActions: ['Run one controlled issue-to-PR smoke task before a live demo.']
 };
 
+const demoLaunchPreflight = {
+  status: 'READY',
+  readyToPost: true,
+  summary: 'Demo launch preflight is ready to post the tested /agent fix comment.',
+  readiness: {
+    ...demoReadiness,
+    status: 'READY',
+    summary: 'PatchPilot is ready for a live demo.',
+    nextActions: []
+  },
+  triggerEvaluation: {
+    status: 'WOULD_CREATE_TASK',
+    source: 'ISSUE_COMMENT',
+    wouldCreateTask: true,
+    blockedReason: null,
+    blockedCategory: null,
+    safetyDecision: {
+      allowed: true,
+      reason: 'Accepted',
+      category: 'UNKNOWN'
+    },
+    activeTaskDecision: {
+      allowed: true,
+      reason: 'No active task exists for this issue',
+      category: 'UNKNOWN'
+    },
+    quarantineDecision: {
+      allowed: true,
+      reason: 'Trigger quarantine accepted',
+      category: 'UNKNOWN'
+    },
+    rateLimitDecision: {
+      allowed: true,
+      reason: 'Trigger rate limit accepted',
+      category: 'UNKNOWN'
+    },
+    triggerIntentDecision: {
+      allowed: true,
+      reason: 'Model trigger classification accepted',
+      category: 'UNKNOWN'
+    },
+    issueContextLoaded: true,
+    nextAction: 'Create task is allowed for this trigger.'
+  },
+  nextActions: ['Post the tested /agent fix comment on the controlled GitHub issue.']
+};
+
 const demoSmokeChecklist = {
   status: 'NEEDS_ATTENTION',
   summary: 'Live demo smoke checklist needs attention.',
@@ -1269,6 +1316,9 @@ beforeEach(() => {
     }
     if (url === '/api/demo/readiness') {
       return jsonResponse(demoReadiness);
+    }
+    if (url === '/api/demo/launch-preflight' && init?.method === 'POST') {
+      return jsonResponse(demoLaunchPreflight);
     }
     if (url === '/api/demo/smoke-checklist') {
       return jsonResponse(demoSmokeChecklist);
@@ -2236,12 +2286,13 @@ test('creates a manual task from the dashboard and refreshes task data', async (
 
   render(<App />);
 
-  await user.type(await screen.findByLabelText('Repository owner'), 'bingqin2');
-  await user.type(screen.getByLabelText('Repository name'), 'PatchPilot');
-  await user.type(screen.getByLabelText('Issue number'), '7');
-  await user.clear(screen.getByLabelText('Trigger user'));
-  await user.type(screen.getByLabelText('Trigger user'), 'local-operator');
-  await user.type(screen.getByLabelText('Command'), '/agent fix touch docs/manual-task.md');
+  const manualTaskPanel = await screen.findByRole('region', { name: 'Manual task creation' });
+  await user.type(within(manualTaskPanel).getByLabelText('Repository owner'), 'bingqin2');
+  await user.type(within(manualTaskPanel).getByLabelText('Repository name'), 'PatchPilot');
+  await user.type(within(manualTaskPanel).getByLabelText('Issue number'), '7');
+  await user.clear(within(manualTaskPanel).getByLabelText('Trigger user'));
+  await user.type(within(manualTaskPanel).getByLabelText('Trigger user'), 'local-operator');
+  await user.type(within(manualTaskPanel).getByLabelText('Command'), '/agent fix touch docs/manual-task.md');
   await user.click(screen.getByRole('button', { name: 'Create task' }));
 
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks', {
@@ -2257,7 +2308,7 @@ test('creates a manual task from the dashboard and refreshes task data', async (
   }));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks?limit=50'));
   expect(await screen.findByText('Manual task queued')).toBeInTheDocument();
-  expect(screen.getByLabelText('Command')).toHaveValue('');
+  expect(within(manualTaskPanel).getByLabelText('Command')).toHaveValue('');
 });
 
 test('copies manual trigger evaluation evidence from the dashboard', async () => {
@@ -2272,12 +2323,13 @@ test('copies manual trigger evaluation evidence from the dashboard', async () =>
   render(<App />);
 
   await user.click(await screen.findByRole('radio', { name: /github issue comment/i }));
-  await user.type(screen.getByLabelText('Repository owner'), 'bingqin2');
-  await user.type(screen.getByLabelText('Repository name'), 'PatchPilot');
-  await user.type(screen.getByLabelText('Issue number'), '7');
-  await user.clear(screen.getByLabelText('Trigger user'));
-  await user.type(screen.getByLabelText('Trigger user'), 'local-operator');
-  await user.type(screen.getByLabelText('Command'), '/agent fix touch docs/manual-task.md');
+  const manualTaskPanel = await screen.findByRole('region', { name: 'Manual task creation' });
+  await user.type(within(manualTaskPanel).getByLabelText('Repository owner'), 'bingqin2');
+  await user.type(within(manualTaskPanel).getByLabelText('Repository name'), 'PatchPilot');
+  await user.type(within(manualTaskPanel).getByLabelText('Issue number'), '7');
+  await user.clear(within(manualTaskPanel).getByLabelText('Trigger user'));
+  await user.type(within(manualTaskPanel).getByLabelText('Trigger user'), 'local-operator');
+  await user.type(within(manualTaskPanel).getByLabelText('Command'), '/agent fix touch docs/manual-task.md');
   await user.click(screen.getByRole('button', { name: 'Evaluate trigger' }));
 
   await waitFor(() =>
@@ -2339,6 +2391,58 @@ test('runs repository preflight from the dashboard', async () => {
   expect(writeText).toHaveBeenCalledWith(expect.stringContaining('# PatchPilot Repository Preflight Report'));
   expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- Status: `SUPPORTED`'));
   expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- Repository path: `docs/demo-repositories/java-maven`'));
+});
+
+test('runs demo launch preflight from the dashboard before posting an issue comment', async () => {
+  const user = userEvent.setup();
+  const fetchMock = vi.mocked(fetch);
+  const writeText = vi.fn().mockResolvedValue(undefined);
+  Object.defineProperty(navigator, 'clipboard', {
+    configurable: true,
+    value: { writeText }
+  });
+
+  render(<App />);
+
+  const preflightPanel = await screen.findByRole('region', { name: 'Demo launch preflight' });
+  const preflightForm = within(preflightPanel).getByRole('form', { name: 'Demo launch preflight form' });
+  await user.clear(within(preflightForm).getByLabelText('Repository owner'));
+  await user.type(within(preflightForm).getByLabelText('Repository owner'), 'bingqin2');
+  await user.clear(within(preflightForm).getByLabelText('Repository name'));
+  await user.type(within(preflightForm).getByLabelText('Repository name'), 'PatchPilot');
+  await user.clear(within(preflightForm).getByLabelText('Issue number'));
+  await user.type(within(preflightForm).getByLabelText('Issue number'), '1');
+  await user.clear(within(preflightForm).getByLabelText('Trigger user'));
+  await user.type(within(preflightForm).getByLabelText('Trigger user'), 'bingqin2');
+  await user.clear(within(preflightForm).getByLabelText('GitHub issue comment'));
+  await user.type(
+    within(preflightForm).getByLabelText('GitHub issue comment'),
+    '/agent fix replace docs/demo.md PatchPilot smoke test'
+  );
+  await user.click(within(preflightPanel).getByRole('button', { name: 'Run launch preflight' }));
+
+  await waitFor(() =>
+    expect(fetchMock).toHaveBeenCalledWith('/api/demo/launch-preflight', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        repositoryOwner: 'bingqin2',
+        repositoryName: 'PatchPilot',
+        issueNumber: 1,
+        triggerUser: 'bingqin2',
+        triggerComment: '/agent fix replace docs/demo.md PatchPilot smoke test'
+      })
+    })
+  );
+  expect(within(preflightPanel).getByText('Ready to post')).toBeInTheDocument();
+  expect(within(preflightPanel).getByText('WOULD_CREATE_TASK')).toBeInTheDocument();
+  expect(
+    within(preflightPanel).getByText('Post the tested /agent fix comment on the controlled GitHub issue.')
+  ).toBeInTheDocument();
+
+  await user.click(within(preflightPanel).getByRole('button', { name: 'Copy launch preflight report' }));
+  expect(writeText).toHaveBeenCalledWith(expect.stringContaining('# PatchPilot Demo Launch Preflight Report'));
+  expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- Ready to post: `YES`'));
 });
 
 test('shows manual task creation failures without clearing the form', async () => {
@@ -2423,14 +2527,15 @@ test('shows manual task creation failures without clearing the form', async () =
 
   render(<App />);
 
-  await user.type(await screen.findByLabelText('Repository owner'), 'bingqin2');
-  await user.type(screen.getByLabelText('Repository name'), 'PatchPilot');
-  await user.type(screen.getByLabelText('Issue number'), '7');
-  await user.type(screen.getByLabelText('Command'), '/agent fix touch docs/manual-task.md');
+  const manualTaskPanel = await screen.findByRole('region', { name: 'Manual task creation' });
+  await user.type(within(manualTaskPanel).getByLabelText('Repository owner'), 'bingqin2');
+  await user.type(within(manualTaskPanel).getByLabelText('Repository name'), 'PatchPilot');
+  await user.type(within(manualTaskPanel).getByLabelText('Issue number'), '7');
+  await user.type(within(manualTaskPanel).getByLabelText('Command'), '/agent fix touch docs/manual-task.md');
   await user.click(screen.getByRole('button', { name: 'Create task' }));
 
   expect(await screen.findByRole('alert')).toHaveTextContent('An active task already exists for this issue');
-  expect(screen.getByLabelText('Command')).toHaveValue('/agent fix touch docs/manual-task.md');
+  expect(within(manualTaskPanel).getByLabelText('Command')).toHaveValue('/agent fix touch docs/manual-task.md');
 });
 
 test('selects task detail from taskId URL parameter', async () => {
@@ -3467,6 +3572,9 @@ function defaultAppResponse(input: RequestInfo | URL, init?: RequestInit) {
   }
   if (url === '/api/demo/readiness') {
     return jsonResponse(demoReadiness);
+  }
+  if (url === '/api/demo/launch-preflight' && init?.method === 'POST') {
+    return jsonResponse(demoLaunchPreflight);
   }
   if (url === '/api/demo/smoke-checklist') {
     return jsonResponse(demoSmokeChecklist);

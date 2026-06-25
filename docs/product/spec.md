@@ -95,6 +95,7 @@ The current implementation target is local self-hosted development first. Hosted
 - A task can be queried by id for status and result.
 - Task creation must pass authorization, command parsing, actionability, and rate-limit checks before expensive execution begins.
 - Operators should be able to dry-run a proposed `/agent fix` trigger as either a manual API source or a GitHub issue-comment source and see whether it would create a task or be blocked without creating tasks, queue work, rejected-trigger audit rows, GitHub comments, webhook delivery diagnostics, or rate-limit records.
+- Operators should be able to run a final demo launch preflight for the exact GitHub issue comment they plan to post, combining current demo readiness with an `ISSUE_COMMENT` trigger dry run without creating a task or mutating GitHub.
 - Task execution must pass a repository language-adapter preflight after workspace preparation and before model patch generation.
 - Operators should be able to run a local repository preflight diagnostic that uses the same language adapter registry without creating a task, running tests, mutating Git, or opening a Pull Request.
 - Local repository preflight diagnostics must reject paths outside configured allowed roots before adapter detection.
@@ -117,6 +118,7 @@ The current implementation target is local self-hosted development first. Hosted
 - The local repository preflight diagnostic should return supported status, selected language/build system, verification command, detection reason, and next operator action so unsupported repository shapes can be fixed before a live `/agent fix`.
 - The local repository preflight diagnostic should expose its configured allowed roots through non-sensitive configuration summary APIs and the dashboard so operators can verify scope before using it.
 - Demo readiness and the operator setup checklist should warn when the configured demo repository or recent demo trigger user does not match enabled safety allowlists.
+- Demo launch preflight should block posting guidance when either demo readiness is not ready or the exact tested issue comment would be rejected by task-creation gates.
 - Demo readiness and the operator setup checklist should warn when repository-preflight allowed roots do not cover checked-in demo fixture paths.
 - Demo readiness and the operator setup checklist should warn when the configured OpenAI-compatible model provider cannot answer a minimal health probe, even if model credentials are present.
 - Demo readiness, the smoke checklist, the demo script, the session snapshot checklist, and the operator setup checklist should warn when a supported adapter's selected verification executable is not available on the backend process `PATH`.

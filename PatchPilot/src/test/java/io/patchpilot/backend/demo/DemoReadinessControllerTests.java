@@ -9,6 +9,9 @@ import io.patchpilot.backend.demo.domain.DemoAdapterFixtureEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoSmokeChecklistStatus;
 import io.patchpilot.backend.demo.domain.DemoSmokeChecklistStepVo;
 import io.patchpilot.backend.demo.domain.DemoSmokeChecklistVo;
+import io.patchpilot.backend.demo.domain.DemoLaunchPreflightVo;
+import io.patchpilot.backend.task.domain.vo.TriggerEvaluationDecisionVo;
+import io.patchpilot.backend.task.domain.vo.TriggerEvaluationResultVo;
 import io.patchpilot.backend.demo.domain.DemoScriptStepVo;
 import io.patchpilot.backend.demo.domain.DemoScriptVo;
 import io.patchpilot.backend.demo.domain.DemoSessionArchiveVo;
@@ -68,6 +71,9 @@ class DemoReadinessControllerTests {
 
     @MockitoBean
     private DemoSessionArchiveService demoSessionArchiveService;
+
+    @MockitoBean
+    private DemoLaunchPreflightService demoLaunchPreflightService;
 
     @MockitoBean
     private OperatorSafetyAuditService operatorSafetyAuditService;
@@ -132,6 +138,84 @@ class DemoReadinessControllerTests {
                 .andExpect(jsonPath("$.data.steps[0].status").value("NEEDS_ATTENTION"))
                 .andExpect(jsonPath("$.data.steps[0].evidence").value("delivery-invalid"))
                 .andExpect(jsonPath("$.data.nextActions[0]").value("Fix the webhook secret or URL, then use GitHub Redeliver before the live demo."));
+    }
+
+    @Test
+    void should_return_demo_launch_preflight() throws Exception {
+        when(demoLaunchPreflightService.preflight(argThat(request ->
+                request.repositoryOwner().equals("bingqin2")
+                        && request.repositoryName().equals("PatchPilot")
+                        && request.issueNumber().equals(12L)
+                        && request.triggerUser().equals("bingqin2")
+                        && request.triggerComment().equals("/agent fix update docs/demo.md")
+        ))).thenReturn(new DemoLaunchPreflightVo(
+                DemoReadinessStatus.READY,
+                true,
+                "Demo launch preflight is ready to post the tested /agent fix comment.",
+                new DemoReadinessVo(
+                        DemoReadinessStatus.READY,
+                        "PatchPilot is ready for a controlled demo.",
+                        List.of(),
+                        List.of()
+                ),
+                new TriggerEvaluationResultVo(
+                        "WOULD_CREATE_TASK",
+                        "ISSUE_COMMENT",
+                        true,
+                        null,
+                        null,
+                        new TriggerEvaluationDecisionVo(true, "Accepted", "UNKNOWN"),
+                        new TriggerEvaluationDecisionVo(true, "No active task exists for this issue", "UNKNOWN"),
+                        new TriggerEvaluationDecisionVo(true, "not blocked before task creation", "UNKNOWN"),
+                        new TriggerEvaluationDecisionVo(true, "not rate limited before task creation", "UNKNOWN"),
+                        new TriggerEvaluationDecisionVo(true, "model accepted trigger: concrete request", "UNKNOWN"),
+                        true,
+                        "Create task is allowed for this trigger."
+                ),
+                List.of("Post the tested /agent fix comment on the controlled GitHub issue.")
+        ));
+
+        mockMvc.perform(post("/api/demo/launch-preflight")
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "repositoryOwner": "bingqin2",
+                                  "repositoryName": "PatchPilot",
+                                  "issueNumber": 12,
+                                  "triggerUser": "bingqin2",
+                                  "triggerComment": "/agent fix update docs/demo.md"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.readyToPost").value(true))
+                .andExpect(jsonPath("$.data.summary").value("Demo launch preflight is ready to post the tested /agent fix comment."))
+                .andExpect(jsonPath("$.data.readiness.status").value("READY"))
+                .andExpect(jsonPath("$.data.triggerEvaluation.source").value("ISSUE_COMMENT"))
+                .andExpect(jsonPath("$.data.triggerEvaluation.status").value("WOULD_CREATE_TASK"))
+                .andExpect(jsonPath("$.data.nextActions[0]").value("Post the tested /agent fix comment on the controlled GitHub issue."));
+    }
+
+    @Test
+    void should_return_bad_request_for_invalid_demo_launch_preflight_request() throws Exception {
+        when(demoLaunchPreflightService.preflight(argThat(request -> request.issueNumber().equals(0L))))
+                .thenThrow(new IllegalArgumentException("issueNumber must be positive"));
+
+        mockMvc.perform(post("/api/demo/launch-preflight")
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "repositoryOwner": "bingqin2",
+                                  "repositoryName": "PatchPilot",
+                                  "issueNumber": 0,
+                                  "triggerUser": "bingqin2",
+                                  "triggerComment": "/agent fix update docs/demo.md"
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("issueNumber must be positive"));
     }
 
     @Test

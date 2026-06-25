@@ -316,6 +316,23 @@ export interface DemoReadiness {
   nextActions: string[];
 }
 
+export interface DemoLaunchPreflightInput {
+  repositoryOwner: string;
+  repositoryName: string;
+  issueNumber: number;
+  triggerUser: string;
+  triggerComment: string;
+}
+
+export interface DemoLaunchPreflight {
+  status: DemoReadinessStatus;
+  readyToPost: boolean;
+  summary: string;
+  readiness: DemoReadiness;
+  triggerEvaluation: TriggerEvaluationResult;
+  nextActions: string[];
+}
+
 export type DemoSmokeChecklistStatus = 'READY' | 'NEEDS_ATTENTION' | 'BLOCKED';
 
 export interface DemoSmokeChecklistStep {

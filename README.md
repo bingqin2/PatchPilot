@@ -47,6 +47,7 @@ PatchPilot is not a chatbot and does not auto-merge code. The current target is 
 - Demo session archive that stores the latest copyable and downloadable session reports for live-demo handoff without creating tasks or mutating GitHub; database-backed profiles persist archives across backend restarts.
 - Adapter readiness report that summarizes supported languages, allowlisted verification commands, fixture pass rate, runtime executable availability, and fixture failures, with copyable Markdown for demo handoff.
 - Copyable repository preflight report that exports local path support status, selected adapter, allowlisted command, allowed roots, and unsupported-repository guidance before task creation.
+- Demo launch preflight that combines current demo readiness with a read-only `ISSUE_COMMENT` trigger evaluation for the exact `/agent fix` comment an operator plans to post on GitHub.
 
 ## Repository Layout
 
@@ -189,6 +190,23 @@ Verify the backend:
 curl http://127.0.0.1:8080/health
 curl -H "X-PatchPilot-Admin-Token: $PATCHPILOT_ADMIN_TOKEN" http://127.0.0.1:8080/api/tasks
 ```
+
+Before posting a live GitHub issue comment, dry-run the exact launch trigger:
+
+```bash
+curl -X POST http://127.0.0.1:8080/api/demo/launch-preflight \
+  -H "X-PatchPilot-Admin-Token: $PATCHPILOT_ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "repositoryOwner": "bingqin2",
+    "repositoryName": "PatchPilot",
+    "issueNumber": 1,
+    "triggerUser": "bingqin2",
+    "triggerComment": "/agent fix replace docs/demo.md PatchPilot smoke test"
+  }'
+```
+
+This endpoint is read-only. It does not create a task, write GitHub comments, mutate Git, open a Pull Request, or write rejected-trigger audit records.
 
 Expected health response includes:
 

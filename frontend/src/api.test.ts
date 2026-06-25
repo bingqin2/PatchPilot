@@ -16,6 +16,7 @@ import {
   getDemoScript,
   archiveDemoSession,
   listDemoSessionArchives,
+  preflightDemoLaunch,
   getDemoSessionSnapshot,
   getDemoSessionReport,
   downloadDemoSessionReport,
@@ -262,6 +263,87 @@ test('evaluates trigger without creating manual task through backend API', async
   expect(result.source).toBe('ISSUE_COMMENT');
   expect(result.wouldCreateTask).toBe(true);
   expect(result.triggerIntentDecision?.reason).toBe('Model trigger classification is disabled');
+});
+
+test('runs demo launch preflight through backend API without creating a task', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        status: 'READY',
+        readyToPost: true,
+        summary: 'Demo launch preflight is ready to post the tested /agent fix comment.',
+        readiness: {
+          status: 'READY',
+          summary: 'PatchPilot is ready for a live demo.',
+          checks: [],
+          nextActions: []
+        },
+        triggerEvaluation: {
+          status: 'WOULD_CREATE_TASK',
+          source: 'ISSUE_COMMENT',
+          wouldCreateTask: true,
+          blockedReason: null,
+          blockedCategory: null,
+          safetyDecision: {
+            allowed: true,
+            reason: 'Accepted',
+            category: 'UNKNOWN'
+          },
+          activeTaskDecision: {
+            allowed: true,
+            reason: 'No active task exists for this issue',
+            category: 'UNKNOWN'
+          },
+          quarantineDecision: {
+            allowed: true,
+            reason: 'Trigger quarantine accepted',
+            category: 'UNKNOWN'
+          },
+          rateLimitDecision: {
+            allowed: true,
+            reason: 'Trigger rate limit accepted',
+            category: 'UNKNOWN'
+          },
+          triggerIntentDecision: {
+            allowed: true,
+            reason: 'Model trigger classification accepted',
+            category: 'UNKNOWN'
+          },
+          issueContextLoaded: true,
+          nextAction: 'Create task is allowed for this trigger.'
+        },
+        nextActions: ['Post the tested /agent fix comment on the controlled GitHub issue.']
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const result = await preflightDemoLaunch({
+    repositoryOwner: 'bingqin2',
+    repositoryName: 'PatchPilot',
+    issueNumber: 1,
+    triggerUser: 'bingqin2',
+    triggerComment: '/agent fix replace docs/demo.md PatchPilot smoke test'
+  });
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/launch-preflight', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      repositoryOwner: 'bingqin2',
+      repositoryName: 'PatchPilot',
+      issueNumber: 1,
+      triggerUser: 'bingqin2',
+      triggerComment: '/agent fix replace docs/demo.md PatchPilot smoke test'
+    })
+  });
+  expect(result.status).toBe('READY');
+  expect(result.readyToPost).toBe(true);
+  expect(result.triggerEvaluation.source).toBe('ISSUE_COMMENT');
 });
 
 test('approves pending review tasks through backend API', async () => {

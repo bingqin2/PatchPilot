@@ -2,6 +2,7 @@ package io.patchpilot.backend.demo;
 
 import io.patchpilot.backend.common.response.ApiResponse;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
+import io.patchpilot.backend.demo.domain.DemoLaunchPreflightVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessVo;
 import io.patchpilot.backend.demo.domain.DemoScriptVo;
 import io.patchpilot.backend.demo.domain.DemoSessionArchiveVo;
@@ -18,6 +19,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -38,6 +40,7 @@ public class DemoReadinessController {
     private final DemoSessionSnapshotService demoSessionSnapshotService;
     private final DemoSessionReportService demoSessionReportService;
     private final DemoSessionArchiveService demoSessionArchiveService;
+    private final DemoLaunchPreflightService demoLaunchPreflightService;
     private final OperatorSafetyAuditService operatorSafetyAuditService;
 
     @GetMapping("/readiness")
@@ -48,6 +51,17 @@ public class DemoReadinessController {
     @GetMapping("/smoke-checklist")
     public ApiResponse<DemoSmokeChecklistVo> getSmokeChecklist() {
         return ApiResponse.ok(demoSmokeChecklistService.getSmokeChecklist());
+    }
+
+    @PostMapping("/launch-preflight")
+    public ResponseEntity<ApiResponse<DemoLaunchPreflightVo>> preflightLaunch(
+            @RequestBody DemoLaunchPreflightRequestDto request
+    ) {
+        try {
+            return ResponseEntity.ok(ApiResponse.ok(demoLaunchPreflightService.preflight(request)));
+        } catch (IllegalArgumentException exception) {
+            return ResponseEntity.badRequest().body(ApiResponse.fail(exception.getMessage()));
+        }
     }
 
     @GetMapping("/evidence-bundle")
