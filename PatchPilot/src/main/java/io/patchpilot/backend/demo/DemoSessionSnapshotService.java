@@ -66,6 +66,7 @@ public class DemoSessionSnapshotService {
     private static List<String> operatorChecklist(DemoEvidenceBundleVo bundle) {
         List<String> checklist = new ArrayList<>();
         checklist.add("Open the dashboard and confirm the demo session snapshot status.");
+        checklist.add(adapterRuntimeChecklistItem(bundle));
         checklist.add("Verify the latest webhook delivery and recent task before posting a live trigger.");
         checklist.add("Copy the runbook after Pull Request evidence is visible.");
         if (bundle.recentPullRequestUrl() == null || bundle.recentPullRequestUrl().isBlank()) {
@@ -73,6 +74,15 @@ public class DemoSessionSnapshotService {
         }
         checklist.addAll(bundle.nextActions());
         return checklist;
+    }
+
+    private static String adapterRuntimeChecklistItem(DemoEvidenceBundleVo bundle) {
+        return bundle.readiness().checks().stream()
+                .filter(check -> check.name().equals("Adapter runtimes"))
+                .findFirst()
+                .filter(check -> check.status() != DemoReadinessStatus.READY)
+                .map(check -> check.action())
+                .orElse("Confirm adapter runtime executables are available on the backend PATH.");
     }
 
     private static List<String> healthContract() {

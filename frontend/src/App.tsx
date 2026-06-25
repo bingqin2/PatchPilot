@@ -984,6 +984,7 @@ export default function App() {
         configuration={configuration}
         demoReadiness={demoReadiness}
         adapterFixtureVerifications={adapterFixtureVerifications}
+        adapterRuntimeReadiness={adapterRuntimeReadiness}
         queueSummary={queueSummary}
         workerHealth={workerHealth}
         tasks={tasks}

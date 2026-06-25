@@ -84,16 +84,20 @@ public class DemoScriptService {
 
     private static DemoScriptStepVo repositorySupportStep(DemoEvidenceBundleVo bundle) {
         DemoReadinessCheckVo adapterCheck = readinessCheck(bundle, "Adapter fixtures");
+        DemoReadinessCheckVo runtimeCheck = readinessCheck(bundle, "Adapter runtimes");
         DemoReadinessCheckVo preflightCheck = readinessCheck(bundle, "Repository preflight scope");
         return new DemoScriptStepVo(
                 3,
                 "Verify repository support",
-                worstStatus(adapterCheck, preflightCheck),
-                "Confirm adapter fixtures and local repository preflight before using a controlled target repository.",
-                "curl ${ADMIN_HEADER[@]} http://127.0.0.1:8080/api/language-adapters/fixtures",
-                "Demo fixture paths detect the expected adapter and verification command.",
+                worstStatus(adapterCheck, runtimeCheck, preflightCheck),
+                "Confirm adapter fixtures, runtime executables, and local repository preflight before using a controlled target repository.",
+                "curl ${ADMIN_HEADER[@]} http://127.0.0.1:8080/api/language-adapters/fixtures && curl ${ADMIN_HEADER[@]} http://127.0.0.1:8080/api/language-adapters/runtime-readiness",
+                "Demo fixture paths detect the expected adapter and required verification executables are available.",
                 "Supported adapters and repository preflight panels",
-                bundle.adapterFixtures().totalCount() + " adapter fixtures, " + bundle.adapterFixtures().failedCount() + " failed"
+                bundle.adapterFixtures().totalCount() + " adapter fixtures, "
+                        + bundle.adapterFixtures().failedCount() + " failed; "
+                        + "adapter runtimes: "
+                        + (runtimeCheck == null ? "not evaluated" : runtimeCheck.message())
         );
     }
 
@@ -170,15 +174,25 @@ public class DemoScriptService {
     }
 
     private static DemoReadinessStatus worstStatus(DemoReadinessCheckVo first, DemoReadinessCheckVo second) {
-        DemoReadinessStatus firstStatus = first == null ? DemoReadinessStatus.READY : first.status();
-        DemoReadinessStatus secondStatus = second == null ? DemoReadinessStatus.READY : second.status();
-        if (firstStatus == DemoReadinessStatus.BLOCKED || secondStatus == DemoReadinessStatus.BLOCKED) {
+        return worstStatus(List.of(statusOf(first), statusOf(second)));
+    }
+
+    private static DemoReadinessStatus worstStatus(DemoReadinessCheckVo first, DemoReadinessCheckVo second, DemoReadinessCheckVo third) {
+        return worstStatus(List.of(statusOf(first), statusOf(second), statusOf(third)));
+    }
+
+    private static DemoReadinessStatus worstStatus(List<DemoReadinessStatus> statuses) {
+        if (statuses.contains(DemoReadinessStatus.BLOCKED)) {
             return DemoReadinessStatus.BLOCKED;
         }
-        if (firstStatus == DemoReadinessStatus.NEEDS_ATTENTION || secondStatus == DemoReadinessStatus.NEEDS_ATTENTION) {
+        if (statuses.contains(DemoReadinessStatus.NEEDS_ATTENTION)) {
             return DemoReadinessStatus.NEEDS_ATTENTION;
         }
         return DemoReadinessStatus.READY;
+    }
+
+    private static DemoReadinessStatus statusOf(DemoReadinessCheckVo check) {
+        return check == null ? DemoReadinessStatus.READY : check.status();
     }
 
     private static DemoReadinessStatus toReadinessStatus(DemoSmokeChecklistStatus status) {
