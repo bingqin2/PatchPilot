@@ -3558,3 +3558,22 @@ Validation so far:
 - `mvn -pl PatchPilot -Dtest=OperatorSafetyAuditControllerTests,InMemoryOperatorSafetyAuditServiceTests,MyBatisOperatorSafetyAuditServiceTests test`: first failed because `OperatorSafetyAuditQuery` and filtered service methods did not exist; then failed once because old controller tests still mocked the legacy integer method; then passed after backend implementation, 12 tests run, 0 failures.
 - `npm test -- --run src/api.test.ts src/dashboard/components/AdminAuditPanel.test.tsx`: first failed because `listAdminAuditEvents` treated filter options as a limit and the panel had no filter/export controls; then passed after frontend API and component implementation, 49 tests run, 0 failures.
 - `npm test -- --run src/App.test.tsx src/api.test.ts src/dashboard/components/AdminAuditPanel.test.tsx -t "renders operational task dashboard|filters admin audit|lists filtered admin audit|AdminAuditPanel"`: first failed because the new App test used a nonexistent fetch helper; then passed after wiring it to `defaultAppResponse`, 3 targeted tests run, 0 failures.
+
+Implemented adapter readiness report from `docs/plans/178-adapter-readiness-report.md`.
+
+Changes:
+
+- Added a dashboard `AdapterReadinessReportPanel` derived from the existing supported-adapter and fixture-verification APIs.
+- Summarized adapter count, language coverage, fixture pass rate, and fixture failures in one operator-facing panel.
+- Listed allowlisted verification commands for each language/build-system adapter so operators can confirm what PatchPilot is permitted to run.
+- Added `Copy adapter readiness report` to export the current adapter readiness state as Markdown.
+- Kept the existing supported-adapter matrix and fixture verification matrix for detailed inspection.
+- Updated README, product spec, frontend design notes, and this execution log.
+
+Validation so far:
+
+- `npm test -- --run src/dashboard/components/AdapterReadinessReportPanel.test.tsx`: first failed because the new component did not exist; then passed after implementation, 3 tests run, 0 failures.
+- `npm test -- --run src/App.test.tsx -t "renders operational task dashboard"`: first failed because the dashboard did not expose the adapter readiness region; then failed twice because repeated fixture-readiness text needed panel-scoped assertions; then passed after App wiring and scoped integration assertions, 1 targeted test run, 0 failures.
+- `npm test`: passed after full frontend regression verification, 188 tests run, 0 failures.
+- `npm run build`: passed after production frontend build verification.
+- `mvn -pl PatchPilot test`: passed after backend regression verification, 646 tests run, 0 failures.

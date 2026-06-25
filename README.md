@@ -36,6 +36,7 @@ PatchPilot is not a chatbot and does not auto-merge code. The current target is 
 - Copyable demo runbook Markdown that exports the evidence bundle into a concise operator handoff report.
 - Copyable and downloadable demo session report Markdown that exports the full session snapshot, script, checklist, health contract, next actions, and embedded runbook.
 - Demo session archive that stores the latest copyable and downloadable session reports for live-demo handoff without creating tasks or mutating GitHub; database-backed profiles persist archives across backend restarts.
+- Adapter readiness report that summarizes supported languages, allowlisted verification commands, fixture pass rate, and fixture failures, with copyable Markdown for demo handoff.
 
 ## Repository Layout
 
@@ -387,6 +388,8 @@ curl http://127.0.0.1:8080/api/language-adapters/fixtures
 ```
 
 This endpoint runs each checked-in demo fixture through the real adapter registry and returns expected versus actual language, build system, verification command, detection reason, and `PASS` or `FAIL`. Missing or drifting fixtures are returned as failed rows instead of hiding the rest of the matrix. The backend Docker image copies `docs/demo-repositories/` into `/app/docs/demo-repositories`, so the same endpoint works in Docker Compose.
+
+The dashboard combines these two adapter APIs into an `Adapter readiness report` panel. Use it before a live demo to confirm language coverage, allowlisted verification commands, fixture pass rate, and any fixture drift in one place. `Copy adapter readiness report` exports the same evidence as Markdown for a handoff note or Pull Request review.
 
 Operators can run a local repository preflight before creating a real task:
 

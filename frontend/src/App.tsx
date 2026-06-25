@@ -72,6 +72,7 @@ import { compactDateTime, duration, percent } from './dashboard/format';
 import { emptyDetail } from './dashboard/types';
 import type { TaskDetailState } from './dashboard/types';
 import { AdminAuditPanel } from './dashboard/components/AdminAuditPanel';
+import { AdapterReadinessReportPanel } from './dashboard/components/AdapterReadinessReportPanel';
 import type {
   ApproveReviewInput,
   ConfigurationSummary,
@@ -1071,6 +1072,12 @@ export default function App() {
       />
 
       <ConfigurationPanel configuration={configuration} backendHealth={backendHealth} />
+
+      <AdapterReadinessReportPanel
+        adapters={supportedAdapters}
+        verifications={adapterFixtureVerifications}
+        error={adapterError ?? adapterFixtureError}
+      />
 
       <SupportedAdaptersPanel adapters={supportedAdapters} error={adapterError} />
 

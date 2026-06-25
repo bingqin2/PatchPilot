@@ -586,10 +586,111 @@ h3 {
   font-weight: 800;
 }
 
+.adapter-readiness-panel,
 .supported-adapters-panel,
 .repository-preflight-panel,
 .fixture-verification-panel {
   margin-bottom: 16px;
+}
+
+.adapter-readiness-summary {
+  border-top: 1px solid #edf1f5;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  padding: 14px 16px;
+}
+
+.adapter-readiness-summary div {
+  background: #f7f9fb;
+  border: 1px solid #dbe3ea;
+  border-radius: 6px;
+  padding: 10px;
+}
+
+.adapter-readiness-summary span,
+.adapter-readiness-section h3 {
+  color: #637181;
+  font-size: 12px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.adapter-readiness-summary strong {
+  color: #17202a;
+  display: block;
+  font-size: 18px;
+  line-height: 1.25;
+  margin-top: 4px;
+}
+
+.adapter-readiness-summary p {
+  color: #52606e;
+  font-size: 13px;
+  font-weight: 750;
+  margin-top: 6px;
+}
+
+.adapter-readiness-section {
+  border-top: 1px solid #edf1f5;
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+}
+
+.adapter-readiness-command-list,
+.adapter-readiness-failure-list {
+  display: grid;
+  gap: 8px;
+}
+
+.adapter-readiness-command-row,
+.adapter-readiness-failure-row {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #dbe3ea;
+  border-radius: 6px;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: minmax(130px, 0.45fr) minmax(180px, 0.65fr) minmax(240px, 1fr);
+  padding: 10px;
+}
+
+.adapter-readiness-command-row strong,
+.adapter-readiness-failure-row strong {
+  color: #17202a;
+  font-size: 13px;
+}
+
+.adapter-readiness-command-row code {
+  background: #eef3f6;
+  border: 1px solid #d6dee6;
+  border-radius: 6px;
+  color: #17202a;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 6px 8px;
+  width: fit-content;
+}
+
+.adapter-readiness-command-row span,
+.adapter-readiness-failure-row span,
+.adapter-readiness-failure-row p {
+  color: #52606e;
+  font-size: 12px;
+  font-weight: 750;
+  overflow-wrap: anywhere;
+}
+
+.adapter-readiness-failure-row {
+  align-items: start;
+  background: #fff8e5;
+  border-color: #eed38a;
+}
+
+.adapter-readiness-failure-row p {
+  margin: 0;
 }
 
 .adapter-api-error {
