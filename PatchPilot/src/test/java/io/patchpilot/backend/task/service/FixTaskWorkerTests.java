@@ -9,6 +9,7 @@ import io.patchpilot.backend.github.config.GitHubProperties;
 import io.patchpilot.backend.task.domain.bo.CreateFixTaskCommand;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.enums.FixTaskTimelineEventType;
+import io.patchpilot.backend.task.domain.vo.FixTaskTestRunVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskTimelineEventVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import io.patchpilot.backend.task.executor.FixTaskExecutor;
@@ -16,8 +17,10 @@ import io.patchpilot.backend.task.executor.TaskCancellationException;
 import io.patchpilot.backend.task.executor.domain.FixTaskExecutionResult;
 import io.patchpilot.backend.task.service.impl.FixTaskWorker;
 import io.patchpilot.backend.task.service.impl.InMemoryFixTaskService;
+import io.patchpilot.backend.task.service.impl.InMemoryFixTaskTestRunService;
 import org.junit.jupiter.api.Test;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -35,8 +38,10 @@ class FixTaskWorkerTests {
         RecordingExecutor executor = new RecordingExecutor();
         RecordingIssueCommentTool issueCommentTool = new RecordingIssueCommentTool();
         RecordingTimelineService timelineService = new RecordingTimelineService();
-        FixTaskWorker worker = new FixTaskWorker(fixTaskService, executor, issueCommentTool, timelineService);
+        InMemoryFixTaskTestRunService testRunService = new InMemoryFixTaskTestRunService();
+        FixTaskWorker worker = worker(fixTaskService, executor, issueCommentTool, timelineService, testRunService);
         FixTaskVo task = createTask(fixTaskService, "delivery-worker-completed");
+        recordTestRun(testRunService, task.id(), 0);
         fixTaskService.recordAdapterMetadata(
                 task.id(),
                 "java",
@@ -60,6 +65,8 @@ class FixTaskWorkerTests {
         assertThat(issueCommentTool.completedTask().verificationCommand()).isEqualTo("./mvnw test");
         assertThat(issueCommentTool.completedTask().adapterDetectionReason())
                 .isEqualTo("pom.xml detected with mvnw wrapper");
+        assertThat(issueCommentTool.completedTestRun().command()).isEqualTo("./mvnw test");
+        assertThat(issueCommentTool.completedTestRun().exitCode()).isZero();
         assertThat(timelineService.eventTypes())
                 .containsSequence(
                         FixTaskTimelineEventType.RUNNING,
@@ -75,7 +82,7 @@ class FixTaskWorkerTests {
         RecordingExecutor executor = new RecordingExecutor();
         RecordingIssueCommentTool issueCommentTool = new RecordingIssueCommentTool();
         RecordingTimelineService timelineService = new RecordingTimelineService();
-        FixTaskWorker worker = new FixTaskWorker(fixTaskService, executor, issueCommentTool, timelineService);
+        FixTaskWorker worker = worker(fixTaskService, executor, issueCommentTool, timelineService);
         FixTaskVo task = createTask(fixTaskService, "delivery-worker-running-tests");
 
         worker.execute(task.id());
@@ -91,8 +98,10 @@ class FixTaskWorkerTests {
         FailingExecutor executor = new FailingExecutor();
         RecordingIssueCommentTool issueCommentTool = new RecordingIssueCommentTool();
         RecordingTimelineService timelineService = new RecordingTimelineService();
-        FixTaskWorker worker = new FixTaskWorker(fixTaskService, executor, issueCommentTool, timelineService);
+        InMemoryFixTaskTestRunService testRunService = new InMemoryFixTaskTestRunService();
+        FixTaskWorker worker = worker(fixTaskService, executor, issueCommentTool, timelineService, testRunService);
         FixTaskVo task = createTask(fixTaskService, "delivery-worker-failed");
+        recordTestRun(testRunService, task.id(), 1);
         fixTaskService.recordAdapterMetadata(
                 task.id(),
                 "java",
@@ -114,6 +123,8 @@ class FixTaskWorkerTests {
         assertThat(issueCommentTool.failedTask().verificationCommand()).isEqualTo("./mvnw test");
         assertThat(issueCommentTool.failedTask().adapterDetectionReason())
                 .isEqualTo("pom.xml detected with mvnw wrapper");
+        assertThat(issueCommentTool.failedTestRun().command()).isEqualTo("./mvnw test");
+        assertThat(issueCommentTool.failedTestRun().exitCode()).isEqualTo(1);
         assertThat(timelineService.eventTypes())
                 .containsSequence(
                         FixTaskTimelineEventType.RUNNING,
@@ -129,7 +140,7 @@ class FixTaskWorkerTests {
         FailingExecutor executor = new FailingExecutor();
         RecordingIssueCommentTool issueCommentTool = new RecordingIssueCommentTool();
         RecordingTimelineService timelineService = new RecordingTimelineService();
-        FixTaskWorker worker = new FixTaskWorker(fixTaskService, executor, issueCommentTool, timelineService);
+        FixTaskWorker worker = worker(fixTaskService, executor, issueCommentTool, timelineService);
         FixTaskVo task = createTaskWithoutStatusComment(fixTaskService, "delivery-worker-failed-create-comment");
 
         worker.execute(task.id());
@@ -150,7 +161,7 @@ class FixTaskWorkerTests {
         FailingExecutor executor = new FailingExecutor("Unsupported repository: no supported language adapter detected");
         RecordingIssueCommentTool issueCommentTool = new RecordingIssueCommentTool();
         RecordingTimelineService timelineService = new RecordingTimelineService();
-        FixTaskWorker worker = new FixTaskWorker(fixTaskService, executor, issueCommentTool, timelineService);
+        FixTaskWorker worker = worker(fixTaskService, executor, issueCommentTool, timelineService);
         FixTaskVo task = createTaskWithoutStatusComment(fixTaskService, "delivery-worker-unsupported-repository");
 
         worker.execute(task.id());
@@ -175,7 +186,7 @@ class FixTaskWorkerTests {
         FailingExecutor executor = new FailingExecutor("Unsupported repository: no supported language adapter detected");
         RecordingIssueCommentTool issueCommentTool = new RecordingIssueCommentTool();
         RecordingTimelineService timelineService = new RecordingTimelineService();
-        FixTaskWorker worker = new FixTaskWorker(fixTaskService, executor, issueCommentTool, timelineService);
+        FixTaskWorker worker = worker(fixTaskService, executor, issueCommentTool, timelineService);
         FixTaskVo task = createTask(fixTaskService, "delivery-worker-unsupported-repository-update");
 
         worker.execute(task.id());
@@ -193,7 +204,7 @@ class FixTaskWorkerTests {
         FailingExecutor executor = new FailingExecutor();
         FailingCreateFailureIssueCommentTool issueCommentTool = new FailingCreateFailureIssueCommentTool();
         RecordingTimelineService timelineService = new RecordingTimelineService();
-        FixTaskWorker worker = new FixTaskWorker(fixTaskService, executor, issueCommentTool, timelineService);
+        FixTaskWorker worker = worker(fixTaskService, executor, issueCommentTool, timelineService);
         FixTaskVo task = createTaskWithoutStatusComment(fixTaskService, "delivery-worker-failed-create-comment-fails");
 
         worker.execute(task.id());
@@ -212,7 +223,7 @@ class FixTaskWorkerTests {
         FailingExecutor executor = new FailingExecutor("Generated diff rejected: sensitive path .github/workflows/deploy.yml");
         RecordingIssueCommentTool issueCommentTool = new RecordingIssueCommentTool();
         RecordingTimelineService timelineService = new RecordingTimelineService();
-        FixTaskWorker worker = new FixTaskWorker(fixTaskService, executor, issueCommentTool, timelineService);
+        FixTaskWorker worker = worker(fixTaskService, executor, issueCommentTool, timelineService);
         FixTaskVo task = createTask(fixTaskService, "delivery-worker-risk-review");
         fixTaskService.recordAdapterMetadata(
                 task.id(),
@@ -234,6 +245,7 @@ class FixTaskWorkerTests {
         assertThat(issueCommentTool.pendingReviewTask().verificationCommand()).isEqualTo("npm test");
         assertThat(issueCommentTool.pendingReviewTask().adapterDetectionReason())
                 .isEqualTo("package.json detected with a non-empty test script");
+        assertThat(issueCommentTool.pendingReviewTestRun()).isNull();
         assertThat(timelineService.eventTypes())
                 .containsSequence(
                         FixTaskTimelineEventType.RUNNING,
@@ -248,7 +260,7 @@ class FixTaskWorkerTests {
         FailingExecutor executor = new FailingExecutor("x".repeat(10_000));
         RecordingIssueCommentTool issueCommentTool = new RecordingIssueCommentTool();
         RecordingTimelineService timelineService = new RecordingTimelineService();
-        FixTaskWorker worker = new FixTaskWorker(fixTaskService, executor, issueCommentTool, timelineService);
+        FixTaskWorker worker = worker(fixTaskService, executor, issueCommentTool, timelineService);
         FixTaskVo task = createTask(fixTaskService, "delivery-worker-long-failure");
 
         worker.execute(task.id());
@@ -267,7 +279,7 @@ class FixTaskWorkerTests {
         CancellingExecutor executor = new CancellingExecutor();
         RecordingIssueCommentTool issueCommentTool = new RecordingIssueCommentTool();
         RecordingTimelineService timelineService = new RecordingTimelineService();
-        FixTaskWorker worker = new FixTaskWorker(fixTaskService, executor, issueCommentTool, timelineService);
+        FixTaskWorker worker = worker(fixTaskService, executor, issueCommentTool, timelineService);
         FixTaskVo task = createTask(fixTaskService, "delivery-worker-cancelled");
 
         worker.execute(task.id());
@@ -286,7 +298,7 @@ class FixTaskWorkerTests {
         RecordingExecutor executor = new RecordingExecutor();
         FailingUpdateIssueCommentTool issueCommentTool = new FailingUpdateIssueCommentTool();
         RecordingTimelineService timelineService = new RecordingTimelineService();
-        FixTaskWorker worker = new FixTaskWorker(fixTaskService, executor, issueCommentTool, timelineService);
+        FixTaskWorker worker = worker(fixTaskService, executor, issueCommentTool, timelineService);
         FixTaskVo task = createTask(fixTaskService, "delivery-worker-comment-failed");
 
         worker.execute(task.id());
@@ -328,6 +340,40 @@ class FixTaskWorkerTests {
                 deliveryId,
                 98765
         ));
+    }
+
+    private static FixTaskWorker worker(
+            FixTaskService fixTaskService,
+            FixTaskExecutor executor,
+            IssueCommentTool issueCommentTool,
+            FixTaskTimelineService timelineService
+    ) {
+        return worker(fixTaskService, executor, issueCommentTool, timelineService, new InMemoryFixTaskTestRunService());
+    }
+
+    private static FixTaskWorker worker(
+            FixTaskService fixTaskService,
+            FixTaskExecutor executor,
+            IssueCommentTool issueCommentTool,
+            FixTaskTimelineService timelineService,
+            FixTaskTestRunService testRunService
+    ) {
+        return new FixTaskWorker(fixTaskService, executor, issueCommentTool, timelineService, testRunService);
+    }
+
+    private static FixTaskTestRunVo recordTestRun(
+            FixTaskTestRunService testRunService,
+            String taskId,
+            int exitCode
+    ) {
+        return testRunService.recordTestRun(
+                taskId,
+                "./mvnw test",
+                exitCode,
+                exitCode == 0 ? "tests passed" : "tests failed",
+                Instant.parse("2026-06-18T00:01:00Z"),
+                Instant.parse("2026-06-18T00:01:02Z")
+        );
     }
 
     private static final class RecordingExecutor implements FixTaskExecutor {
@@ -386,6 +432,9 @@ class FixTaskWorkerTests {
         private final AtomicReference<FixTaskVo> completedTask = new AtomicReference<>();
         private final AtomicReference<FixTaskVo> failedTask = new AtomicReference<>();
         private final AtomicReference<FixTaskVo> pendingReviewTask = new AtomicReference<>();
+        private final AtomicReference<FixTaskTestRunVo> completedTestRun = new AtomicReference<>();
+        private final AtomicReference<FixTaskTestRunVo> failedTestRun = new AtomicReference<>();
+        private final AtomicReference<FixTaskTestRunVo> pendingReviewTestRun = new AtomicReference<>();
 
         private RecordingIssueCommentTool() {
             super(new GitHubIssueCommentClient(new GitHubProperties()) {
@@ -414,16 +463,18 @@ class FixTaskWorkerTests {
         }
 
         @Override
-        public Optional<IssueCommentResult> updateCompleted(FixTaskVo task) {
+        public Optional<IssueCommentResult> updateCompleted(FixTaskVo task, FixTaskTestRunVo latestTestRun) {
             record(task);
             completedTask.set(task);
+            completedTestRun.set(latestTestRun);
             return Optional.of(new IssueCommentResult(123, "https://github.com/octocat/hello-world/issues/42#issuecomment-123"));
         }
 
         @Override
-        public Optional<IssueCommentResult> updateFailed(FixTaskVo task) {
+        public Optional<IssueCommentResult> updateFailed(FixTaskVo task, FixTaskTestRunVo latestTestRun) {
             record(task);
             failedTask.set(task);
+            failedTestRun.set(latestTestRun);
             failureReasons.add(task.failureReason());
             return Optional.of(new IssueCommentResult(123, "https://github.com/octocat/hello-world/issues/42#issuecomment-123"));
         }
@@ -436,9 +487,10 @@ class FixTaskWorkerTests {
         }
 
         @Override
-        public Optional<IssueCommentResult> updatePendingReview(FixTaskVo task) {
+        public Optional<IssueCommentResult> updatePendingReview(FixTaskVo task, FixTaskTestRunVo latestTestRun) {
             record(task);
             pendingReviewTask.set(task);
+            pendingReviewTestRun.set(latestTestRun);
             failureReasons.add(task.failureReason());
             return Optional.of(new IssueCommentResult(123, "https://github.com/octocat/hello-world/issues/42#issuecomment-123"));
         }
@@ -461,6 +513,18 @@ class FixTaskWorkerTests {
 
         private FixTaskVo pendingReviewTask() {
             return pendingReviewTask.get();
+        }
+
+        private FixTaskTestRunVo completedTestRun() {
+            return completedTestRun.get();
+        }
+
+        private FixTaskTestRunVo failedTestRun() {
+            return failedTestRun.get();
+        }
+
+        private FixTaskTestRunVo pendingReviewTestRun() {
+            return pendingReviewTestRun.get();
         }
 
         private List<String> failureReasons() {
@@ -502,6 +566,11 @@ class FixTaskWorkerTests {
 
         @Override
         public Optional<IssueCommentResult> updateCompleted(FixTaskVo task) {
+            return updateCompleted(task, null);
+        }
+
+        @Override
+        public Optional<IssueCommentResult> updateCompleted(FixTaskVo task, FixTaskTestRunVo latestTestRun) {
             updateLatch.countDown();
             throw new IllegalStateException("comment update failed");
         }

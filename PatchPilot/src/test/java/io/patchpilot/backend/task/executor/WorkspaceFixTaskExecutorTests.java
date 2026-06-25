@@ -112,6 +112,8 @@ class WorkspaceFixTaskExecutorTests {
         assertThat(pullRequestTool.buildSystem()).isEqualTo("maven");
         assertThat(pullRequestTool.verificationCommand()).isEqualTo("custom-verify test");
         assertThat(pullRequestTool.adapterDetectionReason()).isEqualTo("Detected custom verifier");
+        assertThat(pullRequestTool.testRun().command()).isEqualTo("custom-verify test");
+        assertThat(pullRequestTool.testRun().exitCode()).isZero();
         assertThat(patchWorkflow.callOrder()).isLessThan(diffTool.callOrder());
         assertThat(diffTool.callOrder()).isLessThan(verificationRunner.callOrder());
         assertThat(verificationRunner.callOrder()).isLessThan(commitTool.callOrder());
@@ -1120,6 +1122,7 @@ class WorkspaceFixTaskExecutorTests {
         private String buildSystem;
         private String verificationCommand;
         private String adapterDetectionReason;
+        private FixTaskTestRunVo testRun;
         private int callOrder;
 
         private RecordingPullRequestTool() {
@@ -1133,12 +1136,18 @@ class WorkspaceFixTaskExecutorTests {
 
         @Override
         public PullRequestResult createPullRequest(FixTaskVo task, String branchName) {
+            return createPullRequest(task, branchName, null);
+        }
+
+        @Override
+        public PullRequestResult createPullRequest(FixTaskVo task, String branchName, FixTaskTestRunVo testRun) {
             this.taskId = task.id();
             this.branchName = branchName;
             this.language = task.language();
             this.buildSystem = task.buildSystem();
             this.verificationCommand = task.verificationCommand();
             this.adapterDetectionReason = task.adapterDetectionReason();
+            this.testRun = testRun;
             this.callOrder = CallOrder.next();
             return new PullRequestResult("https://github.com/octocat/hello-world/pull/7");
         }
@@ -1165,6 +1174,10 @@ class WorkspaceFixTaskExecutorTests {
 
         private String adapterDetectionReason() {
             return adapterDetectionReason;
+        }
+
+        private FixTaskTestRunVo testRun() {
+            return testRun;
         }
 
         private int callOrder() {

@@ -17,6 +17,7 @@ import io.patchpilot.backend.runner.domain.vo.TestRunResult;
 import io.patchpilot.backend.safety.GeneratedDiffRiskGate;
 import io.patchpilot.backend.safety.domain.GeneratedDiffRiskDecision;
 import io.patchpilot.backend.runner.service.VerificationRunner;
+import io.patchpilot.backend.task.domain.vo.FixTaskTestRunVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import io.patchpilot.backend.task.executor.domain.FixTaskExecutionResult;
 import io.patchpilot.backend.task.service.FixTaskAdapterMetadataRecorder;
@@ -283,7 +284,7 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
                 adapterDetectionContext.detectionResult().verificationCommand()
         );
         Instant testFinishedAt = Instant.now();
-        fixTaskTestRunService.recordTestRun(
+        FixTaskTestRunVo testRun = fixTaskTestRunService.recordTestRun(
                 taskWithAdapterEvidence.id(),
                 testRunResult.command(),
                 testRunResult.exitCode(),
@@ -328,11 +329,11 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
                 "PullRequestTool",
                 "repository=%s/%s, branchName=%s, issueNumber=%d".formatted(
                         taskWithAdapterEvidence.repositoryOwner(),
-                        taskWithAdapterEvidence.repositoryName(),
-                        preparedWorkspace.branchName(),
-                        taskWithAdapterEvidence.issueNumber()
-                ),
-                () -> pullRequestTool.createPullRequest(taskWithAdapterEvidence, preparedWorkspace.branchName()),
+                taskWithAdapterEvidence.repositoryName(),
+                preparedWorkspace.branchName(),
+                taskWithAdapterEvidence.issueNumber()
+        ),
+                () -> pullRequestTool.createPullRequest(taskWithAdapterEvidence, preparedWorkspace.branchName(), testRun),
                 PullRequestResult::url
         );
         return new FixTaskExecutionResult(pullRequestResult.url());

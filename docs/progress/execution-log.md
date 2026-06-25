@@ -3656,6 +3656,22 @@ Validation:
 - `npm run build`: passed after production frontend build verification.
 - `git diff --check`: passed.
 
+Implemented GitHub verification result evidence from `docs/plans/185-github-verification-result-evidence.md`.
+
+Changes:
+
+- Expanded Pull Request bodies with actual verification result evidence: command, exit code, and duration.
+- Expanded completed issue status comments with the same verification result evidence when a test run exists.
+- Expanded failed issue status comments with failed verification result evidence when a test run exists.
+- Added pending-review issue comment wording that verification has not run when the task pauses before verification.
+- Wired `NoopFixTaskExecutor` to pass the recorded test-run evidence into Pull Request creation.
+- Wired `FixTaskWorker` to load the latest test-run evidence before completed, failed, and pending-review status comment updates.
+- Updated README, product spec, and this execution log.
+
+Validation so far:
+
+- `mvn -pl PatchPilot -Dtest=PullRequestToolTests,IssueCommentToolTests,FixTaskWorkerTests,WorkspaceFixTaskExecutorTests test`: first failed at compile time because PR/comment tools and `FixTaskWorker` did not accept verification-result evidence; then failed once because the completed-comment failure test still overrode the legacy update method; then passed after wiring the new evidence path, 37 tests run, 0 failures.
+
 Implemented non-success issue comment evidence summary from `docs/plans/184-non-success-issue-comment-evidence-summary.md`.
 
 Changes:

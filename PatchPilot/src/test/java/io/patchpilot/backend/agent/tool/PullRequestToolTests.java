@@ -5,6 +5,7 @@ import io.patchpilot.backend.github.client.domain.CreatePullRequestCommand;
 import io.patchpilot.backend.github.client.domain.PullRequestResult;
 import io.patchpilot.backend.github.config.GitHubProperties;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
+import io.patchpilot.backend.task.domain.vo.FixTaskTestRunVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import org.junit.jupiter.api.Test;
 
@@ -19,7 +20,7 @@ class PullRequestToolTests {
         RecordingGitHubPullRequestClient client = new RecordingGitHubPullRequestClient();
         PullRequestTool tool = new PullRequestTool(client);
 
-        PullRequestResult result = tool.createPullRequest(task(), "patchpilot/task-123");
+        PullRequestResult result = tool.createPullRequest(task(), "patchpilot/task-123", testRun(0, 2_345));
 
         assertThat(result.url()).isEqualTo("https://github.com/octocat/hello-world/pull/7");
         assertThat(client.command().owner()).isEqualTo("octocat");
@@ -35,6 +36,7 @@ class PullRequestToolTests {
         assertThat(client.command().body()).contains("Build system: `maven`");
         assertThat(client.command().body()).contains("Verification: `./mvnw test`");
         assertThat(client.command().body()).contains("Detection reason: pom.xml detected with mvnw wrapper");
+        assertThat(client.command().body()).contains("Verification result: `./mvnw test` exited `0` in `2345 ms`.");
         assertThat(client.command().body())
                 .contains("PatchPilot opened this PR only after adapter-selected verification passed.");
         assertThat(client.command().body())
@@ -60,6 +62,19 @@ class PullRequestToolTests {
                 "maven",
                 "./mvnw test",
                 "pom.xml detected with mvnw wrapper"
+        );
+    }
+
+    private static FixTaskTestRunVo testRun(int exitCode, long durationMs) {
+        return new FixTaskTestRunVo(
+                "test-run-123",
+                "task-123",
+                "./mvnw test",
+                exitCode,
+                "tests passed",
+                Instant.parse("2026-06-18T00:01:00Z"),
+                Instant.parse("2026-06-18T00:01:02Z"),
+                durationMs
         );
     }
 

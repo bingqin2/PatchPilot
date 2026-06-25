@@ -3,11 +3,13 @@ package io.patchpilot.backend.task.service.impl;
 import io.patchpilot.backend.agent.tool.IssueCommentTool;
 import io.patchpilot.backend.github.client.domain.IssueCommentResult;
 import io.patchpilot.backend.task.domain.enums.FixTaskTimelineEventType;
+import io.patchpilot.backend.task.domain.vo.FixTaskTestRunVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import io.patchpilot.backend.task.executor.TaskCancellationException;
 import io.patchpilot.backend.task.executor.FixTaskExecutor;
 import io.patchpilot.backend.task.executor.domain.FixTaskExecutionResult;
 import io.patchpilot.backend.task.service.FixTaskService;
+import io.patchpilot.backend.task.service.FixTaskTestRunService;
 import io.patchpilot.backend.task.service.LogSummary;
 import io.patchpilot.backend.task.service.FixTaskTimelineService;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +24,7 @@ public class FixTaskWorker {
     private final FixTaskExecutor fixTaskExecutor;
     private final IssueCommentTool issueCommentTool;
     private final FixTaskTimelineService fixTaskTimelineService;
+    private final FixTaskTestRunService fixTaskTestRunService;
 
     public void execute(String taskId) {
         FixTaskVo runningTask = fixTaskService.markRunning(taskId);
@@ -41,7 +44,7 @@ public class FixTaskWorker {
             if (isGeneratedDiffRiskRejection(failureReason)) {
                 FixTaskVo reviewTask = fixTaskService.markPendingReview(taskId, failureReason);
                 recordTimelineEvent(taskId, FixTaskTimelineEventType.PENDING_REVIEW, failureReason);
-                updateStatusComment(taskId, () -> issueCommentTool.updatePendingReview(reviewTask));
+                updateStatusComment(taskId, () -> issueCommentTool.updatePendingReview(reviewTask, latestTestRun(taskId)));
                 return;
             }
             FixTaskVo failedTask = fixTaskService.markFailed(taskId, failureReason);
@@ -52,12 +55,12 @@ public class FixTaskWorker {
         recordTimelineEvent(taskId, FixTaskTimelineEventType.PR_CREATED, executionResult.pullRequestUrl());
         FixTaskVo completedTask = fixTaskService.markCompleted(taskId, executionResult.pullRequestUrl());
         recordTimelineEvent(taskId, FixTaskTimelineEventType.COMPLETED, "Task completed");
-        updateStatusComment(taskId, () -> issueCommentTool.updateCompleted(completedTask));
+        updateStatusComment(taskId, () -> issueCommentTool.updateCompleted(completedTask, latestTestRun(taskId)));
     }
 
     private void publishFailureStatusComment(FixTaskVo failedTask) {
         if (failedTask.statusCommentId() != null) {
-            updateStatusComment(failedTask.id(), () -> issueCommentTool.updateFailed(failedTask));
+            updateStatusComment(failedTask.id(), () -> issueCommentTool.updateFailed(failedTask, latestTestRun(failedTask.id())));
             return;
         }
         updateStatusComment(failedTask.id(), () -> {
@@ -78,6 +81,12 @@ public class FixTaskWorker {
             );
             // GitHub comment feedback must not change durable task status.
         }
+    }
+
+    private FixTaskTestRunVo latestTestRun(String taskId) {
+        return fixTaskTestRunService.listTestRuns(taskId).stream()
+                .reduce((first, second) -> second)
+                .orElse(null);
     }
 
     private void recordTimelineEvent(String taskId, FixTaskTimelineEventType eventType, String message) {
