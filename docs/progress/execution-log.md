@@ -3655,3 +3655,22 @@ Validation:
 - `npm test`: passed after full frontend regression verification, 193 tests run, 0 failures.
 - `npm run build`: passed after production frontend build verification.
 - `git diff --check`: passed.
+
+Implemented completed issue comment evidence summary from `docs/plans/183-completed-issue-comment-evidence-summary.md`.
+
+Changes:
+
+- Expanded completed GitHub issue status comments with detected language, build system, allowlisted verification command, and adapter detection reason.
+- Added review-boundary text to successful issue comments: PatchPilot opens the Pull Request only after adapter-selected verification passes, verification commands come from repository adapters instead of arbitrary issue text, and PatchPilot does not auto-merge.
+- Added worker coverage to ensure completed issue comments receive the adapter metadata preserved on the completed task.
+- Updated README, product spec, and this execution log.
+
+Validation so far:
+
+- `mvn -pl PatchPilot -Dtest=IssueCommentToolTests test`: first failed because the completed issue comment lacked `Language: \`java\``; then passed after adding completed-comment evidence.
+- `mvn -pl PatchPilot -Dtest=FixTaskWorkerTests#should_execute_task_and_mark_completed test`: passed after locking the worker handoff so completed issue comments receive adapter metadata.
+- `mvn -pl PatchPilot -Dtest=IssueCommentToolTests,FixTaskWorkerTests test`: passed after focused backend regression verification, 25 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed after full backend regression verification, 649 tests run, 0 failures.
+- `npm test`: passed after full frontend regression verification, 193 tests run, 0 failures.
+- `npm run build`: passed after production frontend build verification.
+- `git diff --check`: passed.

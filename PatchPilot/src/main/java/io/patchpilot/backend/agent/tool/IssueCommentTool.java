@@ -163,6 +163,9 @@ public class IssueCommentTool {
         if (StringUtils.hasText(pullRequestUrl)) {
             body.append("PR: ").append(pullRequestUrl).append("\n");
         }
+        if (status == FixTaskStatus.COMPLETED) {
+            appendCompletionEvidence(body, task);
+        }
         if (PatchReviewFailureClassifier.isPatchReviewRejection(failureReason)) {
             body.append("Review gate: ").append(PatchReviewFailureClassifier.REVIEW_GATE).append("\n");
             body.append(PatchReviewFailureClassifier.STATUS_COMMENT_RECOVERY).append("\n");
@@ -178,6 +181,24 @@ public class IssueCommentTool {
             }
         }
         return body.toString();
+    }
+
+    private static void appendCompletionEvidence(StringBuilder body, FixTaskVo task) {
+        if (StringUtils.hasText(task.language())) {
+            body.append("Language: `").append(task.language()).append("`\n");
+        }
+        if (StringUtils.hasText(task.buildSystem())) {
+            body.append("Build system: `").append(task.buildSystem()).append("`\n");
+        }
+        if (StringUtils.hasText(task.verificationCommand())) {
+            body.append("Verification: `").append(task.verificationCommand()).append("`\n");
+        }
+        if (StringUtils.hasText(task.adapterDetectionReason())) {
+            body.append("Detection reason: ").append(task.adapterDetectionReason()).append("\n");
+        }
+        body.append("PatchPilot opened the Pull Request only after adapter-selected verification passed.\n");
+        body.append("Verification commands come from repository adapters, not arbitrary issue text.\n");
+        body.append("PatchPilot does not auto-merge Pull Requests.\n");
     }
 
     private static boolean unsupportedRepository(TaskFailureFeedback feedback) {
