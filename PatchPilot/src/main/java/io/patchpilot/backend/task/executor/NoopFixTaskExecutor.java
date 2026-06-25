@@ -268,62 +268,71 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
         taskCancellationChecker.throwIfCancelled(task.id());
         PreparedWorkspaceResult preparedWorkspace = prepareWorkspace(task);
         taskCancellationChecker.throwIfCancelled(task.id());
-        LanguageDetectionResult detectionResult = detectAndRecordAdapter(task, preparedWorkspace);
-        if (task.riskReviewApprovedAt() == null) {
-            generateAndRiskCheckDiff(task, preparedWorkspace);
+        AdapterDetectionContext adapterDetectionContext = detectAndRecordAdapter(task, preparedWorkspace);
+        FixTaskVo taskWithAdapterEvidence = adapterDetectionContext.task();
+        if (taskWithAdapterEvidence.riskReviewApprovedAt() == null) {
+            generateAndRiskCheckDiff(taskWithAdapterEvidence, preparedWorkspace);
         } else {
-            recordApprovedRiskReview(task);
+            recordApprovedRiskReview(taskWithAdapterEvidence);
         }
-        taskCancellationChecker.throwIfCancelled(task.id());
+        taskCancellationChecker.throwIfCancelled(taskWithAdapterEvidence.id());
         Instant testStartedAt = Instant.now();
         TestRunResult testRunResult = verificationRunner.runVerification(
-                task.id(),
+                taskWithAdapterEvidence.id(),
                 preparedWorkspace.repositoryDir(),
-                detectionResult.verificationCommand()
+                adapterDetectionContext.detectionResult().verificationCommand()
         );
         Instant testFinishedAt = Instant.now();
         fixTaskTestRunService.recordTestRun(
-                task.id(),
+                taskWithAdapterEvidence.id(),
                 testRunResult.command(),
                 testRunResult.exitCode(),
                 testRunResult.output(),
                 testStartedAt,
                 testFinishedAt
         );
-        taskCancellationChecker.throwIfCancelled(task.id());
+        taskCancellationChecker.throwIfCancelled(taskWithAdapterEvidence.id());
         if (testRunResult.exitCode() != 0) {
             throw new IllegalStateException("verification failed: " + testRunResult.output());
         }
         auditToolCall(
-                task.id(),
+                taskWithAdapterEvidence.id(),
                 "CommitTool",
                 "repositoryDir=%s, message=%s".formatted(
                         preparedWorkspace.repositoryDir(),
-                        "PatchPilot task " + task.id()
+                        "PatchPilot task " + taskWithAdapterEvidence.id()
                 ),
-                () -> commitTool.commitAll(task.id(), preparedWorkspace.repositoryDir(), "PatchPilot task " + task.id())
+                () -> commitTool.commitAll(
+                        taskWithAdapterEvidence.id(),
+                        preparedWorkspace.repositoryDir(),
+                        "PatchPilot task " + taskWithAdapterEvidence.id()
+                )
         );
-        taskCancellationChecker.throwIfCancelled(task.id());
+        taskCancellationChecker.throwIfCancelled(taskWithAdapterEvidence.id());
         auditToolCall(
-                task.id(),
+                taskWithAdapterEvidence.id(),
                 "PushTool",
                 "repositoryDir=%s, branchName=%s".formatted(
                         preparedWorkspace.repositoryDir(),
                         preparedWorkspace.branchName()
                 ),
-                () -> pushTool.pushBranch(task.id(), preparedWorkspace.repositoryDir(), preparedWorkspace.branchName())
+                () -> pushTool.pushBranch(
+                        taskWithAdapterEvidence.id(),
+                        preparedWorkspace.repositoryDir(),
+                        preparedWorkspace.branchName()
+                )
         );
-        taskCancellationChecker.throwIfCancelled(task.id());
+        taskCancellationChecker.throwIfCancelled(taskWithAdapterEvidence.id());
         PullRequestResult pullRequestResult = auditToolCall(
-                task.id(),
+                taskWithAdapterEvidence.id(),
                 "PullRequestTool",
                 "repository=%s/%s, branchName=%s, issueNumber=%d".formatted(
-                        task.repositoryOwner(),
-                        task.repositoryName(),
+                        taskWithAdapterEvidence.repositoryOwner(),
+                        taskWithAdapterEvidence.repositoryName(),
                         preparedWorkspace.branchName(),
-                        task.issueNumber()
+                        taskWithAdapterEvidence.issueNumber()
                 ),
-                () -> pullRequestTool.createPullRequest(task, preparedWorkspace.branchName()),
+                () -> pullRequestTool.createPullRequest(taskWithAdapterEvidence, preparedWorkspace.branchName()),
                 PullRequestResult::url
         );
         return new FixTaskExecutionResult(pullRequestResult.url());
@@ -355,7 +364,7 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
         );
     }
 
-    private LanguageDetectionResult detectAndRecordAdapter(FixTaskVo task, PreparedWorkspaceResult preparedWorkspace) {
+    private AdapterDetectionContext detectAndRecordAdapter(FixTaskVo task, PreparedWorkspaceResult preparedWorkspace) {
         LanguageDetectionResult detectionResult = auditToolCall(
                 task.id(),
                 "LanguageAdapterRegistry",
@@ -367,7 +376,7 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
                         result.reason()
                 )
         );
-        adapterMetadataRecorder.recordAdapterMetadata(
+        FixTaskVo updatedTask = adapterMetadataRecorder.recordAdapterMetadata(
                 task.id(),
                 detectionResult.language(),
                 detectionResult.buildSystem(),
@@ -375,7 +384,7 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
                 detectionResult.reason()
         );
         taskCancellationChecker.throwIfCancelled(task.id());
-        return detectionResult;
+        return new AdapterDetectionContext(updatedTask == null ? task : updatedTask, detectionResult);
     }
 
     private void generateAndRiskCheckDiff(FixTaskVo task, PreparedWorkspaceResult preparedWorkspace) {
@@ -492,6 +501,9 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
     private interface ToolCallOutputSummary<T> {
 
         String summary(T output);
+    }
+
+    private record AdapterDetectionContext(FixTaskVo task, LanguageDetectionResult detectionResult) {
     }
 
 }

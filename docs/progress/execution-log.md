@@ -3636,3 +3636,22 @@ Validation so far:
 - `npm test`: passed after full frontend regression verification, 190 tests run, 0 failures.
 - `npm run build`: passed after production frontend build verification.
 - `mvn -pl PatchPilot test`: passed after backend regression verification, 646 tests run, 0 failures.
+
+Implemented Pull Request evidence summary from `docs/plans/182-pull-request-evidence-summary.md`.
+
+Changes:
+
+- Expanded `PullRequestTool` PR bodies with task id, trigger user, branch, detected language, build system, allowlisted verification command, and adapter detection reason.
+- Added review-boundary text to generated PRs: PatchPilot opens a PR only after adapter-selected verification passes, commands come from repository adapters instead of arbitrary issue text, and PatchPilot does not auto-merge.
+- Updated `NoopFixTaskExecutor` to pass the adapter-enriched task context into PR creation after adapter metadata is recorded.
+- Updated README, product spec, and this execution log.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=PullRequestToolTests test`: first failed because the PR body lacked `Task: \`task-123\``; then passed after adding the PR evidence summary.
+- `mvn -pl PatchPilot -Dtest=WorkspaceFixTaskExecutorTests#should_prepare_task_repository_and_run_maven_tests test`: first failed because the task passed to `PullRequestTool` had no adapter metadata; then passed after carrying the adapter-enriched task through the executor.
+- `mvn -pl PatchPilot -Dtest=PullRequestToolTests,WorkspaceFixTaskExecutorTests test`: passed after focused backend regression verification, 12 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed after full backend regression verification, 649 tests run, 0 failures.
+- `npm test`: passed after full frontend regression verification, 193 tests run, 0 failures.
+- `npm run build`: passed after production frontend build verification.
+- `git diff --check`: passed.

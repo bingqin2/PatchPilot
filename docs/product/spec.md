@@ -200,6 +200,8 @@ The current implementation target is local self-hosted development first. Hosted
 - When patch generation and tests succeed, the system pushes a patch branch.
 - The system creates a Pull Request.
 - The PR body includes the linked issue, summary of changes, files changed, and test result.
+- The PR body includes task id, trigger user, patch branch, detected language adapter, selected build system, allowlisted verification command, and adapter detection reason when available.
+- The PR body states that verification commands come from repository adapters rather than arbitrary issue text, and that PatchPilot does not auto-merge Pull Requests.
 - The system comments on the original issue with the PR link.
 - The system does not merge Pull Requests automatically.
 

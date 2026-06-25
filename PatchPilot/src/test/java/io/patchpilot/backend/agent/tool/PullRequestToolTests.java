@@ -28,8 +28,17 @@ class PullRequestToolTests {
         assertThat(client.command().base()).isEqualTo("main");
         assertThat(client.command().title()).isEqualTo("PatchPilot fix for #42");
         assertThat(client.command().body()).contains("Fixes #42");
+        assertThat(client.command().body()).contains("Task: `task-123`");
         assertThat(client.command().body()).contains("Triggered by: alice");
         assertThat(client.command().body()).contains("Branch: patchpilot/task-123");
+        assertThat(client.command().body()).contains("Language: `java`");
+        assertThat(client.command().body()).contains("Build system: `maven`");
+        assertThat(client.command().body()).contains("Verification: `./mvnw test`");
+        assertThat(client.command().body()).contains("Detection reason: pom.xml detected with mvnw wrapper");
+        assertThat(client.command().body())
+                .contains("PatchPilot opened this PR only after adapter-selected verification passed.");
+        assertThat(client.command().body())
+                .contains("PatchPilot does not auto-merge Pull Requests.");
     }
 
     private static FixTaskVo task() {
@@ -46,6 +55,11 @@ class PullRequestToolTests {
                 FixTaskStatus.RUNNING,
                 null,
                 Instant.parse("2026-06-18T00:00:00Z")
+        ).withAdapterMetadata(
+                "java",
+                "maven",
+                "./mvnw test",
+                "pom.xml detected with mvnw wrapper"
         );
     }
 
