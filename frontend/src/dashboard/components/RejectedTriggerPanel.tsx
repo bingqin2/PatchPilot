@@ -11,6 +11,7 @@ import type {
   TriggerQuarantineScope
 } from '../../types';
 import { useState, type FormEvent } from 'react';
+import { actionLabel } from '../actionLabels';
 import { compactTime } from '../format';
 
 const REJECTED_TRIGGER_CATEGORY_FILTERS: RejectedTriggerCategoryFilter[] = [
@@ -533,15 +534,6 @@ function categoryLabel(category: string | null) {
     return 'Unknown';
   }
   return category
-    .toLowerCase()
-    .split('_')
-    .filter(Boolean)
-    .join(' ')
-    .replace(/^./, (character) => character.toUpperCase());
-}
-
-function actionLabel(action: string) {
-  return action
     .toLowerCase()
     .split('_')
     .filter(Boolean)

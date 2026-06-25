@@ -3523,3 +3523,20 @@ Validation so far:
 - `mvn -pl PatchPilot -Dtest=GitHubWebhookControllerTests,WebhookDeliveryDiagnosticControllerTests,InMemoryWebhookDeliveryDiagnosticServiceTests,MyBatisWebhookDeliveryDiagnosticServiceTests,WebhookDeliveryDiagnosticMigrationTests test`: passed after focused backend webhook-delivery regression verification, 18 tests run, 0 failures.
 - `npm test -- --run src/dashboard/components/WebhookDeliveryPanel.test.tsx`: first failed because the dashboard did not render delivery outcome targets; then passed after adding outcome rendering, 3 tests run, 0 failures.
 - `npm test -- --run src/api.test.ts src/App.test.tsx src/dashboard/components/WebhookDeliveryPanel.test.tsx`: passed after dashboard fixture and integration coverage, 105 tests run, 0 failures.
+
+Implemented admin audit event trail from `docs/plans/176-admin-audit-event-trail.md`.
+
+Changes:
+
+- Reused `operator_safety_audit` as the durable protected-admin mutation stream.
+- Added `/api/admin-audit-events` as a clearer alias for the existing operator safety audit stream while keeping `/api/operator-safety-audits` compatible.
+- Recorded audit rows after successful manual task creation, task cancel, task retry, risk-review approval, rejected-trigger retry, demo session archive, and existing quarantine create/release actions.
+- Kept failed validation, missing resources, and conflict responses from writing misleading audit rows.
+- Added a dashboard `Admin audit trail` panel for the full protected mutation stream.
+- Kept the rejected-trigger panel focused on quarantine-related operator safety rows by filtering the same admin event stream.
+- Updated README, frontend design notes, and this execution log.
+
+Validation so far:
+
+- `mvn -pl PatchPilot -Dtest=OperatorSafetyAuditControllerTests,TaskControllerTests,RejectedTriggerAuditControllerTests,DemoReadinessControllerTests test`: first failed with missing `/api/admin-audit-events` route and missing audit writes for task control, rejected-trigger retry, and demo archive; then passed after backend implementation, 91 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts src/dashboard/components/AdminAuditPanel.test.tsx src/App.test.tsx`: first failed because `listAdminAuditEvents` and `AdminAuditPanel` did not exist and App still loaded the old operator-safety endpoint; then passed after frontend implementation, 105 tests run, 0 failures.

@@ -3,8 +3,11 @@ package io.patchpilot.backend.safety;
 import io.patchpilot.backend.safety.domain.RejectedTriggerAuditVo;
 import io.patchpilot.backend.safety.domain.RejectedTriggerAuditSummaryVo;
 import io.patchpilot.backend.safety.domain.RejectedTriggerCountVo;
+import io.patchpilot.backend.safety.domain.RecordOperatorSafetyAuditCommand;
+import io.patchpilot.backend.safety.domain.TriggerQuarantineScope;
 import io.patchpilot.backend.safety.service.RejectedTriggerAuditService;
 import io.patchpilot.backend.safety.service.RejectedTriggerRetryService;
+import io.patchpilot.backend.safety.service.OperatorSafetyAuditService;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import org.junit.jupiter.api.Test;
@@ -16,6 +19,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.time.Instant;
 import java.util.List;
 
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -33,6 +38,9 @@ class RejectedTriggerAuditControllerTests {
 
     @MockitoBean
     private RejectedTriggerRetryService retryService;
+
+    @MockitoBean
+    private OperatorSafetyAuditService operatorSafetyAuditService;
 
     @Test
     void should_list_rejected_trigger_audits() throws Exception {
@@ -182,6 +190,19 @@ class RejectedTriggerAuditControllerTests {
                 .andExpect(jsonPath("$.data.repositoryName").value("hello-world"))
                 .andExpect(jsonPath("$.data.issueNumber").value(42))
                 .andExpect(jsonPath("$.data.triggerComment").value("/agent fix touch docs/retry.md"));
+
+        verify(operatorSafetyAuditService).recordSafetyAudit(argThat(this::isRejectedTriggerRetryAudit));
+    }
+
+    private boolean isRejectedTriggerRetryAudit(RecordOperatorSafetyAuditCommand command) {
+        return command != null
+                && "REJECTED_TRIGGER_RETRIED".equals(command.action())
+                && "TASK".equals(command.resourceType())
+                && "task-123".equals(command.resourceId())
+                && command.scope() == TriggerQuarantineScope.REPOSITORY
+                && "octocat/hello-world".equals(command.scopeKey())
+                && "admin-api".equals(command.operator())
+                && "Retried rejected trigger audit-123 as manual task".equals(command.reason());
     }
 
     @Test

@@ -13,6 +13,9 @@ import io.patchpilot.backend.demo.domain.DemoScriptStepVo;
 import io.patchpilot.backend.demo.domain.DemoScriptVo;
 import io.patchpilot.backend.demo.domain.DemoSessionArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoSessionSnapshotVo;
+import io.patchpilot.backend.safety.domain.RecordOperatorSafetyAuditCommand;
+import io.patchpilot.backend.safety.domain.TriggerQuarantineScope;
+import io.patchpilot.backend.safety.service.OperatorSafetyAuditService;
 import io.patchpilot.backend.task.domain.vo.FixTaskQueueSummaryVo;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +29,8 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -63,6 +68,9 @@ class DemoReadinessControllerTests {
 
     @MockitoBean
     private DemoSessionArchiveService demoSessionArchiveService;
+
+    @MockitoBean
+    private OperatorSafetyAuditService operatorSafetyAuditService;
 
     @Test
     void should_return_demo_readiness_summary() throws Exception {
@@ -358,6 +366,19 @@ class DemoReadinessControllerTests {
                 .andExpect(jsonPath("$.data.status").value("READY"))
                 .andExpect(jsonPath("$.data.recentPullRequestUrl").value("https://github.com/bingqin2/PatchPilot/pull/42"))
                 .andExpect(jsonPath("$.data.report").value(org.hamcrest.Matchers.containsString("# PatchPilot Demo Session Report")));
+
+        verify(operatorSafetyAuditService).recordSafetyAudit(argThat(this::isDemoSessionArchiveAudit));
+    }
+
+    private boolean isDemoSessionArchiveAudit(RecordOperatorSafetyAuditCommand command) {
+        return command != null
+                && "DEMO_SESSION_ARCHIVED".equals(command.action())
+                && "DEMO_SESSION_ARCHIVE".equals(command.resourceType())
+                && "archive-1".equals(command.resourceId())
+                && command.scope() == TriggerQuarantineScope.REPOSITORY
+                && "patchpilot/local-demo".equals(command.scopeKey())
+                && "admin-api".equals(command.operator())
+                && "Archived demo session demo-session-20260624T003000Z".equals(command.reason());
     }
 
     @Test

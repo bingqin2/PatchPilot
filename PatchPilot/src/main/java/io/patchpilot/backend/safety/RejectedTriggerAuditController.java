@@ -1,8 +1,11 @@
 package io.patchpilot.backend.safety;
 
 import io.patchpilot.backend.common.response.ApiResponse;
+import io.patchpilot.backend.safety.domain.RecordOperatorSafetyAuditCommand;
 import io.patchpilot.backend.safety.domain.RejectedTriggerAuditSummaryVo;
 import io.patchpilot.backend.safety.domain.RejectedTriggerAuditVo;
+import io.patchpilot.backend.safety.domain.TriggerQuarantineScope;
+import io.patchpilot.backend.safety.service.OperatorSafetyAuditService;
 import io.patchpilot.backend.safety.service.RejectedTriggerAuditService;
 import io.patchpilot.backend.safety.service.RejectedTriggerRetryService;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
@@ -25,6 +28,7 @@ public class RejectedTriggerAuditController {
 
     private final RejectedTriggerAuditService auditService;
     private final RejectedTriggerRetryService retryService;
+    private final OperatorSafetyAuditService operatorSafetyAuditService;
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<RejectedTriggerAuditVo>>> listRejectedTriggers(
@@ -53,6 +57,15 @@ public class RejectedTriggerAuditController {
     public ResponseEntity<ApiResponse<FixTaskVo>> retryRejectedTrigger(@PathVariable String id) {
         try {
             FixTaskVo task = retryService.retryRejectedTrigger(id);
+            operatorSafetyAuditService.recordSafetyAudit(new RecordOperatorSafetyAuditCommand(
+                    "REJECTED_TRIGGER_RETRIED",
+                    "TASK",
+                    task.id(),
+                    TriggerQuarantineScope.REPOSITORY,
+                    task.repositoryOwner() + "/" + task.repositoryName(),
+                    "admin-api",
+                    "Retried rejected trigger " + id + " as manual task"
+            ));
             return ResponseEntity.created(URI.create("/api/tasks/" + task.id())).body(ApiResponse.ok(task));
         } catch (RejectedTriggerRetryService.RejectedTriggerNotFoundException exception) {
             return ResponseEntity.status(404).body(ApiResponse.fail(exception.getMessage()));

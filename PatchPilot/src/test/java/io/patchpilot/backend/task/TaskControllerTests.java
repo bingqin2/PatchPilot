@@ -7,11 +7,13 @@ import io.patchpilot.backend.github.client.domain.GetIssueContextCommand;
 import io.patchpilot.backend.github.client.domain.GitHubIssueContext;
 import io.patchpilot.backend.github.client.domain.GitHubIssueContextComment;
 import io.patchpilot.backend.github.config.GitHubProperties;
+import io.patchpilot.backend.safety.domain.OperatorSafetyAuditVo;
 import io.patchpilot.backend.task.domain.bo.CreateFixTaskCommand;
 import io.patchpilot.backend.task.domain.enums.FixTaskQueueItemStatus;
 import io.patchpilot.backend.task.domain.enums.FixTaskTimelineEventType;
 import io.patchpilot.backend.safety.domain.RejectedTriggerAuditVo;
 import io.patchpilot.backend.safety.service.RejectedTriggerAuditService;
+import io.patchpilot.backend.safety.service.OperatorSafetyAuditService;
 import io.patchpilot.backend.task.domain.vo.FixTaskQueueItemVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskModelCallVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskTestRunVo;
@@ -87,6 +89,9 @@ class TaskControllerTests {
     @Autowired
     private RejectedTriggerAuditService rejectedTriggerAuditService;
 
+    @Autowired
+    private OperatorSafetyAuditService operatorSafetyAuditService;
+
     @Test
     void should_create_manual_task_and_dispatch_it() throws Exception {
         mockMvc.perform(post("/api/tasks")
@@ -112,6 +117,13 @@ class TaskControllerTests {
                 .andExpect(jsonPath("$.data.deliveryId").value(startsWith("manual-")))
                 .andExpect(jsonPath("$.data.commentId").value(0))
                 .andExpect(jsonPath("$.data.status").value("PENDING"));
+
+        assertAuditRecorded(
+                "MANUAL_TASK_CREATED",
+                "TASK",
+                "local-operator",
+                "Manual task queued from dashboard/API: /agent fix touch docs/manual-task.md"
+        );
     }
 
     @Test
@@ -548,6 +560,14 @@ class TaskControllerTests {
                 .andExpect(jsonPath("$.data.riskReviewApprovedBy").value("release-captain"))
                 .andExpect(jsonPath("$.data.riskReviewApprovalReason")
                         .value("Reviewed generated diff and accepted docs-only change"));
+
+        assertAuditRecorded(
+                "RISK_REVIEW_APPROVED",
+                "TASK",
+                reviewTask.id(),
+                "release-captain",
+                "Reviewed generated diff and accepted docs-only change"
+        );
 
         assertThat(fixTaskTimelineService.listEvents(reviewTask.id()).stream()
                 .filter(event -> event.eventType() == FixTaskTimelineEventType.REVIEW_APPROVED)
@@ -1366,6 +1386,14 @@ class TaskControllerTests {
                 .andExpect(jsonPath("$.data.id").value(task.id()))
                 .andExpect(jsonPath("$.data.status").value("CANCELLED"))
                 .andExpect(jsonPath("$.data.failureReason").value("Task cancelled by user request"));
+
+        assertAuditRecorded(
+                "TASK_CANCELLED",
+                "TASK",
+                task.id(),
+                "admin-api",
+                "Task cancelled by user request"
+        );
     }
 
     @Test
@@ -1421,6 +1449,14 @@ class TaskControllerTests {
                 .andExpect(jsonPath("$.data.retrySourceFailureReason").value("executor failed"))
                 .andExpect(jsonPath("$.data.retryReason").value("Verified the failure cause and want a clean rerun"))
                 .andExpect(jsonPath("$.data.retriedAt").value(not(nullValue())));
+
+        assertAuditRecorded(
+                "TASK_RETRIED",
+                "TASK",
+                task.id(),
+                "admin-api",
+                "Verified the failure cause and want a clean rerun"
+        );
     }
 
     @Test
@@ -1787,6 +1823,35 @@ class TaskControllerTests {
 
     private FixTaskVo createTask(CreateFixTaskCommand command) {
         return fixTaskService.createFixTask(command);
+    }
+
+    private void assertAuditRecorded(String action, String resourceType, String operator, String reason) {
+        assertThat(operatorSafetyAuditService.listSafetyAudits(100))
+                .filteredOn(audit -> action.equals(audit.action()))
+                .filteredOn(audit -> resourceType.equals(audit.resourceType()))
+                .filteredOn(audit -> operator.equals(audit.operator()))
+                .filteredOn(audit -> reason.equals(audit.reason()))
+                .isNotEmpty();
+    }
+
+    private void assertAuditRecorded(
+            String action,
+            String resourceType,
+            String resourceId,
+            String operator,
+            String reason
+    ) {
+        assertThat(operatorSafetyAuditService.listSafetyAudits(100))
+                .filteredOn(audit -> action.equals(audit.action()))
+                .filteredOn(audit -> resourceType.equals(audit.resourceType()))
+                .filteredOn(audit -> resourceId.equals(audit.resourceId()))
+                .filteredOn(audit -> operator.equals(audit.operator()))
+                .filteredOn(audit -> reason.equals(audit.reason()))
+                .singleElement()
+                .satisfies(audit -> {
+                    assertThat(audit.scopeKey()).isNotBlank();
+                    assertThat(audit.createdAt()).isNotNull();
+                });
     }
 
     private CreateFixTaskCommand command(String owner, String repositoryName, String deliveryId) {

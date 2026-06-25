@@ -22,6 +22,7 @@ import {
   getRejectedTriggerSummary,
   getTriggerQuarantineEvidence,
   getWorkerHealth,
+  listAdminAuditEvents,
   listLanguageAdapterFixtures,
   listLanguageAdapters,
   listOperatorSafetyAudits,
@@ -969,6 +970,38 @@ test('lists recent operator safety audits through backend API', async () => {
   expect(audits[0].resourceType).toBe('TRIGGER_QUARANTINE');
   expect(audits[0].scopeKey).toBe('drive-by-user');
   expect(audits[0].operator).toBe('local-admin');
+});
+
+test('lists recent admin audit events through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: [
+        {
+          id: 'admin-audit-1',
+          action: 'TASK_RETRIED',
+          resourceType: 'TASK',
+          resourceId: 'task-123',
+          scope: 'REPOSITORY',
+          scopeKey: 'bingqin2/patchpilot',
+          operator: 'admin-api',
+          reason: 'Verified failure cause and requested a clean rerun',
+          createdAt: '2026-06-24T02:00:00Z'
+        }
+      ],
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const audits = await listAdminAuditEvents(20);
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/admin-audit-events?limit=20');
+  expect(audits[0].action).toBe('TASK_RETRIED');
+  expect(audits[0].resourceType).toBe('TASK');
+  expect(audits[0].operator).toBe('admin-api');
 });
 
 test('creates manual trigger quarantines through backend API', async () => {

@@ -279,6 +279,10 @@ export async function listOperatorSafetyAudits(limit = 20): Promise<OperatorSafe
   return getApi<OperatorSafetyAudit[]>(`/api/operator-safety-audits?limit=${limit}`);
 }
 
+export async function listAdminAuditEvents(limit = 20): Promise<OperatorSafetyAudit[]> {
+  return getApi<OperatorSafetyAudit[]>(`/api/admin-audit-events?limit=${limit}`);
+}
+
 export async function createTriggerQuarantine(input: CreateTriggerQuarantineInput): Promise<TriggerQuarantine> {
   return postApi<TriggerQuarantine>('/api/trigger-quarantines', input);
 }

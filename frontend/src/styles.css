@@ -3491,6 +3491,61 @@ pre {
   color: #465563;
 }
 
+.admin-audit-panel {
+  grid-column: 1 / -1;
+}
+
+.admin-audit-list {
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+}
+
+.admin-audit-row {
+  background: #f7f9fb;
+  border: 1px solid #dbe3ea;
+  border-radius: 6px;
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+}
+
+.admin-audit-row > div {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+.admin-audit-row strong,
+.admin-audit-row span,
+.admin-audit-row time,
+.admin-audit-row p {
+  overflow-wrap: anywhere;
+}
+
+.admin-audit-row strong {
+  color: #17202a;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 12px;
+}
+
+.admin-audit-row span,
+.admin-audit-row time {
+  color: #64727f;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.admin-audit-row p {
+  color: #465563;
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1.35;
+  margin: 0;
+}
+
 .rejected-trigger-row {
   border-bottom: 1px solid #edf1f5;
   display: grid;
