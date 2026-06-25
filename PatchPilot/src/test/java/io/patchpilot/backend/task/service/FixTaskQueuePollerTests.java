@@ -191,7 +191,7 @@ class FixTaskQueuePollerTests {
         private final AtomicReference<String> taskId = new AtomicReference<>();
 
         private RecordingWorker(boolean fail) {
-            super(null, null, null, null, null);
+            super(null, null, null, null, null, null);
             this.fail = fail;
         }
 

@@ -3690,6 +3690,26 @@ Validation:
 - `mvn -pl PatchPilot test`: passed after full backend regression verification, 653 tests run, 0 failures.
 - `git diff --check`: passed.
 
+Implemented issue comment patch review evidence from `docs/plans/189-issue-comment-patch-review-evidence.md`.
+
+Changes:
+
+- Added shared GitHub feedback formatting for model patch-review evidence: decision, reason, confidence, required follow-up, edited files, and review time.
+- Reused the shared formatter in Pull Request bodies so PR and issue feedback stay consistent.
+- Expanded completed issue status comments with model patch-review evidence when a review record exists.
+- Expanded failed issue status comments with model patch-review rejection evidence when a review record exists.
+- Wired `FixTaskWorker` to load the latest patch-review record before completed and failed status comment updates.
+- Updated README, product spec, and this execution log.
+
+Validation so far:
+
+- `mvn -pl PatchPilot -Dtest=IssueCommentToolTests test`: first failed because `IssueCommentTool` had no patch-review-aware `updateCompleted` / `updateFailed` overloads.
+- `mvn -pl PatchPilot -Dtest=IssueCommentToolTests,PullRequestToolTests test`: passed after adding shared patch-review evidence formatting, 21 tests run, 0 failures.
+- `mvn -pl PatchPilot -Dtest=FixTaskWorkerTests test`: first failed because `FixTaskWorker` did not accept `FixTaskPatchReviewService`; then failed once because a test substitute still overrode the legacy comment-update method; then passed after wiring latest patch-review lookup and updating the substitute, 13 tests run, 0 failures.
+- `mvn -pl PatchPilot -Dtest=IssueCommentToolTests,PullRequestToolTests,FixTaskWorkerTests,FixTaskQueuePollerTests,InMemoryFixTaskQueueTests test`: passed after focused regression verification, 39 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed after full backend regression verification, 657 tests run, 0 failures.
+- `git diff --check`: passed.
+
 Implemented GitHub feedback Dashboard deep links from `docs/plans/186-github-feedback-dashboard-deep-links.md`.
 
 Changes:

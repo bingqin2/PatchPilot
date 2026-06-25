@@ -7,11 +7,13 @@ import io.patchpilot.backend.github.client.domain.UpdateIssueCommentCommand;
 import io.patchpilot.backend.github.config.GitHubProperties;
 import io.patchpilot.backend.dashboard.config.DashboardProperties;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
+import io.patchpilot.backend.task.domain.vo.FixTaskPatchReviewVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskTestRunVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -146,6 +148,34 @@ class IssueCommentToolTests {
     }
 
     @Test
+    void should_update_completed_status_comment_with_patch_review_evidence() {
+        RecordingGitHubIssueCommentClient client = new RecordingGitHubIssueCommentClient();
+        IssueCommentTool tool = new IssueCommentTool(client);
+
+        Optional<IssueCommentResult> result = tool.updateCompleted(task(
+                FixTaskStatus.COMPLETED,
+                123L,
+                "https://github.com/octocat/hello-world/pull/7",
+                null
+        ).withAdapterMetadata(
+                "java",
+                "maven",
+                "./mvnw test",
+                "pom.xml detected with mvnw wrapper"
+        ), testRun(0, 2_345), approvedPatchReview());
+
+        assertThat(result).isPresent();
+        assertThat(client.updateCommand().body()).contains("Patch review:");
+        assertThat(client.updateCommand().body()).contains("Patch review decision: `APPROVE`");
+        assertThat(client.updateCommand().body())
+                .contains("Patch review reason: Generated patch only updates the requested docs file.");
+        assertThat(client.updateCommand().body()).contains("Patch review confidence: `HIGH`");
+        assertThat(client.updateCommand().body()).contains("Patch review follow-up: Review the PR before merge.");
+        assertThat(client.updateCommand().body()).contains("Patch review edited files: `docs/demo.md`");
+        assertThat(client.updateCommand().body()).contains("Patch reviewed at: `2026-06-18T00:03:00Z`");
+    }
+
+    @Test
     void should_update_failed_status_comment_with_failure_reason() {
         RecordingGitHubIssueCommentClient client = new RecordingGitHubIssueCommentClient();
         IssueCommentTool tool = new IssueCommentTool(client);
@@ -245,12 +275,21 @@ class IssueCommentToolTests {
                 123L,
                 null,
                 "Model patch review rejected generated edits: The proposed edit changed an unrelated file."
-        ));
+        ), null, rejectedPatchReview());
 
         assertThat(result).isPresent();
         assertThat(client.updateCommand().commentId()).isEqualTo(123);
         assertThat(client.updateCommand().body()).contains("PatchPilot blocked the generated patch during review.");
         assertThat(client.updateCommand().body()).contains("Status: FAILED");
+        assertThat(client.updateCommand().body()).contains("Patch review:");
+        assertThat(client.updateCommand().body()).contains("Patch review decision: `REJECT`");
+        assertThat(client.updateCommand().body())
+                .contains("Patch review reason: The proposed edit changed an unrelated file.");
+        assertThat(client.updateCommand().body()).contains("Patch review confidence: `MEDIUM`");
+        assertThat(client.updateCommand().body()).contains("Patch review follow-up: Generate a narrower patch.");
+        assertThat(client.updateCommand().body())
+                .contains("Patch review edited files: `src/main/java/example/AuthConfig.java`");
+        assertThat(client.updateCommand().body()).contains("Patch reviewed at: `2026-06-18T00:04:00Z`");
         assertThat(client.updateCommand().body()).contains("Review gate: PATCH_REVIEW_REJECTED");
         assertThat(client.updateCommand().body()).contains("Retrying this task will ask the model to generate a new patch.");
         assertThat(client.updateCommand().body()).contains("Reason: Model patch review rejected generated edits: The proposed edit changed an unrelated file.");
@@ -412,6 +451,32 @@ class IssueCommentToolTests {
                 Instant.parse("2026-06-18T00:01:00Z"),
                 Instant.parse("2026-06-18T00:01:02Z"),
                 durationMs
+        );
+    }
+
+    private static FixTaskPatchReviewVo approvedPatchReview() {
+        return new FixTaskPatchReviewVo(
+                "patch-review-123",
+                "task-123",
+                "APPROVE",
+                "Generated patch only updates the requested docs file.",
+                "HIGH",
+                "Review the PR before merge.",
+                List.of("docs/demo.md"),
+                Instant.parse("2026-06-18T00:03:00Z")
+        );
+    }
+
+    private static FixTaskPatchReviewVo rejectedPatchReview() {
+        return new FixTaskPatchReviewVo(
+                "patch-review-456",
+                "task-123",
+                "REJECT",
+                "The proposed edit changed an unrelated file.",
+                "MEDIUM",
+                "Generate a narrower patch.",
+                List.of("src/main/java/example/AuthConfig.java"),
+                Instant.parse("2026-06-18T00:04:00Z")
         );
     }
 
