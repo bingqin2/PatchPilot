@@ -6,6 +6,7 @@ import type {
   ConfigurationSummary,
   CreateTriggerQuarantineInput,
   CreateTaskInput,
+  DashboardBootstrap,
   DemoEvidenceBundle,
   DemoReadiness,
   DemoScript,
@@ -221,6 +222,10 @@ export async function getDemoRunbook(): Promise<string> {
 
 export async function getBackendHealth(): Promise<BackendHealth> {
   return getApi<BackendHealth>('/health');
+}
+
+export async function getDashboardBootstrap(): Promise<DashboardBootstrap> {
+  return getApi<DashboardBootstrap>('/api/dashboard/bootstrap');
 }
 
 export async function listLanguageAdapters(): Promise<SupportedLanguageAdapter[]> {

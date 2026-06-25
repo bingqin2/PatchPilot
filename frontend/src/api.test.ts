@@ -4,6 +4,7 @@ import {
   createTriggerQuarantine,
   ADMIN_TOKEN_STORAGE_KEY,
   evaluateTrigger,
+  getDashboardBootstrap,
   getBackendHealth,
   getConfigurationSummary,
   getFailureCauseSummary,
@@ -105,6 +106,31 @@ test('creates manual task through backend API', async () => {
   });
   expect(task.id).toBe('manual-task-1');
   expect(task.status).toBe('PENDING');
+});
+
+test('loads dashboard bootstrap through backend API without a saved admin token', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        adminTokenConfigured: true,
+        adminTokenBootstrapEnabled: true,
+        adminToken: 'local-admin-token',
+        message: 'Local dashboard admin token bootstrap is enabled.',
+        operatorAction: 'The dashboard can store this token for the current local browser.'
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const bootstrap = await getDashboardBootstrap();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/dashboard/bootstrap');
+  expect(bootstrap.adminToken).toBe('local-admin-token');
+  expect(bootstrap.adminTokenBootstrapEnabled).toBe(true);
 });
 
 test('evaluates trigger without creating manual task through backend API', async () => {

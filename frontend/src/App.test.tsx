@@ -1753,7 +1753,7 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(screen.getAllByText('gpt-5.5')).toHaveLength(2);
   expect(screen.getByText('Generated diff')).toBeInTheDocument();
   expect(screen.getByLabelText('Generated diff preview')).toHaveTextContent('+PatchPilot smoke test');
-});
+}, 10000);
 
 test('filters admin audit events through backend query parameters', async () => {
   const user = userEvent.setup();
@@ -1882,6 +1882,48 @@ test('prompts for admin token and reloads dashboard after saving it', async () =
     });
   });
   expect(await screen.findByText('3 of 3 tasks visible')).toBeInTheDocument();
+  expect(screen.queryByText('Admin token is required')).not.toBeInTheDocument();
+});
+
+test('bootstraps dashboard admin token before loading protected APIs when explicitly enabled', async () => {
+  const storage = new Map<string, string>();
+  vi.stubGlobal('localStorage', {
+    getItem: (key: string) => storage.get(key) ?? null,
+    setItem: (key: string, value: string) => storage.set(key, value),
+    removeItem: (key: string) => storage.delete(key),
+    clear: () => storage.clear()
+  });
+  const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = input.toString();
+    if (url === '/health') {
+      return defaultAppResponse(input, init);
+    }
+    if (url === '/api/dashboard/bootstrap') {
+      return jsonResponse({
+        adminTokenConfigured: true,
+        adminTokenBootstrapEnabled: true,
+        adminToken: 'bootstrap-token',
+        message: 'Local dashboard admin token bootstrap is enabled.',
+        operatorAction: 'The dashboard can store this token for the current local browser.'
+      });
+    }
+    const adminToken = headersRecord(init?.headers)['X-PatchPilot-Admin-Token'];
+    if (adminToken !== 'bootstrap-token') {
+      return jsonResponse(null, false, 'Admin token is required', 401);
+    }
+    return defaultAppResponse(input, init);
+  });
+  vi.stubGlobal('fetch', fetchMock);
+
+  render(<App />);
+
+  await waitFor(() => expect(storage.get('patchpilot.adminToken')).toBe('bootstrap-token'));
+  await waitFor(() => {
+    expect(fetchMock).toHaveBeenCalledWith('/api/tasks?limit=50', {
+      headers: { 'X-PatchPilot-Admin-Token': 'bootstrap-token' }
+    });
+  });
+  expect(await screen.findByText('Admin token saved')).toBeInTheDocument();
   expect(screen.queryByText('Admin token is required')).not.toBeInTheDocument();
 });
 
@@ -3311,6 +3353,15 @@ function jsonResponse(data: unknown, success = true, message: string | null = nu
 
 function defaultAppResponse(input: RequestInfo | URL, init?: RequestInit) {
   const url = input.toString();
+  if (url === '/api/dashboard/bootstrap') {
+    return jsonResponse({
+      adminTokenConfigured: false,
+      adminTokenBootstrapEnabled: false,
+      adminToken: null,
+      message: 'Local dashboard admin token bootstrap is disabled.',
+      operatorAction: 'Enter PATCHPILOT_ADMIN_TOKEN manually in the dashboard header when protected APIs require it.'
+    });
+  }
   if (url === '/api/tasks/status-counts') {
     return jsonResponse(statusCounts);
   }

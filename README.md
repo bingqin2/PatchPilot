@@ -94,10 +94,12 @@ PATCHPILOT_GITHUB_WEBHOOK_SECRET=replace-with-a-random-secret
 PATCHPILOT_GITHUB_TOKEN=github_pat_or_fine_grained_token
 PATCHPILOT_AGENT_API_KEY=your_model_provider_api_key
 PATCHPILOT_ADMIN_TOKEN=replace-with-a-random-admin-token
+PATCHPILOT_DASHBOARD_ADMIN_TOKEN_BOOTSTRAP_ENABLED=false
 PATCHPILOT_DASHBOARD_BASE_URL=https://your-dashboard-url.example
 ```
 
 The webhook secret must match the GitHub webhook configuration. The GitHub token is used for clone, push, issue comments, and Pull Request creation. The admin token protects operator APIs such as task listing, queue inspection, manual task creation, retry, cancel, and risk-review approval when the backend is exposed through a temporary URL. Do not commit `.env`.
+`PATCHPILOT_DASHBOARD_ADMIN_TOKEN_BOOTSTRAP_ENABLED` is a local-only convenience flag. Keep it `false` by default. When set to `true`, `GET /api/dashboard/bootstrap` can return the configured admin token so the React dashboard can store it in the current browser before loading protected APIs. Do not enable it for Cloudflare Tunnel URLs, shared networks, or public demos.
 `PATCHPILOT_DASHBOARD_BASE_URL` is optional. When set, GitHub issue status comments and generated Pull Request bodies include `Dashboard: <base-url>/tasks/{taskId}` so maintainers can jump from GitHub feedback to the matching task detail page. Leave it empty for local-only runs where the dashboard is not reachable by issue reviewers.
 
 Local repository preflight is limited to configured backend-local root directories:
@@ -223,6 +225,8 @@ The GitHub webhook endpoint does not use the admin token, but operator API calls
 curl -H "X-PatchPilot-Admin-Token: $PATCHPILOT_ADMIN_TOKEN" \
   https://your-temp-url.trycloudflare.com/api/tasks
 ```
+
+For private localhost-only dashboard runs, you can set `PATCHPILOT_DASHBOARD_ADMIN_TOKEN_BOOTSTRAP_ENABLED=true` to avoid pasting the token into the browser. Keep this disabled whenever the backend is reachable through the temporary Cloudflare URL.
 
 ## Trigger A Task
 
@@ -523,11 +527,11 @@ The demo script panel converts the current evidence bundle into a six-step live-
 The smoke checklist is the final live-demo panel: it shows ordered readiness, adapter runtime, webhook, execution, and Pull Request evidence so the operator can decide whether to post the real `/agent fix` comment or fix setup first.
 The trigger-decision panel answers the immediate safety question for a selected task: why this `/agent` comment was accepted, and what recent comments were refused instead. It reuses the selected task timeline, rejected-trigger rows, rejected-trigger summary, and refusal comment links when available, while the rejected-trigger panel remains the full audit, quarantine, and operator-action workspace.
 The admin audit trail panel shows protected mutations across the dashboard and API, including manual task creation, cancel, retry, risk-review approval, rejected-trigger retry, demo session archive, and quarantine actions. Operators can filter by action, operator, resource type, resource id, or scope key and copy a Markdown report for the visible evidence. The rejected-trigger panel shows recent `/agent fix` comments that were intentionally refused before task creation, including the command text, rejection reason, retry eligibility guidance, recent category/source counts, top trigger users/repositories, active quarantines, manual quarantine controls, evidence drilldown for one selected quarantine, and quarantine-related operator safety audit rows. It includes `ABUSE_QUARANTINED` rows when repeated rejected attempts cause automatic cooldown. Retry stays enabled only for rows where a direct manual-task retry is safe; dangerous, unauthorized, rate-limited, quarantined, unsupported, unknown, and already-retried rows show `Retry blocked` with the specific next action. Operators can manually quarantine a trigger user or repository with scope, target, reason, duration, and operator name, inspect the rejected-trigger and operator-action evidence behind an active quarantine, and release an active quarantine from the same panel. Each successful manual create or release is also recorded as an operator safety audit row. Use it when GitHub shows a successful delivery but no task appears, when repeated unsafe traffic needs investigation, or when a false-positive quarantine must be cleared before a demo.
-If `PATCHPILOT_ADMIN_TOKEN` is configured, the dashboard header shows whether this browser has an admin token saved. Enter the same token value in `Dashboard admin token` and click `Save dashboard admin token`; the browser stores it under `patchpilot.adminToken`, retries dashboard loading, and later API calls include `X-PatchPilot-Admin-Token`. Use `Clear admin token` when you rotate or remove the local credential.
+If `PATCHPILOT_ADMIN_TOKEN` is configured, the dashboard header shows whether this browser has an admin token saved. Enter the same token value in `Dashboard admin token` and click `Save dashboard admin token`; the browser stores it under `patchpilot.adminToken`, retries dashboard loading, and later API calls include `X-PatchPilot-Admin-Token`. For trusted localhost-only development, set `PATCHPILOT_DASHBOARD_ADMIN_TOKEN_BOOTSTRAP_ENABLED=true` in `.env`; the dashboard then calls `GET /api/dashboard/bootstrap` before protected APIs and stores the configured token automatically when no browser token exists. Keep this flag disabled for Cloudflare Tunnel URLs, shared networks, or public demos. Use `Clear admin token` when you rotate or remove the local credential.
 
 If the first protected API call returns `Admin token is required`, the dashboard also shows the same recovery path inside the alert so you can restore access without opening browser DevTools.
 
-You can also prefill the token from the browser console before opening the dashboard:
+As a fallback, you can also prefill the token from the browser console before opening the dashboard:
 
 ```js
 localStorage.setItem('patchpilot.adminToken', 'replace-with-random-admin-token')

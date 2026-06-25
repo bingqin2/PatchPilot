@@ -13,6 +13,7 @@ import {
   evaluateWebhookPayloadDiagnostic,
   getBackendHealth,
   getConfigurationSummary,
+  getDashboardBootstrap,
   getDemoEvidenceBundle,
   getDemoSessionSnapshot,
   getDemoSessionReport,
@@ -427,6 +428,11 @@ export default function App() {
     try {
       const healthSummary = await getBackendHealth().catch(() => null);
       setBackendHealth(healthSummary);
+      const bootstrappedAdminToken = await bootstrapAdminToken();
+      if (bootstrappedAdminToken) {
+        setDashboardAdminTokenInput(bootstrappedAdminToken);
+        setHasStoredAdminToken(true);
+      }
       const taskFilters = {
         query: searchQuery,
         repositoryOwner: repositoryOwnerFilter,
@@ -1188,6 +1194,18 @@ function storedAdminToken() {
     return '';
   }
   return globalThis.localStorage.getItem(ADMIN_TOKEN_STORAGE_KEY)?.trim() ?? '';
+}
+
+async function bootstrapAdminToken() {
+  if (storedAdminToken()) {
+    return null;
+  }
+  const bootstrap = await getDashboardBootstrap().catch(() => null);
+  if (!bootstrap?.adminToken) {
+    return null;
+  }
+  globalThis.localStorage.setItem(ADMIN_TOKEN_STORAGE_KEY, bootstrap.adminToken);
+  return bootstrap.adminToken;
 }
 
 function isTriggerQuarantineAudit(audit: OperatorSafetyAudit) {

@@ -10,6 +10,8 @@ public class AdminApiSecurityProperties {
 
     private String adminToken = "";
 
+    private boolean dashboardAdminTokenBootstrapEnabled = false;
+
     public boolean isAdminTokenConfigured() {
         return StringUtils.hasText(adminToken);
     }

@@ -18,7 +18,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @ActiveProfiles("default")
 @TestPropertySource(properties = {
-        "patchpilot.security.admin-token=test-admin-token"
+        "patchpilot.security.admin-token=test-admin-token",
+        "patchpilot.security.dashboard-admin-token-bootstrap-enabled=true"
 })
 class AdminApiSecurityFilterTests {
 
@@ -62,5 +63,15 @@ class AdminApiSecurityFilterTests {
         mockMvc.perform(post("/api/github/webhook"))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("Admin token is required"))));
+    }
+
+    @Test
+    void should_keep_dashboard_bootstrap_public_when_admin_token_is_configured() throws Exception {
+        mockMvc.perform(get("/api/dashboard/bootstrap"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.adminTokenConfigured").value(true))
+                .andExpect(jsonPath("$.data.adminTokenBootstrapEnabled").value(true))
+                .andExpect(jsonPath("$.data.adminToken").value("test-admin-token"));
     }
 }
