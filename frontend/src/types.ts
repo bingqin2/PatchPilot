@@ -286,6 +286,20 @@ export interface GitHubCredentialReadiness {
   operatorAction: string;
 }
 
+export type GitHubRepositoryAccessReadinessStatus = 'READY' | 'NEEDS_ATTENTION';
+
+export interface GitHubRepositoryAccessReadiness {
+  tokenConfigured: boolean;
+  repositoryConfigured: boolean;
+  repository: string;
+  status: GitHubRepositoryAccessReadinessStatus;
+  message: string;
+  defaultBranch: string | null;
+  latencyMs: number;
+  checkedAt: string;
+  operatorAction: string;
+}
+
 export type DemoReadinessStatus = 'READY' | 'NEEDS_ATTENTION' | 'BLOCKED';
 
 export interface DemoReadinessCheck {

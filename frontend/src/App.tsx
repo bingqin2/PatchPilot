@@ -22,6 +22,7 @@ import {
   getDemoReadiness,
   getDemoSmokeChecklist,
   getGitHubCredentialReadiness,
+  getGitHubRepositoryAccessReadiness,
   getRejectedTriggerSummary,
   getTriggerQuarantineEvidence,
   getFailureCauseSummary,
@@ -101,6 +102,7 @@ import type {
   FixTaskQueueSummary,
   FixTaskWorkerHealth,
   GitHubCredentialReadiness,
+  GitHubRepositoryAccessReadiness,
   ModelProviderHealth,
   AdminAuditFilterOptions,
   AcceptedTriggerDecision,
@@ -165,6 +167,7 @@ export default function App() {
   const [latency, setLatency] = useState<FixTaskLatencySummary | null>(null);
   const [configuration, setConfiguration] = useState<ConfigurationSummary | null>(null);
   const [githubCredentialReadiness, setGitHubCredentialReadiness] = useState<GitHubCredentialReadiness | null>(null);
+  const [githubRepositoryAccessReadiness, setGitHubRepositoryAccessReadiness] = useState<GitHubRepositoryAccessReadiness | null>(null);
   const [modelProviderHealth, setModelProviderHealth] = useState<ModelProviderHealth | null>(null);
   const [backendHealth, setBackendHealth] = useState<BackendHealth | null>(null);
   const [demoReadiness, setDemoReadiness] = useState<DemoReadiness | null>(null);
@@ -559,6 +562,19 @@ export default function App() {
         )
       ]);
       setTasks(taskList.items);
+      const repositoryTarget = repositoryAccessTarget(taskList.items, repositoryOwnerFilter, repositoryNameFilter);
+      if (repositoryTarget) {
+        const repositoryAccessResult = await getGitHubRepositoryAccessReadiness(
+          repositoryTarget.owner,
+          repositoryTarget.repository
+        ).then(
+          (readiness) => ({ readiness, error: null as string | null }),
+          (caught) => ({ readiness: null, error: errorMessage(caught) })
+        );
+        setGitHubRepositoryAccessReadiness(repositoryAccessResult.readiness);
+      } else {
+        setGitHubRepositoryAccessReadiness(null);
+      }
       setStatusCounts(taskStatusCounts);
       setMetrics(metricsSummary);
       setFailureCauses(failureCauseSummary);
@@ -1011,6 +1027,7 @@ export default function App() {
         backendHealth={backendHealth}
         configuration={configuration}
         githubCredentialReadiness={githubCredentialReadiness}
+        githubRepositoryAccessReadiness={githubRepositoryAccessReadiness}
         modelProviderHealth={modelProviderHealth}
         demoReadiness={demoReadiness}
         adapterFixtureVerifications={adapterFixtureVerifications}
@@ -1274,6 +1291,22 @@ function selectedTaskIdFromList(tasks: FixTask[], currentTaskId: string | null) 
     return currentTaskId;
   }
   return tasks[0]?.id ?? null;
+}
+
+function repositoryAccessTarget(tasks: FixTask[], repositoryOwnerFilter: string, repositoryNameFilter: string) {
+  const owner = repositoryOwnerFilter.trim();
+  const repository = repositoryNameFilter.trim();
+  if (owner && repository) {
+    return { owner, repository };
+  }
+  const task = tasks.find((candidate) => candidate.repositoryOwner && candidate.repositoryName);
+  if (!task) {
+    return null;
+  }
+  return {
+    owner: task.repositoryOwner,
+    repository: task.repositoryName
+  };
 }
 
 function writeTaskIdToUrl(taskId: string) {
