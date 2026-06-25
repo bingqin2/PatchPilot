@@ -275,6 +275,17 @@ export interface ModelProviderHealth {
   operatorAction: string;
 }
 
+export type GitHubCredentialReadinessStatus = 'READY' | 'NEEDS_ATTENTION';
+
+export interface GitHubCredentialReadiness {
+  tokenConfigured: boolean;
+  status: GitHubCredentialReadinessStatus;
+  message: string;
+  latencyMs: number;
+  checkedAt: string;
+  operatorAction: string;
+}
+
 export type DemoReadinessStatus = 'READY' | 'NEEDS_ATTENTION' | 'BLOCKED';
 
 export interface DemoReadinessCheck {

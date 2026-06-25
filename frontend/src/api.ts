@@ -26,6 +26,7 @@ import type {
   FixTaskQueueItem,
   FixTaskQueueSummary,
   FixTaskWorkerHealth,
+  GitHubCredentialReadiness,
   OperatorSafetyAudit,
   AcceptedTriggerDecision,
   RejectedTriggerAudit,
@@ -174,6 +175,10 @@ export async function getConfigurationSummary(): Promise<ConfigurationSummary> {
 
 export async function getModelProviderHealth(): Promise<ModelProviderHealth> {
   return getApi<ModelProviderHealth>('/api/model-provider/health');
+}
+
+export async function getGitHubCredentialReadiness(): Promise<GitHubCredentialReadiness> {
+  return getApi<GitHubCredentialReadiness>('/api/github/credential-readiness');
 }
 
 export async function getDemoReadiness(): Promise<DemoReadiness> {

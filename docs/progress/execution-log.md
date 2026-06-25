@@ -3885,6 +3885,26 @@ Validation:
 - `npm run build`: passed after production frontend build verification.
 - `git diff --check`: passed.
 
+Implemented GitHub credential readiness from `docs/plans/197-github-credential-readiness.md`.
+
+Changes:
+
+- Added an admin-protected `GET /api/github/credential-readiness` endpoint.
+- Added a read-only GitHub credential probe that calls `GET https://api.github.com/user` with `PATCHPILOT_GITHUB_TOKEN`.
+- Returned only non-sensitive readiness fields: token configured flag, status, message, latency, checked time, and operator action.
+- Added a `GitHub credentials` check to demo readiness and block readiness when GitHub rejects the configured token.
+- Added GitHub credential readiness loading to the React dashboard and the operator setup checklist.
+- Updated README, frontend design docs, and this execution log.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=GitHubCredentialReadinessServiceTests,GitHubCredentialHttpProbeTests,GitHubCredentialReadinessControllerTests,DemoReadinessServiceTests test`: first failed because the new GitHub credential classes did not exist; then failed once because the HTTP test helper used an unqualified `Version`; then passed after implementing the endpoint, service, probe, and demo readiness aggregation, 18 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts src/dashboard/components/OperatorSetupChecklistPanel.test.tsx src/App.test.tsx`: first failed because the new API helper and checklist row did not exist; then failed while aligning mock coverage and checklist counts; then passed after frontend integration, 119 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed after full backend regression verification, 688 tests run, 0 failures.
+- `npm test -- --reporter=basic`: passed after full frontend regression verification, 205 tests run, 0 failures.
+- `npm run build`: passed after production frontend build verification.
+- `git diff --check`: passed.
+
 Implemented GitHub verification result evidence from `docs/plans/185-github-verification-result-evidence.md`.
 
 Changes:

@@ -2,6 +2,7 @@ import type {
   BackendHealth,
   ConfigurationSummary,
   DemoReadiness,
+  GitHubCredentialReadiness,
   ModelProviderHealth,
   LanguageAdapterFixtureVerification,
   LanguageAdapterRuntimeReadiness,
@@ -13,6 +14,7 @@ import type {
 interface OperatorSetupChecklistPanelProps {
   backendHealth: BackendHealth | null;
   configuration: ConfigurationSummary | null;
+  githubCredentialReadiness: GitHubCredentialReadiness | null;
   modelProviderHealth: ModelProviderHealth | null;
   demoReadiness: DemoReadiness | null;
   adapterFixtureVerifications: LanguageAdapterFixtureVerification[];
@@ -33,6 +35,7 @@ interface SetupCheck {
 export function OperatorSetupChecklistPanel({
   backendHealth,
   configuration,
+  githubCredentialReadiness,
   modelProviderHealth,
   demoReadiness,
   adapterFixtureVerifications,
@@ -45,6 +48,7 @@ export function OperatorSetupChecklistPanel({
   const checks = setupChecks({
     backendHealth,
     configuration,
+    githubCredentialReadiness,
     modelProviderHealth,
     demoReadiness,
     adapterFixtureVerifications,
@@ -94,6 +98,7 @@ export function OperatorSetupChecklistPanel({
 function setupChecks({
   backendHealth,
   configuration,
+  githubCredentialReadiness,
   modelProviderHealth,
   demoReadiness,
   adapterFixtureVerifications,
@@ -106,6 +111,7 @@ function setupChecks({
   return [
     backendCheck(backendHealth),
     credentialCheck(configuration, hasStoredAdminToken),
+    githubCredentialCheck(githubCredentialReadiness, demoReadiness),
     safetyPolicyCheck(configuration),
     repositoryPreflightScopeCheck(configuration, demoReadiness),
     modelProviderHealthCheck(modelProviderHealth, demoReadiness),
@@ -141,6 +147,29 @@ function credentialCheck(configuration: ConfigurationSummary | null, hasStoredAd
       ? 'agent, GitHub, webhook, and browser admin token are configured'
       : 'missing a required server credential or browser admin token',
     action: 'Configure model, GitHub, webhook, and dashboard admin token values before a demo.'
+  };
+}
+
+function githubCredentialCheck(
+  githubCredentialReadiness: GitHubCredentialReadiness | null,
+  demoReadiness: DemoReadiness | null
+): SetupCheck {
+  const demoReadinessCheck = demoReadiness?.checks.find((check) => check.name === 'GitHub credentials');
+  if (demoReadinessCheck) {
+    return {
+      name: 'GitHub credentials',
+      ready: demoReadinessCheck.status === 'READY',
+      message: demoReadinessCheck.message,
+      action: demoReadinessCheck.action
+    };
+  }
+
+  const ready = githubCredentialReadiness?.status === 'READY';
+  return {
+    name: 'GitHub credentials',
+    ready,
+    message: githubCredentialReadiness?.message ?? 'GitHub credential readiness has not loaded',
+    action: githubCredentialReadiness?.operatorAction ?? 'Confirm /api/github/credential-readiness before a live demo.'
   };
 }
 

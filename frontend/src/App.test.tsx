@@ -911,6 +911,15 @@ const modelProviderHealth = {
   operatorAction: 'No action needed.'
 };
 
+const githubCredentialReadiness = {
+  tokenConfigured: true,
+  status: 'READY',
+  message: 'GitHub API accepted the configured token.',
+  latencyMs: 31,
+  checkedAt: '2026-06-25T03:00:00Z',
+  operatorAction: 'No action needed.'
+};
+
 const demoReadiness = {
   status: 'NEEDS_ATTENTION',
   summary: 'PatchPilot needs attention before a live demo.',
@@ -1233,6 +1242,9 @@ beforeEach(() => {
     }
     if (url === '/api/model-provider/health') {
       return jsonResponse(modelProviderHealth);
+    }
+    if (url === '/api/github/credential-readiness') {
+      return jsonResponse(githubCredentialReadiness);
     }
     if (url === '/api/demo/readiness') {
       return jsonResponse(demoReadiness);
@@ -1739,6 +1751,7 @@ test('renders operational task dashboard from backend APIs', async () => {
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/session-snapshot'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/script'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/readiness'));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/github/credential-readiness'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/smoke-checklist'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/github/webhook-deliveries?limit=10'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/rejected-triggers?limit=20'));
@@ -2031,11 +2044,13 @@ test('summarizes operator setup readiness before a demo run', async () => {
 
   const setupChecklist = await screen.findByRole('region', { name: 'Operator setup checklist' });
   expect(within(setupChecklist).getByRole('heading', { name: 'Operator setup checklist' })).toBeInTheDocument();
-  expect(within(setupChecklist).getByText('8/10 checks ready')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('9/11 checks ready')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Backend connectivity')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Ready - /health reports UP')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Required credentials')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Ready - agent, GitHub, webhook, and browser admin token are configured')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('GitHub credentials')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('Ready - GitHub API accepted the configured token.')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Safety policy')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Ready - allowlists, review approvers, and trigger rate limits are configured')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Repository preflight scope')).toBeInTheDocument();
@@ -2105,6 +2120,9 @@ test('shows when every operator setup check is ready', async () => {
     if (url === '/api/task-queue/summary') {
       return jsonResponse({ ...queueSummary, failedCount: 0 });
     }
+    if (url === '/api/github/credential-readiness') {
+      return jsonResponse(githubCredentialReadiness);
+    }
     return defaultAppResponse(input, init);
   });
   vi.stubGlobal('fetch', fetchMock);
@@ -2112,7 +2130,7 @@ test('shows when every operator setup check is ready', async () => {
   render(<App />);
 
   const setupChecklist = await screen.findByRole('region', { name: 'Operator setup checklist' });
-  expect(within(setupChecklist).getByText('10/10 checks ready')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('11/11 checks ready')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Ready - Model provider responded to the health probe.')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Ready - recent completed task has a Pull Request URL')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('All setup checks are ready for a controlled issue-to-PR demo.')).toBeInTheDocument();
@@ -3403,6 +3421,9 @@ function defaultAppResponse(input: RequestInfo | URL, init?: RequestInit) {
   }
   if (url === '/api/configuration/summary') {
     return jsonResponse(configurationSummary);
+  }
+  if (url === '/api/github/credential-readiness') {
+    return jsonResponse(githubCredentialReadiness);
   }
   if (url === '/api/demo/readiness') {
     return jsonResponse(demoReadiness);

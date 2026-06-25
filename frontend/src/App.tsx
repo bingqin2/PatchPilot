@@ -21,6 +21,7 @@ import {
   getDemoRunbook,
   getDemoReadiness,
   getDemoSmokeChecklist,
+  getGitHubCredentialReadiness,
   getRejectedTriggerSummary,
   getTriggerQuarantineEvidence,
   getFailureCauseSummary,
@@ -99,6 +100,7 @@ import type {
   FixTaskQueueItem,
   FixTaskQueueSummary,
   FixTaskWorkerHealth,
+  GitHubCredentialReadiness,
   ModelProviderHealth,
   AdminAuditFilterOptions,
   AcceptedTriggerDecision,
@@ -162,6 +164,7 @@ export default function App() {
   const [modelUsage, setModelUsage] = useState<FixTaskModelUsageSummary | null>(null);
   const [latency, setLatency] = useState<FixTaskLatencySummary | null>(null);
   const [configuration, setConfiguration] = useState<ConfigurationSummary | null>(null);
+  const [githubCredentialReadiness, setGitHubCredentialReadiness] = useState<GitHubCredentialReadiness | null>(null);
   const [modelProviderHealth, setModelProviderHealth] = useState<ModelProviderHealth | null>(null);
   const [backendHealth, setBackendHealth] = useState<BackendHealth | null>(null);
   const [demoReadiness, setDemoReadiness] = useState<DemoReadiness | null>(null);
@@ -450,6 +453,7 @@ export default function App() {
         modelUsageSummary,
         latencySummary,
         configurationSummary,
+        githubCredentialReadinessResult,
         modelProviderHealthResult,
         demoEvidenceBundleResult,
         demoSessionSnapshotResult,
@@ -482,6 +486,10 @@ export default function App() {
         getModelUsageSummary(taskFilters),
         getLatencySummary(taskFilters),
         getConfigurationSummary(),
+        getGitHubCredentialReadiness().then(
+          (readiness) => ({ readiness, error: null as string | null }),
+          (caught) => ({ readiness: null, error: errorMessage(caught) })
+        ),
         getModelProviderHealth().then(
           (health) => ({ health, error: null as string | null }),
           (caught) => ({ health: null, error: errorMessage(caught) })
@@ -557,6 +565,9 @@ export default function App() {
       setModelUsage(modelUsageSummary);
       setLatency(latencySummary);
       setConfiguration(configurationSummary);
+      if (githubCredentialReadinessResult.readiness) {
+        setGitHubCredentialReadiness(githubCredentialReadinessResult.readiness);
+      }
       if (modelProviderHealthResult.health) {
         setModelProviderHealth(modelProviderHealthResult.health);
       }
@@ -999,6 +1010,7 @@ export default function App() {
       <OperatorSetupChecklistPanel
         backendHealth={backendHealth}
         configuration={configuration}
+        githubCredentialReadiness={githubCredentialReadiness}
         modelProviderHealth={modelProviderHealth}
         demoReadiness={demoReadiness}
         adapterFixtureVerifications={adapterFixtureVerifications}

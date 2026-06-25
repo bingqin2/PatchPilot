@@ -7,6 +7,8 @@ import io.patchpilot.backend.configuration.ConfigurationSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessCheckVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessStatus;
 import io.patchpilot.backend.demo.domain.DemoReadinessVo;
+import io.patchpilot.backend.github.credential.GitHubCredentialReadinessService;
+import io.patchpilot.backend.github.credential.domain.GitHubCredentialReadinessVo;
 import io.patchpilot.backend.language.LanguageAdapterFixtureVerificationService;
 import io.patchpilot.backend.language.LanguageAdapterRuntimeReadinessService;
 import io.patchpilot.backend.language.domain.LanguageAdapterFixtureVerificationVo;
@@ -33,6 +35,7 @@ public class DemoReadinessService {
     private final Supplier<ConfigurationSummaryVo> configurationSupplier;
     private final Supplier<List<LanguageAdapterFixtureVerificationVo>> fixtureSupplier;
     private final Supplier<List<LanguageAdapterRuntimeReadinessVo>> runtimeReadinessSupplier;
+    private final Supplier<GitHubCredentialReadinessVo> gitHubCredentialReadinessSupplier;
     private final Supplier<ModelProviderHealthVo> modelProviderHealthSupplier;
     private final Supplier<FixTaskQueueSummaryVo> queueSummarySupplier;
     private final Supplier<FixTaskWorkerHealthVo> workerHealthSupplier;
@@ -43,6 +46,7 @@ public class DemoReadinessService {
             ConfigurationSummaryService configurationSummaryService,
             LanguageAdapterFixtureVerificationService fixtureVerificationService,
             LanguageAdapterRuntimeReadinessService runtimeReadinessService,
+            GitHubCredentialReadinessService gitHubCredentialReadinessService,
             ModelProviderHealthService modelProviderHealthService,
             FixTaskQueueQueryService fixTaskQueueQueryService,
             FixTaskWorkerHealthService fixTaskWorkerHealthService,
@@ -52,6 +56,7 @@ public class DemoReadinessService {
                 configurationSummaryService::getConfigurationSummary,
                 fixtureVerificationService::listFixtureVerifications,
                 runtimeReadinessService::listRuntimeReadiness,
+                gitHubCredentialReadinessService::getReadiness,
                 modelProviderHealthService::getHealth,
                 fixTaskQueueQueryService::summary,
                 fixTaskWorkerHealthService::getHealth,
@@ -72,6 +77,7 @@ public class DemoReadinessService {
             Supplier<ConfigurationSummaryVo> configurationSupplier,
             Supplier<List<LanguageAdapterFixtureVerificationVo>> fixtureSupplier,
             Supplier<List<LanguageAdapterRuntimeReadinessVo>> runtimeReadinessSupplier,
+            Supplier<GitHubCredentialReadinessVo> gitHubCredentialReadinessSupplier,
             Supplier<ModelProviderHealthVo> modelProviderHealthSupplier,
             Supplier<FixTaskQueueSummaryVo> queueSummarySupplier,
             Supplier<FixTaskWorkerHealthVo> workerHealthSupplier,
@@ -80,6 +86,7 @@ public class DemoReadinessService {
         this.configurationSupplier = configurationSupplier;
         this.fixtureSupplier = fixtureSupplier;
         this.runtimeReadinessSupplier = runtimeReadinessSupplier;
+        this.gitHubCredentialReadinessSupplier = gitHubCredentialReadinessSupplier;
         this.modelProviderHealthSupplier = modelProviderHealthSupplier;
         this.queueSummarySupplier = queueSummarySupplier;
         this.workerHealthSupplier = workerHealthSupplier;
@@ -90,6 +97,7 @@ public class DemoReadinessService {
         ConfigurationSummaryVo configuration = configurationSupplier.get();
         List<LanguageAdapterFixtureVerificationVo> fixtures = fixtureSupplier.get();
         List<LanguageAdapterRuntimeReadinessVo> runtimes = runtimeReadinessSupplier.get();
+        GitHubCredentialReadinessVo gitHubCredentialReadiness = gitHubCredentialReadinessSupplier.get();
         ModelProviderHealthVo modelProviderHealth = modelProviderHealthSupplier.get();
         FixTaskQueueSummaryVo queueSummary = queueSummarySupplier.get();
         FixTaskWorkerHealthVo workerHealth = workerHealthSupplier.get();
@@ -98,6 +106,7 @@ public class DemoReadinessService {
         List<DemoReadinessCheckVo> checks = List.of(
                 backendCheck(),
                 credentialsCheck(configuration),
+                gitHubCredentialCheck(gitHubCredentialReadiness),
                 safetyPolicyCheck(configuration),
                 repositoryPreflightScopeCheck(configuration),
                 modelProviderCheck(modelProviderHealth),
@@ -213,6 +222,23 @@ public class DemoReadinessService {
                 DemoReadinessStatus.READY,
                 "Trigger users, repositories, review approvers, admin API token, command safety, rate limits, and rejected-trigger quarantine are configured.",
                 "No action needed."
+        );
+    }
+
+    private static DemoReadinessCheckVo gitHubCredentialCheck(GitHubCredentialReadinessVo readiness) {
+        if (GitHubCredentialReadinessService.READY.equals(readiness.status())) {
+            return new DemoReadinessCheckVo(
+                    "GitHub credentials",
+                    DemoReadinessStatus.READY,
+                    readiness.message(),
+                    "No action needed."
+            );
+        }
+        return new DemoReadinessCheckVo(
+                "GitHub credentials",
+                DemoReadinessStatus.BLOCKED,
+                readiness.message(),
+                readiness.operatorAction()
         );
     }
 
