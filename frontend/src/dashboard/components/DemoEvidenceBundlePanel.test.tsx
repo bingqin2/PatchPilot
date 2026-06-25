@@ -86,6 +86,9 @@ const bundle: DemoEvidenceBundle = {
     message: 'Webhook created a task.',
     redeliveryRecommended: false,
     operatorAction: 'Task was created.',
+    outcomeType: 'TASK',
+    outcomeId: 'task-2',
+    outcomeUrl: '/tasks/task-2',
     createdAt: '2026-06-24T00:00:00Z'
   },
   rejectedTriggerSummary: {

@@ -16,6 +16,9 @@ public record WebhookDeliveryDiagnosticVo(
         String message,
         boolean redeliveryRecommended,
         String operatorAction,
+        WebhookDeliveryOutcomeType outcomeType,
+        String outcomeId,
+        String outcomeUrl,
         Instant createdAt
 ) {
     public WebhookDeliveryDiagnosticVo(
@@ -46,6 +49,84 @@ public record WebhookDeliveryDiagnosticVo(
                 message,
                 redeliveryRecommended(status),
                 operatorAction(status),
+                defaultOutcomeType(status),
+                taskId,
+                defaultOutcomeUrl(status, taskId),
+                createdAt
+        );
+    }
+
+    public WebhookDeliveryDiagnosticVo(
+            String id,
+            String deliveryId,
+            String event,
+            WebhookDeliveryDiagnosticStatus status,
+            String taskId,
+            String repositoryOwner,
+            String repositoryName,
+            Long issueNumber,
+            String triggerUser,
+            String triggerComment,
+            String message,
+            WebhookDeliveryOutcomeType outcomeType,
+            String outcomeId,
+            String outcomeUrl,
+            Instant createdAt
+    ) {
+        this(
+                id,
+                deliveryId,
+                event,
+                status,
+                taskId,
+                repositoryOwner,
+                repositoryName,
+                issueNumber,
+                triggerUser,
+                triggerComment,
+                message,
+                redeliveryRecommended(status),
+                operatorAction(status),
+                outcomeType,
+                outcomeId,
+                outcomeUrl,
+                createdAt
+        );
+    }
+
+    public WebhookDeliveryDiagnosticVo(
+            String id,
+            String deliveryId,
+            String event,
+            WebhookDeliveryDiagnosticStatus status,
+            String taskId,
+            String repositoryOwner,
+            String repositoryName,
+            Long issueNumber,
+            String triggerUser,
+            String triggerComment,
+            String message,
+            boolean redeliveryRecommended,
+            String operatorAction,
+            Instant createdAt
+    ) {
+        this(
+                id,
+                deliveryId,
+                event,
+                status,
+                taskId,
+                repositoryOwner,
+                repositoryName,
+                issueNumber,
+                triggerUser,
+                triggerComment,
+                message,
+                redeliveryRecommended,
+                operatorAction,
+                defaultOutcomeType(status),
+                taskId,
+                defaultOutcomeUrl(status, taskId),
                 createdAt
         );
     }
@@ -75,5 +156,24 @@ public record WebhookDeliveryDiagnosticVo(
             case IGNORED ->
                     "PatchPilot intentionally ignored this delivery. Redelivery will not create a task unless the event or comment changes.";
         };
+    }
+
+    private static WebhookDeliveryOutcomeType defaultOutcomeType(WebhookDeliveryDiagnosticStatus status) {
+        return switch (status) {
+            case TASK_CREATED, ACTIVE_TASK_EXISTS -> WebhookDeliveryOutcomeType.TASK;
+            case DUPLICATE_DELIVERY -> WebhookDeliveryOutcomeType.DUPLICATE;
+            case REJECTED -> WebhookDeliveryOutcomeType.REJECTED_TRIGGER;
+            case IGNORED -> WebhookDeliveryOutcomeType.IGNORED;
+            case INVALID_SIGNATURE, BAD_REQUEST, FAILED -> WebhookDeliveryOutcomeType.ERROR;
+        };
+    }
+
+    private static String defaultOutcomeUrl(WebhookDeliveryDiagnosticStatus status, String taskId) {
+        return (status == WebhookDeliveryDiagnosticStatus.TASK_CREATED
+                || status == WebhookDeliveryDiagnosticStatus.ACTIVE_TASK_EXISTS
+                || status == WebhookDeliveryDiagnosticStatus.DUPLICATE_DELIVERY)
+                && taskId != null
+                ? "/tasks/" + taskId
+                : null;
     }
 }

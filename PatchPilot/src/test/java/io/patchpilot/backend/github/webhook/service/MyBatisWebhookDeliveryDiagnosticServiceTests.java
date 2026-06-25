@@ -4,6 +4,7 @@ import io.patchpilot.backend.github.webhook.domain.RecordWebhookDeliveryDiagnost
 import io.patchpilot.backend.github.webhook.domain.WebhookDeliveryDiagnosticEntity;
 import io.patchpilot.backend.github.webhook.domain.WebhookDeliveryDiagnosticStatus;
 import io.patchpilot.backend.github.webhook.domain.WebhookDeliveryDiagnosticVo;
+import io.patchpilot.backend.github.webhook.domain.WebhookDeliveryOutcomeType;
 import io.patchpilot.backend.github.webhook.mapper.WebhookDeliveryDiagnosticMapper;
 import io.patchpilot.backend.github.webhook.service.impl.MyBatisWebhookDeliveryDiagnosticService;
 import org.junit.jupiter.api.Test;
@@ -40,7 +41,10 @@ class MyBatisWebhookDeliveryDiagnosticServiceTests {
                 42L,
                 "alice",
                 "/agent fix touch docs/demo.md",
-                "Task created from /agent fix"
+                "Task created from /agent fix",
+                WebhookDeliveryOutcomeType.TASK,
+                "task-123",
+                "/tasks/task-123"
         ));
 
         verify(diagnosticMapper).insert(entityCaptor.capture());
@@ -56,11 +60,17 @@ class MyBatisWebhookDeliveryDiagnosticServiceTests {
         assertThat(entity.getTriggerUser()).isEqualTo("alice");
         assertThat(entity.getTriggerComment()).isEqualTo("/agent fix touch docs/demo.md");
         assertThat(entity.getMessage()).isEqualTo("Task created from /agent fix");
+        assertThat(entity.getOutcomeType()).isEqualTo(WebhookDeliveryOutcomeType.TASK);
+        assertThat(entity.getOutcomeId()).isEqualTo("task-123");
+        assertThat(entity.getOutcomeUrl()).isEqualTo("/tasks/task-123");
         assertThat(entity.getCreatedAt()).isNotNull();
         assertThat(diagnostic.id()).isEqualTo(entity.getId());
         assertThat(diagnostic.redeliveryRecommended()).isFalse();
         assertThat(diagnostic.operatorAction())
                 .isEqualTo("Task was created. Do not redeliver this webhook unless you intentionally want GitHub to report a duplicate delivery.");
+        assertThat(diagnostic.outcomeType()).isEqualTo(WebhookDeliveryOutcomeType.TASK);
+        assertThat(diagnostic.outcomeId()).isEqualTo("task-123");
+        assertThat(diagnostic.outcomeUrl()).isEqualTo("/tasks/task-123");
     }
 
     @Test
@@ -85,6 +95,9 @@ class MyBatisWebhookDeliveryDiagnosticServiceTests {
         entity.setStatus(WebhookDeliveryDiagnosticStatus.INVALID_SIGNATURE);
         entity.setTaskId(null);
         entity.setMessage("Invalid GitHub webhook signature");
+        entity.setOutcomeType(null);
+        entity.setOutcomeId(null);
+        entity.setOutcomeUrl(null);
         when(diagnosticMapper.selectList(any())).thenReturn(List.of(entity));
 
         List<WebhookDeliveryDiagnosticVo> diagnostics = diagnosticService.listRecent(50);
@@ -93,6 +106,7 @@ class MyBatisWebhookDeliveryDiagnosticServiceTests {
         assertThat(diagnostics.get(0).redeliveryRecommended()).isTrue();
         assertThat(diagnostics.get(0).operatorAction())
                 .isEqualTo("Fix the webhook secret or payload URL first, then use GitHub's Redeliver action for this delivery.");
+        assertThat(diagnostics.get(0).outcomeType()).isEqualTo(WebhookDeliveryOutcomeType.ERROR);
     }
 
     private static WebhookDeliveryDiagnosticEntity entity(String id, Instant createdAt) {
@@ -108,6 +122,9 @@ class MyBatisWebhookDeliveryDiagnosticServiceTests {
         entity.setTriggerUser("alice");
         entity.setTriggerComment("/agent fix");
         entity.setMessage("Task created from /agent fix");
+        entity.setOutcomeType(WebhookDeliveryOutcomeType.TASK);
+        entity.setOutcomeId("task-" + id);
+        entity.setOutcomeUrl("/tasks/task-" + id);
         entity.setCreatedAt(createdAt);
         return entity;
     }

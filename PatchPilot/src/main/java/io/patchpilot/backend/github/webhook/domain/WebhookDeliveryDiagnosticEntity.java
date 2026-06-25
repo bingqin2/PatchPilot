@@ -45,6 +45,15 @@ public class WebhookDeliveryDiagnosticEntity {
     @TableField("message")
     private String message;
 
+    @TableField("outcome_type")
+    private WebhookDeliveryOutcomeType outcomeType;
+
+    @TableField("outcome_id")
+    private String outcomeId;
+
+    @TableField("outcome_url")
+    private String outcomeUrl;
+
     @TableField("created_at")
     private Instant createdAt;
 }

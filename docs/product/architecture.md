@@ -85,6 +85,12 @@ it must not call `GitHubWebhookService.handle`, create tasks, queue work, record
 delivery diagnostics, record rejected triggers, post GitHub comments, consume
 rate-limit quota, or call the model.
 
+Real webhook delivery diagnostics persist an outcome correlation target for each
+handled delivery. Task-created, active-task, and duplicate deliveries point to
+the task detail route; rejected deliveries point to the rejected-trigger audit
+anchor created during the same webhook handling path; ignored deliveries and
+errors keep a typed outcome without introducing another task-triggering path.
+
 ## Worker Runtime Health
 
 The single-process backend records queue worker heartbeat state in memory through

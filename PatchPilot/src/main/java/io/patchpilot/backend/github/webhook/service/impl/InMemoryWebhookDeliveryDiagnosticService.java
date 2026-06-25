@@ -32,6 +32,9 @@ public class InMemoryWebhookDeliveryDiagnosticService implements WebhookDelivery
                 command.triggerUser(),
                 command.triggerComment(),
                 command.message(),
+                command.outcomeType(),
+                command.outcomeId(),
+                command.outcomeUrl(),
                 Instant.now()
         );
         diagnostics.add(diagnostic);

@@ -37,6 +37,13 @@ export type WebhookDeliveryDiagnosticStatus =
   | 'TASK_CREATED'
   | 'FAILED';
 
+export type WebhookDeliveryOutcomeType =
+  | 'TASK'
+  | 'REJECTED_TRIGGER'
+  | 'IGNORED'
+  | 'DUPLICATE'
+  | 'ERROR';
+
 export type FixTaskTimelineEventType =
   | 'TRIGGER_ACCEPTED'
   | 'TASK_CREATED'
@@ -462,6 +469,9 @@ export interface WebhookDeliveryDiagnostic {
   message: string;
   redeliveryRecommended: boolean;
   operatorAction: string;
+  outcomeType: WebhookDeliveryOutcomeType | null;
+  outcomeId: string | null;
+  outcomeUrl: string | null;
   createdAt: string;
 }
 
