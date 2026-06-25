@@ -4,6 +4,7 @@ import io.patchpilot.backend.configuration.ConfigurationSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessStatus;
 import io.patchpilot.backend.demo.domain.DemoReadinessVo;
 import io.patchpilot.backend.language.domain.LanguageAdapterFixtureVerificationVo;
+import io.patchpilot.backend.language.domain.LanguageAdapterRuntimeReadinessVo;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.vo.FixTaskQueueSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
@@ -23,6 +24,7 @@ class DemoReadinessServiceTests {
         DemoReadinessService service = new DemoReadinessService(
                 () -> configuration(true, true, true, true),
                 () -> List.of(fixture("java-maven", "PASS"), fixture("python-hatch", "PASS")),
+                () -> List.of(runtime("java", "maven", "mvn", "READY"), runtime("python", "hatch", "python", "READY")),
                 () -> new FixTaskQueueSummaryVo(3, 0, 0, 0, 0, 3, 0, 0),
                 DemoReadinessServiceTests::readyWorker,
                 () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/12"))
@@ -40,6 +42,7 @@ class DemoReadinessServiceTests {
                         "Safety policy",
                         "Repository preflight scope",
                         "Adapter fixtures",
+                        "Adapter runtimes",
                         "Queue",
                         "Worker heartbeat",
                         "Recent Pull Request"
@@ -62,6 +65,7 @@ class DemoReadinessServiceTests {
                         List.of()
                 ),
                 () -> List.of(fixture("java-maven", "PASS")),
+                () -> List.of(runtime("java", "maven", "mvn", "READY")),
                 () -> FixTaskQueueSummaryVo.empty(),
                 DemoReadinessServiceTests::readyWorker,
                 () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/12"))
@@ -89,6 +93,7 @@ class DemoReadinessServiceTests {
         DemoReadinessService service = new DemoReadinessService(
                 () -> configuration(false, false, false, false),
                 () -> List.of(fixture("java-maven", "PASS"), fixture("python-hatch", "FAIL")),
+                () -> List.of(runtime("java", "maven", "mvn", "READY"), runtime("python", "hatch", "python", "READY")),
                 () -> FixTaskQueueSummaryVo.empty(),
                 DemoReadinessServiceTests::readyWorker,
                 List::of
@@ -123,6 +128,7 @@ class DemoReadinessServiceTests {
         DemoReadinessService service = new DemoReadinessService(
                 () -> configuration(true, true, true, false),
                 () -> List.of(fixture("java-maven", "PASS")),
+                () -> List.of(runtime("java", "maven", "mvn", "READY")),
                 () -> new FixTaskQueueSummaryVo(5, 1, 1, 0, 1, 1, 2, 0),
                 DemoReadinessServiceTests::readyWorker,
                 () -> List.of(task("task-2", FixTaskStatus.FAILED, null))
@@ -155,6 +161,7 @@ class DemoReadinessServiceTests {
         DemoReadinessService service = new DemoReadinessService(
                 () -> configuration(true, true, true, true, false),
                 () -> List.of(fixture("java-maven", "PASS")),
+                () -> List.of(runtime("java", "maven", "mvn", "READY")),
                 () -> FixTaskQueueSummaryVo.empty(),
                 DemoReadinessServiceTests::readyWorker,
                 () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/12"))
@@ -188,6 +195,7 @@ class DemoReadinessServiceTests {
                         List.of("/tmp/patchpilot/workspaces")
                 ),
                 () -> List.of(fixture("java-maven", "PASS")),
+                () -> List.of(runtime("java", "maven", "mvn", "READY")),
                 () -> FixTaskQueueSummaryVo.empty(),
                 DemoReadinessServiceTests::readyWorker,
                 () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/12"))
@@ -220,6 +228,7 @@ class DemoReadinessServiceTests {
                         List.of(Path.of("..").resolve("docs/demo").toAbsolutePath().normalize().toString())
                 ),
                 () -> List.of(fixture("java-maven", "PASS")),
+                () -> List.of(runtime("java", "maven", "mvn", "READY")),
                 () -> FixTaskQueueSummaryVo.empty(),
                 DemoReadinessServiceTests::readyWorker,
                 () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/12"))
@@ -239,6 +248,7 @@ class DemoReadinessServiceTests {
         DemoReadinessService service = new DemoReadinessService(
                 () -> configuration(true, true, true, true),
                 () -> List.of(fixture("java-maven", "PASS")),
+                () -> List.of(runtime("java", "maven", "mvn", "READY")),
                 () -> FixTaskQueueSummaryVo.empty(),
                 () -> new FixTaskWorkerHealthVo(
                         "NOT_STARTED",
@@ -272,6 +282,31 @@ class DemoReadinessServiceTests {
                     assertThat(check.action()).contains("queue worker poller");
                 });
         assertThat(readiness.nextActions()).contains("Wait for the queue worker poller to start or check the active Spring profile.");
+    }
+
+    @Test
+    void should_report_runtime_attention_when_adapter_executable_is_missing() {
+        DemoReadinessService service = new DemoReadinessService(
+                () -> configuration(true, true, true, true),
+                () -> List.of(fixture("java-maven", "PASS"), fixture("python-hatch", "PASS")),
+                () -> List.of(runtime("java", "maven", "mvn", "READY"), runtime("python", "hatch", "python", "MISSING")),
+                () -> FixTaskQueueSummaryVo.empty(),
+                DemoReadinessServiceTests::readyWorker,
+                () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/12"))
+        );
+
+        DemoReadinessVo readiness = service.getReadiness();
+
+        assertThat(readiness.status()).isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
+        assertThat(readiness.checks())
+                .filteredOn(check -> check.name().equals("Adapter runtimes"))
+                .singleElement()
+                .satisfies(check -> {
+                    assertThat(check.status()).isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
+                    assertThat(check.message()).isEqualTo("1 adapter runtime executable is missing: python-hatch requires `python`.");
+                    assertThat(check.action()).isEqualTo("Install missing adapter executables on the backend PATH before demonstrating affected languages.");
+                });
+        assertThat(readiness.nextActions()).contains("Install missing adapter executables on the backend PATH before demonstrating affected languages.");
     }
 
     private static ConfigurationSummaryVo configuration(
@@ -419,6 +454,17 @@ class DemoReadinessServiceTests {
                 List.of("mvn", "test"),
                 "Detected fixture",
                 status
+        );
+    }
+
+    private static LanguageAdapterRuntimeReadinessVo runtime(String language, String buildSystem, String executable, String status) {
+        return new LanguageAdapterRuntimeReadinessVo(
+                language,
+                buildSystem,
+                executable,
+                List.of(executable, "--version"),
+                status,
+                "Executable `" + executable + "` readiness fixture"
         );
     }
 

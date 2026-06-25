@@ -6,7 +6,9 @@ import io.patchpilot.backend.demo.domain.DemoReadinessCheckVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessStatus;
 import io.patchpilot.backend.demo.domain.DemoReadinessVo;
 import io.patchpilot.backend.language.LanguageAdapterFixtureVerificationService;
+import io.patchpilot.backend.language.LanguageAdapterRuntimeReadinessService;
 import io.patchpilot.backend.language.domain.LanguageAdapterFixtureVerificationVo;
+import io.patchpilot.backend.language.domain.LanguageAdapterRuntimeReadinessVo;
 import io.patchpilot.backend.task.domain.bo.FixTaskListQuery;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.vo.FixTaskQueueSummaryVo;
@@ -28,6 +30,7 @@ public class DemoReadinessService {
 
     private final Supplier<ConfigurationSummaryVo> configurationSupplier;
     private final Supplier<List<LanguageAdapterFixtureVerificationVo>> fixtureSupplier;
+    private final Supplier<List<LanguageAdapterRuntimeReadinessVo>> runtimeReadinessSupplier;
     private final Supplier<FixTaskQueueSummaryVo> queueSummarySupplier;
     private final Supplier<FixTaskWorkerHealthVo> workerHealthSupplier;
     private final Supplier<List<FixTaskVo>> recentTasksSupplier;
@@ -36,6 +39,7 @@ public class DemoReadinessService {
     public DemoReadinessService(
             ConfigurationSummaryService configurationSummaryService,
             LanguageAdapterFixtureVerificationService fixtureVerificationService,
+            LanguageAdapterRuntimeReadinessService runtimeReadinessService,
             FixTaskQueueQueryService fixTaskQueueQueryService,
             FixTaskWorkerHealthService fixTaskWorkerHealthService,
             FixTaskService fixTaskService
@@ -43,6 +47,7 @@ public class DemoReadinessService {
         this(
                 configurationSummaryService::getConfigurationSummary,
                 fixtureVerificationService::listFixtureVerifications,
+                runtimeReadinessService::listRuntimeReadiness,
                 fixTaskQueueQueryService::summary,
                 fixTaskWorkerHealthService::getHealth,
                 () -> fixTaskService.listTasks(new FixTaskListQuery(
@@ -61,12 +66,14 @@ public class DemoReadinessService {
     DemoReadinessService(
             Supplier<ConfigurationSummaryVo> configurationSupplier,
             Supplier<List<LanguageAdapterFixtureVerificationVo>> fixtureSupplier,
+            Supplier<List<LanguageAdapterRuntimeReadinessVo>> runtimeReadinessSupplier,
             Supplier<FixTaskQueueSummaryVo> queueSummarySupplier,
             Supplier<FixTaskWorkerHealthVo> workerHealthSupplier,
             Supplier<List<FixTaskVo>> recentTasksSupplier
     ) {
         this.configurationSupplier = configurationSupplier;
         this.fixtureSupplier = fixtureSupplier;
+        this.runtimeReadinessSupplier = runtimeReadinessSupplier;
         this.queueSummarySupplier = queueSummarySupplier;
         this.workerHealthSupplier = workerHealthSupplier;
         this.recentTasksSupplier = recentTasksSupplier;
@@ -75,6 +82,7 @@ public class DemoReadinessService {
     public DemoReadinessVo getReadiness() {
         ConfigurationSummaryVo configuration = configurationSupplier.get();
         List<LanguageAdapterFixtureVerificationVo> fixtures = fixtureSupplier.get();
+        List<LanguageAdapterRuntimeReadinessVo> runtimes = runtimeReadinessSupplier.get();
         FixTaskQueueSummaryVo queueSummary = queueSummarySupplier.get();
         FixTaskWorkerHealthVo workerHealth = workerHealthSupplier.get();
         List<FixTaskVo> recentTasks = recentTasksSupplier.get();
@@ -85,6 +93,7 @@ public class DemoReadinessService {
                 safetyPolicyCheck(configuration),
                 repositoryPreflightScopeCheck(configuration),
                 adapterFixtureCheck(fixtures),
+                adapterRuntimeCheck(runtimes),
                 queueCheck(queueSummary),
                 workerHeartbeatCheck(workerHealth),
                 recentPullRequestCheck(recentTasks)
@@ -98,6 +107,28 @@ public class DemoReadinessService {
                 "Backend",
                 DemoReadinessStatus.READY,
                 "Backend readiness endpoint is reachable.",
+                "No action needed."
+        );
+    }
+
+    private static DemoReadinessCheckVo adapterRuntimeCheck(List<LanguageAdapterRuntimeReadinessVo> runtimes) {
+        List<LanguageAdapterRuntimeReadinessVo> missing = runtimes.stream()
+                .filter(runtime -> !"READY".equals(runtime.status()))
+                .toList();
+        if (!missing.isEmpty()) {
+            return new DemoReadinessCheckVo(
+                    "Adapter runtimes",
+                    DemoReadinessStatus.NEEDS_ATTENTION,
+                    missing.size() + " adapter runtime executable" + plural(missing.size())
+                            + " " + (missing.size() == 1 ? "is" : "are")
+                            + " missing: " + missingRuntimeSummary(missing) + ".",
+                    "Install missing adapter executables on the backend PATH before demonstrating affected languages."
+            );
+        }
+        return new DemoReadinessCheckVo(
+                "Adapter runtimes",
+                DemoReadinessStatus.READY,
+                runtimes.size() + " adapter runtime executable" + plural(runtimes.size()) + " are available on PATH.",
                 "No action needed."
         );
     }
@@ -329,5 +360,11 @@ public class DemoReadinessService {
 
     private static String plural(long count) {
         return count == 1 ? "" : "s";
+    }
+
+    private static String missingRuntimeSummary(List<LanguageAdapterRuntimeReadinessVo> missing) {
+        return missing.stream()
+                .map(runtime -> runtime.language() + "-" + runtime.buildSystem() + " requires `" + runtime.executable() + "`")
+                .collect(java.util.stream.Collectors.joining(", "));
     }
 }

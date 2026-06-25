@@ -46,6 +46,9 @@ class DemoScriptServiceTests {
                 "Review Pull Request and export evidence"
         );
         assertThat(script.steps().get(0).verificationCommand()).isEqualTo("curl http://127.0.0.1:8080/health");
+        assertThat(script.steps().get(2).verificationCommand()).contains("/api/language-adapters/fixtures");
+        assertThat(script.steps().get(2).verificationCommand()).contains("/api/language-adapters/runtime-readiness");
+        assertThat(script.steps().get(2).evidence()).contains("adapter runtimes");
         assertThat(script.steps().get(3).operatorAction()).contains("/agent fix replace docs/demo.md PatchPilot smoke test");
         assertThat(script.steps().get(5).evidence()).isEqualTo("https://github.com/bingqin2/PatchPilot/pull/42");
         assertThat(script.healthContract()).contains(
@@ -97,7 +100,8 @@ class DemoScriptServiceTests {
                 List.of(
                         new DemoReadinessCheckVo("Backend", DemoReadinessStatus.READY, "Backend readiness endpoint is reachable.", "No action needed."),
                         new DemoReadinessCheckVo("Safety policy", status, "Safety policy evidence.", "Fix safety policy."),
-                        new DemoReadinessCheckVo("Adapter fixtures", status, "Adapter fixture evidence.", "Fix adapter fixtures.")
+                        new DemoReadinessCheckVo("Adapter fixtures", status, "Adapter fixture evidence.", "Fix adapter fixtures."),
+                        new DemoReadinessCheckVo("Adapter runtimes", status, "Adapter runtime evidence.", "Fix adapter runtimes.")
                 ),
                 status == DemoReadinessStatus.READY ? List.of() : List.of("Fix adapter fixtures.")
         );

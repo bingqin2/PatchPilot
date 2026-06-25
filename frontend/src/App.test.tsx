@@ -916,6 +916,12 @@ const demoReadiness = {
       action: 'No action needed.'
     },
     {
+      name: 'Adapter runtimes',
+      status: 'READY',
+      message: '13 adapter runtime executables are available on PATH.',
+      action: 'No action needed.'
+    },
+    {
       name: 'Recent Pull Request',
       status: 'NEEDS_ATTENTION',
       message: 'No completed task with a Pull Request URL was found in recent task history.',
@@ -939,6 +945,14 @@ const demoSmokeChecklist = {
     },
     {
       order: 2,
+      name: 'Adapter runtime gate',
+      status: 'READY',
+      message: '13 adapter runtime executables are available on PATH.',
+      evidence: 'Adapter runtimes',
+      action: 'No action needed.'
+    },
+    {
+      order: 3,
       name: 'Webhook delivery',
       status: 'READY',
       message: 'Latest webhook delivery reached PatchPilot and produced task task-1.',
@@ -946,7 +960,7 @@ const demoSmokeChecklist = {
       action: 'Post the live /agent fix comment only after confirming the webhook URL is current.'
     },
     {
-      order: 3,
+      order: 4,
       name: 'Task execution',
       status: 'READY',
       message: 'Recent task completed with verification command mvn test.',
@@ -954,7 +968,7 @@ const demoSmokeChecklist = {
       action: 'Use the same repository shape for the live demo.'
     },
     {
-      order: 4,
+      order: 5,
       name: 'Pull Request evidence',
       status: 'READY',
       message: 'Recent completed task opened a Pull Request.',
@@ -1035,6 +1049,7 @@ const demoSessionSnapshot = {
   runbook: '# PatchPilot Demo Runbook\n\n- Status: `READY`',
   operatorChecklist: [
     'Open the dashboard and confirm the demo session snapshot status.',
+    'Confirm adapter runtime executables are available on the backend PATH.',
     'Verify the latest webhook delivery and recent task before posting a live trigger.',
     'Copy the runbook after Pull Request evidence is visible.'
   ],
@@ -1580,6 +1595,8 @@ test('renders operational task dashboard from backend APIs', async () => {
   const smokeChecklistPanel = screen.getByRole('region', { name: 'Live demo smoke checklist' });
   expect(within(smokeChecklistPanel).getByRole('heading', { name: 'Live demo smoke checklist' })).toBeInTheDocument();
   expect(within(smokeChecklistPanel).getByText('Live demo smoke checklist needs attention.')).toBeInTheDocument();
+  expect(within(smokeChecklistPanel).getByText('Adapter runtime gate')).toBeInTheDocument();
+  expect(within(smokeChecklistPanel).getByText('13 adapter runtime executables are available on PATH.')).toBeInTheDocument();
   expect(within(smokeChecklistPanel).getByText('Webhook delivery')).toBeInTheDocument();
   expect(within(smokeChecklistPanel).getByText('delivery-created-status-comment')).toBeInTheDocument();
   expect(within(smokeChecklistPanel).getByText('Post the live /agent fix comment only after confirming the webhook URL is current.')).toBeInTheDocument();
@@ -1951,7 +1968,7 @@ test('summarizes operator setup readiness before a demo run', async () => {
 
   const setupChecklist = await screen.findByRole('region', { name: 'Operator setup checklist' });
   expect(within(setupChecklist).getByRole('heading', { name: 'Operator setup checklist' })).toBeInTheDocument();
-  expect(within(setupChecklist).getByText('6/8 checks ready')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('7/9 checks ready')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Backend connectivity')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Ready - /health reports UP')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Required credentials')).toBeInTheDocument();
@@ -1962,6 +1979,8 @@ test('summarizes operator setup readiness before a demo run', async () => {
   expect(within(setupChecklist).getByText('Ready - demo fixture preflight paths are allowed')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Adapter fixtures')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Ready - 13/13 fixtures passing')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('Adapter runtimes')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('Ready - 13/13 runtime executables available')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Queue health')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Attention - 1 failed queue item')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Worker heartbeat')).toBeInTheDocument();
@@ -2022,7 +2041,7 @@ test('shows when every operator setup check is ready', async () => {
   render(<App />);
 
   const setupChecklist = await screen.findByRole('region', { name: 'Operator setup checklist' });
-  expect(within(setupChecklist).getByText('8/8 checks ready')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('9/9 checks ready')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Ready - recent completed task has a Pull Request URL')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('All setup checks are ready for a controlled issue-to-PR demo.')).toBeInTheDocument();
   expect(within(setupChecklist).queryByRole('heading', { name: 'Next setup actions' })).not.toBeInTheDocument();

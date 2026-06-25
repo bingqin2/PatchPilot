@@ -2,6 +2,7 @@ package io.patchpilot.backend.demo;
 
 import io.patchpilot.backend.demo.domain.DemoReadinessStatus;
 import io.patchpilot.backend.demo.domain.DemoReadinessVo;
+import io.patchpilot.backend.demo.domain.DemoReadinessCheckVo;
 import io.patchpilot.backend.demo.domain.DemoSmokeChecklistStatus;
 import io.patchpilot.backend.demo.domain.DemoSmokeChecklistStepVo;
 import io.patchpilot.backend.demo.domain.DemoSmokeChecklistVo;
@@ -65,6 +66,7 @@ public class DemoSmokeChecklistService {
 
         List<DemoSmokeChecklistStepVo> steps = List.of(
                 readinessStep(readiness),
+                adapterRuntimeStep(readiness),
                 webhookStep(deliveries),
                 taskExecutionStep(recentTasks),
                 pullRequestStep(recentTasks)
@@ -85,10 +87,36 @@ public class DemoSmokeChecklistService {
         );
     }
 
+    private static DemoSmokeChecklistStepVo adapterRuntimeStep(DemoReadinessVo readiness) {
+        Optional<DemoReadinessCheckVo> runtimeCheck = readiness.checks().stream()
+                .filter(check -> check.name().equals("Adapter runtimes"))
+                .findFirst();
+        if (runtimeCheck.isEmpty()) {
+            return new DemoSmokeChecklistStepVo(
+                    2,
+                    "Adapter runtime gate",
+                    DemoSmokeChecklistStatus.NEEDS_ATTENTION,
+                    "Adapter runtime readiness has not been evaluated.",
+                    "No adapter runtime evidence",
+                    "Open /api/language-adapters/runtime-readiness before a live demo."
+            );
+        }
+
+        DemoReadinessCheckVo check = runtimeCheck.get();
+        return new DemoSmokeChecklistStepVo(
+                2,
+                "Adapter runtime gate",
+                toSmokeStatus(check.status()),
+                check.message(),
+                check.name(),
+                check.action()
+        );
+    }
+
     private static DemoSmokeChecklistStepVo webhookStep(List<WebhookDeliveryDiagnosticVo> deliveries) {
         if (deliveries.isEmpty()) {
             return new DemoSmokeChecklistStepVo(
-                    2,
+                    3,
                     "Webhook delivery",
                     DemoSmokeChecklistStatus.NEEDS_ATTENTION,
                     "No recent webhook delivery has been recorded.",
@@ -99,7 +127,7 @@ public class DemoSmokeChecklistService {
         WebhookDeliveryDiagnosticVo latest = deliveries.get(0);
         if (latest.redeliveryRecommended()) {
             return new DemoSmokeChecklistStepVo(
-                    2,
+                    3,
                     "Webhook delivery",
                     DemoSmokeChecklistStatus.NEEDS_ATTENTION,
                     latest.message(),
@@ -109,7 +137,7 @@ public class DemoSmokeChecklistService {
         }
         if (latest.status() != WebhookDeliveryDiagnosticStatus.TASK_CREATED || latest.taskId() == null) {
             return new DemoSmokeChecklistStepVo(
-                    2,
+                    3,
                     "Webhook delivery",
                     DemoSmokeChecklistStatus.NEEDS_ATTENTION,
                     latest.message(),
@@ -118,7 +146,7 @@ public class DemoSmokeChecklistService {
             );
         }
         return new DemoSmokeChecklistStepVo(
-                2,
+                3,
                 "Webhook delivery",
                 DemoSmokeChecklistStatus.READY,
                 "Latest webhook delivery reached PatchPilot and produced task " + latest.taskId() + ".",
@@ -134,7 +162,7 @@ public class DemoSmokeChecklistService {
         if (completedTask.isPresent()) {
             FixTaskVo task = completedTask.get();
             return new DemoSmokeChecklistStepVo(
-                    3,
+                    4,
                     "Task execution",
                     DemoSmokeChecklistStatus.READY,
                     "Recent task completed with verification command " + nullToUnknown(task.verificationCommand()) + ".",
@@ -150,7 +178,7 @@ public class DemoSmokeChecklistService {
                 .findFirst();
         if (activeTask.isPresent()) {
             return new DemoSmokeChecklistStepVo(
-                    3,
+                    4,
                     "Task execution",
                     DemoSmokeChecklistStatus.NEEDS_ATTENTION,
                     "A task is still active: " + activeTask.get().status() + ".",
@@ -159,7 +187,7 @@ public class DemoSmokeChecklistService {
             );
         }
         return new DemoSmokeChecklistStepVo(
-                3,
+                4,
                 "Task execution",
                 DemoSmokeChecklistStatus.NEEDS_ATTENTION,
                 "No recent completed task is available as execution evidence.",
@@ -175,7 +203,7 @@ public class DemoSmokeChecklistService {
         if (taskWithPullRequest.isPresent()) {
             FixTaskVo task = taskWithPullRequest.get();
             return new DemoSmokeChecklistStepVo(
-                    4,
+                    5,
                     "Pull Request evidence",
                     DemoSmokeChecklistStatus.READY,
                     "Recent completed task opened a Pull Request.",
@@ -184,7 +212,7 @@ public class DemoSmokeChecklistService {
             );
         }
         return new DemoSmokeChecklistStepVo(
-                4,
+                5,
                 "Pull Request evidence",
                 DemoSmokeChecklistStatus.NEEDS_ATTENTION,
                 "No recent completed task has a Pull Request URL.",

@@ -24,7 +24,10 @@ class DemoSmokeChecklistServiceTests {
                 () -> new DemoReadinessVo(
                         DemoReadinessStatus.READY,
                         "PatchPilot is ready for a controlled demo.",
-                        List.of(check("Credentials", DemoReadinessStatus.READY)),
+                        List.of(
+                                check("Credentials", DemoReadinessStatus.READY),
+                                check("Adapter runtimes", DemoReadinessStatus.READY)
+                        ),
                         List.of("Open a controlled GitHub issue and comment /agent fix with a concrete change request.")
                 ),
                 () -> List.of(delivery(
@@ -44,6 +47,7 @@ class DemoSmokeChecklistServiceTests {
                 .extracting("name")
                 .containsExactly(
                         "Readiness gate",
+                        "Adapter runtime gate",
                         "Webhook delivery",
                         "Task execution",
                         "Pull Request evidence"
@@ -91,12 +95,63 @@ class DemoSmokeChecklistServiceTests {
     }
 
     @Test
+    void should_surface_adapter_runtime_gate_from_demo_readiness() {
+        DemoSmokeChecklistService service = new DemoSmokeChecklistService(
+                () -> new DemoReadinessVo(
+                        DemoReadinessStatus.NEEDS_ATTENTION,
+                        "PatchPilot needs attention before a live demo.",
+                        List.of(
+                                check("Credentials", DemoReadinessStatus.READY),
+                                new DemoReadinessCheckVo(
+                                        "Adapter runtimes",
+                                        DemoReadinessStatus.NEEDS_ATTENTION,
+                                        "1 adapter runtime executable is missing: python-hatch requires `python`.",
+                                        "Install missing adapter executables on the backend PATH before demonstrating affected languages."
+                                )
+                        ),
+                        List.of("Install missing adapter executables on the backend PATH before demonstrating affected languages.")
+                ),
+                () -> List.of(delivery(
+                        "delivery-created",
+                        WebhookDeliveryDiagnosticStatus.TASK_CREATED,
+                        "task-1",
+                        "Task created from /agent fix"
+                )),
+                () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/12"))
+        );
+
+        DemoSmokeChecklistVo checklist = service.getSmokeChecklist();
+
+        assertThat(checklist.status()).isEqualTo(DemoSmokeChecklistStatus.NEEDS_ATTENTION);
+        assertThat(checklist.steps())
+                .extracting("name")
+                .containsExactly(
+                        "Readiness gate",
+                        "Adapter runtime gate",
+                        "Webhook delivery",
+                        "Task execution",
+                        "Pull Request evidence"
+                );
+        assertThat(checklist.steps())
+                .filteredOn(step -> step.name().equals("Adapter runtime gate"))
+                .singleElement()
+                .satisfies(step -> {
+                    assertThat(step.status()).isEqualTo(DemoSmokeChecklistStatus.NEEDS_ATTENTION);
+                    assertThat(step.message()).isEqualTo("1 adapter runtime executable is missing: python-hatch requires `python`.");
+                    assertThat(step.action()).isEqualTo("Install missing adapter executables on the backend PATH before demonstrating affected languages.");
+                });
+    }
+
+    @Test
     void should_request_attention_when_latest_webhook_delivery_needs_redelivery() {
         DemoSmokeChecklistService service = new DemoSmokeChecklistService(
                 () -> new DemoReadinessVo(
                         DemoReadinessStatus.READY,
                         "PatchPilot is ready for a controlled demo.",
-                        List.of(check("Credentials", DemoReadinessStatus.READY)),
+                        List.of(
+                                check("Credentials", DemoReadinessStatus.READY),
+                                check("Adapter runtimes", DemoReadinessStatus.READY)
+                        ),
                         List.of("Open a controlled GitHub issue and comment /agent fix with a concrete change request.")
                 ),
                 () -> List.of(delivery(
@@ -128,7 +183,10 @@ class DemoSmokeChecklistServiceTests {
                 () -> new DemoReadinessVo(
                         DemoReadinessStatus.READY,
                         "PatchPilot is ready for a controlled demo.",
-                        List.of(check("Credentials", DemoReadinessStatus.READY)),
+                        List.of(
+                                check("Credentials", DemoReadinessStatus.READY),
+                                check("Adapter runtimes", DemoReadinessStatus.READY)
+                        ),
                         List.of("Open a controlled GitHub issue and comment /agent fix with a concrete change request.")
                 ),
                 () -> List.of(delivery(

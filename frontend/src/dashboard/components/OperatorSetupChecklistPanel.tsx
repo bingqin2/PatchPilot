@@ -3,6 +3,7 @@ import type {
   ConfigurationSummary,
   DemoReadiness,
   LanguageAdapterFixtureVerification,
+  LanguageAdapterRuntimeReadiness,
   FixTask,
   FixTaskQueueSummary,
   FixTaskWorkerHealth
@@ -13,6 +14,7 @@ interface OperatorSetupChecklistPanelProps {
   configuration: ConfigurationSummary | null;
   demoReadiness: DemoReadiness | null;
   adapterFixtureVerifications: LanguageAdapterFixtureVerification[];
+  adapterRuntimeReadiness: LanguageAdapterRuntimeReadiness[];
   queueSummary: FixTaskQueueSummary | null;
   workerHealth: FixTaskWorkerHealth | null;
   tasks: FixTask[];
@@ -31,6 +33,7 @@ export function OperatorSetupChecklistPanel({
   configuration,
   demoReadiness,
   adapterFixtureVerifications,
+  adapterRuntimeReadiness,
   queueSummary,
   workerHealth,
   tasks,
@@ -41,6 +44,7 @@ export function OperatorSetupChecklistPanel({
     configuration,
     demoReadiness,
     adapterFixtureVerifications,
+    adapterRuntimeReadiness,
     queueSummary,
     workerHealth,
     tasks,
@@ -88,6 +92,7 @@ function setupChecks({
   configuration,
   demoReadiness,
   adapterFixtureVerifications,
+  adapterRuntimeReadiness,
   queueSummary,
   workerHealth,
   tasks,
@@ -99,6 +104,7 @@ function setupChecks({
     safetyPolicyCheck(configuration),
     repositoryPreflightScopeCheck(configuration, demoReadiness),
     adapterFixtureCheck(adapterFixtureVerifications),
+    adapterRuntimeCheck(adapterRuntimeReadiness),
     queueHealthCheck(queueSummary),
     workerHeartbeatCheck(demoReadiness, workerHealth),
     recentPullRequestCheck(demoReadiness, tasks)
@@ -183,6 +189,19 @@ function adapterFixtureCheck(adapterFixtureVerifications: LanguageAdapterFixture
   };
 }
 
+function adapterRuntimeCheck(adapterRuntimeReadiness: LanguageAdapterRuntimeReadiness[]): SetupCheck {
+  const missing = adapterRuntimeReadiness.filter((readiness) => readiness.status !== 'READY');
+  const ready = adapterRuntimeReadiness.length > 0 && missing.length === 0;
+  return {
+    name: 'Adapter runtimes',
+    ready,
+    message: ready
+      ? `${adapterRuntimeReadiness.length}/${adapterRuntimeReadiness.length} runtime executables available`
+      : `${missing.length} runtime executable${missing.length === 1 ? '' : 's'} missing${missing.length > 0 ? `: ${runtimeSummary(missing)}` : ''}`,
+    action: 'Install missing adapter executables on the backend PATH before demonstrating affected languages.'
+  };
+}
+
 function queueHealthCheck(queueSummary: FixTaskQueueSummary | null): SetupCheck {
   const failedCount = queueSummary?.failedCount ?? 0;
   return {
@@ -191,6 +210,12 @@ function queueHealthCheck(queueSummary: FixTaskQueueSummary | null): SetupCheck 
     message: failedCount === 0 ? 'no failed queue items' : `${failedCount} failed queue item${failedCount === 1 ? '' : 's'}`,
     action: 'Clear failed queue items before a live demo.'
   };
+}
+
+function runtimeSummary(missing: LanguageAdapterRuntimeReadiness[]): string {
+  return missing
+    .map((readiness) => `${readiness.language}-${readiness.buildSystem} requires ${readiness.executable}`)
+    .join(', ');
 }
 
 function workerHeartbeatCheck(demoReadiness: DemoReadiness | null, workerHealth: FixTaskWorkerHealth | null): SetupCheck {

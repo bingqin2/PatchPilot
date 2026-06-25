@@ -4,6 +4,29 @@ This file records dated implementation progress, validation commands, and import
 
 ## 2026-06-25
 
+Implemented demo runtime readiness gate from `docs/plans/194-demo-runtime-readiness-gate.md`.
+
+Changes:
+
+- Added adapter runtime executable availability to the demo readiness gate as an `Adapter runtimes` check.
+- Added a dedicated `Adapter runtime gate` step to the live demo smoke checklist.
+- Added adapter runtime guidance to demo session snapshots and generated demo scripts so copied demo reports and operator scripts do not omit missing executables.
+- Added adapter runtime availability to the dashboard operator setup checklist.
+- Updated README and product docs to describe runtime executable readiness as a demo gate, not only an adapter report diagnostic.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=DemoReadinessServiceTests,DemoSmokeChecklistServiceTests test`: first failed because `DemoReadinessService` had no runtime readiness supplier and the smoke checklist lacked an adapter runtime step; then passed after wiring runtime readiness into the demo gate, 14 tests run.
+- `npm test -- --run src/dashboard/components/OperatorSetupChecklistPanel.test.tsx`: first failed because the checklist still rendered 8 setup checks and ignored runtime readiness; then passed after adding the `Adapter runtimes` setup check, 5 tests run.
+- `mvn -pl PatchPilot -Dtest=DemoScriptServiceTests test`: first failed because the repository-support demo script step only referenced `/api/language-adapters/fixtures`; then passed after adding `/api/language-adapters/runtime-readiness` evidence to the script.
+- `mvn -pl PatchPilot -Dtest=DemoScriptServiceTests,DemoReadinessServiceTests,DemoSmokeChecklistServiceTests,DemoSessionSnapshotServiceTests test`: passed after focused demo-readiness regression verification, 18 tests run.
+- `mvn -pl PatchPilot test`: passed after full backend regression verification, 671 tests run.
+- `npm test`: passed after full frontend regression verification, 199 tests run.
+- `npm run build`: passed after production frontend build verification.
+- `git diff --check`: passed.
+
+## 2026-06-25
+
 Implemented adapter runtime readiness checks from `docs/plans/193-adapter-runtime-readiness-checks.md`.
 
 Changes:

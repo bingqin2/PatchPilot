@@ -6,7 +6,8 @@ import type {
   FixTask,
   FixTaskWorkerHealth,
   FixTaskQueueSummary,
-  LanguageAdapterFixtureVerification
+  LanguageAdapterFixtureVerification,
+  LanguageAdapterRuntimeReadiness
 } from '../../types';
 import { OperatorSetupChecklistPanel } from './OperatorSetupChecklistPanel';
 
@@ -81,6 +82,17 @@ const fixtures: LanguageAdapterFixtureVerification[] = [
   }
 ];
 
+const runtimeReadiness: LanguageAdapterRuntimeReadiness[] = [
+  {
+    language: 'java',
+    buildSystem: 'maven',
+    executable: 'mvn',
+    verificationCommand: ['mvn', 'test'],
+    status: 'READY',
+    reason: 'Executable `mvn` is available on PATH'
+  }
+];
+
 const queueSummary: FixTaskQueueSummary = {
   totalCount: 1,
   pendingCount: 0,
@@ -116,9 +128,11 @@ test('shows repository preflight scope as ready when demo fixtures are allowed',
   renderChecklist(configuration);
 
   const panel = screen.getByRole('region', { name: 'Operator setup checklist' });
-  expect(within(panel).getByText('8/8 checks ready')).toBeInTheDocument();
+  expect(within(panel).getByText('9/9 checks ready')).toBeInTheDocument();
   expect(within(panel).getByText('Repository preflight scope')).toBeInTheDocument();
   expect(within(panel).getByText('Ready - demo fixture preflight paths are allowed')).toBeInTheDocument();
+  expect(within(panel).getByText('Adapter runtimes')).toBeInTheDocument();
+  expect(within(panel).getByText('Ready - 1/1 runtime executables available')).toBeInTheDocument();
   expect(within(panel).getByText('Worker heartbeat')).toBeInTheDocument();
   expect(within(panel).getByText('Ready - Worker poller is active but no queue item was available.')).toBeInTheDocument();
 });
@@ -130,7 +144,7 @@ test('shows repository preflight scope setup action when demo fixtures are outsi
   });
 
   const panel = screen.getByRole('region', { name: 'Operator setup checklist' });
-  expect(within(panel).getByText('7/8 checks ready')).toBeInTheDocument();
+  expect(within(panel).getByText('8/9 checks ready')).toBeInTheDocument();
   expect(within(panel).getByText('Repository preflight scope')).toBeInTheDocument();
   expect(within(panel).getByText('Attention - demo fixture preflight path is not allowed')).toBeInTheDocument();
   expect(within(panel).getByText('Add docs/demo-repositories or the project root to PATCHPILOT_REPOSITORY_PREFLIGHT_ALLOWED_ROOT_DIRS.')).toBeInTheDocument();
@@ -155,7 +169,7 @@ test('uses demo readiness preflight scope result when backend reports a scope wa
   });
 
   const panel = screen.getByRole('region', { name: 'Operator setup checklist' });
-  expect(within(panel).getByText('7/8 checks ready')).toBeInTheDocument();
+  expect(within(panel).getByText('8/9 checks ready')).toBeInTheDocument();
   expect(within(panel).getByText('Attention - Repository preflight allowed roots do not include docs/demo-repositories.')).toBeInTheDocument();
   expect(within(panel).getByText('Configure PATCHPILOT_REPOSITORY_PREFLIGHT_ALLOWED_ROOT_DIRS to include docs/demo-repositories or the project root before a live demo.')).toBeInTheDocument();
 });
@@ -177,18 +191,43 @@ test('uses demo readiness worker heartbeat result when backend reports a stale w
   });
 
   const panel = screen.getByRole('region', { name: 'Operator setup checklist' });
-  expect(within(panel).getByText('7/8 checks ready')).toBeInTheDocument();
+  expect(within(panel).getByText('8/9 checks ready')).toBeInTheDocument();
   expect(within(panel).getByText('Attention - Worker heartbeat is stale.')).toBeInTheDocument();
   expect(within(panel).getByText('Check whether the queue worker scheduler is still running.')).toBeInTheDocument();
 });
 
-function renderChecklist(config: ConfigurationSummary, readiness: DemoReadiness = demoReadiness) {
+test('shows adapter runtime setup action when an executable is missing', () => {
+  renderChecklist(configuration, demoReadiness, [
+    ...runtimeReadiness,
+    {
+      language: 'python',
+      buildSystem: 'hatch',
+      executable: 'python',
+      verificationCommand: ['python', '-m', 'pytest'],
+      status: 'MISSING',
+      reason: 'Executable `python` is not available on PATH'
+    }
+  ]);
+
+  const panel = screen.getByRole('region', { name: 'Operator setup checklist' });
+  expect(within(panel).getByText('8/9 checks ready')).toBeInTheDocument();
+  expect(within(panel).getByText('Adapter runtimes')).toBeInTheDocument();
+  expect(within(panel).getByText('Attention - 1 runtime executable missing: python-hatch requires python')).toBeInTheDocument();
+  expect(within(panel).getByText('Install missing adapter executables on the backend PATH before demonstrating affected languages.')).toBeInTheDocument();
+});
+
+function renderChecklist(
+  config: ConfigurationSummary,
+  readiness: DemoReadiness = demoReadiness,
+  runtimes: LanguageAdapterRuntimeReadiness[] = runtimeReadiness
+) {
   render(
     <OperatorSetupChecklistPanel
       backendHealth={backendHealth}
       configuration={config}
       demoReadiness={readiness}
       adapterFixtureVerifications={fixtures}
+      adapterRuntimeReadiness={runtimes}
       queueSummary={queueSummary}
       workerHealth={workerHealth}
       tasks={tasks}

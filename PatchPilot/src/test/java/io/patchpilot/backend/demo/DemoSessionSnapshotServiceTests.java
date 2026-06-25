@@ -44,6 +44,7 @@ class DemoSessionSnapshotServiceTests {
         assertThat(snapshot.runbook()).contains("https://github.com/bingqin2/PatchPilot/pull/42");
         assertThat(snapshot.operatorChecklist()).contains(
                 "Open the dashboard and confirm the demo session snapshot status.",
+                "Confirm adapter runtime executables are available on the backend PATH.",
                 "Verify the latest webhook delivery and recent task before posting a live trigger.",
                 "Copy the runbook after Pull Request evidence is visible."
         );
@@ -69,6 +70,7 @@ class DemoSessionSnapshotServiceTests {
         assertThat(snapshot.status()).isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
         assertThat(snapshot.summary()).isEqualTo("Demo session snapshot needs attention before use.");
         assertThat(snapshot.shareSummary()).contains("NEEDS_ATTENTION");
+        assertThat(snapshot.operatorChecklist()).contains("Install missing adapter executables on the backend PATH before demonstrating affected languages.");
         assertThat(snapshot.nextActions()).containsExactly("Fix failing adapter fixtures before a live demo.");
     }
 
@@ -99,7 +101,17 @@ class DemoSessionSnapshotServiceTests {
                 List.of(
                         new DemoReadinessCheckVo("Backend", DemoReadinessStatus.READY, "Backend readiness endpoint is reachable.", "No action needed."),
                         new DemoReadinessCheckVo("Safety policy", status, "Safety policy evidence.", "Fix safety policy."),
-                        new DemoReadinessCheckVo("Adapter fixtures", status, "Adapter fixture evidence.", "Fix adapter fixtures.")
+                        new DemoReadinessCheckVo("Adapter fixtures", status, "Adapter fixture evidence.", "Fix adapter fixtures."),
+                        new DemoReadinessCheckVo(
+                                "Adapter runtimes",
+                                status,
+                                status == DemoReadinessStatus.READY
+                                        ? "13 adapter runtime executables are available on PATH."
+                                        : "1 adapter runtime executable is missing: python-hatch requires `python`.",
+                                status == DemoReadinessStatus.READY
+                                        ? "No action needed."
+                                        : "Install missing adapter executables on the backend PATH before demonstrating affected languages."
+                        )
                 ),
                 status == DemoReadinessStatus.READY ? List.of() : List.of("Fix adapter fixtures.")
         );

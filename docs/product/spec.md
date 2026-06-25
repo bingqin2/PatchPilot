@@ -117,6 +117,7 @@ The current implementation target is local self-hosted development first. Hosted
 - The local repository preflight diagnostic should return supported status, selected language/build system, verification command, detection reason, and next operator action so unsupported repository shapes can be fixed before a live `/agent fix`.
 - The local repository preflight diagnostic should expose its configured allowed roots through non-sensitive configuration summary APIs and the dashboard so operators can verify scope before using it.
 - Demo readiness and the operator setup checklist should warn when repository-preflight allowed roots do not cover checked-in demo fixture paths.
+- Demo readiness, the smoke checklist, the demo script, the session snapshot checklist, and the operator setup checklist should warn when a supported adapter's selected verification executable is not available on the backend process `PATH`.
 - Demo readiness and the operator setup checklist should warn when the queue worker has not started, has most recently errored, or has stopped polling within the configured stale threshold.
 - If project detection is possible from webhook or repository metadata before cloning, the system may reject even earlier.
 - The system must never follow user instructions that request secret exfiltration, destructive repository changes, arbitrary shell execution, or permission escalation.
@@ -133,6 +134,23 @@ The current implementation target is local self-hosted development first. Hosted
 - The system should record manual safety mutations, including trigger quarantine creation and release, with operator, reason, target, and timestamp.
 - Operators should be able to filter protected admin mutation audit events by action, operator, resource, and scope key, then copy the visible rows as a Markdown evidence report.
 - Non-triggering comments may be ignored without creating task or rejection audit records.
+
+
+### AI Infrastructure Requirements
+
+- Model calls must go through a single internal provider boundary instead of direct provider calls from workflow code.
+- The first provider path should be OpenAI-compatible so the project can connect to common hosted model providers and local OpenAI-compatible gateways.
+- Model requests and responses should record provider, model, prompt version, input summary, output summary, token usage, duration, estimated cost when configured, success state, and stable error category.
+- Prompts that affect execution should have explicit names and version ids.
+- Model outputs used for trigger classification, fix planning, file edits, patch review, PR summaries, and failure summaries must be parsed as structured output and validated before use.
+- Malformed, incomplete, low-confidence, or over-budget model outputs must stop safely with a clear task or rejection category.
+- The agent workflow should enforce per-task limits for model calls, tool calls, changed files, changed lines, and runtime duration.
+- Tool definitions should have stable names, typed inputs, typed outputs, risk levels, timeout policy, and audit summaries.
+- Repository retrieval should start with deterministic tree inspection and lexical search; optional embeddings or vector search are future additions behind a pluggable retrieval boundary.
+- Any repository indexing or retrieval step must exclude secrets, dependency directories, generated artifacts, and files outside the task workspace.
+- Evaluation cases should define repository fixture, issue text, expected changed files, expected verification command, and success criteria.
+- Evaluation runs should record model, prompt version, repository revision, success metrics, failure categories, cost, latency, and a copyable Markdown report.
+- Dashboard and API surfaces should make model usage, tool usage, retrieval evidence, evaluation results, budget state, and safety decisions inspectable without exposing secrets.
 
 ### Agent Workflow
 
@@ -308,6 +326,11 @@ Planned follow-up capabilities:
 - MySQL-backed durable task history.
 - Redis or queue-backed async execution.
 - RAG over repository code and previous fixes.
+- Provider-neutral model gateway with prompt versioning, structured output validation, retries, fallback policy, and model capability metadata.
+- Evaluation harness for issue-to-PR benchmark cases across supported repository adapters.
+- Retrieval audit records and optional embedding-backed code search behind a pluggable vector-store boundary.
+- Prompt regression tests and model/prompt comparison reports.
+- Per-task, per-repository, and per-instance model budget controls.
 - Cost, latency, success-rate, and test-pass-rate dashboards.
 - Human approval for high-risk actions.
 - Durable multi-instance worker telemetry.
@@ -331,6 +354,7 @@ PatchPilot MVP is successful when:
 - An operator can copy or download a Markdown session report that includes the snapshot, script, checklist, health contract, next actions, and runbook.
 - An operator can copy an adapter readiness report that proves current multi-language coverage and highlights fixture drift before a live run.
 - An operator can see whether each adapter's verification executable is available in the current backend runtime before a live run.
+- An operator can see missing adapter verification executables reflected in the demo readiness gate instead of only in the adapter report.
 - An operator can copy a repository preflight report that shows whether a local path is supported and which allowlisted command would run.
 - A failed task records and reports a clear failure reason.
 - An unsupported repository failure reports the supported adapter matrix back to the GitHub issue without attempting model, test, Git, or Pull Request work.
