@@ -9,6 +9,7 @@ import io.patchpilot.backend.demo.domain.DemoAdapterFixtureEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoSmokeChecklistStatus;
 import io.patchpilot.backend.demo.domain.DemoSmokeChecklistStepVo;
 import io.patchpilot.backend.demo.domain.DemoSmokeChecklistVo;
+import io.patchpilot.backend.demo.domain.DemoLaunchCommandVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchPreflightVo;
 import io.patchpilot.backend.task.domain.vo.TriggerEvaluationDecisionVo;
 import io.patchpilot.backend.task.domain.vo.TriggerEvaluationResultVo;
@@ -74,6 +75,9 @@ class DemoReadinessControllerTests {
 
     @MockitoBean
     private DemoLaunchPreflightService demoLaunchPreflightService;
+
+    @MockitoBean
+    private DemoLaunchCommandService demoLaunchCommandService;
 
     @MockitoBean
     private OperatorSafetyAuditService operatorSafetyAuditService;
@@ -195,6 +199,79 @@ class DemoReadinessControllerTests {
                 .andExpect(jsonPath("$.data.triggerEvaluation.source").value("ISSUE_COMMENT"))
                 .andExpect(jsonPath("$.data.triggerEvaluation.status").value("WOULD_CREATE_TASK"))
                 .andExpect(jsonPath("$.data.nextActions[0]").value("Post the tested /agent fix comment on the controlled GitHub issue."));
+    }
+
+    @Test
+    void should_return_demo_launch_command() throws Exception {
+        DemoLaunchPreflightRequestDto preflightInput = new DemoLaunchPreflightRequestDto(
+                "bingqin2",
+                "PatchPilot",
+                12L,
+                "bingqin2",
+                "/agent fix replace docs/demo.md PatchPilot smoke test"
+        );
+        when(demoLaunchCommandService.compose(argThat(request ->
+                request.repositoryOwner().equals("bingqin2")
+                        && request.repositoryName().equals("PatchPilot")
+                        && request.issueNumber().equals(12L)
+                        && request.triggerUser().equals("bingqin2")
+                        && request.operation().equals("replace")
+                        && request.targetPath().equals("docs/demo.md")
+                        && request.replacementText().equals("PatchPilot smoke test")
+        ))).thenReturn(new DemoLaunchCommandVo(
+                "/agent fix replace docs/demo.md PatchPilot smoke test",
+                preflightInput,
+                "https://github.com/bingqin2/PatchPilot/issues/12",
+                "Prepared a demo /agent fix replace command for bingqin2/PatchPilot#12.",
+                List.of("Run launch preflight with the generated command before posting it on GitHub.")
+        ));
+
+        mockMvc.perform(post("/api/demo/launch-command")
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "repositoryOwner": "bingqin2",
+                                  "repositoryName": "PatchPilot",
+                                  "issueNumber": 12,
+                                  "triggerUser": "bingqin2",
+                                  "operation": "replace",
+                                  "targetPath": "docs/demo.md",
+                                  "replacementText": "PatchPilot smoke test"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.triggerComment").value("/agent fix replace docs/demo.md PatchPilot smoke test"))
+                .andExpect(jsonPath("$.data.preflightInput.repositoryOwner").value("bingqin2"))
+                .andExpect(jsonPath("$.data.preflightInput.repositoryName").value("PatchPilot"))
+                .andExpect(jsonPath("$.data.preflightInput.issueNumber").value(12))
+                .andExpect(jsonPath("$.data.preflightInput.triggerUser").value("bingqin2"))
+                .andExpect(jsonPath("$.data.preflightInput.triggerComment").value("/agent fix replace docs/demo.md PatchPilot smoke test"))
+                .andExpect(jsonPath("$.data.githubIssueUrl").value("https://github.com/bingqin2/PatchPilot/issues/12"))
+                .andExpect(jsonPath("$.data.summary").value("Prepared a demo /agent fix replace command for bingqin2/PatchPilot#12."))
+                .andExpect(jsonPath("$.data.nextActions[0]").value("Run launch preflight with the generated command before posting it on GitHub."));
+    }
+
+    @Test
+    void should_return_bad_request_for_invalid_demo_launch_command_request() throws Exception {
+        when(demoLaunchCommandService.compose(argThat(request -> request.targetPath().equals(".git/config"))))
+                .thenThrow(new IllegalArgumentException("targetPath must not target protected repository metadata"));
+
+        mockMvc.perform(post("/api/demo/launch-command")
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "repositoryOwner": "bingqin2",
+                                  "repositoryName": "PatchPilot",
+                                  "issueNumber": 12,
+                                  "triggerUser": "bingqin2",
+                                  "operation": "touch",
+                                  "targetPath": ".git/config"
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("targetPath must not target protected repository metadata"));
     }
 
     @Test

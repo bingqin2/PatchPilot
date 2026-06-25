@@ -112,6 +112,43 @@ test('runs demo launch preflight for the exact issue comment that will be posted
   });
 });
 
+test('applies a generated launch command to the preflight form', async () => {
+  const user = userEvent.setup();
+  const onRunPreflight = vi.fn(async () => readyPreflight);
+
+  render(
+    <DemoLaunchPreflightPanel
+      result={null}
+      error={null}
+      pending={false}
+      composedPreflightInput={{
+        repositoryOwner: 'octocat',
+        repositoryName: 'hello-world',
+        issueNumber: 42,
+        triggerUser: 'demo-operator',
+        triggerComment: '/agent fix touch docs/generated.md'
+      }}
+      onRunPreflight={onRunPreflight}
+    />
+  );
+
+  expect(screen.getByLabelText('Repository owner')).toHaveValue('octocat');
+  expect(screen.getByLabelText('Repository name')).toHaveValue('hello-world');
+  expect(screen.getByLabelText('Issue number')).toHaveValue(42);
+  expect(screen.getByLabelText('Trigger user')).toHaveValue('demo-operator');
+  expect(screen.getByLabelText('GitHub issue comment')).toHaveValue('/agent fix touch docs/generated.md');
+
+  await user.click(screen.getByRole('button', { name: 'Run launch preflight' }));
+
+  expect(onRunPreflight).toHaveBeenCalledWith({
+    repositoryOwner: 'octocat',
+    repositoryName: 'hello-world',
+    issueNumber: 42,
+    triggerUser: 'demo-operator',
+    triggerComment: '/agent fix touch docs/generated.md'
+  });
+});
+
 test('shows ready and blocked demo launch preflight outcomes', () => {
   const { rerender } = render(
     <DemoLaunchPreflightPanel

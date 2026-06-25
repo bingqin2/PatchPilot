@@ -970,19 +970,29 @@ h3 {
   padding: 9px 10px;
 }
 
+.demo-launch-command-panel,
 .demo-launch-preflight-panel {
   margin-bottom: 16px;
 }
 
+.demo-launch-command-form,
 .demo-launch-preflight-form {
   align-items: end;
   border-top: 1px solid #e6ebef;
   display: grid;
   gap: 12px;
-  grid-template-columns: minmax(120px, 1fr) minmax(120px, 1fr) minmax(90px, 0.7fr) minmax(120px, 1fr) minmax(260px, 2fr) auto;
   padding: 14px 16px 16px;
 }
 
+.demo-launch-command-form {
+  grid-template-columns: minmax(120px, 1fr) minmax(120px, 1fr) minmax(90px, 0.7fr) minmax(120px, 1fr) minmax(110px, 0.8fr) minmax(180px, 1.4fr) minmax(220px, 1.8fr) auto;
+}
+
+.demo-launch-preflight-form {
+  grid-template-columns: minmax(120px, 1fr) minmax(120px, 1fr) minmax(90px, 0.7fr) minmax(120px, 1fr) minmax(260px, 2fr) auto;
+}
+
+.demo-launch-command-form label,
 .demo-launch-preflight-form label {
   color: #52606e;
   display: grid;
@@ -991,6 +1001,8 @@ h3 {
   gap: 6px;
 }
 
+.demo-launch-command-form input,
+.demo-launch-command-form select,
 .demo-launch-preflight-form input {
   background: #ffffff;
   border: 1px solid #cfd9e2;
@@ -1002,9 +1014,79 @@ h3 {
   padding: 0 10px;
 }
 
+.demo-launch-command-form input:focus,
+.demo-launch-command-form select:focus,
 .demo-launch-preflight-form input:focus {
   border-color: #187b78;
   outline: 2px solid rgba(24, 123, 120, 0.16);
+}
+
+.demo-launch-command-result {
+  border-top: 1px solid #dce3e9;
+  display: grid;
+  gap: 12px;
+  padding: 14px 16px 16px;
+}
+
+.demo-launch-command-output {
+  background: #f5f7f9;
+  border: 1px solid #dfe6ec;
+  border-radius: 6px;
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  padding: 10px 12px;
+}
+
+.demo-launch-command-output span {
+  color: #637181;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.demo-launch-command-output code {
+  color: #17202a;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 13px;
+  font-weight: 750;
+  overflow-wrap: anywhere;
+}
+
+.demo-launch-command-result p {
+  color: #384858;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.demo-launch-command-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.demo-launch-command-actions a {
+  color: #166b68;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.demo-launch-command-result ul {
+  display: grid;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.demo-launch-command-result li {
+  background: #ffffff;
+  border: 1px solid #dfe7ee;
+  border-radius: 6px;
+  color: #384858;
+  font-size: 13px;
+  font-weight: 750;
+  padding: 9px 10px;
 }
 
 .demo-launch-preflight-result {
@@ -4036,6 +4118,7 @@ pre {
   .operator-setup-grid,
   .demo-smoke-steps,
   .manual-task-form,
+  .demo-launch-command-form,
   .demo-launch-preflight-form,
   .demo-launch-preflight-grid,
   .split-section,

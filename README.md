@@ -47,6 +47,7 @@ PatchPilot is not a chatbot and does not auto-merge code. The current target is 
 - Demo session archive that stores the latest copyable and downloadable session reports for live-demo handoff without creating tasks or mutating GitHub; database-backed profiles persist archives across backend restarts.
 - Adapter readiness report that summarizes supported languages, allowlisted verification commands, fixture pass rate, runtime executable availability, and fixture failures, with copyable Markdown for demo handoff.
 - Copyable repository preflight report that exports local path support status, selected adapter, allowlisted command, allowed roots, and unsupported-repository guidance before task creation.
+- Demo launch command composer that turns structured repository, issue, operation, target path, and replacement text fields into a copyable `/agent fix` GitHub issue comment and reusable launch-preflight input without creating a task.
 - Demo launch preflight that combines current demo readiness with a read-only `ISSUE_COMMENT` trigger evaluation for the exact `/agent fix` comment an operator plans to post on GitHub.
 
 ## Repository Layout
@@ -135,6 +136,24 @@ PatchPilot only creates a task when the `/agent fix` comment is actionable. Use 
 ```
 
 Vague comments such as `/agent fix`, `/agent fix help`, or `/agent fix make it better` are rejected before task creation and appear in `/api/rejected-triggers`. For GitHub webhook triggers, PatchPilot also posts a refusal comment on the issue with the stable rejection category, safe reason, and next action. The refusal comment intentionally does not echo the original trigger body.
+
+For live demos, compose the exact GitHub issue comment before posting it:
+
+```bash
+curl -sS http://127.0.0.1:8080/api/demo/launch-command \
+  -H "Content-Type: application/json" \
+  -d '{
+    "repositoryOwner": "bingqin2",
+    "repositoryName": "PatchPilot",
+    "issueNumber": 1,
+    "triggerUser": "bingqin2",
+    "operation": "replace",
+    "targetPath": "docs/demo.md",
+    "replacementText": "PatchPilot smoke test"
+  }'
+```
+
+This endpoint is read-only. It returns the generated `triggerComment`, GitHub issue URL, and `preflightInput` for `/api/demo/launch-preflight`; it does not create tasks, post comments, mutate GitHub, or touch the queue.
 
 You can also enable model-assisted trigger classification after the deterministic safety gate:
 

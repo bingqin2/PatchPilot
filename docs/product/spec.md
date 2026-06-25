@@ -95,6 +95,7 @@ The current implementation target is local self-hosted development first. Hosted
 - A task can be queried by id for status and result.
 - Task creation must pass authorization, command parsing, actionability, and rate-limit checks before expensive execution begins.
 - Operators should be able to dry-run a proposed `/agent fix` trigger as either a manual API source or a GitHub issue-comment source and see whether it would create a task or be blocked without creating tasks, queue work, rejected-trigger audit rows, GitHub comments, webhook delivery diagnostics, or rate-limit records.
+- Operators should be able to compose a controlled demo `/agent fix` issue comment from structured repository, issue, operation, target path, and replacement text fields, then copy it or apply it to launch preflight without creating a task or mutating GitHub.
 - Operators should be able to run a final demo launch preflight for the exact GitHub issue comment they plan to post, combining current demo readiness with an `ISSUE_COMMENT` trigger dry run without creating a task or mutating GitHub.
 - Task execution must pass a repository language-adapter preflight after workspace preparation and before model patch generation.
 - Operators should be able to run a local repository preflight diagnostic that uses the same language adapter registry without creating a task, running tests, mutating Git, or opening a Pull Request.
@@ -123,6 +124,7 @@ The current implementation target is local self-hosted development first. Hosted
 - Demo readiness and the operator setup checklist should warn when the configured OpenAI-compatible model provider cannot answer a minimal health probe, even if model credentials are present.
 - Demo readiness, the smoke checklist, the demo script, the session snapshot checklist, and the operator setup checklist should warn when a supported adapter's selected verification executable is not available on the backend process `PATH`.
 - Demo readiness and the operator setup checklist should warn when the queue worker has not started, has most recently errored, or has stopped polling within the configured stale threshold.
+- Demo launch command composition should reject unsupported operations, protected repository metadata paths, absolute paths, parent-directory segments, empty path segments, whitespace in target paths, and blank replacement text for `replace` commands before the operator copies the command.
 - If project detection is possible from webhook or repository metadata before cloning, the system may reject even earlier.
 - The system must never follow user instructions that request secret exfiltration, destructive repository changes, arbitrary shell execution, or permission escalation.
 - The system should record rejected trigger decisions with clear operator-facing reasons.

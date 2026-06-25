@@ -3957,6 +3957,26 @@ Changes:
 - Added a read-only GitHub repository access probe that calls `GET https://api.github.com/repos/{owner}/{repository}` with `PATCHPILOT_GITHUB_TOKEN`.
 - Returned only non-sensitive readiness fields: token configured flag, repository configured flag, repository full name, status, message, default branch, latency, checked time, and operator action.
 - Added GitHub repository access readiness loading to the React dashboard.
+Implemented demo launch command composer from `docs/plans/202-demo-launch-command-composer.md`.
+
+Changes:
+
+- Added read-only `POST /api/demo/launch-command` to generate controlled demo `/agent fix` comments from structured repository, issue, operation, target path, and replacement text fields.
+- Added backend validation that rejects unsupported operations, blank required fields, absolute paths, `..` segments, empty path segments, whitespace in target paths, protected `.git` / `.github` metadata paths, and blank replacement text for `replace`.
+- Returned a generated `triggerComment`, GitHub issue URL, next actions, and reusable `preflightInput` for `/api/demo/launch-preflight`.
+- Added `DemoLaunchCommandPanel` to the dashboard with structured inputs, generated command display, GitHub issue link, copy command action, and apply-to-preflight action.
+- Updated `DemoLaunchPreflightPanel` so a composed command can fill the preflight form without manual copy/paste.
+- Updated README, product spec, frontend design docs, and this execution log.
+
+Validation so far:
+
+- `mvn -pl PatchPilot -Dtest=DemoLaunchCommandServiceTests,DemoReadinessControllerTests test`: first failed because `DemoLaunchCommandService` and `DemoLaunchCommandVo` did not exist; then passed after implementing the service, DTO/VO, validation, and controller endpoint, 21 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts src/dashboard/components/DemoLaunchCommandPanel.test.tsx src/dashboard/components/DemoLaunchPreflightPanel.test.tsx src/App.test.tsx --reporter=basic`: first failed because `composeDemoLaunchCommand`, `DemoLaunchCommandPanel`, and preflight input application did not exist; then passed after frontend integration, 124 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed after full backend regression verification, 715 tests run, 0 failures.
+- `npm test -- --reporter=basic`: passed after full frontend regression verification, 220 tests run, 0 failures.
+- `npm run build`: passed after production frontend build verification.
+- `git diff --check`: passed.
+
 - Added a `Repository access` row to the operator setup checklist so a token that is valid but cannot read the selected repository is visible before a live `/agent fix` run.
 - Updated README, frontend design docs, and this execution log.
 

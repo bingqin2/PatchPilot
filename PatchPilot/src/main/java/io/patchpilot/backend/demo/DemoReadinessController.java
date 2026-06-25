@@ -2,6 +2,7 @@ package io.patchpilot.backend.demo;
 
 import io.patchpilot.backend.common.response.ApiResponse;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
+import io.patchpilot.backend.demo.domain.DemoLaunchCommandVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchPreflightVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessVo;
 import io.patchpilot.backend.demo.domain.DemoScriptVo;
@@ -41,6 +42,7 @@ public class DemoReadinessController {
     private final DemoSessionReportService demoSessionReportService;
     private final DemoSessionArchiveService demoSessionArchiveService;
     private final DemoLaunchPreflightService demoLaunchPreflightService;
+    private final DemoLaunchCommandService demoLaunchCommandService;
     private final OperatorSafetyAuditService operatorSafetyAuditService;
 
     @GetMapping("/readiness")
@@ -59,6 +61,17 @@ public class DemoReadinessController {
     ) {
         try {
             return ResponseEntity.ok(ApiResponse.ok(demoLaunchPreflightService.preflight(request)));
+        } catch (IllegalArgumentException exception) {
+            return ResponseEntity.badRequest().body(ApiResponse.fail(exception.getMessage()));
+        }
+    }
+
+    @PostMapping("/launch-command")
+    public ResponseEntity<ApiResponse<DemoLaunchCommandVo>> composeLaunchCommand(
+            @RequestBody DemoLaunchCommandRequestDto request
+    ) {
+        try {
+            return ResponseEntity.ok(ApiResponse.ok(demoLaunchCommandService.compose(request)));
         } catch (IllegalArgumentException exception) {
             return ResponseEntity.badRequest().body(ApiResponse.fail(exception.getMessage()));
         }

@@ -8,6 +8,8 @@ import type {
   CreateTaskInput,
   DashboardBootstrap,
   DemoEvidenceBundle,
+  DemoLaunchCommand,
+  DemoLaunchCommandInput,
   DemoLaunchPreflight,
   DemoLaunchPreflightInput,
   DemoReadiness,
@@ -203,6 +205,10 @@ export async function getDemoReadiness(): Promise<DemoReadiness> {
 
 export async function preflightDemoLaunch(input: DemoLaunchPreflightInput): Promise<DemoLaunchPreflight> {
   return postApi<DemoLaunchPreflight>('/api/demo/launch-preflight', input);
+}
+
+export async function composeDemoLaunchCommand(input: DemoLaunchCommandInput): Promise<DemoLaunchCommand> {
+  return postApi<DemoLaunchCommand>('/api/demo/launch-command', input);
 }
 
 export async function getDemoSmokeChecklist(): Promise<DemoSmokeChecklist> {
