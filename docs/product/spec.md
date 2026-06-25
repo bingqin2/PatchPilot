@@ -117,6 +117,7 @@ The current implementation target is local self-hosted development first. Hosted
 - The local repository preflight diagnostic should return supported status, selected language/build system, verification command, detection reason, and next operator action so unsupported repository shapes can be fixed before a live `/agent fix`.
 - The local repository preflight diagnostic should expose its configured allowed roots through non-sensitive configuration summary APIs and the dashboard so operators can verify scope before using it.
 - Demo readiness and the operator setup checklist should warn when repository-preflight allowed roots do not cover checked-in demo fixture paths.
+- Demo readiness and the operator setup checklist should warn when the configured OpenAI-compatible model provider cannot answer a minimal health probe, even if model credentials are present.
 - Demo readiness, the smoke checklist, the demo script, the session snapshot checklist, and the operator setup checklist should warn when a supported adapter's selected verification executable is not available on the backend process `PATH`.
 - Demo readiness and the operator setup checklist should warn when the queue worker has not started, has most recently errored, or has stopped polling within the configured stale threshold.
 - If project detection is possible from webhook or repository metadata before cloning, the system may reject even earlier.

@@ -1,6 +1,7 @@
 package io.patchpilot.backend.demo;
 
 import io.patchpilot.backend.configuration.ConfigurationSummaryVo;
+import io.patchpilot.backend.agent.provider.domain.ModelProviderHealthVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessStatus;
 import io.patchpilot.backend.demo.domain.DemoReadinessVo;
 import io.patchpilot.backend.language.domain.LanguageAdapterFixtureVerificationVo;
@@ -25,6 +26,7 @@ class DemoReadinessServiceTests {
                 () -> configuration(true, true, true, true),
                 () -> List.of(fixture("java-maven", "PASS"), fixture("python-hatch", "PASS")),
                 () -> List.of(runtime("java", "maven", "mvn", "READY"), runtime("python", "hatch", "python", "READY")),
+                DemoReadinessServiceTests::readyModelProvider,
                 () -> new FixTaskQueueSummaryVo(3, 0, 0, 0, 0, 3, 0, 0),
                 DemoReadinessServiceTests::readyWorker,
                 () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/12"))
@@ -41,6 +43,7 @@ class DemoReadinessServiceTests {
                         "Credentials",
                         "Safety policy",
                         "Repository preflight scope",
+                        "Model provider",
                         "Adapter fixtures",
                         "Adapter runtimes",
                         "Queue",
@@ -66,6 +69,7 @@ class DemoReadinessServiceTests {
                 ),
                 () -> List.of(fixture("java-maven", "PASS")),
                 () -> List.of(runtime("java", "maven", "mvn", "READY")),
+                DemoReadinessServiceTests::readyModelProvider,
                 () -> FixTaskQueueSummaryVo.empty(),
                 DemoReadinessServiceTests::readyWorker,
                 () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/12"))
@@ -94,6 +98,7 @@ class DemoReadinessServiceTests {
                 () -> configuration(false, false, false, false),
                 () -> List.of(fixture("java-maven", "PASS"), fixture("python-hatch", "FAIL")),
                 () -> List.of(runtime("java", "maven", "mvn", "READY"), runtime("python", "hatch", "python", "READY")),
+                DemoReadinessServiceTests::readyModelProvider,
                 () -> FixTaskQueueSummaryVo.empty(),
                 DemoReadinessServiceTests::readyWorker,
                 List::of
@@ -129,6 +134,7 @@ class DemoReadinessServiceTests {
                 () -> configuration(true, true, true, false),
                 () -> List.of(fixture("java-maven", "PASS")),
                 () -> List.of(runtime("java", "maven", "mvn", "READY")),
+                DemoReadinessServiceTests::readyModelProvider,
                 () -> new FixTaskQueueSummaryVo(5, 1, 1, 0, 1, 1, 2, 0),
                 DemoReadinessServiceTests::readyWorker,
                 () -> List.of(task("task-2", FixTaskStatus.FAILED, null))
@@ -162,6 +168,7 @@ class DemoReadinessServiceTests {
                 () -> configuration(true, true, true, true, false),
                 () -> List.of(fixture("java-maven", "PASS")),
                 () -> List.of(runtime("java", "maven", "mvn", "READY")),
+                DemoReadinessServiceTests::readyModelProvider,
                 () -> FixTaskQueueSummaryVo.empty(),
                 DemoReadinessServiceTests::readyWorker,
                 () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/12"))
@@ -196,6 +203,7 @@ class DemoReadinessServiceTests {
                 ),
                 () -> List.of(fixture("java-maven", "PASS")),
                 () -> List.of(runtime("java", "maven", "mvn", "READY")),
+                DemoReadinessServiceTests::readyModelProvider,
                 () -> FixTaskQueueSummaryVo.empty(),
                 DemoReadinessServiceTests::readyWorker,
                 () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/12"))
@@ -229,6 +237,7 @@ class DemoReadinessServiceTests {
                 ),
                 () -> List.of(fixture("java-maven", "PASS")),
                 () -> List.of(runtime("java", "maven", "mvn", "READY")),
+                DemoReadinessServiceTests::readyModelProvider,
                 () -> FixTaskQueueSummaryVo.empty(),
                 DemoReadinessServiceTests::readyWorker,
                 () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/12"))
@@ -249,6 +258,7 @@ class DemoReadinessServiceTests {
                 () -> configuration(true, true, true, true),
                 () -> List.of(fixture("java-maven", "PASS")),
                 () -> List.of(runtime("java", "maven", "mvn", "READY")),
+                DemoReadinessServiceTests::readyModelProvider,
                 () -> FixTaskQueueSummaryVo.empty(),
                 () -> new FixTaskWorkerHealthVo(
                         "NOT_STARTED",
@@ -290,6 +300,7 @@ class DemoReadinessServiceTests {
                 () -> configuration(true, true, true, true),
                 () -> List.of(fixture("java-maven", "PASS"), fixture("python-hatch", "PASS")),
                 () -> List.of(runtime("java", "maven", "mvn", "READY"), runtime("python", "hatch", "python", "MISSING")),
+                DemoReadinessServiceTests::readyModelProvider,
                 () -> FixTaskQueueSummaryVo.empty(),
                 DemoReadinessServiceTests::readyWorker,
                 () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/12"))
@@ -307,6 +318,42 @@ class DemoReadinessServiceTests {
                     assertThat(check.action()).isEqualTo("Install missing adapter executables on the backend PATH before demonstrating affected languages.");
                 });
         assertThat(readiness.nextActions()).contains("Install missing adapter executables on the backend PATH before demonstrating affected languages.");
+    }
+
+    @Test
+    void should_report_model_provider_attention_when_health_probe_is_not_ready() {
+        DemoReadinessService service = new DemoReadinessService(
+                () -> configuration(true, true, true, true),
+                () -> List.of(fixture("java-maven", "PASS")),
+                () -> List.of(runtime("java", "maven", "mvn", "READY")),
+                () -> new ModelProviderHealthVo(
+                        "openai-compatible",
+                        "gpt-5.5",
+                        true,
+                        true,
+                        "NEEDS_ATTENTION",
+                        "Model provider health probe failed: HTTP 401",
+                        45,
+                        Instant.parse("2026-06-25T02:00:00Z"),
+                        "Check PATCHPILOT_AGENT_API_KEY, PATCHPILOT_AGENT_BASE_URL, and PATCHPILOT_AGENT_MODEL."
+                ),
+                () -> FixTaskQueueSummaryVo.empty(),
+                DemoReadinessServiceTests::readyWorker,
+                () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/12"))
+        );
+
+        DemoReadinessVo readiness = service.getReadiness();
+
+        assertThat(readiness.status()).isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
+        assertThat(readiness.checks())
+                .filteredOn(check -> check.name().equals("Model provider"))
+                .singleElement()
+                .satisfies(check -> {
+                    assertThat(check.status()).isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
+                    assertThat(check.message()).isEqualTo("Model provider health probe failed: HTTP 401");
+                    assertThat(check.action()).isEqualTo("Check PATCHPILOT_AGENT_API_KEY, PATCHPILOT_AGENT_BASE_URL, and PATCHPILOT_AGENT_MODEL.");
+                });
+        assertThat(readiness.nextActions()).contains("Check PATCHPILOT_AGENT_API_KEY, PATCHPILOT_AGENT_BASE_URL, and PATCHPILOT_AGENT_MODEL.");
     }
 
     private static ConfigurationSummaryVo configuration(
@@ -465,6 +512,20 @@ class DemoReadinessServiceTests {
                 List.of(executable, "--version"),
                 status,
                 "Executable `" + executable + "` readiness fixture"
+        );
+    }
+
+    private static ModelProviderHealthVo readyModelProvider() {
+        return new ModelProviderHealthVo(
+                "openai-compatible",
+                "gpt-5.5",
+                true,
+                true,
+                "READY",
+                "Model provider responded to the health probe.",
+                42,
+                Instant.parse("2026-06-25T02:00:00Z"),
+                "No action needed."
         );
     }
 

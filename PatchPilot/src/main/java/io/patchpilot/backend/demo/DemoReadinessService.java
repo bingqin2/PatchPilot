@@ -1,5 +1,7 @@
 package io.patchpilot.backend.demo;
 
+import io.patchpilot.backend.agent.provider.ModelProviderHealthService;
+import io.patchpilot.backend.agent.provider.domain.ModelProviderHealthVo;
 import io.patchpilot.backend.configuration.ConfigurationSummaryService;
 import io.patchpilot.backend.configuration.ConfigurationSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessCheckVo;
@@ -31,6 +33,7 @@ public class DemoReadinessService {
     private final Supplier<ConfigurationSummaryVo> configurationSupplier;
     private final Supplier<List<LanguageAdapterFixtureVerificationVo>> fixtureSupplier;
     private final Supplier<List<LanguageAdapterRuntimeReadinessVo>> runtimeReadinessSupplier;
+    private final Supplier<ModelProviderHealthVo> modelProviderHealthSupplier;
     private final Supplier<FixTaskQueueSummaryVo> queueSummarySupplier;
     private final Supplier<FixTaskWorkerHealthVo> workerHealthSupplier;
     private final Supplier<List<FixTaskVo>> recentTasksSupplier;
@@ -40,6 +43,7 @@ public class DemoReadinessService {
             ConfigurationSummaryService configurationSummaryService,
             LanguageAdapterFixtureVerificationService fixtureVerificationService,
             LanguageAdapterRuntimeReadinessService runtimeReadinessService,
+            ModelProviderHealthService modelProviderHealthService,
             FixTaskQueueQueryService fixTaskQueueQueryService,
             FixTaskWorkerHealthService fixTaskWorkerHealthService,
             FixTaskService fixTaskService
@@ -48,6 +52,7 @@ public class DemoReadinessService {
                 configurationSummaryService::getConfigurationSummary,
                 fixtureVerificationService::listFixtureVerifications,
                 runtimeReadinessService::listRuntimeReadiness,
+                modelProviderHealthService::getHealth,
                 fixTaskQueueQueryService::summary,
                 fixTaskWorkerHealthService::getHealth,
                 () -> fixTaskService.listTasks(new FixTaskListQuery(
@@ -67,6 +72,7 @@ public class DemoReadinessService {
             Supplier<ConfigurationSummaryVo> configurationSupplier,
             Supplier<List<LanguageAdapterFixtureVerificationVo>> fixtureSupplier,
             Supplier<List<LanguageAdapterRuntimeReadinessVo>> runtimeReadinessSupplier,
+            Supplier<ModelProviderHealthVo> modelProviderHealthSupplier,
             Supplier<FixTaskQueueSummaryVo> queueSummarySupplier,
             Supplier<FixTaskWorkerHealthVo> workerHealthSupplier,
             Supplier<List<FixTaskVo>> recentTasksSupplier
@@ -74,6 +80,7 @@ public class DemoReadinessService {
         this.configurationSupplier = configurationSupplier;
         this.fixtureSupplier = fixtureSupplier;
         this.runtimeReadinessSupplier = runtimeReadinessSupplier;
+        this.modelProviderHealthSupplier = modelProviderHealthSupplier;
         this.queueSummarySupplier = queueSummarySupplier;
         this.workerHealthSupplier = workerHealthSupplier;
         this.recentTasksSupplier = recentTasksSupplier;
@@ -83,6 +90,7 @@ public class DemoReadinessService {
         ConfigurationSummaryVo configuration = configurationSupplier.get();
         List<LanguageAdapterFixtureVerificationVo> fixtures = fixtureSupplier.get();
         List<LanguageAdapterRuntimeReadinessVo> runtimes = runtimeReadinessSupplier.get();
+        ModelProviderHealthVo modelProviderHealth = modelProviderHealthSupplier.get();
         FixTaskQueueSummaryVo queueSummary = queueSummarySupplier.get();
         FixTaskWorkerHealthVo workerHealth = workerHealthSupplier.get();
         List<FixTaskVo> recentTasks = recentTasksSupplier.get();
@@ -92,6 +100,7 @@ public class DemoReadinessService {
                 credentialsCheck(configuration),
                 safetyPolicyCheck(configuration),
                 repositoryPreflightScopeCheck(configuration),
+                modelProviderCheck(modelProviderHealth),
                 adapterFixtureCheck(fixtures),
                 adapterRuntimeCheck(runtimes),
                 queueCheck(queueSummary),
@@ -235,6 +244,23 @@ public class DemoReadinessService {
                 DemoReadinessStatus.READY,
                 "Repository preflight can inspect demo fixture paths.",
                 "No action needed."
+        );
+    }
+
+    private static DemoReadinessCheckVo modelProviderCheck(ModelProviderHealthVo modelProviderHealth) {
+        if (ModelProviderHealthService.READY.equals(modelProviderHealth.status())) {
+            return new DemoReadinessCheckVo(
+                    "Model provider",
+                    DemoReadinessStatus.READY,
+                    modelProviderHealth.message(),
+                    "No action needed."
+            );
+        }
+        return new DemoReadinessCheckVo(
+                "Model provider",
+                DemoReadinessStatus.NEEDS_ATTENTION,
+                modelProviderHealth.message(),
+                modelProviderHealth.operatorAction()
         );
     }
 

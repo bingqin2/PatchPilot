@@ -43,6 +43,7 @@ import type {
   FixTaskToolCall,
   LanguageAdapterFixtureVerification,
   LanguageAdapterRuntimeReadiness,
+  ModelProviderHealth,
   RepositoryPreflightInput,
   RepositoryPreflightResult,
   SupportedLanguageAdapter,
@@ -168,6 +169,10 @@ function getFilteredMetricsApi<T>(path: string, options: ListTasksOptions): Prom
 
 export async function getConfigurationSummary(): Promise<ConfigurationSummary> {
   return getApi<ConfigurationSummary>('/api/configuration/summary');
+}
+
+export async function getModelProviderHealth(): Promise<ModelProviderHealth> {
+  return getApi<ModelProviderHealth>('/api/model-provider/health');
 }
 
 export async function getDemoReadiness(): Promise<DemoReadiness> {

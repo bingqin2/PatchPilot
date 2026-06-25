@@ -3,6 +3,7 @@ import type {
   BackendHealth,
   ConfigurationSummary,
   DemoReadiness,
+  ModelProviderHealth,
   FixTask,
   FixTaskWorkerHealth,
   FixTaskQueueSummary,
@@ -51,6 +52,18 @@ const configuration: ConfigurationSummary = {
   allowedRepositories: ['bingqin2/PatchPilot'],
   reviewApprovalAllowedOperators: ['release-captain'],
   repositoryPreflightAllowedRootDirs: ['/tmp/patchpilot/workspaces', '/Users/demo/agent/docs/demo-repositories']
+};
+
+const modelProviderHealth: ModelProviderHealth = {
+  provider: 'openai-compatible',
+  model: 'gpt-5.5',
+  baseUrlConfigured: true,
+  apiKeyConfigured: true,
+  status: 'READY',
+  message: 'Model provider responded to the health probe.',
+  latencyMs: 43,
+  checkedAt: '2026-06-25T02:00:00Z',
+  operatorAction: 'No action needed.'
 };
 
 const demoReadiness: DemoReadiness = {
@@ -128,7 +141,9 @@ test('shows repository preflight scope as ready when demo fixtures are allowed',
   renderChecklist(configuration);
 
   const panel = screen.getByRole('region', { name: 'Operator setup checklist' });
-  expect(within(panel).getByText('9/9 checks ready')).toBeInTheDocument();
+  expect(within(panel).getByText('10/10 checks ready')).toBeInTheDocument();
+  expect(within(panel).getByText('Model provider health')).toBeInTheDocument();
+  expect(within(panel).getByText('Ready - Model provider responded to the health probe.')).toBeInTheDocument();
   expect(within(panel).getByText('Repository preflight scope')).toBeInTheDocument();
   expect(within(panel).getByText('Ready - demo fixture preflight paths are allowed')).toBeInTheDocument();
   expect(within(panel).getByText('Adapter runtimes')).toBeInTheDocument();
@@ -144,7 +159,7 @@ test('shows repository preflight scope setup action when demo fixtures are outsi
   });
 
   const panel = screen.getByRole('region', { name: 'Operator setup checklist' });
-  expect(within(panel).getByText('8/9 checks ready')).toBeInTheDocument();
+  expect(within(panel).getByText('9/10 checks ready')).toBeInTheDocument();
   expect(within(panel).getByText('Repository preflight scope')).toBeInTheDocument();
   expect(within(panel).getByText('Attention - demo fixture preflight path is not allowed')).toBeInTheDocument();
   expect(within(panel).getByText('Add docs/demo-repositories or the project root to PATCHPILOT_REPOSITORY_PREFLIGHT_ALLOWED_ROOT_DIRS.')).toBeInTheDocument();
@@ -169,7 +184,7 @@ test('uses demo readiness preflight scope result when backend reports a scope wa
   });
 
   const panel = screen.getByRole('region', { name: 'Operator setup checklist' });
-  expect(within(panel).getByText('8/9 checks ready')).toBeInTheDocument();
+  expect(within(panel).getByText('9/10 checks ready')).toBeInTheDocument();
   expect(within(panel).getByText('Attention - Repository preflight allowed roots do not include docs/demo-repositories.')).toBeInTheDocument();
   expect(within(panel).getByText('Configure PATCHPILOT_REPOSITORY_PREFLIGHT_ALLOWED_ROOT_DIRS to include docs/demo-repositories or the project root before a live demo.')).toBeInTheDocument();
 });
@@ -191,7 +206,7 @@ test('uses demo readiness worker heartbeat result when backend reports a stale w
   });
 
   const panel = screen.getByRole('region', { name: 'Operator setup checklist' });
-  expect(within(panel).getByText('8/9 checks ready')).toBeInTheDocument();
+  expect(within(panel).getByText('9/10 checks ready')).toBeInTheDocument();
   expect(within(panel).getByText('Attention - Worker heartbeat is stale.')).toBeInTheDocument();
   expect(within(panel).getByText('Check whether the queue worker scheduler is still running.')).toBeInTheDocument();
 });
@@ -210,21 +225,38 @@ test('shows adapter runtime setup action when an executable is missing', () => {
   ]);
 
   const panel = screen.getByRole('region', { name: 'Operator setup checklist' });
-  expect(within(panel).getByText('8/9 checks ready')).toBeInTheDocument();
+  expect(within(panel).getByText('9/10 checks ready')).toBeInTheDocument();
   expect(within(panel).getByText('Adapter runtimes')).toBeInTheDocument();
   expect(within(panel).getByText('Attention - 1 runtime executable missing: python-hatch requires python')).toBeInTheDocument();
   expect(within(panel).getByText('Install missing adapter executables on the backend PATH before demonstrating affected languages.')).toBeInTheDocument();
 });
 
+test('shows model provider setup action when the health probe is not ready', () => {
+  renderChecklist(configuration, demoReadiness, runtimeReadiness, {
+    ...modelProviderHealth,
+    status: 'NEEDS_ATTENTION',
+    message: 'Model provider health probe failed: HTTP 401',
+    operatorAction: 'Check PATCHPILOT_AGENT_API_KEY, PATCHPILOT_AGENT_BASE_URL, and PATCHPILOT_AGENT_MODEL.'
+  });
+
+  const panel = screen.getByRole('region', { name: 'Operator setup checklist' });
+  expect(within(panel).getByText('9/10 checks ready')).toBeInTheDocument();
+  expect(within(panel).getByText('Model provider health')).toBeInTheDocument();
+  expect(within(panel).getByText('Attention - Model provider health probe failed: HTTP 401')).toBeInTheDocument();
+  expect(within(panel).getByText('Check PATCHPILOT_AGENT_API_KEY, PATCHPILOT_AGENT_BASE_URL, and PATCHPILOT_AGENT_MODEL.')).toBeInTheDocument();
+});
+
 function renderChecklist(
   config: ConfigurationSummary,
   readiness: DemoReadiness = demoReadiness,
-  runtimes: LanguageAdapterRuntimeReadiness[] = runtimeReadiness
+  runtimes: LanguageAdapterRuntimeReadiness[] = runtimeReadiness,
+  providerHealth: ModelProviderHealth = modelProviderHealth
 ) {
   render(
     <OperatorSetupChecklistPanel
       backendHealth={backendHealth}
       configuration={config}
+      modelProviderHealth={providerHealth}
       demoReadiness={readiness}
       adapterFixtureVerifications={fixtures}
       adapterRuntimeReadiness={runtimes}
