@@ -32,6 +32,7 @@ import {
   getTaskReport,
   getTaskStatusCounts,
   getWorkerHealth,
+  listAcceptedTriggerDecisions,
   listAdminAuditEvents,
   listLanguageAdapterFixtures,
   listLanguageAdapters,
@@ -61,6 +62,7 @@ import { ModelUsagePanel } from './dashboard/components/ModelUsagePanel';
 import { ManualTaskForm } from './dashboard/components/ManualTaskForm';
 import { OperatorSetupChecklistPanel } from './dashboard/components/OperatorSetupChecklistPanel';
 import { QueuePanel } from './dashboard/components/QueuePanel';
+import { AcceptedTriggerDecisionPanel } from './dashboard/components/AcceptedTriggerDecisionPanel';
 import { RejectedTriggerPanel } from './dashboard/components/RejectedTriggerPanel';
 import { RepositoryPreflightPanel } from './dashboard/components/RepositoryPreflightPanel';
 import { SupportedAdaptersPanel } from './dashboard/components/SupportedAdaptersPanel';
@@ -95,6 +97,7 @@ import type {
   FixTaskQueueSummary,
   FixTaskWorkerHealth,
   AdminAuditFilterOptions,
+  AcceptedTriggerDecision,
   OperatorSafetyAudit,
   RejectedTriggerCategoryFilter,
   RejectedTriggerAudit,
@@ -183,12 +186,14 @@ export default function App() {
   const [webhookPayloadDiagnosticError, setWebhookPayloadDiagnosticError] = useState<string | null>(null);
   const [evaluatingWebhookPayload, setEvaluatingWebhookPayload] = useState(false);
   const [rejectedTriggers, setRejectedTriggers] = useState<RejectedTriggerAudit[]>([]);
+  const [acceptedTriggerDecisions, setAcceptedTriggerDecisions] = useState<AcceptedTriggerDecision[]>([]);
   const [rejectedTriggerSummary, setRejectedTriggerSummary] = useState<RejectedTriggerAuditSummary | null>(null);
   const [triggerQuarantines, setTriggerQuarantines] = useState<TriggerQuarantine[]>([]);
   const [adminAuditEvents, setAdminAuditEvents] = useState<OperatorSafetyAudit[]>([]);
   const [adminAuditFilters, setAdminAuditFilters] = useState<AdminAuditFilterOptions>({ limit: 20 });
   const [operatorSafetyAudits, setOperatorSafetyAudits] = useState<OperatorSafetyAudit[]>([]);
   const [triggerQuarantineEvidence, setTriggerQuarantineEvidence] = useState<TriggerQuarantineEvidence | null>(null);
+  const [acceptedTriggerDecisionError, setAcceptedTriggerDecisionError] = useState<string | null>(null);
   const [rejectedTriggerError, setRejectedTriggerError] = useState<string | null>(null);
   const [rejectedTriggerCategoryFilter, setRejectedTriggerCategoryFilter] = useState<RejectedTriggerCategoryFilter>(
     initialFilters.rejectedCategory
@@ -444,6 +449,7 @@ export default function App() {
         queueItemList,
         workerHealthData,
         webhookDeliveryResult,
+        acceptedTriggerDecisionResult,
         rejectedTriggerResult,
         rejectedTriggerSummaryResult,
         triggerQuarantineResult,
@@ -499,6 +505,10 @@ export default function App() {
         listWebhookDeliveries(10).then(
           (deliveries) => ({ deliveries, error: null as string | null }),
           (caught) => ({ deliveries: null, error: errorMessage(caught) })
+        ),
+        listAcceptedTriggerDecisions(20).then(
+          (decisions) => ({ decisions, error: null as string | null }),
+          (caught) => ({ decisions: null, error: errorMessage(caught) })
         ),
         listRejectedTriggers({ limit: 20, category: rejectedTriggerCategoryFilter }).then(
           (rejections) => ({ rejections, error: null as string | null }),
@@ -563,6 +573,10 @@ export default function App() {
         setWebhookDeliveries(webhookDeliveryResult.deliveries);
       }
       setWebhookDeliveryError(webhookDeliveryResult.error);
+      if (acceptedTriggerDecisionResult.decisions) {
+        setAcceptedTriggerDecisions(acceptedTriggerDecisionResult.decisions);
+      }
+      setAcceptedTriggerDecisionError(acceptedTriggerDecisionResult.error);
       if (rejectedTriggerResult.rejections) {
         setRejectedTriggers(rejectedTriggerResult.rejections);
       }
@@ -1069,6 +1083,12 @@ export default function App() {
         timeline={detail.timeline}
         rejectedTriggers={rejectedTriggers}
         summary={rejectedTriggerSummary}
+      />
+
+      <AcceptedTriggerDecisionPanel
+        decisions={acceptedTriggerDecisions}
+        error={acceptedTriggerDecisionError}
+        onSelectTask={selectTask}
       />
 
       <ConfigurationPanel configuration={configuration} backendHealth={backendHealth} />

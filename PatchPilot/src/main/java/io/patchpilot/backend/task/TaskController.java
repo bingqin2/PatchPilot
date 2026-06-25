@@ -31,6 +31,7 @@ import io.patchpilot.backend.task.domain.vo.FixTaskModelCallVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskModelUsageSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskPageVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskPreExecutionDecisionVo;
+import io.patchpilot.backend.task.domain.vo.FixTaskPreExecutionDecisionSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskPreExecutionSafetySnapshotVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskQueueItemVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskRetryPreflightVo;
@@ -256,6 +257,23 @@ public class TaskController {
             return ResponseEntity.ok(ApiResponse.ok(fixTaskMetricsService.latency(metricsQuery(
                     query, repositoryOwner, repositoryName, language, buildSystem, createdAfter, createdBefore
             ))));
+        } catch (IllegalArgumentException exception) {
+            return ResponseEntity.badRequest().body(ApiResponse.fail(exception.getMessage()));
+        }
+    }
+
+    @GetMapping("/pre-execution-decisions")
+    public ResponseEntity<ApiResponse<List<FixTaskPreExecutionDecisionSummaryVo>>> listPreExecutionDecisions(
+            @RequestParam(required = false) Integer limit
+    ) {
+        try {
+            return ResponseEntity.ok(ApiResponse.ok(fixTaskPreExecutionDecisionService
+                    .listRecentDecisions(parseLimit(limit))
+                    .stream()
+                    .flatMap(decision -> fixTaskService.findTask(decision.taskId())
+                            .map(task -> preExecutionDecisionSummary(task, decision))
+                            .stream())
+                    .toList()));
         } catch (IllegalArgumentException exception) {
             return ResponseEntity.badRequest().body(ApiResponse.fail(exception.getMessage()));
         }
@@ -702,6 +720,31 @@ public class TaskController {
                 decision.rateLimitDecision().reason(),
                 decision.issueContextLoaded() ? "issue context loaded" : "issue context unavailable",
                 decision.triggerIntentDecision().reason(),
+                decision.createdAt()
+        );
+    }
+
+    private static FixTaskPreExecutionDecisionSummaryVo preExecutionDecisionSummary(
+            FixTaskVo task,
+            FixTaskPreExecutionDecisionVo decision
+    ) {
+        return new FixTaskPreExecutionDecisionSummaryVo(
+                decision.id(),
+                decision.taskId(),
+                task.repositoryOwner(),
+                task.repositoryName(),
+                task.issueNumber(),
+                task.triggerUser(),
+                task.triggerComment(),
+                task.status().name(),
+                decision.source(),
+                decision.finalDecision(),
+                decision.safetyDecision(),
+                decision.activeTaskDecision(),
+                decision.quarantineDecision(),
+                decision.rateLimitDecision(),
+                decision.triggerIntentDecision(),
+                decision.issueContextLoaded(),
                 decision.createdAt()
         );
     }

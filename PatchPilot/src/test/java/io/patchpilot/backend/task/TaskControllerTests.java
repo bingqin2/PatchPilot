@@ -1184,6 +1184,55 @@ class TaskControllerTests {
     }
 
     @Test
+    void should_list_recent_pre_execution_decisions_with_task_context() throws Exception {
+        FixTaskVo olderTask = createTask("delivery-accepted-decision-older");
+        FixTaskVo newerTask = createTask("delivery-accepted-decision-newer");
+        fixTaskPreExecutionDecisionService.recordDecision(new RecordFixTaskPreExecutionDecisionCommand(
+                olderTask.id(),
+                "ISSUE_COMMENT",
+                "ALLOWED",
+                new TriggerEvaluationDecisionVo(true, "older safety gate accepted", RejectedTriggerCategory.UNKNOWN),
+                new TriggerEvaluationDecisionVo(true, "older active task check passed", RejectedTriggerCategory.UNKNOWN),
+                new TriggerEvaluationDecisionVo(true, "older quarantine check passed", RejectedTriggerCategory.UNKNOWN),
+                new TriggerEvaluationDecisionVo(true, "older rate limit check passed", RejectedTriggerCategory.UNKNOWN),
+                new TriggerEvaluationDecisionVo(true, "older model accepted request", RejectedTriggerCategory.UNKNOWN),
+                false,
+                Instant.parse("2026-06-20T06:00:00Z")
+        ));
+        fixTaskPreExecutionDecisionService.recordDecision(new RecordFixTaskPreExecutionDecisionCommand(
+                newerTask.id(),
+                "ISSUE_COMMENT",
+                "ALLOWED",
+                new TriggerEvaluationDecisionVo(true, "newer safety gate accepted", RejectedTriggerCategory.UNKNOWN),
+                new TriggerEvaluationDecisionVo(true, "newer active task check passed", RejectedTriggerCategory.UNKNOWN),
+                new TriggerEvaluationDecisionVo(true, "newer quarantine check passed", RejectedTriggerCategory.UNKNOWN),
+                new TriggerEvaluationDecisionVo(true, "newer rate limit check passed", RejectedTriggerCategory.UNKNOWN),
+                new TriggerEvaluationDecisionVo(true, "newer model accepted request", RejectedTriggerCategory.UNKNOWN),
+                true,
+                Instant.parse("2026-06-20T06:01:00Z")
+        ));
+
+        mockMvc.perform(get("/api/tasks/pre-execution-decisions").param("limit", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].taskId").value(newerTask.id()))
+                .andExpect(jsonPath("$.data[0].repositoryOwner").value("octocat"))
+                .andExpect(jsonPath("$.data[0].repositoryName").value("hello-world"))
+                .andExpect(jsonPath("$.data[0].issueNumber").value(42))
+                .andExpect(jsonPath("$.data[0].taskStatus").value("PENDING"))
+                .andExpect(jsonPath("$.data[0].source").value("ISSUE_COMMENT"))
+                .andExpect(jsonPath("$.data[0].finalDecision").value("ALLOWED"))
+                .andExpect(jsonPath("$.data[0].safetyDecision.reason").value("newer safety gate accepted"))
+                .andExpect(jsonPath("$.data[0].activeTaskDecision.reason").value("newer active task check passed"))
+                .andExpect(jsonPath("$.data[0].quarantineDecision.reason").value("newer quarantine check passed"))
+                .andExpect(jsonPath("$.data[0].rateLimitDecision.reason").value("newer rate limit check passed"))
+                .andExpect(jsonPath("$.data[0].triggerIntentDecision.reason").value("newer model accepted request"))
+                .andExpect(jsonPath("$.data[0].issueContextLoaded").value(true))
+                .andExpect(jsonPath("$.data[0].createdAt").value("2026-06-20T06:01:00Z"));
+    }
+
+    @Test
     void should_include_latest_generated_diff_in_task_detail() throws Exception {
         FixTaskVo task = createTask("delivery-generated-diff");
         fixTaskToolCallService.recordToolCall(
