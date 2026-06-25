@@ -25,6 +25,7 @@ import {
   getFailureCauseSummary,
   getLatencySummary,
   getMetricsSummary,
+  getModelProviderHealth,
   getModelUsageSummary,
   getQueueSummary,
   getTaskDetail,
@@ -97,6 +98,7 @@ import type {
   FixTaskQueueItem,
   FixTaskQueueSummary,
   FixTaskWorkerHealth,
+  ModelProviderHealth,
   AdminAuditFilterOptions,
   AcceptedTriggerDecision,
   OperatorSafetyAudit,
@@ -159,6 +161,7 @@ export default function App() {
   const [modelUsage, setModelUsage] = useState<FixTaskModelUsageSummary | null>(null);
   const [latency, setLatency] = useState<FixTaskLatencySummary | null>(null);
   const [configuration, setConfiguration] = useState<ConfigurationSummary | null>(null);
+  const [modelProviderHealth, setModelProviderHealth] = useState<ModelProviderHealth | null>(null);
   const [backendHealth, setBackendHealth] = useState<BackendHealth | null>(null);
   const [demoReadiness, setDemoReadiness] = useState<DemoReadiness | null>(null);
   const [demoReadinessError, setDemoReadinessError] = useState<string | null>(null);
@@ -441,6 +444,7 @@ export default function App() {
         modelUsageSummary,
         latencySummary,
         configurationSummary,
+        modelProviderHealthResult,
         demoEvidenceBundleResult,
         demoSessionSnapshotResult,
         demoSessionArchiveResult,
@@ -472,6 +476,10 @@ export default function App() {
         getModelUsageSummary(taskFilters),
         getLatencySummary(taskFilters),
         getConfigurationSummary(),
+        getModelProviderHealth().then(
+          (health) => ({ health, error: null as string | null }),
+          (caught) => ({ health: null, error: errorMessage(caught) })
+        ),
         getDemoEvidenceBundle().then(
           (bundle) => ({ bundle, error: null as string | null }),
           (caught) => ({ bundle: null, error: errorMessage(caught) })
@@ -543,6 +551,9 @@ export default function App() {
       setModelUsage(modelUsageSummary);
       setLatency(latencySummary);
       setConfiguration(configurationSummary);
+      if (modelProviderHealthResult.health) {
+        setModelProviderHealth(modelProviderHealthResult.health);
+      }
       if (demoEvidenceBundleResult.bundle) {
         setDemoEvidenceBundle(demoEvidenceBundleResult.bundle);
       }
@@ -982,6 +993,7 @@ export default function App() {
       <OperatorSetupChecklistPanel
         backendHealth={backendHealth}
         configuration={configuration}
+        modelProviderHealth={modelProviderHealth}
         demoReadiness={demoReadiness}
         adapterFixtureVerifications={adapterFixtureVerifications}
         adapterRuntimeReadiness={adapterRuntimeReadiness}

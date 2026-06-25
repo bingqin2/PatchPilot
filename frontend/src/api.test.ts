@@ -8,6 +8,7 @@ import {
   getConfigurationSummary,
   getFailureCauseSummary,
   getLatencySummary,
+  getModelProviderHealth,
   getModelUsageSummary,
   getDemoScript,
   archiveDemoSession,
@@ -1708,6 +1709,44 @@ test('runs repository preflight through backend API', async () => {
     operatorAction: 'Repository is supported. PatchPilot can run the detected verification command after patch generation.',
     repositoryPath: 'docs/demo-repositories/java-maven',
     supportedAdapters: []
+  });
+});
+
+test('loads model provider health from backend API without exposing secrets', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        provider: 'openai-compatible',
+        model: 'gpt-5.5',
+        baseUrlConfigured: true,
+        apiKeyConfigured: true,
+        status: 'READY',
+        message: 'Model provider responded to the health probe.',
+        latencyMs: 43,
+        checkedAt: '2026-06-25T02:00:00Z',
+        operatorAction: 'No action needed.'
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const health = await getModelProviderHealth();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/model-provider/health');
+  expect(health).toEqual({
+    provider: 'openai-compatible',
+    model: 'gpt-5.5',
+    baseUrlConfigured: true,
+    apiKeyConfigured: true,
+    status: 'READY',
+    message: 'Model provider responded to the health probe.',
+    latencyMs: 43,
+    checkedAt: '2026-06-25T02:00:00Z',
+    operatorAction: 'No action needed.'
   });
 });
 

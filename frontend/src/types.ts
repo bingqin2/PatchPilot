@@ -253,6 +253,20 @@ export interface ConfigurationSummary {
   repositoryPreflightAllowedRootDirs: string[];
 }
 
+export type ModelProviderHealthStatus = 'READY' | 'NEEDS_ATTENTION';
+
+export interface ModelProviderHealth {
+  provider: string;
+  model: string;
+  baseUrlConfigured: boolean;
+  apiKeyConfigured: boolean;
+  status: ModelProviderHealthStatus;
+  message: string;
+  latencyMs: number;
+  checkedAt: string;
+  operatorAction: string;
+}
+
 export type DemoReadinessStatus = 'READY' | 'NEEDS_ATTENTION' | 'BLOCKED';
 
 export interface DemoReadinessCheck {

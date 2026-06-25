@@ -2,6 +2,7 @@ import type {
   BackendHealth,
   ConfigurationSummary,
   DemoReadiness,
+  ModelProviderHealth,
   LanguageAdapterFixtureVerification,
   LanguageAdapterRuntimeReadiness,
   FixTask,
@@ -12,6 +13,7 @@ import type {
 interface OperatorSetupChecklistPanelProps {
   backendHealth: BackendHealth | null;
   configuration: ConfigurationSummary | null;
+  modelProviderHealth: ModelProviderHealth | null;
   demoReadiness: DemoReadiness | null;
   adapterFixtureVerifications: LanguageAdapterFixtureVerification[];
   adapterRuntimeReadiness: LanguageAdapterRuntimeReadiness[];
@@ -31,6 +33,7 @@ interface SetupCheck {
 export function OperatorSetupChecklistPanel({
   backendHealth,
   configuration,
+  modelProviderHealth,
   demoReadiness,
   adapterFixtureVerifications,
   adapterRuntimeReadiness,
@@ -42,6 +45,7 @@ export function OperatorSetupChecklistPanel({
   const checks = setupChecks({
     backendHealth,
     configuration,
+    modelProviderHealth,
     demoReadiness,
     adapterFixtureVerifications,
     adapterRuntimeReadiness,
@@ -90,6 +94,7 @@ export function OperatorSetupChecklistPanel({
 function setupChecks({
   backendHealth,
   configuration,
+  modelProviderHealth,
   demoReadiness,
   adapterFixtureVerifications,
   adapterRuntimeReadiness,
@@ -103,6 +108,7 @@ function setupChecks({
     credentialCheck(configuration, hasStoredAdminToken),
     safetyPolicyCheck(configuration),
     repositoryPreflightScopeCheck(configuration, demoReadiness),
+    modelProviderHealthCheck(modelProviderHealth, demoReadiness),
     adapterFixtureCheck(adapterFixtureVerifications),
     adapterRuntimeCheck(adapterRuntimeReadiness),
     queueHealthCheck(queueSummary),
@@ -173,6 +179,26 @@ function repositoryPreflightScopeCheck(configuration: ConfigurationSummary | nul
     ready,
     message: ready ? 'demo fixture preflight paths are allowed' : 'demo fixture preflight path is not allowed',
     action: 'Add docs/demo-repositories or the project root to PATCHPILOT_REPOSITORY_PREFLIGHT_ALLOWED_ROOT_DIRS.'
+  };
+}
+
+function modelProviderHealthCheck(modelProviderHealth: ModelProviderHealth | null, demoReadiness: DemoReadiness | null): SetupCheck {
+  const demoReadinessCheck = demoReadiness?.checks.find((check) => check.name === 'Model provider');
+  if (demoReadinessCheck) {
+    return {
+      name: 'Model provider health',
+      ready: demoReadinessCheck.status === 'READY',
+      message: demoReadinessCheck.message,
+      action: demoReadinessCheck.action
+    };
+  }
+
+  const ready = modelProviderHealth?.status === 'READY';
+  return {
+    name: 'Model provider health',
+    ready,
+    message: modelProviderHealth?.message ?? 'model provider health has not loaded',
+    action: modelProviderHealth?.operatorAction ?? 'Confirm /api/model-provider/health before a live demo.'
   };
 }
 

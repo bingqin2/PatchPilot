@@ -899,6 +899,18 @@ const configurationSummary = {
   repositoryPreflightAllowedRootDirs: ['/tmp/patchpilot/workspaces', 'docs/demo-repositories']
 };
 
+const modelProviderHealth = {
+  provider: 'openai-compatible',
+  model: 'gpt-5.5',
+  baseUrlConfigured: true,
+  apiKeyConfigured: true,
+  status: 'READY',
+  message: 'Model provider responded to the health probe.',
+  latencyMs: 43,
+  checkedAt: '2026-06-25T02:00:00Z',
+  operatorAction: 'No action needed.'
+};
+
 const demoReadiness = {
   status: 'NEEDS_ATTENTION',
   summary: 'PatchPilot needs attention before a live demo.',
@@ -919,6 +931,12 @@ const demoReadiness = {
       name: 'Adapter runtimes',
       status: 'READY',
       message: '13 adapter runtime executables are available on PATH.',
+      action: 'No action needed.'
+    },
+    {
+      name: 'Model provider',
+      status: 'READY',
+      message: 'Model provider responded to the health probe.',
       action: 'No action needed.'
     },
     {
@@ -1212,6 +1230,9 @@ beforeEach(() => {
     }
     if (url === '/api/configuration/summary') {
       return jsonResponse(configurationSummary);
+    }
+    if (url === '/api/model-provider/health') {
+      return jsonResponse(modelProviderHealth);
     }
     if (url === '/api/demo/readiness') {
       return jsonResponse(demoReadiness);
@@ -1968,7 +1989,7 @@ test('summarizes operator setup readiness before a demo run', async () => {
 
   const setupChecklist = await screen.findByRole('region', { name: 'Operator setup checklist' });
   expect(within(setupChecklist).getByRole('heading', { name: 'Operator setup checklist' })).toBeInTheDocument();
-  expect(within(setupChecklist).getByText('7/9 checks ready')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('8/10 checks ready')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Backend connectivity')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Ready - /health reports UP')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Required credentials')).toBeInTheDocument();
@@ -1977,6 +1998,8 @@ test('summarizes operator setup readiness before a demo run', async () => {
   expect(within(setupChecklist).getByText('Ready - allowlists, review approvers, and trigger rate limits are configured')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Repository preflight scope')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Ready - demo fixture preflight paths are allowed')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('Model provider health')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('Ready - Model provider responded to the health probe.')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Adapter fixtures')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Ready - 13/13 fixtures passing')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Adapter runtimes')).toBeInTheDocument();
@@ -2013,6 +2036,12 @@ test('shows when every operator setup check is ready', async () => {
             action: 'No action needed.'
           },
           {
+            name: 'Model provider',
+            status: 'READY',
+            message: 'Model provider responded to the health probe.',
+            action: 'No action needed.'
+          },
+          {
             name: 'Recent Pull Request',
             status: 'READY',
             message: 'Recent completed Pull Request evidence is available.',
@@ -2041,7 +2070,8 @@ test('shows when every operator setup check is ready', async () => {
   render(<App />);
 
   const setupChecklist = await screen.findByRole('region', { name: 'Operator setup checklist' });
-  expect(within(setupChecklist).getByText('9/9 checks ready')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('10/10 checks ready')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('Ready - Model provider responded to the health probe.')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Ready - recent completed task has a Pull Request URL')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('All setup checks are ready for a controlled issue-to-PR demo.')).toBeInTheDocument();
   expect(within(setupChecklist).queryByRole('heading', { name: 'Next setup actions' })).not.toBeInTheDocument();

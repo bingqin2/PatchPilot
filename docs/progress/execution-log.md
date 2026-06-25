@@ -4,6 +4,29 @@ This file records dated implementation progress, validation commands, and import
 
 ## 2026-06-25
 
+Implemented model provider health readiness from `docs/plans/195-model-provider-health-readiness.md`.
+
+Changes:
+
+- Added admin-protected `GET /api/model-provider/health` to run a minimal OpenAI-compatible health probe and return only non-sensitive status, configured booleans, latency, checked time, and operator action.
+- Kept provider health probes out of task model-call audit records so dashboard refreshes do not pollute task execution metrics.
+- Added a `Model provider` check to `GET /api/demo/readiness` so configured-but-unreachable model providers produce `NEEDS_ATTENTION` before a live `/agent fix` run.
+- Added model provider health loading to the React dashboard and surfaced it in the operator setup checklist.
+- Updated README, product spec, and this execution log.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=ModelProviderHealthServiceTests,ModelProviderHealthControllerTests,DemoReadinessServiceTests test`: first failed because `ModelProviderHealthVo`, `ModelProviderHealthService`, and the controller did not exist; then passed after adding the health probe service, controller, and readiness gate, 15 tests run.
+- `npm test -- --run src/api.test.ts src/dashboard/components/OperatorSetupChecklistPanel.test.tsx`: first failed because `getModelProviderHealth` did not exist and the checklist still had 9 checks; then passed after adding the API client, type, and `Model provider health` setup check, 54 tests run.
+- `npm test -- --run src/App.test.tsx`: first failed because a ready-state App test did not mock model provider health; then passed after updating dashboard integration fixtures, 61 tests run.
+- `mvn -pl PatchPilot -Dtest=ConfigurationControllerTests,TaskControllerTests,DemoReadinessControllerTests test`: first exposed a Spring constructor-selection issue in the health probe component; then passed after marking the production constructor for injection, 84 tests run.
+- `mvn -pl PatchPilot test`: passed after full backend regression verification, 677 tests run.
+- `npm test`: passed after full frontend regression verification, 201 tests run.
+- `npm run build`: passed after production frontend build verification.
+- `git diff --check`: passed.
+
+## 2026-06-25
+
 Implemented demo runtime readiness gate from `docs/plans/194-demo-runtime-readiness-gate.md`.
 
 Changes:
