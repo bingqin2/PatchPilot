@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/operator-safety-audits")
+@RequestMapping({"/api/operator-safety-audits", "/api/admin-audit-events"})
 @RequiredArgsConstructor
 public class OperatorSafetyAuditController {
 

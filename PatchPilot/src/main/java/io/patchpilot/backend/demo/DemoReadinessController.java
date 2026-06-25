@@ -7,6 +7,9 @@ import io.patchpilot.backend.demo.domain.DemoScriptVo;
 import io.patchpilot.backend.demo.domain.DemoSessionArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoSessionSnapshotVo;
 import io.patchpilot.backend.demo.domain.DemoSmokeChecklistVo;
+import io.patchpilot.backend.safety.domain.RecordOperatorSafetyAuditCommand;
+import io.patchpilot.backend.safety.domain.TriggerQuarantineScope;
+import io.patchpilot.backend.safety.service.OperatorSafetyAuditService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
@@ -35,6 +38,7 @@ public class DemoReadinessController {
     private final DemoSessionSnapshotService demoSessionSnapshotService;
     private final DemoSessionReportService demoSessionReportService;
     private final DemoSessionArchiveService demoSessionArchiveService;
+    private final OperatorSafetyAuditService operatorSafetyAuditService;
 
     @GetMapping("/readiness")
     public ApiResponse<DemoReadinessVo> getReadiness() {
@@ -81,7 +85,17 @@ public class DemoReadinessController {
 
     @PostMapping("/session-archives")
     public ApiResponse<DemoSessionArchiveVo> archiveCurrentSession() {
-        return ApiResponse.ok(demoSessionArchiveService.archiveCurrentSession());
+        DemoSessionArchiveVo archive = demoSessionArchiveService.archiveCurrentSession();
+        operatorSafetyAuditService.recordSafetyAudit(new RecordOperatorSafetyAuditCommand(
+                "DEMO_SESSION_ARCHIVED",
+                "DEMO_SESSION_ARCHIVE",
+                archive.id(),
+                TriggerQuarantineScope.REPOSITORY,
+                "patchpilot/local-demo",
+                "admin-api",
+                "Archived demo session " + archive.sessionId()
+        ));
+        return ApiResponse.ok(archive);
     }
 
     @GetMapping("/session-archives")

@@ -4,6 +4,9 @@ import io.patchpilot.backend.common.response.ApiResponse;
 import io.patchpilot.backend.github.IssueContextService;
 import io.patchpilot.backend.github.client.domain.GitHubIssueContext;
 import io.patchpilot.backend.github.client.domain.GitHubIssueContextComment;
+import io.patchpilot.backend.safety.domain.RecordOperatorSafetyAuditCommand;
+import io.patchpilot.backend.safety.domain.TriggerQuarantineScope;
+import io.patchpilot.backend.safety.service.OperatorSafetyAuditService;
 import io.patchpilot.backend.task.domain.bo.ApproveReviewCommand;
 import io.patchpilot.backend.task.domain.bo.CreateManualFixTaskCommand;
 import io.patchpilot.backend.task.domain.bo.EvaluateTriggerCommand;
@@ -89,12 +92,19 @@ public class TaskController {
     private final TriggerEvaluationService triggerEvaluationService;
     private final RepositorySupportGuidanceService repositorySupportGuidanceService;
     private final IssueContextService issueContextService;
+    private final OperatorSafetyAuditService operatorSafetyAuditService;
 
     @PostMapping
     public ResponseEntity<ApiResponse<FixTaskVo>> createTask(@RequestBody CreateFixTaskDto request) {
         try {
             CreateManualFixTaskCommand command = manualTaskCommand(request);
             FixTaskVo task = manualFixTaskService.createManualTask(command);
+            recordAdminAudit(
+                    "MANUAL_TASK_CREATED",
+                    task,
+                    task.triggerUser(),
+                    "Manual task queued from dashboard/API: " + task.triggerComment()
+            );
             return ResponseEntity.created(URI.create("/api/tasks/" + task.id())).body(ApiResponse.ok(task));
         } catch (IllegalArgumentException exception) {
             return ResponseEntity.badRequest().body(ApiResponse.fail(exception.getMessage()));
@@ -319,7 +329,9 @@ public class TaskController {
     @PostMapping("/{id}/cancel")
     public ResponseEntity<ApiResponse<FixTaskVo>> cancelTask(@PathVariable String id) {
         try {
-            return ResponseEntity.ok(ApiResponse.ok(fixTaskControlService.cancelTask(id)));
+            FixTaskVo task = fixTaskControlService.cancelTask(id);
+            recordAdminAudit("TASK_CANCELLED", task, "admin-api", "Task cancelled by user request");
+            return ResponseEntity.ok(ApiResponse.ok(task));
         } catch (IllegalArgumentException exception) {
             return ResponseEntity.status(404).body(ApiResponse.fail("Task not found"));
         } catch (IllegalStateException exception) {
@@ -339,7 +351,9 @@ public class TaskController {
             return ResponseEntity.badRequest().body(ApiResponse.fail(exception.getMessage()));
         }
         try {
-            return ResponseEntity.ok(ApiResponse.ok(fixTaskControlService.retryTask(id, command)));
+            FixTaskVo task = fixTaskControlService.retryTask(id, command);
+            recordAdminAudit("TASK_RETRIED", task, "admin-api", command.reason());
+            return ResponseEntity.ok(ApiResponse.ok(task));
         } catch (IllegalArgumentException exception) {
             return ResponseEntity.status(404).body(ApiResponse.fail("Task not found"));
         } catch (IllegalStateException exception) {
@@ -359,7 +373,9 @@ public class TaskController {
             return ResponseEntity.badRequest().body(ApiResponse.fail(exception.getMessage()));
         }
         try {
-            return ResponseEntity.ok(ApiResponse.ok(fixTaskControlService.approveReviewTask(id, command)));
+            FixTaskVo task = fixTaskControlService.approveReviewTask(id, command);
+            recordAdminAudit("RISK_REVIEW_APPROVED", task, command.operator(), command.reason());
+            return ResponseEntity.ok(ApiResponse.ok(task));
         } catch (SecurityException exception) {
             return ResponseEntity.status(403).body(ApiResponse.fail(exception.getMessage()));
         } catch (IllegalArgumentException exception) {
@@ -767,6 +783,18 @@ public class TaskController {
             throw new IllegalArgumentException("retry reason must not be blank");
         }
         return new RetryTaskCommand(reason);
+    }
+
+    private void recordAdminAudit(String action, FixTaskVo task, String operator, String reason) {
+        operatorSafetyAuditService.recordSafetyAudit(new RecordOperatorSafetyAuditCommand(
+                action,
+                "TASK",
+                task.id(),
+                TriggerQuarantineScope.REPOSITORY,
+                task.repositoryOwner() + "/" + task.repositoryName(),
+                operator,
+                reason
+        ));
     }
 
     private static String requiredText(String value, String message) {

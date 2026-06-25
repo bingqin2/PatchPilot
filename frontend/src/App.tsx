@@ -32,10 +32,10 @@ import {
   getTaskReport,
   getTaskStatusCounts,
   getWorkerHealth,
+  listAdminAuditEvents,
   listLanguageAdapterFixtures,
   listLanguageAdapters,
   listDemoSessionArchives,
-  listOperatorSafetyAudits,
   listQueueItems,
   listRejectedTriggers,
   listTriggerQuarantines,
@@ -71,6 +71,7 @@ import { WebhookDeliveryPanel } from './dashboard/components/WebhookDeliveryPane
 import { compactDateTime, duration, percent } from './dashboard/format';
 import { emptyDetail } from './dashboard/types';
 import type { TaskDetailState } from './dashboard/types';
+import { AdminAuditPanel } from './dashboard/components/AdminAuditPanel';
 import type {
   ApproveReviewInput,
   ConfigurationSummary,
@@ -182,6 +183,7 @@ export default function App() {
   const [rejectedTriggers, setRejectedTriggers] = useState<RejectedTriggerAudit[]>([]);
   const [rejectedTriggerSummary, setRejectedTriggerSummary] = useState<RejectedTriggerAuditSummary | null>(null);
   const [triggerQuarantines, setTriggerQuarantines] = useState<TriggerQuarantine[]>([]);
+  const [adminAuditEvents, setAdminAuditEvents] = useState<OperatorSafetyAudit[]>([]);
   const [operatorSafetyAudits, setOperatorSafetyAudits] = useState<OperatorSafetyAudit[]>([]);
   const [triggerQuarantineEvidence, setTriggerQuarantineEvidence] = useState<TriggerQuarantineEvidence | null>(null);
   const [rejectedTriggerError, setRejectedTriggerError] = useState<string | null>(null);
@@ -442,7 +444,7 @@ export default function App() {
         rejectedTriggerResult,
         rejectedTriggerSummaryResult,
         triggerQuarantineResult,
-        operatorSafetyAuditResult
+        adminAuditResult
       ] = await Promise.all([
         listTasks({
           status: statusFilter,
@@ -507,7 +509,7 @@ export default function App() {
           (quarantines) => ({ quarantines, error: null as string | null }),
           (caught) => ({ quarantines: null, error: errorMessage(caught) })
         ),
-        listOperatorSafetyAudits(20).then(
+        listAdminAuditEvents(20).then(
           (audits) => ({ audits, error: null as string | null }),
           (caught) => ({ audits: null, error: errorMessage(caught) })
         )
@@ -567,14 +569,15 @@ export default function App() {
       if (triggerQuarantineResult.quarantines) {
         setTriggerQuarantines(triggerQuarantineResult.quarantines);
       }
-      if (operatorSafetyAuditResult.audits) {
-        setOperatorSafetyAudits(operatorSafetyAuditResult.audits);
+      if (adminAuditResult.audits) {
+        setAdminAuditEvents(adminAuditResult.audits);
+        setOperatorSafetyAudits(adminAuditResult.audits.filter(isTriggerQuarantineAudit));
       }
       setRejectedTriggerError(
         rejectedTriggerResult.error
         ?? rejectedTriggerSummaryResult.error
         ?? triggerQuarantineResult.error
-        ?? operatorSafetyAuditResult.error
+        ?? adminAuditResult.error
       );
       setCanLoadMoreTasks(taskList.hasMore);
       setTaskTotal(taskList.total);
@@ -1090,6 +1093,8 @@ export default function App() {
         onEvaluatePayload={handleEvaluateWebhookPayload}
       />
 
+      <AdminAuditPanel audits={adminAuditEvents} error={rejectedTriggerError} />
+
       <RejectedTriggerPanel
         rejectedTriggers={rejectedTriggers}
         summary={rejectedTriggerSummary}
@@ -1122,6 +1127,10 @@ function storedAdminToken() {
     return '';
   }
   return globalThis.localStorage.getItem(ADMIN_TOKEN_STORAGE_KEY)?.trim() ?? '';
+}
+
+function isTriggerQuarantineAudit(audit: OperatorSafetyAudit) {
+  return audit.resourceType === 'TRIGGER_QUARANTINE';
 }
 
 function taskIdFromUrl() {
