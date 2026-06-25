@@ -6,6 +6,7 @@ import io.patchpilot.backend.github.client.domain.IssueCommentResult;
 import io.patchpilot.backend.github.client.domain.UpdateIssueCommentCommand;
 import io.patchpilot.backend.github.config.GitHubProperties;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
+import io.patchpilot.backend.task.domain.vo.FixTaskTestRunVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import org.junit.jupiter.api.Test;
 
@@ -77,7 +78,7 @@ class IssueCommentToolTests {
                 "maven",
                 "./mvnw test",
                 "pom.xml detected with mvnw wrapper"
-        ));
+        ), testRun(0, 2_345));
 
         assertThat(result).isPresent();
         assertThat(client.updateCommand().commentId()).isEqualTo(123);
@@ -88,6 +89,8 @@ class IssueCommentToolTests {
         assertThat(client.updateCommand().body()).contains("Build system: `maven`");
         assertThat(client.updateCommand().body()).contains("Verification: `./mvnw test`");
         assertThat(client.updateCommand().body()).contains("Detection reason: pom.xml detected with mvnw wrapper");
+        assertThat(client.updateCommand().body())
+                .contains("Verification result: `./mvnw test` exited `0` in `2345 ms`.");
         assertThat(client.updateCommand().body())
                 .contains("PatchPilot opened the Pull Request only after adapter-selected verification passed.");
         assertThat(client.updateCommand().body())
@@ -111,7 +114,7 @@ class IssueCommentToolTests {
                 "maven",
                 "./mvnw test",
                 "pom.xml detected with mvnw wrapper"
-        ));
+        ), testRun(1, 1_500));
 
         assertThat(result).isPresent();
         assertThat(client.updateCommand().commentId()).isEqualTo(123);
@@ -121,6 +124,8 @@ class IssueCommentToolTests {
         assertThat(client.updateCommand().body()).contains("Build system: `maven`");
         assertThat(client.updateCommand().body()).contains("Verification: `./mvnw test`");
         assertThat(client.updateCommand().body()).contains("Detection reason: pom.xml detected with mvnw wrapper");
+        assertThat(client.updateCommand().body())
+                .contains("Verification result: `./mvnw test` exited `1` in `1500 ms`.");
         assertThat(client.updateCommand().body())
                 .contains("PatchPilot selected this verification command from the repository adapter allowlist.");
         assertThat(client.updateCommand().body())
@@ -231,6 +236,8 @@ class IssueCommentToolTests {
         assertThat(client.updateCommand().body()).contains("Verification: `npm test`");
         assertThat(client.updateCommand().body())
                 .contains("Detection reason: package.json detected with a non-empty test script");
+        assertThat(client.updateCommand().body())
+                .contains("Verification result: not run because the task paused before verification.");
         assertThat(client.updateCommand().body())
                 .contains("PatchPilot selected this verification command from the repository adapter allowlist.");
         assertThat(client.updateCommand().body())
@@ -346,6 +353,19 @@ class IssueCommentToolTests {
                 Instant.parse("2026-06-18T00:05:00Z"),
                 statusCommentId,
                 statusCommentId == null ? null : "https://github.com/octocat/hello-world/issues/42#issuecomment-123"
+        );
+    }
+
+    private static FixTaskTestRunVo testRun(int exitCode, long durationMs) {
+        return new FixTaskTestRunVo(
+                "test-run-123",
+                "task-123",
+                "./mvnw test",
+                exitCode,
+                exitCode == 0 ? "tests passed" : "tests failed",
+                Instant.parse("2026-06-18T00:01:00Z"),
+                Instant.parse("2026-06-18T00:01:02Z"),
+                durationMs
         );
     }
 

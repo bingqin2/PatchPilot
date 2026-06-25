@@ -7,6 +7,7 @@ import io.patchpilot.backend.github.client.domain.UpdateIssueCommentCommand;
 import io.patchpilot.backend.language.LanguageAdapterCatalogService;
 import io.patchpilot.backend.language.domain.SupportedLanguageAdapterVo;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
+import io.patchpilot.backend.task.domain.vo.FixTaskTestRunVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import io.patchpilot.backend.task.service.PatchReviewFailureClassifier;
 import io.patchpilot.backend.task.service.TaskFailureFeedback;
@@ -45,39 +46,67 @@ public class IssueCommentTool {
                 task,
                 FixTaskStatus.PENDING,
                 null,
+                null,
                 null
         )));
     }
 
     public Optional<IssueCommentResult> updateRunning(FixTaskVo task) {
-        return update(task, "PatchPilot is working on this task.", FixTaskStatus.RUNNING, null, null);
+        return update(task, "PatchPilot is working on this task.", FixTaskStatus.RUNNING, null, null, null);
     }
 
     public Optional<IssueCommentResult> updateRunningTests(FixTaskVo task) {
-        return update(task, "PatchPilot is running verification.", FixTaskStatus.RUNNING_TESTS, null, null);
+        return update(task, "PatchPilot is running verification.", FixTaskStatus.RUNNING_TESTS, null, null, null);
     }
 
     public Optional<IssueCommentResult> updateCompleted(FixTaskVo task) {
-        return update(task, "PatchPilot completed the task.", FixTaskStatus.COMPLETED, task.pullRequestUrl(), null);
+        return updateCompleted(task, null);
+    }
+
+    public Optional<IssueCommentResult> updateCompleted(FixTaskVo task, FixTaskTestRunVo latestTestRun) {
+        return update(
+                task,
+                "PatchPilot completed the task.",
+                FixTaskStatus.COMPLETED,
+                task.pullRequestUrl(),
+                null,
+                latestTestRun
+        );
     }
 
     public Optional<IssueCommentResult> updateFailed(FixTaskVo task) {
-        return update(task, failedHeadline(task.failureReason()), FixTaskStatus.FAILED, null, task.failureReason());
+        return updateFailed(task, null);
+    }
+
+    public Optional<IssueCommentResult> updateFailed(FixTaskVo task, FixTaskTestRunVo latestTestRun) {
+        return update(
+                task,
+                failedHeadline(task.failureReason()),
+                FixTaskStatus.FAILED,
+                null,
+                task.failureReason(),
+                latestTestRun
+        );
     }
 
     public Optional<IssueCommentResult> updatePendingReview(FixTaskVo task) {
+        return updatePendingReview(task, null);
+    }
+
+    public Optional<IssueCommentResult> updatePendingReview(FixTaskVo task, FixTaskTestRunVo latestTestRun) {
         return update(
                 task,
                 "PatchPilot paused this task for human review.",
                 FixTaskStatus.PENDING_REVIEW,
                 null,
-                task.failureReason()
+                task.failureReason(),
+                latestTestRun
         );
     }
 
     public Optional<IssueCommentResult> updateActiveTaskExists(FixTaskVo task) {
         return update(task, "PatchPilot is already working on this issue.", task.status(), task.pullRequestUrl(),
-                task.failureReason());
+                task.failureReason(), null);
     }
 
     public IssueCommentResult commentRejected(
@@ -103,6 +132,7 @@ public class IssueCommentTool {
                 task,
                 FixTaskStatus.COMPLETED,
                 pullRequestUrl,
+                null,
                 null
         ))));
     }
@@ -113,7 +143,8 @@ public class IssueCommentTool {
                 task,
                 FixTaskStatus.FAILED,
                 null,
-                failureReason
+                failureReason,
+                null
         ))));
     }
 
@@ -131,7 +162,8 @@ public class IssueCommentTool {
             String headline,
             FixTaskStatus status,
             String pullRequestUrl,
-            String failureReason
+            String failureReason,
+            FixTaskTestRunVo latestTestRun
     ) {
         if (task.statusCommentId() == null) {
             return Optional.empty();
@@ -140,7 +172,7 @@ public class IssueCommentTool {
                 task.repositoryOwner(),
                 task.repositoryName(),
                 task.statusCommentId(),
-                body(headline, task, status, pullRequestUrl, failureReason)
+                body(headline, task, status, pullRequestUrl, failureReason, latestTestRun)
         )));
     }
 
@@ -149,7 +181,8 @@ public class IssueCommentTool {
             FixTaskVo task,
             FixTaskStatus status,
             String pullRequestUrl,
-            String failureReason
+            String failureReason,
+            FixTaskTestRunVo latestTestRun
     ) {
         StringBuilder body = new StringBuilder();
         TaskFailureFeedback feedback = TaskFailureFeedback.from(failureReason);
@@ -164,10 +197,10 @@ public class IssueCommentTool {
             body.append("PR: ").append(pullRequestUrl).append("\n");
         }
         if (status == FixTaskStatus.COMPLETED) {
-            appendCompletionEvidence(body, task);
+            appendCompletionEvidence(body, task, latestTestRun);
         }
         if (status == FixTaskStatus.FAILED || status == FixTaskStatus.PENDING_REVIEW) {
-            appendNonSuccessEvidence(body, task);
+            appendNonSuccessEvidence(body, task, status, latestTestRun);
         }
         if (PatchReviewFailureClassifier.isPatchReviewRejection(failureReason)) {
             body.append("Review gate: ").append(PatchReviewFailureClassifier.REVIEW_GATE).append("\n");
@@ -186,18 +219,29 @@ public class IssueCommentTool {
         return body.toString();
     }
 
-    private static void appendCompletionEvidence(StringBuilder body, FixTaskVo task) {
+    private static void appendCompletionEvidence(StringBuilder body, FixTaskVo task, FixTaskTestRunVo latestTestRun) {
         appendAdapterEvidence(body, task);
+        appendVerificationResult(body, latestTestRun);
         body.append("PatchPilot opened the Pull Request only after adapter-selected verification passed.\n");
         body.append("Verification commands come from repository adapters, not arbitrary issue text.\n");
         body.append("PatchPilot does not auto-merge Pull Requests.\n");
     }
 
-    private static void appendNonSuccessEvidence(StringBuilder body, FixTaskVo task) {
+    private static void appendNonSuccessEvidence(
+            StringBuilder body,
+            FixTaskVo task,
+            FixTaskStatus status,
+            FixTaskTestRunVo latestTestRun
+    ) {
         if (!hasAdapterEvidence(task)) {
             return;
         }
         appendAdapterEvidence(body, task);
+        if (latestTestRun != null) {
+            appendVerificationResult(body, latestTestRun);
+        } else if (status == FixTaskStatus.PENDING_REVIEW) {
+            body.append("Verification result: not run because the task paused before verification.\n");
+        }
         body.append("PatchPilot selected this verification command from the repository adapter allowlist.\n");
         body.append("PatchPilot does not run arbitrary shell commands from issue comments.\n");
     }
@@ -222,6 +266,19 @@ public class IssueCommentTool {
                 || StringUtils.hasText(task.buildSystem())
                 || StringUtils.hasText(task.verificationCommand())
                 || StringUtils.hasText(task.adapterDetectionReason());
+    }
+
+    private static void appendVerificationResult(StringBuilder body, FixTaskTestRunVo latestTestRun) {
+        if (latestTestRun == null) {
+            return;
+        }
+        body.append("Verification result: `")
+                .append(latestTestRun.command())
+                .append("` exited `")
+                .append(latestTestRun.exitCode())
+                .append("` in `")
+                .append(latestTestRun.durationMs())
+                .append(" ms`.\n");
     }
 
     private static boolean unsupportedRepository(TaskFailureFeedback feedback) {

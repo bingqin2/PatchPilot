@@ -29,7 +29,7 @@ class InMemoryFixTaskQueueTests {
         private final AtomicReference<String> taskId = new AtomicReference<>();
 
         private RecordingFixTaskWorker() {
-            super(null, null, null, null);
+            super(null, null, null, null, null);
         }
 
         @Override

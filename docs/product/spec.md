@@ -201,9 +201,11 @@ The current implementation target is local self-hosted development first. Hosted
 - The system creates a Pull Request.
 - The PR body includes the linked issue, summary of changes, files changed, and test result.
 - The PR body includes task id, trigger user, patch branch, detected language adapter, selected build system, allowlisted verification command, and adapter detection reason when available.
+- The PR body includes the actual verification result summary when available, including command, exit code, and duration.
 - The PR body states that verification commands come from repository adapters rather than arbitrary issue text, and that PatchPilot does not auto-merge Pull Requests.
 - The system comments on the original issue with the PR link.
 - Completed issue comments include the detected adapter, allowlisted verification command, detection reason, and review boundary when available.
+- Completed issue comments include the actual verification result summary when available.
 - The system does not merge Pull Requests automatically.
 
 ### Failure Reporting
@@ -212,7 +214,9 @@ The current implementation target is local self-hosted development first. Hosted
 - User-actionable failures should be posted as issue comments.
 - Failed-task issue comments should include a failure category, next action, and a sanitized reason.
 - Failed-task issue comments should include detected language, selected build system, allowlisted verification command, and adapter detection reason when that repository evidence is available.
+- Failed-task issue comments should include the actual verification result summary when a test run exists.
 - `PENDING_REVIEW` issue comments should include the same adapter evidence when available, so the issue author can distinguish a risk-gate pause from an unsupported repository or test failure.
+- `PENDING_REVIEW` issue comments should state that verification has not run when the task paused before verification.
 - Non-success issue comments with adapter evidence should state that PatchPilot selects verification commands from repository adapter allowlists and does not run arbitrary shell commands from issue comments.
 - Failure metrics should reuse the same stable failure categories and next-action guidance as failed-task issue comments, so dashboard summaries and GitHub feedback stay consistent.
 - Task detail APIs and copied task reports should expose accepted-trigger intent audit, failure category, next action, and sanitized reason for failed tasks, so per-task investigation and aggregate metrics use one taxonomy.

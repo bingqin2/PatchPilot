@@ -3,6 +3,7 @@ package io.patchpilot.backend.agent.tool;
 import io.patchpilot.backend.github.client.GitHubPullRequestClient;
 import io.patchpilot.backend.github.client.domain.CreatePullRequestCommand;
 import io.patchpilot.backend.github.client.domain.PullRequestResult;
+import io.patchpilot.backend.task.domain.vo.FixTaskTestRunVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.util.StringUtils;
@@ -15,17 +16,21 @@ public class PullRequestTool {
     private final GitHubPullRequestClient gitHubPullRequestClient;
 
     public PullRequestResult createPullRequest(FixTaskVo task, String branchName) {
+        return createPullRequest(task, branchName, null);
+    }
+
+    public PullRequestResult createPullRequest(FixTaskVo task, String branchName, FixTaskTestRunVo latestTestRun) {
         return gitHubPullRequestClient.createPullRequest(new CreatePullRequestCommand(
                 task.repositoryOwner(),
                 task.repositoryName(),
                 task.repositoryOwner() + ":" + branchName,
                 "main",
                 "PatchPilot fix for #" + task.issueNumber(),
-                body(task, branchName)
+                body(task, branchName, latestTestRun)
         ));
     }
 
-    private String body(FixTaskVo task, String branchName) {
+    private String body(FixTaskVo task, String branchName, FixTaskTestRunVo latestTestRun) {
         StringBuilder body = new StringBuilder();
         body.append("Fixes #").append(task.issueNumber()).append("\n\n");
         body.append("## PatchPilot task\n\n");
@@ -34,6 +39,7 @@ public class PullRequestTool {
         body.append("- Branch: ").append(branchName).append("\n");
         appendAdapterEvidence(body, task);
         body.append("\n## Verification and review\n\n");
+        appendVerificationResult(body, latestTestRun);
         body.append("- PatchPilot opened this PR only after adapter-selected verification passed.\n");
         body.append("- Verification commands are selected by the detected repository adapter, not by arbitrary issue text.\n");
         body.append("- PatchPilot does not auto-merge Pull Requests.\n");
@@ -53,5 +59,18 @@ public class PullRequestTool {
         if (StringUtils.hasText(task.adapterDetectionReason())) {
             body.append("- Detection reason: ").append(task.adapterDetectionReason()).append("\n");
         }
+    }
+
+    private static void appendVerificationResult(StringBuilder body, FixTaskTestRunVo latestTestRun) {
+        if (latestTestRun == null) {
+            return;
+        }
+        body.append("- Verification result: `")
+                .append(latestTestRun.command())
+                .append("` exited `")
+                .append(latestTestRun.exitCode())
+                .append("` in `")
+                .append(latestTestRun.durationMs())
+                .append(" ms`.\n");
     }
 }
