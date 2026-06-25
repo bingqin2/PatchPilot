@@ -970,6 +970,143 @@ h3 {
   padding: 9px 10px;
 }
 
+.demo-launch-preflight-panel {
+  margin-bottom: 16px;
+}
+
+.demo-launch-preflight-form {
+  align-items: end;
+  border-top: 1px solid #e6ebef;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(120px, 1fr) minmax(120px, 1fr) minmax(90px, 0.7fr) minmax(120px, 1fr) minmax(260px, 2fr) auto;
+  padding: 14px 16px 16px;
+}
+
+.demo-launch-preflight-form label {
+  color: #52606e;
+  display: grid;
+  font-size: 12px;
+  font-weight: 800;
+  gap: 6px;
+}
+
+.demo-launch-preflight-form input {
+  background: #ffffff;
+  border: 1px solid #cfd9e2;
+  border-radius: 6px;
+  color: #17202a;
+  font: inherit;
+  min-height: 36px;
+  min-width: 0;
+  padding: 0 10px;
+}
+
+.demo-launch-preflight-form input:focus {
+  border-color: #187b78;
+  outline: 2px solid rgba(24, 123, 120, 0.16);
+}
+
+.demo-launch-preflight-result {
+  border-top: 1px solid #dce3e9;
+  display: grid;
+  gap: 12px;
+  padding: 14px 16px 16px;
+}
+
+.demo-launch-preflight-result-ready {
+  background: #f3fbf7;
+}
+
+.demo-launch-preflight-result-needs-attention {
+  background: #fffaf0;
+}
+
+.demo-launch-preflight-result-blocked {
+  background: #fff7f7;
+}
+
+.demo-launch-preflight-summary {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.demo-launch-preflight-summary strong {
+  color: #17202a;
+  font-size: 15px;
+}
+
+.demo-launch-preflight-summary p {
+  color: #384858;
+  flex-basis: 100%;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.demo-launch-preflight-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.demo-launch-preflight-grid div {
+  background: #ffffff;
+  border: 1px solid #dfe6ec;
+  border-radius: 6px;
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  padding: 10px 12px;
+}
+
+.demo-launch-preflight-grid span {
+  color: #637181;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.demo-launch-preflight-grid strong,
+.demo-launch-preflight-blocked {
+  color: #202b36;
+  font-size: 13px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.demo-launch-preflight-blocked {
+  font-weight: 800;
+}
+
+.demo-launch-preflight-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.demo-launch-preflight-actions h3 {
+  color: #17202a;
+  font-size: 14px;
+}
+
+.demo-launch-preflight-actions ul {
+  display: grid;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.demo-launch-preflight-actions li {
+  background: #ffffff;
+  border: 1px solid #dfe7ee;
+  border-radius: 6px;
+  color: #384858;
+  font-size: 13px;
+  font-weight: 750;
+  padding: 9px 10px;
+}
+
 .demo-evidence-panel {
   margin-bottom: 16px;
 }
@@ -3899,6 +4036,8 @@ pre {
   .operator-setup-grid,
   .demo-smoke-steps,
   .manual-task-form,
+  .demo-launch-preflight-form,
+  .demo-launch-preflight-grid,
   .split-section,
   .queue-summary,
   .trigger-decision-grid,

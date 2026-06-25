@@ -8,6 +8,8 @@ import type {
   CreateTaskInput,
   DashboardBootstrap,
   DemoEvidenceBundle,
+  DemoLaunchPreflight,
+  DemoLaunchPreflightInput,
   DemoReadiness,
   DemoScript,
   DemoSessionArchive,
@@ -197,6 +199,10 @@ export async function getGitHubRepositoryAccessReadiness(
 
 export async function getDemoReadiness(): Promise<DemoReadiness> {
   return getApi<DemoReadiness>('/api/demo/readiness');
+}
+
+export async function preflightDemoLaunch(input: DemoLaunchPreflightInput): Promise<DemoLaunchPreflight> {
+  return postApi<DemoLaunchPreflight>('/api/demo/launch-preflight', input);
 }
 
 export async function getDemoSmokeChecklist(): Promise<DemoSmokeChecklist> {

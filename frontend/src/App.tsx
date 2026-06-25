@@ -21,6 +21,7 @@ import {
   getDemoRunbook,
   getDemoReadiness,
   getDemoSmokeChecklist,
+  preflightDemoLaunch,
   getGitHubCredentialReadiness,
   getGitHubRepositoryAccessReadiness,
   getRejectedTriggerSummary,
@@ -57,6 +58,7 @@ import { ConfigurationPanel } from './dashboard/components/ConfigurationPanel';
 import { ConnectivityPanel } from './dashboard/components/ConnectivityPanel';
 import { DemoReadinessPanel } from './dashboard/components/DemoReadinessPanel';
 import { DemoEvidenceBundlePanel } from './dashboard/components/DemoEvidenceBundlePanel';
+import { DemoLaunchPreflightPanel } from './dashboard/components/DemoLaunchPreflightPanel';
 import { DemoSessionSnapshotPanel } from './dashboard/components/DemoSessionSnapshotPanel';
 import { DemoScriptPanel } from './dashboard/components/DemoScriptPanel';
 import { DemoSmokeChecklistPanel } from './dashboard/components/DemoSmokeChecklistPanel';
@@ -88,6 +90,8 @@ import type {
   CreateTriggerQuarantineInput,
   DemoReadiness,
   DemoEvidenceBundle,
+  DemoLaunchPreflight,
+  DemoLaunchPreflightInput,
   DemoScript,
   DemoSessionArchive,
   DemoSessionSnapshot,
@@ -182,6 +186,9 @@ export default function App() {
   const [demoScriptError, setDemoScriptError] = useState<string | null>(null);
   const [demoSmokeChecklist, setDemoSmokeChecklist] = useState<DemoSmokeChecklist | null>(null);
   const [demoSmokeChecklistError, setDemoSmokeChecklistError] = useState<string | null>(null);
+  const [demoLaunchPreflight, setDemoLaunchPreflight] = useState<DemoLaunchPreflight | null>(null);
+  const [demoLaunchPreflightError, setDemoLaunchPreflightError] = useState<string | null>(null);
+  const [demoLaunchPreflightPending, setDemoLaunchPreflightPending] = useState(false);
   const [supportedAdapters, setSupportedAdapters] = useState<SupportedLanguageAdapter[]>([]);
   const [adapterError, setAdapterError] = useState<string | null>(null);
   const [adapterFixtureVerifications, setAdapterFixtureVerifications] = useState<LanguageAdapterFixtureVerification[]>([]);
@@ -802,6 +809,21 @@ export default function App() {
     return archive;
   }, []);
 
+  const handleDemoLaunchPreflight = useCallback(async (input: DemoLaunchPreflightInput) => {
+    setDemoLaunchPreflightPending(true);
+    setDemoLaunchPreflightError(null);
+    try {
+      const result = await preflightDemoLaunch(input);
+      setDemoLaunchPreflight(result);
+      return result;
+    } catch (caught) {
+      setDemoLaunchPreflightError(errorMessage(caught));
+      throw caught;
+    } finally {
+      setDemoLaunchPreflightPending(false);
+    }
+  }, []);
+
   const handleCreateTask = useCallback(async (input: CreateTaskInput) => {
     setCreatingTask(true);
     setCreateTaskStatus(null);
@@ -1060,6 +1082,13 @@ export default function App() {
       <DemoReadinessPanel readiness={demoReadiness} error={demoReadinessError} />
 
       <DemoSmokeChecklistPanel checklist={demoSmokeChecklist} error={demoSmokeChecklistError} />
+
+      <DemoLaunchPreflightPanel
+        result={demoLaunchPreflight}
+        error={demoLaunchPreflightError}
+        pending={demoLaunchPreflightPending}
+        onRunPreflight={handleDemoLaunchPreflight}
+      />
 
       <section className="metrics-grid" aria-label="Task metrics">
         <MetricCard label="Tasks" value={metrics?.totalCount ?? 0} detail={`${metrics?.completedCount ?? 0} completed`} />
