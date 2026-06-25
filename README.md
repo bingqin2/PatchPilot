@@ -23,7 +23,7 @@ PatchPilot is not a chatbot and does not auto-merge code. The current target is 
 - MySQL-backed task, queue, timeline, test-run, tool-call, and model-call records.
 - Runtime worker heartbeat visibility for the queue poller, including poll counts, claimed tasks, latest worker error, readiness status, last poll age, and operator action.
 - Local workspace clone, branch, diff, commit, push, and Pull Request creation.
-- Pull Request evidence summaries that include task id, trigger user, branch, detected adapter, allowlisted verification command, actual verification result, detection reason, risk-review approval evidence when applicable, and review boundaries.
+- Pull Request evidence summaries that include task id, trigger user, branch, detected adapter, allowlisted verification command, actual verification result, patch-review decision evidence, detection reason, risk-review approval evidence when applicable, and review boundaries.
 - Completed issue comments with the Pull Request link, detected adapter, allowlisted verification command, actual verification result, detection reason, risk-review approval evidence when applicable, and review boundaries.
 - Failed and pending-review issue comments with detected adapter, allowlisted verification command, verification-result or not-yet-run evidence, detection reason, failure category, next action, and safe-command boundaries when repository evidence is available.
 - Java/Maven, Java/Gradle, Go, Node/Bun, Node/npm, Node/pnpm, Node/yarn, Python/tox, Python/nox, Python/hatch, Python/Poetry, Python/uv, and Python/pytest language adapters backed by an adapter-driven verification runner with command allowlists.

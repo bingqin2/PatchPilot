@@ -22,10 +22,12 @@ import io.patchpilot.backend.runner.service.CommandExecutionGuard;
 import io.patchpilot.backend.runner.service.VerificationRunner;
 import io.patchpilot.backend.safety.GeneratedDiffRiskGate;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
+import io.patchpilot.backend.task.domain.vo.FixTaskPatchReviewVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskTestRunVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskToolCallVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import io.patchpilot.backend.task.executor.domain.FixTaskExecutionResult;
+import io.patchpilot.backend.task.service.FixTaskPatchReviewService;
 import io.patchpilot.backend.task.service.FixTaskService;
 import io.patchpilot.backend.task.service.FixTaskTestRunService;
 import io.patchpilot.backend.task.service.FixTaskToolCallService;
@@ -42,6 +44,7 @@ import org.junit.jupiter.api.Test;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -415,6 +418,7 @@ class WorkspaceFixTaskExecutorTests {
         RecordingFixTaskTestRunService testRunService = new RecordingFixTaskTestRunService();
         RecordingFixTaskToolCallService toolCallService = new RecordingFixTaskToolCallService();
         RecordingFixTaskService fixTaskService = new RecordingFixTaskService(approvedReviewTask());
+        RecordingFixTaskPatchReviewService patchReviewService = new RecordingFixTaskPatchReviewService(patchReview());
         FixTaskExecutor executor = new NoopFixTaskExecutor(
                 workspaceService,
                 languageAdapterRegistry,
@@ -425,6 +429,7 @@ class WorkspaceFixTaskExecutorTests {
                 pushTool,
                 pullRequestTool,
                 fixTaskService,
+                patchReviewService,
                 testRunService,
                 toolCallService,
                 taskId -> { }
@@ -444,6 +449,8 @@ class WorkspaceFixTaskExecutorTests {
         assertThat(commitTool.repositoryDir()).isEqualTo(Path.of("/tmp/workspace/repo"));
         assertThat(pushTool.branchName()).isEqualTo("patchpilot/task-123");
         assertThat(pullRequestTool.branchName()).isEqualTo("patchpilot/task-123");
+        assertThat(patchReviewService.requestedTaskId()).isEqualTo("task-123");
+        assertThat(pullRequestTool.patchReview()).isEqualTo(patchReview());
         assertThat(toolCallService.toolCalls())
                 .extracting(FixTaskToolCallVo::toolName)
                 .containsExactly(
@@ -605,6 +612,19 @@ class WorkspaceFixTaskExecutorTests {
                 FixTaskStatus.RUNNING,
                 null,
                 Instant.parse("2026-06-18T00:00:00Z")
+        );
+    }
+
+    private static FixTaskPatchReviewVo patchReview() {
+        return new FixTaskPatchReviewVo(
+                "patch-review-123",
+                "task-123",
+                "APPROVE",
+                "The generated edit matches the issue and stays inside the planned file.",
+                "HIGH",
+                "Run npm test before opening the PR.",
+                List.of("src/main/App.java"),
+                Instant.parse("2026-06-20T04:00:14Z")
         );
     }
 
@@ -866,6 +886,39 @@ class WorkspaceFixTaskExecutorTests {
         }
     }
 
+    private static final class RecordingFixTaskPatchReviewService implements FixTaskPatchReviewService {
+
+        private final FixTaskPatchReviewVo patchReview;
+        private String requestedTaskId;
+
+        private RecordingFixTaskPatchReviewService(FixTaskPatchReviewVo patchReview) {
+            this.patchReview = patchReview;
+        }
+
+        @Override
+        public FixTaskPatchReviewVo recordPatchReview(
+                String taskId,
+                String decision,
+                String reason,
+                String confidence,
+                String requiredFollowUp,
+                List<String> editedFiles,
+                Instant createdAt
+        ) {
+            throw new AssertionError("Expected executor to read the latest patch review only");
+        }
+
+        @Override
+        public Optional<FixTaskPatchReviewVo> findLatestPatchReview(String taskId) {
+            this.requestedTaskId = taskId;
+            return Optional.ofNullable(patchReview);
+        }
+
+        private String requestedTaskId() {
+            return requestedTaskId;
+        }
+    }
+
     private static final class RecordingFixTaskToolCallService implements FixTaskToolCallService {
 
         private final List<FixTaskToolCallVo> toolCalls = new java.util.ArrayList<>();
@@ -1123,6 +1176,7 @@ class WorkspaceFixTaskExecutorTests {
         private String verificationCommand;
         private String adapterDetectionReason;
         private FixTaskTestRunVo testRun;
+        private FixTaskPatchReviewVo patchReview;
         private int callOrder;
 
         private RecordingPullRequestTool() {
@@ -1141,6 +1195,16 @@ class WorkspaceFixTaskExecutorTests {
 
         @Override
         public PullRequestResult createPullRequest(FixTaskVo task, String branchName, FixTaskTestRunVo testRun) {
+            return createPullRequest(task, branchName, testRun, null);
+        }
+
+        @Override
+        public PullRequestResult createPullRequest(
+                FixTaskVo task,
+                String branchName,
+                FixTaskTestRunVo testRun,
+                FixTaskPatchReviewVo patchReview
+        ) {
             this.taskId = task.id();
             this.branchName = branchName;
             this.language = task.language();
@@ -1148,6 +1212,7 @@ class WorkspaceFixTaskExecutorTests {
             this.verificationCommand = task.verificationCommand();
             this.adapterDetectionReason = task.adapterDetectionReason();
             this.testRun = testRun;
+            this.patchReview = patchReview;
             this.callOrder = CallOrder.next();
             return new PullRequestResult("https://github.com/octocat/hello-world/pull/7");
         }
@@ -1178,6 +1243,10 @@ class WorkspaceFixTaskExecutorTests {
 
         private FixTaskTestRunVo testRun() {
             return testRun;
+        }
+
+        private FixTaskPatchReviewVo patchReview() {
+            return patchReview;
         }
 
         private int callOrder() {

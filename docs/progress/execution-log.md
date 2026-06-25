@@ -3656,6 +3656,24 @@ Validation:
 - `npm run build`: passed after production frontend build verification.
 - `git diff --check`: passed.
 
+Implemented Pull Request patch review evidence summary from `docs/plans/188-pr-patch-review-evidence-summary.md`.
+
+Changes:
+
+- Expanded generated Pull Request bodies with latest model patch-review evidence when available: decision, reason, confidence, required follow-up, edited files, and reviewed time.
+- Kept PR bodies unchanged when no patch-review record exists.
+- Wired `NoopFixTaskExecutor` to read the latest task patch-review record before Pull Request creation and pass it into `PullRequestTool`.
+- Preserved the existing PR review boundary text and avoided including raw diffs, prompts, or model responses in PR bodies.
+- Updated README, product spec, and this execution log.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=PullRequestToolTests test`: first failed at compile time because `PullRequestTool` did not accept patch-review evidence; then passed after adding optional patch-review PR body formatting, 4 tests run, 0 failures.
+- `mvn -pl PatchPilot -Dtest=WorkspaceFixTaskExecutorTests#should_resume_approved_pending_review_task_without_regenerating_diff test`: first failed at compile time because `NoopFixTaskExecutor` had no patch-review service handoff path; then passed after wiring latest patch-review lookup into PR creation, 1 test run, 0 failures.
+- `mvn -pl PatchPilot -Dtest=PullRequestToolTests,WorkspaceFixTaskExecutorTests test`: passed after focused backend regression verification, 15 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed after full backend regression verification, 654 tests run, 0 failures.
+- `git diff --check`: passed.
+
 Implemented GitHub feedback risk review evidence from `docs/plans/187-github-feedback-risk-review-evidence.md`.
 
 Changes:

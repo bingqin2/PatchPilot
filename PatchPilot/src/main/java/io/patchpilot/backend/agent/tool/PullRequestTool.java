@@ -5,11 +5,14 @@ import io.patchpilot.backend.dashboard.config.DashboardProperties;
 import io.patchpilot.backend.github.client.GitHubPullRequestClient;
 import io.patchpilot.backend.github.client.domain.CreatePullRequestCommand;
 import io.patchpilot.backend.github.client.domain.PullRequestResult;
+import io.patchpilot.backend.task.domain.vo.FixTaskPatchReviewVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskTestRunVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
+
+import java.util.List;
 
 @Component
 public class PullRequestTool {
@@ -39,17 +42,31 @@ public class PullRequestTool {
     }
 
     public PullRequestResult createPullRequest(FixTaskVo task, String branchName, FixTaskTestRunVo latestTestRun) {
+        return createPullRequest(task, branchName, latestTestRun, null);
+    }
+
+    public PullRequestResult createPullRequest(
+            FixTaskVo task,
+            String branchName,
+            FixTaskTestRunVo latestTestRun,
+            FixTaskPatchReviewVo latestPatchReview
+    ) {
         return gitHubPullRequestClient.createPullRequest(new CreatePullRequestCommand(
                 task.repositoryOwner(),
                 task.repositoryName(),
                 task.repositoryOwner() + ":" + branchName,
                 "main",
                 "PatchPilot fix for #" + task.issueNumber(),
-                body(task, branchName, latestTestRun)
+                body(task, branchName, latestTestRun, latestPatchReview)
         ));
     }
 
-    private String body(FixTaskVo task, String branchName, FixTaskTestRunVo latestTestRun) {
+    private String body(
+            FixTaskVo task,
+            String branchName,
+            FixTaskTestRunVo latestTestRun,
+            FixTaskPatchReviewVo latestPatchReview
+    ) {
         StringBuilder body = new StringBuilder();
         body.append("Fixes #").append(task.issueNumber()).append("\n\n");
         body.append("## PatchPilot task\n\n");
@@ -61,6 +78,7 @@ public class PullRequestTool {
         appendAdapterEvidence(body, task);
         body.append("\n## Verification and review\n\n");
         appendVerificationResult(body, latestTestRun);
+        appendPatchReviewEvidence(body, latestPatchReview);
         GitHubFeedbackEvidenceFormatter.appendRiskReviewApprovalEvidence(body, task, true);
         body.append("- PatchPilot opened this PR only after adapter-selected verification passed.\n");
         body.append("- Verification commands are selected by the detected repository adapter, not by arbitrary issue text.\n");
@@ -94,5 +112,33 @@ public class PullRequestTool {
                 .append("` in `")
                 .append(latestTestRun.durationMs())
                 .append(" ms`.\n");
+    }
+
+    private static void appendPatchReviewEvidence(StringBuilder body, FixTaskPatchReviewVo latestPatchReview) {
+        if (latestPatchReview == null) {
+            return;
+        }
+        body.append("- Patch review:\n");
+        body.append("- Patch review decision: `").append(latestPatchReview.decision()).append("`\n");
+        if (StringUtils.hasText(latestPatchReview.reason())) {
+            body.append("- Patch review reason: ").append(latestPatchReview.reason()).append("\n");
+        }
+        if (StringUtils.hasText(latestPatchReview.confidence())) {
+            body.append("- Patch review confidence: `").append(latestPatchReview.confidence()).append("`\n");
+        }
+        if (StringUtils.hasText(latestPatchReview.requiredFollowUp())) {
+            body.append("- Patch review follow-up: ").append(latestPatchReview.requiredFollowUp()).append("\n");
+        }
+        body.append("- Patch review edited files: ")
+                .append(formatEditedFiles(latestPatchReview.editedFiles()))
+                .append("\n");
+        body.append("- Patch reviewed at: `").append(latestPatchReview.createdAt()).append("`\n");
+    }
+
+    private static String formatEditedFiles(List<String> editedFiles) {
+        if (editedFiles == null || editedFiles.isEmpty()) {
+            return "none";
+        }
+        return "`" + String.join("`, `", editedFiles) + "`";
     }
 }
