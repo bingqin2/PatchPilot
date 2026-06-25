@@ -2,6 +2,23 @@
 
 This file records dated implementation progress, validation commands, and important outcomes.
 
+## 2026-06-26
+
+Implemented demo command history and reuse from `docs/plans/203-demo-command-history-and-reuse.md`.
+
+Changes:
+
+- Added browser-local history for successful demo launch command compositions in `patchpilot.demoLaunchCommandHistory`.
+- Kept the five most recent unique generated `/agent fix` commands and restored them across dashboard reloads in the same browser.
+- Added copy, refill-composer, apply-to-launch-preflight, and clear-history actions for saved demo commands.
+- Kept command history read-only with respect to backend tasks, queues, GitHub, webhook diagnostics, and demo session archives.
+- Documented plan 204 as the follow-up for writing selected command-history evidence into demo session snapshots and session reports.
+
+Validation:
+
+- `npm test -- --run src/dashboard/components/DemoLaunchCommandPanel.test.tsx -t "stores generated" --reporter=basic`: first failed because the frontend test setup did not provide `localStorage`; fixed by adding a memory-backed test storage.
+- `npm test -- --run src/dashboard/components/DemoLaunchCommandPanel.test.tsx src/App.test.tsx --reporter=basic`: first failed because App tests expected the generated command to appear only once; passed after scoping assertions to current result and history regions, 71 tests run.
+
 ## 2026-06-25
 
 Implemented demo launch preflight from `docs/plans/201-demo-launch-preflight.md`.
