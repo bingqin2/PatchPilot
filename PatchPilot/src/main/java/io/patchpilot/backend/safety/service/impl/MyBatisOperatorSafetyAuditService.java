@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.patchpilot.backend.safety.convert.OperatorSafetyAuditConvert;
 import io.patchpilot.backend.safety.domain.OperatorSafetyAuditEntity;
 import io.patchpilot.backend.safety.domain.OperatorSafetyAuditVo;
+import io.patchpilot.backend.safety.domain.OperatorSafetyAuditQuery;
 import io.patchpilot.backend.safety.domain.RecordOperatorSafetyAuditCommand;
 import io.patchpilot.backend.safety.mapper.OperatorSafetyAuditMapper;
 import io.patchpilot.backend.safety.service.OperatorSafetyAuditService;
@@ -35,11 +36,17 @@ public class MyBatisOperatorSafetyAuditService implements OperatorSafetyAuditSer
     }
 
     @Override
-    public List<OperatorSafetyAuditVo> listSafetyAudits(int limit) {
+    public List<OperatorSafetyAuditVo> listSafetyAudits(OperatorSafetyAuditQuery query) {
         LambdaQueryWrapper<OperatorSafetyAuditEntity> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper
+                .eq(query.hasAction(), OperatorSafetyAuditEntity::getAction, query.action())
+                .eq(query.hasResourceType(), OperatorSafetyAuditEntity::getResourceType, query.resourceType())
+                .eq(query.hasResourceId(), OperatorSafetyAuditEntity::getResourceId, query.resourceId())
+                .eq(query.hasScope(), OperatorSafetyAuditEntity::getScope, query.scope() == null ? null : query.scope().name())
+                .eq(query.hasScopeKey(), OperatorSafetyAuditEntity::getScopeKey, query.scopeKey())
+                .eq(query.hasOperator(), OperatorSafetyAuditEntity::getOperator, query.operator())
                 .orderByDesc(OperatorSafetyAuditEntity::getCreatedAt)
-                .last("LIMIT " + limit);
+                .last("LIMIT " + query.limit());
         return auditMapper.selectList(queryWrapper).stream()
                 .map(OperatorSafetyAuditConvert::toVo)
                 .toList();

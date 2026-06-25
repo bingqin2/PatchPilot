@@ -128,6 +128,7 @@ The current implementation target is local self-hosted development first. Hosted
 - The system should summarize recent rejected trigger decisions by category, source, trigger user, and repository so operators can detect abuse patterns and tune safety configuration.
 - The system should expose active and historical trigger quarantine records with scope, scope key, reason, category, evidence count, window, start time, expiry time, and timestamps.
 - The system should record manual safety mutations, including trigger quarantine creation and release, with operator, reason, target, and timestamp.
+- Operators should be able to filter protected admin mutation audit events by action, operator, resource, and scope key, then copy the visible rows as a Markdown evidence report.
 - Non-triggering comments may be ignored without creating task or rejection audit records.
 
 ### Agent Workflow

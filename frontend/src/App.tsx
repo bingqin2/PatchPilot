@@ -93,6 +93,7 @@ import type {
   FixTaskQueueItem,
   FixTaskQueueSummary,
   FixTaskWorkerHealth,
+  AdminAuditFilterOptions,
   OperatorSafetyAudit,
   RejectedTriggerCategoryFilter,
   RejectedTriggerAudit,
@@ -184,6 +185,7 @@ export default function App() {
   const [rejectedTriggerSummary, setRejectedTriggerSummary] = useState<RejectedTriggerAuditSummary | null>(null);
   const [triggerQuarantines, setTriggerQuarantines] = useState<TriggerQuarantine[]>([]);
   const [adminAuditEvents, setAdminAuditEvents] = useState<OperatorSafetyAudit[]>([]);
+  const [adminAuditFilters, setAdminAuditFilters] = useState<AdminAuditFilterOptions>({ limit: 20 });
   const [operatorSafetyAudits, setOperatorSafetyAudits] = useState<OperatorSafetyAudit[]>([]);
   const [triggerQuarantineEvidence, setTriggerQuarantineEvidence] = useState<TriggerQuarantineEvidence | null>(null);
   const [rejectedTriggerError, setRejectedTriggerError] = useState<string | null>(null);
@@ -509,7 +511,7 @@ export default function App() {
           (quarantines) => ({ quarantines, error: null as string | null }),
           (caught) => ({ quarantines: null, error: errorMessage(caught) })
         ),
-        listAdminAuditEvents(20).then(
+        listAdminAuditEvents(adminAuditFilters).then(
           (audits) => ({ audits, error: null as string | null }),
           (caught) => ({ audits: null, error: errorMessage(caught) })
         )
@@ -588,7 +590,7 @@ export default function App() {
     } finally {
       setLoading(false);
     }
-  }, [buildSystemFilter, createdAfterFilter, createdBeforeFilter, languageFilter, rejectedTriggerCategoryFilter, repositoryNameFilter, repositoryOwnerFilter, searchQuery, statusFilter, taskSort]);
+  }, [adminAuditFilters, buildSystemFilter, createdAfterFilter, createdBeforeFilter, languageFilter, rejectedTriggerCategoryFilter, repositoryNameFilter, repositoryOwnerFilter, searchQuery, statusFilter, taskSort]);
 
   const handleLoadMoreTasks = useCallback(async () => {
     setLoadingMoreTasks(true);
@@ -1093,7 +1095,12 @@ export default function App() {
         onEvaluatePayload={handleEvaluateWebhookPayload}
       />
 
-      <AdminAuditPanel audits={adminAuditEvents} error={rejectedTriggerError} />
+      <AdminAuditPanel
+        audits={adminAuditEvents}
+        error={rejectedTriggerError}
+        filters={adminAuditFilters}
+        onFiltersChange={setAdminAuditFilters}
+      />
 
       <RejectedTriggerPanel
         rejectedTriggers={rejectedTriggers}

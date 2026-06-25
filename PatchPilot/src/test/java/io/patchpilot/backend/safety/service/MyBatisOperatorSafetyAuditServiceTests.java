@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import io.patchpilot.backend.safety.domain.OperatorSafetyAuditEntity;
 import io.patchpilot.backend.safety.domain.OperatorSafetyAuditVo;
+import io.patchpilot.backend.safety.domain.OperatorSafetyAuditQuery;
 import io.patchpilot.backend.safety.domain.RecordOperatorSafetyAuditCommand;
 import io.patchpilot.backend.safety.domain.TriggerQuarantineScope;
 import io.patchpilot.backend.safety.mapper.OperatorSafetyAuditMapper;
@@ -127,5 +128,50 @@ class MyBatisOperatorSafetyAuditServiceTests {
                 .contains("LIMIT 20");
         assertThat(audits).singleElement()
                 .satisfies(audit -> assertThat(audit.resourceId()).isEqualTo("quarantine-1"));
+    }
+
+    @Test
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    void should_query_operator_safety_audits_with_filters() {
+        OperatorSafetyAuditEntity entity = new OperatorSafetyAuditEntity();
+        entity.setId("audit-1");
+        entity.setAction("TASK_RETRIED");
+        entity.setResourceType("TASK");
+        entity.setResourceId("task-123");
+        entity.setScope("REPOSITORY");
+        entity.setScopeKey("bingqin2/patchpilot");
+        entity.setOperator("admin-api");
+        entity.setReason("Verified failure cause and requested a clean rerun");
+        entity.setCreatedAt(Instant.parse("2026-06-24T02:00:00Z"));
+        when(auditMapper.selectList(any())).thenReturn(List.of(entity));
+        ArgumentCaptor<LambdaQueryWrapper<OperatorSafetyAuditEntity>> queryCaptor =
+                ArgumentCaptor.forClass((Class) LambdaQueryWrapper.class);
+
+        List<OperatorSafetyAuditVo> audits = auditService.listSafetyAudits(new OperatorSafetyAuditQuery(
+                25,
+                "task_retried",
+                "task",
+                "task-123",
+                TriggerQuarantineScope.REPOSITORY,
+                "BINGQIN2/PATCHPILOT",
+                "admin-api"
+        ));
+
+        verify(auditMapper).selectList(queryCaptor.capture());
+        assertThat(queryCaptor.getValue().getSqlSegment())
+                .contains("action")
+                .contains("resource_type")
+                .contains("resource_id")
+                .contains("scope")
+                .contains("scope_key")
+                .contains("operator")
+                .contains("ORDER BY")
+                .contains("created_at")
+                .contains("DESC")
+                .contains("LIMIT 25");
+        assertThat(audits).singleElement()
+                .satisfies(audit -> assertThat(audit.reason()).isEqualTo(
+                        "Verified failure cause and requested a clean rerun"
+                ));
     }
 }

@@ -1,6 +1,7 @@
 package io.patchpilot.backend.safety.service;
 
 import io.patchpilot.backend.safety.domain.OperatorSafetyAuditVo;
+import io.patchpilot.backend.safety.domain.OperatorSafetyAuditQuery;
 import io.patchpilot.backend.safety.domain.RecordOperatorSafetyAuditCommand;
 import io.patchpilot.backend.safety.domain.TriggerQuarantineScope;
 import io.patchpilot.backend.safety.service.impl.InMemoryOperatorSafetyAuditService;
@@ -91,5 +92,52 @@ class InMemoryOperatorSafetyAuditServiceTests {
         assertThat(audits)
                 .extracting(OperatorSafetyAuditVo::action)
                 .containsExactly("TRIGGER_QUARANTINE_RELEASED", "MANUAL_QUARANTINE_CREATED");
+    }
+
+    @Test
+    void should_filter_safety_audits_by_query_fields_newest_first() {
+        auditService.recordSafetyAudit(new RecordOperatorSafetyAuditCommand(
+                "TASK_CANCELLED",
+                "TASK",
+                "task-123",
+                TriggerQuarantineScope.REPOSITORY,
+                "bingqin2/patchpilot",
+                "other-admin",
+                "Operator cancelled a stuck task"
+        ));
+        now.set(Instant.parse("2026-06-24T01:03:00Z"));
+        auditService.recordSafetyAudit(new RecordOperatorSafetyAuditCommand(
+                "TASK_RETRIED",
+                "TASK",
+                "task-123",
+                TriggerQuarantineScope.REPOSITORY,
+                "bingqin2/patchpilot",
+                "admin-api",
+                "Verified failure cause and requested a clean rerun"
+        ));
+        now.set(Instant.parse("2026-06-24T01:05:00Z"));
+        auditService.recordSafetyAudit(new RecordOperatorSafetyAuditCommand(
+                "TASK_RETRIED",
+                "TASK",
+                "task-999",
+                TriggerQuarantineScope.REPOSITORY,
+                "other/repo",
+                "admin-api",
+                "Unrelated task retry"
+        ));
+
+        List<OperatorSafetyAuditVo> audits = auditService.listSafetyAudits(new OperatorSafetyAuditQuery(
+                20,
+                "task_retried",
+                "task",
+                "task-123",
+                TriggerQuarantineScope.REPOSITORY,
+                "BINGQIN2/PATCHPILOT",
+                "admin-api"
+        ));
+
+        assertThat(audits)
+                .extracting(OperatorSafetyAuditVo::reason)
+                .containsExactly("Verified failure cause and requested a clean rerun");
     }
 }

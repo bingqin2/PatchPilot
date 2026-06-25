@@ -1,6 +1,7 @@
 package io.patchpilot.backend.safety.service;
 
 import io.patchpilot.backend.safety.domain.OperatorSafetyAuditVo;
+import io.patchpilot.backend.safety.domain.OperatorSafetyAuditQuery;
 import io.patchpilot.backend.safety.domain.RecordOperatorSafetyAuditCommand;
 
 import java.util.List;
@@ -10,7 +11,11 @@ public interface OperatorSafetyAuditService {
 
     OperatorSafetyAuditVo recordSafetyAudit(RecordOperatorSafetyAuditCommand command);
 
-    List<OperatorSafetyAuditVo> listSafetyAudits(int limit);
+    default List<OperatorSafetyAuditVo> listSafetyAudits(int limit) {
+        return listSafetyAudits(new OperatorSafetyAuditQuery(limit, null, null, null, null, null, null));
+    }
+
+    List<OperatorSafetyAuditVo> listSafetyAudits(OperatorSafetyAuditQuery query);
 
     default List<OperatorSafetyAuditVo> listSafetyAuditsForResource(String resourceType, String resourceId, int limit) {
         String normalizedResourceType = normalized(resourceType);

@@ -1201,6 +1201,9 @@ beforeEach(() => {
     if (url === '/api/admin-audit-events?limit=20') {
       return jsonResponse(adminAuditEvents);
     }
+    if (url === '/api/admin-audit-events?limit=20&action=TASK_RETRIED') {
+      return jsonResponse(adminAuditEvents.filter((audit) => audit.action === 'TASK_RETRIED'));
+    }
     if (url === '/api/trigger-quarantines' && init?.method === 'POST') {
       return jsonResponse({
         id: 'manual-quarantine-1',
@@ -1615,6 +1618,21 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(screen.getAllByText('gpt-5.5')).toHaveLength(2);
   expect(screen.getByText('Generated diff')).toBeInTheDocument();
   expect(screen.getByLabelText('Generated diff preview')).toHaveTextContent('+PatchPilot smoke test');
+});
+
+test('filters admin audit events through backend query parameters', async () => {
+  const user = userEvent.setup();
+  const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => defaultAppResponse(input, init));
+  vi.stubGlobal('fetch', fetchMock);
+
+  render(<App />);
+
+  const adminAuditPanel = await screen.findByRole('region', { name: 'Admin audit trail' });
+  await user.type(within(adminAuditPanel).getByLabelText('Admin audit action'), 'TASK_RETRIED');
+  await user.click(within(adminAuditPanel).getByRole('button', { name: 'Apply admin audit filters' }));
+
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/admin-audit-events?limit=20&action=TASK_RETRIED'));
+  expect(within(adminAuditPanel).getByText('task-2')).toBeInTheDocument();
 });
 
 test('shows tool and model call durations in task detail records', async () => {
@@ -3165,6 +3183,9 @@ function defaultAppResponse(input: RequestInfo | URL, init?: RequestInit) {
   }
   if (url === '/api/admin-audit-events?limit=20') {
     return jsonResponse(adminAuditEvents);
+  }
+  if (url === '/api/admin-audit-events?limit=20&action=TASK_RETRIED') {
+    return jsonResponse(adminAuditEvents.filter((audit) => audit.action === 'TASK_RETRIED'));
   }
   if (url === '/api/trigger-quarantines' && init?.method === 'POST') {
     return jsonResponse({

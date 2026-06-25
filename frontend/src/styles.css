@@ -3495,6 +3495,47 @@ pre {
   grid-column: 1 / -1;
 }
 
+.admin-audit-filter-form {
+  align-items: end;
+  border-top: 1px solid #edf1f5;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  padding: 14px 16px;
+}
+
+.admin-audit-filter-form label {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.admin-audit-filter-form label span {
+  color: #64727f;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.admin-audit-filter-form input {
+  background: #ffffff;
+  border: 1px solid #cfd9e2;
+  border-radius: 6px;
+  color: #17202a;
+  font: inherit;
+  min-width: 0;
+  padding: 8px 10px;
+}
+
+.admin-audit-filter-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.admin-audit-filter-actions button {
+  white-space: nowrap;
+}
+
 .admin-audit-list {
   display: grid;
   gap: 10px;

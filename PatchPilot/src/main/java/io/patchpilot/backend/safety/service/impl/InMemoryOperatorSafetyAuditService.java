@@ -2,6 +2,7 @@ package io.patchpilot.backend.safety.service.impl;
 
 import io.patchpilot.backend.safety.convert.OperatorSafetyAuditConvert;
 import io.patchpilot.backend.safety.domain.OperatorSafetyAuditVo;
+import io.patchpilot.backend.safety.domain.OperatorSafetyAuditQuery;
 import io.patchpilot.backend.safety.domain.RecordOperatorSafetyAuditCommand;
 import io.patchpilot.backend.safety.service.OperatorSafetyAuditService;
 import org.springframework.context.annotation.Profile;
@@ -38,10 +39,11 @@ public class InMemoryOperatorSafetyAuditService implements OperatorSafetyAuditSe
     }
 
     @Override
-    public List<OperatorSafetyAuditVo> listSafetyAudits(int limit) {
+    public List<OperatorSafetyAuditVo> listSafetyAudits(OperatorSafetyAuditQuery query) {
         return audits.stream()
+                .filter(audit -> matches(query, audit))
                 .sorted(Comparator.comparing(OperatorSafetyAuditVo::createdAt).reversed())
-                .limit(limit)
+                .limit(query.limit())
                 .toList();
     }
 
@@ -59,5 +61,14 @@ public class InMemoryOperatorSafetyAuditService implements OperatorSafetyAuditSe
 
     private static String normalized(String value) {
         return value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private static boolean matches(OperatorSafetyAuditQuery query, OperatorSafetyAuditVo audit) {
+        return (!query.hasAction() || query.action().equalsIgnoreCase(audit.action()))
+                && (!query.hasResourceType() || query.resourceType().equalsIgnoreCase(audit.resourceType()))
+                && (!query.hasResourceId() || query.resourceId().equals(audit.resourceId()))
+                && (!query.hasScope() || query.scope() == audit.scope())
+                && (!query.hasScopeKey() || query.scopeKey().equals(normalized(audit.scopeKey())))
+                && (!query.hasOperator() || query.operator().equals(audit.operator()));
     }
 }

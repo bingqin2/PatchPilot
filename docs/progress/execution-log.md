@@ -3540,3 +3540,21 @@ Validation so far:
 
 - `mvn -pl PatchPilot -Dtest=OperatorSafetyAuditControllerTests,TaskControllerTests,RejectedTriggerAuditControllerTests,DemoReadinessControllerTests test`: first failed with missing `/api/admin-audit-events` route and missing audit writes for task control, rejected-trigger retry, and demo archive; then passed after backend implementation, 91 tests run, 0 failures.
 - `npm test -- --run src/api.test.ts src/dashboard/components/AdminAuditPanel.test.tsx src/App.test.tsx`: first failed because `listAdminAuditEvents` and `AdminAuditPanel` did not exist and App still loaded the old operator-safety endpoint; then passed after frontend implementation, 105 tests run, 0 failures.
+
+Implemented admin audit search and export from `docs/plans/177-admin-audit-search-export.md`.
+
+Changes:
+
+- Added `OperatorSafetyAuditQuery` as the normalized backend query model for protected admin audit searches.
+- Extended `/api/admin-audit-events` and the compatibility alias `/api/operator-safety-audits` with optional filters for action, resource type, resource id, scope, scope key, operator, and limit.
+- Kept existing recent-list behavior when filters are omitted.
+- Added in-memory and MyBatis filtering support for the unified admin audit stream.
+- Added dashboard admin audit filter controls for action, operator, resource type, resource id, and scope key.
+- Added `Copy admin audit report` to export the visible filtered audit rows as Markdown evidence.
+- Updated README, product spec, frontend design notes, and this execution log.
+
+Validation so far:
+
+- `mvn -pl PatchPilot -Dtest=OperatorSafetyAuditControllerTests,InMemoryOperatorSafetyAuditServiceTests,MyBatisOperatorSafetyAuditServiceTests test`: first failed because `OperatorSafetyAuditQuery` and filtered service methods did not exist; then failed once because old controller tests still mocked the legacy integer method; then passed after backend implementation, 12 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts src/dashboard/components/AdminAuditPanel.test.tsx`: first failed because `listAdminAuditEvents` treated filter options as a limit and the panel had no filter/export controls; then passed after frontend API and component implementation, 49 tests run, 0 failures.
+- `npm test -- --run src/App.test.tsx src/api.test.ts src/dashboard/components/AdminAuditPanel.test.tsx -t "renders operational task dashboard|filters admin audit|lists filtered admin audit|AdminAuditPanel"`: first failed because the new App test used a nonexistent fetch helper; then passed after wiring it to `defaultAppResponse`, 3 targeted tests run, 0 failures.
