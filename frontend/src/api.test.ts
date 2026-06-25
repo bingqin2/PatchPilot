@@ -7,6 +7,7 @@ import {
   getDashboardBootstrap,
   getBackendHealth,
   getConfigurationSummary,
+  getGitHubCredentialReadiness,
   getFailureCauseSummary,
   getLatencySummary,
   getModelProviderHealth,
@@ -131,6 +132,33 @@ test('loads dashboard bootstrap through backend API without a saved admin token'
   expect(fetchMock).toHaveBeenCalledWith('/api/dashboard/bootstrap');
   expect(bootstrap.adminToken).toBe('local-admin-token');
   expect(bootstrap.adminTokenBootstrapEnabled).toBe(true);
+});
+
+test('gets GitHub credential readiness through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        tokenConfigured: true,
+        status: 'READY',
+        message: 'GitHub API accepted the configured token.',
+        latencyMs: 31,
+        checkedAt: '2026-06-25T03:00:00Z',
+        operatorAction: 'No action needed.'
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const readiness = await getGitHubCredentialReadiness();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/github/credential-readiness');
+  expect(readiness.status).toBe('READY');
+  expect(readiness.tokenConfigured).toBe(true);
+  expect(readiness.message).toBe('GitHub API accepted the configured token.');
 });
 
 test('evaluates trigger without creating manual task through backend API', async () => {
