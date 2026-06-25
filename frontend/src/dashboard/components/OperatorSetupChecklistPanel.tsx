@@ -119,6 +119,7 @@ function setupChecks({
     githubCredentialCheck(githubCredentialReadiness, demoReadiness),
     githubRepositoryAccessCheck(githubRepositoryAccessReadiness, demoReadiness),
     safetyPolicyCheck(configuration),
+    demoTargetPolicyCheck(demoReadiness),
     repositoryPreflightScopeCheck(configuration, demoReadiness),
     modelProviderHealthCheck(modelProviderHealth, demoReadiness),
     adapterFixtureCheck(adapterFixtureVerifications),
@@ -217,6 +218,25 @@ function safetyPolicyCheck(configuration: ConfigurationSummary | null): SetupChe
       ? 'allowlists, review approvers, and trigger rate limits are configured'
       : 'allowlists, review approvers, or trigger rate limits need attention',
     action: 'Configure trigger allowlists, repository allowlists, review approvers, and trigger rate limits.'
+  };
+}
+
+function demoTargetPolicyCheck(demoReadiness: DemoReadiness | null): SetupCheck {
+  const demoReadinessCheck = demoReadiness?.checks.find((check) => check.name === 'Demo target policy');
+  if (demoReadinessCheck) {
+    return {
+      name: 'Demo target policy',
+      ready: demoReadinessCheck.status === 'READY',
+      message: demoReadinessCheck.message,
+      action: demoReadinessCheck.action
+    };
+  }
+
+  return {
+    name: 'Demo target policy',
+    ready: false,
+    message: 'demo target policy readiness has not loaded',
+    action: 'Confirm /api/demo/readiness includes demo target policy before a live demo.'
   };
 }
 

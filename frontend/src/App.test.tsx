@@ -961,6 +961,12 @@ const demoReadiness = {
       action: 'No action needed.'
     },
     {
+      name: 'Demo target policy',
+      status: 'READY',
+      message: 'Demo repository and recent trigger user align with configured safety allowlists.',
+      action: 'No action needed.'
+    },
+    {
       name: 'Recent Pull Request',
       status: 'NEEDS_ATTENTION',
       message: 'No completed task with a Pull Request URL was found in recent task history.',
@@ -2060,7 +2066,7 @@ test('summarizes operator setup readiness before a demo run', async () => {
 
   const setupChecklist = await screen.findByRole('region', { name: 'Operator setup checklist' });
   expect(within(setupChecklist).getByRole('heading', { name: 'Operator setup checklist' })).toBeInTheDocument();
-  expect(within(setupChecklist).getByText('10/12 checks ready')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('11/13 checks ready')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Backend connectivity')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Ready - /health reports UP')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Required credentials')).toBeInTheDocument();
@@ -2071,6 +2077,8 @@ test('summarizes operator setup readiness before a demo run', async () => {
   expect(within(setupChecklist).getByText('Ready - GitHub token can read repository bingqin2/PatchPilot.')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Safety policy')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Ready - allowlists, review approvers, and trigger rate limits are configured')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('Demo target policy')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('Ready - Demo repository and recent trigger user align with configured safety allowlists.')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Repository preflight scope')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Ready - demo fixture preflight paths are allowed')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Model provider health')).toBeInTheDocument();
@@ -2117,6 +2125,12 @@ test('shows when every operator setup check is ready', async () => {
             action: 'No action needed.'
           },
           {
+            name: 'Demo target policy',
+            status: 'READY',
+            message: 'Demo repository and recent trigger user align with configured safety allowlists.',
+            action: 'No action needed.'
+          },
+          {
             name: 'Recent Pull Request',
             status: 'READY',
             message: 'Recent completed Pull Request evidence is available.',
@@ -2151,8 +2165,9 @@ test('shows when every operator setup check is ready', async () => {
   render(<App />);
 
   const setupChecklist = await screen.findByRole('region', { name: 'Operator setup checklist' });
-  expect(within(setupChecklist).getByText('12/12 checks ready')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('13/13 checks ready')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Ready - GitHub token can read repository bingqin2/PatchPilot.')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('Ready - Demo repository and recent trigger user align with configured safety allowlists.')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Ready - Model provider responded to the health probe.')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Ready - recent completed task has a Pull Request URL')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('All setup checks are ready for a controlled issue-to-PR demo.')).toBeInTheDocument();

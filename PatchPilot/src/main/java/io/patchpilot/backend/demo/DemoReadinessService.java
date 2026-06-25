@@ -122,6 +122,7 @@ public class DemoReadinessService {
                 gitHubCredentialCheck(gitHubCredentialReadiness),
                 gitHubRepositoryAccessCheck(gitHubRepositoryAccessReadiness),
                 safetyPolicyCheck(configuration),
+                demoTargetPolicyCheck(configuration, gitHubRepositoryAccessReadiness, recentTasks),
                 repositoryPreflightScopeCheck(configuration),
                 modelProviderCheck(modelProviderHealth),
                 adapterFixtureCheck(fixtures),
@@ -278,6 +279,49 @@ public class DemoReadinessService {
                 DemoReadinessStatus.BLOCKED,
                 readiness.message(),
                 readiness.operatorAction()
+        );
+    }
+
+    private static DemoReadinessCheckVo demoTargetPolicyCheck(
+            ConfigurationSummaryVo configuration,
+            GitHubRepositoryAccessReadinessVo repositoryAccessReadiness,
+            List<FixTaskVo> recentTasks
+    ) {
+        List<String> gaps = new ArrayList<>();
+        List<String> actions = new ArrayList<>();
+        String demoRepository = repositoryAccessReadiness.repository();
+        if (hasText(demoRepository)
+                && configuration.repositoryAllowlistConfigured()
+                && !configuration.allowedRepositories().contains(demoRepository)) {
+            gaps.add("Demo repository " + demoRepository + " is not in PATCHPILOT_ALLOWED_REPOSITORIES");
+            actions.add("add " + demoRepository + " to PATCHPILOT_ALLOWED_REPOSITORIES");
+        }
+
+        String recentTriggerUser = recentTasks.stream()
+                .map(FixTaskVo::triggerUser)
+                .filter(DemoReadinessService::hasText)
+                .findFirst()
+                .orElse("");
+        if (hasText(recentTriggerUser)
+                && configuration.triggerUserAllowlistConfigured()
+                && !configuration.allowedTriggerUsers().contains(recentTriggerUser)) {
+            gaps.add("Recent demo trigger user " + recentTriggerUser + " is not in PATCHPILOT_ALLOWED_TRIGGER_USERS");
+            actions.add("add " + recentTriggerUser + " to PATCHPILOT_ALLOWED_TRIGGER_USERS");
+        }
+
+        if (!gaps.isEmpty()) {
+            return new DemoReadinessCheckVo(
+                    "Demo target policy",
+                    DemoReadinessStatus.NEEDS_ATTENTION,
+                    String.join("; ", gaps) + ".",
+                    "Update demo safety allowlists before a live demo: " + String.join("; ", actions) + "."
+            );
+        }
+        return new DemoReadinessCheckVo(
+                "Demo target policy",
+                DemoReadinessStatus.READY,
+                "Demo repository and recent trigger user align with configured safety allowlists.",
+                "No action needed."
         );
     }
 

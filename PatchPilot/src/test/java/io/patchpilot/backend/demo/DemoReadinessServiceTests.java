@@ -48,6 +48,7 @@ class DemoReadinessServiceTests {
                         "GitHub credentials",
                         "GitHub repository access",
                         "Safety policy",
+                        "Demo target policy",
                         "Repository preflight scope",
                         "Model provider",
                         "Adapter fixtures",
@@ -98,6 +99,78 @@ class DemoReadinessServiceTests {
         assertThat(readiness.nextActions()).contains(
                 "Configure PATCHPILOT_ALLOWED_TRIGGER_USERS and PATCHPILOT_REVIEW_APPROVAL_ALLOWED_OPERATORS before a live demo."
         );
+    }
+
+    @Test
+    void should_report_demo_target_policy_attention_when_repository_allowlist_excludes_demo_repository() {
+        DemoReadinessService service = new DemoReadinessService(
+                () -> configuration(
+                        true,
+                        true,
+                        true,
+                        true,
+                        List.of("bingqin2"),
+                        List.of("bingqin2/OtherRepo"),
+                        List.of("release-captain")
+                ),
+                () -> List.of(fixture("java-maven", "PASS")),
+                () -> List.of(runtime("java", "maven", "mvn", "READY")),
+                DemoReadinessServiceTests::readyGitHubCredential,
+                DemoReadinessServiceTests::readyRepositoryAccess,
+                DemoReadinessServiceTests::readyModelProvider,
+                () -> FixTaskQueueSummaryVo.empty(),
+                DemoReadinessServiceTests::readyWorker,
+                () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/12"))
+        );
+
+        DemoReadinessVo readiness = service.getReadiness();
+
+        assertThat(readiness.status()).isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
+        assertThat(readiness.checks())
+                .filteredOn(check -> check.name().equals("Demo target policy"))
+                .singleElement()
+                .satisfies(check -> {
+                    assertThat(check.status()).isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
+                    assertThat(check.message()).contains("Demo repository bingqin2/PatchPilot is not in PATCHPILOT_ALLOWED_REPOSITORIES");
+                    assertThat(check.action()).contains("PATCHPILOT_ALLOWED_REPOSITORIES");
+                    assertThat(check.action()).contains("bingqin2/PatchPilot");
+                });
+    }
+
+    @Test
+    void should_report_demo_target_policy_attention_when_recent_demo_trigger_user_is_not_allowed() {
+        DemoReadinessService service = new DemoReadinessService(
+                () -> configuration(
+                        true,
+                        true,
+                        true,
+                        true,
+                        List.of("release-captain"),
+                        List.of("bingqin2/PatchPilot"),
+                        List.of("release-captain")
+                ),
+                () -> List.of(fixture("java-maven", "PASS")),
+                () -> List.of(runtime("java", "maven", "mvn", "READY")),
+                DemoReadinessServiceTests::readyGitHubCredential,
+                DemoReadinessServiceTests::readyRepositoryAccess,
+                DemoReadinessServiceTests::readyModelProvider,
+                () -> FixTaskQueueSummaryVo.empty(),
+                DemoReadinessServiceTests::readyWorker,
+                () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/12"))
+        );
+
+        DemoReadinessVo readiness = service.getReadiness();
+
+        assertThat(readiness.status()).isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
+        assertThat(readiness.checks())
+                .filteredOn(check -> check.name().equals("Demo target policy"))
+                .singleElement()
+                .satisfies(check -> {
+                    assertThat(check.status()).isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
+                    assertThat(check.message()).contains("Recent demo trigger user bingqin2 is not in PATCHPILOT_ALLOWED_TRIGGER_USERS");
+                    assertThat(check.action()).contains("PATCHPILOT_ALLOWED_TRIGGER_USERS");
+                    assertThat(check.action()).contains("bingqin2");
+                });
     }
 
     @Test

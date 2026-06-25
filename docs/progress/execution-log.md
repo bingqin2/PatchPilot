@@ -4,6 +4,29 @@ This file records dated implementation progress, validation commands, and import
 
 ## 2026-06-25
 
+Implemented demo target policy alignment from `docs/plans/200-demo-target-policy-alignment.md`.
+
+Changes:
+
+- Added a `Demo target policy` check to `GET /api/demo/readiness`.
+- Warned when the configured demo repository is missing from `PATCHPILOT_ALLOWED_REPOSITORIES` while repository allowlists are enabled.
+- Warned when the most recent demo trigger user is missing from `PATCHPILOT_ALLOWED_TRIGGER_USERS` while trigger-user allowlists are enabled.
+- Updated the operator setup checklist to display the demo target policy check from demo readiness.
+- Updated README and product docs so demo readiness now covers both repository access and safety allowlist alignment.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=DemoReadinessServiceTests test`: first failed because the readiness checks did not include `Demo target policy` and the allowlist mismatch scenarios still returned `READY`; then passed after adding the backend check, 15 tests run.
+- `npm test -- --run src/dashboard/components/OperatorSetupChecklistPanel.test.tsx --reporter=basic`: first failed because the checklist still rendered `12/12 checks ready` and omitted `Demo target policy`; then passed after wiring the readiness check into the setup checklist, 10 tests run.
+- `mvn -pl PatchPilot -Dtest=DemoReadinessServiceTests,DemoReadinessControllerTests,DemoEvidenceBundleServiceTests,DemoRunbookServiceTests,DemoSessionSnapshotServiceTests test`: passed after demo evidence regression verification, 33 tests run.
+- `npm test -- --run src/App.test.tsx src/api.test.ts src/dashboard/components/OperatorSetupChecklistPanel.test.tsx --reporter=basic`: passed after dashboard integration fixture updates, 123 tests run.
+- `mvn -pl PatchPilot test`: passed after full backend regression verification, 702 tests run.
+- `npm test -- --reporter=basic`: passed after full frontend regression verification, 209 tests run.
+- `npm run build`: passed after production frontend build verification.
+- `git diff --check`: passed.
+
+## 2026-06-25
+
 Implemented repository access demo readiness context from `docs/plans/199-repository-access-demo-readiness-context.md`.
 
 Changes:

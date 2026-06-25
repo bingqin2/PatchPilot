@@ -116,6 +116,7 @@ The current implementation target is local self-hosted development first. Hosted
 - Unsupported repository task failures should post issue-facing feedback that says execution stopped before model patch generation, tests, commits, pushes, or Pull Request creation, then lists supported language/build shapes and a safe next action.
 - The local repository preflight diagnostic should return supported status, selected language/build system, verification command, detection reason, and next operator action so unsupported repository shapes can be fixed before a live `/agent fix`.
 - The local repository preflight diagnostic should expose its configured allowed roots through non-sensitive configuration summary APIs and the dashboard so operators can verify scope before using it.
+- Demo readiness and the operator setup checklist should warn when the configured demo repository or recent demo trigger user does not match enabled safety allowlists.
 - Demo readiness and the operator setup checklist should warn when repository-preflight allowed roots do not cover checked-in demo fixture paths.
 - Demo readiness and the operator setup checklist should warn when the configured OpenAI-compatible model provider cannot answer a minimal health probe, even if model credentials are present.
 - Demo readiness, the smoke checklist, the demo script, the session snapshot checklist, and the operator setup checklist should warn when a supported adapter's selected verification executable is not available on the backend process `PATH`.
