@@ -51,6 +51,49 @@ class DemoSessionReportServiceTests {
     }
 
     @Test
+    void should_include_prepared_launch_commands_when_report_context_provides_them() {
+        DemoSessionReportService service = new DemoSessionReportService(() -> snapshot());
+        DemoSessionReportRequestDto request = new DemoSessionReportRequestDto(List.of(
+                new DemoPreparedLaunchCommandRequestDto(
+                        "/agent fix replace docs/demo.md PatchPilot smoke test",
+                        "bingqin2",
+                        "PatchPilot",
+                        1L,
+                        "bingqin2",
+                        "replace",
+                        "docs/demo.md",
+                        "PatchPilot smoke test",
+                        "2026-06-26T01:00:00Z"
+                ),
+                new DemoPreparedLaunchCommandRequestDto(
+                        "/agent fix touch docs/history.md",
+                        "bingqin2",
+                        "PatchPilot",
+                        2L,
+                        "bingqin2",
+                        "touch",
+                        "docs/history.md",
+                        null,
+                        "2026-06-26T01:05:00Z"
+                )
+        ));
+
+        String report = service.getSessionReport(request);
+
+        assertThat(report)
+                .contains("## Prepared Launch Commands")
+                .contains("- `/agent fix replace docs/demo.md PatchPilot smoke test`")
+                .contains("  - Target: `bingqin2/PatchPilot#1`")
+                .contains("  - Operation: `replace` on `docs/demo.md`")
+                .contains("  - Replacement: `PatchPilot smoke test`")
+                .contains("  - Saved at: `2026-06-26T01:00:00Z`")
+                .contains("- `/agent fix touch docs/history.md`")
+                .contains("  - Target: `bingqin2/PatchPilot#2`")
+                .contains("  - Operation: `touch` on `docs/history.md`")
+                .contains("  - Saved at: `2026-06-26T01:05:00Z`");
+    }
+
+    @Test
     void should_render_empty_lists_and_missing_evidence_as_none() {
         DemoSessionReportService service = new DemoSessionReportService(() -> new DemoSessionSnapshotVo(
                 "demo-session-20260624T003000Z",

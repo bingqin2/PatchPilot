@@ -102,6 +102,11 @@ public class DemoReadinessController {
         return ApiResponse.ok(demoSessionReportService.getSessionReport());
     }
 
+    @PostMapping("/session-report")
+    public ApiResponse<String> getSessionReport(@RequestBody(required = false) DemoSessionReportRequestDto request) {
+        return ApiResponse.ok(demoSessionReportService.getSessionReport(normalizeReportRequest(request)));
+    }
+
     @GetMapping(value = "/session-report/download", produces = "text/markdown;charset=UTF-8")
     public ResponseEntity<String> downloadSessionReport() {
         return markdownAttachment(
@@ -110,9 +115,19 @@ public class DemoReadinessController {
         );
     }
 
+    @PostMapping(value = "/session-report/download", produces = "text/markdown;charset=UTF-8")
+    public ResponseEntity<String> downloadSessionReport(@RequestBody(required = false) DemoSessionReportRequestDto request) {
+        return markdownAttachment(
+                "patchpilot-demo-session-report.md",
+                demoSessionReportService.getSessionReport(normalizeReportRequest(request))
+        );
+    }
+
     @PostMapping("/session-archives")
-    public ApiResponse<DemoSessionArchiveVo> archiveCurrentSession() {
-        DemoSessionArchiveVo archive = demoSessionArchiveService.archiveCurrentSession();
+    public ApiResponse<DemoSessionArchiveVo> archiveCurrentSession(
+            @RequestBody(required = false) DemoSessionReportRequestDto request
+    ) {
+        DemoSessionArchiveVo archive = demoSessionArchiveService.archiveCurrentSession(normalizeReportRequest(request));
         operatorSafetyAuditService.recordSafetyAudit(new RecordOperatorSafetyAuditCommand(
                 "DEMO_SESSION_ARCHIVED",
                 "DEMO_SESSION_ARCHIVE",
@@ -148,6 +163,10 @@ public class DemoReadinessController {
                 .contentType(new MediaType("text", "markdown", StandardCharsets.UTF_8))
                 .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition.toString())
                 .body(report);
+    }
+
+    private static DemoSessionReportRequestDto normalizeReportRequest(DemoSessionReportRequestDto request) {
+        return request == null ? new DemoSessionReportRequestDto(List.of()) : request;
     }
 
     private static String safeFilenamePart(String value) {

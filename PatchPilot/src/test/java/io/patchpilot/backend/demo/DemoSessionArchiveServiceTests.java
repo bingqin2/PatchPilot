@@ -48,6 +48,37 @@ class DemoSessionArchiveServiceTests {
     }
 
     @Test
+    void should_archive_current_demo_session_report_with_prepared_launch_commands() {
+        DemoSessionArchiveService service = new DemoSessionArchiveService(
+                new DemoSessionReportService(() -> snapshot("demo-session-1", DemoReadinessStatus.READY)),
+                new InMemoryDemoSessionArchiveRepository(),
+                () -> snapshot("demo-session-1", DemoReadinessStatus.READY),
+                Clock.fixed(Instant.parse("2026-06-24T04:00:00Z"), ZoneOffset.UTC),
+                () -> "archive-1"
+        );
+        DemoSessionReportRequestDto request = new DemoSessionReportRequestDto(List.of(
+                new DemoPreparedLaunchCommandRequestDto(
+                        "/agent fix replace docs/demo.md PatchPilot smoke test",
+                        "bingqin2",
+                        "PatchPilot",
+                        1L,
+                        "bingqin2",
+                        "replace",
+                        "docs/demo.md",
+                        "PatchPilot smoke test",
+                        "2026-06-26T01:00:00Z"
+                )
+        ));
+
+        DemoSessionArchiveVo archive = service.archiveCurrentSession(request);
+
+        assertThat(archive.report())
+                .contains("## Prepared Launch Commands")
+                .contains("- `/agent fix replace docs/demo.md PatchPilot smoke test`")
+                .contains("  - Operation: `replace` on `docs/demo.md`");
+    }
+
+    @Test
     void should_cap_recent_archives_to_twenty_entries() {
         DemoSessionArchiveService service = new DemoSessionArchiveService(
                 new DemoSessionReportService(() -> snapshot("demo-session-latest", DemoReadinessStatus.READY)),

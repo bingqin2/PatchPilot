@@ -80,6 +80,7 @@ import { TaskListPanel } from './dashboard/components/TaskListPanel';
 import { TriggerDecisionPanel } from './dashboard/components/TriggerDecisionPanel';
 import { WebhookDeliveryPanel } from './dashboard/components/WebhookDeliveryPanel';
 import { compactDateTime, duration, percent } from './dashboard/format';
+import { loadDemoLaunchCommandHistory, toPreparedLaunchCommands } from './dashboard/demoLaunchCommandHistory';
 import { emptyDetail } from './dashboard/types';
 import type { TaskDetailState } from './dashboard/types';
 import { AdminAuditPanel } from './dashboard/components/AdminAuditPanel';
@@ -98,6 +99,7 @@ import type {
   DemoLaunchPreflightInput,
   DemoScript,
   DemoSessionArchive,
+  DemoSessionReportInput,
   DemoSessionSnapshot,
   DemoSmokeChecklist,
   FixTask,
@@ -193,6 +195,7 @@ export default function App() {
   const [demoLaunchCommand, setDemoLaunchCommand] = useState<DemoLaunchCommand | null>(null);
   const [demoLaunchCommandError, setDemoLaunchCommandError] = useState<string | null>(null);
   const [demoLaunchCommandPending, setDemoLaunchCommandPending] = useState(false);
+  const [demoLaunchCommandHistoryRevision, setDemoLaunchCommandHistoryRevision] = useState(0);
   const [composedPreflightInput, setComposedPreflightInput] = useState<DemoLaunchPreflightInput | null>(null);
   const [demoLaunchPreflight, setDemoLaunchPreflight] = useState<DemoLaunchPreflight | null>(null);
   const [demoLaunchPreflightError, setDemoLaunchPreflightError] = useState<string | null>(null);
@@ -261,6 +264,10 @@ export default function App() {
   const selectedTask = useMemo(
     () => tasks.find((task) => task.id === selectedTaskId) ?? tasks[0] ?? null,
     [selectedTaskId, tasks]
+  );
+  const preparedDemoLaunchCommands = useMemo(
+    () => toPreparedLaunchCommands(loadDemoLaunchCommandHistory()),
+    [demoLaunchCommandHistoryRevision]
   );
 
   const selectTask = useCallback((taskId: string) => {
@@ -805,13 +812,15 @@ export default function App() {
 
   const handleCopyReport = useCallback((taskId: string) => getTaskReport(taskId), []);
   const handleCopyDemoRunbook = useCallback(() => getDemoRunbook(), []);
-  const handleCopyDemoSessionReport = useCallback(() => getDemoSessionReport(), []);
-  const handleDownloadDemoSessionReport = useCallback(() => downloadDemoSessionReport(), []);
+  const handleCopyDemoSessionReport = useCallback((input: DemoSessionReportInput) => getDemoSessionReport(input), []);
+  const handleDownloadDemoSessionReport = useCallback((input: DemoSessionReportInput) => (
+    downloadDemoSessionReport(input)
+  ), []);
   const handleDownloadDemoSessionArchiveReport = useCallback((archiveId: string) => (
     downloadDemoSessionArchiveReport(archiveId)
   ), []);
-  const handleArchiveDemoSession = useCallback(async () => {
-    const archive = await archiveDemoSession();
+  const handleArchiveDemoSession = useCallback(async (input: DemoSessionReportInput) => {
+    const archive = await archiveDemoSession(input);
     setDemoSessionArchives((current) => [archive, ...current.filter((item) => item.id !== archive.id)].slice(0, 20));
     setDemoSessionArchiveError(null);
     return archive;
@@ -834,6 +843,10 @@ export default function App() {
 
   const handleApplyDemoLaunchCommandToPreflight = useCallback((input: DemoLaunchPreflightInput) => {
     setComposedPreflightInput(input);
+  }, []);
+
+  const handleDemoLaunchCommandHistoryChange = useCallback(() => {
+    setDemoLaunchCommandHistoryRevision((currentRevision) => currentRevision + 1);
   }, []);
 
   const handleDemoLaunchPreflight = useCallback(async (input: DemoLaunchPreflightInput) => {
@@ -1095,6 +1108,7 @@ export default function App() {
 
       <DemoSessionSnapshotPanel
         snapshot={demoSessionSnapshot}
+        preparedLaunchCommands={preparedDemoLaunchCommands}
         archives={demoSessionArchives}
         error={demoSessionSnapshotError}
         archiveError={demoSessionArchiveError}
@@ -1116,6 +1130,7 @@ export default function App() {
         pending={demoLaunchCommandPending}
         onComposeCommand={handleComposeDemoLaunchCommand}
         onApplyToPreflight={handleApplyDemoLaunchCommandToPreflight}
+        onHistoryChange={handleDemoLaunchCommandHistoryChange}
       />
 
       <DemoLaunchPreflightPanel

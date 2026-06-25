@@ -24,11 +24,19 @@ public class DemoSessionReportService {
     }
 
     public String getSessionReport() {
+        return getSessionReport(new DemoSessionReportRequestDto(List.of()));
+    }
+
+    public String getSessionReport(DemoSessionReportRequestDto request) {
         DemoSessionSnapshotVo snapshot = snapshotSupplier.get();
-        return formatSessionReport(snapshot);
+        return formatSessionReport(snapshot, request);
     }
 
     String formatSessionReport(DemoSessionSnapshotVo snapshot) {
+        return formatSessionReport(snapshot, new DemoSessionReportRequestDto(List.of()));
+    }
+
+    String formatSessionReport(DemoSessionSnapshotVo snapshot, DemoSessionReportRequestDto request) {
         StringBuilder report = new StringBuilder()
                 .append("# PatchPilot Demo Session Report\n\n")
                 .append("- Session: `").append(snapshot.sessionId()).append("`\n")
@@ -40,6 +48,7 @@ public class DemoSessionReportService {
 
         appendRecentTask(report, snapshot.evidenceBundle().recentTask());
         appendList(report, "Operator Checklist", snapshot.operatorChecklist(), "No operator checklist items recorded.");
+        appendPreparedLaunchCommands(report, request.preparedLaunchCommands());
         appendScriptSteps(report, snapshot.script().steps());
         appendList(report, "Health Contract", withReportHealthContract(snapshot.healthContract()), "No health contract recorded.");
         appendList(report, "Next Actions", snapshot.nextActions(), "No next actions recorded.");
@@ -58,6 +67,40 @@ public class DemoSessionReportService {
                 .append("` (`")
                 .append(task.status())
                 .append("`)\n");
+    }
+
+    private static void appendPreparedLaunchCommands(
+            StringBuilder report,
+            List<DemoPreparedLaunchCommandRequestDto> preparedLaunchCommands
+    ) {
+        report.append("\n## Prepared Launch Commands\n\n");
+        List<DemoPreparedLaunchCommandRequestDto> commands = preparedLaunchCommands.stream()
+                .filter(command -> !isBlank(command.triggerComment()))
+                .limit(5)
+                .toList();
+        if (commands.isEmpty()) {
+            report.append("- No prepared launch commands recorded for this browser session.\n");
+            return;
+        }
+
+        commands.forEach(command -> {
+            report.append("- `").append(command.triggerComment().trim()).append("`\n")
+                    .append("  - Target: `")
+                    .append(valueOrNone(command.repositoryOwner()))
+                    .append("/")
+                    .append(valueOrNone(command.repositoryName()))
+                    .append("#")
+                    .append(command.issueNumber() == null ? "none" : command.issueNumber())
+                    .append("`\n")
+                    .append("  - Trigger user: `").append(valueOrNone(command.triggerUser())).append("`\n")
+                    .append("  - Operation: `").append(valueOrNone(command.operation())).append("` on `")
+                    .append(valueOrNone(command.targetPath()))
+                    .append("`\n");
+            if (!isBlank(command.replacementText())) {
+                report.append("  - Replacement: `").append(command.replacementText().trim()).append("`\n");
+            }
+            report.append("  - Saved at: `").append(valueOrNone(command.savedAt())).append("`\n");
+        });
     }
 
     private static void appendScriptSteps(StringBuilder report, List<DemoScriptStepVo> steps) {
@@ -97,5 +140,9 @@ public class DemoSessionReportService {
 
     private static String valueOrNone(String value) {
         return value == null || value.isBlank() ? "none" : value;
+    }
+
+    private static boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 }

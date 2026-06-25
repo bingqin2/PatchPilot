@@ -49,6 +49,7 @@ import {
   listTasks,
   retryTask
 } from './api';
+import type { DemoSessionReportInput } from './types';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -829,6 +830,43 @@ test('loads demo session report markdown from backend API', async () => {
   expect(report).toContain('`READY`');
 });
 
+test('loads demo session report markdown with prepared launch command context', async () => {
+  const input: DemoSessionReportInput = {
+    preparedLaunchCommands: [
+      {
+        triggerComment: '/agent fix replace docs/demo.md PatchPilot smoke test',
+        repositoryOwner: 'bingqin2',
+        repositoryName: 'PatchPilot',
+        issueNumber: 1,
+        triggerUser: 'bingqin2',
+        operation: 'replace',
+        targetPath: 'docs/demo.md',
+        replacementText: 'PatchPilot smoke test',
+        savedAt: '2026-06-26T01:00:00Z'
+      }
+    ]
+  };
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: '# PatchPilot Demo Session Report\n\n## Prepared Launch Commands',
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const report = await getDemoSessionReport(input);
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/session-report', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input)
+  });
+  expect(report).toContain('Prepared Launch Commands');
+});
+
 test('downloads demo session report markdown from backend API', async () => {
   const reportBlob = new Blob(['# PatchPilot Demo Session Report\n\n- Status: `READY`'], {
     type: 'text/markdown;charset=UTF-8'
@@ -843,6 +881,42 @@ test('downloads demo session report markdown from backend API', async () => {
   const downloadedReport = await downloadDemoSessionReport();
 
   expect(fetchMock).toHaveBeenCalledWith('/api/demo/session-report/download');
+  expect(downloadedReport).toBe(reportBlob);
+});
+
+test('downloads demo session report markdown with prepared launch command context', async () => {
+  const input: DemoSessionReportInput = {
+    preparedLaunchCommands: [
+      {
+        triggerComment: '/agent fix touch docs/history.md',
+        repositoryOwner: 'bingqin2',
+        repositoryName: 'PatchPilot',
+        issueNumber: 2,
+        triggerUser: 'bingqin2',
+        operation: 'touch',
+        targetPath: 'docs/history.md',
+        replacementText: null,
+        savedAt: '2026-06-26T01:05:00Z'
+      }
+    ]
+  };
+  const reportBlob = new Blob(['# PatchPilot Demo Session Report'], {
+    type: 'text/markdown;charset=UTF-8'
+  });
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    blob: async () => reportBlob
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const downloadedReport = await downloadDemoSessionReport(input);
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/session-report/download', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input)
+  });
   expect(downloadedReport).toBe(reportBlob);
 });
 
@@ -889,6 +963,52 @@ test('archives current demo session through backend API', async () => {
   expect(fetchMock).toHaveBeenCalledWith('/api/demo/session-archives', { method: 'POST' });
   expect(archive.id).toBe('archive-1');
   expect(archive.report).toContain('# PatchPilot Demo Session Report');
+});
+
+test('archives current demo session with prepared launch command context', async () => {
+  const input: DemoSessionReportInput = {
+    preparedLaunchCommands: [
+      {
+        triggerComment: '/agent fix replace docs/demo.md PatchPilot smoke test',
+        repositoryOwner: 'bingqin2',
+        repositoryName: 'PatchPilot',
+        issueNumber: 1,
+        triggerUser: 'bingqin2',
+        operation: 'replace',
+        targetPath: 'docs/demo.md',
+        replacementText: 'PatchPilot smoke test',
+        savedAt: '2026-06-26T01:00:00Z'
+      }
+    ]
+  };
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        id: 'archive-1',
+        sessionId: 'demo-session-20260624T003000Z',
+        status: 'READY',
+        summary: 'Demo session snapshot is ready.',
+        shareSummary: 'Status READY; recent PR https://github.com/bingqin2/PatchPilot/pull/42.',
+        recentPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+        createdAt: '2026-06-24T04:00:00Z',
+        report: '# PatchPilot Demo Session Report\n\n## Prepared Launch Commands'
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const archive = await archiveDemoSession(input);
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/session-archives', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input)
+  });
+  expect(archive.report).toContain('Prepared Launch Commands');
 });
 
 test('lists demo session archives through backend API', async () => {

@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -507,8 +508,76 @@ class DemoReadinessControllerTests {
     }
 
     @Test
+    void should_return_demo_session_report_markdown_with_prepared_launch_commands() throws Exception {
+        when(demoSessionReportService.getSessionReport(argThat(request ->
+                request.preparedLaunchCommands().size() == 1
+                        && request.preparedLaunchCommands().get(0).triggerComment().equals("/agent fix replace docs/demo.md PatchPilot smoke test")
+        ))).thenReturn("""
+                # PatchPilot Demo Session Report
+
+                ## Prepared Launch Commands
+                """);
+
+        mockMvc.perform(post("/api/demo/session-report")
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "preparedLaunchCommands": [
+                                    {
+                                      "triggerComment": "/agent fix replace docs/demo.md PatchPilot smoke test",
+                                      "repositoryOwner": "bingqin2",
+                                      "repositoryName": "PatchPilot",
+                                      "issueNumber": 1,
+                                      "triggerUser": "bingqin2",
+                                      "operation": "replace",
+                                      "targetPath": "docs/demo.md",
+                                      "replacementText": "PatchPilot smoke test",
+                                      "savedAt": "2026-06-26T01:00:00Z"
+                                    }
+                                  ]
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("Prepared Launch Commands")));
+    }
+
+    @Test
+    void should_download_demo_session_report_with_prepared_launch_commands() throws Exception {
+        when(demoSessionReportService.getSessionReport(any(DemoSessionReportRequestDto.class))).thenReturn("""
+                # PatchPilot Demo Session Report
+
+                ## Prepared Launch Commands
+                """);
+
+        mockMvc.perform(post("/api/demo/session-report/download")
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "preparedLaunchCommands": [
+                                    {
+                                      "triggerComment": "/agent fix touch docs/history.md",
+                                      "repositoryOwner": "bingqin2",
+                                      "repositoryName": "PatchPilot",
+                                      "issueNumber": 2,
+                                      "triggerUser": "bingqin2",
+                                      "operation": "touch",
+                                      "targetPath": "docs/history.md",
+                                      "replacementText": null,
+                                      "savedAt": "2026-06-26T01:05:00Z"
+                                    }
+                                  ]
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("attachment;")))
+                .andExpect(content().contentTypeCompatibleWith("text/markdown"))
+                .andExpect(content().string(containsString("Prepared Launch Commands")));
+    }
+
+    @Test
     void should_archive_current_demo_session_report() throws Exception {
-        when(demoSessionArchiveService.archiveCurrentSession()).thenReturn(new DemoSessionArchiveVo(
+        when(demoSessionArchiveService.archiveCurrentSession(any(DemoSessionReportRequestDto.class))).thenReturn(new DemoSessionArchiveVo(
                 "archive-1",
                 "demo-session-20260624T003000Z",
                 DemoReadinessStatus.READY,

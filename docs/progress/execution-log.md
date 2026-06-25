@@ -4,6 +4,27 @@ This file records dated implementation progress, validation commands, and import
 
 ## 2026-06-26
 
+Implemented demo command history session reports from `docs/plans/204-demo-command-history-session-report.md`.
+
+Changes:
+
+- Added optional prepared launch command context to demo session report requests.
+- Added `POST /api/demo/session-report` and `POST /api/demo/session-report/download` so dashboard report actions can include browser-local command history while preserving GET compatibility.
+- Updated demo session archive creation to include supplied prepared command context in the stored Markdown report.
+- Moved demo launch command history parsing into a shared frontend helper and converted saved browser history into bounded report context.
+- Rendered prepared launch commands in the demo session snapshot panel and sent the same context through copy, download, and archive actions.
+- Updated README and product docs so command history is no longer described as excluded from reports.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=DemoSessionReportServiceTests,DemoSessionArchiveServiceTests,DemoReadinessControllerTests test`: passed after adding backend context/request coverage, 24 tests run.
+- `npm test -- --run src/api.test.ts src/dashboard/components/DemoSessionSnapshotPanel.test.tsx src/dashboard/components/DemoLaunchCommandPanel.test.tsx src/App.test.tsx --reporter=basic`: passed after wiring App-level browser history context into report actions, 133 tests run.
+- `npm test -- --reporter=basic`: passed after full frontend regression verification, 227 tests run.
+- `npm run build`: first failed because `tsc` caught un-narrowed API test fixtures and optional `replacementText` context; passed after adding explicit `DemoSessionReportInput` fixtures and normalizing missing replacement text to `null`.
+- `mvn -pl PatchPilot test`: passed after full backend regression verification, 719 tests run.
+
+## 2026-06-26
+
 Implemented demo command history and reuse from `docs/plans/203-demo-command-history-and-reuse.md`.
 
 Changes:
