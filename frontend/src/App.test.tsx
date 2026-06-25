@@ -1078,6 +1078,42 @@ beforeEach(() => {
       manualTaskCreated = true;
       return jsonResponse(manuallyCreatedTask, true, null, 201);
     }
+    if (url === '/api/tasks/evaluate-trigger' && init?.method === 'POST') {
+      return jsonResponse({
+        status: 'WOULD_CREATE_TASK',
+        source: 'ISSUE_COMMENT',
+        wouldCreateTask: true,
+        blockedReason: null,
+        blockedCategory: null,
+        safetyDecision: {
+          allowed: true,
+          reason: 'Accepted',
+          category: 'UNKNOWN'
+        },
+        activeTaskDecision: {
+          allowed: true,
+          reason: 'No active task exists for this issue',
+          category: 'UNKNOWN'
+        },
+        quarantineDecision: {
+          allowed: true,
+          reason: 'Trigger quarantine accepted',
+          category: 'UNKNOWN'
+        },
+        rateLimitDecision: {
+          allowed: true,
+          reason: 'Trigger rate limit accepted',
+          category: 'UNKNOWN'
+        },
+        triggerIntentDecision: {
+          allowed: true,
+          reason: 'Model trigger classification accepted',
+          category: 'UNKNOWN'
+        },
+        issueContextLoaded: true,
+        nextAction: 'Create task is allowed for this trigger.'
+      });
+    }
     if (url === '/api/tasks/metrics/summary' || url.startsWith('/api/tasks/metrics/summary?')) {
       return jsonResponse({
         totalCount: 3,
@@ -2019,6 +2055,53 @@ test('creates a manual task from the dashboard and refreshes task data', async (
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks?limit=50'));
   expect(await screen.findByText('Manual task queued')).toBeInTheDocument();
   expect(screen.getByLabelText('Command')).toHaveValue('');
+});
+
+test('copies manual trigger evaluation evidence from the dashboard', async () => {
+  const user = userEvent.setup();
+  const fetchMock = vi.mocked(fetch);
+  const writeText = vi.fn().mockResolvedValue(undefined);
+  Object.defineProperty(navigator, 'clipboard', {
+    configurable: true,
+    value: { writeText }
+  });
+
+  render(<App />);
+
+  await user.click(await screen.findByRole('radio', { name: /github issue comment/i }));
+  await user.type(screen.getByLabelText('Repository owner'), 'bingqin2');
+  await user.type(screen.getByLabelText('Repository name'), 'PatchPilot');
+  await user.type(screen.getByLabelText('Issue number'), '7');
+  await user.clear(screen.getByLabelText('Trigger user'));
+  await user.type(screen.getByLabelText('Trigger user'), 'local-operator');
+  await user.type(screen.getByLabelText('Command'), '/agent fix touch docs/manual-task.md');
+  await user.click(screen.getByRole('button', { name: 'Evaluate trigger' }));
+
+  await waitFor(() =>
+    expect(fetchMock).toHaveBeenCalledWith('/api/tasks/evaluate-trigger', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        source: 'ISSUE_COMMENT',
+        repositoryOwner: 'bingqin2',
+        repositoryName: 'PatchPilot',
+        issueNumber: 7,
+        triggerUser: 'local-operator',
+        triggerComment: '/agent fix touch docs/manual-task.md'
+      })
+    })
+  );
+
+  await user.click(screen.getByRole('button', { name: 'Copy evaluation report' }));
+
+  expect(writeText).toHaveBeenCalledWith(expect.stringContaining('# PatchPilot Trigger Evaluation Report'));
+  expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- Status: `WOULD_CREATE_TASK`'));
+  expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- Source: `ISSUE_COMMENT`'));
+  expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- Repository: `bingqin2/PatchPilot`'));
+  expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- Issue: `#7`'));
+  expect(writeText).toHaveBeenCalledWith(
+    expect.stringContaining('- Model: `ALLOW` - Model trigger classification accepted')
+  );
 });
 
 test('runs repository preflight from the dashboard', async () => {

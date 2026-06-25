@@ -39,6 +39,25 @@ const allowedEvaluation: TriggerEvaluationResult = {
   nextAction: 'Create task is allowed for this trigger.'
 };
 
+const blockedEvaluation: TriggerEvaluationResult = {
+  ...allowedEvaluation,
+  status: 'BLOCKED',
+  source: 'ISSUE_COMMENT',
+  wouldCreateTask: false,
+  blockedReason: 'Unsafe request rejected: destructive or secret-exfiltration instruction',
+  blockedCategory: 'DANGEROUS_INSTRUCTION',
+  safetyDecision: {
+    allowed: false,
+    reason: 'Unsafe request rejected: destructive or secret-exfiltration instruction',
+    category: 'DANGEROUS_INSTRUCTION'
+  },
+  activeTaskDecision: null,
+  quarantineDecision: null,
+  rateLimitDecision: null,
+  triggerIntentDecision: null,
+  nextAction: 'Revise the /agent fix request before creating a task.'
+};
+
 describe('ManualTaskForm', () => {
   test('evaluates a trigger before creating a task', async () => {
     const user = userEvent.setup();
@@ -111,25 +130,6 @@ describe('ManualTaskForm', () => {
   });
 
   test('renders allowed and blocked evaluation results', () => {
-    const blockedEvaluation: TriggerEvaluationResult = {
-      ...allowedEvaluation,
-      status: 'BLOCKED',
-      source: 'ISSUE_COMMENT',
-      wouldCreateTask: false,
-      blockedReason: 'Unsafe request rejected: destructive or secret-exfiltration instruction',
-      blockedCategory: 'DANGEROUS_INSTRUCTION',
-      safetyDecision: {
-        allowed: false,
-        reason: 'Unsafe request rejected: destructive or secret-exfiltration instruction',
-        category: 'DANGEROUS_INSTRUCTION'
-      },
-      activeTaskDecision: null,
-      quarantineDecision: null,
-      rateLimitDecision: null,
-      triggerIntentDecision: null,
-      nextAction: 'Revise the /agent fix request before creating a task.'
-    };
-
     const { rerender } = render(
       <ManualTaskForm
         creating={false}
@@ -165,5 +165,93 @@ describe('ManualTaskForm', () => {
       within(blockedRegion).getByText('Unsafe request rejected: destructive or secret-exfiltration instruction')
     ).toBeInTheDocument();
     expect(within(blockedRegion).getByText('DANGEROUS_INSTRUCTION')).toBeInTheDocument();
+  });
+
+  test('copies a manual trigger evaluation report', async () => {
+    const user = userEvent.setup();
+    const writeText = vi.fn();
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText }
+    });
+
+    render(
+      <ManualTaskForm
+        creating={false}
+        evaluating={false}
+        evaluation={allowedEvaluation}
+        successMessage={null}
+        onCreateTask={vi.fn()}
+        onEvaluateTrigger={vi.fn()}
+      />
+    );
+
+    await user.type(screen.getByLabelText('Repository owner'), 'bingqin2');
+    await user.type(screen.getByLabelText('Repository name'), 'PatchPilot');
+    await user.type(screen.getByLabelText('Issue number'), '7');
+    await user.clear(screen.getByLabelText('Trigger user'));
+    await user.type(screen.getByLabelText('Trigger user'), 'local-operator');
+    await user.type(screen.getByLabelText('Command'), '/agent fix touch docs/manual-task.md');
+    await user.click(screen.getByRole('button', { name: 'Copy evaluation report' }));
+
+    expect(writeText).toHaveBeenCalledWith(expect.stringContaining('# PatchPilot Trigger Evaluation Report'));
+    expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- Status: `WOULD_CREATE_TASK`'));
+    expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- Source: `MANUAL`'));
+    expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- Repository: `bingqin2/PatchPilot`'));
+    expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- Issue: `#7`'));
+    expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- Trigger user: `local-operator`'));
+    expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- Command: `/agent fix touch docs/manual-task.md`'));
+    expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- Safety: `ALLOW` - Accepted'));
+    expect(writeText).toHaveBeenCalledWith(
+      expect.stringContaining('- Model: `ALLOW` - Model trigger classification is disabled')
+    );
+    expect(writeText).toHaveBeenCalledWith(
+      expect.stringContaining('- Next action: Create task is allowed for this trigger.')
+    );
+  });
+
+  test('copies a blocked trigger evaluation report', async () => {
+    const user = userEvent.setup();
+    const writeText = vi.fn();
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText }
+    });
+
+    render(
+      <ManualTaskForm
+        creating={false}
+        evaluating={false}
+        evaluation={blockedEvaluation}
+        successMessage={null}
+        onCreateTask={vi.fn()}
+        onEvaluateTrigger={vi.fn()}
+      />
+    );
+
+    await user.click(screen.getByRole('radio', { name: /github issue comment/i }));
+    await user.type(screen.getByLabelText('Repository owner'), 'bingqin2');
+    await user.type(screen.getByLabelText('Repository name'), 'PatchPilot');
+    await user.type(screen.getByLabelText('Issue number'), '8');
+    await user.clear(screen.getByLabelText('Trigger user'));
+    await user.type(screen.getByLabelText('Trigger user'), 'abuse-user');
+    await user.type(screen.getByLabelText('Command'), '/agent fix print secrets');
+    await user.click(screen.getByRole('button', { name: 'Copy evaluation report' }));
+
+    expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- Status: `BLOCKED`'));
+    expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- Source: `ISSUE_COMMENT`'));
+    expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- Would create task: `NO`'));
+    expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- Trigger user: `abuse-user`'));
+    expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- Blocked category: `DANGEROUS_INSTRUCTION`'));
+    expect(writeText).toHaveBeenCalledWith(
+      expect.stringContaining('- Blocked reason: Unsafe request rejected: destructive or secret-exfiltration instruction')
+    );
+    expect(writeText).toHaveBeenCalledWith(
+      expect.stringContaining('- Safety: `BLOCK` - Unsafe request rejected: destructive or secret-exfiltration instruction')
+    );
+    expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- Active task: `NOT_EVALUATED`'));
+    expect(writeText).toHaveBeenCalledWith(
+      expect.stringContaining('- Next action: Revise the /agent fix request before creating a task.')
+    );
   });
 });
