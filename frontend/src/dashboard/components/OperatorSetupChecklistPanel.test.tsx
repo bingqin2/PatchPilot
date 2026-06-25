@@ -310,6 +310,38 @@ test('shows repository access setup action when the selected repository cannot b
   expect(within(panel).getByText('Check PATCHPILOT_GITHUB_TOKEN permissions and repository allowlist for bingqin2/PatchPilot.')).toBeInTheDocument();
 });
 
+test('uses demo readiness repository access result when backend reports the demo target is not readable', () => {
+  renderChecklist(
+    configuration,
+    {
+      ...demoReadiness,
+      status: 'BLOCKED',
+      checks: [
+        {
+          name: 'GitHub repository access',
+          status: 'BLOCKED',
+          message: 'GitHub repository access probe failed: HTTP 404',
+          action: 'Check PATCHPILOT_GITHUB_TOKEN permissions, GitHub App installation access, and repository allowlist for bingqin2/PatchPilot; then retry the readiness check.'
+        },
+        ...demoReadiness.checks
+      ],
+      nextActions: [
+        'Check PATCHPILOT_GITHUB_TOKEN permissions, GitHub App installation access, and repository allowlist for bingqin2/PatchPilot; then retry the readiness check.'
+      ]
+    },
+    runtimeReadiness,
+    modelProviderHealth,
+    githubCredentialReadiness,
+    githubRepositoryAccessReadiness
+  );
+
+  const panel = screen.getByRole('region', { name: 'Operator setup checklist' });
+  expect(within(panel).getByText('11/12 checks ready')).toBeInTheDocument();
+  expect(within(panel).getByText('Repository access')).toBeInTheDocument();
+  expect(within(panel).getByText('Attention - GitHub repository access probe failed: HTTP 404')).toBeInTheDocument();
+  expect(within(panel).getByText('Check PATCHPILOT_GITHUB_TOKEN permissions, GitHub App installation access, and repository allowlist for bingqin2/PatchPilot; then retry the readiness check.')).toBeInTheDocument();
+});
+
 function renderChecklist(
   config: ConfigurationSummary,
   readiness: DemoReadiness = demoReadiness,

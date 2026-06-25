@@ -5,6 +5,7 @@ import io.patchpilot.backend.agent.provider.domain.ModelProviderHealthVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessStatus;
 import io.patchpilot.backend.demo.domain.DemoReadinessVo;
 import io.patchpilot.backend.github.credential.domain.GitHubCredentialReadinessVo;
+import io.patchpilot.backend.github.credential.domain.GitHubRepositoryAccessReadinessVo;
 import io.patchpilot.backend.language.domain.LanguageAdapterFixtureVerificationVo;
 import io.patchpilot.backend.language.domain.LanguageAdapterRuntimeReadinessVo;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
@@ -28,6 +29,7 @@ class DemoReadinessServiceTests {
                 () -> List.of(fixture("java-maven", "PASS"), fixture("python-hatch", "PASS")),
                 () -> List.of(runtime("java", "maven", "mvn", "READY"), runtime("python", "hatch", "python", "READY")),
                 DemoReadinessServiceTests::readyGitHubCredential,
+                DemoReadinessServiceTests::readyRepositoryAccess,
                 DemoReadinessServiceTests::readyModelProvider,
                 () -> new FixTaskQueueSummaryVo(3, 0, 0, 0, 0, 3, 0, 0),
                 DemoReadinessServiceTests::readyWorker,
@@ -44,6 +46,7 @@ class DemoReadinessServiceTests {
                         "Backend",
                         "Credentials",
                         "GitHub credentials",
+                        "GitHub repository access",
                         "Safety policy",
                         "Repository preflight scope",
                         "Model provider",
@@ -73,6 +76,7 @@ class DemoReadinessServiceTests {
                 () -> List.of(fixture("java-maven", "PASS")),
                 () -> List.of(runtime("java", "maven", "mvn", "READY")),
                 DemoReadinessServiceTests::readyGitHubCredential,
+                DemoReadinessServiceTests::readyRepositoryAccess,
                 DemoReadinessServiceTests::readyModelProvider,
                 () -> FixTaskQueueSummaryVo.empty(),
                 DemoReadinessServiceTests::readyWorker,
@@ -103,6 +107,7 @@ class DemoReadinessServiceTests {
                 () -> List.of(fixture("java-maven", "PASS"), fixture("python-hatch", "FAIL")),
                 () -> List.of(runtime("java", "maven", "mvn", "READY"), runtime("python", "hatch", "python", "READY")),
                 DemoReadinessServiceTests::readyGitHubCredential,
+                DemoReadinessServiceTests::readyRepositoryAccess,
                 DemoReadinessServiceTests::readyModelProvider,
                 () -> FixTaskQueueSummaryVo.empty(),
                 DemoReadinessServiceTests::readyWorker,
@@ -140,6 +145,7 @@ class DemoReadinessServiceTests {
                 () -> List.of(fixture("java-maven", "PASS")),
                 () -> List.of(runtime("java", "maven", "mvn", "READY")),
                 DemoReadinessServiceTests::readyGitHubCredential,
+                DemoReadinessServiceTests::readyRepositoryAccess,
                 DemoReadinessServiceTests::readyModelProvider,
                 () -> new FixTaskQueueSummaryVo(5, 1, 1, 0, 1, 1, 2, 0),
                 DemoReadinessServiceTests::readyWorker,
@@ -175,6 +181,7 @@ class DemoReadinessServiceTests {
                 () -> List.of(fixture("java-maven", "PASS")),
                 () -> List.of(runtime("java", "maven", "mvn", "READY")),
                 DemoReadinessServiceTests::readyGitHubCredential,
+                DemoReadinessServiceTests::readyRepositoryAccess,
                 DemoReadinessServiceTests::readyModelProvider,
                 () -> FixTaskQueueSummaryVo.empty(),
                 DemoReadinessServiceTests::readyWorker,
@@ -211,6 +218,7 @@ class DemoReadinessServiceTests {
                 () -> List.of(fixture("java-maven", "PASS")),
                 () -> List.of(runtime("java", "maven", "mvn", "READY")),
                 DemoReadinessServiceTests::readyGitHubCredential,
+                DemoReadinessServiceTests::readyRepositoryAccess,
                 DemoReadinessServiceTests::readyModelProvider,
                 () -> FixTaskQueueSummaryVo.empty(),
                 DemoReadinessServiceTests::readyWorker,
@@ -246,6 +254,7 @@ class DemoReadinessServiceTests {
                 () -> List.of(fixture("java-maven", "PASS")),
                 () -> List.of(runtime("java", "maven", "mvn", "READY")),
                 DemoReadinessServiceTests::readyGitHubCredential,
+                DemoReadinessServiceTests::readyRepositoryAccess,
                 DemoReadinessServiceTests::readyModelProvider,
                 () -> FixTaskQueueSummaryVo.empty(),
                 DemoReadinessServiceTests::readyWorker,
@@ -268,6 +277,7 @@ class DemoReadinessServiceTests {
                 () -> List.of(fixture("java-maven", "PASS")),
                 () -> List.of(runtime("java", "maven", "mvn", "READY")),
                 DemoReadinessServiceTests::readyGitHubCredential,
+                DemoReadinessServiceTests::readyRepositoryAccess,
                 DemoReadinessServiceTests::readyModelProvider,
                 () -> FixTaskQueueSummaryVo.empty(),
                 () -> new FixTaskWorkerHealthVo(
@@ -311,6 +321,7 @@ class DemoReadinessServiceTests {
                 () -> List.of(fixture("java-maven", "PASS"), fixture("python-hatch", "PASS")),
                 () -> List.of(runtime("java", "maven", "mvn", "READY"), runtime("python", "hatch", "python", "MISSING")),
                 DemoReadinessServiceTests::readyGitHubCredential,
+                DemoReadinessServiceTests::readyRepositoryAccess,
                 DemoReadinessServiceTests::readyModelProvider,
                 () -> FixTaskQueueSummaryVo.empty(),
                 DemoReadinessServiceTests::readyWorker,
@@ -338,6 +349,7 @@ class DemoReadinessServiceTests {
                 () -> List.of(fixture("java-maven", "PASS")),
                 () -> List.of(runtime("java", "maven", "mvn", "READY")),
                 DemoReadinessServiceTests::readyGitHubCredential,
+                DemoReadinessServiceTests::readyRepositoryAccess,
                 () -> new ModelProviderHealthVo(
                         "openai-compatible",
                         "gpt-5.5",
@@ -382,6 +394,7 @@ class DemoReadinessServiceTests {
                         Instant.parse("2026-06-25T03:00:00Z"),
                         "Check PATCHPILOT_GITHUB_TOKEN permissions before running a live task."
                 ),
+                DemoReadinessServiceTests::readyRepositoryAccess,
                 DemoReadinessServiceTests::readyModelProvider,
                 () -> FixTaskQueueSummaryVo.empty(),
                 DemoReadinessServiceTests::readyWorker,
@@ -400,6 +413,84 @@ class DemoReadinessServiceTests {
                     assertThat(check.action()).isEqualTo("Check PATCHPILOT_GITHUB_TOKEN permissions before running a live task.");
                 });
         assertThat(readiness.nextActions()).contains("Check PATCHPILOT_GITHUB_TOKEN permissions before running a live task.");
+    }
+
+    @Test
+    void should_report_attention_when_demo_repository_access_target_is_not_configured() {
+        DemoReadinessService service = new DemoReadinessService(
+                () -> configuration(true, true, true, true),
+                () -> List.of(fixture("java-maven", "PASS")),
+                () -> List.of(runtime("java", "maven", "mvn", "READY")),
+                DemoReadinessServiceTests::readyGitHubCredential,
+                () -> new GitHubRepositoryAccessReadinessVo(
+                        true,
+                        false,
+                        "",
+                        "NEEDS_ATTENTION",
+                        "Repository owner and name are required for the access probe.",
+                        null,
+                        0,
+                        Instant.parse("2026-06-25T04:00:00Z"),
+                        "Select a repository or provide owner and repository query parameters."
+                ),
+                DemoReadinessServiceTests::readyModelProvider,
+                () -> FixTaskQueueSummaryVo.empty(),
+                DemoReadinessServiceTests::readyWorker,
+                () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/12"))
+        );
+
+        DemoReadinessVo readiness = service.getReadiness();
+
+        assertThat(readiness.status()).isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
+        assertThat(readiness.checks())
+                .filteredOn(check -> check.name().equals("GitHub repository access"))
+                .singleElement()
+                .satisfies(check -> {
+                    assertThat(check.status()).isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
+                    assertThat(check.message()).isEqualTo("Demo repository access target is not configured.");
+                    assertThat(check.action()).contains("PATCHPILOT_DEMO_REPOSITORY_OWNER");
+                    assertThat(check.action()).contains("PATCHPILOT_DEMO_REPOSITORY_NAME");
+                });
+    }
+
+    @Test
+    void should_report_blocked_when_demo_repository_access_probe_is_not_ready() {
+        DemoReadinessService service = new DemoReadinessService(
+                () -> configuration(true, true, true, true),
+                () -> List.of(fixture("java-maven", "PASS")),
+                () -> List.of(runtime("java", "maven", "mvn", "READY")),
+                DemoReadinessServiceTests::readyGitHubCredential,
+                () -> new GitHubRepositoryAccessReadinessVo(
+                        true,
+                        true,
+                        "bingqin2/PatchPilot",
+                        "NEEDS_ATTENTION",
+                        "GitHub repository access probe failed: HTTP 404",
+                        null,
+                        42,
+                        Instant.parse("2026-06-25T04:00:00Z"),
+                        "Check PATCHPILOT_GITHUB_TOKEN permissions, GitHub App installation access, and repository allowlist for bingqin2/PatchPilot; then retry the readiness check."
+                ),
+                DemoReadinessServiceTests::readyModelProvider,
+                () -> FixTaskQueueSummaryVo.empty(),
+                DemoReadinessServiceTests::readyWorker,
+                () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/12"))
+        );
+
+        DemoReadinessVo readiness = service.getReadiness();
+
+        assertThat(readiness.status()).isEqualTo(DemoReadinessStatus.BLOCKED);
+        assertThat(readiness.checks())
+                .filteredOn(check -> check.name().equals("GitHub repository access"))
+                .singleElement()
+                .satisfies(check -> {
+                    assertThat(check.status()).isEqualTo(DemoReadinessStatus.BLOCKED);
+                    assertThat(check.message()).isEqualTo("GitHub repository access probe failed: HTTP 404");
+                    assertThat(check.action()).contains("repository allowlist for bingqin2/PatchPilot");
+                });
+        assertThat(readiness.nextActions()).contains(
+                "Check PATCHPILOT_GITHUB_TOKEN permissions, GitHub App installation access, and repository allowlist for bingqin2/PatchPilot; then retry the readiness check."
+        );
     }
 
     private static ConfigurationSummaryVo configuration(
@@ -582,6 +673,20 @@ class DemoReadinessServiceTests {
                 "GitHub API accepted the configured token.",
                 31,
                 Instant.parse("2026-06-25T03:00:00Z"),
+                "No action needed."
+        );
+    }
+
+    private static GitHubRepositoryAccessReadinessVo readyRepositoryAccess() {
+        return new GitHubRepositoryAccessReadinessVo(
+                true,
+                true,
+                "bingqin2/PatchPilot",
+                "READY",
+                "GitHub token can read repository bingqin2/PatchPilot.",
+                "main",
+                42,
+                Instant.parse("2026-06-25T04:00:00Z"),
                 "No action needed."
         );
     }

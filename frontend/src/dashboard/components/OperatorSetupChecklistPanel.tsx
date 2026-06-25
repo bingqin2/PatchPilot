@@ -117,7 +117,7 @@ function setupChecks({
     backendCheck(backendHealth),
     credentialCheck(configuration, hasStoredAdminToken),
     githubCredentialCheck(githubCredentialReadiness, demoReadiness),
-    githubRepositoryAccessCheck(githubRepositoryAccessReadiness),
+    githubRepositoryAccessCheck(githubRepositoryAccessReadiness, demoReadiness),
     safetyPolicyCheck(configuration),
     repositoryPreflightScopeCheck(configuration, demoReadiness),
     modelProviderHealthCheck(modelProviderHealth, demoReadiness),
@@ -179,7 +179,20 @@ function githubCredentialCheck(
   };
 }
 
-function githubRepositoryAccessCheck(githubRepositoryAccessReadiness: GitHubRepositoryAccessReadiness | null): SetupCheck {
+function githubRepositoryAccessCheck(
+  githubRepositoryAccessReadiness: GitHubRepositoryAccessReadiness | null,
+  demoReadiness: DemoReadiness | null
+): SetupCheck {
+  const demoReadinessCheck = demoReadiness?.checks.find((check) => check.name === 'GitHub repository access');
+  if (demoReadinessCheck) {
+    return {
+      name: 'Repository access',
+      ready: demoReadinessCheck.status === 'READY',
+      message: demoReadinessCheck.message,
+      action: demoReadinessCheck.action
+    };
+  }
+
   const ready = githubRepositoryAccessReadiness?.status === 'READY';
   return {
     name: 'Repository access',

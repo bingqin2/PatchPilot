@@ -2,6 +2,7 @@ package io.patchpilot.backend;
 
 import io.patchpilot.backend.agent.config.AgentProperties;
 import io.patchpilot.backend.dashboard.config.DashboardProperties;
+import io.patchpilot.backend.demo.config.DemoProperties;
 import io.patchpilot.backend.language.config.RepositoryPreflightProperties;
 import io.patchpilot.backend.safety.config.SafetyProperties;
 import io.patchpilot.backend.security.config.AdminApiSecurityProperties;
@@ -24,7 +25,8 @@ import org.springframework.scheduling.annotation.EnableScheduling;
         SafetyProperties.class,
         AdminApiSecurityProperties.class,
         RepositoryPreflightProperties.class,
-        DashboardProperties.class
+        DashboardProperties.class,
+        DemoProperties.class
 })
 @EnableScheduling
 public class PatchPilotApplication {
