@@ -52,7 +52,7 @@ Reusable dashboard components live under `frontend/src/dashboard/components/`:
 - `ConfigurationPanel`: read-only runtime configuration summary with backend health, provider, model, workspace, queue policy, queue worker heartbeat stale threshold, trigger rate limits, rejected-trigger quarantine policy, generated-diff policy state, configured/missing secret states, and setup health hints.
 - `AdapterReadinessReportPanel`: read-only adapter readiness summary that combines supported languages, allowlisted verification commands, fixture pass rate, fixture failures, adapter API warnings, and a copyable Markdown report.
 - `SupportedAdaptersPanel`: read-only support matrix for Java/Maven, Java/Gradle, Go, Node/Bun, Node/npm, Node/pnpm, Node/yarn, Python/tox, Python/nox, Python/hatch, Python/Poetry, Python/uv, and Python/pytest adapters.
-- `RepositoryPreflightPanel`: local diagnostic form that runs adapter detection against a backend-local repository path before an operator creates a real task. It shows supported status, selected adapter metadata, verification command, detection reason, and unsupported adapter guidance without running tests or mutating Git.
+- `RepositoryPreflightPanel`: local diagnostic form that runs adapter detection against a backend-local repository path before an operator creates a real task. It shows supported status, selected adapter metadata, verification command, detection reason, unsupported adapter guidance, configured allowed roots, and a copyable Markdown preflight report without running tests or mutating Git.
 - `AdapterFixtureVerificationPanel`: read-only fixture verification matrix showing expected versus actual adapter detection for each checked-in demo fixture.
 - `FailureCausePanel`, `ModelUsagePanel`, and `LatencyPanel`: operational summary cards for failure grouping, token usage, call counts, estimated model cost, and execution latency. Failure grouping uses the same stable categories and next-action guidance as failed-task issue feedback.
 - `MetricCard`, `RecordLine`, and `SummaryItem`: small shared presentation units.
@@ -87,7 +87,7 @@ The first screen is the working dashboard:
 - Trigger intent visibility in task detail turns the accepted-trigger timeline evidence into safety, issue-context, and model-decision fields so copied reports and per-task investigation show why execution proceeded.
 - Configuration visibility shows backend `/health` status, the active provider, model, workspace root, queue policy, worker heartbeat stale threshold, trigger rate-limit thresholds, rejected-trigger quarantine thresholds, generated-diff risk-gate state, protected path pattern count, repository-preflight allowed roots, whether required secrets are configured, and clear health hints for missing secrets or weak optional settings without exposing secret values.
 - Supported-adapter visibility shows each supported language/build system, verification command, detection signals, and demo fixture path. Adapter readiness visibility summarizes the same data with fixture pass rate, language coverage, allowlisted commands, fixture failures, and copyable Markdown evidence. Fixture verification visibility shows whether each demo fixture still maps to the expected adapter and command. If either adapter API fails, the readiness and detailed panels show local warnings while the rest of the dashboard can still load.
-- Repository preflight visibility lets an operator enter an allowed local path such as `docs/demo-repositories/java-maven`, see the configured allowed roots, run the real adapter registry, and see whether that repository shape would be supported before creating a task.
+- Repository preflight visibility lets an operator enter an allowed local path such as `docs/demo-repositories/java-maven`, see the configured allowed roots, run the real adapter registry, and see whether that repository shape would be supported before creating a task. After a result exists, the operator can copy a Markdown preflight report with status, repository path, selected adapter, verification command, detection reason, operator action, allowed roots, and supported adapter options for unsupported repositories.
 - If the readiness API fails, the demo readiness panel shows a local warning while the rest of the dashboard can still load.
 - Cancel and retry are available only for task states where those actions make sense; failed and cancelled tasks show retry preflight before queuing another attempt, require an operator reason before retrying, and retried tasks keep source failure context plus the retry reason in the detail panel.
 
@@ -103,6 +103,7 @@ This keeps the UI focused on operator questions:
 - Which repository shapes are supported right now?
 - Are all adapter fixtures still ready for a multi-language demo?
 - Do the checked-in demo fixtures still detect as the expected adapters?
+- Can I copy evidence that a specific local repository path is supported before posting `/agent fix`?
 - Why did this `/agent fix` comment not create a task?
 - Why was this `/agent fix` comment accepted while similar recent comments were rejected?
 - What did the agent call?

@@ -3577,3 +3577,21 @@ Validation so far:
 - `npm test`: passed after full frontend regression verification, 188 tests run, 0 failures.
 - `npm run build`: passed after production frontend build verification.
 - `mvn -pl PatchPilot test`: passed after backend regression verification, 646 tests run, 0 failures.
+
+Implemented repository preflight evidence report from `docs/plans/179-repository-preflight-evidence-report.md`.
+
+Changes:
+
+- Added `Copy preflight report` to the dashboard repository preflight panel after a result exists.
+- Exported supported status, repository path, selected adapter, allowlisted verification command, detection reason, operator action, allowed roots, and current preflight API error as Markdown.
+- Included supported adapter options in unsupported-repository reports so operators can see which project markers or adapter work would make a repository eligible.
+- Kept the existing `POST /api/repository-preflight` API and execution safety contract unchanged.
+- Updated README, product spec, frontend design notes, and this execution log.
+
+Validation so far:
+
+- `npm test -- --run src/dashboard/components/RepositoryPreflightPanel.test.tsx`: first failed because `Copy preflight report` did not exist; then passed after adding the copy action and Markdown formatter, 5 tests run, 0 failures.
+- `npm test -- --run src/App.test.tsx -t "runs repository preflight"`: passed after dashboard integration coverage for running preflight and copying the resulting Markdown, 1 targeted test run, 0 failures.
+- `npm test`: passed after full frontend regression verification, 190 tests run, 0 failures.
+- `npm run build`: passed after production frontend build verification.
+- `mvn -pl PatchPilot test`: passed after backend regression verification, 646 tests run, 0 failures.
