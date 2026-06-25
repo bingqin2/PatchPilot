@@ -3656,6 +3656,20 @@ Validation:
 - `npm run build`: passed after production frontend build verification.
 - `git diff --check`: passed.
 
+Implemented non-success issue comment evidence summary from `docs/plans/184-non-success-issue-comment-evidence-summary.md`.
+
+Changes:
+
+- Expanded failed GitHub issue status comments with detected language, build system, allowlisted verification command, and adapter detection reason when repository evidence exists.
+- Expanded pending-review issue status comments with the same adapter evidence so authors can tell a risk-gate pause from unsupported repository or test failure feedback.
+- Added safe-command boundary text to non-success comments: PatchPilot selects verification commands from repository adapter allowlists and does not run arbitrary shell commands from issue comments.
+- Added worker coverage to ensure failed and pending-review issue comments receive adapter metadata preserved on the task.
+- Updated README, product spec, and this execution log.
+
+Validation so far:
+
+- `mvn -pl PatchPilot -Dtest=IssueCommentToolTests,FixTaskWorkerTests test`: first failed because failed and pending-review issue comments lacked `Language` evidence; then passed after adding non-success-comment evidence, 25 tests run, 0 failures.
+
 Implemented completed issue comment evidence summary from `docs/plans/183-completed-issue-comment-evidence-summary.md`.
 
 Changes:

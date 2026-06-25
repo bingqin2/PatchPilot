@@ -166,6 +166,9 @@ public class IssueCommentTool {
         if (status == FixTaskStatus.COMPLETED) {
             appendCompletionEvidence(body, task);
         }
+        if (status == FixTaskStatus.FAILED || status == FixTaskStatus.PENDING_REVIEW) {
+            appendNonSuccessEvidence(body, task);
+        }
         if (PatchReviewFailureClassifier.isPatchReviewRejection(failureReason)) {
             body.append("Review gate: ").append(PatchReviewFailureClassifier.REVIEW_GATE).append("\n");
             body.append(PatchReviewFailureClassifier.STATUS_COMMENT_RECOVERY).append("\n");
@@ -184,6 +187,22 @@ public class IssueCommentTool {
     }
 
     private static void appendCompletionEvidence(StringBuilder body, FixTaskVo task) {
+        appendAdapterEvidence(body, task);
+        body.append("PatchPilot opened the Pull Request only after adapter-selected verification passed.\n");
+        body.append("Verification commands come from repository adapters, not arbitrary issue text.\n");
+        body.append("PatchPilot does not auto-merge Pull Requests.\n");
+    }
+
+    private static void appendNonSuccessEvidence(StringBuilder body, FixTaskVo task) {
+        if (!hasAdapterEvidence(task)) {
+            return;
+        }
+        appendAdapterEvidence(body, task);
+        body.append("PatchPilot selected this verification command from the repository adapter allowlist.\n");
+        body.append("PatchPilot does not run arbitrary shell commands from issue comments.\n");
+    }
+
+    private static void appendAdapterEvidence(StringBuilder body, FixTaskVo task) {
         if (StringUtils.hasText(task.language())) {
             body.append("Language: `").append(task.language()).append("`\n");
         }
@@ -196,9 +215,13 @@ public class IssueCommentTool {
         if (StringUtils.hasText(task.adapterDetectionReason())) {
             body.append("Detection reason: ").append(task.adapterDetectionReason()).append("\n");
         }
-        body.append("PatchPilot opened the Pull Request only after adapter-selected verification passed.\n");
-        body.append("Verification commands come from repository adapters, not arbitrary issue text.\n");
-        body.append("PatchPilot does not auto-merge Pull Requests.\n");
+    }
+
+    private static boolean hasAdapterEvidence(FixTaskVo task) {
+        return StringUtils.hasText(task.language())
+                || StringUtils.hasText(task.buildSystem())
+                || StringUtils.hasText(task.verificationCommand())
+                || StringUtils.hasText(task.adapterDetectionReason());
     }
 
     private static boolean unsupportedRepository(TaskFailureFeedback feedback) {

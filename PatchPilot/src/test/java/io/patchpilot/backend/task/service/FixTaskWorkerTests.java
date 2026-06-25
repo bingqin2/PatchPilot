@@ -93,6 +93,13 @@ class FixTaskWorkerTests {
         RecordingTimelineService timelineService = new RecordingTimelineService();
         FixTaskWorker worker = new FixTaskWorker(fixTaskService, executor, issueCommentTool, timelineService);
         FixTaskVo task = createTask(fixTaskService, "delivery-worker-failed");
+        fixTaskService.recordAdapterMetadata(
+                task.id(),
+                "java",
+                "maven",
+                "./mvnw test",
+                "pom.xml detected with mvnw wrapper"
+        );
 
         worker.execute(task.id());
 
@@ -102,6 +109,11 @@ class FixTaskWorkerTests {
         assertThat(issueCommentTool.updatedStatuses())
                 .containsSequence(FixTaskStatus.RUNNING, FixTaskStatus.RUNNING_TESTS, FixTaskStatus.FAILED);
         assertThat(issueCommentTool.failureReasons()).contains("executor failed");
+        assertThat(issueCommentTool.failedTask().language()).isEqualTo("java");
+        assertThat(issueCommentTool.failedTask().buildSystem()).isEqualTo("maven");
+        assertThat(issueCommentTool.failedTask().verificationCommand()).isEqualTo("./mvnw test");
+        assertThat(issueCommentTool.failedTask().adapterDetectionReason())
+                .isEqualTo("pom.xml detected with mvnw wrapper");
         assertThat(timelineService.eventTypes())
                 .containsSequence(
                         FixTaskTimelineEventType.RUNNING,
@@ -202,6 +214,13 @@ class FixTaskWorkerTests {
         RecordingTimelineService timelineService = new RecordingTimelineService();
         FixTaskWorker worker = new FixTaskWorker(fixTaskService, executor, issueCommentTool, timelineService);
         FixTaskVo task = createTask(fixTaskService, "delivery-worker-risk-review");
+        fixTaskService.recordAdapterMetadata(
+                task.id(),
+                "node",
+                "npm",
+                "npm test",
+                "package.json detected with a non-empty test script"
+        );
 
         worker.execute(task.id());
 
@@ -210,6 +229,11 @@ class FixTaskWorkerTests {
         assertThat(reviewTask.failureReason()).isEqualTo("Generated diff rejected: sensitive path .github/workflows/deploy.yml");
         assertThat(issueCommentTool.updatedStatuses())
                 .containsSequence(FixTaskStatus.RUNNING, FixTaskStatus.RUNNING_TESTS, FixTaskStatus.PENDING_REVIEW);
+        assertThat(issueCommentTool.pendingReviewTask().language()).isEqualTo("node");
+        assertThat(issueCommentTool.pendingReviewTask().buildSystem()).isEqualTo("npm");
+        assertThat(issueCommentTool.pendingReviewTask().verificationCommand()).isEqualTo("npm test");
+        assertThat(issueCommentTool.pendingReviewTask().adapterDetectionReason())
+                .isEqualTo("package.json detected with a non-empty test script");
         assertThat(timelineService.eventTypes())
                 .containsSequence(
                         FixTaskTimelineEventType.RUNNING,
@@ -360,6 +384,8 @@ class FixTaskWorkerTests {
         private final List<String> failureReasons = new CopyOnWriteArrayList<>();
         private final List<String> createdFailureTaskIds = new CopyOnWriteArrayList<>();
         private final AtomicReference<FixTaskVo> completedTask = new AtomicReference<>();
+        private final AtomicReference<FixTaskVo> failedTask = new AtomicReference<>();
+        private final AtomicReference<FixTaskVo> pendingReviewTask = new AtomicReference<>();
 
         private RecordingIssueCommentTool() {
             super(new GitHubIssueCommentClient(new GitHubProperties()) {
@@ -397,6 +423,7 @@ class FixTaskWorkerTests {
         @Override
         public Optional<IssueCommentResult> updateFailed(FixTaskVo task) {
             record(task);
+            failedTask.set(task);
             failureReasons.add(task.failureReason());
             return Optional.of(new IssueCommentResult(123, "https://github.com/octocat/hello-world/issues/42#issuecomment-123"));
         }
@@ -411,6 +438,7 @@ class FixTaskWorkerTests {
         @Override
         public Optional<IssueCommentResult> updatePendingReview(FixTaskVo task) {
             record(task);
+            pendingReviewTask.set(task);
             failureReasons.add(task.failureReason());
             return Optional.of(new IssueCommentResult(123, "https://github.com/octocat/hello-world/issues/42#issuecomment-123"));
         }
@@ -425,6 +453,14 @@ class FixTaskWorkerTests {
 
         private FixTaskVo completedTask() {
             return completedTask.get();
+        }
+
+        private FixTaskVo failedTask() {
+            return failedTask.get();
+        }
+
+        private FixTaskVo pendingReviewTask() {
+            return pendingReviewTask.get();
         }
 
         private List<String> failureReasons() {

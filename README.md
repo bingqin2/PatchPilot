@@ -25,6 +25,7 @@ PatchPilot is not a chatbot and does not auto-merge code. The current target is 
 - Local workspace clone, branch, diff, commit, push, and Pull Request creation.
 - Pull Request evidence summaries that include task id, trigger user, branch, detected adapter, allowlisted verification command, detection reason, and review boundaries.
 - Completed issue comments with the Pull Request link, detected adapter, allowlisted verification command, detection reason, and review boundaries.
+- Failed and pending-review issue comments with detected adapter, allowlisted verification command, detection reason, failure category, next action, and safe-command boundaries when repository evidence is available.
 - Java/Maven, Java/Gradle, Go, Node/Bun, Node/npm, Node/pnpm, Node/yarn, Python/tox, Python/nox, Python/hatch, Python/Poetry, Python/uv, and Python/pytest language adapters backed by an adapter-driven verification runner with command allowlists.
 - Generated diff risk gate that blocks sensitive files, secret-like added lines, binary patches, and overly broad patches before tests, commits, pushes, or Pull Request creation.
 - Human approval flow for generated-diff risk rejections: `PENDING_REVIEW` tasks expose the generated diff for inspection, then can be cancelled or explicitly approved to resume from the already-generated workspace and continue verification, commit, push, and Pull Request creation.
@@ -463,7 +464,7 @@ curl "${ADMIN_HEADER[@]}" http://127.0.0.1:8080/api/tasks/metrics/model-usage
 curl "${ADMIN_HEADER[@]}" http://127.0.0.1:8080/api/tasks/metrics/latency
 ```
 
-Failure-cause metrics, failed-task issue feedback, task detail responses, copied task reports, and dashboard failure diagnosis use the same stable categories and next-action guidance, so repeated failures are grouped as `VERIFICATION_FAILED`, `GITHUB_OPERATION_FAILED`, `MODEL_FAILED`, `WORKSPACE_FAILED`, `UNSUPPORTED_REPOSITORY`, `PATCH_REVIEW_REJECTED`, or `TASK_FAILED` instead of ad hoc exception text. `UNSUPPORTED_REPOSITORY` issue comments include a safe-stop explanation and supported adapter matrix so the issue author can fix repository shape without asking the agent to run arbitrary commands.
+Failure-cause metrics, failed-task issue feedback, task detail responses, copied task reports, and dashboard failure diagnosis use the same stable categories and next-action guidance, so repeated failures are grouped as `VERIFICATION_FAILED`, `GITHUB_OPERATION_FAILED`, `MODEL_FAILED`, `WORKSPACE_FAILED`, `UNSUPPORTED_REPOSITORY`, `PATCH_REVIEW_REJECTED`, or `TASK_FAILED` instead of ad hoc exception text. When adapter metadata exists, failed and pending-review issue comments include the detected language, build system, allowlisted verification command, detection reason, and a reminder that PatchPilot does not run arbitrary shell commands from issue comments. `UNSUPPORTED_REPOSITORY` issue comments include a safe-stop explanation and supported adapter matrix so the issue author can fix repository shape without asking the agent to run arbitrary commands.
 
 Task list, status count, and metrics APIs accept the same investigation filters:
 
