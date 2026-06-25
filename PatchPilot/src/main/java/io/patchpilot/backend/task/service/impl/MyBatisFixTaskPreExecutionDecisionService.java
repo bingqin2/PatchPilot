@@ -12,6 +12,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
 import java.util.Comparator;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -40,5 +41,16 @@ public class MyBatisFixTaskPreExecutionDecisionService implements FixTaskPreExec
         return decisionMapper.selectList(queryWrapper).stream()
                 .max(Comparator.comparing(FixTaskPreExecutionDecisionEntity::getCreatedAt))
                 .map(FixTaskPreExecutionDecisionConvert::toVo);
+    }
+
+    @Override
+    public List<FixTaskPreExecutionDecisionVo> listRecentDecisions(int limit) {
+        LambdaQueryWrapper<FixTaskPreExecutionDecisionEntity> queryWrapper =
+                new LambdaQueryWrapper<FixTaskPreExecutionDecisionEntity>()
+                        .orderByDesc(FixTaskPreExecutionDecisionEntity::getCreatedAt)
+                        .last("LIMIT " + Math.max(0, limit));
+        return decisionMapper.selectList(queryWrapper).stream()
+                .map(FixTaskPreExecutionDecisionConvert::toVo)
+                .toList();
     }
 }

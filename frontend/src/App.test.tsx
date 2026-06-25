@@ -495,7 +495,7 @@ const webhookDeliveries = [
     repositoryName: 'PatchPilot',
     issueNumber: 1,
     triggerUser: 'bingqin2',
-    triggerComment: '/agent fix replace docs/demo.md PatchPilot smoke test',
+    triggerComment: '/agent fix accepted trigger audit demo',
     message: 'Task created from /agent fix',
     redeliveryRecommended: false,
     operatorAction: 'Task was created. Do not redeliver this webhook unless you intentionally want GitHub to report a duplicate delivery.',
@@ -582,6 +582,32 @@ const rejectedTriggers = [
     retryable: true,
     retryBlockedReason: null,
     createdAt: '2026-06-20T01:05:05Z'
+  }
+];
+
+const acceptedTriggerDecisions = [
+  {
+    id: 'decision-1',
+    taskId: 'task-1',
+    repositoryOwner: 'bingqin2',
+    repositoryName: 'PatchPilot',
+    issueNumber: 1,
+    triggerUser: 'bingqin2',
+    triggerComment: '/agent fix accepted trigger audit demo',
+    taskStatus: 'COMPLETED',
+    source: 'ISSUE_COMMENT',
+    finalDecision: 'ALLOWED',
+    safetyDecision: { allowed: true, reason: 'safety gate accepted', category: 'UNKNOWN' },
+    activeTaskDecision: { allowed: true, reason: 'No active task exists for this issue', category: 'UNKNOWN' },
+    quarantineDecision: { allowed: true, reason: 'not blocked before task creation', category: 'UNKNOWN' },
+    rateLimitDecision: { allowed: true, reason: 'not rate limited before task creation', category: 'UNKNOWN' },
+    triggerIntentDecision: {
+      allowed: true,
+      reason: 'model accepted trigger: Issue context describes a concrete failing test',
+      category: 'UNKNOWN'
+    },
+    issueContextLoaded: true,
+    createdAt: '2026-06-20T01:00:30Z'
   }
 ];
 
@@ -1237,6 +1263,9 @@ beforeEach(() => {
     }
     if (url === '/api/rejected-triggers?limit=20') {
       return jsonResponse(rejectedTriggers);
+    }
+    if (url === '/api/tasks/pre-execution-decisions?limit=20') {
+      return jsonResponse(acceptedTriggerDecisions);
     }
     if (url === '/api/rejected-triggers/summary?limit=100') {
       return jsonResponse(rejectedTriggerSummary);

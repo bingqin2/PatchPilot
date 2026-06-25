@@ -43,4 +43,12 @@ public class InMemoryFixTaskPreExecutionDecisionService implements FixTaskPreExe
                 .filter(decision -> decision.taskId().equals(taskId))
                 .max(Comparator.comparing(FixTaskPreExecutionDecisionVo::createdAt));
     }
+
+    @Override
+    public List<FixTaskPreExecutionDecisionVo> listRecentDecisions(int limit) {
+        return decisions.stream()
+                .sorted(Comparator.comparing(FixTaskPreExecutionDecisionVo::createdAt).reversed())
+                .limit(Math.max(0, limit))
+                .toList();
+    }
 }

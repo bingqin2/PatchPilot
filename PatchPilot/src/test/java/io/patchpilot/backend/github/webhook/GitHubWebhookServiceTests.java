@@ -1393,6 +1393,11 @@ class GitHubWebhookServiceTests {
             return Optional.empty();
         }
 
+        @Override
+        public List<FixTaskPreExecutionDecisionVo> listRecentDecisions(int limit) {
+            return List.of();
+        }
+
         private RecordFixTaskPreExecutionDecisionCommand command() {
             return command;
         }

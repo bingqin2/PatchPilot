@@ -22,6 +22,7 @@ import {
   getRejectedTriggerSummary,
   getTriggerQuarantineEvidence,
   getWorkerHealth,
+  listAcceptedTriggerDecisions,
   listAdminAuditEvents,
   listLanguageAdapterFixtures,
   listLanguageAdapters,
@@ -777,6 +778,52 @@ test('lists recent rejected triggers through backend API', async () => {
   expect(rejectedTriggers[0].retriedAt).toBe('2026-06-23T01:06:00Z');
   expect(rejectedTriggers[0].retryable).toBe(false);
   expect(rejectedTriggers[0].retryBlockedReason).toBe('Rejected trigger has already been retried; open the linked retried task instead.');
+});
+
+test('lists accepted trigger decisions through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: [
+        {
+          id: 'decision-1',
+          taskId: 'task-1',
+          repositoryOwner: 'bingqin2',
+          repositoryName: 'PatchPilot',
+          issueNumber: 1,
+          triggerUser: 'bingqin2',
+          triggerComment: '/agent fix touch docs/demo.md',
+          taskStatus: 'COMPLETED',
+          source: 'ISSUE_COMMENT',
+          finalDecision: 'ALLOWED',
+          safetyDecision: { allowed: true, reason: 'safety gate accepted', category: 'UNKNOWN' },
+          activeTaskDecision: { allowed: true, reason: 'No active task exists for this issue', category: 'UNKNOWN' },
+          quarantineDecision: { allowed: true, reason: 'not blocked before task creation', category: 'UNKNOWN' },
+          rateLimitDecision: { allowed: true, reason: 'not rate limited before task creation', category: 'UNKNOWN' },
+          triggerIntentDecision: {
+            allowed: true,
+            reason: 'model accepted trigger: Issue context describes a concrete failing test',
+            category: 'UNKNOWN'
+          },
+          issueContextLoaded: true,
+          createdAt: '2026-06-23T01:05:00Z'
+        }
+      ],
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const decisions = await listAcceptedTriggerDecisions(20);
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/tasks/pre-execution-decisions?limit=20');
+  expect(decisions[0].taskId).toBe('task-1');
+  expect(decisions[0].taskStatus).toBe('COMPLETED');
+  expect(decisions[0].triggerIntentDecision.reason).toBe(
+    'model accepted trigger: Issue context describes a concrete failing test'
+  );
 });
 
 test('lists recent rejected triggers by category through backend API', async () => {

@@ -542,6 +542,26 @@ export interface RejectedTriggerAuditSummary {
   repositoryCounts: RejectedTriggerCountSummary[];
 }
 
+export interface AcceptedTriggerDecision {
+  id: string;
+  taskId: string;
+  repositoryOwner: string;
+  repositoryName: string;
+  issueNumber: number;
+  triggerUser: string;
+  triggerComment: string;
+  taskStatus: TaskStatus;
+  source: string;
+  finalDecision: string;
+  safetyDecision: TriggerEvaluationDecision;
+  activeTaskDecision: TriggerEvaluationDecision;
+  quarantineDecision: TriggerEvaluationDecision;
+  rateLimitDecision: TriggerEvaluationDecision;
+  triggerIntentDecision: TriggerEvaluationDecision;
+  issueContextLoaded: boolean;
+  createdAt: string;
+}
+
 export type TriggerQuarantineScope = 'TRIGGER_USER' | 'REPOSITORY';
 
 export interface CreateTriggerQuarantineInput {

@@ -4,6 +4,24 @@ This file records dated implementation progress, validation commands, and import
 
 ## 2026-06-25
 
+Implemented accepted trigger decision audit from `docs/plans/192-accepted-trigger-decision-audit.md`.
+
+Changes:
+
+- Added `GET /api/tasks/pre-execution-decisions` to list recent persisted accepted trigger decisions with task context.
+- Extended the pre-execution decision service boundary for in-memory and MyBatis profiles.
+- Added a structured accepted-decision summary response with repository, issue, trigger user, command, task status, source, final allow decision, gate decisions, issue-context state, and timestamp.
+- Added a dashboard `Accepted trigger audit` panel backed by the new API, with per-decision gate evidence and an `Open task` action.
+- Kept accepted-trigger audit errors scoped to the accepted panel instead of mixing them into rejected-trigger or admin-audit errors.
+- Updated README and product/frontend design docs to describe the accepted trigger audit stream.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=InMemoryFixTaskPreExecutionDecisionServiceTests,MyBatisFixTaskPreExecutionDecisionServiceTests,TaskControllerTests test`: first failed because test-local `FixTaskPreExecutionDecisionService` stubs did not implement the new list method, then passed after updating those stubs, 76 tests run.
+- `npm test -- --run src/api.test.ts src/dashboard/components/AcceptedTriggerDecisionPanel.test.tsx src/App.test.tsx`: first failed because the accepted-trigger fixture reused the same command text as task-list/detail fixtures, creating ambiguous text queries; passed after giving the accepted audit fixture a distinct command, 109 tests run.
+
+## 2026-06-25
+
 Implemented persisted pre-execution decision records from `docs/plans/191-persisted-pre-execution-decision-records.md`.
 
 Changes:

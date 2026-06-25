@@ -21,6 +21,7 @@ PatchPilot is not a chatbot and does not auto-merge code. The current target is 
 - Dashboard trigger-decision visibility that pairs the selected task's accepted trigger evidence with recent rejected trigger decisions.
 - Accepted-trigger intent audit in task detail, copied Markdown reports, and the dashboard, including safety-gate result, issue-context load status, and model trigger-classification outcome.
 - Persisted pre-execution safety snapshots in task detail, copied Markdown reports, and the dashboard, including trigger source, final allow decision, safety, active-task, quarantine, rate-limit, issue-context, and model classification evidence.
+- Recent accepted trigger decision audit through `/api/tasks/pre-execution-decisions` and the dashboard, including task context, task status, command, per-gate allow evidence, and an `Open task` action.
 - MySQL-backed task, queue, timeline, test-run, tool-call, and model-call records.
 - Runtime worker heartbeat visibility for the queue poller, including poll counts, claimed tasks, latest worker error, readiness status, last poll age, and operator action.
 - Local workspace clone, branch, diff, commit, push, and Pull Request creation.

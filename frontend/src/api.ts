@@ -26,6 +26,7 @@ import type {
   FixTaskQueueSummary,
   FixTaskWorkerHealth,
   OperatorSafetyAudit,
+  AcceptedTriggerDecision,
   RejectedTriggerAudit,
   RejectedTriggerAuditSummary,
   ReleaseTriggerQuarantineInput,
@@ -257,6 +258,10 @@ export async function listRejectedTriggers(options: number | ListRejectedTrigger
     searchParams.set('category', normalizedOptions.category);
   }
   return getApi<RejectedTriggerAudit[]>(`/api/rejected-triggers?${searchParams.toString()}`);
+}
+
+export async function listAcceptedTriggerDecisions(limit = 20): Promise<AcceptedTriggerDecision[]> {
+  return getApi<AcceptedTriggerDecision[]>(`/api/tasks/pre-execution-decisions?limit=${limit}`);
 }
 
 export async function getRejectedTriggerSummary(limit = 100): Promise<RejectedTriggerAuditSummary> {

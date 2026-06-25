@@ -34,6 +34,26 @@ class InMemoryFixTaskPreExecutionDecisionServiceTests {
         assertThat(decisionService.findLatestDecision("missing-task")).isEmpty();
     }
 
+    @Test
+    void should_list_recent_pre_execution_decisions() {
+        FixTaskPreExecutionDecisionVo older = decisionService.recordDecision(command(
+                "task-older",
+                "ISSUE_COMMENT",
+                "older safety reason",
+                Instant.parse("2026-06-20T04:00:00Z")
+        ));
+        FixTaskPreExecutionDecisionVo newer = decisionService.recordDecision(command(
+                "task-newer",
+                "ISSUE_COMMENT",
+                "newer safety reason",
+                Instant.parse("2026-06-20T04:01:00Z")
+        ));
+
+        assertThat(decisionService.listRecentDecisions(1)).containsExactly(newer);
+        assertThat(decisionService.listRecentDecisions(10)).containsExactly(newer, older);
+        assertThat(decisionService.listRecentDecisions(0)).isEmpty();
+    }
+
     private static RecordFixTaskPreExecutionDecisionCommand command(
             String taskId,
             String source,

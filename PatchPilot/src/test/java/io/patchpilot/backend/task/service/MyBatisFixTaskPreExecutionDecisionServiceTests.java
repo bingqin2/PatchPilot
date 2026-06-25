@@ -78,6 +78,27 @@ class MyBatisFixTaskPreExecutionDecisionServiceTests {
                 });
     }
 
+    @Test
+    void should_list_recent_pre_execution_decisions() {
+        FixTaskPreExecutionDecisionEntity newer = entity(
+                "decision-newer",
+                "task-newer",
+                "newer safety",
+                Instant.parse("2026-06-20T04:01:00Z")
+        );
+        FixTaskPreExecutionDecisionEntity older = entity(
+                "decision-older",
+                "task-older",
+                "older safety",
+                Instant.parse("2026-06-20T04:00:00Z")
+        );
+        when(decisionMapper.selectList(any())).thenReturn(List.of(newer, older));
+
+        assertThat(decisionService.listRecentDecisions(2))
+                .extracting(FixTaskPreExecutionDecisionVo::id)
+                .containsExactly("decision-newer", "decision-older");
+    }
+
     private static RecordFixTaskPreExecutionDecisionCommand command(
             String taskId,
             String source,

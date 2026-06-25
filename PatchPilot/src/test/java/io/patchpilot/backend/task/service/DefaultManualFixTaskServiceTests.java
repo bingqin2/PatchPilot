@@ -574,6 +574,13 @@ class DefaultManualFixTaskServiceTests {
             return java.util.Optional.empty();
         }
 
+        @Override
+        public java.util.List<io.patchpilot.backend.task.domain.vo.FixTaskPreExecutionDecisionVo> listRecentDecisions(
+                int limit
+        ) {
+            return java.util.List.of();
+        }
+
         private RecordFixTaskPreExecutionDecisionCommand command() {
             return command;
         }
