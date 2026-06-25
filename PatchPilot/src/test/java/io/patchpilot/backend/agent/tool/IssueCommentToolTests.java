@@ -72,6 +72,11 @@ class IssueCommentToolTests {
                 123L,
                 "https://github.com/octocat/hello-world/pull/7",
                 null
+        ).withAdapterMetadata(
+                "java",
+                "maven",
+                "./mvnw test",
+                "pom.xml detected with mvnw wrapper"
         ));
 
         assertThat(result).isPresent();
@@ -79,6 +84,16 @@ class IssueCommentToolTests {
         assertThat(client.updateCommand().body()).contains("PatchPilot completed the task.");
         assertThat(client.updateCommand().body()).contains("Status: COMPLETED");
         assertThat(client.updateCommand().body()).contains("PR: https://github.com/octocat/hello-world/pull/7");
+        assertThat(client.updateCommand().body()).contains("Language: `java`");
+        assertThat(client.updateCommand().body()).contains("Build system: `maven`");
+        assertThat(client.updateCommand().body()).contains("Verification: `./mvnw test`");
+        assertThat(client.updateCommand().body()).contains("Detection reason: pom.xml detected with mvnw wrapper");
+        assertThat(client.updateCommand().body())
+                .contains("PatchPilot opened the Pull Request only after adapter-selected verification passed.");
+        assertThat(client.updateCommand().body())
+                .contains("Verification commands come from repository adapters, not arbitrary issue text.");
+        assertThat(client.updateCommand().body())
+                .contains("PatchPilot does not auto-merge Pull Requests.");
     }
 
     @Test

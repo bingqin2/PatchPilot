@@ -37,6 +37,13 @@ class FixTaskWorkerTests {
         RecordingTimelineService timelineService = new RecordingTimelineService();
         FixTaskWorker worker = new FixTaskWorker(fixTaskService, executor, issueCommentTool, timelineService);
         FixTaskVo task = createTask(fixTaskService, "delivery-worker-completed");
+        fixTaskService.recordAdapterMetadata(
+                task.id(),
+                "java",
+                "maven",
+                "./mvnw test",
+                "pom.xml detected with mvnw wrapper"
+        );
 
         worker.execute(task.id());
 
@@ -48,6 +55,11 @@ class FixTaskWorkerTests {
         assertThat(issueCommentTool.updatedStatuses())
                 .containsSequence(FixTaskStatus.RUNNING, FixTaskStatus.RUNNING_TESTS, FixTaskStatus.COMPLETED);
         assertThat(issueCommentTool.updatedTaskIds()).contains(task.id());
+        assertThat(issueCommentTool.completedTask().language()).isEqualTo("java");
+        assertThat(issueCommentTool.completedTask().buildSystem()).isEqualTo("maven");
+        assertThat(issueCommentTool.completedTask().verificationCommand()).isEqualTo("./mvnw test");
+        assertThat(issueCommentTool.completedTask().adapterDetectionReason())
+                .isEqualTo("pom.xml detected with mvnw wrapper");
         assertThat(timelineService.eventTypes())
                 .containsSequence(
                         FixTaskTimelineEventType.RUNNING,
@@ -347,6 +359,7 @@ class FixTaskWorkerTests {
         private final List<String> updatedTaskIds = new CopyOnWriteArrayList<>();
         private final List<String> failureReasons = new CopyOnWriteArrayList<>();
         private final List<String> createdFailureTaskIds = new CopyOnWriteArrayList<>();
+        private final AtomicReference<FixTaskVo> completedTask = new AtomicReference<>();
 
         private RecordingIssueCommentTool() {
             super(new GitHubIssueCommentClient(new GitHubProperties()) {
@@ -377,6 +390,7 @@ class FixTaskWorkerTests {
         @Override
         public Optional<IssueCommentResult> updateCompleted(FixTaskVo task) {
             record(task);
+            completedTask.set(task);
             return Optional.of(new IssueCommentResult(123, "https://github.com/octocat/hello-world/issues/42#issuecomment-123"));
         }
 
@@ -407,6 +421,10 @@ class FixTaskWorkerTests {
 
         private List<String> updatedTaskIds() {
             return updatedTaskIds;
+        }
+
+        private FixTaskVo completedTask() {
+            return completedTask.get();
         }
 
         private List<String> failureReasons() {
