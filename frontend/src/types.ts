@@ -253,6 +253,14 @@ export interface ConfigurationSummary {
   repositoryPreflightAllowedRootDirs: string[];
 }
 
+export interface DashboardBootstrap {
+  adminTokenConfigured: boolean;
+  adminTokenBootstrapEnabled: boolean;
+  adminToken: string | null;
+  message: string;
+  operatorAction: string;
+}
+
 export type ModelProviderHealthStatus = 'READY' | 'NEEDS_ATTENTION';
 
 export interface ModelProviderHealth {

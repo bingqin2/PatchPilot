@@ -40,7 +40,8 @@ public class AdminApiSecurityFilter extends OncePerRequestFilter {
         String path = request.getRequestURI();
         return path.equals("/health")
                 || path.startsWith("/actuator")
-                || path.equals("/api/github/webhook");
+                || path.equals("/api/github/webhook")
+                || path.equals("/api/dashboard/bootstrap");
     }
 
     @Override

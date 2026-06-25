@@ -3844,6 +3844,25 @@ Validation so far:
 - `mvn -pl PatchPilot test`: passed after full backend regression verification, 657 tests run, 0 failures.
 - `git diff --check`: passed.
 
+Implemented local dashboard admin token bootstrap from `docs/plans/196-admin-token-bootstrap-from-env.md`.
+
+Changes:
+
+- Added `PATCHPILOT_DASHBOARD_ADMIN_TOKEN_BOOTSTRAP_ENABLED` / `patchpilot.security.dashboard-admin-token-bootstrap-enabled`, defaulting to disabled.
+- Added `GET /api/dashboard/bootstrap` as a public bootstrap endpoint that returns the configured admin token only when the explicit local bootstrap flag is enabled.
+- Kept existing operator APIs protected by the admin API token and documented that the bootstrap flag must stay disabled for public Cloudflare Tunnel or shared-network URLs.
+- Updated the React dashboard to call bootstrap before protected API requests and store the returned token only when the browser has no existing admin token.
+- Updated `.env.example`, README, this execution log, and the implementation plan.
+
+Validation so far:
+
+- `mvn -pl PatchPilot -Dtest=DashboardBootstrapServiceTests,AdminApiSecurityFilterTests test`: first failed because bootstrap properties, service, and response types did not exist; then passed after implementing the endpoint and security-filter bypass, 8 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts src/App.test.tsx`: first failed because `getDashboardBootstrap` did not exist and the dashboard did not store the bootstrap token before protected calls; then passed after adding the API helper and refresh bootstrap flow, 111 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed after full backend regression verification, 680 tests run, 0 failures.
+- `npm test`: first hit the default 5s timeout in the broad dashboard smoke test under the full concurrent frontend suite; the same test passed in isolation, then the test was given a scoped 10s timeout and the full frontend suite passed, 203 tests run, 0 failures.
+- `npm run build`: passed after production frontend build verification.
+- `git diff --check`: passed.
+
 Implemented GitHub feedback Dashboard deep links from `docs/plans/186-github-feedback-dashboard-deep-links.md`.
 
 Changes:
