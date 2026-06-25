@@ -4,6 +4,28 @@ This file records dated implementation progress, validation commands, and import
 
 ## 2026-06-25
 
+Implemented persisted pre-execution decision records from `docs/plans/191-persisted-pre-execution-decision-records.md`.
+
+Changes:
+
+- Added a `fix_task_pre_execution_decision` migration, entity, mapper, converter, in-memory service, and MyBatis service.
+- Recorded structured pre-execution allow decisions for manual task creation and GitHub `issue_comment` webhook task creation.
+- Preserved all existing safety checks while storing safety, active-task, quarantine, rate-limit, model trigger-classification, issue-context, and final allow evidence.
+- Updated task detail and copied Markdown reports to prefer persisted pre-execution decisions while falling back to accepted-trigger timeline parsing for older tasks.
+- Restored `DefaultManualFixTaskService` Spring injection to the complete constructor so runtime task creation continues to use configured safety, quarantine, rate-limit, model-classification, issue-context, and persistence beans.
+- Updated README and product specification language to describe persisted pre-execution safety snapshots.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=FixTaskPreExecutionDecisionMigrationTests,InMemoryFixTaskPreExecutionDecisionServiceTests,MyBatisFixTaskPreExecutionDecisionServiceTests,TaskControllerTests test`: first failed at test compile because the persisted decision domain/service did not exist, then passed after implementation.
+- `mvn -pl PatchPilot -Dtest=FixTaskPreExecutionDecisionMigrationTests,InMemoryFixTaskPreExecutionDecisionServiceTests,MyBatisFixTaskPreExecutionDecisionServiceTests,DefaultManualFixTaskServiceTests,TaskControllerTests test`: first failed because `DefaultManualFixTaskService` Spring injection used a convenience constructor that bypassed configured `CommandSafetyGate`; passed after moving injection to the complete constructor, 84 tests run.
+- `mvn -pl PatchPilot -Dtest=GitHubWebhookServiceTests test`: passed, 19 tests run.
+- `mvn -pl PatchPilot -Dtest=GitHubWebhookControllerTests test`: first exposed shared in-memory test data around active tasks for one webhook-controller case, then passed after isolating the no-installation payload issue number, 9 tests run.
+- `mvn -pl PatchPilot test`: passed, 664 tests run.
+- `git diff --check`: passed.
+
+## 2026-06-25
+
 Implemented task pre-execution safety snapshots from `docs/plans/190-task-pre-execution-safety-snapshot.md`.
 
 Changes:

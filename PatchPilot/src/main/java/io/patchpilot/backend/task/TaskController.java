@@ -30,6 +30,7 @@ import io.patchpilot.backend.task.domain.vo.FixTaskDetailVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskModelCallVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskModelUsageSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskPageVo;
+import io.patchpilot.backend.task.domain.vo.FixTaskPreExecutionDecisionVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskPreExecutionSafetySnapshotVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskQueueItemVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskRetryPreflightVo;
@@ -46,6 +47,7 @@ import io.patchpilot.backend.task.service.FixTaskControlService;
 import io.patchpilot.backend.task.service.FixTaskMetricsService;
 import io.patchpilot.backend.task.service.FixTaskModelCallService;
 import io.patchpilot.backend.task.service.FixTaskPatchReviewService;
+import io.patchpilot.backend.task.service.FixTaskPreExecutionDecisionService;
 import io.patchpilot.backend.task.service.FixTaskQueueQueryService;
 import io.patchpilot.backend.task.service.FixTaskReportFormatter;
 import io.patchpilot.backend.task.service.FixTaskTestRunService;
@@ -84,6 +86,7 @@ public class TaskController {
     private final FixTaskToolCallService fixTaskToolCallService;
     private final FixTaskModelCallService fixTaskModelCallService;
     private final FixTaskPatchReviewService fixTaskPatchReviewService;
+    private final FixTaskPreExecutionDecisionService fixTaskPreExecutionDecisionService;
     private final FixTaskControlService fixTaskControlService;
     private final FixTaskMetricsService fixTaskMetricsService;
     private final FixTaskAuditSummaryService fixTaskAuditSummaryService;
@@ -629,7 +632,7 @@ public class TaskController {
                 toolCalls,
                 fixTaskModelCallService.listModelCalls(taskId),
                 triggerIntentAudit(timeline),
-                preExecutionSafetySnapshot(summary.task(), timeline),
+                preExecutionSafetySnapshot(summary.task(), timeline, taskId),
                 latestGeneratedDiff(toolCalls),
                 fixTaskPatchReviewService.findLatestPatchReview(taskId).orElse(null),
                 issueContext(summary.task()),
@@ -669,15 +672,38 @@ public class TaskController {
         ));
     }
 
-    private static FixTaskPreExecutionSafetySnapshotVo preExecutionSafetySnapshot(
+    private FixTaskPreExecutionSafetySnapshotVo preExecutionSafetySnapshot(
             FixTaskVo task,
-            List<FixTaskTimelineEventVo> timeline
+            List<FixTaskTimelineEventVo> timeline,
+            String taskId
     ) {
+        Optional<FixTaskPreExecutionDecisionVo> persistedDecision =
+                fixTaskPreExecutionDecisionService.findLatestDecision(taskId);
+        if (persistedDecision.isPresent()) {
+            return fromPreExecutionDecision(persistedDecision.get());
+        }
+
         return timeline.stream()
                 .filter(event -> event.eventType() == FixTaskTimelineEventType.TRIGGER_ACCEPTED)
                 .reduce((first, second) -> second)
                 .flatMap(event -> parsePreExecutionSafetySnapshot(task, event))
                 .orElse(null);
+    }
+
+    private static FixTaskPreExecutionSafetySnapshotVo fromPreExecutionDecision(
+            FixTaskPreExecutionDecisionVo decision
+    ) {
+        return new FixTaskPreExecutionSafetySnapshotVo(
+                decision.id(),
+                decision.source(),
+                decision.finalDecision(),
+                decision.safetyDecision().reason(),
+                decision.quarantineDecision().reason(),
+                decision.rateLimitDecision().reason(),
+                decision.issueContextLoaded() ? "issue context loaded" : "issue context unavailable",
+                decision.triggerIntentDecision().reason(),
+                decision.createdAt()
+        );
     }
 
     private static Optional<FixTaskPreExecutionSafetySnapshotVo> parsePreExecutionSafetySnapshot(

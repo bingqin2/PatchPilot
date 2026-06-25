@@ -37,17 +37,22 @@ import io.patchpilot.backend.safety.service.TriggerRateLimitService;
 import io.patchpilot.backend.safety.service.impl.InMemoryRejectedTriggerAuditService;
 import io.patchpilot.backend.task.domain.bo.CreateFixTaskCommand;
 import io.patchpilot.backend.task.domain.bo.FixTaskCreationResult;
+import io.patchpilot.backend.task.domain.bo.RecordFixTaskPreExecutionDecisionCommand;
 import io.patchpilot.backend.task.domain.enums.FixTaskTimelineEventType;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
+import io.patchpilot.backend.task.domain.vo.TriggerEvaluationDecisionVo;
 import io.patchpilot.backend.task.service.FixTaskDispatcher;
+import io.patchpilot.backend.task.service.FixTaskPreExecutionDecisionService;
 import io.patchpilot.backend.task.service.FixTaskService;
 import io.patchpilot.backend.task.service.FixTaskTimelineService;
 import io.patchpilot.backend.task.service.LogSummary;
+import io.patchpilot.backend.task.service.impl.InMemoryFixTaskPreExecutionDecisionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -70,6 +75,7 @@ public class GitHubWebhookService {
     private final TriggerIntentClassifier triggerIntentClassifier;
     private final WebhookDeliveryDiagnosticService webhookDeliveryDiagnosticService;
     private final IssueContextService issueContextService;
+    private final FixTaskPreExecutionDecisionService preExecutionDecisionService;
     private final ConcurrentMap<String, WebhookHandleResult> deliveryResults = new ConcurrentHashMap<>();
 
     public GitHubWebhookService(
@@ -285,7 +291,40 @@ public class GitHubWebhookService {
                 triggerQuarantineService,
                 triggerRateLimitService,
                 triggerIntentClassifier,
-                new InMemoryWebhookDeliveryDiagnosticService()
+                new InMemoryWebhookDeliveryDiagnosticService(),
+                defaultIssueContextService(),
+                new InMemoryFixTaskPreExecutionDecisionService()
+        );
+    }
+
+    public GitHubWebhookService(
+            ObjectMapper objectMapper,
+            FixTaskService fixTaskService,
+            FixTaskDispatcher fixTaskDispatcher,
+            IssueCommentTool issueCommentTool,
+            FixTaskTimelineService fixTaskTimelineService,
+            RejectedTriggerAuditService rejectedTriggerAuditService,
+            CommandSafetyGate commandSafetyGate,
+            TriggerQuarantineService triggerQuarantineService,
+            TriggerRateLimitService triggerRateLimitService,
+            TriggerIntentClassifier triggerIntentClassifier,
+            IssueContextService issueContextService,
+            FixTaskPreExecutionDecisionService preExecutionDecisionService
+    ) {
+        this(
+                objectMapper,
+                fixTaskService,
+                fixTaskDispatcher,
+                issueCommentTool,
+                fixTaskTimelineService,
+                rejectedTriggerAuditService,
+                commandSafetyGate,
+                triggerQuarantineService,
+                triggerRateLimitService,
+                triggerIntentClassifier,
+                new InMemoryWebhookDeliveryDiagnosticService(),
+                issueContextService,
+                preExecutionDecisionService
         );
     }
 
@@ -314,7 +353,8 @@ public class GitHubWebhookService {
                 triggerRateLimitService,
                 triggerIntentClassifier,
                 new InMemoryWebhookDeliveryDiagnosticService(),
-                issueContextService
+                issueContextService,
+                new InMemoryFixTaskPreExecutionDecisionService()
         );
     }
 
@@ -343,7 +383,8 @@ public class GitHubWebhookService {
                 triggerRateLimitService,
                 triggerIntentClassifier,
                 webhookDeliveryDiagnosticService,
-                defaultIssueContextService()
+                defaultIssueContextService(),
+                new InMemoryFixTaskPreExecutionDecisionService()
         );
     }
 
@@ -360,7 +401,8 @@ public class GitHubWebhookService {
             TriggerRateLimitService triggerRateLimitService,
             TriggerIntentClassifier triggerIntentClassifier,
             WebhookDeliveryDiagnosticService webhookDeliveryDiagnosticService,
-            IssueContextService issueContextService
+            IssueContextService issueContextService,
+            FixTaskPreExecutionDecisionService preExecutionDecisionService
     ) {
         this.objectMapper = objectMapper;
         this.fixTaskService = fixTaskService;
@@ -374,6 +416,7 @@ public class GitHubWebhookService {
         this.triggerIntentClassifier = triggerIntentClassifier;
         this.webhookDeliveryDiagnosticService = webhookDeliveryDiagnosticService;
         this.issueContextService = issueContextService;
+        this.preExecutionDecisionService = preExecutionDecisionService;
     }
 
     public WebhookHandleResult handle(String event, String deliveryId, String payload) {
@@ -671,6 +714,18 @@ public class GitHubWebhookService {
             );
             return WebhookHandleResult.duplicate(task.id());
         }
+        preExecutionDecisionService.recordDecision(new RecordFixTaskPreExecutionDecisionCommand(
+                task.id(),
+                "ISSUE_COMMENT",
+                "ALLOWED",
+                decision(safetyDecision.allowed(), safetyDecision.reason(), safetyDecision.category()),
+                decision(true, "No active task exists for this issue", RejectedTriggerCategory.UNKNOWN),
+                decision(quarantineDecision.allowed(), quarantineDecision.reason(), quarantineDecision.category()),
+                decision(rateLimitDecision.allowed(), rateLimitDecision.reason(), rateLimitDecision.category()),
+                decision(true, triggerIntentDecision.reason(), triggerIntentDecision.rejectionCategory()),
+                triggerClassificationResult.issueContextLoaded(),
+                Instant.now()
+        ));
         recordTimelineEvent(
                 task.id(),
                 FixTaskTimelineEventType.TRIGGER_ACCEPTED,
@@ -972,6 +1027,10 @@ public class GitHubWebhookService {
 
     private static String failureReason(RuntimeException exception) {
         return exception.getMessage() == null ? exception.getClass().getSimpleName() : exception.getMessage();
+    }
+
+    private static TriggerEvaluationDecisionVo decision(boolean allowed, String reason, String category) {
+        return new TriggerEvaluationDecisionVo(allowed, reason, category);
     }
 
     private static IssueContextService defaultIssueContextService() {

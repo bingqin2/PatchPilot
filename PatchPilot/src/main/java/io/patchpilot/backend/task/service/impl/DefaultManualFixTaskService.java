@@ -27,15 +27,19 @@ import io.patchpilot.backend.safety.service.TriggerRateLimitService;
 import io.patchpilot.backend.safety.service.impl.InMemoryRejectedTriggerAuditService;
 import io.patchpilot.backend.task.domain.bo.CreateFixTaskCommand;
 import io.patchpilot.backend.task.domain.bo.CreateManualFixTaskCommand;
+import io.patchpilot.backend.task.domain.bo.RecordFixTaskPreExecutionDecisionCommand;
 import io.patchpilot.backend.task.domain.enums.FixTaskTimelineEventType;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
+import io.patchpilot.backend.task.domain.vo.TriggerEvaluationDecisionVo;
 import io.patchpilot.backend.task.service.FixTaskDispatcher;
+import io.patchpilot.backend.task.service.FixTaskPreExecutionDecisionService;
 import io.patchpilot.backend.task.service.FixTaskService;
 import io.patchpilot.backend.task.service.FixTaskTimelineService;
 import io.patchpilot.backend.task.service.ManualFixTaskService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -51,6 +55,7 @@ public class DefaultManualFixTaskService implements ManualFixTaskService {
     private final TriggerRateLimitService triggerRateLimitService;
     private final TriggerIntentClassifier triggerIntentClassifier;
     private final IssueContextService issueContextService;
+    private final FixTaskPreExecutionDecisionService preExecutionDecisionService;
 
     public DefaultManualFixTaskService(
             FixTaskService fixTaskService,
@@ -66,7 +71,28 @@ public class DefaultManualFixTaskService implements ManualFixTaskService {
                 new NoOpTriggerQuarantineService(),
                 new NoOpTriggerRateLimitService(),
                 new NoOpTriggerIntentClassifier(),
-                defaultIssueContextService()
+                defaultIssueContextService(),
+                new InMemoryFixTaskPreExecutionDecisionService()
+        );
+    }
+
+    public DefaultManualFixTaskService(
+            FixTaskService fixTaskService,
+            FixTaskTimelineService fixTaskTimelineService,
+            FixTaskDispatcher fixTaskDispatcher,
+            FixTaskPreExecutionDecisionService preExecutionDecisionService
+    ) {
+        this(
+                fixTaskService,
+                fixTaskTimelineService,
+                fixTaskDispatcher,
+                new InMemoryRejectedTriggerAuditService(),
+                new CommandSafetyGate(),
+                new NoOpTriggerQuarantineService(),
+                new NoOpTriggerRateLimitService(),
+                new NoOpTriggerIntentClassifier(),
+                defaultIssueContextService(),
+                preExecutionDecisionService
         );
     }
 
@@ -85,7 +111,8 @@ public class DefaultManualFixTaskService implements ManualFixTaskService {
                 new NoOpTriggerQuarantineService(),
                 new NoOpTriggerRateLimitService(),
                 new NoOpTriggerIntentClassifier(),
-                defaultIssueContextService()
+                defaultIssueContextService(),
+                new InMemoryFixTaskPreExecutionDecisionService()
         );
     }
 
@@ -105,7 +132,8 @@ public class DefaultManualFixTaskService implements ManualFixTaskService {
                 new NoOpTriggerQuarantineService(),
                 new NoOpTriggerRateLimitService(),
                 new NoOpTriggerIntentClassifier(),
-                defaultIssueContextService()
+                defaultIssueContextService(),
+                new InMemoryFixTaskPreExecutionDecisionService()
         );
     }
 
@@ -126,7 +154,8 @@ public class DefaultManualFixTaskService implements ManualFixTaskService {
                 new NoOpTriggerQuarantineService(),
                 new NoOpTriggerRateLimitService(),
                 triggerIntentClassifier,
-                defaultIssueContextService()
+                defaultIssueContextService(),
+                new InMemoryFixTaskPreExecutionDecisionService()
         );
     }
 
@@ -140,7 +169,8 @@ public class DefaultManualFixTaskService implements ManualFixTaskService {
             TriggerQuarantineService triggerQuarantineService,
             TriggerRateLimitService triggerRateLimitService,
             TriggerIntentClassifier triggerIntentClassifier,
-            IssueContextService issueContextService
+            IssueContextService issueContextService,
+            FixTaskPreExecutionDecisionService preExecutionDecisionService
     ) {
         this.fixTaskService = fixTaskService;
         this.fixTaskTimelineService = fixTaskTimelineService;
@@ -151,6 +181,32 @@ public class DefaultManualFixTaskService implements ManualFixTaskService {
         this.triggerRateLimitService = triggerRateLimitService;
         this.triggerIntentClassifier = triggerIntentClassifier;
         this.issueContextService = issueContextService;
+        this.preExecutionDecisionService = preExecutionDecisionService;
+    }
+
+    public DefaultManualFixTaskService(
+            FixTaskService fixTaskService,
+            FixTaskTimelineService fixTaskTimelineService,
+            FixTaskDispatcher fixTaskDispatcher,
+            RejectedTriggerAuditService rejectedTriggerAuditService,
+            CommandSafetyGate commandSafetyGate,
+            TriggerQuarantineService triggerQuarantineService,
+            TriggerRateLimitService triggerRateLimitService,
+            TriggerIntentClassifier triggerIntentClassifier,
+            IssueContextService issueContextService
+    ) {
+        this(
+                fixTaskService,
+                fixTaskTimelineService,
+                fixTaskDispatcher,
+                rejectedTriggerAuditService,
+                commandSafetyGate,
+                triggerQuarantineService,
+                triggerRateLimitService,
+                triggerIntentClassifier,
+                issueContextService,
+                new InMemoryFixTaskPreExecutionDecisionService()
+        );
     }
 
     public DefaultManualFixTaskService(
@@ -172,7 +228,8 @@ public class DefaultManualFixTaskService implements ManualFixTaskService {
                 triggerQuarantineService,
                 triggerRateLimitService,
                 triggerIntentClassifier,
-                defaultIssueContextService()
+                defaultIssueContextService(),
+                new InMemoryFixTaskPreExecutionDecisionService()
         );
     }
 
@@ -206,6 +263,11 @@ public class DefaultManualFixTaskService implements ManualFixTaskService {
                 .ifPresent(activeTask -> {
                     throw new IllegalStateException("An active task already exists for this issue");
                 });
+        TriggerEvaluationDecisionVo activeTaskDecision = new TriggerEvaluationDecisionVo(
+                true,
+                "No active task exists for this issue",
+                RejectedTriggerCategory.UNKNOWN
+        );
 
         TriggerQuarantineDecision quarantineDecision = triggerQuarantineService.check(new TriggerQuarantineRequest(
                 "manual",
@@ -266,6 +328,11 @@ public class DefaultManualFixTaskService implements ManualFixTaskService {
             ));
             throw new IllegalArgumentException(triggerIntentDecision.rejectionReason());
         }
+        TriggerEvaluationDecisionVo triggerIntentEvaluation = new TriggerEvaluationDecisionVo(
+                true,
+                triggerIntentDecision.reason(),
+                triggerIntentDecision.rejectionCategory()
+        );
 
         FixTaskVo task = fixTaskService.createFixTask(new CreateFixTaskCommand(
                 command.repositoryOwner(),
@@ -276,6 +343,18 @@ public class DefaultManualFixTaskService implements ManualFixTaskService {
                 command.triggerComment(),
                 "manual-" + UUID.randomUUID(),
                 0
+        ));
+        preExecutionDecisionService.recordDecision(new RecordFixTaskPreExecutionDecisionCommand(
+                task.id(),
+                "MANUAL",
+                "ALLOWED",
+                decision(safetyDecision.allowed(), safetyDecision.reason(), safetyDecision.category()),
+                activeTaskDecision,
+                decision(quarantineDecision.allowed(), quarantineDecision.reason(), quarantineDecision.category()),
+                decision(rateLimitDecision.allowed(), rateLimitDecision.reason(), rateLimitDecision.category()),
+                triggerIntentEvaluation,
+                triggerClassificationResult.issueContextLoaded(),
+                Instant.now()
         ));
         fixTaskTimelineService.recordEvent(
                 task.id(),
@@ -347,6 +426,10 @@ public class DefaultManualFixTaskService implements ManualFixTaskService {
 
     private static String failureReason(RuntimeException exception) {
         return exception.getMessage() == null ? exception.getClass().getSimpleName() : exception.getMessage();
+    }
+
+    private static TriggerEvaluationDecisionVo decision(boolean allowed, String reason, String category) {
+        return new TriggerEvaluationDecisionVo(allowed, reason, category);
     }
 
     private static IssueContextService defaultIssueContextService() {

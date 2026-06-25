@@ -8,7 +8,9 @@ import io.patchpilot.backend.github.client.domain.GitHubIssueContext;
 import io.patchpilot.backend.github.client.domain.GitHubIssueContextComment;
 import io.patchpilot.backend.github.config.GitHubProperties;
 import io.patchpilot.backend.safety.domain.OperatorSafetyAuditVo;
+import io.patchpilot.backend.safety.domain.RejectedTriggerCategory;
 import io.patchpilot.backend.task.domain.bo.CreateFixTaskCommand;
+import io.patchpilot.backend.task.domain.bo.RecordFixTaskPreExecutionDecisionCommand;
 import io.patchpilot.backend.task.domain.enums.FixTaskQueueItemStatus;
 import io.patchpilot.backend.task.domain.enums.FixTaskTimelineEventType;
 import io.patchpilot.backend.safety.domain.RejectedTriggerAuditVo;
@@ -19,8 +21,10 @@ import io.patchpilot.backend.task.domain.vo.FixTaskModelCallVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskTestRunVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskToolCallVo;
+import io.patchpilot.backend.task.domain.vo.TriggerEvaluationDecisionVo;
 import io.patchpilot.backend.task.service.FixTaskModelCallService;
 import io.patchpilot.backend.task.service.FixTaskPatchReviewService;
+import io.patchpilot.backend.task.service.FixTaskPreExecutionDecisionService;
 import io.patchpilot.backend.task.service.FixTaskQueueQueryService;
 import io.patchpilot.backend.task.service.FixTaskTestRunService;
 import io.patchpilot.backend.task.service.FixTaskTimelineService;
@@ -82,6 +86,9 @@ class TaskControllerTests {
 
     @Autowired
     private FixTaskPatchReviewService fixTaskPatchReviewService;
+
+    @Autowired
+    private FixTaskPreExecutionDecisionService fixTaskPreExecutionDecisionService;
 
     @Autowired
     private FixTaskQueueQueryService fixTaskQueueQueryService;
@@ -1143,6 +1150,40 @@ class TaskControllerTests {
     }
 
     @Test
+    void should_prefer_persisted_pre_execution_decision_in_task_detail() throws Exception {
+        FixTaskVo task = createTask("delivery-persisted-pre-execution");
+        fixTaskTimelineService.recordEvent(
+                task.id(),
+                FixTaskTimelineEventType.TRIGGER_ACCEPTED,
+                "Trigger accepted: stale timeline safety; issue context unavailable; model accepted trigger: stale timeline model"
+        );
+        fixTaskPreExecutionDecisionService.recordDecision(new RecordFixTaskPreExecutionDecisionCommand(
+                task.id(),
+                "ISSUE_COMMENT",
+                "ALLOWED",
+                new TriggerEvaluationDecisionVo(true, "persisted safety gate accepted", RejectedTriggerCategory.UNKNOWN),
+                new TriggerEvaluationDecisionVo(true, "persisted active task check passed", RejectedTriggerCategory.UNKNOWN),
+                new TriggerEvaluationDecisionVo(true, "persisted quarantine check passed", RejectedTriggerCategory.UNKNOWN),
+                new TriggerEvaluationDecisionVo(true, "persisted rate limit check passed", RejectedTriggerCategory.UNKNOWN),
+                new TriggerEvaluationDecisionVo(true, "persisted model accepted concrete maintenance request", RejectedTriggerCategory.UNKNOWN),
+                true,
+                Instant.parse("2026-06-20T04:01:00Z")
+        ));
+
+        mockMvc.perform(get("/api/tasks/{id}/detail", task.id()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.preExecutionSafetySnapshot.source").value("ISSUE_COMMENT"))
+                .andExpect(jsonPath("$.data.preExecutionSafetySnapshot.finalDecision").value("ALLOWED"))
+                .andExpect(jsonPath("$.data.preExecutionSafetySnapshot.safetyDecision").value("persisted safety gate accepted"))
+                .andExpect(jsonPath("$.data.preExecutionSafetySnapshot.quarantineDecision").value("persisted quarantine check passed"))
+                .andExpect(jsonPath("$.data.preExecutionSafetySnapshot.rateLimitDecision").value("persisted rate limit check passed"))
+                .andExpect(jsonPath("$.data.preExecutionSafetySnapshot.issueContextStatus").value("issue context loaded"))
+                .andExpect(jsonPath("$.data.preExecutionSafetySnapshot.modelDecision").value("persisted model accepted concrete maintenance request"))
+                .andExpect(jsonPath("$.data.preExecutionSafetySnapshot.createdAt").value("2026-06-20T04:01:00Z"));
+    }
+
+    @Test
     void should_include_latest_generated_diff_in_task_detail() throws Exception {
         FixTaskVo task = createTask("delivery-generated-diff");
         fixTaskToolCallService.recordToolCall(
@@ -1358,6 +1399,38 @@ class TaskControllerTests {
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Edited files: `docs/demo.md`, `src/main/App.java`")))
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("## Model Calls")))
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- `gpt-5.5` -> success, 200 tokens")));
+    }
+
+    @Test
+    void should_prefer_persisted_pre_execution_decision_in_task_report() throws Exception {
+        FixTaskVo task = createTask("delivery-persisted-report");
+        fixTaskTimelineService.recordEvent(
+                task.id(),
+                FixTaskTimelineEventType.TRIGGER_ACCEPTED,
+                "Trigger accepted: stale timeline safety; issue context unavailable; model accepted trigger: stale timeline model"
+        );
+        fixTaskPreExecutionDecisionService.recordDecision(new RecordFixTaskPreExecutionDecisionCommand(
+                task.id(),
+                "ISSUE_COMMENT",
+                "ALLOWED",
+                new TriggerEvaluationDecisionVo(true, "persisted safety gate accepted", RejectedTriggerCategory.UNKNOWN),
+                new TriggerEvaluationDecisionVo(true, "persisted active task check passed", RejectedTriggerCategory.UNKNOWN),
+                new TriggerEvaluationDecisionVo(true, "persisted quarantine check passed", RejectedTriggerCategory.UNKNOWN),
+                new TriggerEvaluationDecisionVo(true, "persisted rate limit check passed", RejectedTriggerCategory.UNKNOWN),
+                new TriggerEvaluationDecisionVo(true, "persisted model accepted concrete maintenance request", RejectedTriggerCategory.UNKNOWN),
+                true,
+                Instant.parse("2026-06-20T05:01:00Z")
+        ));
+
+        mockMvc.perform(get("/api/tasks/{id}/report", task.id()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("## Pre-Execution Safety Snapshot")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Safety: persisted safety gate accepted")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Quarantine: persisted quarantine check passed")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Rate limit: persisted rate limit check passed")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Issue context: issue context loaded")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Model: persisted model accepted concrete maintenance request")));
     }
 
     @Test

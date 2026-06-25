@@ -19,6 +19,7 @@ import io.patchpilot.backend.safety.service.TriggerQuarantineService;
 import io.patchpilot.backend.safety.service.TriggerRateLimitService;
 import io.patchpilot.backend.task.domain.bo.CreateFixTaskCommand;
 import io.patchpilot.backend.task.domain.bo.CreateManualFixTaskCommand;
+import io.patchpilot.backend.task.domain.bo.RecordFixTaskPreExecutionDecisionCommand;
 import io.patchpilot.backend.task.domain.enums.FixTaskTimelineEventType;
 import io.patchpilot.backend.task.domain.vo.FixTaskTimelineEventVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
@@ -38,10 +39,13 @@ class DefaultManualFixTaskServiceTests {
     private final InMemoryFixTaskService fixTaskService = new InMemoryFixTaskService();
     private final RecordingTimelineService fixTaskTimelineService = new RecordingTimelineService();
     private final RecordingFixTaskDispatcher fixTaskDispatcher = new RecordingFixTaskDispatcher();
+    private final RecordingPreExecutionDecisionService preExecutionDecisionService =
+            new RecordingPreExecutionDecisionService();
     private final ManualFixTaskService manualFixTaskService = new DefaultManualFixTaskService(
             fixTaskService,
             fixTaskTimelineService,
-            fixTaskDispatcher
+            fixTaskDispatcher,
+            preExecutionDecisionService
     );
 
     @Test
@@ -68,6 +72,19 @@ class DefaultManualFixTaskServiceTests {
                 "Trigger accepted: safety gate accepted; issue context not loaded; model trigger classification disabled",
                 "Task accepted from dashboard manual creation"
         );
+        assertThat(preExecutionDecisionService.command().taskId()).isEqualTo(task.id());
+        assertThat(preExecutionDecisionService.command().source()).isEqualTo("MANUAL");
+        assertThat(preExecutionDecisionService.command().finalDecision()).isEqualTo("ALLOWED");
+        assertThat(preExecutionDecisionService.command().safetyDecision().reason()).isEqualTo("Accepted");
+        assertThat(preExecutionDecisionService.command().activeTaskDecision().reason())
+                .isEqualTo("No active task exists for this issue");
+        assertThat(preExecutionDecisionService.command().quarantineDecision().reason())
+                .isEqualTo("Trigger quarantine accepted");
+        assertThat(preExecutionDecisionService.command().rateLimitDecision().reason())
+                .isEqualTo("Trigger rate limit accepted");
+        assertThat(preExecutionDecisionService.command().triggerIntentDecision().reason())
+                .isEqualTo("Model trigger classification is disabled");
+        assertThat(preExecutionDecisionService.command().issueContextLoaded()).isFalse();
         assertThat(fixTaskDispatcher.taskIds()).containsExactly(task.id());
     }
 
@@ -523,6 +540,42 @@ class DefaultManualFixTaskServiceTests {
 
         private TriggerQuarantineRequest request() {
             return request;
+        }
+    }
+
+    private static final class RecordingPreExecutionDecisionService implements FixTaskPreExecutionDecisionService {
+
+        private RecordFixTaskPreExecutionDecisionCommand command;
+
+        @Override
+        public io.patchpilot.backend.task.domain.vo.FixTaskPreExecutionDecisionVo recordDecision(
+                RecordFixTaskPreExecutionDecisionCommand command
+        ) {
+            this.command = command;
+            return new io.patchpilot.backend.task.domain.vo.FixTaskPreExecutionDecisionVo(
+                    "decision-1",
+                    command.taskId(),
+                    command.source(),
+                    command.finalDecision(),
+                    command.safetyDecision(),
+                    command.activeTaskDecision(),
+                    command.quarantineDecision(),
+                    command.rateLimitDecision(),
+                    command.triggerIntentDecision(),
+                    command.issueContextLoaded(),
+                    command.createdAt()
+            );
+        }
+
+        @Override
+        public java.util.Optional<io.patchpilot.backend.task.domain.vo.FixTaskPreExecutionDecisionVo> findLatestDecision(
+                String taskId
+        ) {
+            return java.util.Optional.empty();
+        }
+
+        private RecordFixTaskPreExecutionDecisionCommand command() {
+            return command;
         }
     }
 }
