@@ -975,6 +975,13 @@ h3 {
   margin-bottom: 16px;
 }
 
+.demo-launch-preflight-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
 .demo-launch-command-form,
 .demo-launch-preflight-form {
   align-items: end;

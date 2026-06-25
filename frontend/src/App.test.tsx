@@ -2536,6 +2536,12 @@ test('composes a demo launch command and applies it to preflight from the dashbo
       body: JSON.stringify(demoLaunchCommand.preflightInput)
     })
   );
+
+  await user.click(within(preflightPanel).getByRole('button', { name: 'Copy launch package' }));
+  expect(writeText).toHaveBeenCalledWith(expect.stringContaining('# PatchPilot Demo Launch Package'));
+  expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- GitHub issue: https://github.com/bingqin2/PatchPilot/issues/1'));
+  expect(writeText).toHaveBeenCalledWith(expect.stringContaining('## Prepared Commands In This Browser'));
+  expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- `/agent fix replace docs/demo.md PatchPilot smoke test`'));
 });
 
 test('persists demo launch command history across dashboard reloads', async () => {

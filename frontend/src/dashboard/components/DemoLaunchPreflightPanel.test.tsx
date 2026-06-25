@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { DemoLaunchPreflight } from '../../types';
+import type { DemoLaunchPreflight, DemoPreparedLaunchCommand } from '../../types';
 import { DemoLaunchPreflightPanel } from './DemoLaunchPreflightPanel';
 
 const readyPreflight: DemoLaunchPreflight = {
@@ -78,6 +78,20 @@ const blockedPreflight: DemoLaunchPreflight = {
   ]
 };
 
+const preparedLaunchCommands: DemoPreparedLaunchCommand[] = [
+  {
+    triggerComment: '/agent fix replace docs/demo.md PatchPilot smoke test',
+    repositoryOwner: 'bingqin2',
+    repositoryName: 'PatchPilot',
+    issueNumber: 1,
+    triggerUser: 'bingqin2',
+    operation: 'replace',
+    targetPath: 'docs/demo.md',
+    replacementText: 'PatchPilot smoke test',
+    savedAt: '2026-06-26T01:00:00Z'
+  }
+];
+
 test('runs demo launch preflight for the exact issue comment that will be posted', async () => {
   const user = userEvent.setup();
   const onRunPreflight = vi.fn(async () => readyPreflight);
@@ -87,6 +101,7 @@ test('runs demo launch preflight for the exact issue comment that will be posted
       result={null}
       error={null}
       pending={false}
+      preparedLaunchCommands={[]}
       onRunPreflight={onRunPreflight}
     />
   );
@@ -121,6 +136,7 @@ test('applies a generated launch command to the preflight form', async () => {
       result={null}
       error={null}
       pending={false}
+      preparedLaunchCommands={[]}
       composedPreflightInput={{
         repositoryOwner: 'octocat',
         repositoryName: 'hello-world',
@@ -155,6 +171,7 @@ test('shows ready and blocked demo launch preflight outcomes', () => {
       result={readyPreflight}
       error={null}
       pending={false}
+      preparedLaunchCommands={[]}
       onRunPreflight={vi.fn()}
     />
   );
@@ -169,6 +186,7 @@ test('shows ready and blocked demo launch preflight outcomes', () => {
       result={blockedPreflight}
       error="Trigger user intruder is not allowed"
       pending={false}
+      preparedLaunchCommands={[]}
       onRunPreflight={vi.fn()}
     />
   );
@@ -194,6 +212,7 @@ test('copies demo launch preflight evidence as markdown', async () => {
       result={readyPreflight}
       error={null}
       pending={false}
+      preparedLaunchCommands={preparedLaunchCommands}
       onRunPreflight={vi.fn()}
     />
   );
@@ -208,4 +227,41 @@ test('copies demo launch preflight evidence as markdown', async () => {
   expect(writeText).toHaveBeenCalledWith(
     expect.stringContaining('- Next action: Post the tested /agent fix comment on the controlled GitHub issue.')
   );
+});
+
+test('copies a complete demo launch package with issue url and prepared command evidence', async () => {
+  const user = userEvent.setup();
+  const writeText = vi.fn().mockResolvedValue(undefined);
+  Object.defineProperty(navigator, 'clipboard', {
+    configurable: true,
+    value: { writeText }
+  });
+
+  render(
+    <DemoLaunchPreflightPanel
+      result={readyPreflight}
+      error={null}
+      pending={false}
+      preparedLaunchCommands={preparedLaunchCommands}
+      composedPreflightInput={{
+        repositoryOwner: 'bingqin2',
+        repositoryName: 'PatchPilot',
+        issueNumber: 1,
+        triggerUser: 'bingqin2',
+        triggerComment: '/agent fix replace docs/demo.md PatchPilot smoke test'
+      }}
+      onRunPreflight={vi.fn()}
+    />
+  );
+
+  await user.click(screen.getByRole('button', { name: 'Copy launch package' }));
+
+  expect(writeText).toHaveBeenCalledWith(expect.stringContaining('# PatchPilot Demo Launch Package'));
+  expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- GitHub issue: https://github.com/bingqin2/PatchPilot/issues/1'));
+  expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- Comment: `/agent fix replace docs/demo.md PatchPilot smoke test`'));
+  expect(writeText).toHaveBeenCalledWith(expect.stringContaining('## Preflight Evidence'));
+  expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- Ready to post: `YES`'));
+  expect(writeText).toHaveBeenCalledWith(expect.stringContaining('## Prepared Commands In This Browser'));
+  expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- `/agent fix replace docs/demo.md PatchPilot smoke test`'));
+  expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- Target: `docs/demo.md`'));
 });
