@@ -27,6 +27,7 @@ import type {
   FixTaskQueueSummary,
   FixTaskWorkerHealth,
   GitHubCredentialReadiness,
+  GitHubRepositoryAccessReadiness,
   OperatorSafetyAudit,
   AcceptedTriggerDecision,
   RejectedTriggerAudit,
@@ -179,6 +180,19 @@ export async function getModelProviderHealth(): Promise<ModelProviderHealth> {
 
 export async function getGitHubCredentialReadiness(): Promise<GitHubCredentialReadiness> {
   return getApi<GitHubCredentialReadiness>('/api/github/credential-readiness');
+}
+
+export async function getGitHubRepositoryAccessReadiness(
+  owner?: string,
+  repository?: string
+): Promise<GitHubRepositoryAccessReadiness> {
+  const searchParams = new URLSearchParams();
+  appendSearchParam(searchParams, 'owner', owner);
+  appendSearchParam(searchParams, 'repository', repository);
+  const queryString = searchParams.toString();
+  return getApi<GitHubRepositoryAccessReadiness>(
+    queryString ? `/api/github/repository-access-readiness?${queryString}` : '/api/github/repository-access-readiness'
+  );
 }
 
 export async function getDemoReadiness(): Promise<DemoReadiness> {

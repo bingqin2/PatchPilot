@@ -3,6 +3,7 @@ import type {
   ConfigurationSummary,
   DemoReadiness,
   GitHubCredentialReadiness,
+  GitHubRepositoryAccessReadiness,
   ModelProviderHealth,
   LanguageAdapterFixtureVerification,
   LanguageAdapterRuntimeReadiness,
@@ -15,6 +16,7 @@ interface OperatorSetupChecklistPanelProps {
   backendHealth: BackendHealth | null;
   configuration: ConfigurationSummary | null;
   githubCredentialReadiness: GitHubCredentialReadiness | null;
+  githubRepositoryAccessReadiness: GitHubRepositoryAccessReadiness | null;
   modelProviderHealth: ModelProviderHealth | null;
   demoReadiness: DemoReadiness | null;
   adapterFixtureVerifications: LanguageAdapterFixtureVerification[];
@@ -36,6 +38,7 @@ export function OperatorSetupChecklistPanel({
   backendHealth,
   configuration,
   githubCredentialReadiness,
+  githubRepositoryAccessReadiness,
   modelProviderHealth,
   demoReadiness,
   adapterFixtureVerifications,
@@ -49,6 +52,7 @@ export function OperatorSetupChecklistPanel({
     backendHealth,
     configuration,
     githubCredentialReadiness,
+    githubRepositoryAccessReadiness,
     modelProviderHealth,
     demoReadiness,
     adapterFixtureVerifications,
@@ -99,6 +103,7 @@ function setupChecks({
   backendHealth,
   configuration,
   githubCredentialReadiness,
+  githubRepositoryAccessReadiness,
   modelProviderHealth,
   demoReadiness,
   adapterFixtureVerifications,
@@ -112,6 +117,7 @@ function setupChecks({
     backendCheck(backendHealth),
     credentialCheck(configuration, hasStoredAdminToken),
     githubCredentialCheck(githubCredentialReadiness, demoReadiness),
+    githubRepositoryAccessCheck(githubRepositoryAccessReadiness),
     safetyPolicyCheck(configuration),
     repositoryPreflightScopeCheck(configuration, demoReadiness),
     modelProviderHealthCheck(modelProviderHealth, demoReadiness),
@@ -170,6 +176,17 @@ function githubCredentialCheck(
     ready,
     message: githubCredentialReadiness?.message ?? 'GitHub credential readiness has not loaded',
     action: githubCredentialReadiness?.operatorAction ?? 'Confirm /api/github/credential-readiness before a live demo.'
+  };
+}
+
+function githubRepositoryAccessCheck(githubRepositoryAccessReadiness: GitHubRepositoryAccessReadiness | null): SetupCheck {
+  const ready = githubRepositoryAccessReadiness?.status === 'READY';
+  return {
+    name: 'Repository access',
+    ready,
+    message: githubRepositoryAccessReadiness?.message ?? 'GitHub repository access readiness has not loaded',
+    action: githubRepositoryAccessReadiness?.operatorAction
+      ?? 'Select a repository filter or load recent tasks, then confirm /api/github/repository-access-readiness before a live demo.'
   };
 }
 

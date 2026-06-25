@@ -920,6 +920,18 @@ const githubCredentialReadiness = {
   operatorAction: 'No action needed.'
 };
 
+const githubRepositoryAccessReadiness = {
+  tokenConfigured: true,
+  repositoryConfigured: true,
+  repository: 'bingqin2/PatchPilot',
+  status: 'READY',
+  message: 'GitHub token can read repository bingqin2/PatchPilot.',
+  defaultBranch: 'main',
+  latencyMs: 42,
+  checkedAt: '2026-06-25T04:00:00Z',
+  operatorAction: 'No action needed.'
+};
+
 const demoReadiness = {
   status: 'NEEDS_ATTENTION',
   summary: 'PatchPilot needs attention before a live demo.',
@@ -1245,6 +1257,9 @@ beforeEach(() => {
     }
     if (url === '/api/github/credential-readiness') {
       return jsonResponse(githubCredentialReadiness);
+    }
+    if (url === '/api/github/repository-access-readiness?owner=bingqin2&repository=PatchPilot') {
+      return jsonResponse(githubRepositoryAccessReadiness);
     }
     if (url === '/api/demo/readiness') {
       return jsonResponse(demoReadiness);
@@ -1752,6 +1767,7 @@ test('renders operational task dashboard from backend APIs', async () => {
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/script'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/readiness'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/github/credential-readiness'));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/github/repository-access-readiness?owner=bingqin2&repository=PatchPilot'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/smoke-checklist'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/github/webhook-deliveries?limit=10'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/rejected-triggers?limit=20'));
@@ -2044,13 +2060,15 @@ test('summarizes operator setup readiness before a demo run', async () => {
 
   const setupChecklist = await screen.findByRole('region', { name: 'Operator setup checklist' });
   expect(within(setupChecklist).getByRole('heading', { name: 'Operator setup checklist' })).toBeInTheDocument();
-  expect(within(setupChecklist).getByText('9/11 checks ready')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('10/12 checks ready')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Backend connectivity')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Ready - /health reports UP')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Required credentials')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Ready - agent, GitHub, webhook, and browser admin token are configured')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('GitHub credentials')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Ready - GitHub API accepted the configured token.')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('Repository access')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('Ready - GitHub token can read repository bingqin2/PatchPilot.')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Safety policy')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Ready - allowlists, review approvers, and trigger rate limits are configured')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Repository preflight scope')).toBeInTheDocument();
@@ -2123,6 +2141,9 @@ test('shows when every operator setup check is ready', async () => {
     if (url === '/api/github/credential-readiness') {
       return jsonResponse(githubCredentialReadiness);
     }
+    if (url === '/api/github/repository-access-readiness?owner=bingqin2&repository=PatchPilot') {
+      return jsonResponse(githubRepositoryAccessReadiness);
+    }
     return defaultAppResponse(input, init);
   });
   vi.stubGlobal('fetch', fetchMock);
@@ -2130,7 +2151,8 @@ test('shows when every operator setup check is ready', async () => {
   render(<App />);
 
   const setupChecklist = await screen.findByRole('region', { name: 'Operator setup checklist' });
-  expect(within(setupChecklist).getByText('11/11 checks ready')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('12/12 checks ready')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('Ready - GitHub token can read repository bingqin2/PatchPilot.')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Ready - Model provider responded to the health probe.')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Ready - recent completed task has a Pull Request URL')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('All setup checks are ready for a controlled issue-to-PR demo.')).toBeInTheDocument();
@@ -3424,6 +3446,9 @@ function defaultAppResponse(input: RequestInfo | URL, init?: RequestInit) {
   }
   if (url === '/api/github/credential-readiness') {
     return jsonResponse(githubCredentialReadiness);
+  }
+  if (url === '/api/github/repository-access-readiness?owner=bingqin2&repository=PatchPilot') {
+    return jsonResponse(githubRepositoryAccessReadiness);
   }
   if (url === '/api/demo/readiness') {
     return jsonResponse(demoReadiness);

@@ -8,6 +8,7 @@ import {
   getBackendHealth,
   getConfigurationSummary,
   getGitHubCredentialReadiness,
+  getGitHubRepositoryAccessReadiness,
   getFailureCauseSummary,
   getLatencySummary,
   getModelProviderHealth,
@@ -159,6 +160,36 @@ test('gets GitHub credential readiness through backend API', async () => {
   expect(readiness.status).toBe('READY');
   expect(readiness.tokenConfigured).toBe(true);
   expect(readiness.message).toBe('GitHub API accepted the configured token.');
+});
+
+test('gets GitHub repository access readiness through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        tokenConfigured: true,
+        repositoryConfigured: true,
+        repository: 'bingqin2/PatchPilot',
+        status: 'READY',
+        message: 'GitHub token can read repository bingqin2/PatchPilot.',
+        defaultBranch: 'main',
+        latencyMs: 42,
+        checkedAt: '2026-06-25T04:00:00Z',
+        operatorAction: 'No action needed.'
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const readiness = await getGitHubRepositoryAccessReadiness(' bingqin2 ', ' PatchPilot ');
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/github/repository-access-readiness?owner=bingqin2&repository=PatchPilot');
+  expect(readiness.status).toBe('READY');
+  expect(readiness.repository).toBe('bingqin2/PatchPilot');
+  expect(readiness.defaultBranch).toBe('main');
 });
 
 test('evaluates trigger without creating manual task through backend API', async () => {

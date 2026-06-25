@@ -3885,6 +3885,26 @@ Validation:
 - `npm run build`: passed after production frontend build verification.
 - `git diff --check`: passed.
 
+Implemented GitHub repository access readiness from `docs/plans/198-github-repository-access-readiness.md`.
+
+Changes:
+
+- Added an admin-protected `GET /api/github/repository-access-readiness` endpoint.
+- Added a read-only GitHub repository access probe that calls `GET https://api.github.com/repos/{owner}/{repository}` with `PATCHPILOT_GITHUB_TOKEN`.
+- Returned only non-sensitive readiness fields: token configured flag, repository configured flag, repository full name, status, message, default branch, latency, checked time, and operator action.
+- Added GitHub repository access readiness loading to the React dashboard.
+- Added a `Repository access` row to the operator setup checklist so a token that is valid but cannot read the selected repository is visible before a live `/agent fix` run.
+- Updated README, frontend design docs, and this execution log.
+
+Validation so far:
+
+- `mvn -pl PatchPilot -Dtest=GitHubRepositoryAccessReadinessServiceTests,GitHubRepositoryAccessHttpProbeTests,GitHubRepositoryAccessReadinessControllerTests test`: first failed because the new repository access readiness classes did not exist; then passed after implementing the endpoint, service, HTTP probe, and non-sensitive response model.
+- `mvn -pl PatchPilot -Dtest=GitHubRepositoryAccessReadinessServiceTests,GitHubRepositoryAccessHttpProbeTests,GitHubRepositoryAccessReadinessControllerTests,GitHubCredentialReadinessControllerTests test`: passed after updating the existing GitHub credential controller test wiring, 12 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts src/dashboard/components/OperatorSetupChecklistPanel.test.tsx src/App.test.tsx`: first failed because the new API helper and checklist row did not exist; then passed after frontend integration, 121 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed after full backend regression verification, 698 tests run, 0 failures.
+- `npm test -- --reporter=basic`: passed after full frontend regression verification, 207 tests run, 0 failures.
+- `npm run build`: passed after production frontend build verification.
+
 Implemented GitHub credential readiness from `docs/plans/197-github-credential-readiness.md`.
 
 Changes:
