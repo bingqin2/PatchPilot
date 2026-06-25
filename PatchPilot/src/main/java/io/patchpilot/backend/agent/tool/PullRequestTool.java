@@ -12,8 +12,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
-import java.util.List;
-
 @Component
 public class PullRequestTool {
 
@@ -78,7 +76,7 @@ public class PullRequestTool {
         appendAdapterEvidence(body, task);
         body.append("\n## Verification and review\n\n");
         appendVerificationResult(body, latestTestRun);
-        appendPatchReviewEvidence(body, latestPatchReview);
+        GitHubFeedbackEvidenceFormatter.appendPatchReviewEvidence(body, latestPatchReview, true);
         GitHubFeedbackEvidenceFormatter.appendRiskReviewApprovalEvidence(body, task, true);
         body.append("- PatchPilot opened this PR only after adapter-selected verification passed.\n");
         body.append("- Verification commands are selected by the detected repository adapter, not by arbitrary issue text.\n");
@@ -114,31 +112,4 @@ public class PullRequestTool {
                 .append(" ms`.\n");
     }
 
-    private static void appendPatchReviewEvidence(StringBuilder body, FixTaskPatchReviewVo latestPatchReview) {
-        if (latestPatchReview == null) {
-            return;
-        }
-        body.append("- Patch review:\n");
-        body.append("- Patch review decision: `").append(latestPatchReview.decision()).append("`\n");
-        if (StringUtils.hasText(latestPatchReview.reason())) {
-            body.append("- Patch review reason: ").append(latestPatchReview.reason()).append("\n");
-        }
-        if (StringUtils.hasText(latestPatchReview.confidence())) {
-            body.append("- Patch review confidence: `").append(latestPatchReview.confidence()).append("`\n");
-        }
-        if (StringUtils.hasText(latestPatchReview.requiredFollowUp())) {
-            body.append("- Patch review follow-up: ").append(latestPatchReview.requiredFollowUp()).append("\n");
-        }
-        body.append("- Patch review edited files: ")
-                .append(formatEditedFiles(latestPatchReview.editedFiles()))
-                .append("\n");
-        body.append("- Patch reviewed at: `").append(latestPatchReview.createdAt()).append("`\n");
-    }
-
-    private static String formatEditedFiles(List<String> editedFiles) {
-        if (editedFiles == null || editedFiles.isEmpty()) {
-            return "none";
-        }
-        return "`" + String.join("`, `", editedFiles) + "`";
-    }
 }

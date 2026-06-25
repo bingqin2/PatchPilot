@@ -210,6 +210,7 @@ The current implementation target is local self-hosted development first. Hosted
 - Issue status comments include a Dashboard task deep link when a public Dashboard base URL is configured.
 - Completed issue comments include the detected adapter, allowlisted verification command, detection reason, and review boundary when available.
 - Completed issue comments include the actual verification result summary when available.
+- Completed issue comments include the latest model patch-review decision, reason, confidence, required follow-up, edited files, and review time when available.
 - Completed issue comments include risk-review approval operator, time, and reason when a task resumed after generated-diff risk review approval.
 - The system does not merge Pull Requests automatically.
 
@@ -220,6 +221,7 @@ The current implementation target is local self-hosted development first. Hosted
 - Failed-task issue comments should include a failure category, next action, and a sanitized reason.
 - Failed-task issue comments should include detected language, selected build system, allowlisted verification command, and adapter detection reason when that repository evidence is available.
 - Failed-task issue comments should include the actual verification result summary when a test run exists.
+- Failed-task issue comments should include the latest model patch-review decision, reason, confidence, required follow-up, edited files, and review time when available.
 - `PENDING_REVIEW` issue comments should include the same adapter evidence when available, so the issue author can distinguish a risk-gate pause from an unsupported repository or test failure.
 - `PENDING_REVIEW` issue comments should state that verification has not run when the task paused before verification.
 - Non-success issue comments with adapter evidence should state that PatchPilot selects verification commands from repository adapter allowlists and does not run arbitrary shell commands from issue comments.

@@ -3,11 +3,13 @@ package io.patchpilot.backend.task.service.impl;
 import io.patchpilot.backend.agent.tool.IssueCommentTool;
 import io.patchpilot.backend.github.client.domain.IssueCommentResult;
 import io.patchpilot.backend.task.domain.enums.FixTaskTimelineEventType;
+import io.patchpilot.backend.task.domain.vo.FixTaskPatchReviewVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskTestRunVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import io.patchpilot.backend.task.executor.TaskCancellationException;
 import io.patchpilot.backend.task.executor.FixTaskExecutor;
 import io.patchpilot.backend.task.executor.domain.FixTaskExecutionResult;
+import io.patchpilot.backend.task.service.FixTaskPatchReviewService;
 import io.patchpilot.backend.task.service.FixTaskService;
 import io.patchpilot.backend.task.service.FixTaskTestRunService;
 import io.patchpilot.backend.task.service.LogSummary;
@@ -25,6 +27,7 @@ public class FixTaskWorker {
     private final IssueCommentTool issueCommentTool;
     private final FixTaskTimelineService fixTaskTimelineService;
     private final FixTaskTestRunService fixTaskTestRunService;
+    private final FixTaskPatchReviewService fixTaskPatchReviewService;
 
     public void execute(String taskId) {
         FixTaskVo runningTask = fixTaskService.markRunning(taskId);
@@ -55,12 +58,20 @@ public class FixTaskWorker {
         recordTimelineEvent(taskId, FixTaskTimelineEventType.PR_CREATED, executionResult.pullRequestUrl());
         FixTaskVo completedTask = fixTaskService.markCompleted(taskId, executionResult.pullRequestUrl());
         recordTimelineEvent(taskId, FixTaskTimelineEventType.COMPLETED, "Task completed");
-        updateStatusComment(taskId, () -> issueCommentTool.updateCompleted(completedTask, latestTestRun(taskId)));
+        updateStatusComment(taskId, () -> issueCommentTool.updateCompleted(
+                completedTask,
+                latestTestRun(taskId),
+                latestPatchReview(taskId)
+        ));
     }
 
     private void publishFailureStatusComment(FixTaskVo failedTask) {
         if (failedTask.statusCommentId() != null) {
-            updateStatusComment(failedTask.id(), () -> issueCommentTool.updateFailed(failedTask, latestTestRun(failedTask.id())));
+            updateStatusComment(failedTask.id(), () -> issueCommentTool.updateFailed(
+                    failedTask,
+                    latestTestRun(failedTask.id()),
+                    latestPatchReview(failedTask.id())
+            ));
             return;
         }
         updateStatusComment(failedTask.id(), () -> {
@@ -86,6 +97,11 @@ public class FixTaskWorker {
     private FixTaskTestRunVo latestTestRun(String taskId) {
         return fixTaskTestRunService.listTestRuns(taskId).stream()
                 .reduce((first, second) -> second)
+                .orElse(null);
+    }
+
+    private FixTaskPatchReviewVo latestPatchReview(String taskId) {
+        return fixTaskPatchReviewService.findLatestPatchReview(taskId)
                 .orElse(null);
     }
 

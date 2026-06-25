@@ -9,6 +9,7 @@ import io.patchpilot.backend.github.config.GitHubProperties;
 import io.patchpilot.backend.task.domain.bo.CreateFixTaskCommand;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.enums.FixTaskTimelineEventType;
+import io.patchpilot.backend.task.domain.vo.FixTaskPatchReviewVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskTestRunVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskTimelineEventVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
@@ -77,6 +78,39 @@ class FixTaskWorkerTests {
     }
 
     @Test
+    void should_publish_latest_patch_review_in_completed_status_comment() {
+        FixTaskService fixTaskService = new InMemoryFixTaskService();
+        RecordingExecutor executor = new RecordingExecutor();
+        RecordingIssueCommentTool issueCommentTool = new RecordingIssueCommentTool();
+        RecordingTimelineService timelineService = new RecordingTimelineService();
+        InMemoryFixTaskTestRunService testRunService = new InMemoryFixTaskTestRunService();
+        RecordingFixTaskPatchReviewService patchReviewService = new RecordingFixTaskPatchReviewService();
+        FixTaskWorker worker = worker(
+                fixTaskService,
+                executor,
+                issueCommentTool,
+                timelineService,
+                testRunService,
+                patchReviewService
+        );
+        FixTaskVo task = createTask(fixTaskService, "delivery-worker-completed-patch-review");
+        FixTaskPatchReviewVo patchReview = patchReviewService.recordPatchReview(
+                task.id(),
+                "APPROVE",
+                "Generated patch only updates the requested docs file.",
+                "HIGH",
+                "Review the PR before merge.",
+                List.of("docs/demo.md"),
+                Instant.parse("2026-06-18T00:03:00Z")
+        );
+
+        worker.execute(task.id());
+
+        assertThat(issueCommentTool.completedPatchReview()).isEqualTo(patchReview);
+        assertThat(patchReviewService.lookedUpTaskIds()).contains(task.id());
+    }
+
+    @Test
     void should_mark_running_tests_before_executor_runs() {
         RecordingFixTaskService fixTaskService = new RecordingFixTaskService();
         RecordingExecutor executor = new RecordingExecutor();
@@ -132,6 +166,40 @@ class FixTaskWorkerTests {
                         FixTaskTimelineEventType.FAILED
                 );
         assertThat(timelineService.messages()).contains("executor failed");
+    }
+
+    @Test
+    void should_publish_latest_patch_review_in_failed_status_comment() {
+        FixTaskService fixTaskService = new InMemoryFixTaskService();
+        FailingExecutor executor = new FailingExecutor(
+                "Model patch review rejected generated edits: The proposed edit changed an unrelated file."
+        );
+        RecordingIssueCommentTool issueCommentTool = new RecordingIssueCommentTool();
+        RecordingTimelineService timelineService = new RecordingTimelineService();
+        RecordingFixTaskPatchReviewService patchReviewService = new RecordingFixTaskPatchReviewService();
+        FixTaskWorker worker = worker(
+                fixTaskService,
+                executor,
+                issueCommentTool,
+                timelineService,
+                new InMemoryFixTaskTestRunService(),
+                patchReviewService
+        );
+        FixTaskVo task = createTask(fixTaskService, "delivery-worker-failed-patch-review");
+        FixTaskPatchReviewVo patchReview = patchReviewService.recordPatchReview(
+                task.id(),
+                "REJECT",
+                "The proposed edit changed an unrelated file.",
+                "MEDIUM",
+                "Generate a narrower patch.",
+                List.of("src/main/java/example/AuthConfig.java"),
+                Instant.parse("2026-06-18T00:04:00Z")
+        );
+
+        worker.execute(task.id());
+
+        assertThat(issueCommentTool.failedPatchReview()).isEqualTo(patchReview);
+        assertThat(patchReviewService.lookedUpTaskIds()).contains(task.id());
     }
 
     @Test
@@ -358,7 +426,32 @@ class FixTaskWorkerTests {
             FixTaskTimelineService timelineService,
             FixTaskTestRunService testRunService
     ) {
-        return new FixTaskWorker(fixTaskService, executor, issueCommentTool, timelineService, testRunService);
+        return worker(
+                fixTaskService,
+                executor,
+                issueCommentTool,
+                timelineService,
+                testRunService,
+                new RecordingFixTaskPatchReviewService()
+        );
+    }
+
+    private static FixTaskWorker worker(
+            FixTaskService fixTaskService,
+            FixTaskExecutor executor,
+            IssueCommentTool issueCommentTool,
+            FixTaskTimelineService timelineService,
+            FixTaskTestRunService testRunService,
+            FixTaskPatchReviewService patchReviewService
+    ) {
+        return new FixTaskWorker(
+                fixTaskService,
+                executor,
+                issueCommentTool,
+                timelineService,
+                testRunService,
+                patchReviewService
+        );
     }
 
     private static FixTaskTestRunVo recordTestRun(
@@ -435,6 +528,8 @@ class FixTaskWorkerTests {
         private final AtomicReference<FixTaskTestRunVo> completedTestRun = new AtomicReference<>();
         private final AtomicReference<FixTaskTestRunVo> failedTestRun = new AtomicReference<>();
         private final AtomicReference<FixTaskTestRunVo> pendingReviewTestRun = new AtomicReference<>();
+        private final AtomicReference<FixTaskPatchReviewVo> completedPatchReview = new AtomicReference<>();
+        private final AtomicReference<FixTaskPatchReviewVo> failedPatchReview = new AtomicReference<>();
 
         private RecordingIssueCommentTool() {
             super(new GitHubIssueCommentClient(new GitHubProperties()) {
@@ -464,17 +559,37 @@ class FixTaskWorkerTests {
 
         @Override
         public Optional<IssueCommentResult> updateCompleted(FixTaskVo task, FixTaskTestRunVo latestTestRun) {
+            return updateCompleted(task, latestTestRun, null);
+        }
+
+        @Override
+        public Optional<IssueCommentResult> updateCompleted(
+                FixTaskVo task,
+                FixTaskTestRunVo latestTestRun,
+                FixTaskPatchReviewVo latestPatchReview
+        ) {
             record(task);
             completedTask.set(task);
             completedTestRun.set(latestTestRun);
+            completedPatchReview.set(latestPatchReview);
             return Optional.of(new IssueCommentResult(123, "https://github.com/octocat/hello-world/issues/42#issuecomment-123"));
         }
 
         @Override
         public Optional<IssueCommentResult> updateFailed(FixTaskVo task, FixTaskTestRunVo latestTestRun) {
+            return updateFailed(task, latestTestRun, null);
+        }
+
+        @Override
+        public Optional<IssueCommentResult> updateFailed(
+                FixTaskVo task,
+                FixTaskTestRunVo latestTestRun,
+                FixTaskPatchReviewVo latestPatchReview
+        ) {
             record(task);
             failedTask.set(task);
             failedTestRun.set(latestTestRun);
+            failedPatchReview.set(latestPatchReview);
             failureReasons.add(task.failureReason());
             return Optional.of(new IssueCommentResult(123, "https://github.com/octocat/hello-world/issues/42#issuecomment-123"));
         }
@@ -527,6 +642,14 @@ class FixTaskWorkerTests {
             return pendingReviewTestRun.get();
         }
 
+        private FixTaskPatchReviewVo completedPatchReview() {
+            return completedPatchReview.get();
+        }
+
+        private FixTaskPatchReviewVo failedPatchReview() {
+            return failedPatchReview.get();
+        }
+
         private List<String> failureReasons() {
             return failureReasons;
         }
@@ -571,6 +694,16 @@ class FixTaskWorkerTests {
 
         @Override
         public Optional<IssueCommentResult> updateCompleted(FixTaskVo task, FixTaskTestRunVo latestTestRun) {
+            updateLatch.countDown();
+            throw new IllegalStateException("comment update failed");
+        }
+
+        @Override
+        public Optional<IssueCommentResult> updateCompleted(
+                FixTaskVo task,
+                FixTaskTestRunVo latestTestRun,
+                FixTaskPatchReviewVo latestPatchReview
+        ) {
             updateLatch.countDown();
             throw new IllegalStateException("comment update failed");
         }
@@ -641,6 +774,48 @@ class FixTaskWorkerTests {
 
         protected List<FixTaskStatus> statuses() {
             return statuses;
+        }
+    }
+
+    private static final class RecordingFixTaskPatchReviewService implements FixTaskPatchReviewService {
+
+        private final List<FixTaskPatchReviewVo> patchReviews = new CopyOnWriteArrayList<>();
+        private final List<String> lookedUpTaskIds = new CopyOnWriteArrayList<>();
+
+        @Override
+        public FixTaskPatchReviewVo recordPatchReview(
+                String taskId,
+                String decision,
+                String reason,
+                String confidence,
+                String requiredFollowUp,
+                List<String> editedFiles,
+                Instant createdAt
+        ) {
+            FixTaskPatchReviewVo patchReview = new FixTaskPatchReviewVo(
+                    "patch-review-" + patchReviews.size(),
+                    taskId,
+                    decision,
+                    reason,
+                    confidence,
+                    requiredFollowUp,
+                    editedFiles,
+                    createdAt
+            );
+            patchReviews.add(patchReview);
+            return patchReview;
+        }
+
+        @Override
+        public Optional<FixTaskPatchReviewVo> findLatestPatchReview(String taskId) {
+            lookedUpTaskIds.add(taskId);
+            return patchReviews.stream()
+                    .filter(patchReview -> patchReview.taskId().equals(taskId))
+                    .reduce((first, second) -> second);
+        }
+
+        private List<String> lookedUpTaskIds() {
+            return lookedUpTaskIds;
         }
     }
 
