@@ -1023,6 +1023,20 @@ const demoLaunchPreflight = {
   nextActions: ['Post the tested /agent fix comment on the controlled GitHub issue.']
 };
 
+const demoLaunchCommand = {
+  triggerComment: '/agent fix replace docs/demo.md PatchPilot smoke test',
+  preflightInput: {
+    repositoryOwner: 'bingqin2',
+    repositoryName: 'PatchPilot',
+    issueNumber: 1,
+    triggerUser: 'bingqin2',
+    triggerComment: '/agent fix replace docs/demo.md PatchPilot smoke test'
+  },
+  githubIssueUrl: 'https://github.com/bingqin2/PatchPilot/issues/1',
+  summary: 'Prepared a demo /agent fix replace command for bingqin2/PatchPilot#1.',
+  nextActions: ['Run launch preflight with the generated command before posting it on GitHub.']
+};
+
 const demoSmokeChecklist = {
   status: 'NEEDS_ATTENTION',
   summary: 'Live demo smoke checklist needs attention.',
@@ -1319,6 +1333,9 @@ beforeEach(() => {
     }
     if (url === '/api/demo/launch-preflight' && init?.method === 'POST') {
       return jsonResponse(demoLaunchPreflight);
+    }
+    if (url === '/api/demo/launch-command' && init?.method === 'POST') {
+      return jsonResponse(demoLaunchCommand);
     }
     if (url === '/api/demo/smoke-checklist') {
       return jsonResponse(demoSmokeChecklist);
@@ -2443,6 +2460,71 @@ test('runs demo launch preflight from the dashboard before posting an issue comm
   await user.click(within(preflightPanel).getByRole('button', { name: 'Copy launch preflight report' }));
   expect(writeText).toHaveBeenCalledWith(expect.stringContaining('# PatchPilot Demo Launch Preflight Report'));
   expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- Ready to post: `YES`'));
+});
+
+test('composes a demo launch command and applies it to preflight from the dashboard', async () => {
+  const user = userEvent.setup();
+  const fetchMock = vi.mocked(fetch);
+  const writeText = vi.fn().mockResolvedValue(undefined);
+  Object.defineProperty(navigator, 'clipboard', {
+    configurable: true,
+    value: { writeText }
+  });
+
+  render(<App />);
+
+  const commandPanel = await screen.findByRole('region', { name: 'Demo launch command composer' });
+  await user.clear(within(commandPanel).getByLabelText('Repository owner'));
+  await user.type(within(commandPanel).getByLabelText('Repository owner'), 'bingqin2');
+  await user.clear(within(commandPanel).getByLabelText('Repository name'));
+  await user.type(within(commandPanel).getByLabelText('Repository name'), 'PatchPilot');
+  await user.clear(within(commandPanel).getByLabelText('Issue number'));
+  await user.type(within(commandPanel).getByLabelText('Issue number'), '1');
+  await user.clear(within(commandPanel).getByLabelText('Trigger user'));
+  await user.type(within(commandPanel).getByLabelText('Trigger user'), 'bingqin2');
+  await user.selectOptions(within(commandPanel).getByLabelText('Operation'), 'replace');
+  await user.clear(within(commandPanel).getByLabelText('Target path'));
+  await user.type(within(commandPanel).getByLabelText('Target path'), 'docs/demo.md');
+  await user.clear(within(commandPanel).getByLabelText('Replacement text'));
+  await user.type(within(commandPanel).getByLabelText('Replacement text'), 'PatchPilot smoke test');
+  await user.click(within(commandPanel).getByRole('button', { name: 'Generate command' }));
+
+  await waitFor(() =>
+    expect(fetchMock).toHaveBeenCalledWith('/api/demo/launch-command', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        repositoryOwner: 'bingqin2',
+        repositoryName: 'PatchPilot',
+        issueNumber: 1,
+        triggerUser: 'bingqin2',
+        operation: 'replace',
+        targetPath: 'docs/demo.md',
+        replacementText: 'PatchPilot smoke test'
+      })
+    })
+  );
+  expect(within(commandPanel).getByText('/agent fix replace docs/demo.md PatchPilot smoke test')).toBeInTheDocument();
+
+  await user.click(within(commandPanel).getByRole('button', { name: 'Copy command' }));
+  expect(writeText).toHaveBeenCalledWith('/agent fix replace docs/demo.md PatchPilot smoke test');
+
+  await user.click(within(commandPanel).getByRole('button', { name: 'Apply to launch preflight' }));
+
+  const preflightPanel = screen.getByRole('region', { name: 'Demo launch preflight' });
+  const preflightForm = within(preflightPanel).getByRole('form', { name: 'Demo launch preflight form' });
+  expect(within(preflightForm).getByLabelText('GitHub issue comment')).toHaveValue(
+    '/agent fix replace docs/demo.md PatchPilot smoke test'
+  );
+
+  await user.click(within(preflightPanel).getByRole('button', { name: 'Run launch preflight' }));
+  await waitFor(() =>
+    expect(fetchMock).toHaveBeenCalledWith('/api/demo/launch-preflight', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(demoLaunchCommand.preflightInput)
+    })
+  );
 });
 
 test('shows manual task creation failures without clearing the form', async () => {

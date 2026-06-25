@@ -1,5 +1,6 @@
 import {
   approveTaskReview,
+  composeDemoLaunchCommand,
   createTask,
   createTriggerQuarantine,
   ADMIN_TOKEN_STORAGE_KEY,
@@ -344,6 +345,58 @@ test('runs demo launch preflight through backend API without creating a task', a
   expect(result.status).toBe('READY');
   expect(result.readyToPost).toBe(true);
   expect(result.triggerEvaluation.source).toBe('ISSUE_COMMENT');
+});
+
+test('composes a demo launch command through backend API without creating a task', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        triggerComment: '/agent fix replace docs/demo.md PatchPilot smoke test',
+        preflightInput: {
+          repositoryOwner: 'bingqin2',
+          repositoryName: 'PatchPilot',
+          issueNumber: 1,
+          triggerUser: 'bingqin2',
+          triggerComment: '/agent fix replace docs/demo.md PatchPilot smoke test'
+        },
+        githubIssueUrl: 'https://github.com/bingqin2/PatchPilot/issues/1',
+        summary: 'Prepared a demo /agent fix replace command for bingqin2/PatchPilot#1.',
+        nextActions: ['Run launch preflight with the generated command before posting it on GitHub.']
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const result = await composeDemoLaunchCommand({
+    repositoryOwner: 'bingqin2',
+    repositoryName: 'PatchPilot',
+    issueNumber: 1,
+    triggerUser: 'bingqin2',
+    operation: 'replace',
+    targetPath: 'docs/demo.md',
+    replacementText: 'PatchPilot smoke test'
+  });
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/launch-command', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      repositoryOwner: 'bingqin2',
+      repositoryName: 'PatchPilot',
+      issueNumber: 1,
+      triggerUser: 'bingqin2',
+      operation: 'replace',
+      targetPath: 'docs/demo.md',
+      replacementText: 'PatchPilot smoke test'
+    })
+  });
+  expect(result.triggerComment).toBe('/agent fix replace docs/demo.md PatchPilot smoke test');
+  expect(result.preflightInput.triggerComment).toBe('/agent fix replace docs/demo.md PatchPilot smoke test');
+  expect(result.githubIssueUrl).toBe('https://github.com/bingqin2/PatchPilot/issues/1');
 });
 
 test('approves pending review tasks through backend API', async () => {

@@ -1,11 +1,12 @@
 import { Copy, SearchCheck } from 'lucide-react';
-import { useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import type { DemoLaunchPreflight, DemoLaunchPreflightInput, DemoReadinessStatus } from '../../types';
 
 interface DemoLaunchPreflightPanelProps {
   result: DemoLaunchPreflight | null;
   error: string | null;
   pending: boolean;
+  composedPreflightInput?: DemoLaunchPreflightInput | null;
   onRunPreflight: (input: DemoLaunchPreflightInput) => Promise<DemoLaunchPreflight> | Promise<void> | void;
 }
 
@@ -13,6 +14,7 @@ export function DemoLaunchPreflightPanel({
   result,
   error,
   pending,
+  composedPreflightInput,
   onRunPreflight
 }: DemoLaunchPreflightPanelProps) {
   const [repositoryOwner, setRepositoryOwner] = useState('bingqin2');
@@ -20,6 +22,23 @@ export function DemoLaunchPreflightPanel({
   const [issueNumber, setIssueNumber] = useState('1');
   const [triggerUser, setTriggerUser] = useState('bingqin2');
   const [triggerComment, setTriggerComment] = useState('/agent fix replace docs/demo.md PatchPilot smoke test');
+  const lastAppliedPreflightInputKey = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!composedPreflightInput) {
+      return;
+    }
+    const inputKey = JSON.stringify(composedPreflightInput);
+    if (inputKey === lastAppliedPreflightInputKey.current) {
+      return;
+    }
+    setRepositoryOwner(composedPreflightInput.repositoryOwner);
+    setRepositoryName(composedPreflightInput.repositoryName);
+    setIssueNumber(String(composedPreflightInput.issueNumber));
+    setTriggerUser(composedPreflightInput.triggerUser);
+    setTriggerComment(composedPreflightInput.triggerComment);
+    lastAppliedPreflightInputKey.current = inputKey;
+  }, [composedPreflightInput]);
 
   function input(): DemoLaunchPreflightInput {
     return {

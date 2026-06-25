@@ -324,6 +324,26 @@ export interface DemoLaunchPreflightInput {
   triggerComment: string;
 }
 
+export type DemoLaunchCommandOperation = 'replace' | 'touch';
+
+export interface DemoLaunchCommandInput {
+  repositoryOwner: string;
+  repositoryName: string;
+  issueNumber: number;
+  triggerUser: string;
+  operation: DemoLaunchCommandOperation;
+  targetPath: string;
+  replacementText?: string | null;
+}
+
+export interface DemoLaunchCommand {
+  triggerComment: string;
+  preflightInput: DemoLaunchPreflightInput;
+  githubIssueUrl: string;
+  summary: string;
+  nextActions: string[];
+}
+
 export interface DemoLaunchPreflight {
   status: DemoReadinessStatus;
   readyToPost: boolean;

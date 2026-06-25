@@ -5,6 +5,7 @@ import {
   approveTaskReview,
   archiveDemoSession,
   cancelTask,
+  composeDemoLaunchCommand,
   createTask,
   createTriggerQuarantine,
   downloadDemoSessionArchiveReport,
@@ -58,6 +59,7 @@ import { ConfigurationPanel } from './dashboard/components/ConfigurationPanel';
 import { ConnectivityPanel } from './dashboard/components/ConnectivityPanel';
 import { DemoReadinessPanel } from './dashboard/components/DemoReadinessPanel';
 import { DemoEvidenceBundlePanel } from './dashboard/components/DemoEvidenceBundlePanel';
+import { DemoLaunchCommandPanel } from './dashboard/components/DemoLaunchCommandPanel';
 import { DemoLaunchPreflightPanel } from './dashboard/components/DemoLaunchPreflightPanel';
 import { DemoSessionSnapshotPanel } from './dashboard/components/DemoSessionSnapshotPanel';
 import { DemoScriptPanel } from './dashboard/components/DemoScriptPanel';
@@ -90,6 +92,8 @@ import type {
   CreateTriggerQuarantineInput,
   DemoReadiness,
   DemoEvidenceBundle,
+  DemoLaunchCommand,
+  DemoLaunchCommandInput,
   DemoLaunchPreflight,
   DemoLaunchPreflightInput,
   DemoScript,
@@ -186,6 +190,10 @@ export default function App() {
   const [demoScriptError, setDemoScriptError] = useState<string | null>(null);
   const [demoSmokeChecklist, setDemoSmokeChecklist] = useState<DemoSmokeChecklist | null>(null);
   const [demoSmokeChecklistError, setDemoSmokeChecklistError] = useState<string | null>(null);
+  const [demoLaunchCommand, setDemoLaunchCommand] = useState<DemoLaunchCommand | null>(null);
+  const [demoLaunchCommandError, setDemoLaunchCommandError] = useState<string | null>(null);
+  const [demoLaunchCommandPending, setDemoLaunchCommandPending] = useState(false);
+  const [composedPreflightInput, setComposedPreflightInput] = useState<DemoLaunchPreflightInput | null>(null);
   const [demoLaunchPreflight, setDemoLaunchPreflight] = useState<DemoLaunchPreflight | null>(null);
   const [demoLaunchPreflightError, setDemoLaunchPreflightError] = useState<string | null>(null);
   const [demoLaunchPreflightPending, setDemoLaunchPreflightPending] = useState(false);
@@ -809,6 +817,25 @@ export default function App() {
     return archive;
   }, []);
 
+  const handleComposeDemoLaunchCommand = useCallback(async (input: DemoLaunchCommandInput) => {
+    setDemoLaunchCommandPending(true);
+    setDemoLaunchCommandError(null);
+    try {
+      const result = await composeDemoLaunchCommand(input);
+      setDemoLaunchCommand(result);
+      return result;
+    } catch (caught) {
+      setDemoLaunchCommandError(errorMessage(caught));
+      throw caught;
+    } finally {
+      setDemoLaunchCommandPending(false);
+    }
+  }, []);
+
+  const handleApplyDemoLaunchCommandToPreflight = useCallback((input: DemoLaunchPreflightInput) => {
+    setComposedPreflightInput(input);
+  }, []);
+
   const handleDemoLaunchPreflight = useCallback(async (input: DemoLaunchPreflightInput) => {
     setDemoLaunchPreflightPending(true);
     setDemoLaunchPreflightError(null);
@@ -1083,10 +1110,19 @@ export default function App() {
 
       <DemoSmokeChecklistPanel checklist={demoSmokeChecklist} error={demoSmokeChecklistError} />
 
+      <DemoLaunchCommandPanel
+        result={demoLaunchCommand}
+        error={demoLaunchCommandError}
+        pending={demoLaunchCommandPending}
+        onComposeCommand={handleComposeDemoLaunchCommand}
+        onApplyToPreflight={handleApplyDemoLaunchCommandToPreflight}
+      />
+
       <DemoLaunchPreflightPanel
         result={demoLaunchPreflight}
         error={demoLaunchPreflightError}
         pending={demoLaunchPreflightPending}
+        composedPreflightInput={composedPreflightInput}
         onRunPreflight={handleDemoLaunchPreflight}
       />
 
