@@ -165,6 +165,7 @@ The current implementation target is local self-hosted development first. Hosted
 - Each adapter defines project detection, allowed verification commands, test output capture, timeout policy, and unsupported-repository failure reasons.
 - The adapter registry selects the first adapter that supports the repository and returns a clear unsupported result when none match.
 - The verification runner executes only the selected adapter's allowlisted verification command.
+- The adapter runtime readiness API reports whether the executable for each allowlisted verification command is available on the backend process `PATH` without running the command.
 - The selected adapter metadata is stored on the task as `language`, `buildSystem`, and `verificationCommand`.
 - The Java/Maven adapter detects `mvnw` and `pom.xml`.
 - The Java/Maven adapter runs `./mvnw test` when a Maven wrapper exists.
@@ -329,6 +330,7 @@ PatchPilot MVP is successful when:
 - An operator can copy a Markdown runbook that explains the current demo status and next actions without manually assembling API responses.
 - An operator can copy or download a Markdown session report that includes the snapshot, script, checklist, health contract, next actions, and runbook.
 - An operator can copy an adapter readiness report that proves current multi-language coverage and highlights fixture drift before a live run.
+- An operator can see whether each adapter's verification executable is available in the current backend runtime before a live run.
 - An operator can copy a repository preflight report that shows whether a local path is supported and which allowlisted command would run.
 - A failed task records and reports a clear failure reason.
 - An unsupported repository failure reports the supported adapter matrix back to the GitHub issue without attempting model, test, Git, or Pull Request work.

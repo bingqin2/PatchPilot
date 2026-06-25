@@ -35,6 +35,7 @@ import {
   listAcceptedTriggerDecisions,
   listAdminAuditEvents,
   listLanguageAdapterFixtures,
+  listLanguageAdapterRuntimeReadiness,
   listLanguageAdapters,
   listDemoSessionArchives,
   listQueueItems,
@@ -109,6 +110,7 @@ import type {
   WebhookPayloadDiagnosticInput,
   WebhookPayloadDiagnosticResult,
   LanguageAdapterFixtureVerification,
+  LanguageAdapterRuntimeReadiness,
   RepositoryPreflightInput,
   RepositoryPreflightResult,
   RetryTaskInput,
@@ -174,6 +176,8 @@ export default function App() {
   const [adapterError, setAdapterError] = useState<string | null>(null);
   const [adapterFixtureVerifications, setAdapterFixtureVerifications] = useState<LanguageAdapterFixtureVerification[]>([]);
   const [adapterFixtureError, setAdapterFixtureError] = useState<string | null>(null);
+  const [adapterRuntimeReadiness, setAdapterRuntimeReadiness] = useState<LanguageAdapterRuntimeReadiness[]>([]);
+  const [adapterRuntimeReadinessError, setAdapterRuntimeReadinessError] = useState<string | null>(null);
   const [repositoryPreflightResult, setRepositoryPreflightResult] = useState<RepositoryPreflightResult | null>(null);
   const [repositoryPreflightError, setRepositoryPreflightError] = useState<string | null>(null);
   const [repositoryPreflightLoading, setRepositoryPreflightLoading] = useState(false);
@@ -445,6 +449,7 @@ export default function App() {
         demoSmokeChecklistResult,
         adapterListResult,
         adapterFixtureResult,
+        adapterRuntimeReadinessResult,
         queueSummaryData,
         queueItemList,
         workerHealthData,
@@ -498,6 +503,10 @@ export default function App() {
         listLanguageAdapterFixtures().then(
           (verifications) => ({ verifications, error: null as string | null }),
           (caught) => ({ verifications: null, error: errorMessage(caught) })
+        ),
+        listLanguageAdapterRuntimeReadiness().then(
+          (readiness) => ({ readiness, error: null as string | null }),
+          (caught) => ({ readiness: null, error: errorMessage(caught) })
         ),
         getQueueSummary(),
         listQueueItems(),
@@ -566,6 +575,10 @@ export default function App() {
         setAdapterFixtureVerifications(adapterFixtureResult.verifications);
       }
       setAdapterFixtureError(adapterFixtureResult.error);
+      if (adapterRuntimeReadinessResult.readiness) {
+        setAdapterRuntimeReadiness(adapterRuntimeReadinessResult.readiness);
+      }
+      setAdapterRuntimeReadinessError(adapterRuntimeReadinessResult.error);
       setQueueSummary(queueSummaryData);
       setQueueItems(queueItemList);
       setWorkerHealth(workerHealthData);
@@ -1096,7 +1109,8 @@ export default function App() {
       <AdapterReadinessReportPanel
         adapters={supportedAdapters}
         verifications={adapterFixtureVerifications}
-        error={adapterError ?? adapterFixtureError}
+        runtimeReadiness={adapterRuntimeReadiness}
+        error={adapterError ?? adapterFixtureError ?? adapterRuntimeReadinessError}
       />
 
       <SupportedAdaptersPanel adapters={supportedAdapters} error={adapterError} />

@@ -816,6 +816,15 @@ const adapterFixtureVerifications = supportedLanguageAdapters.map((adapter) => (
   status: 'PASS'
 }));
 
+const adapterRuntimeReadiness = supportedLanguageAdapters.map((adapter) => ({
+  language: adapter.language,
+  buildSystem: adapter.buildSystem,
+  executable: adapter.verificationCommand[0],
+  verificationCommand: adapter.verificationCommand,
+  status: 'READY',
+  reason: `Executable \`${adapter.verificationCommand[0]}\` is available on PATH`
+}));
+
 const supportedRepositoryPreflightResult = {
   supported: true,
   language: 'java',
@@ -1228,6 +1237,9 @@ beforeEach(() => {
     }
     if (url === '/api/language-adapters/fixtures') {
       return jsonResponse(adapterFixtureVerifications);
+    }
+    if (url === '/api/language-adapters/runtime-readiness') {
+      return jsonResponse(adapterRuntimeReadiness);
     }
     if (url === '/api/repository-preflight' && init?.method === 'POST') {
       return jsonResponse(supportedRepositoryPreflightResult);
@@ -1681,9 +1693,10 @@ test('renders operational task dashboard from backend APIs', async () => {
   await waitFor(() => expect(screen.getByText('Task completed')).toBeInTheDocument());
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/language-adapters'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/language-adapters/fixtures'));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/language-adapters/runtime-readiness'));
   const adapterReadinessReport = screen.getByRole('region', { name: 'Adapter readiness report' });
   expect(adapterReadinessReport).toBeInTheDocument();
-  expect(within(adapterReadinessReport).getByText('Ready - 13/13 fixtures passing')).toBeInTheDocument();
+  expect(within(adapterReadinessReport).getByText('Ready - 13/13 fixtures passing, 13/13 runtimes ready')).toBeInTheDocument();
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/evidence-bundle'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/session-snapshot'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/script'));
@@ -2237,6 +2250,12 @@ test('shows manual task creation failures without clearing the form', async () =
     }
     if (url === '/api/language-adapters') {
       return jsonResponse(supportedLanguageAdapters);
+    }
+    if (url === '/api/language-adapters/fixtures') {
+      return jsonResponse(adapterFixtureVerifications);
+    }
+    if (url === '/api/language-adapters/runtime-readiness') {
+      return jsonResponse(adapterRuntimeReadiness);
     }
     if (url === '/api/task-queue/summary') {
       return jsonResponse(queueSummary);
@@ -2842,6 +2861,12 @@ test('shows dashboard refresh progress while top-level data is loading', async (
     if (url === '/api/language-adapters') {
       return jsonResponse(supportedLanguageAdapters);
     }
+    if (url === '/api/language-adapters/fixtures') {
+      return jsonResponse(adapterFixtureVerifications);
+    }
+    if (url === '/api/language-adapters/runtime-readiness') {
+      return jsonResponse(adapterRuntimeReadiness);
+    }
     if (url === '/api/task-queue/summary') {
       return jsonResponse(queueSummary);
     }
@@ -3297,6 +3322,9 @@ function defaultAppResponse(input: RequestInfo | URL, init?: RequestInit) {
   }
   if (url === '/api/language-adapters/fixtures') {
     return jsonResponse(adapterFixtureVerifications);
+  }
+  if (url === '/api/language-adapters/runtime-readiness') {
+    return jsonResponse(adapterRuntimeReadiness);
   }
   if (url === '/api/repository-preflight' && init?.method === 'POST') {
     return jsonResponse(supportedRepositoryPreflightResult);

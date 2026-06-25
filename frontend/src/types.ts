@@ -413,6 +413,15 @@ export interface LanguageAdapterFixtureVerification {
   status: 'PASS' | 'FAIL';
 }
 
+export interface LanguageAdapterRuntimeReadiness {
+  language: string;
+  buildSystem: string;
+  executable: string;
+  verificationCommand: string[];
+  status: 'READY' | 'MISSING';
+  reason: string;
+}
+
 export interface FixTaskQueueSummary {
   totalCount: number;
   pendingCount: number;
