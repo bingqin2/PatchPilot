@@ -45,6 +45,7 @@ public class FixTaskReportFormatter {
 
         appendAdapter(report, task);
         appendTriggerIntentAudit(report, detail);
+        appendPreExecutionSafetySnapshot(report, detail);
         appendRetryLineage(report, task);
         appendFailureDiagnosis(report, detail);
         appendIssueContext(report, detail.issueContext());
@@ -68,6 +69,21 @@ public class FixTaskReportFormatter {
                 .append("- Safety: ").append(detail.triggerIntentAudit().safetyDecision()).append("\n")
                 .append("- Issue context: ").append(detail.triggerIntentAudit().issueContextStatus()).append("\n")
                 .append("- Model: ").append(detail.triggerIntentAudit().modelDecision()).append("\n");
+    }
+
+    private static void appendPreExecutionSafetySnapshot(StringBuilder report, FixTaskDetailVo detail) {
+        if (detail.preExecutionSafetySnapshot() == null) {
+            return;
+        }
+
+        report.append("\n## Pre-Execution Safety Snapshot\n\n")
+                .append("- Source: `").append(detail.preExecutionSafetySnapshot().source()).append("`\n")
+                .append("- Final decision: `").append(detail.preExecutionSafetySnapshot().finalDecision()).append("`\n")
+                .append("- Safety: ").append(detail.preExecutionSafetySnapshot().safetyDecision()).append("\n")
+                .append("- Quarantine: ").append(detail.preExecutionSafetySnapshot().quarantineDecision()).append("\n")
+                .append("- Rate limit: ").append(detail.preExecutionSafetySnapshot().rateLimitDecision()).append("\n")
+                .append("- Issue context: ").append(detail.preExecutionSafetySnapshot().issueContextStatus()).append("\n")
+                .append("- Model: ").append(detail.preExecutionSafetySnapshot().modelDecision()).append("\n");
     }
 
     private static void appendFailureDiagnosis(StringBuilder report, FixTaskDetailVo detail) {

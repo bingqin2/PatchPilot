@@ -1790,6 +1790,17 @@ test('loads aggregate task detail from backend API', async () => {
           modelDecision: 'model accepted trigger: Issue context describes a concrete failing test',
           createdAt: '2026-06-20T01:00:30Z'
         },
+        preExecutionSafetySnapshot: {
+          eventId: 'timeline-trigger',
+          source: 'ISSUE_COMMENT',
+          finalDecision: 'ALLOWED',
+          safetyDecision: 'safety gate accepted',
+          quarantineDecision: 'not blocked before task creation',
+          rateLimitDecision: 'not rate limited before task creation',
+          issueContextStatus: 'issue context loaded',
+          modelDecision: 'model accepted trigger: Issue context describes a concrete failing test',
+          createdAt: '2026-06-20T01:00:30Z'
+        },
         generatedDiff: {
           toolCallId: 'tool-diff',
           diff: 'diff --git a/docs/demo.md b/docs/demo.md\n+PatchPilot smoke test',
@@ -1840,6 +1851,10 @@ test('loads aggregate task detail from backend API', async () => {
   expect(detail.triggerIntentAudit?.modelDecision).toBe(
     'model accepted trigger: Issue context describes a concrete failing test'
   );
+  expect(detail.preExecutionSafetySnapshot?.source).toBe('ISSUE_COMMENT');
+  expect(detail.preExecutionSafetySnapshot?.finalDecision).toBe('ALLOWED');
+  expect(detail.preExecutionSafetySnapshot?.quarantineDecision).toBe('not blocked before task creation');
+  expect(detail.preExecutionSafetySnapshot?.rateLimitDecision).toBe('not rate limited before task creation');
   expect(detail.queueItems.map((item) => item.id)).toEqual(['queue-1', 'queue-older']);
   expect(detail.timeline).toEqual([]);
   expect(detail.testRuns).toEqual([]);

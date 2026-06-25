@@ -625,6 +625,7 @@ export interface FixTaskDetail {
   toolCalls: FixTaskToolCall[];
   modelCalls: FixTaskModelCall[];
   triggerIntentAudit: FixTaskTriggerIntentAudit | null;
+  preExecutionSafetySnapshot: FixTaskPreExecutionSafetySnapshot | null;
   generatedDiff: FixTaskGeneratedDiff | null;
   patchReview: FixTaskPatchReview | null;
   issueContext: IssueContext | null;
@@ -637,6 +638,18 @@ export interface FixTaskTriggerIntentAudit {
   eventId: string;
   summary: string;
   safetyDecision: string;
+  issueContextStatus: string;
+  modelDecision: string;
+  createdAt: string;
+}
+
+export interface FixTaskPreExecutionSafetySnapshot {
+  eventId: string;
+  source: string;
+  finalDecision: string;
+  safetyDecision: string;
+  quarantineDecision: string;
+  rateLimitDecision: string;
   issueContextStatus: string;
   modelDecision: string;
   createdAt: string;

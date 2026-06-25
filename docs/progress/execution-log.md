@@ -4,6 +4,29 @@ This file records dated implementation progress, validation commands, and import
 
 ## 2026-06-25
 
+Implemented task pre-execution safety snapshots from `docs/plans/190-task-pre-execution-safety-snapshot.md`.
+
+Changes:
+
+- Added structured task detail evidence for accepted tasks that summarizes source, final allow decision, safety, quarantine, rate-limit, issue-context, and model trigger-classification state.
+- Derived the first snapshot from durable accepted-trigger timeline evidence so existing task records can still be explained without a schema migration.
+- Added the snapshot to copied Markdown task reports.
+- Rendered the snapshot in the dashboard task detail panel.
+- Covered backend task detail/report behavior plus frontend API parsing and dashboard rendering with tests.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=TaskControllerTests test`: first failed because task detail lacked `preExecutionSafetySnapshot` and copied reports lacked the snapshot section, then passed after implementation.
+- `npm test -- src/dashboard/components/TaskDetailPanel.test.tsx`: first failed because the `Pre-execution safety` section was not rendered, then passed after implementation.
+- `npm test -- src/api.test.ts src/dashboard/components/TaskDetailPanel.test.tsx src/App.test.tsx`: passed, 130 tests run.
+- `mvn -pl PatchPilot -Dtest=TaskControllerTests test`: passed, 68 tests run.
+- `npm test`: passed, 194 tests run.
+- `npm run build`: passed.
+- `mvn -pl PatchPilot test`: passed, 657 tests run.
+- `git diff --check`: passed.
+
+## 2026-06-25
+
 Implemented unsupported repository issue feedback from `docs/plans/181-unsupported-repository-issue-feedback.md`.
 
 Changes:
