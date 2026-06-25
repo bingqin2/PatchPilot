@@ -23,6 +23,7 @@ PatchPilot is not a chatbot and does not auto-merge code. The current target is 
 - MySQL-backed task, queue, timeline, test-run, tool-call, and model-call records.
 - Runtime worker heartbeat visibility for the queue poller, including poll counts, claimed tasks, latest worker error, readiness status, last poll age, and operator action.
 - Local workspace clone, branch, diff, commit, push, and Pull Request creation.
+- Pull Request evidence summaries that include task id, trigger user, branch, detected adapter, allowlisted verification command, detection reason, and review boundaries.
 - Java/Maven, Java/Gradle, Go, Node/Bun, Node/npm, Node/pnpm, Node/yarn, Python/tox, Python/nox, Python/hatch, Python/Poetry, Python/uv, and Python/pytest language adapters backed by an adapter-driven verification runner with command allowlists.
 - Generated diff risk gate that blocks sensitive files, secret-like added lines, binary patches, and overly broad patches before tests, commits, pushes, or Pull Request creation.
 - Human approval flow for generated-diff risk rejections: `PENDING_REVIEW` tasks expose the generated diff for inspection, then can be cancelled or explicitly approved to resume from the already-generated workspace and continue verification, commit, push, and Pull Request creation.
