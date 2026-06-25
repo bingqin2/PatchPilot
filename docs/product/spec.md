@@ -203,11 +203,13 @@ The current implementation target is local self-hosted development first. Hosted
 - The PR body includes task id, trigger user, patch branch, detected language adapter, selected build system, allowlisted verification command, and adapter detection reason when available.
 - The PR body includes a Dashboard task deep link when a public Dashboard base URL is configured.
 - The PR body includes the actual verification result summary when available, including command, exit code, and duration.
+- The PR body includes risk-review approval operator, time, and reason when a task resumed after generated-diff risk review approval.
 - The PR body states that verification commands come from repository adapters rather than arbitrary issue text, and that PatchPilot does not auto-merge Pull Requests.
 - The system comments on the original issue with the PR link.
 - Issue status comments include a Dashboard task deep link when a public Dashboard base URL is configured.
 - Completed issue comments include the detected adapter, allowlisted verification command, detection reason, and review boundary when available.
 - Completed issue comments include the actual verification result summary when available.
+- Completed issue comments include risk-review approval operator, time, and reason when a task resumed after generated-diff risk review approval.
 - The system does not merge Pull Requests automatically.
 
 ### Failure Reporting

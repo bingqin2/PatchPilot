@@ -115,6 +115,37 @@ class IssueCommentToolTests {
     }
 
     @Test
+    void should_update_completed_status_comment_with_risk_review_approval_evidence() {
+        RecordingGitHubIssueCommentClient client = new RecordingGitHubIssueCommentClient();
+        IssueCommentTool tool = new IssueCommentTool(client);
+
+        Optional<IssueCommentResult> result = tool.updateCompleted(task(
+                FixTaskStatus.COMPLETED,
+                123L,
+                "https://github.com/octocat/hello-world/pull/7",
+                null
+        ).withAdapterMetadata(
+                "java",
+                "maven",
+                "./mvnw test",
+                "pom.xml detected with mvnw wrapper"
+        ).withRiskReviewApproval(
+                Instant.parse("2026-06-18T01:02:03Z"),
+                "release-captain",
+                "Reviewed generated diff and accepted docs-only change"
+        ), testRun(0, 2_345));
+
+        assertThat(result).isPresent();
+        assertThat(client.updateCommand().body()).contains("Risk review approval:");
+        assertThat(client.updateCommand().body()).contains("Review approved by: `release-captain`");
+        assertThat(client.updateCommand().body()).contains("Review approved at: `2026-06-18T01:02:03Z`");
+        assertThat(client.updateCommand().body())
+                .contains("Review approval reason: Reviewed generated diff and accepted docs-only change");
+        assertThat(client.updateCommand().body())
+                .contains("PatchPilot resumed this task only after an allowed operator approved the generated diff risk review.");
+    }
+
+    @Test
     void should_update_failed_status_comment_with_failure_reason() {
         RecordingGitHubIssueCommentClient client = new RecordingGitHubIssueCommentClient();
         IssueCommentTool tool = new IssueCommentTool(client);

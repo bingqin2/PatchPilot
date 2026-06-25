@@ -61,6 +61,7 @@ public class PullRequestTool {
         appendAdapterEvidence(body, task);
         body.append("\n## Verification and review\n\n");
         appendVerificationResult(body, latestTestRun);
+        GitHubFeedbackEvidenceFormatter.appendRiskReviewApprovalEvidence(body, task, true);
         body.append("- PatchPilot opened this PR only after adapter-selected verification passed.\n");
         body.append("- Verification commands are selected by the detected repository adapter, not by arbitrary issue text.\n");
         body.append("- PatchPilot does not auto-merge Pull Requests.\n");
