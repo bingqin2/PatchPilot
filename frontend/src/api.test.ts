@@ -1004,6 +1004,33 @@ test('lists recent admin audit events through backend API', async () => {
   expect(audits[0].operator).toBe('admin-api');
 });
 
+test('lists filtered admin audit events through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: [],
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  await listAdminAuditEvents({
+    limit: 25,
+    action: 'TASK_RETRIED',
+    resourceType: 'TASK',
+    resourceId: 'task-123',
+    scope: 'REPOSITORY',
+    scopeKey: 'bingqin2/patchpilot',
+    operator: 'admin-api'
+  });
+
+  expect(fetchMock).toHaveBeenCalledWith(
+    '/api/admin-audit-events?limit=25&action=TASK_RETRIED&resourceType=TASK&resourceId=task-123&scope=REPOSITORY&scopeKey=bingqin2%2Fpatchpilot&operator=admin-api'
+  );
+});
+
 test('creates manual trigger quarantines through backend API', async () => {
   const fetchMock = vi.fn(async () => ({
     ok: true,

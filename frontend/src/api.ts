@@ -1,4 +1,5 @@
 import type {
+  AdminAuditFilterOptions,
   ApproveReviewInput,
   ApiResponse,
   BackendHealth,
@@ -131,6 +132,12 @@ function appendTaskFilterSearchParams(searchParams: URLSearchParams, normalizedO
   }
   if (normalizedOptions.createdBefore?.trim()) {
     searchParams.set('createdBefore', normalizedOptions.createdBefore.trim());
+  }
+}
+
+function appendSearchParam(searchParams: URLSearchParams, key: string, value: string | undefined | null) {
+  if (value?.trim()) {
+    searchParams.set(key, value.trim());
   }
 }
 
@@ -279,8 +286,18 @@ export async function listOperatorSafetyAudits(limit = 20): Promise<OperatorSafe
   return getApi<OperatorSafetyAudit[]>(`/api/operator-safety-audits?limit=${limit}`);
 }
 
-export async function listAdminAuditEvents(limit = 20): Promise<OperatorSafetyAudit[]> {
-  return getApi<OperatorSafetyAudit[]>(`/api/admin-audit-events?limit=${limit}`);
+export async function listAdminAuditEvents(options: number | AdminAuditFilterOptions = 20): Promise<OperatorSafetyAudit[]> {
+  const normalizedOptions = typeof options === 'number' ? { limit: options } : options;
+  const searchParams = new URLSearchParams({
+    limit: String(normalizedOptions.limit ?? 20)
+  });
+  appendSearchParam(searchParams, 'action', normalizedOptions.action);
+  appendSearchParam(searchParams, 'resourceType', normalizedOptions.resourceType);
+  appendSearchParam(searchParams, 'resourceId', normalizedOptions.resourceId);
+  appendSearchParam(searchParams, 'scope', normalizedOptions.scope);
+  appendSearchParam(searchParams, 'scopeKey', normalizedOptions.scopeKey);
+  appendSearchParam(searchParams, 'operator', normalizedOptions.operator);
+  return getApi<OperatorSafetyAudit[]>(`/api/admin-audit-events?${searchParams.toString()}`);
 }
 
 export async function createTriggerQuarantine(input: CreateTriggerQuarantineInput): Promise<TriggerQuarantine> {

@@ -587,6 +587,16 @@ export interface OperatorSafetyAudit {
   createdAt: string;
 }
 
+export interface AdminAuditFilterOptions {
+  limit?: number;
+  action?: string;
+  resourceType?: string;
+  resourceId?: string;
+  scope?: TriggerQuarantineScope;
+  scopeKey?: string;
+  operator?: string;
+}
+
 export interface TriggerQuarantineEvidence {
   quarantine: TriggerQuarantine;
   rejectedTriggers: RejectedTriggerAudit[];

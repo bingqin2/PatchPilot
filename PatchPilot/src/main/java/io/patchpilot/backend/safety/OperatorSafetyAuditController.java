@@ -2,6 +2,8 @@ package io.patchpilot.backend.safety;
 
 import io.patchpilot.backend.common.response.ApiResponse;
 import io.patchpilot.backend.safety.domain.OperatorSafetyAuditVo;
+import io.patchpilot.backend.safety.domain.OperatorSafetyAuditQuery;
+import io.patchpilot.backend.safety.domain.TriggerQuarantineScope;
 import io.patchpilot.backend.safety.service.OperatorSafetyAuditService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -21,10 +23,25 @@ public class OperatorSafetyAuditController {
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<OperatorSafetyAuditVo>>> listSafetyAudits(
-            @RequestParam(required = false) Integer limit
+            @RequestParam(required = false) Integer limit,
+            @RequestParam(required = false) String action,
+            @RequestParam(required = false) String resourceType,
+            @RequestParam(required = false) String resourceId,
+            @RequestParam(required = false) TriggerQuarantineScope scope,
+            @RequestParam(required = false) String scopeKey,
+            @RequestParam(required = false) String operator
     ) {
         try {
-            return ResponseEntity.ok(ApiResponse.ok(auditService.listSafetyAudits(normalizeLimit(limit))));
+            OperatorSafetyAuditQuery query = new OperatorSafetyAuditQuery(
+                    normalizeLimit(limit),
+                    action,
+                    resourceType,
+                    resourceId,
+                    scope,
+                    scopeKey,
+                    operator
+            );
+            return ResponseEntity.ok(ApiResponse.ok(auditService.listSafetyAudits(query)));
         } catch (IllegalArgumentException exception) {
             return ResponseEntity.badRequest().body(ApiResponse.fail(exception.getMessage()));
         }

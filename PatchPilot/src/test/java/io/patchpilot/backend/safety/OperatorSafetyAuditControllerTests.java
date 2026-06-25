@@ -1,6 +1,7 @@
 package io.patchpilot.backend.safety;
 
 import io.patchpilot.backend.safety.domain.OperatorSafetyAuditVo;
+import io.patchpilot.backend.safety.domain.OperatorSafetyAuditQuery;
 import io.patchpilot.backend.safety.domain.TriggerQuarantineScope;
 import io.patchpilot.backend.safety.service.OperatorSafetyAuditService;
 import org.junit.jupiter.api.Test;
@@ -12,6 +13,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.time.Instant;
 import java.util.List;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -28,7 +30,7 @@ class OperatorSafetyAuditControllerTests {
 
     @Test
     void should_list_recent_operator_safety_audits() throws Exception {
-        when(auditService.listSafetyAudits(20)).thenReturn(List.of(new OperatorSafetyAuditVo(
+        when(auditService.listSafetyAudits(any(OperatorSafetyAuditQuery.class))).thenReturn(List.of(new OperatorSafetyAuditVo(
                 "audit-1",
                 "MANUAL_QUARANTINE_CREATED",
                 "TRIGGER_QUARANTINE",
@@ -57,7 +59,7 @@ class OperatorSafetyAuditControllerTests {
 
     @Test
     void should_list_recent_admin_audit_events_from_same_audit_stream() throws Exception {
-        when(auditService.listSafetyAudits(20)).thenReturn(List.of(new OperatorSafetyAuditVo(
+        when(auditService.listSafetyAudits(any(OperatorSafetyAuditQuery.class))).thenReturn(List.of(new OperatorSafetyAuditVo(
                 "audit-task-retry",
                 "TASK_RETRIED",
                 "TASK",
@@ -81,6 +83,43 @@ class OperatorSafetyAuditControllerTests {
                 .andExpect(jsonPath("$.data[0].scopeKey").value("bingqin2/patchpilot"))
                 .andExpect(jsonPath("$.data[0].operator").value("admin-api"))
                 .andExpect(jsonPath("$.data[0].reason").value("Verified failure cause and requested a clean rerun"));
+    }
+
+    @Test
+    void should_filter_admin_audit_events_by_operator_action_and_resource_scope() throws Exception {
+        OperatorSafetyAuditQuery query = new OperatorSafetyAuditQuery(
+                25,
+                "TASK_RETRIED",
+                "TASK",
+                "task-123",
+                TriggerQuarantineScope.REPOSITORY,
+                "bingqin2/patchpilot",
+                "admin-api"
+        );
+        when(auditService.listSafetyAudits(query)).thenReturn(List.of(new OperatorSafetyAuditVo(
+                "audit-task-retry",
+                "TASK_RETRIED",
+                "TASK",
+                "task-123",
+                TriggerQuarantineScope.REPOSITORY,
+                "bingqin2/patchpilot",
+                "admin-api",
+                "Verified failure cause and requested a clean rerun",
+                Instant.parse("2026-06-24T02:00:00Z")
+        )));
+
+        mockMvc.perform(get("/api/admin-audit-events")
+                        .param("limit", "25")
+                        .param("action", "TASK_RETRIED")
+                        .param("resourceType", "TASK")
+                        .param("resourceId", "task-123")
+                        .param("scope", "REPOSITORY")
+                        .param("scopeKey", "bingqin2/patchpilot")
+                        .param("operator", "admin-api"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].id").value("audit-task-retry"));
     }
 
     @Test
