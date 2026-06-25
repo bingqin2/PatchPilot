@@ -1,19 +1,38 @@
 package io.patchpilot.backend.agent.tool;
 
+import io.patchpilot.backend.dashboard.DashboardLinkService;
+import io.patchpilot.backend.dashboard.config.DashboardProperties;
 import io.patchpilot.backend.github.client.GitHubPullRequestClient;
 import io.patchpilot.backend.github.client.domain.CreatePullRequestCommand;
 import io.patchpilot.backend.github.client.domain.PullRequestResult;
 import io.patchpilot.backend.task.domain.vo.FixTaskTestRunVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
-import lombok.RequiredArgsConstructor;
-import org.springframework.util.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 @Component
-@RequiredArgsConstructor
 public class PullRequestTool {
 
     private final GitHubPullRequestClient gitHubPullRequestClient;
+    private final DashboardLinkService dashboardLinkService;
+
+    public PullRequestTool(GitHubPullRequestClient gitHubPullRequestClient) {
+        this(gitHubPullRequestClient, new DashboardLinkService());
+    }
+
+    public PullRequestTool(GitHubPullRequestClient gitHubPullRequestClient, DashboardProperties dashboardProperties) {
+        this(gitHubPullRequestClient, new DashboardLinkService(dashboardProperties));
+    }
+
+    @Autowired
+    public PullRequestTool(
+            GitHubPullRequestClient gitHubPullRequestClient,
+            DashboardLinkService dashboardLinkService
+    ) {
+        this.gitHubPullRequestClient = gitHubPullRequestClient;
+        this.dashboardLinkService = dashboardLinkService;
+    }
 
     public PullRequestResult createPullRequest(FixTaskVo task, String branchName) {
         return createPullRequest(task, branchName, null);
@@ -35,6 +54,8 @@ public class PullRequestTool {
         body.append("Fixes #").append(task.issueNumber()).append("\n\n");
         body.append("## PatchPilot task\n\n");
         body.append("- Task: `").append(task.id()).append("`\n");
+        dashboardLinkService.taskUrl(task.id())
+                .ifPresent(taskUrl -> body.append("- Dashboard: ").append(taskUrl).append("\n"));
         body.append("- Triggered by: ").append(task.triggerUser()).append("\n");
         body.append("- Branch: ").append(branchName).append("\n");
         appendAdapterEvidence(body, task);

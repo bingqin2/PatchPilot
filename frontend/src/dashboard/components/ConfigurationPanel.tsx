@@ -43,6 +43,7 @@ export function ConfigurationPanel({ configuration, backendHealth }: Configurati
           <p>GitHub token {configured(configuration?.githubTokenConfigured)}</p>
           <p>Webhook secret {configured(configuration?.githubWebhookSecretConfigured)}</p>
           <p>Admin API token {configured(configuration?.adminTokenConfigured)}</p>
+          <p>Dashboard URL {configured(configuration?.dashboardBaseUrlConfigured)}</p>
         </div>
         <div>
           <span>Queue policy</span>
@@ -146,6 +147,9 @@ function configurationHealth(configuration: ConfigurationSummary | null) {
   }
   if (!configuration.adminTokenConfigured) {
     advisoryIssues.push({ kind: 'advisory', message: 'Admin API token is missing' });
+  }
+  if (!configuration.dashboardBaseUrlConfigured) {
+    advisoryIssues.push({ kind: 'advisory', message: 'Dashboard base URL is missing' });
   }
   if (!configuration.modelCostConfigured) {
     advisoryIssues.push({ kind: 'advisory', message: 'Model cost is not configured' });

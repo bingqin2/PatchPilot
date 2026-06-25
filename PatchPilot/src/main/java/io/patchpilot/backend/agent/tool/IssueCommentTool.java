@@ -1,5 +1,7 @@
 package io.patchpilot.backend.agent.tool;
 
+import io.patchpilot.backend.dashboard.DashboardLinkService;
+import io.patchpilot.backend.dashboard.config.DashboardProperties;
 import io.patchpilot.backend.github.client.GitHubIssueCommentClient;
 import io.patchpilot.backend.github.client.domain.CreateIssueCommentCommand;
 import io.patchpilot.backend.github.client.domain.IssueCommentResult;
@@ -26,18 +28,28 @@ public class IssueCommentTool {
 
     private final GitHubIssueCommentClient gitHubIssueCommentClient;
     private final LanguageAdapterCatalogService languageAdapterCatalogService;
+    private final DashboardLinkService dashboardLinkService;
 
     public IssueCommentTool(GitHubIssueCommentClient gitHubIssueCommentClient) {
-        this(gitHubIssueCommentClient, new LanguageAdapterCatalogService());
+        this(gitHubIssueCommentClient, new LanguageAdapterCatalogService(), new DashboardLinkService());
+    }
+
+    public IssueCommentTool(
+            GitHubIssueCommentClient gitHubIssueCommentClient,
+            DashboardProperties dashboardProperties
+    ) {
+        this(gitHubIssueCommentClient, new LanguageAdapterCatalogService(), new DashboardLinkService(dashboardProperties));
     }
 
     @Autowired
     public IssueCommentTool(
             GitHubIssueCommentClient gitHubIssueCommentClient,
-            LanguageAdapterCatalogService languageAdapterCatalogService
+            LanguageAdapterCatalogService languageAdapterCatalogService,
+            DashboardLinkService dashboardLinkService
     ) {
         this.gitHubIssueCommentClient = gitHubIssueCommentClient;
         this.languageAdapterCatalogService = languageAdapterCatalogService;
+        this.dashboardLinkService = dashboardLinkService;
     }
 
     public IssueCommentResult commentAccepted(FixTaskVo task) {
@@ -190,6 +202,8 @@ public class IssueCommentTool {
                 .append("\n\n");
         body.append("Status: ").append(status).append("\n");
         body.append("Task: ").append(task.id()).append("\n");
+        dashboardLinkService.taskUrl(task.id())
+                .ifPresent(taskUrl -> body.append("Dashboard: ").append(taskUrl).append("\n"));
         body.append("Repository: ").append(task.repositoryOwner()).append("/").append(task.repositoryName()).append("\n");
         body.append("Issue: #").append(task.issueNumber()).append("\n");
         body.append("Triggered by: ").append(task.triggerUser()).append("\n");

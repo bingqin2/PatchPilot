@@ -1,6 +1,7 @@
 package io.patchpilot.backend.configuration;
 
 import io.patchpilot.backend.agent.config.AgentProperties;
+import io.patchpilot.backend.dashboard.DashboardLinkService;
 import io.patchpilot.backend.github.config.GitHubProperties;
 import io.patchpilot.backend.language.config.RepositoryPreflightProperties;
 import io.patchpilot.backend.safety.GeneratedDiffSafetyPolicy;
@@ -31,6 +32,7 @@ public class ConfigurationSummaryService {
     private final AdminApiSecurityProperties adminApiSecurityProperties;
     private final GeneratedDiffSafetyPolicy generatedDiffSafetyPolicy;
     private final RepositoryPreflightProperties repositoryPreflightProperties;
+    private final DashboardLinkService dashboardLinkService;
 
     @Value("${patchpilot.github.webhook-secret:}")
     private String webhookSecret;
@@ -47,6 +49,7 @@ public class ConfigurationSummaryService {
                 hasText(gitHubProperties.getToken()),
                 hasText(webhookSecret),
                 adminApiSecurityProperties.isAdminTokenConfigured(),
+                dashboardLinkService.isBaseUrlConfigured(),
                 workspaceProperties.getRootDir().toString(),
                 taskQueueProperties.getMaxAttempts(),
                 taskQueueProperties.getRetryDelayMs(),

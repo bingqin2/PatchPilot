@@ -10,6 +10,7 @@ public record ConfigurationSummaryVo(
         boolean githubTokenConfigured,
         boolean githubWebhookSecretConfigured,
         boolean adminTokenConfigured,
+        boolean dashboardBaseUrlConfigured,
         String workspaceRootDir,
         int queueMaxAttempts,
         long queueRetryDelayMs,

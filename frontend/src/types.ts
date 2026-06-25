@@ -225,6 +225,7 @@ export interface ConfigurationSummary {
   githubTokenConfigured: boolean;
   githubWebhookSecretConfigured: boolean;
   adminTokenConfigured: boolean;
+  dashboardBaseUrlConfigured: boolean;
   workspaceRootDir: string;
   queueMaxAttempts: number;
   queueRetryDelayMs: number;

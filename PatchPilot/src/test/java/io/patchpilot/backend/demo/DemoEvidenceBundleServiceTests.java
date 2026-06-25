@@ -113,6 +113,7 @@ class DemoEvidenceBundleServiceTests {
                 true,
                 true,
                 true,
+                true,
                 "/tmp/patchpilot/workspaces",
                 3,
                 1000,

@@ -201,9 +201,11 @@ The current implementation target is local self-hosted development first. Hosted
 - The system creates a Pull Request.
 - The PR body includes the linked issue, summary of changes, files changed, and test result.
 - The PR body includes task id, trigger user, patch branch, detected language adapter, selected build system, allowlisted verification command, and adapter detection reason when available.
+- The PR body includes a Dashboard task deep link when a public Dashboard base URL is configured.
 - The PR body includes the actual verification result summary when available, including command, exit code, and duration.
 - The PR body states that verification commands come from repository adapters rather than arbitrary issue text, and that PatchPilot does not auto-merge Pull Requests.
 - The system comments on the original issue with the PR link.
+- Issue status comments include a Dashboard task deep link when a public Dashboard base URL is configured.
 - Completed issue comments include the detected adapter, allowlisted verification command, detection reason, and review boundary when available.
 - Completed issue comments include the actual verification result summary when available.
 - The system does not merge Pull Requests automatically.
@@ -313,6 +315,7 @@ PatchPilot MVP is successful when:
 - PatchPilot generates a patch for a simple supported Java, Node.js, or Python bug.
 - Adapter-selected verification runs and the result is recorded.
 - A successful task creates a Pull Request.
+- GitHub issue comments and Pull Request bodies can link back to the matching dashboard task detail page when the operator configures a public Dashboard URL.
 - An operator can verify demo readiness through a single evidence bundle covering setup, safety, queue, webhook, and recent PR signals.
 - An operator can inspect a single demo session snapshot before or after a live run without manually assembling evidence, script, runbook, checklist, and health-contract responses.
 - An operator can follow an ordered demo script whose endpoint is explicitly read-only and whose steps point to dashboard evidence and curl verification commands.

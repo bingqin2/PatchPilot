@@ -3656,6 +3656,28 @@ Validation:
 - `npm run build`: passed after production frontend build verification.
 - `git diff --check`: passed.
 
+Implemented GitHub feedback Dashboard deep links from `docs/plans/186-github-feedback-dashboard-deep-links.md`.
+
+Changes:
+
+- Added `patchpilot.dashboard.base-url` / `PATCHPILOT_DASHBOARD_BASE_URL` as an optional, non-secret operator link setting.
+- Added `DashboardLinkService` to format task detail links as `<base-url>/tasks/{taskId}` with safe slash handling.
+- Added Dashboard task links to GitHub issue status comments and generated Pull Request bodies when the base URL is configured.
+- Kept GitHub feedback unchanged when no Dashboard base URL is configured.
+- Exposed only `dashboardBaseUrlConfigured` through `/api/configuration/summary` and the frontend configuration panel; the raw URL is not returned.
+- Updated README, product spec, `.env.example`, Docker Compose, and this execution log.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=IssueCommentToolTests,PullRequestToolTests,ConfigurationSummaryServiceTests test`: first failed because `DashboardProperties` and link-aware constructors did not exist; then passed after adding Dashboard link configuration and feedback integration, 18 tests run, 0 failures.
+- `npm test -- src/api.test.ts src/dashboard/components/ConfigurationPanel.test.tsx`: first failed because the configuration panel did not render Dashboard URL status; then passed after adding the configuration field and advisory, 48 tests run, 0 failures.
+- `mvn -pl PatchPilot -Dtest=IssueCommentToolTests,PullRequestToolTests,ConfigurationSummaryServiceTests,ConfigurationControllerTests test`: passed after adding property-binding and non-leakage coverage, 19 tests run, 0 failures.
+- `npm test -- src/api.test.ts src/dashboard/components/ConfigurationPanel.test.tsx src/App.test.tsx src/dashboard/components/OperatorSetupChecklistPanel.test.tsx`: passed after frontend integration regression verification, 113 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed after full backend regression verification, 651 tests run, 0 failures.
+- `npm test`: passed after full frontend regression verification, 193 tests run, 0 failures.
+- `npm run build`: passed after production frontend build verification.
+- `git diff --check`: passed.
+
 Implemented GitHub verification result evidence from `docs/plans/185-github-verification-result-evidence.md`.
 
 Changes:

@@ -9,6 +9,7 @@ const healthyConfiguration = {
   githubTokenConfigured: true,
   githubWebhookSecretConfigured: true,
   adminTokenConfigured: true,
+  dashboardBaseUrlConfigured: true,
   workspaceRootDir: '/tmp/patchpilot/workspaces',
   queueMaxAttempts: 3,
   queueRetryDelayMs: 30000,
@@ -68,6 +69,7 @@ test('shows healthy configuration status when required and advisory settings are
   expect(screen.getByText('2 allowed roots')).toBeInTheDocument();
   expect(screen.getByText('/tmp/patchpilot/workspaces, docs/demo-repositories')).toBeInTheDocument();
   expect(screen.getByText('Admin API token Configured')).toBeInTheDocument();
+  expect(screen.getByText('Dashboard URL Configured')).toBeInTheDocument();
   expect(screen.getByText('10.0s worker heartbeat stale threshold')).toBeInTheDocument();
   expect(screen.getByText('600.0s window')).toBeInTheDocument();
   expect(screen.queryByText('Agent API key is missing')).not.toBeInTheDocument();
@@ -83,6 +85,7 @@ test('shows setup issues and advisories for weak configuration', () => {
         githubTokenConfigured: false,
         githubWebhookSecretConfigured: false,
         adminTokenConfigured: false,
+        dashboardBaseUrlConfigured: false,
         queueMaxAttempts: 0,
         queueRetryDelayMs: -1,
         queueVisibilityTimeoutMs: 500,
@@ -111,11 +114,12 @@ test('shows setup issues and advisories for weak configuration', () => {
 
   expect(screen.getByText('3 setup issues')).toBeInTheDocument();
   expect(screen.getByText('Backend unavailable')).toBeInTheDocument();
-  expect(screen.getByText('18 advisory items')).toBeInTheDocument();
+  expect(screen.getByText('19 advisory items')).toBeInTheDocument();
   expect(screen.getByText('Agent API key is missing')).toBeInTheDocument();
   expect(screen.getByText('GitHub token is missing')).toBeInTheDocument();
   expect(screen.getByText('Webhook secret is missing')).toBeInTheDocument();
   expect(screen.getByText('Admin API token is missing')).toBeInTheDocument();
+  expect(screen.getByText('Dashboard base URL is missing')).toBeInTheDocument();
   expect(screen.getByText('Model cost is not configured')).toBeInTheDocument();
   expect(screen.getByText('Queue attempts must be at least 1')).toBeInTheDocument();
   expect(screen.getByText('Queue retry delay cannot be negative')).toBeInTheDocument();
