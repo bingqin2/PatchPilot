@@ -121,3 +121,12 @@ Decision: Scope local repository preflight to configured backend-local roots.
 Reason: Repository preflight is intentionally an operator diagnostic, but it accepts local paths. Limiting it to configured roots keeps demos and prepared workspaces usable without exposing broad filesystem inspection through the dashboard or API.
 
 Impact: `POST /api/repository-preflight` rejects paths outside `patchpilot.repository-preflight.allowed-root-dirs` before adapter detection. Operators can see normalized allowed roots in `/api/configuration/summary` and the dashboard configuration panel.
+
+
+## 2026-06-25
+
+Decision: Treat AI infrastructure as an explicit target scope, but implement it incrementally behind the issue-to-PR workflow.
+
+Reason: PatchPilot should demonstrate more than a thin model API wrapper. The resume value comes from model-provider boundaries, prompt governance, structured outputs, tool traces, cost and latency observability, safety gates, and evaluation evidence. Implementing all of that before the basic workflow is stable would create scope risk.
+
+Impact: `docs/product/ai-infrastructure-target.md` defines the broader AI infrastructure direction. Current implementation work should still prioritize a reliable local self-hosted issue-to-PR path, then add AI infrastructure slices when they improve safety, debuggability, model quality, or demo evidence.

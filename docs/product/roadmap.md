@@ -155,6 +155,39 @@ Suggested ExecPlan:
 
 - `docs/plans/004-agent-tooling-patch-proposal.md`
 
+
+## Phase 4.5: AI Infrastructure Foundation
+
+Goal: turn model usage into explicit backend infrastructure before the agent workflow grows more complex.
+
+Build:
+
+- Provider-neutral model client boundary.
+- OpenAI-compatible provider implementation.
+- Prompt names and prompt version ids for execution-affecting prompts.
+- Structured output schemas for trigger classification, fix planning, file edits, patch review, and summaries.
+- Model-call audit records with token, cost, duration, provider, model, prompt version, success state, and stable error category.
+- Per-task model-call limits and conservative malformed-output handling.
+
+Do not build yet:
+
+- Multi-provider marketplace behavior.
+- Automatic model selection across many providers.
+- Large-scale embedding index.
+- Public hosted billing.
+
+Exit criteria:
+
+- Every workflow model call goes through the internal provider boundary.
+- Every execution-affecting model output is schema-validated before use.
+- Operators can inspect model-call evidence without reading backend logs.
+
+Suggested ExecPlan:
+
+- `docs/plans/031-model-provider-client-boundary.md`
+- `docs/plans/032-structured-fix-plan-generation.md`
+- `docs/plans/092-model-assisted-trigger-classification.md`
+
 ## Phase 5: Maven Verification And Pull Request Creation
 
 Goal: run Maven tests and create a Pull Request when verification succeeds.
@@ -345,3 +378,36 @@ Exit criteria:
 Suggested ExecPlan:
 
 - `docs/plans/009-public-hosted-service-readiness.md`
+
+
+## Phase 10: Advanced AI Infrastructure And Evaluation
+
+Goal: make PatchPilot measurable, model-portable, and ready for broader hosted usage after the self-hosted workflow is reliable.
+
+Build:
+
+- Evaluation harness for repeatable issue-to-PR benchmark runs.
+- Prompt regression tests and prompt comparison reports.
+- Stored evaluation cases and evaluation run reports.
+- Retrieval audit records for repository context selection.
+- Optional embedding-backed code search behind a pluggable retrieval boundary.
+- Model routing by task stage, with fallback and budget policy.
+- Per-task, per-repository, per-trigger-user, and per-instance model budget controls.
+- Dashboard panels for evaluation results, retrieval evidence, model routing, and budget state.
+
+Do not build yet:
+
+- Hosted billing or tenant accounting before public hosted service safeguards exist.
+- Autonomous large refactors across unrelated files.
+- Model-generated dependency installation or arbitrary shell execution.
+
+Exit criteria:
+
+- A reviewer can run benchmark cases and see success rate, verification pass rate, cost, and latency.
+- Prompt or model changes can be compared against prior runs before being used in demos.
+- Retrieval evidence explains why the model saw specific files and snippets.
+- Budget limits can stop expensive tasks before uncontrolled provider spend.
+
+Suggested ExecPlan:
+
+- `docs/plans/194-advanced-ai-infrastructure-evaluation.md`

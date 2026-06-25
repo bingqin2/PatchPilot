@@ -8,6 +8,20 @@ The target state is not autonomous merging or unrestricted code execution. The t
 
 PatchPilot should only execute when a request is clear, authorized, actionable, and supported. Unclear comments, unsupported repositories, unsafe instructions, and abusive usage should be ignored or rejected before task execution begins.
 
+
+## AI Infrastructure Target
+
+PatchPilot should expose AI behavior as auditable backend infrastructure, not as hidden calls inside a workflow. The long-term AI infrastructure target is documented in `docs/product/ai-infrastructure-target.md` and includes:
+
+- A provider-neutral model gateway with OpenAI-compatible support first.
+- Versioned prompts and validated structured outputs for every model decision that can affect task execution.
+- Typed tool registry boundaries, tool-call traces, model-call traces, and task artifacts.
+- Repository retrieval and optional RAG through a pluggable retrieval boundary after lexical search is insufficient.
+- Evaluation fixtures and benchmark runs that measure issue-to-PR success, verification pass rate, cost, and latency.
+- Budget, retry, fallback, redaction, and safety-policy controls suitable for self-hosted and later hosted deployments.
+
+These capabilities should be implemented incrementally. The basic workflow remains a clear, safe issue-to-PR path before broader AI infrastructure is added.
+
 ## Language Support Target
 
 PatchPilot should not pretend to solve every repository through one generic workflow. Each supported language should be integrated through a `LanguageAdapter` boundary that defines:
