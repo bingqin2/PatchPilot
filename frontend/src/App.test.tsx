@@ -2289,10 +2289,19 @@ test('copies demo session report from backend API', async () => {
 
   render(<App />);
 
+  const commandPanel = await screen.findByRole('region', { name: 'Demo launch command composer' });
+  await user.click(within(commandPanel).getByRole('button', { name: 'Generate command' }));
+
   const sessionPanel = await screen.findByRole('region', { name: 'Demo session snapshot' });
+  expect(within(sessionPanel).getByRole('heading', { name: 'Prepared launch commands' })).toBeInTheDocument();
+  expect(within(sessionPanel).getByText('/agent fix replace docs/demo.md PatchPilot smoke test')).toBeInTheDocument();
   await user.click(within(sessionPanel).getByRole('button', { name: 'Copy session report' }));
 
-  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/session-report'));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/session-report', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: expect.stringContaining('/agent fix replace docs/demo.md PatchPilot smoke test')
+  }));
   expect(writeText).toHaveBeenCalledWith('# PatchPilot Demo Session Report\n\n- Status: `READY`');
   expect(within(sessionPanel).getByText('Demo session report copied')).toBeInTheDocument();
 });

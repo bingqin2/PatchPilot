@@ -15,6 +15,7 @@ import type {
   DemoReadiness,
   DemoScript,
   DemoSessionArchive,
+  DemoSessionReportInput,
   DemoSessionSnapshot,
   DemoSmokeChecklist,
   FixTask,
@@ -227,16 +228,16 @@ export async function getDemoSessionSnapshot(): Promise<DemoSessionSnapshot> {
   return getApi<DemoSessionSnapshot>('/api/demo/session-snapshot');
 }
 
-export async function getDemoSessionReport(): Promise<string> {
-  return getApi<string>('/api/demo/session-report');
+export async function getDemoSessionReport(input?: DemoSessionReportInput): Promise<string> {
+  return input ? postApi<string>('/api/demo/session-report', input) : getApi<string>('/api/demo/session-report');
 }
 
-export async function downloadDemoSessionReport(): Promise<Blob> {
-  return getBlobApi('/api/demo/session-report/download');
+export async function downloadDemoSessionReport(input?: DemoSessionReportInput): Promise<Blob> {
+  return input ? postBlobApi('/api/demo/session-report/download', input) : getBlobApi('/api/demo/session-report/download');
 }
 
-export async function archiveDemoSession(): Promise<DemoSessionArchive> {
-  return postApi<DemoSessionArchive>('/api/demo/session-archives');
+export async function archiveDemoSession(input?: DemoSessionReportInput): Promise<DemoSessionArchive> {
+  return postApi<DemoSessionArchive>('/api/demo/session-archives', input);
 }
 
 export async function listDemoSessionArchives(): Promise<DemoSessionArchive[]> {
@@ -423,6 +424,20 @@ async function getBlobApi(path: string): Promise<Blob> {
   const securedInit = withAdminToken();
   try {
     response = securedInit ? await fetch(path, securedInit) : await fetch(path);
+  } catch {
+    throw new Error(backendConnectionError);
+  }
+  if (!response.ok) {
+    throw new Error(`Request failed: ${response.status}`);
+  }
+  return response.blob();
+}
+
+async function postBlobApi(path: string, body: unknown): Promise<Blob> {
+  let response: Response;
+  const securedInit = withAdminToken(postRequest(body));
+  try {
+    response = await fetch(path, securedInit);
   } catch {
     throw new Error(backendConnectionError);
   }

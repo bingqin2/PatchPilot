@@ -436,6 +436,22 @@ export interface DemoSessionSnapshot {
   nextActions: string[];
 }
 
+export interface DemoPreparedLaunchCommand {
+  triggerComment: string;
+  repositoryOwner: string;
+  repositoryName: string;
+  issueNumber: number;
+  triggerUser: string;
+  operation: DemoLaunchCommandOperation;
+  targetPath: string;
+  replacementText: string | null;
+  savedAt: string;
+}
+
+export interface DemoSessionReportInput {
+  preparedLaunchCommands: DemoPreparedLaunchCommand[];
+}
+
 export interface DemoSessionArchive {
   id: string;
   sessionId: string;

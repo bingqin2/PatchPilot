@@ -1,21 +1,23 @@
 import { Archive, Copy, Download } from 'lucide-react';
 import { useState } from 'react';
-import type { DemoReadinessStatus, DemoSessionArchive, DemoSessionSnapshot } from '../../types';
+import type { DemoPreparedLaunchCommand, DemoReadinessStatus, DemoSessionArchive, DemoSessionReportInput, DemoSessionSnapshot } from '../../types';
 import { compactDateTime } from '../format';
 
 interface DemoSessionSnapshotPanelProps {
   snapshot: DemoSessionSnapshot | null;
+  preparedLaunchCommands: DemoPreparedLaunchCommand[];
   archives: DemoSessionArchive[];
   error: string | null;
   archiveError: string | null;
-  onCopyReport: () => Promise<string>;
-  onDownloadReport: () => Promise<Blob>;
-  onArchiveSession: () => Promise<DemoSessionArchive>;
+  onCopyReport: (input: DemoSessionReportInput) => Promise<string>;
+  onDownloadReport: (input: DemoSessionReportInput) => Promise<Blob>;
+  onArchiveSession: (input: DemoSessionReportInput) => Promise<DemoSessionArchive>;
   onDownloadArchiveReport: (archiveId: string) => Promise<Blob>;
 }
 
 export function DemoSessionSnapshotPanel({
   snapshot,
+  preparedLaunchCommands,
   archives,
   error,
   archiveError,
@@ -28,10 +30,11 @@ export function DemoSessionSnapshotPanel({
   const [downloadStatus, setDownloadStatus] = useState<string | null>(null);
   const [archiveStatus, setArchiveStatus] = useState<string | null>(null);
   const scriptStepCount = snapshot?.script.steps.length ?? 0;
+  const reportInput = { preparedLaunchCommands };
 
   async function copySessionReport() {
     try {
-      const report = await onCopyReport();
+      const report = await onCopyReport(reportInput);
       await navigator.clipboard.writeText(report);
       setCopyStatus('Demo session report copied');
     } catch {
@@ -44,7 +47,7 @@ export function DemoSessionSnapshotPanel({
       return;
     }
     try {
-      const report = await onDownloadReport();
+      const report = await onDownloadReport(reportInput);
       downloadMarkdown(report, `patchpilot-demo-session-${snapshot.sessionId}.md`);
       setDownloadStatus('Demo session report downloaded');
     } catch {
@@ -54,7 +57,7 @@ export function DemoSessionSnapshotPanel({
 
   async function archiveSession() {
     try {
-      await onArchiveSession();
+      await onArchiveSession(reportInput);
       setArchiveStatus('Demo session archived');
     } catch {
       setArchiveStatus('Archive failed');
@@ -168,6 +171,8 @@ export function DemoSessionSnapshotPanel({
             <SnapshotList title="Next actions" items={snapshot.nextActions} emptyText="No next actions recorded." />
           </div>
 
+          <PreparedLaunchCommandList commands={preparedLaunchCommands} />
+
           <div className="demo-session-archives">
             <h3>Recent session archives</h3>
             {archives.length ? (
@@ -249,6 +254,31 @@ function SnapshotList({ title, items, emptyText = 'No entries recorded.' }: Snap
         </ul>
       ) : (
         <p className="empty-state">{emptyText}</p>
+      )}
+    </div>
+  );
+}
+
+function PreparedLaunchCommandList({ commands }: { commands: DemoPreparedLaunchCommand[] }) {
+  return (
+    <div className="demo-session-prepared-commands">
+      <h3>Prepared launch commands</h3>
+      {commands.length ? (
+        <ul>
+          {commands.map((command) => (
+            <li key={`${command.triggerComment}-${command.savedAt}`}>
+              <code>{command.triggerComment}</code>
+              <span>
+                {command.repositoryOwner}/{command.repositoryName} #{command.issueNumber} - {command.operation} -{' '}
+                {command.targetPath}
+              </span>
+              {command.replacementText ? <small>{command.replacementText}</small> : null}
+              <time dateTime={command.savedAt}>{compactDateTime(command.savedAt)}</time>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="empty-state compact-empty-state">No prepared launch commands recorded in this browser.</p>
       )}
     </div>
   );

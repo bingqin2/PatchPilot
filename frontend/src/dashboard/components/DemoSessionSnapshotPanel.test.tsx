@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { DemoSessionArchive, DemoSessionSnapshot } from '../../types';
+import type { DemoPreparedLaunchCommand, DemoSessionArchive, DemoSessionSnapshot } from '../../types';
 import { DemoSessionSnapshotPanel } from './DemoSessionSnapshotPanel';
 
 const snapshot: DemoSessionSnapshot = {
@@ -127,6 +127,31 @@ const archives: DemoSessionArchive[] = [
   }
 ];
 
+const preparedLaunchCommands: DemoPreparedLaunchCommand[] = [
+  {
+    triggerComment: '/agent fix replace docs/demo.md PatchPilot smoke test',
+    repositoryOwner: 'bingqin2',
+    repositoryName: 'PatchPilot',
+    issueNumber: 1,
+    triggerUser: 'bingqin2',
+    operation: 'replace',
+    targetPath: 'docs/demo.md',
+    replacementText: 'PatchPilot smoke test',
+    savedAt: '2026-06-26T01:00:00Z'
+  },
+  {
+    triggerComment: '/agent fix touch docs/history.md',
+    repositoryOwner: 'bingqin2',
+    repositoryName: 'PatchPilot',
+    issueNumber: 2,
+    triggerUser: 'bingqin2',
+    operation: 'touch',
+    targetPath: 'docs/history.md',
+    replacementText: null,
+    savedAt: '2026-06-26T01:05:00Z'
+  }
+];
+
 afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
@@ -136,6 +161,7 @@ test('renders demo session snapshot summary, evidence, checklist, contract, and 
   render(
     <DemoSessionSnapshotPanel
       snapshot={snapshot}
+      preparedLaunchCommands={preparedLaunchCommands}
       archives={archives}
       error={null}
       archiveError={null}
@@ -161,12 +187,16 @@ test('renders demo session snapshot summary, evidence, checklist, contract, and 
   expect(within(panel).getByText(/does not create tasks, call the model, run tests, mutate Git, or write to GitHub/)).toBeInTheDocument();
   expect(within(panel).getByRole('heading', { name: 'Recent session archives' })).toBeInTheDocument();
   expect(within(panel).getByText('archive-1')).toBeInTheDocument();
+  expect(within(panel).getByRole('heading', { name: 'Prepared launch commands' })).toBeInTheDocument();
+  expect(within(panel).getByText('/agent fix replace docs/demo.md PatchPilot smoke test')).toBeInTheDocument();
+  expect(within(panel).getByText('/agent fix touch docs/history.md')).toBeInTheDocument();
 });
 
 test('shows loading and API errors without hiding snapshot data', () => {
   const { rerender } = render(
     <DemoSessionSnapshotPanel
       snapshot={null}
+      preparedLaunchCommands={[]}
       archives={[]}
       error={null}
       archiveError={null}
@@ -182,6 +212,7 @@ test('shows loading and API errors without hiding snapshot data', () => {
   rerender(
     <DemoSessionSnapshotPanel
       snapshot={snapshot}
+      preparedLaunchCommands={preparedLaunchCommands}
       archives={archives}
       error="Backend request failed"
       archiveError="Archive request failed"
@@ -209,6 +240,7 @@ test('copies demo session report markdown', async () => {
   render(
     <DemoSessionSnapshotPanel
       snapshot={snapshot}
+      preparedLaunchCommands={preparedLaunchCommands}
       archives={[]}
       error={null}
       archiveError={null}
@@ -221,7 +253,7 @@ test('copies demo session report markdown', async () => {
 
   await userEvent.click(screen.getByRole('button', { name: 'Copy session report' }));
 
-  expect(onCopyReport).toHaveBeenCalledTimes(1);
+  expect(onCopyReport).toHaveBeenCalledWith({ preparedLaunchCommands });
   expect(writeText).toHaveBeenCalledWith('# PatchPilot Demo Session Report\n\n- Status: `READY`');
   expect(screen.getByText('Demo session report copied')).toBeInTheDocument();
 });
@@ -241,6 +273,7 @@ test('downloads demo session report markdown', async () => {
   render(
     <DemoSessionSnapshotPanel
       snapshot={snapshot}
+      preparedLaunchCommands={preparedLaunchCommands}
       archives={[]}
       error={null}
       archiveError={null}
@@ -253,7 +286,7 @@ test('downloads demo session report markdown', async () => {
 
   await userEvent.click(screen.getByRole('button', { name: 'Download session report' }));
 
-  expect(onDownloadReport).toHaveBeenCalledTimes(1);
+  expect(onDownloadReport).toHaveBeenCalledWith({ preparedLaunchCommands });
   expect(createObjectURL).toHaveBeenCalledWith(reportBlob);
   expect(click).toHaveBeenCalledTimes(1);
   expect(revokeObjectURL).toHaveBeenCalledWith('blob:demo-session-report');
@@ -271,6 +304,7 @@ test('archives current demo session and copies archived report markdown', async 
   render(
     <DemoSessionSnapshotPanel
       snapshot={snapshot}
+      preparedLaunchCommands={preparedLaunchCommands}
       archives={archives}
       error={null}
       archiveError={null}
@@ -284,7 +318,7 @@ test('archives current demo session and copies archived report markdown', async 
   await userEvent.click(screen.getByRole('button', { name: 'Archive session' }));
   await userEvent.click(screen.getByRole('button', { name: 'Copy archived session report archive-1' }));
 
-  expect(onArchiveSession).toHaveBeenCalledTimes(1);
+  expect(onArchiveSession).toHaveBeenCalledWith({ preparedLaunchCommands });
   expect(screen.getByText('Demo session archived')).toBeInTheDocument();
   expect(writeText).toHaveBeenCalledWith('# PatchPilot Demo Session Report\n\n- Status: `READY`');
   expect(screen.getByText('Archived session report copied')).toBeInTheDocument();
@@ -305,6 +339,7 @@ test('downloads archived demo session report markdown', async () => {
   render(
     <DemoSessionSnapshotPanel
       snapshot={snapshot}
+      preparedLaunchCommands={[]}
       archives={archives}
       error={null}
       archiveError={null}

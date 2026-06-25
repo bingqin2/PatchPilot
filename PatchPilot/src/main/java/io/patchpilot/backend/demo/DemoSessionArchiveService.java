@@ -54,6 +54,10 @@ public class DemoSessionArchiveService {
     }
 
     public DemoSessionArchiveVo archiveCurrentSession() {
+        return archiveCurrentSession(new DemoSessionReportRequestDto(List.of()));
+    }
+
+    public DemoSessionArchiveVo archiveCurrentSession(DemoSessionReportRequestDto request) {
         DemoSessionSnapshotVo snapshot = snapshotSupplier.get();
         DemoSessionArchiveVo archive = new DemoSessionArchiveVo(
                 idSupplier.get(),
@@ -63,7 +67,7 @@ public class DemoSessionArchiveService {
                 snapshot.shareSummary(),
                 snapshot.evidenceBundle().recentPullRequestUrl(),
                 Instant.now(clock),
-                demoSessionReportService.formatSessionReport(snapshot)
+                demoSessionReportService.formatSessionReport(snapshot, request)
         );
         return archiveRepository.save(archive);
     }

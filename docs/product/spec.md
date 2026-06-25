@@ -306,11 +306,11 @@ MVP frontend scope:
 - Inspect tool-call summaries.
 - Inspect verification output.
 - Inspect a single demo evidence bundle before posting a live `/agent fix` comment.
-- Inspect a single demo session snapshot that combines evidence, script, runbook, checklist, health contract, share summary, and next actions.
+- Inspect a single demo session snapshot that combines evidence, prepared launch commands from browser-local history, script, runbook, checklist, health contract, share summary, and next actions.
 - Follow a read-only demo script that gives ordered operator actions, verification commands, troubleshooting targets, and health-contract guarantees before and during a live smoke run.
 - Copy a Markdown demo runbook generated from the current evidence bundle.
-- Copy or download a Markdown demo session report generated from the current session snapshot.
-- Archive the current demo session report into a recent list and copy or download archived Markdown reports during or after a live demo. Database-backed local profiles should persist these archives across backend restarts.
+- Copy or download a Markdown demo session report generated from the current session snapshot and current browser's prepared demo launch commands.
+- Archive the current demo session report into a recent list, including prepared demo launch command context when supplied by the dashboard, and copy or download archived Markdown reports during or after a live demo. Database-backed local profiles should persist these archives across backend restarts.
 - Inspect queue worker readiness, last poll age, and operator action before a live issue-to-PR demo.
 - Evaluate a manual `/agent fix` trigger before creating a task and see the gate decisions plus next operator action.
 - Evaluate a pasted GitHub webhook payload before redelivery and see whether the temporary URL, webhook secret, event type, action, and `/agent fix` comment shape look correct.
@@ -354,10 +354,10 @@ PatchPilot MVP is successful when:
 - A successful task creates a Pull Request.
 - GitHub issue comments and Pull Request bodies can link back to the matching dashboard task detail page when the operator configures a public Dashboard URL.
 - An operator can verify demo readiness through a single evidence bundle covering setup, safety, queue, webhook, and recent PR signals.
-- An operator can inspect a single demo session snapshot before or after a live run without manually assembling evidence, script, runbook, checklist, and health-contract responses.
+- An operator can inspect a single demo session snapshot before or after a live run without manually assembling evidence, prepared launch commands, script, runbook, checklist, and health-contract responses.
 - An operator can follow an ordered demo script whose endpoint is explicitly read-only and whose steps point to dashboard evidence and curl verification commands.
 - An operator can copy a Markdown runbook that explains the current demo status and next actions without manually assembling API responses.
-- An operator can copy or download a Markdown session report that includes the snapshot, script, checklist, health contract, next actions, and runbook.
+- An operator can copy or download a Markdown session report that includes the snapshot, prepared launch commands from the current browser, script, checklist, health contract, next actions, and runbook.
 - An operator can copy an adapter readiness report that proves current multi-language coverage and highlights fixture drift before a live run.
 - An operator can see whether each adapter's verification executable is available in the current backend runtime before a live run.
 - An operator can see missing adapter verification executables reflected in the demo readiness gate instead of only in the adapter report.
