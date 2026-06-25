@@ -2504,7 +2504,9 @@ test('composes a demo launch command and applies it to preflight from the dashbo
       })
     })
   );
-  expect(within(commandPanel).getByText('/agent fix replace docs/demo.md PatchPilot smoke test')).toBeInTheDocument();
+  const generatedCommand = within(commandPanel).getByText('Generated issue comment').closest('.demo-launch-command-output');
+  expect(generatedCommand).not.toBeNull();
+  expect(within(generatedCommand as HTMLElement).getByText('/agent fix replace docs/demo.md PatchPilot smoke test')).toBeInTheDocument();
 
   await user.click(within(commandPanel).getByRole('button', { name: 'Copy command' }));
   expect(writeText).toHaveBeenCalledWith('/agent fix replace docs/demo.md PatchPilot smoke test');
@@ -2525,6 +2527,25 @@ test('composes a demo launch command and applies it to preflight from the dashbo
       body: JSON.stringify(demoLaunchCommand.preflightInput)
     })
   );
+});
+
+test('persists demo launch command history across dashboard reloads', async () => {
+  const user = userEvent.setup();
+
+  const { unmount } = render(<App />);
+
+  let commandPanel = await screen.findByRole('region', { name: 'Demo launch command composer' });
+  await user.click(within(commandPanel).getByRole('button', { name: 'Generate command' }));
+  await waitFor(() =>
+    expect(within(commandPanel).getByRole('list', { name: 'Recent demo launch commands' })).toBeInTheDocument()
+  );
+
+  unmount();
+  render(<App />);
+
+  commandPanel = await screen.findByRole('region', { name: 'Demo launch command composer' });
+  const history = within(commandPanel).getByRole('list', { name: 'Recent demo launch commands' });
+  expect(within(history).getByText('/agent fix replace docs/demo.md PatchPilot smoke test')).toBeInTheDocument();
 });
 
 test('shows manual task creation failures without clearing the form', async () => {

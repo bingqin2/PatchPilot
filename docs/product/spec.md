@@ -95,7 +95,7 @@ The current implementation target is local self-hosted development first. Hosted
 - A task can be queried by id for status and result.
 - Task creation must pass authorization, command parsing, actionability, and rate-limit checks before expensive execution begins.
 - Operators should be able to dry-run a proposed `/agent fix` trigger as either a manual API source or a GitHub issue-comment source and see whether it would create a task or be blocked without creating tasks, queue work, rejected-trigger audit rows, GitHub comments, webhook delivery diagnostics, or rate-limit records.
-- Operators should be able to compose a controlled demo `/agent fix` issue comment from structured repository, issue, operation, target path, and replacement text fields, then copy it or apply it to launch preflight without creating a task or mutating GitHub.
+- Operators should be able to compose a controlled demo `/agent fix` issue comment from structured repository, issue, operation, target path, and replacement text fields, then copy it, store it in browser-local recent command history, refill the composer from it, or apply it to launch preflight without creating a task or mutating GitHub.
 - Operators should be able to run a final demo launch preflight for the exact GitHub issue comment they plan to post, combining current demo readiness with an `ISSUE_COMMENT` trigger dry run without creating a task or mutating GitHub.
 - Task execution must pass a repository language-adapter preflight after workspace preparation and before model patch generation.
 - Operators should be able to run a local repository preflight diagnostic that uses the same language adapter registry without creating a task, running tests, mutating Git, or opening a Pull Request.
