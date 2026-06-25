@@ -270,6 +270,7 @@ MVP frontend scope:
 - Evaluate a manual `/agent fix` trigger before creating a task and see the gate decisions plus next operator action.
 - Evaluate a pasted GitHub webhook payload before redelivery and see whether the temporary URL, webhook secret, event type, action, and `/agent fix` comment shape look correct.
 - Inspect and copy a single adapter readiness report covering supported languages, allowlisted verification commands, fixture pass rate, and fixture failures.
+- Copy a Markdown repository preflight report after checking a local path so supported and unsupported repository evidence can be shared before task creation.
 
 The frontend does not need to trigger the first backend workflow. GitHub issue comments remain the first trigger.
 
@@ -307,6 +308,7 @@ PatchPilot MVP is successful when:
 - An operator can copy a Markdown runbook that explains the current demo status and next actions without manually assembling API responses.
 - An operator can copy or download a Markdown session report that includes the snapshot, script, checklist, health contract, next actions, and runbook.
 - An operator can copy an adapter readiness report that proves current multi-language coverage and highlights fixture drift before a live run.
+- An operator can copy a repository preflight report that shows whether a local path is supported and which allowlisted command would run.
 - A failed task records and reports a clear failure reason.
 
 The broader product is successful when:

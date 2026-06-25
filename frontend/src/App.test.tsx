@@ -2024,6 +2024,11 @@ test('creates a manual task from the dashboard and refreshes task data', async (
 test('runs repository preflight from the dashboard', async () => {
   const user = userEvent.setup();
   const fetchMock = vi.mocked(fetch);
+  const writeText = vi.fn().mockResolvedValue(undefined);
+  Object.defineProperty(navigator, 'clipboard', {
+    configurable: true,
+    value: { writeText }
+  });
 
   render(<App />);
 
@@ -2044,6 +2049,10 @@ test('runs repository preflight from the dashboard', async () => {
   expect(within(preflightPanel).getByText('SUPPORTED')).toBeInTheDocument();
   expect(within(preflightPanel).getByText('mvn test')).toBeInTheDocument();
   expect(within(preflightPanel).getByText('Detected Maven project')).toBeInTheDocument();
+  await user.click(within(preflightPanel).getByRole('button', { name: 'Copy preflight report' }));
+  expect(writeText).toHaveBeenCalledWith(expect.stringContaining('# PatchPilot Repository Preflight Report'));
+  expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- Status: `SUPPORTED`'));
+  expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- Repository path: `docs/demo-repositories/java-maven`'));
 });
 
 test('shows manual task creation failures without clearing the form', async () => {

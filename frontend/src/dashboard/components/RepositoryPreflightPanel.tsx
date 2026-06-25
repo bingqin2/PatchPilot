@@ -25,6 +25,13 @@ export function RepositoryPreflightPanel({
     await onRunPreflight({ repositoryPath: repositoryPath.trim() });
   }
 
+  async function copyReport() {
+    if (!result) {
+      return;
+    }
+    await navigator.clipboard?.writeText(buildRepositoryPreflightReport(result, allowedRootDirs, error));
+  }
+
   return (
     <section className="panel repository-preflight-panel" aria-label="Repository preflight">
       <div className="panel-header">
@@ -32,6 +39,11 @@ export function RepositoryPreflightPanel({
           <h2>Repository preflight</h2>
           <p>Validate local adapter support before creating a fix task</p>
         </div>
+        {result ? (
+          <button type="button" className="secondary-button" onClick={copyReport}>
+            Copy preflight report
+          </button>
+        ) : null}
       </div>
       <form className="repository-preflight-form" onSubmit={(event) => void submit(event)}>
         <label htmlFor="repository-preflight-path">
@@ -113,4 +125,36 @@ function RepositoryPreflightResultView({ result }: { result: RepositoryPreflight
 
 function commandLabel(command: string[]) {
   return command.length > 0 ? command.join(' ') : 'none';
+}
+
+function buildRepositoryPreflightReport(
+  result: RepositoryPreflightResult,
+  allowedRootDirs: string[],
+  error: string | null
+) {
+  const status = result.supported ? 'SUPPORTED' : 'UNSUPPORTED';
+  const selectedAdapter = `${result.language}/${result.buildSystem}`;
+  const allowedRoots = allowedRootDirs.length > 0
+    ? allowedRootDirs.map((root) => `\`${root}\``).join(', ')
+    : 'none configured';
+  return [
+    '# PatchPilot Repository Preflight Report',
+    '',
+    `- Status: \`${status}\``,
+    `- Repository path: \`${result.repositoryPath}\``,
+    `- Selected adapter: \`${selectedAdapter}\``,
+    `- Verification command: \`${commandLabel(result.verificationCommand)}\``,
+    `- Detection reason: ${result.reason}`,
+    `- Operator action: ${result.operatorAction}`,
+    `- Allowed roots: ${allowedRoots}`,
+    error ? `- Error: ${error}` : null,
+    '',
+    '## Supported Adapter Options',
+    '',
+    ...(result.supportedAdapters.length > 0
+      ? result.supportedAdapters.map((adapter) => (
+        `- \`${adapter.language}/${adapter.buildSystem}\`: signals \`${adapter.detectionSignals.join(', ')}\`; command \`${commandLabel(adapter.verificationCommand)}\``
+      ))
+      : ['No alternate adapter options returned for this preflight result.'])
+  ].filter((line): line is string => line !== null).join('\n');
 }

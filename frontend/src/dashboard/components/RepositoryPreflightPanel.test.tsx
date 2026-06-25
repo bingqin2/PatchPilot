@@ -76,6 +76,35 @@ test('shows supported repository detection details', () => {
   expect(within(panel).getByText('Detected Maven project')).toBeInTheDocument();
 });
 
+test('copies supported repository preflight evidence as markdown', async () => {
+  const user = userEvent.setup();
+  const writeText = vi.fn().mockResolvedValue(undefined);
+  Object.defineProperty(navigator, 'clipboard', {
+    configurable: true,
+    value: { writeText }
+  });
+
+  render(
+    <RepositoryPreflightPanel
+      result={supportedResult}
+      error={null}
+      loading={false}
+      allowedRootDirs={['/Users/demo/agent/docs/demo-repositories']}
+      onRunPreflight={vi.fn()}
+    />
+  );
+
+  await user.click(screen.getByRole('button', { name: 'Copy preflight report' }));
+
+  expect(writeText).toHaveBeenCalledWith(expect.stringContaining('# PatchPilot Repository Preflight Report'));
+  expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- Status: `SUPPORTED`'));
+  expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- Repository path: `docs/demo-repositories/java-maven`'));
+  expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- Selected adapter: `java/maven`'));
+  expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- Verification command: `mvn test`'));
+  expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- Allowed roots: `/Users/demo/agent/docs/demo-repositories`'));
+}
+);
+
 test('shows unsupported guidance and adapter options', () => {
   render(
     <RepositoryPreflightPanel
@@ -94,4 +123,30 @@ test('shows unsupported guidance and adapter options', () => {
   expect(screen.getByText('Add a LanguageAdapter for this repository shape before running /agent fix.')).toBeInTheDocument();
   expect(screen.getByText('java / maven')).toBeInTheDocument();
   expect(screen.getByText('pom.xml, mvnw')).toBeInTheDocument();
+});
+
+test('copies unsupported repository preflight evidence with adapter options', async () => {
+  const user = userEvent.setup();
+  const writeText = vi.fn().mockResolvedValue(undefined);
+  Object.defineProperty(navigator, 'clipboard', {
+    configurable: true,
+    value: { writeText }
+  });
+
+  render(
+    <RepositoryPreflightPanel
+      result={unsupportedResult}
+      error="Backend request failed"
+      loading={false}
+      allowedRootDirs={[]}
+      onRunPreflight={vi.fn()}
+    />
+  );
+
+  await user.click(screen.getByRole('button', { name: 'Copy preflight report' }));
+
+  expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- Status: `UNSUPPORTED`'));
+  expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- Error: Backend request failed'));
+  expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- Operator action: Add a LanguageAdapter for this repository shape before running /agent fix.'));
+  expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- `java/maven`: signals `pom.xml, mvnw`; command `mvn test`'));
 });
