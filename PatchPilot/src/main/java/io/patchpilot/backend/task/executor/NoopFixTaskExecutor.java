@@ -17,10 +17,12 @@ import io.patchpilot.backend.runner.domain.vo.TestRunResult;
 import io.patchpilot.backend.safety.GeneratedDiffRiskGate;
 import io.patchpilot.backend.safety.domain.GeneratedDiffRiskDecision;
 import io.patchpilot.backend.runner.service.VerificationRunner;
+import io.patchpilot.backend.task.domain.vo.FixTaskPatchReviewVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskTestRunVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import io.patchpilot.backend.task.executor.domain.FixTaskExecutionResult;
 import io.patchpilot.backend.task.service.FixTaskAdapterMetadataRecorder;
+import io.patchpilot.backend.task.service.FixTaskPatchReviewService;
 import io.patchpilot.backend.task.service.FixTaskTestRunService;
 import io.patchpilot.backend.task.service.FixTaskToolCallService;
 import io.patchpilot.backend.workspace.domain.bo.CloneWorkspaceCommand;
@@ -31,6 +33,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class NoopFixTaskExecutor implements FixTaskExecutor {
@@ -46,6 +49,7 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
     private final IssueContextService issueContextService;
     private final GeneratedDiffRiskGate generatedDiffRiskGate;
     private final FixTaskAdapterMetadataRecorder adapterMetadataRecorder;
+    private final FixTaskPatchReviewService fixTaskPatchReviewService;
     private final FixTaskTestRunService fixTaskTestRunService;
     private final FixTaskToolCallService fixTaskToolCallService;
     private final TaskCancellationChecker taskCancellationChecker;
@@ -74,6 +78,7 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
                 new GeneratedDiffRiskGate(),
                 defaultIssueContextService(),
                 FixTaskAdapterMetadataRecorder.NOOP,
+                noopPatchReviewService(),
                 fixTaskTestRunService,
                 fixTaskToolCallService,
                 taskCancellationChecker
@@ -105,6 +110,7 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
                 new GeneratedDiffRiskGate(),
                 defaultIssueContextService(),
                 FixTaskAdapterMetadataRecorder.NOOP,
+                noopPatchReviewService(),
                 fixTaskTestRunService,
                 fixTaskToolCallService,
                 taskCancellationChecker
@@ -138,6 +144,7 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
                 generatedDiffRiskGate(),
                 issueContextService,
                 adapterMetadataRecorder,
+                noopPatchReviewService(),
                 fixTaskTestRunService,
                 fixTaskToolCallService,
                 taskCancellationChecker
@@ -170,6 +177,41 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
                 generatedDiffRiskGate(),
                 defaultIssueContextService(),
                 adapterMetadataRecorder,
+                noopPatchReviewService(),
+                fixTaskTestRunService,
+                fixTaskToolCallService,
+                taskCancellationChecker
+        );
+    }
+
+    public NoopFixTaskExecutor(
+            WorkspaceService workspaceService,
+            LanguageAdapterRegistry languageAdapterRegistry,
+            VerificationRunner verificationRunner,
+            PatchWorkflow patchWorkflow,
+            DiffTool diffTool,
+            CommitTool commitTool,
+            PushTool pushTool,
+            PullRequestTool pullRequestTool,
+            FixTaskAdapterMetadataRecorder adapterMetadataRecorder,
+            FixTaskPatchReviewService fixTaskPatchReviewService,
+            FixTaskTestRunService fixTaskTestRunService,
+            FixTaskToolCallService fixTaskToolCallService,
+            TaskCancellationChecker taskCancellationChecker
+    ) {
+        this(
+                workspaceService,
+                languageAdapterRegistry,
+                verificationRunner,
+                patchWorkflow,
+                diffTool,
+                commitTool,
+                pushTool,
+                pullRequestTool,
+                generatedDiffRiskGate(),
+                defaultIssueContextService(),
+                adapterMetadataRecorder,
+                fixTaskPatchReviewService,
                 fixTaskTestRunService,
                 fixTaskToolCallService,
                 taskCancellationChecker
@@ -203,6 +245,7 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
                 generatedDiffRiskGate,
                 defaultIssueContextService(),
                 adapterMetadataRecorder,
+                noopPatchReviewService(),
                 fixTaskTestRunService,
                 fixTaskToolCallService,
                 taskCancellationChecker
@@ -222,6 +265,7 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
             GeneratedDiffRiskGate generatedDiffRiskGate,
             IssueContextService issueContextService,
             FixTaskAdapterMetadataRecorder adapterMetadataRecorder,
+            FixTaskPatchReviewService fixTaskPatchReviewService,
             FixTaskTestRunService fixTaskTestRunService,
             FixTaskToolCallService fixTaskToolCallService,
             TaskCancellationChecker taskCancellationChecker
@@ -237,6 +281,7 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
         this.issueContextService = issueContextService;
         this.generatedDiffRiskGate = generatedDiffRiskGate;
         this.adapterMetadataRecorder = adapterMetadataRecorder;
+        this.fixTaskPatchReviewService = fixTaskPatchReviewService;
         this.fixTaskTestRunService = fixTaskTestRunService;
         this.fixTaskToolCallService = fixTaskToolCallService;
         this.taskCancellationChecker = taskCancellationChecker;
@@ -262,6 +307,28 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
                 return new GitHubIssueContext("", "", "", List.of());
             }
         });
+    }
+
+    private static FixTaskPatchReviewService noopPatchReviewService() {
+        return new FixTaskPatchReviewService() {
+            @Override
+            public FixTaskPatchReviewVo recordPatchReview(
+                    String taskId,
+                    String decision,
+                    String reason,
+                    String confidence,
+                    String requiredFollowUp,
+                    List<String> editedFiles,
+                    Instant createdAt
+            ) {
+                throw new UnsupportedOperationException("Patch review recording is not supported");
+            }
+
+            @Override
+            public Optional<FixTaskPatchReviewVo> findLatestPatchReview(String taskId) {
+                return Optional.empty();
+            }
+        };
     }
 
     @Override
@@ -324,6 +391,9 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
                 )
         );
         taskCancellationChecker.throwIfCancelled(taskWithAdapterEvidence.id());
+        FixTaskPatchReviewVo latestPatchReview = fixTaskPatchReviewService
+                .findLatestPatchReview(taskWithAdapterEvidence.id())
+                .orElse(null);
         PullRequestResult pullRequestResult = auditToolCall(
                 taskWithAdapterEvidence.id(),
                 "PullRequestTool",
@@ -333,7 +403,12 @@ public class NoopFixTaskExecutor implements FixTaskExecutor {
                 preparedWorkspace.branchName(),
                 taskWithAdapterEvidence.issueNumber()
         ),
-                () -> pullRequestTool.createPullRequest(taskWithAdapterEvidence, preparedWorkspace.branchName(), testRun),
+                () -> pullRequestTool.createPullRequest(
+                        taskWithAdapterEvidence,
+                        preparedWorkspace.branchName(),
+                        testRun,
+                        latestPatchReview
+                ),
                 PullRequestResult::url
         );
         return new FixTaskExecutionResult(pullRequestResult.url());

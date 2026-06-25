@@ -6,11 +6,13 @@ import io.patchpilot.backend.github.client.domain.PullRequestResult;
 import io.patchpilot.backend.github.config.GitHubProperties;
 import io.patchpilot.backend.dashboard.config.DashboardProperties;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
+import io.patchpilot.backend.task.domain.vo.FixTaskPatchReviewVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskTestRunVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -73,6 +75,24 @@ class PullRequestToolTests {
                 .contains("PatchPilot resumed this task only after an allowed operator approved the generated diff risk review.");
     }
 
+    @Test
+    void should_include_patch_review_evidence_when_available() {
+        RecordingGitHubPullRequestClient client = new RecordingGitHubPullRequestClient();
+        PullRequestTool tool = new PullRequestTool(client);
+
+        tool.createPullRequest(task(), "patchpilot/task-123", testRun(0, 2_345), patchReview());
+
+        assertThat(client.command().body()).contains("Patch review:");
+        assertThat(client.command().body()).contains("Patch review decision: `APPROVE`");
+        assertThat(client.command().body())
+                .contains("Patch review reason: The generated edit matches the issue and stays inside the planned file.");
+        assertThat(client.command().body()).contains("Patch review confidence: `HIGH`");
+        assertThat(client.command().body())
+                .contains("Patch review follow-up: Run ./mvnw test before opening the PR.");
+        assertThat(client.command().body()).contains("Patch review edited files: `src/main/App.java`, `docs/demo.md`");
+        assertThat(client.command().body()).contains("Patch reviewed at: `2026-06-20T04:00:14Z`");
+    }
+
     private static FixTaskVo task() {
         return new FixTaskVo(
                 "task-123",
@@ -113,6 +133,19 @@ class PullRequestToolTests {
                 Instant.parse("2026-06-18T00:01:00Z"),
                 Instant.parse("2026-06-18T00:01:02Z"),
                 durationMs
+        );
+    }
+
+    private static FixTaskPatchReviewVo patchReview() {
+        return new FixTaskPatchReviewVo(
+                "patch-review-123",
+                "task-123",
+                "APPROVE",
+                "The generated edit matches the issue and stays inside the planned file.",
+                "HIGH",
+                "Run ./mvnw test before opening the PR.",
+                List.of("src/main/App.java", "docs/demo.md"),
+                Instant.parse("2026-06-20T04:00:14Z")
         );
     }
 
