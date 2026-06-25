@@ -93,6 +93,8 @@ Fill in at least:
 ```bash
 PATCHPILOT_GITHUB_WEBHOOK_SECRET=replace-with-a-random-secret
 PATCHPILOT_GITHUB_TOKEN=github_pat_or_fine_grained_token
+PATCHPILOT_DEMO_REPOSITORY_OWNER=bingqin2
+PATCHPILOT_DEMO_REPOSITORY_NAME=PatchPilot
 PATCHPILOT_AGENT_API_KEY=your_model_provider_api_key
 PATCHPILOT_ADMIN_TOKEN=replace-with-a-random-admin-token
 PATCHPILOT_DASHBOARD_ADMIN_TOKEN_BOOTSTRAP_ENABLED=false
@@ -100,6 +102,7 @@ PATCHPILOT_DASHBOARD_BASE_URL=https://your-dashboard-url.example
 ```
 
 The webhook secret must match the GitHub webhook configuration. The GitHub token is used for clone, push, issue comments, and Pull Request creation. The admin token protects operator APIs such as task listing, queue inspection, manual task creation, retry, cancel, and risk-review approval when the backend is exposed through a temporary URL. Do not commit `.env`.
+`PATCHPILOT_DEMO_REPOSITORY_OWNER` and `PATCHPILOT_DEMO_REPOSITORY_NAME` identify the repository used by `/api/demo/readiness` to prove the configured GitHub token can read the live demo target before you trigger `/agent fix`.
 `PATCHPILOT_DASHBOARD_ADMIN_TOKEN_BOOTSTRAP_ENABLED` is a local-only convenience flag. Keep it `false` by default. When set to `true`, `GET /api/dashboard/bootstrap` can return the configured admin token so the React dashboard can store it in the current browser before loading protected APIs. Do not enable it for Cloudflare Tunnel URLs, shared networks, or public demos.
 `PATCHPILOT_DASHBOARD_BASE_URL` is optional. When set, GitHub issue status comments and generated Pull Request bodies include `Dashboard: <base-url>/tasks/{taskId}` so maintainers can jump from GitHub feedback to the matching task detail page. Leave it empty for local-only runs where the dashboard is not reachable by issue reviewers.
 
@@ -483,7 +486,7 @@ curl "${ADMIN_HEADER[@]}" "http://127.0.0.1:8080/api/github/repository-access-re
 
 This endpoint sends a read-only `GET /repos/{owner}/{repository}` request to GitHub using `PATCHPILOT_GITHUB_TOKEN` and returns whether the token can read the target repository, the default branch, probe latency, checked time, and the next operator action. It does not return the token, repository contents, account details, or raw GitHub response body, and it does not create tasks, comments, commits, pushes, or Pull Requests. Use it when the token probe is ready but a live `/agent fix` run could still fail because the token or GitHub App installation cannot access the selected repository.
 
-The readiness endpoint aggregates backend reachability, required credential flags, GitHub credential readiness, safety policy state, model provider health, model cost configuration, adapter fixture verification, adapter runtime executable availability, queue state, and recent completed Pull Request evidence into one `READY`, `NEEDS_ATTENTION`, or `BLOCKED` result. Use it before a live `/agent fix` demo to see the next operator action without manually checking every panel or curl endpoint.
+The readiness endpoint aggregates backend reachability, required credential flags, GitHub credential readiness, configured demo repository access, safety policy state, model provider health, model cost configuration, adapter fixture verification, adapter runtime executable availability, queue state, and recent completed Pull Request evidence into one `READY`, `NEEDS_ATTENTION`, or `BLOCKED` result. Configure `PATCHPILOT_DEMO_REPOSITORY_OWNER` and `PATCHPILOT_DEMO_REPOSITORY_NAME` so this gate checks the same repository you will use for the live `/agent fix` demo.
 The smoke checklist endpoint is the final pre-demo readout. It orders the checks as readiness gate, adapter runtime gate, webhook delivery, task execution, and Pull Request evidence, and includes the current evidence plus the next operator action for each step.
 The evidence bundle endpoint is the one-call demo summary. It includes readiness, smoke checklist, non-sensitive configuration, adapter fixture counts, queue summary, recent task and Pull Request evidence, latest webhook delivery, rejected-trigger counts, active quarantine count, generated time, and next actions.
 The demo session snapshot endpoint combines the current evidence bundle, script, runbook, operator checklist, health contract, share summary, and next actions into one read-only demo handoff object. Use it before or after a live run when you need one durable summary for the dashboard, terminal, or review notes.

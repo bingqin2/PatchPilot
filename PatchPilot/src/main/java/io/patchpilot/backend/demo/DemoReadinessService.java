@@ -4,11 +4,14 @@ import io.patchpilot.backend.agent.provider.ModelProviderHealthService;
 import io.patchpilot.backend.agent.provider.domain.ModelProviderHealthVo;
 import io.patchpilot.backend.configuration.ConfigurationSummaryService;
 import io.patchpilot.backend.configuration.ConfigurationSummaryVo;
+import io.patchpilot.backend.demo.config.DemoProperties;
 import io.patchpilot.backend.demo.domain.DemoReadinessCheckVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessStatus;
 import io.patchpilot.backend.demo.domain.DemoReadinessVo;
 import io.patchpilot.backend.github.credential.GitHubCredentialReadinessService;
+import io.patchpilot.backend.github.credential.GitHubRepositoryAccessReadinessService;
 import io.patchpilot.backend.github.credential.domain.GitHubCredentialReadinessVo;
+import io.patchpilot.backend.github.credential.domain.GitHubRepositoryAccessReadinessVo;
 import io.patchpilot.backend.language.LanguageAdapterFixtureVerificationService;
 import io.patchpilot.backend.language.LanguageAdapterRuntimeReadinessService;
 import io.patchpilot.backend.language.domain.LanguageAdapterFixtureVerificationVo;
@@ -36,6 +39,7 @@ public class DemoReadinessService {
     private final Supplier<List<LanguageAdapterFixtureVerificationVo>> fixtureSupplier;
     private final Supplier<List<LanguageAdapterRuntimeReadinessVo>> runtimeReadinessSupplier;
     private final Supplier<GitHubCredentialReadinessVo> gitHubCredentialReadinessSupplier;
+    private final Supplier<GitHubRepositoryAccessReadinessVo> gitHubRepositoryAccessReadinessSupplier;
     private final Supplier<ModelProviderHealthVo> modelProviderHealthSupplier;
     private final Supplier<FixTaskQueueSummaryVo> queueSummarySupplier;
     private final Supplier<FixTaskWorkerHealthVo> workerHealthSupplier;
@@ -47,6 +51,8 @@ public class DemoReadinessService {
             LanguageAdapterFixtureVerificationService fixtureVerificationService,
             LanguageAdapterRuntimeReadinessService runtimeReadinessService,
             GitHubCredentialReadinessService gitHubCredentialReadinessService,
+            GitHubRepositoryAccessReadinessService gitHubRepositoryAccessReadinessService,
+            DemoProperties demoProperties,
             ModelProviderHealthService modelProviderHealthService,
             FixTaskQueueQueryService fixTaskQueueQueryService,
             FixTaskWorkerHealthService fixTaskWorkerHealthService,
@@ -57,6 +63,10 @@ public class DemoReadinessService {
                 fixtureVerificationService::listFixtureVerifications,
                 runtimeReadinessService::listRuntimeReadiness,
                 gitHubCredentialReadinessService::getReadiness,
+                () -> gitHubRepositoryAccessReadinessService.getReadiness(
+                        demoProperties.getRepositoryOwner(),
+                        demoProperties.getRepositoryName()
+                ),
                 modelProviderHealthService::getHealth,
                 fixTaskQueueQueryService::summary,
                 fixTaskWorkerHealthService::getHealth,
@@ -78,6 +88,7 @@ public class DemoReadinessService {
             Supplier<List<LanguageAdapterFixtureVerificationVo>> fixtureSupplier,
             Supplier<List<LanguageAdapterRuntimeReadinessVo>> runtimeReadinessSupplier,
             Supplier<GitHubCredentialReadinessVo> gitHubCredentialReadinessSupplier,
+            Supplier<GitHubRepositoryAccessReadinessVo> gitHubRepositoryAccessReadinessSupplier,
             Supplier<ModelProviderHealthVo> modelProviderHealthSupplier,
             Supplier<FixTaskQueueSummaryVo> queueSummarySupplier,
             Supplier<FixTaskWorkerHealthVo> workerHealthSupplier,
@@ -87,6 +98,7 @@ public class DemoReadinessService {
         this.fixtureSupplier = fixtureSupplier;
         this.runtimeReadinessSupplier = runtimeReadinessSupplier;
         this.gitHubCredentialReadinessSupplier = gitHubCredentialReadinessSupplier;
+        this.gitHubRepositoryAccessReadinessSupplier = gitHubRepositoryAccessReadinessSupplier;
         this.modelProviderHealthSupplier = modelProviderHealthSupplier;
         this.queueSummarySupplier = queueSummarySupplier;
         this.workerHealthSupplier = workerHealthSupplier;
@@ -98,6 +110,7 @@ public class DemoReadinessService {
         List<LanguageAdapterFixtureVerificationVo> fixtures = fixtureSupplier.get();
         List<LanguageAdapterRuntimeReadinessVo> runtimes = runtimeReadinessSupplier.get();
         GitHubCredentialReadinessVo gitHubCredentialReadiness = gitHubCredentialReadinessSupplier.get();
+        GitHubRepositoryAccessReadinessVo gitHubRepositoryAccessReadiness = gitHubRepositoryAccessReadinessSupplier.get();
         ModelProviderHealthVo modelProviderHealth = modelProviderHealthSupplier.get();
         FixTaskQueueSummaryVo queueSummary = queueSummarySupplier.get();
         FixTaskWorkerHealthVo workerHealth = workerHealthSupplier.get();
@@ -107,6 +120,7 @@ public class DemoReadinessService {
                 backendCheck(),
                 credentialsCheck(configuration),
                 gitHubCredentialCheck(gitHubCredentialReadiness),
+                gitHubRepositoryAccessCheck(gitHubRepositoryAccessReadiness),
                 safetyPolicyCheck(configuration),
                 repositoryPreflightScopeCheck(configuration),
                 modelProviderCheck(modelProviderHealth),
@@ -236,6 +250,31 @@ public class DemoReadinessService {
         }
         return new DemoReadinessCheckVo(
                 "GitHub credentials",
+                DemoReadinessStatus.BLOCKED,
+                readiness.message(),
+                readiness.operatorAction()
+        );
+    }
+
+    private static DemoReadinessCheckVo gitHubRepositoryAccessCheck(GitHubRepositoryAccessReadinessVo readiness) {
+        if (!readiness.repositoryConfigured()) {
+            return new DemoReadinessCheckVo(
+                    "GitHub repository access",
+                    DemoReadinessStatus.NEEDS_ATTENTION,
+                    "Demo repository access target is not configured.",
+                    "Configure PATCHPILOT_DEMO_REPOSITORY_OWNER and PATCHPILOT_DEMO_REPOSITORY_NAME before a live demo."
+            );
+        }
+        if (GitHubRepositoryAccessReadinessService.READY.equals(readiness.status())) {
+            return new DemoReadinessCheckVo(
+                    "GitHub repository access",
+                    DemoReadinessStatus.READY,
+                    readiness.message(),
+                    "No action needed."
+            );
+        }
+        return new DemoReadinessCheckVo(
+                "GitHub repository access",
                 DemoReadinessStatus.BLOCKED,
                 readiness.message(),
                 readiness.operatorAction()

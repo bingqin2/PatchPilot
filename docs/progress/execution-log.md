@@ -4,6 +4,29 @@ This file records dated implementation progress, validation commands, and import
 
 ## 2026-06-25
 
+Implemented repository access demo readiness context from `docs/plans/199-repository-access-demo-readiness-context.md`.
+
+Changes:
+
+- Added demo repository owner/name configuration for the live repository used by demo readiness.
+- Added a `GitHub repository access` check to `GET /api/demo/readiness` using the existing read-only repository access probe.
+- Made missing demo repository configuration produce `NEEDS_ATTENTION` and configured-but-unreadable repositories produce `BLOCKED`.
+- Updated the operator setup checklist to prefer the demo readiness repository access result before falling back to the standalone repository access endpoint.
+- Updated `.env.example`, Docker Compose, README, and the plan document with the new demo repository configuration.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=DemoReadinessServiceTests test`: first failed because the readiness checks did not include `GitHub repository access`; then passed after wiring the repository access readiness supplier and status mapping, 13 tests run.
+- `npm test -- --run src/dashboard/components/OperatorSetupChecklistPanel.test.tsx`: first failed because the checklist still reported `12/12 checks ready` while demo readiness had a blocked repository access check; then passed after preferring demo readiness repository access evidence, 9 tests run.
+- `mvn -pl PatchPilot -Dtest=DemoReadinessServiceTests,DemoReadinessControllerTests,DemoEvidenceBundleServiceTests,DemoRunbookServiceTests,DemoSessionSnapshotServiceTests test`: passed after Spring injection and demo evidence regression verification, 31 tests run.
+- `npm test -- --run src/api.test.ts src/App.test.tsx src/dashboard/components/OperatorSetupChecklistPanel.test.tsx`: passed after dashboard integration regression verification, 122 tests run.
+- `mvn -pl PatchPilot test`: passed after full backend regression verification, 700 tests run.
+- `npm test`: passed after full frontend regression verification, 208 tests run.
+- `npm run build`: passed after production frontend build verification.
+- `git diff --check`: passed.
+
+## 2026-06-25
+
 Implemented model provider health readiness from `docs/plans/195-model-provider-health-readiness.md`.
 
 Changes:
