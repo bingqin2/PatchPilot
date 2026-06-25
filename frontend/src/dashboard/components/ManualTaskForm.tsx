@@ -1,4 +1,4 @@
-import { SearchCheck, Send } from 'lucide-react';
+import { Copy, SearchCheck, Send } from 'lucide-react';
 import { FormEvent, useState } from 'react';
 import type { CreateTaskInput, TriggerEvaluationResult, TriggerEvaluationSource } from '../../types';
 
@@ -49,6 +49,13 @@ export function ManualTaskForm({
 
   async function evaluate() {
     await onEvaluateTrigger(input(source));
+  }
+
+  async function copyEvaluationReport() {
+    if (!evaluation) {
+      return;
+    }
+    await navigator.clipboard?.writeText(buildTriggerEvaluationReport(input(source), evaluation));
   }
 
   return (
@@ -146,12 +153,20 @@ export function ManualTaskForm({
           </button>
         </div>
       </form>
-      {evaluation ? <TriggerEvaluationSummary evaluation={evaluation} /> : null}
+      {evaluation ? (
+        <TriggerEvaluationSummary evaluation={evaluation} onCopyReport={copyEvaluationReport} />
+      ) : null}
     </section>
   );
 }
 
-function TriggerEvaluationSummary({ evaluation }: { evaluation: TriggerEvaluationResult }) {
+function TriggerEvaluationSummary({
+  evaluation,
+  onCopyReport
+}: {
+  evaluation: TriggerEvaluationResult;
+  onCopyReport: () => void | Promise<void>;
+}) {
   return (
     <section
       className={`trigger-evaluation-result ${evaluation.wouldCreateTask ? 'is-allowed' : 'is-blocked'}`}
@@ -162,6 +177,10 @@ function TriggerEvaluationSummary({ evaluation }: { evaluation: TriggerEvaluatio
         <div>
           <span>{sourceLabel(evaluation.source)}</span>
           {evaluation.blockedCategory ? <span>{evaluation.blockedCategory}</span> : null}
+          <button className="secondary-button" type="button" onClick={() => void onCopyReport()}>
+            <Copy size={16} />
+            Copy evaluation report
+          </button>
         </div>
       </div>
       <p>{evaluation.wouldCreateTask ? 'Ready to create task.' : 'Review the gate details below before retrying.'}</p>
@@ -179,6 +198,43 @@ function TriggerEvaluationSummary({ evaluation }: { evaluation: TriggerEvaluatio
       <p className="trigger-evaluation-next-action">{evaluation.nextAction}</p>
     </section>
   );
+}
+
+function buildTriggerEvaluationReport(input: CreateTaskInput, evaluation: TriggerEvaluationResult) {
+  return [
+    '# PatchPilot Trigger Evaluation Report',
+    '',
+    `- Status: \`${evaluation.status}\``,
+    `- Source: \`${evaluation.source}\``,
+    `- Would create task: \`${evaluation.wouldCreateTask ? 'YES' : 'NO'}\``,
+    `- Repository: \`${inlineCode(`${input.repositoryOwner}/${input.repositoryName}`)}\``,
+    `- Issue: \`#${input.issueNumber}\``,
+    `- Trigger user: \`${inlineCode(input.triggerUser)}\``,
+    `- Command: \`${inlineCode(input.triggerComment)}\``,
+    evaluation.blockedCategory ? `- Blocked category: \`${inlineCode(evaluation.blockedCategory)}\`` : null,
+    evaluation.blockedReason ? `- Blocked reason: ${evaluation.blockedReason}` : null,
+    `- Issue context: \`${evaluation.issueContextLoaded ? 'LOADED' : 'NOT_LOADED'}\``,
+    `- Next action: ${evaluation.nextAction}`,
+    '',
+    '## Gate Decisions',
+    '',
+    decisionLine('Safety', evaluation.safetyDecision),
+    decisionLine('Active task', evaluation.activeTaskDecision),
+    decisionLine('Quarantine', evaluation.quarantineDecision),
+    decisionLine('Rate limit', evaluation.rateLimitDecision),
+    decisionLine('Model', evaluation.triggerIntentDecision)
+  ].filter((line): line is string => line !== null).join('\n');
+}
+
+function decisionLine(label: string, decision: TriggerEvaluationResult['safetyDecision']) {
+  if (!decision) {
+    return `- ${label}: \`NOT_EVALUATED\``;
+  }
+  return `- ${label}: \`${decision.allowed ? 'ALLOW' : 'BLOCK'}\` - ${decision.reason}`;
+}
+
+function inlineCode(value: string) {
+  return value.replace(/`/g, "'").replace(/\s+/g, ' ').trim();
 }
 
 function sourceLabel(source: TriggerEvaluationResult['source']) {

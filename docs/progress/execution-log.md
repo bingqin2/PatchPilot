@@ -2,6 +2,26 @@
 
 This file records dated implementation progress, validation commands, and important outcomes.
 
+## 2026-06-25
+
+Implemented manual trigger evaluation evidence reports from `docs/plans/180-manual-trigger-evaluation-report.md`.
+
+Changes:
+
+- Added a copy action to the dashboard manual task form when a trigger evaluation result is visible.
+- The copied Markdown report includes status, source, would-create-task state, repository, issue, trigger user, command, blocked reason/category, issue-context state, next action, and per-gate decisions.
+- Covered both allowed and blocked trigger dry-runs in `ManualTaskForm` tests.
+- Updated README and frontend design documentation to describe the copyable dry-run evidence workflow.
+
+Validation:
+
+- `npm test -- --run src/dashboard/components/ManualTaskForm.test.tsx`: first failed because `Copy evaluation report` was not rendered, then passed after implementation, 5 tests run.
+- `npm test -- --run src/App.test.tsx -t "copies manual trigger evaluation evidence"`: passed, 1 selected test run.
+- `npm test`: passed, 193 tests run.
+- `npm run build`: passed.
+- `mvn -pl PatchPilot test`: passed, 646 tests run.
+- `git diff --check`: passed.
+
 ## 2026-06-23
 
 Implemented the post-edit model review gate from `docs/plans/134-post-edit-model-review-gate.md`.
