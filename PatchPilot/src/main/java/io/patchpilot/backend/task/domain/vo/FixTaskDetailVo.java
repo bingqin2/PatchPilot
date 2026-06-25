@@ -9,6 +9,7 @@ public record FixTaskDetailVo(
         List<FixTaskToolCallVo> toolCalls,
         List<FixTaskModelCallVo> modelCalls,
         FixTaskTriggerIntentAuditVo triggerIntentAudit,
+        FixTaskPreExecutionSafetySnapshotVo preExecutionSafetySnapshot,
         FixTaskGeneratedDiffVo generatedDiff,
         FixTaskPatchReviewVo patchReview,
         IssueContextVo issueContext,

@@ -96,6 +96,7 @@ const baseDetail: TaskDetailState = {
   toolCalls: [],
   modelCalls: [],
   triggerIntentAudit: null,
+  preExecutionSafetySnapshot: null,
   generatedDiff: null,
   patchReview: null,
   issueContext: {
@@ -177,6 +178,47 @@ test('shows trigger intent audit for accepted tasks', () => {
   expect(within(audit).getByText('issue context loaded')).toBeInTheDocument();
   expect(
     within(audit).getByText('model accepted trigger: Issue context describes a concrete failing test')
+  ).toBeInTheDocument();
+});
+
+test('shows pre-execution safety snapshot for accepted tasks', () => {
+  render(
+    <TaskDetailPanel
+      task={task}
+      detail={{
+        ...baseDetail,
+        preExecutionSafetySnapshot: {
+          eventId: 'timeline-trigger',
+          source: 'ISSUE_COMMENT',
+          finalDecision: 'ALLOWED',
+          safetyDecision: 'safety gate accepted',
+          quarantineDecision: 'not blocked before task creation',
+          rateLimitDecision: 'not rate limited before task creation',
+          issueContextStatus: 'issue context loaded',
+          modelDecision: 'model accepted trigger: Issue context describes a concrete failing test',
+          createdAt: '2026-06-20T01:00:30Z'
+        }
+      }}
+      loading={false}
+      actionInFlight={false}
+      reviewApprovalAllowedOperators={['release-captain']}
+      onCancelTask={vi.fn()}
+      onRetryTask={vi.fn()}
+      onApproveReview={vi.fn()}
+      onCopyReport={vi.fn()}
+    />
+  );
+
+  const snapshot = screen.getByLabelText('Pre-execution safety');
+  expect(within(snapshot).getByText('Pre-execution safety')).toBeInTheDocument();
+  expect(within(snapshot).getByText('ISSUE_COMMENT')).toBeInTheDocument();
+  expect(within(snapshot).getByText('ALLOWED')).toBeInTheDocument();
+  expect(within(snapshot).getByText('safety gate accepted')).toBeInTheDocument();
+  expect(within(snapshot).getByText('not blocked before task creation')).toBeInTheDocument();
+  expect(within(snapshot).getByText('not rate limited before task creation')).toBeInTheDocument();
+  expect(within(snapshot).getByText('issue context loaded')).toBeInTheDocument();
+  expect(
+    within(snapshot).getByText('model accepted trigger: Issue context describes a concrete failing test')
   ).toBeInTheDocument();
 });
 

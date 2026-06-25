@@ -7,6 +7,7 @@ import type {
   FixTaskToolCall,
   FixTaskGeneratedDiff,
   FixTaskPatchReview,
+  FixTaskPreExecutionSafetySnapshot,
   FixTaskFailureDiagnosis,
   FixTaskRetryPreflight,
   FixTaskTriggerIntentAudit,
@@ -23,6 +24,7 @@ export interface TaskDetailState {
   toolCalls: FixTaskToolCall[];
   modelCalls: FixTaskModelCall[];
   triggerIntentAudit: FixTaskTriggerIntentAudit | null;
+  preExecutionSafetySnapshot: FixTaskPreExecutionSafetySnapshot | null;
   generatedDiff: FixTaskGeneratedDiff | null;
   patchReview: FixTaskPatchReview | null;
   issueContext: IssueContext | null;
@@ -40,6 +42,7 @@ export const emptyDetail: TaskDetailState = {
   toolCalls: [],
   modelCalls: [],
   triggerIntentAudit: null,
+  preExecutionSafetySnapshot: null,
   generatedDiff: null,
   patchReview: null,
   issueContext: null,

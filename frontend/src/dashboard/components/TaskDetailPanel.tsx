@@ -224,6 +224,46 @@ export function TaskDetailPanel({
         </section>
       ) : null}
 
+      {detail.preExecutionSafetySnapshot ? (
+        <section className="detail-section trigger-intent-section" aria-label="Pre-execution safety">
+          <div className="trigger-intent-header">
+            <div>
+              <h3>Pre-execution safety</h3>
+              <p>{detail.preExecutionSafetySnapshot.finalDecision}</p>
+            </div>
+            <time dateTime={detail.preExecutionSafetySnapshot.createdAt}>
+              {compactTime(detail.preExecutionSafetySnapshot.createdAt)}
+            </time>
+          </div>
+          <div className="trigger-intent-grid">
+            <div>
+              <span>Source</span>
+              <p>{detail.preExecutionSafetySnapshot.source}</p>
+            </div>
+            <div>
+              <span>Safety</span>
+              <p>{detail.preExecutionSafetySnapshot.safetyDecision}</p>
+            </div>
+            <div>
+              <span>Quarantine</span>
+              <p>{detail.preExecutionSafetySnapshot.quarantineDecision}</p>
+            </div>
+            <div>
+              <span>Rate limit</span>
+              <p>{detail.preExecutionSafetySnapshot.rateLimitDecision}</p>
+            </div>
+            <div>
+              <span>Issue context</span>
+              <p>{detail.preExecutionSafetySnapshot.issueContextStatus}</p>
+            </div>
+            <div>
+              <span>Model</span>
+              <p>{detail.preExecutionSafetySnapshot.modelDecision}</p>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
       {task.riskReviewApprovedAt ? (
         <section className="detail-section review-approval-detail" aria-label="Review approval">
           <h3>Review approval</h3>

@@ -30,6 +30,7 @@ import io.patchpilot.backend.task.domain.vo.FixTaskDetailVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskModelCallVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskModelUsageSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskPageVo;
+import io.patchpilot.backend.task.domain.vo.FixTaskPreExecutionSafetySnapshotVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskQueueItemVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskRetryPreflightVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskStatusCountsVo;
@@ -628,6 +629,7 @@ public class TaskController {
                 toolCalls,
                 fixTaskModelCallService.listModelCalls(taskId),
                 triggerIntentAudit(timeline),
+                preExecutionSafetySnapshot(summary.task(), timeline),
                 latestGeneratedDiff(toolCalls),
                 fixTaskPatchReviewService.findLatestPatchReview(taskId).orElse(null),
                 issueContext(summary.task()),
@@ -665,6 +667,42 @@ public class TaskController {
                 parts[2],
                 event.createdAt()
         ));
+    }
+
+    private static FixTaskPreExecutionSafetySnapshotVo preExecutionSafetySnapshot(
+            FixTaskVo task,
+            List<FixTaskTimelineEventVo> timeline
+    ) {
+        return timeline.stream()
+                .filter(event -> event.eventType() == FixTaskTimelineEventType.TRIGGER_ACCEPTED)
+                .reduce((first, second) -> second)
+                .flatMap(event -> parsePreExecutionSafetySnapshot(task, event))
+                .orElse(null);
+    }
+
+    private static Optional<FixTaskPreExecutionSafetySnapshotVo> parsePreExecutionSafetySnapshot(
+            FixTaskVo task,
+            FixTaskTimelineEventVo event
+    ) {
+        return parseTriggerIntentAudit(event)
+                .map(audit -> new FixTaskPreExecutionSafetySnapshotVo(
+                        event.id(),
+                        triggerSource(task),
+                        "ALLOWED",
+                        audit.safetyDecision(),
+                        "not blocked before task creation",
+                        "not rate limited before task creation",
+                        audit.issueContextStatus(),
+                        audit.modelDecision(),
+                        event.createdAt()
+                ));
+    }
+
+    private static String triggerSource(FixTaskVo task) {
+        if (task.deliveryId() != null && task.deliveryId().startsWith("manual-")) {
+            return "MANUAL";
+        }
+        return "ISSUE_COMMENT";
     }
 
     private static FixTaskFailureDiagnosisVo failureDiagnosis(FixTaskVo task) {
