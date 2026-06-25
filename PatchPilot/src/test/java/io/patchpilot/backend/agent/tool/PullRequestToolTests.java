@@ -4,6 +4,7 @@ import io.patchpilot.backend.github.client.GitHubPullRequestClient;
 import io.patchpilot.backend.github.client.domain.CreatePullRequestCommand;
 import io.patchpilot.backend.github.client.domain.PullRequestResult;
 import io.patchpilot.backend.github.config.GitHubProperties;
+import io.patchpilot.backend.dashboard.config.DashboardProperties;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.vo.FixTaskTestRunVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
@@ -18,7 +19,9 @@ class PullRequestToolTests {
     @Test
     void should_create_pull_request_from_task_context() {
         RecordingGitHubPullRequestClient client = new RecordingGitHubPullRequestClient();
-        PullRequestTool tool = new PullRequestTool(client);
+        DashboardProperties dashboardProperties = new DashboardProperties();
+        dashboardProperties.setBaseUrl("https://dashboard.example.test");
+        PullRequestTool tool = new PullRequestTool(client, dashboardProperties);
 
         PullRequestResult result = tool.createPullRequest(task(), "patchpilot/task-123", testRun(0, 2_345));
 
@@ -30,6 +33,7 @@ class PullRequestToolTests {
         assertThat(client.command().title()).isEqualTo("PatchPilot fix for #42");
         assertThat(client.command().body()).contains("Fixes #42");
         assertThat(client.command().body()).contains("Task: `task-123`");
+        assertThat(client.command().body()).contains("Dashboard: https://dashboard.example.test/tasks/task-123");
         assertThat(client.command().body()).contains("Triggered by: alice");
         assertThat(client.command().body()).contains("Branch: patchpilot/task-123");
         assertThat(client.command().body()).contains("Language: `java`");
@@ -41,6 +45,16 @@ class PullRequestToolTests {
                 .contains("PatchPilot opened this PR only after adapter-selected verification passed.");
         assertThat(client.command().body())
                 .contains("PatchPilot does not auto-merge Pull Requests.");
+    }
+
+    @Test
+    void should_omit_dashboard_link_when_dashboard_base_url_is_missing() {
+        RecordingGitHubPullRequestClient client = new RecordingGitHubPullRequestClient();
+        PullRequestTool tool = new PullRequestTool(client, new DashboardProperties());
+
+        tool.createPullRequest(task(), "patchpilot/task-123", testRun(0, 2_345));
+
+        assertThat(client.command().body()).doesNotContain("Dashboard:");
     }
 
     private static FixTaskVo task() {

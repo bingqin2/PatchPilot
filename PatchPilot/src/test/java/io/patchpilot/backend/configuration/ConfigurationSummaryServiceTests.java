@@ -1,6 +1,8 @@
 package io.patchpilot.backend.configuration;
 
 import io.patchpilot.backend.agent.config.AgentProperties;
+import io.patchpilot.backend.dashboard.DashboardLinkService;
+import io.patchpilot.backend.dashboard.config.DashboardProperties;
 import io.patchpilot.backend.github.config.GitHubProperties;
 import io.patchpilot.backend.language.config.RepositoryPreflightProperties;
 import io.patchpilot.backend.safety.GeneratedDiffSafetyPolicy;
@@ -46,6 +48,8 @@ class ConfigurationSummaryServiceTests {
                 Path.of("docs/demo-repositories"),
                 Path.of("/tmp/patchpilot/workspaces")
         ));
+        DashboardProperties dashboardProperties = new DashboardProperties();
+        dashboardProperties.setBaseUrl("https://dashboard.example.test/");
 
         ConfigurationSummaryVo summary = new ConfigurationSummaryService(
                 agentProperties,
@@ -56,7 +60,8 @@ class ConfigurationSummaryServiceTests {
                 reviewApprovalProperties,
                 adminApiSecurityProperties,
                 new GeneratedDiffSafetyPolicy(),
-                repositoryPreflightProperties
+                repositoryPreflightProperties,
+                new DashboardLinkService(dashboardProperties)
         ).getConfigurationSummary();
 
         assertThat(summary.reviewApprovalAllowedOperators()).containsExactly("release-captain", "local-operator");
@@ -77,5 +82,6 @@ class ConfigurationSummaryServiceTests {
                 "/tmp/patchpilot/workspaces",
                 Path.of("..").resolve("docs/demo-repositories").toAbsolutePath().normalize().toString()
         );
+        assertThat(summary.dashboardBaseUrlConfigured()).isTrue();
     }
 }

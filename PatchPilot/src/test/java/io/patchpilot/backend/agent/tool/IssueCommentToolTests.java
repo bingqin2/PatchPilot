@@ -5,6 +5,7 @@ import io.patchpilot.backend.github.client.domain.CreateIssueCommentCommand;
 import io.patchpilot.backend.github.client.domain.IssueCommentResult;
 import io.patchpilot.backend.github.client.domain.UpdateIssueCommentCommand;
 import io.patchpilot.backend.github.config.GitHubProperties;
+import io.patchpilot.backend.dashboard.config.DashboardProperties;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.vo.FixTaskTestRunVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
@@ -20,7 +21,9 @@ class IssueCommentToolTests {
     @Test
     void should_create_accepted_status_comment() {
         RecordingGitHubIssueCommentClient client = new RecordingGitHubIssueCommentClient();
-        IssueCommentTool tool = new IssueCommentTool(client);
+        DashboardProperties dashboardProperties = new DashboardProperties();
+        dashboardProperties.setBaseUrl("https://dashboard.example.test/");
+        IssueCommentTool tool = new IssueCommentTool(client, dashboardProperties);
 
         IssueCommentResult result = tool.commentAccepted(task(FixTaskStatus.PENDING, null, null, null));
 
@@ -31,9 +34,21 @@ class IssueCommentToolTests {
         assertThat(client.createCommand().body()).contains("PatchPilot task accepted.");
         assertThat(client.createCommand().body()).contains("Status: PENDING");
         assertThat(client.createCommand().body()).contains("Task: task-123");
+        assertThat(client.createCommand().body())
+                .contains("Dashboard: https://dashboard.example.test/tasks/task-123");
         assertThat(client.createCommand().body()).contains("Repository: octocat/hello-world");
         assertThat(client.createCommand().body()).contains("Issue: #42");
         assertThat(client.createCommand().body()).contains("Triggered by: alice");
+    }
+
+    @Test
+    void should_omit_dashboard_link_when_dashboard_base_url_is_missing() {
+        RecordingGitHubIssueCommentClient client = new RecordingGitHubIssueCommentClient();
+        IssueCommentTool tool = new IssueCommentTool(client, new DashboardProperties());
+
+        tool.commentAccepted(task(FixTaskStatus.PENDING, null, null, null));
+
+        assertThat(client.createCommand().body()).doesNotContain("Dashboard:");
     }
 
     @Test

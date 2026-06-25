@@ -24,6 +24,7 @@ const configuration: ConfigurationSummary = {
   githubTokenConfigured: true,
   githubWebhookSecretConfigured: true,
   adminTokenConfigured: true,
+  dashboardBaseUrlConfigured: true,
   workspaceRootDir: '/tmp/patchpilot/workspaces',
   queueMaxAttempts: 3,
   queueRetryDelayMs: 30000,
