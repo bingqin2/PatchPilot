@@ -42,6 +42,7 @@ import type {
   FixTaskTimelineEvent,
   FixTaskToolCall,
   LanguageAdapterFixtureVerification,
+  LanguageAdapterRuntimeReadiness,
   RepositoryPreflightInput,
   RepositoryPreflightResult,
   SupportedLanguageAdapter,
@@ -223,6 +224,10 @@ export async function listLanguageAdapters(): Promise<SupportedLanguageAdapter[]
 
 export async function listLanguageAdapterFixtures(): Promise<LanguageAdapterFixtureVerification[]> {
   return getApi<LanguageAdapterFixtureVerification[]>('/api/language-adapters/fixtures');
+}
+
+export async function listLanguageAdapterRuntimeReadiness(): Promise<LanguageAdapterRuntimeReadiness[]> {
+  return getApi<LanguageAdapterRuntimeReadiness[]>('/api/language-adapters/runtime-readiness');
 }
 
 export async function preflightRepository(input: RepositoryPreflightInput): Promise<RepositoryPreflightResult> {

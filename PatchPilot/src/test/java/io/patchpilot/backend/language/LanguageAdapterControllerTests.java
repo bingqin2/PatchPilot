@@ -19,6 +19,10 @@ class LanguageAdapterControllerTests {
                     new LanguageAdapterFixtureVerificationService(
                             new LanguageAdapterCatalogService(),
                             new LanguageAdapterRegistry(List.of())
+                    ),
+                    new LanguageAdapterRuntimeReadinessService(
+                            new LanguageAdapterCatalogService(),
+                            executable -> "mvn".equals(executable) || "python3".equals(executable)
                     )
             ))
             .build();
@@ -62,11 +66,34 @@ class LanguageAdapterControllerTests {
     }
 
     @Test
+    void should_return_adapter_runtime_readiness_results() throws Exception {
+        mockMvc.perform(get("/api/language-adapters/runtime-readiness"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data", hasSize(13)))
+                .andExpect(jsonPath("$.data[0].language").value("java"))
+                .andExpect(jsonPath("$.data[0].buildSystem").value("maven"))
+                .andExpect(jsonPath("$.data[0].executable").value("mvn"))
+                .andExpect(jsonPath("$.data[0].status").value("READY"))
+                .andExpect(jsonPath("$.data[0].reason").value("Executable `mvn` is available on PATH"))
+                .andExpect(jsonPath("$.data[2].language").value("go"))
+                .andExpect(jsonPath("$.data[2].buildSystem").value("go"))
+                .andExpect(jsonPath("$.data[2].executable").value("go"))
+                .andExpect(jsonPath("$.data[2].status").value("MISSING"))
+                .andExpect(jsonPath("$.data[2].reason").value("Executable `go` is not available on PATH"))
+                .andExpect(jsonPath("$.data[12].language").value("python"))
+                .andExpect(jsonPath("$.data[12].buildSystem").value("pytest"))
+                .andExpect(jsonPath("$.data[12].executable").value("python3"))
+                .andExpect(jsonPath("$.data[12].status").value("READY"));
+    }
+
+    @Test
     void should_return_adapter_fixture_verification_results() throws Exception {
         MockMvc fixtureMockMvc = MockMvcBuilders
                 .standaloneSetup(new LanguageAdapterController(
                         new LanguageAdapterCatalogService(),
-                        LanguageAdapterFixtureVerificationServiceTests.fixtureService()
+                        LanguageAdapterFixtureVerificationServiceTests.fixtureService(),
+                        new LanguageAdapterRuntimeReadinessService(new LanguageAdapterCatalogService())
                 ))
                 .build();
 

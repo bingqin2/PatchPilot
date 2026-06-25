@@ -25,6 +25,7 @@ import {
   listAcceptedTriggerDecisions,
   listAdminAuditEvents,
   listLanguageAdapterFixtures,
+  listLanguageAdapterRuntimeReadiness,
   listLanguageAdapters,
   listOperatorSafetyAudits,
   listRejectedTriggers,
@@ -1630,6 +1631,42 @@ test('loads language adapter fixture verifications from backend API', async () =
       actualVerificationCommand: ['hatch', 'test'],
       reason: 'Detected Hatch test script',
       status: 'PASS'
+    }
+  ]);
+});
+
+test('loads language adapter runtime readiness from backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: [
+        {
+          language: 'node',
+          buildSystem: 'npm',
+          executable: 'npm',
+          verificationCommand: ['npm', 'test'],
+          status: 'MISSING',
+          reason: 'Executable `npm` is not available on PATH'
+        }
+      ],
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const readiness = await listLanguageAdapterRuntimeReadiness();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/language-adapters/runtime-readiness');
+  expect(readiness).toEqual([
+    {
+      language: 'node',
+      buildSystem: 'npm',
+      executable: 'npm',
+      verificationCommand: ['npm', 'test'],
+      status: 'MISSING',
+      reason: 'Executable `npm` is not available on PATH'
     }
   ]);
 });

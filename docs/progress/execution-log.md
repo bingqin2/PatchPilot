@@ -4,6 +4,31 @@ This file records dated implementation progress, validation commands, and import
 
 ## 2026-06-25
 
+Implemented adapter runtime readiness checks from `docs/plans/193-adapter-runtime-readiness-checks.md`.
+
+Changes:
+
+- Added `GET /api/language-adapters/runtime-readiness` to report whether each adapter verification executable is available on the backend process `PATH`.
+- Kept the endpoint read-only: it does not execute verification commands, create tasks, mutate repositories, write to GitHub, or call the model.
+- Added runtime readiness status and missing-executable reasons to the dashboard adapter readiness report.
+- Extended the copyable adapter readiness Markdown report with runtime executable evidence.
+- Updated README and product docs to describe the runtime readiness diagnostic.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=LanguageAdapterControllerTests test`: first failed because `LanguageAdapterRuntimeReadinessService` did not exist; then failed once because `List.getFirst()` is not available on Java 17; then passed after adding the Java 17-compatible runtime readiness service and controller endpoint, 3 tests run.
+- `npm test -- --run src/dashboard/components/AdapterReadinessReportPanel.test.tsx`: first failed because the panel ignored runtime readiness; then passed after rendering runtime status and copy-report evidence, 3 tests run.
+- `npm test -- --run src/api.test.ts -t "loads language adapter runtime readiness"`: first failed because `listLanguageAdapterRuntimeReadiness` did not exist; then passed after adding the API client method, 1 test run.
+- `mvn -pl PatchPilot -Dtest=LanguageAdapterRuntimeReadinessServiceTests,LanguageAdapterControllerTests test`: passed after adding service-level coverage, 4 tests run.
+- `npm test -- --run src/api.test.ts src/dashboard/components/AdapterReadinessReportPanel.test.tsx`: passed after focused frontend API and panel regression verification, 50 tests run.
+- `npm test -- --run src/App.test.tsx -t "renders operational task dashboard"`: passed after wiring runtime readiness into the dashboard load flow, 1 targeted test run.
+- `mvn -pl PatchPilot test`: passed after full backend regression verification, 669 tests run.
+- `npm test`: passed after full frontend regression verification, 198 tests run.
+- `npm run build`: passed after production frontend build verification.
+- `git diff --check`: passed.
+
+## 2026-06-25
+
 Implemented accepted trigger decision audit from `docs/plans/192-accepted-trigger-decision-audit.md`.
 
 Changes:
