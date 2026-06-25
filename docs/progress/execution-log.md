@@ -3656,6 +3656,22 @@ Validation:
 - `npm run build`: passed after production frontend build verification.
 - `git diff --check`: passed.
 
+Implemented GitHub feedback risk review evidence from `docs/plans/187-github-feedback-risk-review-evidence.md`.
+
+Changes:
+
+- Added shared GitHub feedback formatting for generated-diff risk-review approval evidence.
+- Expanded generated Pull Request bodies with approval operator, approval time, approval reason, and an explicit statement that the task resumed only after an allowed operator approved the generated-diff risk review.
+- Expanded completed issue status comments with the same approval evidence when the task contains risk-review approval metadata.
+- Kept PR and issue feedback unchanged for tasks that did not pass through human risk-review approval.
+- Updated README, product spec, and this execution log.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=PullRequestToolTests,IssueCommentToolTests test`: first failed because PR and completed issue comments lacked `Risk review approval:`; then passed after adding shared GitHub feedback approval formatting, 19 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed after full backend regression verification, 653 tests run, 0 failures.
+- `git diff --check`: passed.
+
 Implemented GitHub feedback Dashboard deep links from `docs/plans/186-github-feedback-dashboard-deep-links.md`.
 
 Changes:

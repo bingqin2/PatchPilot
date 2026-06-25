@@ -57,6 +57,22 @@ class PullRequestToolTests {
         assertThat(client.command().body()).doesNotContain("Dashboard:");
     }
 
+    @Test
+    void should_include_risk_review_approval_evidence_when_task_resumed_after_review() {
+        RecordingGitHubPullRequestClient client = new RecordingGitHubPullRequestClient();
+        PullRequestTool tool = new PullRequestTool(client);
+
+        tool.createPullRequest(approvedReviewTask(), "patchpilot/task-123", testRun(0, 2_345));
+
+        assertThat(client.command().body()).contains("Risk review approval:");
+        assertThat(client.command().body()).contains("Review approved by: `release-captain`");
+        assertThat(client.command().body()).contains("Review approved at: `2026-06-18T01:02:03Z`");
+        assertThat(client.command().body())
+                .contains("Review approval reason: Reviewed generated diff and accepted docs-only change");
+        assertThat(client.command().body())
+                .contains("PatchPilot resumed this task only after an allowed operator approved the generated diff risk review.");
+    }
+
     private static FixTaskVo task() {
         return new FixTaskVo(
                 "task-123",
@@ -76,6 +92,14 @@ class PullRequestToolTests {
                 "maven",
                 "./mvnw test",
                 "pom.xml detected with mvnw wrapper"
+        );
+    }
+
+    private static FixTaskVo approvedReviewTask() {
+        return task().withRiskReviewApproval(
+                Instant.parse("2026-06-18T01:02:03Z"),
+                "release-captain",
+                "Reviewed generated diff and accepted docs-only change"
         );
     }
 

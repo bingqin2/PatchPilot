@@ -236,6 +236,7 @@ public class IssueCommentTool {
     private static void appendCompletionEvidence(StringBuilder body, FixTaskVo task, FixTaskTestRunVo latestTestRun) {
         appendAdapterEvidence(body, task);
         appendVerificationResult(body, latestTestRun);
+        GitHubFeedbackEvidenceFormatter.appendRiskReviewApprovalEvidence(body, task, false);
         body.append("PatchPilot opened the Pull Request only after adapter-selected verification passed.\n");
         body.append("Verification commands come from repository adapters, not arbitrary issue text.\n");
         body.append("PatchPilot does not auto-merge Pull Requests.\n");
