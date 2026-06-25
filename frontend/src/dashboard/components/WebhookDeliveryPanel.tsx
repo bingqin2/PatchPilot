@@ -102,7 +102,7 @@ export function WebhookDeliveryPanel({
             <div className="webhook-delivery-meta">
               <span>{repositoryLabel(delivery)}</span>
               {delivery.triggerUser ? <span>{delivery.triggerUser}</span> : null}
-              {delivery.taskId ? <span>task {delivery.taskId}</span> : null}
+              <DeliveryOutcome delivery={delivery} />
             </div>
             <p>{delivery.message}</p>
             <div className="webhook-delivery-action">
@@ -114,6 +114,23 @@ export function WebhookDeliveryPanel({
         {deliveries.length === 0 && !error ? <p className="empty-state">No webhook deliveries recorded.</p> : null}
       </div>
     </section>
+  );
+}
+
+function DeliveryOutcome({ delivery }: { delivery: WebhookDeliveryDiagnostic }) {
+  const outcomeType = delivery.outcomeType ?? fallbackOutcomeType(delivery);
+  const outcomeId = delivery.outcomeId ?? delivery.taskId;
+  const outcomeUrl = delivery.outcomeUrl ?? (delivery.taskId ? `/tasks/${delivery.taskId}` : null);
+
+  return (
+    <span className="webhook-delivery-outcome">
+      <span>Outcome {outcomeType}</span>
+      {outcomeId && outcomeUrl ? (
+        <a href={outcomeUrl}>{outcomeId}</a>
+      ) : outcomeId ? (
+        <strong>{outcomeId}</strong>
+      ) : null}
+    </span>
   );
 }
 
@@ -151,6 +168,22 @@ function WebhookPayloadDiagnosticResultPanel({ diagnostic }: { diagnostic: Webho
       <p className="webhook-delivery-action">{diagnostic.nextAction}</p>
     </section>
   );
+}
+
+function fallbackOutcomeType(delivery: WebhookDeliveryDiagnostic) {
+  if (delivery.status === 'TASK_CREATED' || delivery.status === 'ACTIVE_TASK_EXISTS') {
+    return 'TASK';
+  }
+  if (delivery.status === 'DUPLICATE_DELIVERY') {
+    return 'DUPLICATE';
+  }
+  if (delivery.status === 'REJECTED') {
+    return 'REJECTED_TRIGGER';
+  }
+  if (delivery.status === 'IGNORED') {
+    return 'IGNORED';
+  }
+  return 'ERROR';
 }
 
 function repositoryLabel(delivery: WebhookDeliveryDiagnostic) {

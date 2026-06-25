@@ -487,6 +487,9 @@ const webhookDeliveries = [
     message: 'Task created from /agent fix',
     redeliveryRecommended: false,
     operatorAction: 'Task was created. Do not redeliver this webhook unless you intentionally want GitHub to report a duplicate delivery.',
+    outcomeType: 'TASK',
+    outcomeId: 'task-1',
+    outcomeUrl: '/tasks/task-1',
     createdAt: '2026-06-20T01:00:05Z'
   },
   {
@@ -503,6 +506,9 @@ const webhookDeliveries = [
     message: 'Invalid GitHub webhook signature',
     redeliveryRecommended: true,
     operatorAction: "Fix the webhook secret or payload URL first, then use GitHub's Redeliver action for this delivery.",
+    outcomeType: 'ERROR',
+    outcomeId: null,
+    outcomeUrl: null,
     createdAt: '2026-06-20T01:02:05Z'
   }
 ];

@@ -10,6 +10,7 @@ import io.patchpilot.backend.github.client.domain.IssueCommentResult;
 import io.patchpilot.backend.github.config.GitHubProperties;
 import io.patchpilot.backend.github.webhook.domain.RecordWebhookDeliveryDiagnosticCommand;
 import io.patchpilot.backend.github.webhook.domain.WebhookDeliveryDiagnosticStatus;
+import io.patchpilot.backend.github.webhook.domain.WebhookDeliveryOutcomeType;
 import io.patchpilot.backend.github.webhook.service.WebhookDeliveryDiagnosticService;
 import io.patchpilot.backend.github.webhook.service.impl.InMemoryWebhookDeliveryDiagnosticService;
 import io.patchpilot.backend.safety.CommandSafetyGate;
@@ -28,6 +29,7 @@ import io.patchpilot.backend.safety.domain.TriggerQuarantineDecision;
 import io.patchpilot.backend.safety.domain.TriggerQuarantineRequest;
 import io.patchpilot.backend.safety.domain.TriggerRateLimitDecision;
 import io.patchpilot.backend.safety.domain.TriggerRateLimitRequest;
+import io.patchpilot.backend.safety.domain.RejectedTriggerAuditVo;
 import io.patchpilot.backend.safety.service.RejectedTriggerAuditService;
 import io.patchpilot.backend.safety.service.TriggerIntentClassifier;
 import io.patchpilot.backend.safety.service.TriggerQuarantineService;
@@ -470,7 +472,7 @@ public class GitHubWebhookService {
                 commentBody
         ));
         if (!safetyDecision.allowed() && !canClassifyWithIssueContext(safetyDecision)) {
-            recordRejectedTrigger(
+            RejectedTriggerAuditVo rejectedTrigger = recordRejectedTrigger(
                     deliveryId,
                     repositoryOwner,
                     repositoryName,
@@ -490,7 +492,10 @@ public class GitHubWebhookService {
                     issueNumber,
                     triggerUser,
                     commentBody,
-                    safetyDecision.reason()
+                    safetyDecision.reason(),
+                    WebhookDeliveryOutcomeType.REJECTED_TRIGGER,
+                    rejectedTrigger.id(),
+                    rejectedTriggerUrl(rejectedTrigger.id())
             );
             return WebhookHandleResult.rejected();
         }
@@ -541,7 +546,7 @@ public class GitHubWebhookService {
                 triggerUser
         ));
         if (!quarantineDecision.allowed()) {
-            recordRejectedTrigger(
+            RejectedTriggerAuditVo rejectedTrigger = recordRejectedTrigger(
                     deliveryId,
                     repositoryOwner,
                     repositoryName,
@@ -561,7 +566,10 @@ public class GitHubWebhookService {
                     issueNumber,
                     triggerUser,
                     commentBody,
-                    quarantineDecision.reason()
+                    quarantineDecision.reason(),
+                    WebhookDeliveryOutcomeType.REJECTED_TRIGGER,
+                    rejectedTrigger.id(),
+                    rejectedTriggerUrl(rejectedTrigger.id())
             );
             return WebhookHandleResult.rejected();
         }
@@ -573,7 +581,7 @@ public class GitHubWebhookService {
                 triggerUser
         ));
         if (!rateLimitDecision.allowed()) {
-            recordRejectedTrigger(
+            RejectedTriggerAuditVo rejectedTrigger = recordRejectedTrigger(
                     deliveryId,
                     repositoryOwner,
                     repositoryName,
@@ -593,7 +601,10 @@ public class GitHubWebhookService {
                     issueNumber,
                     triggerUser,
                     commentBody,
-                    rateLimitDecision.reason()
+                    rateLimitDecision.reason(),
+                    WebhookDeliveryOutcomeType.REJECTED_TRIGGER,
+                    rejectedTrigger.id(),
+                    rejectedTriggerUrl(rejectedTrigger.id())
             );
             return WebhookHandleResult.rejected();
         }
@@ -607,7 +618,7 @@ public class GitHubWebhookService {
         );
         TriggerIntentDecision triggerIntentDecision = triggerClassificationResult.decision();
         if (!triggerIntentDecision.shouldExecute()) {
-            recordRejectedTrigger(
+            RejectedTriggerAuditVo rejectedTrigger = recordRejectedTrigger(
                     deliveryId,
                     repositoryOwner,
                     repositoryName,
@@ -627,7 +638,10 @@ public class GitHubWebhookService {
                     issueNumber,
                     triggerUser,
                     commentBody,
-                    triggerIntentDecision.rejectionReason()
+                    triggerIntentDecision.rejectionReason(),
+                    WebhookDeliveryOutcomeType.REJECTED_TRIGGER,
+                    rejectedTrigger.id(),
+                    rejectedTriggerUrl(rejectedTrigger.id())
             );
             return WebhookHandleResult.rejected();
         }
@@ -758,7 +772,7 @@ public class GitHubWebhookService {
                 && triggerIntentClassifier.supportsIssueContextClassification();
     }
 
-    private void recordRejectedTrigger(
+    private RejectedTriggerAuditVo recordRejectedTrigger(
             String deliveryId,
             String repositoryOwner,
             String repositoryName,
@@ -777,7 +791,7 @@ public class GitHubWebhookService {
                 reason,
                 category
         );
-        rejectedTriggerAuditService.recordRejectedTrigger(new RecordRejectedTriggerCommand(
+        return rejectedTriggerAuditService.recordRejectedTrigger(new RecordRejectedTriggerCommand(
                 "issue_comment",
                 deliveryId,
                 repositoryOwner,
@@ -866,6 +880,38 @@ public class GitHubWebhookService {
             String triggerComment,
             String message
     ) {
+        recordDelivery(
+                deliveryId,
+                event,
+                status,
+                taskId,
+                repositoryOwner,
+                repositoryName,
+                issueNumber,
+                triggerUser,
+                triggerComment,
+                message,
+                defaultOutcomeType(status),
+                defaultOutcomeId(status, taskId),
+                defaultOutcomeUrl(status, taskId)
+        );
+    }
+
+    private void recordDelivery(
+            String deliveryId,
+            String event,
+            WebhookDeliveryDiagnosticStatus status,
+            String taskId,
+            String repositoryOwner,
+            String repositoryName,
+            Long issueNumber,
+            String triggerUser,
+            String triggerComment,
+            String message,
+            WebhookDeliveryOutcomeType outcomeType,
+            String outcomeId,
+            String outcomeUrl
+    ) {
         try {
             webhookDeliveryDiagnosticService.record(new RecordWebhookDeliveryDiagnosticCommand(
                     deliveryId,
@@ -877,11 +923,40 @@ public class GitHubWebhookService {
                     issueNumber,
                     triggerUser,
                     triggerComment,
-                    LogSummary.truncateFailureReason(message)
+                    LogSummary.truncateFailureReason(message),
+                    outcomeType,
+                    outcomeId,
+                    outcomeUrl
             ));
         } catch (RuntimeException exception) {
             // Diagnostics must not block webhook handling.
         }
+    }
+
+    private static WebhookDeliveryOutcomeType defaultOutcomeType(WebhookDeliveryDiagnosticStatus status) {
+        return switch (status) {
+            case TASK_CREATED, ACTIVE_TASK_EXISTS -> WebhookDeliveryOutcomeType.TASK;
+            case DUPLICATE_DELIVERY -> WebhookDeliveryOutcomeType.DUPLICATE;
+            case REJECTED -> WebhookDeliveryOutcomeType.REJECTED_TRIGGER;
+            case IGNORED -> WebhookDeliveryOutcomeType.IGNORED;
+            case INVALID_SIGNATURE, BAD_REQUEST, FAILED -> WebhookDeliveryOutcomeType.ERROR;
+        };
+    }
+
+    private static String defaultOutcomeId(WebhookDeliveryDiagnosticStatus status, String taskId) {
+        return status == WebhookDeliveryDiagnosticStatus.TASK_CREATED
+                || status == WebhookDeliveryDiagnosticStatus.ACTIVE_TASK_EXISTS
+                || status == WebhookDeliveryDiagnosticStatus.DUPLICATE_DELIVERY
+                ? taskId
+                : null;
+    }
+
+    private static String defaultOutcomeUrl(WebhookDeliveryDiagnosticStatus status, String taskId) {
+        return defaultOutcomeId(status, taskId) == null ? null : "/tasks/" + taskId;
+    }
+
+    private static String rejectedTriggerUrl(String rejectedTriggerId) {
+        return "#rejected-trigger-" + rejectedTriggerId;
     }
 
     private static String classificationId(String deliveryId) {

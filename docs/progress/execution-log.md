@@ -3503,3 +3503,23 @@ Validation so far:
 - `npm test -- --run src/api.test.ts`: first failed because `evaluateWebhookPayloadDiagnostic` was not exported; then passed after adding the API helper.
 - `npm test -- --run src/api.test.ts src/dashboard/components/WebhookDeliveryPanel.test.tsx`: first failed because the webhook delivery panel had no payload diagnostic form or result region; then passed after adding the panel UI, 45 tests run, 0 failures.
 - `npm test -- --run src/App.test.tsx src/api.test.ts src/dashboard/components/WebhookDeliveryPanel.test.tsx -t "renders operational task dashboard|evaluates webhook payload|WebhookDeliveryPanel"`: passed after wiring dashboard state and API calls, 4 tests run, 0 failures.
+
+Implemented webhook delivery outcome correlation from `docs/plans/175-webhook-delivery-outcome-correlation.md`.
+
+Changes:
+
+- Added typed webhook delivery outcomes so delivery diagnostics can distinguish task, rejected-trigger, ignored, duplicate, and error outcomes.
+- Linked task-created, active-task, and duplicate webhook diagnostics to task detail routes through `outcomeType`, `outcomeId`, and `outcomeUrl`.
+- Linked rejected webhook diagnostics to the rejected-trigger audit id created during the same webhook handling path.
+- Added nullable MySQL outcome columns for persisted webhook delivery diagnostics while keeping old rows readable through status-based fallback derivation.
+- Rendered correlated outcomes in the dashboard webhook delivery panel, including task links and rejected-trigger anchors.
+- Updated README, product spec, architecture, frontend design notes, and this execution log.
+
+Validation so far:
+
+- `mvn -pl PatchPilot -Dtest=WebhookDeliveryDiagnosticControllerTests test`: first failed because `WebhookDeliveryDiagnosticVo` did not expose outcome fields; then passed after adding the read-model fields and fallback outcome derivation, 2 tests run, 0 failures.
+- `mvn -pl PatchPilot -Dtest=GitHubWebhookControllerTests#should_create_task_for_agent_fix_issue_comment+GitHubWebhookControllerTests#should_reject_dangerous_agent_fix_issue_comment test`: first failed because `RecordWebhookDeliveryDiagnosticCommand` had no outcome fields; then passed after correlating task-created and rejected webhook paths. A later full class run covered both paths because the Maven method filter only executed one method.
+- `mvn -pl PatchPilot -Dtest=MyBatisWebhookDeliveryDiagnosticServiceTests,WebhookDeliveryDiagnosticMigrationTests test`: first failed because the MyBatis entity and migration had no outcome columns; then passed after adding `V27__add_webhook_delivery_outcome.sql`, entity fields, conversion, and old-row fallback derivation, 4 tests run, 0 failures.
+- `mvn -pl PatchPilot -Dtest=GitHubWebhookControllerTests,WebhookDeliveryDiagnosticControllerTests,InMemoryWebhookDeliveryDiagnosticServiceTests,MyBatisWebhookDeliveryDiagnosticServiceTests,WebhookDeliveryDiagnosticMigrationTests test`: passed after focused backend webhook-delivery regression verification, 18 tests run, 0 failures.
+- `npm test -- --run src/dashboard/components/WebhookDeliveryPanel.test.tsx`: first failed because the dashboard did not render delivery outcome targets; then passed after adding outcome rendering, 3 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts src/App.test.tsx src/dashboard/components/WebhookDeliveryPanel.test.tsx`: passed after dashboard fixture and integration coverage, 105 tests run, 0 failures.

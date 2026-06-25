@@ -2,6 +2,7 @@ package io.patchpilot.backend.github.webhook;
 
 import io.patchpilot.backend.github.webhook.domain.WebhookDeliveryDiagnosticStatus;
 import io.patchpilot.backend.github.webhook.domain.WebhookDeliveryDiagnosticVo;
+import io.patchpilot.backend.github.webhook.domain.WebhookDeliveryOutcomeType;
 import io.patchpilot.backend.github.webhook.service.WebhookDeliveryDiagnosticService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,6 +43,9 @@ class WebhookDeliveryDiagnosticControllerTests {
                 "Task created from /agent fix",
                 false,
                 "Task was created. Do not redeliver this webhook unless you intentionally want GitHub to report a duplicate delivery.",
+                WebhookDeliveryOutcomeType.TASK,
+                "task-123",
+                "/tasks/task-123",
                 Instant.parse("2026-06-22T01:00:00Z")
         )));
 
@@ -62,6 +66,9 @@ class WebhookDeliveryDiagnosticControllerTests {
                 .andExpect(jsonPath("$.data[0].message").value("Task created from /agent fix"))
                 .andExpect(jsonPath("$.data[0].redeliveryRecommended").value(false))
                 .andExpect(jsonPath("$.data[0].operatorAction").value("Task was created. Do not redeliver this webhook unless you intentionally want GitHub to report a duplicate delivery."))
+                .andExpect(jsonPath("$.data[0].outcomeType").value("TASK"))
+                .andExpect(jsonPath("$.data[0].outcomeId").value("task-123"))
+                .andExpect(jsonPath("$.data[0].outcomeUrl").value("/tasks/task-123"))
                 .andExpect(jsonPath("$.data[0].createdAt").value("2026-06-22T01:00:00Z"));
     }
 

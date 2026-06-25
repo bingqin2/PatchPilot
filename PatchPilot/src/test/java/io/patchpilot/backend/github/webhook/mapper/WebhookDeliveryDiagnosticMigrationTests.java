@@ -32,5 +32,13 @@ class WebhookDeliveryDiagnosticMigrationTests {
         assertThat(sql).contains("idx_webhook_delivery_diagnostic_created");
         assertThat(sql).contains("idx_webhook_delivery_diagnostic_delivery");
         assertThat(sql).contains("idx_webhook_delivery_diagnostic_repository");
+
+        String outcomeSql = Files.readString(Path.of("src/main/resources/db/migration/V27__add_webhook_delivery_outcome.sql"))
+                .toLowerCase(Locale.ROOT);
+        assertThat(outcomeSql).contains("alter table webhook_delivery_diagnostic");
+        assertThat(outcomeSql).contains("add column outcome_type varchar(64) null");
+        assertThat(outcomeSql).contains("add column outcome_id varchar(128) null");
+        assertThat(outcomeSql).contains("add column outcome_url varchar(512) null");
+        assertThat(outcomeSql).contains("idx_webhook_delivery_diagnostic_outcome");
     }
 }

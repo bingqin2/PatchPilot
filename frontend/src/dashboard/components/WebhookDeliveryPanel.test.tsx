@@ -2,7 +2,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, test, vi } from 'vitest';
 import { WebhookDeliveryPanel } from './WebhookDeliveryPanel';
-import type { WebhookPayloadDiagnosticResult } from '../../types';
+import type { WebhookDeliveryDiagnostic, WebhookPayloadDiagnosticResult } from '../../types';
 
 const readyDiagnostic: WebhookPayloadDiagnosticResult = {
   status: 'READY_FOR_WEBHOOK',
@@ -18,6 +18,26 @@ const readyDiagnostic: WebhookPayloadDiagnosticResult = {
   triggerComment: '/agent fix touch docs/webhook-diagnostic.md',
   message: 'Payload is an issue_comment.created /agent fix trigger.',
   nextAction: 'The payload shape is ready. Use GitHub redeliver.'
+};
+
+const deliveryWithOutcome: WebhookDeliveryDiagnostic = {
+  id: 'diagnostic-1',
+  deliveryId: 'delivery-created',
+  event: 'issue_comment',
+  status: 'TASK_CREATED',
+  taskId: 'task-123',
+  outcomeType: 'TASK',
+  outcomeId: 'task-123',
+  outcomeUrl: '/tasks/task-123',
+  repositoryOwner: 'octocat',
+  repositoryName: 'hello-world',
+  issueNumber: 42,
+  triggerUser: 'alice',
+  triggerComment: '/agent fix touch docs/demo.md',
+  message: 'Task created from /agent fix',
+  redeliveryRecommended: false,
+  operatorAction: 'Task was created. Do not redeliver this webhook.',
+  createdAt: '2026-06-25T00:00:00Z'
 };
 
 describe('WebhookDeliveryPanel', () => {
@@ -70,5 +90,41 @@ describe('WebhookDeliveryPanel', () => {
     expect(within(result).getByText('alice')).toBeInTheDocument();
     expect(within(result).getByText('/agent fix touch docs/webhook-diagnostic.md')).toBeInTheDocument();
     expect(within(result).getByText('The payload shape is ready. Use GitHub redeliver.')).toBeInTheDocument();
+  });
+
+  test('renders delivery outcome correlation targets', () => {
+    render(
+      <WebhookDeliveryPanel
+        deliveries={[
+          deliveryWithOutcome,
+          {
+            ...deliveryWithOutcome,
+            id: 'diagnostic-2',
+            deliveryId: 'delivery-rejected',
+            status: 'REJECTED',
+            taskId: null,
+            outcomeType: 'REJECTED_TRIGGER',
+            outcomeId: 'rejected-123',
+            outcomeUrl: '#rejected-trigger-rejected-123',
+            message: 'Rejected dangerous trigger',
+            operatorAction: 'PatchPilot rejected this trigger by policy.'
+          }
+        ]}
+        error={null}
+        evaluatingPayload={false}
+        payloadDiagnostic={null}
+        payloadDiagnosticError={null}
+        onEvaluatePayload={vi.fn()}
+      />
+    );
+
+    const rows = screen.getAllByRole('article');
+    expect(within(rows[0]).getByText('Outcome TASK')).toBeInTheDocument();
+    expect(within(rows[0]).getByRole('link', { name: 'task-123' })).toHaveAttribute('href', '/tasks/task-123');
+    expect(within(rows[1]).getByText('Outcome REJECTED_TRIGGER')).toBeInTheDocument();
+    expect(within(rows[1]).getByRole('link', { name: 'rejected-123' })).toHaveAttribute(
+      'href',
+      '#rejected-trigger-rejected-123'
+    );
   });
 });

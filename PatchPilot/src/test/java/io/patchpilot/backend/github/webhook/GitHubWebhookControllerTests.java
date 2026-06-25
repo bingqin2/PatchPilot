@@ -21,6 +21,7 @@ import io.patchpilot.backend.github.client.domain.UpdateIssueCommentCommand;
 import io.patchpilot.backend.github.config.GitHubProperties;
 import io.patchpilot.backend.github.webhook.domain.RecordWebhookDeliveryDiagnosticCommand;
 import io.patchpilot.backend.github.webhook.domain.WebhookDeliveryDiagnosticStatus;
+import io.patchpilot.backend.github.webhook.domain.WebhookDeliveryOutcomeType;
 import io.patchpilot.backend.github.webhook.domain.WebhookDeliveryDiagnosticVo;
 import io.patchpilot.backend.github.webhook.service.WebhookDeliveryDiagnosticService;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
@@ -142,6 +143,12 @@ class GitHubWebhookControllerTests {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.status").value("TASK_CREATED"))
                 .andExpect(jsonPath("$.data.taskId").value(not(nullValue())));
+
+        RecordWebhookDeliveryDiagnosticCommand diagnostic = lastDeliveryDiagnostic();
+        assertThat(diagnostic.status()).isEqualTo(WebhookDeliveryDiagnosticStatus.TASK_CREATED);
+        assertThat(diagnostic.outcomeType()).isEqualTo(WebhookDeliveryOutcomeType.TASK);
+        assertThat(diagnostic.outcomeId()).isEqualTo(diagnostic.taskId());
+        assertThat(diagnostic.outcomeUrl()).isEqualTo("/tasks/" + diagnostic.taskId());
     }
 
     @Test
@@ -179,6 +186,12 @@ class GitHubWebhookControllerTests {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.status").value("REJECTED"))
                 .andExpect(jsonPath("$.data.taskId").value(nullValue()));
+
+        RecordWebhookDeliveryDiagnosticCommand diagnostic = lastDeliveryDiagnostic();
+        assertThat(diagnostic.status()).isEqualTo(WebhookDeliveryDiagnosticStatus.REJECTED);
+        assertThat(diagnostic.outcomeType()).isEqualTo(WebhookDeliveryOutcomeType.REJECTED_TRIGGER);
+        assertThat(diagnostic.outcomeId()).isNotBlank();
+        assertThat(diagnostic.outcomeUrl()).isEqualTo("#rejected-trigger-" + diagnostic.outcomeId());
     }
 
     @Test
@@ -322,6 +335,11 @@ class GitHubWebhookControllerTests {
         if (lastError != null) {
             throw lastError;
         }
+    }
+
+    private RecordWebhookDeliveryDiagnosticCommand lastDeliveryDiagnostic() {
+        List<RecordWebhookDeliveryDiagnosticCommand> diagnostics = webhookDeliveryDiagnosticService.commands();
+        return diagnostics.get(diagnostics.size() - 1);
     }
 
     @TestConfiguration
@@ -507,6 +525,9 @@ class GitHubWebhookControllerTests {
                     command.triggerUser(),
                     command.triggerComment(),
                     command.message(),
+                    command.outcomeType(),
+                    command.outcomeId(),
+                    command.outcomeUrl(),
                     Instant.parse("2026-06-23T00:00:00Z").plusSeconds(commands.size())
             );
         }
@@ -526,6 +547,9 @@ class GitHubWebhookControllerTests {
                             command.triggerUser(),
                             command.triggerComment(),
                             command.message(),
+                            command.outcomeType(),
+                            command.outcomeId(),
+                            command.outcomeUrl(),
                             Instant.parse("2026-06-23T00:00:00Z")
                     ))
                     .toList();
