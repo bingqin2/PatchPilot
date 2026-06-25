@@ -216,7 +216,13 @@ class GitHubWebhookControllerTests {
 
     @Test
     void should_create_task_when_repository_webhook_has_no_installation() throws Exception {
-        String payload = issueCommentPayloadWithoutInstallation("created", "/agent fix touch docs/demo.md", "octocat", "hello-world");
+        String payload = issueCommentPayloadWithoutInstallation(
+                "created",
+                "/agent fix touch docs/demo.md",
+                "octocat",
+                "hello-world",
+                42042
+        );
 
         mockMvc.perform(post("/api/github/webhook")
                         .header("X-GitHub-Event", "issue_comment")
@@ -283,7 +289,13 @@ class GitHubWebhookControllerTests {
                 """.formatted(action, repositoryName, owner, commentBody);
     }
 
-    private static String issueCommentPayloadWithoutInstallation(String action, String commentBody, String owner, String repositoryName) {
+    private static String issueCommentPayloadWithoutInstallation(
+            String action,
+            String commentBody,
+            String owner,
+            String repositoryName,
+            long issueNumber
+    ) {
         return """
                 {
                   "action": "%s",
@@ -294,7 +306,7 @@ class GitHubWebhookControllerTests {
                     }
                   },
                   "issue": {
-                    "number": 42
+                    "number": %d
                   },
                   "comment": {
                     "id": 98765,
@@ -304,7 +316,7 @@ class GitHubWebhookControllerTests {
                     }
                   }
                 }
-                """.formatted(action, repositoryName, owner, commentBody);
+                """.formatted(action, repositoryName, owner, issueNumber, commentBody);
     }
 
     private static String signature(String payload) throws Exception {

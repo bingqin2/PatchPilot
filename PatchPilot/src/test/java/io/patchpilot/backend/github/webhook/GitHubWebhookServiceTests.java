@@ -32,12 +32,15 @@ import io.patchpilot.backend.safety.service.RejectedTriggerAuditService;
 import io.patchpilot.backend.safety.service.TriggerRateLimitService;
 import io.patchpilot.backend.task.domain.bo.CreateFixTaskCommand;
 import io.patchpilot.backend.task.domain.bo.FixTaskCreationResult;
+import io.patchpilot.backend.task.domain.bo.RecordFixTaskPreExecutionDecisionCommand;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.enums.FixTaskTimelineEventType;
+import io.patchpilot.backend.task.domain.vo.FixTaskPreExecutionDecisionVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskTimelineEventVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import io.patchpilot.backend.task.service.impl.InMemoryFixTaskService;
 import io.patchpilot.backend.task.service.FixTaskDispatcher;
+import io.patchpilot.backend.task.service.FixTaskPreExecutionDecisionService;
 import io.patchpilot.backend.task.service.FixTaskService;
 import io.patchpilot.backend.task.service.FixTaskTimelineService;
 import org.junit.jupiter.api.Test;
@@ -518,6 +521,56 @@ class GitHubWebhookServiceTests {
         assertThat(timelineService.messages().get(0))
                 .isEqualTo("Trigger accepted: safety gate requested issue-context classification because command is too short to describe a concrete code change; issue context loaded; model accepted trigger: Issue context describes a concrete failing test");
         assertThat(auditService.commands()).isEmpty();
+    }
+
+    @Test
+    void should_record_pre_execution_decision_for_created_issue_comment_task() {
+        FixTaskService fixTaskService = new InMemoryFixTaskService();
+        RecordingFixTaskDispatcher fixTaskDispatcher = new RecordingFixTaskDispatcher();
+        RecordingIssueCommentTool issueCommentTool = new RecordingIssueCommentTool();
+        RecordingTimelineService timelineService = new RecordingTimelineService();
+        RecordingRejectedTriggerAuditService auditService = new RecordingRejectedTriggerAuditService();
+        RecordingTriggerIntentClassifier triggerIntentClassifier = new RecordingTriggerIntentClassifier(
+                TriggerIntentDecision.shouldExecute("Issue context describes a concrete failing test."),
+                true
+        );
+        RecordingIssueContextService issueContextService = new RecordingIssueContextService(issueContext());
+        RecordingPreExecutionDecisionService preExecutionDecisionService =
+                new RecordingPreExecutionDecisionService();
+        GitHubWebhookService webhookService = new GitHubWebhookService(
+                new ObjectMapper(),
+                fixTaskService,
+                fixTaskDispatcher,
+                issueCommentTool,
+                timelineService,
+                auditService,
+                new CommandSafetyGate(),
+                new io.patchpilot.backend.safety.NoOpTriggerQuarantineService(),
+                new io.patchpilot.backend.safety.NoOpTriggerRateLimitService(),
+                triggerIntentClassifier,
+                issueContextService,
+                preExecutionDecisionService
+        );
+
+        WebhookHandleResult result = webhookService.handle(
+                "issue_comment",
+                "delivery-pre-execution-decision",
+                issueCommentPayload("/agent fix")
+        );
+
+        assertThat(result.status()).isEqualTo(WebhookHandleStatus.TASK_CREATED);
+        RecordFixTaskPreExecutionDecisionCommand command = preExecutionDecisionService.command();
+        assertThat(command.taskId()).isEqualTo(result.taskId());
+        assertThat(command.source()).isEqualTo("ISSUE_COMMENT");
+        assertThat(command.finalDecision()).isEqualTo("ALLOWED");
+        assertThat(command.safetyDecision().reason())
+                .isEqualTo("Unsafe request rejected: instruction is not actionable");
+        assertThat(command.activeTaskDecision().reason()).isEqualTo("No active task exists for this issue");
+        assertThat(command.quarantineDecision().reason()).isEqualTo("Trigger quarantine accepted");
+        assertThat(command.rateLimitDecision().reason()).isEqualTo("Trigger rate limit accepted");
+        assertThat(command.triggerIntentDecision().reason())
+                .isEqualTo("Issue context describes a concrete failing test.");
+        assertThat(command.issueContextLoaded()).isTrue();
     }
 
     @Test
@@ -1310,6 +1363,38 @@ class GitHubWebhookServiceTests {
 
         private TriggerQuarantineRequest request() {
             return request;
+        }
+    }
+
+    private static final class RecordingPreExecutionDecisionService implements FixTaskPreExecutionDecisionService {
+
+        private RecordFixTaskPreExecutionDecisionCommand command;
+
+        @Override
+        public FixTaskPreExecutionDecisionVo recordDecision(RecordFixTaskPreExecutionDecisionCommand command) {
+            this.command = command;
+            return new FixTaskPreExecutionDecisionVo(
+                    "decision-1",
+                    command.taskId(),
+                    command.source(),
+                    command.finalDecision(),
+                    command.safetyDecision(),
+                    command.activeTaskDecision(),
+                    command.quarantineDecision(),
+                    command.rateLimitDecision(),
+                    command.triggerIntentDecision(),
+                    command.issueContextLoaded(),
+                    command.createdAt()
+            );
+        }
+
+        @Override
+        public Optional<FixTaskPreExecutionDecisionVo> findLatestDecision(String taskId) {
+            return Optional.empty();
+        }
+
+        private RecordFixTaskPreExecutionDecisionCommand command() {
+            return command;
         }
     }
 
