@@ -5,6 +5,7 @@ import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchCommandVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchPreflightVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessSnapshotArchiveVo;
+import io.patchpilot.backend.demo.domain.DemoReadinessSnapshotTrendVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessVo;
 import io.patchpilot.backend.demo.domain.DemoScriptVo;
 import io.patchpilot.backend.demo.domain.DemoSessionArchiveVo;
@@ -43,6 +44,7 @@ public class DemoReadinessController {
     private final DemoSessionReportService demoSessionReportService;
     private final DemoSessionArchiveService demoSessionArchiveService;
     private final DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
+    private final DemoReadinessSnapshotTrendService demoReadinessSnapshotTrendService;
     private final DemoLaunchPreflightService demoLaunchPreflightService;
     private final DemoLaunchCommandService demoLaunchCommandService;
     private final OperatorSafetyAuditService operatorSafetyAuditService;
@@ -188,6 +190,11 @@ public class DemoReadinessController {
     @GetMapping("/readiness-snapshots")
     public ApiResponse<List<DemoReadinessSnapshotArchiveVo>> listReadinessSnapshotArchives() {
         return ApiResponse.ok(demoReadinessSnapshotArchiveService.listRecentArchives());
+    }
+
+    @GetMapping("/readiness-snapshots/summary")
+    public ApiResponse<DemoReadinessSnapshotTrendVo> getReadinessSnapshotTrendSummary() {
+        return ApiResponse.ok(demoReadinessSnapshotTrendService.getTrendSummary());
     }
 
     @GetMapping(value = "/readiness-snapshots/{archiveId}/report/download", produces = "text/markdown;charset=UTF-8")

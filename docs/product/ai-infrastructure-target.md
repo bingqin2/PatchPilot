@@ -77,7 +77,7 @@ Target capabilities:
 - Separate read-only tools from mutation tools.
 - Tool-call audit records for input summary, output summary, duration, success state, error category, and artifact references.
 - Operator-visible tool traces in task detail and copied reports.
-- Operator-visible readiness evidence archives that prove the system's demo gate state without triggering tasks, model calls, repository mutation, GitHub writes, or verification commands.
+- Operator-visible readiness evidence archives and trend summaries that prove the system's demo gate state and movement without triggering tasks, model calls, repository mutation, GitHub writes, or verification commands.
 
 ## Repository Retrieval And RAG
 
@@ -101,7 +101,7 @@ PatchPilot should be measured through repeatable issue-to-PR fixtures, not only 
 Target capabilities:
 
 - Checked-in evaluation cases with repository fixture, issue text, expected changed files, expected verification command, and success criteria.
-- The first implementation surface is an evaluation case catalog, readiness summary, fixture-readiness report, on-demand fixture execution baseline, fixture baseline run archive, baseline regression summary, demo readiness gate, and run preview API/dashboard panel, so operators can inspect supported language and safety-rejection scenarios, verify checked-in fixture coverage, run adapter-selected local fixture commands, preserve baseline execution reports, block demo launches on fixture regressions, and copy benchmark-shaped evidence before persisted automated benchmark runs exist.
+- The first implementation surface is an evaluation case catalog, readiness summary, fixture-readiness report, on-demand fixture execution baseline, fixture baseline run archive, baseline regression summary, demo readiness gate, readiness snapshot trend summary, and run preview API/dashboard panel, so operators can inspect supported language and safety-rejection scenarios, verify checked-in fixture coverage, run adapter-selected local fixture commands, preserve baseline execution reports, prove whether demo readiness is improving or regressing, block demo launches on fixture regressions, and copy benchmark-shaped evidence before persisted automated benchmark runs exist.
 - Smoke benchmarks for Java/Maven, Java/Gradle, Go, Node, and Python adapters.
 - Metrics for trigger acceptance accuracy, unsupported-repository rejection accuracy, patch application success, verification pass rate, PR creation success, false rejection rate, false acceptance rate, model cost, and latency.
 - Stored evaluation runs that can compare model, prompt version, adapter, and code revision.

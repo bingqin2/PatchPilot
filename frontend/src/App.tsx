@@ -28,6 +28,7 @@ import {
   getDemoScript,
   getDemoRunbook,
   getDemoReadiness,
+  getDemoReadinessSnapshotTrend,
   getDemoSmokeChecklist,
   getEvaluationCaseReadiness,
   getEvaluationFixtureBaselineRunRegressionSummary,
@@ -113,6 +114,7 @@ import type {
   CreateTriggerQuarantineInput,
   DemoReadiness,
   DemoReadinessSnapshotArchive,
+  DemoReadinessSnapshotTrend,
   DemoEvidenceBundle,
   DemoLaunchCommand,
   DemoLaunchCommandInput,
@@ -213,6 +215,8 @@ export default function App() {
   const [demoReadinessError, setDemoReadinessError] = useState<string | null>(null);
   const [demoReadinessSnapshots, setDemoReadinessSnapshots] = useState<DemoReadinessSnapshotArchive[]>([]);
   const [demoReadinessSnapshotError, setDemoReadinessSnapshotError] = useState<string | null>(null);
+  const [demoReadinessSnapshotTrend, setDemoReadinessSnapshotTrend] = useState<DemoReadinessSnapshotTrend | null>(null);
+  const [demoReadinessSnapshotTrendError, setDemoReadinessSnapshotTrendError] = useState<string | null>(null);
   const [demoEvidenceBundle, setDemoEvidenceBundle] = useState<DemoEvidenceBundle | null>(null);
   const [demoEvidenceBundleError, setDemoEvidenceBundleError] = useState<string | null>(null);
   const [demoSessionSnapshot, setDemoSessionSnapshot] = useState<DemoSessionSnapshot | null>(null);
@@ -538,6 +542,7 @@ export default function App() {
         demoScriptResult,
         demoReadinessResult,
         demoReadinessSnapshotResult,
+        demoReadinessSnapshotTrendResult,
         demoSmokeChecklistResult,
         adapterListResult,
         adapterFixtureResult,
@@ -602,6 +607,10 @@ export default function App() {
         listDemoReadinessSnapshots().then(
           (snapshots) => ({ snapshots, error: null as string | null }),
           (caught) => ({ snapshots: null, error: errorMessage(caught) })
+        ),
+        getDemoReadinessSnapshotTrend().then(
+          (trend) => ({ trend, error: null as string | null }),
+          (caught) => ({ trend: null, error: errorMessage(caught) })
         ),
         getDemoSmokeChecklist().then(
           (checklist) => ({ checklist, error: null as string | null }),
@@ -725,6 +734,10 @@ export default function App() {
         setDemoReadinessSnapshots(demoReadinessSnapshotResult.snapshots);
       }
       setDemoReadinessSnapshotError(demoReadinessSnapshotResult.error);
+      if (demoReadinessSnapshotTrendResult.trend) {
+        setDemoReadinessSnapshotTrend(demoReadinessSnapshotTrendResult.trend);
+      }
+      setDemoReadinessSnapshotTrendError(demoReadinessSnapshotTrendResult.error);
       if (demoSmokeChecklistResult.checklist) {
         setDemoSmokeChecklist(demoSmokeChecklistResult.checklist);
       }
@@ -960,6 +973,13 @@ export default function App() {
     const archive = await archiveDemoReadinessSnapshot();
     setDemoReadinessSnapshots((current) => [archive, ...current.filter((item) => item.id !== archive.id)].slice(0, 20));
     setDemoReadinessSnapshotError(null);
+    try {
+      const trend = await getDemoReadinessSnapshotTrend();
+      setDemoReadinessSnapshotTrend(trend);
+      setDemoReadinessSnapshotTrendError(null);
+    } catch (caught) {
+      setDemoReadinessSnapshotTrendError(errorMessage(caught));
+    }
     return archive;
   }, []);
 
@@ -1326,6 +1346,8 @@ export default function App() {
         error={demoReadinessError}
         snapshots={demoReadinessSnapshots}
         snapshotError={demoReadinessSnapshotError}
+        snapshotTrend={demoReadinessSnapshotTrend}
+        snapshotTrendError={demoReadinessSnapshotTrendError}
         onArchiveReadiness={handleArchiveDemoReadinessSnapshot}
         onDownloadSnapshotReport={handleDownloadDemoReadinessSnapshotReport}
       />

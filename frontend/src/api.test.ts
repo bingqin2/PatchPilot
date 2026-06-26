@@ -57,6 +57,7 @@ import {
   getDemoReadiness,
   archiveDemoReadinessSnapshot,
   downloadDemoReadinessSnapshotReport,
+  getDemoReadinessSnapshotTrend,
   listDemoReadinessSnapshots,
   getTaskReport,
   getTaskDetail,
@@ -2652,6 +2653,41 @@ test('lists demo readiness snapshot archives from backend API', async () => {
   expect(fetchMock).toHaveBeenCalledWith('/api/demo/readiness-snapshots');
   expect(archives).toHaveLength(1);
   expect(archives[0].readyCheckCount).toBe(9);
+});
+
+test('loads demo readiness snapshot trend summary from backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        status: 'IMPROVING',
+        summary: 'Demo readiness improved from BLOCKED to READY.',
+        latestSnapshotId: 'readiness-snapshot-new',
+        previousSnapshotId: 'readiness-snapshot-old',
+        latestReadinessStatus: 'READY',
+        previousReadinessStatus: 'BLOCKED',
+        readyCheckDelta: 4,
+        needsAttentionCheckDelta: -2,
+        blockedCheckDelta: -2,
+        nextAction: 'Use the latest readiness snapshot as demo evidence or archive one more snapshot immediately before the live run.',
+        markdownReport: '# PatchPilot Demo Readiness Snapshot Trend\n\n- Status: `IMPROVING`'
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const trend = await getDemoReadinessSnapshotTrend();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/readiness-snapshots/summary');
+  expect(trend.status).toBe('IMPROVING');
+  expect(trend.latestSnapshotId).toBe('readiness-snapshot-new');
+  expect(trend.previousSnapshotId).toBe('readiness-snapshot-old');
+  expect(trend.readyCheckDelta).toBe(4);
+  expect(trend.blockedCheckDelta).toBe(-2);
+  expect(trend.markdownReport).toContain('# PatchPilot Demo Readiness Snapshot Trend');
 });
 
 test('downloads demo readiness snapshot archive report from backend API', async () => {

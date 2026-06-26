@@ -159,3 +159,43 @@ test('archives current readiness and copies recent snapshot reports', async () =
   expect(writeText).toHaveBeenCalledWith('# PatchPilot Demo Readiness Snapshot\n\n- Status: `BLOCKED`');
   expect(screen.getByText('Readiness snapshot report copied')).toBeInTheDocument();
 });
+
+test('shows readiness snapshot trend summary and copies trend report', async () => {
+  const writeText = vi.fn(async () => undefined);
+  Object.assign(navigator, { clipboard: { writeText } });
+
+  render(
+    <DemoReadinessPanel
+      readiness={readyReadiness}
+      error={null}
+      snapshots={[]}
+      snapshotError={null}
+      snapshotTrend={{
+        status: 'IMPROVING',
+        summary: 'Demo readiness improved from BLOCKED to READY.',
+        latestSnapshotId: 'readiness-snapshot-new',
+        previousSnapshotId: 'readiness-snapshot-old',
+        latestReadinessStatus: 'READY',
+        previousReadinessStatus: 'BLOCKED',
+        readyCheckDelta: 4,
+        needsAttentionCheckDelta: -2,
+        blockedCheckDelta: -2,
+        nextAction: 'Use the latest readiness snapshot as demo evidence or archive one more snapshot immediately before the live run.',
+        markdownReport: '# PatchPilot Demo Readiness Snapshot Trend\n\n- Status: `IMPROVING`'
+      }}
+      snapshotTrendError={null}
+    />
+  );
+
+  expect(screen.getByRole('heading', { name: 'Snapshot trend' })).toBeInTheDocument();
+  expect(screen.getByText('Improving')).toBeInTheDocument();
+  expect(screen.getByText('Demo readiness improved from BLOCKED to READY.')).toBeInTheDocument();
+  expect(screen.getByText('Latest readiness-snapshot-new')).toBeInTheDocument();
+  expect(screen.getByText('Previous readiness-snapshot-old')).toBeInTheDocument();
+  expect(screen.getByText('+4 ready / -2 warning / -2 blocked')).toBeInTheDocument();
+  expect(screen.getByText('Use the latest readiness snapshot as demo evidence or archive one more snapshot immediately before the live run.')).toBeInTheDocument();
+
+  await userEvent.click(screen.getByRole('button', { name: 'Copy readiness snapshot trend report' }));
+  expect(writeText).toHaveBeenCalledWith('# PatchPilot Demo Readiness Snapshot Trend\n\n- Status: `IMPROVING`');
+  expect(screen.getByText('Readiness snapshot trend report copied')).toBeInTheDocument();
+});

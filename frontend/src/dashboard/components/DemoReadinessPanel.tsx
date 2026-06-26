@@ -1,6 +1,12 @@
 import { Archive, Copy, Download } from 'lucide-react';
 import { useState } from 'react';
-import type { DemoReadiness, DemoReadinessSnapshotArchive, DemoReadinessStatus } from '../../types';
+import type {
+  DemoReadiness,
+  DemoReadinessSnapshotArchive,
+  DemoReadinessSnapshotTrend,
+  DemoReadinessSnapshotTrendStatus,
+  DemoReadinessStatus
+} from '../../types';
 import { compactDateTime } from '../format';
 
 interface DemoReadinessPanelProps {
@@ -8,6 +14,8 @@ interface DemoReadinessPanelProps {
   error: string | null;
   snapshots?: DemoReadinessSnapshotArchive[];
   snapshotError?: string | null;
+  snapshotTrend?: DemoReadinessSnapshotTrend | null;
+  snapshotTrendError?: string | null;
   onArchiveReadiness?: () => Promise<DemoReadinessSnapshotArchive>;
   onDownloadSnapshotReport?: (snapshotId: string) => Promise<Blob>;
 }
@@ -17,12 +25,15 @@ export function DemoReadinessPanel({
   error,
   snapshots = [],
   snapshotError = null,
+  snapshotTrend = null,
+  snapshotTrendError = null,
   onArchiveReadiness,
   onDownloadSnapshotReport
 }: DemoReadinessPanelProps) {
   const [archiveStatus, setArchiveStatus] = useState<string | null>(null);
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
   const [downloadStatus, setDownloadStatus] = useState<string | null>(null);
+  const [trendCopyStatus, setTrendCopyStatus] = useState<string | null>(null);
 
   async function archiveReadiness() {
     if (!onArchiveReadiness) {
@@ -42,6 +53,18 @@ export function DemoReadinessPanel({
       setCopyStatus('Readiness snapshot report copied');
     } catch {
       setCopyStatus('Copy failed');
+    }
+  }
+
+  async function copySnapshotTrendReport() {
+    if (!snapshotTrend) {
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(snapshotTrend.markdownReport);
+      setTrendCopyStatus('Readiness snapshot trend report copied');
+    } catch {
+      setTrendCopyStatus('Copy failed');
     }
   }
 
@@ -120,6 +143,52 @@ export function DemoReadinessPanel({
             </ul>
           </div>
 
+          <div className="demo-readiness-snapshot-trend">
+            <div className="demo-readiness-snapshot-trend-header">
+              <h3>Snapshot trend</h3>
+              {snapshotTrend ? (
+                <span className={`demo-readiness-trend-status demo-readiness-trend-status-${trendStatusClass(snapshotTrend.status)}`}>
+                  {trendStatusLabel(snapshotTrend.status)}
+                </span>
+              ) : null}
+            </div>
+            {snapshotTrendError ? (
+              <div className="adapter-api-error">
+                <strong>Demo readiness snapshot trend unavailable</strong>
+                <span>{snapshotTrendError}</span>
+              </div>
+            ) : null}
+            {snapshotTrend ? (
+              <div className="demo-readiness-snapshot-trend-body">
+                <p>{snapshotTrend.summary}</p>
+                <div className="demo-readiness-snapshot-trend-grid">
+                  <span>Latest {snapshotTrend.latestSnapshotId ?? 'none'}</span>
+                  <span>Previous {snapshotTrend.previousSnapshotId ?? 'none'}</span>
+                  <span>
+                    {signedDelta(snapshotTrend.readyCheckDelta)} ready /{' '}
+                    {signedDelta(snapshotTrend.needsAttentionCheckDelta)} warning /{' '}
+                    {signedDelta(snapshotTrend.blockedCheckDelta)} blocked
+                  </span>
+                </div>
+                <p className="demo-readiness-trend-action">{snapshotTrend.nextAction}</p>
+                <div className="demo-readiness-snapshot-actions">
+                  <button
+                    className="secondary-button"
+                    type="button"
+                    onClick={() => void copySnapshotTrendReport()}
+                    aria-label="Copy readiness snapshot trend report"
+                  >
+                    <Copy size={14} />
+                    Copy trend report
+                  </button>
+                  {trendCopyStatus ? <span className="copy-status">{trendCopyStatus}</span> : null}
+                </div>
+              </div>
+            ) : (
+              <p className="empty-state">No readiness snapshot trend summary loaded.</p>
+            )}
+          </div>
+
           <div className="demo-readiness-snapshots">
             <h3>Recent readiness snapshots</h3>
             {snapshotError ? (
@@ -193,6 +262,27 @@ function statusLabel(status: DemoReadinessStatus) {
 
 function statusClass(status: DemoReadinessStatus) {
   return status.toLowerCase().replace('_', '-');
+}
+
+function trendStatusLabel(status: DemoReadinessSnapshotTrendStatus) {
+  switch (status) {
+    case 'NO_BASELINE':
+      return 'No baseline';
+    case 'IMPROVING':
+      return 'Improving';
+    case 'STABLE':
+      return 'Stable';
+    case 'REGRESSING':
+      return 'Regressing';
+  }
+}
+
+function trendStatusClass(status: DemoReadinessSnapshotTrendStatus) {
+  return status.toLowerCase().replace('_', '-');
+}
+
+function signedDelta(value: number) {
+  return value > 0 ? `+${value}` : String(value);
 }
 
 function downloadMarkdown(blob: Blob, filename: string) {
