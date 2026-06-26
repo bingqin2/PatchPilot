@@ -2583,6 +2583,47 @@ test('tracks a prepared demo launch through webhook, task, and pull request evid
   ).toBeInTheDocument();
 });
 
+test('copies a prepared demo launch outcome report from the dashboard', async () => {
+  const user = userEvent.setup();
+  const writeText = vi.fn().mockResolvedValue(undefined);
+  Object.defineProperty(window.navigator, 'clipboard', {
+    configurable: true,
+    value: { writeText }
+  });
+  localStorage.setItem('patchpilot.demoLaunchCommandHistory', JSON.stringify([
+    {
+      id: 'saved-launch-command',
+      savedAt: '2026-06-26T01:00:00.000Z',
+      input: {
+        repositoryOwner: 'bingqin2',
+        repositoryName: 'PatchPilot',
+        issueNumber: 1,
+        triggerUser: 'bingqin2',
+        operation: 'replace',
+        targetPath: 'docs/demo.md',
+        replacementText: 'PatchPilot smoke test'
+      },
+      result: demoLaunchCommand
+    }
+  ]));
+
+  render(<App />);
+
+  const trackerPanel = await screen.findByRole('region', { name: 'Demo launch tracker' });
+  await user.click(
+    within(trackerPanel).getByRole('button', {
+      name: 'Copy outcome report for /agent fix replace docs/demo.md PatchPilot smoke test'
+    })
+  );
+
+  expect(writeText).toHaveBeenCalledWith(expect.stringContaining('# PatchPilot Demo Launch Outcome Report'));
+  expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- Repository: `bingqin2/PatchPilot`'));
+  expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- Webhook status: `TASK_CREATED`'));
+  expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- Task: `task-1`'));
+  expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- Task status: `COMPLETED`'));
+  expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- Pull Request: https://github.com/bingqin2/PatchPilot/pull/8'));
+});
+
 test('persists demo launch command history across dashboard reloads', async () => {
   const user = userEvent.setup();
 

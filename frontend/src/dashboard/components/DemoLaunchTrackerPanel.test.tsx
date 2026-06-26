@@ -1,4 +1,5 @@
 import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import type { DemoPreparedLaunchCommand, FixTask, WebhookDeliveryDiagnostic } from '../../types';
 import { DemoLaunchTrackerPanel } from './DemoLaunchTrackerPanel';
 
@@ -84,6 +85,43 @@ test('tracks a successful launch through webhook, task, and Pull Request evidenc
   expect(within(panel).getByRole('link', { name: 'Open Pull Request' })).toHaveAttribute(
     'href',
     'https://github.com/bingqin2/PatchPilot/pull/8'
+  );
+});
+
+test('copies a launch outcome report with webhook, task, and Pull Request evidence', async () => {
+  const user = userEvent.setup();
+  const writeText = vi.fn().mockResolvedValue(undefined);
+  Object.defineProperty(window.navigator, 'clipboard', {
+    configurable: true,
+    value: { writeText }
+  });
+
+  render(
+    <DemoLaunchTrackerPanel
+      preparedLaunchCommands={[preparedCommand]}
+      tasks={[completedTask]}
+      webhookDeliveries={[webhookDelivery]}
+    />
+  );
+
+  const panel = screen.getByRole('region', { name: 'Demo launch tracker' });
+  await user.click(
+    within(panel).getByRole('button', {
+      name: 'Copy outcome report for /agent fix replace docs/demo.md PatchPilot smoke test'
+    })
+  );
+
+  expect(writeText).toHaveBeenCalledWith(expect.stringContaining('# PatchPilot Demo Launch Outcome Report'));
+  expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- Repository: `bingqin2/PatchPilot`'));
+  expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- Issue: `#1`'));
+  expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- Command: `/agent fix replace docs/demo.md PatchPilot smoke test`'));
+  expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- Webhook status: `TASK_CREATED`'));
+  expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- Webhook delivery id: `delivery-1`'));
+  expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- Task: `task-1`'));
+  expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- Task status: `COMPLETED`'));
+  expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- Pull Request: https://github.com/bingqin2/PatchPilot/pull/8'));
+  expect(writeText).toHaveBeenCalledWith(
+    expect.stringContaining('- Next action: Launch succeeded. Open the Pull Request and review the generated patch.')
   );
 });
 

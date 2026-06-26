@@ -4,6 +4,29 @@ This file records dated implementation progress, validation commands, and import
 
 ## 2026-06-26
 
+Implemented demo launch outcome reports from `docs/plans/207-demo-launch-outcome-report.md`.
+
+Changes:
+
+- Added `Copy outcome report` to each demo launch tracker row.
+- Included repository, issue, trigger user, exact command, prepared timestamp, and launch state in the copied Markdown.
+- Included matched webhook status, delivery id, outcome type, message, task id, task status, failure reason, completion timestamp, Pull Request URL, and next action.
+- Kept the feature read-only with no new backend endpoint, task creation, queue mutation, GitHub mutation, or localStorage writes.
+- Updated README, product spec, frontend design docs, the plan document, and this execution log.
+
+Validation:
+
+- `npm test -- --run src/dashboard/components/DemoLaunchTrackerPanel.test.tsx -t "copies a launch outcome report" --reporter=basic`: first failed because the `Copy outcome report` button did not exist; then passed after adding the report action.
+- `npm test -- --run src/dashboard/components/DemoLaunchTrackerPanel.test.tsx --reporter=basic`: passed after component verification, 4 tests run.
+- `npm test -- --run src/App.test.tsx -t "copies a prepared demo launch outcome report" --reporter=basic`: passed after dashboard integration verification.
+- `npm test -- --run src/dashboard/components/DemoLaunchTrackerPanel.test.tsx src/App.test.tsx -t "launch outcome report|tracks a prepared demo launch|tracks a successful launch" --reporter=basic`: passed after focused cross-component verification, 4 tests run.
+- `npm test -- --reporter=basic`: passed after full frontend regression verification, 234 tests run.
+- `npm run build`: passed after TypeScript and production Vite build verification.
+- `mvn -pl PatchPilot test -q`: passed after full backend regression verification.
+- `git diff --check`: passed.
+
+## 2026-06-26
+
 Implemented demo launch tracker from `docs/plans/206-demo-launch-tracker.md`.
 
 Changes:
