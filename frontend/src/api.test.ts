@@ -32,6 +32,7 @@ import {
   getEvaluationSummary,
   getEvaluationCaseReadiness,
   getEvaluationRunPreview,
+  runEvaluationFixtureBaseline,
   getRejectedTriggerSummary,
   getTriggerQuarantineEvidence,
   getWorkerHealth,
@@ -2309,6 +2310,30 @@ test('loads evaluation case fixture readiness from backend API', async () => {
   expect(readiness.markdownReport).toContain('# PatchPilot Evaluation Case Fixture Readiness');
 });
 
+test('runs evaluation fixture baseline through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: evaluationFixtureBaselineSummary(),
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const baseline = await runEvaluationFixtureBaseline();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/evaluation/fixture-baseline', { method: 'POST' });
+  expect(baseline.status).toBe('READY');
+  expect(baseline.executedCaseCount).toBe(2);
+  expect(baseline.passedCaseCount).toBe(2);
+  expect(baseline.skippedCaseCount).toBe(1);
+  expect(baseline.cases[0].caseId).toBe('java-maven-doc-fix');
+  expect(baseline.cases[0].outputSnippet).toBe('maven ok');
+  expect(baseline.markdownReport).toContain('# PatchPilot Evaluation Fixture Baseline');
+});
+
 test('archives evaluation run snapshot through backend API', async () => {
   const fetchMock = vi.fn(async () => ({
     ok: true,
@@ -2908,5 +2933,66 @@ function evaluationCaseReadinessSummary() {
     sideEffectContract: 'Evaluation case fixture readiness checks local checked-in fixtures and adapter metadata only; it does not create tasks, call the model, run verification commands, mutate Git, or write to GitHub.',
     nextAction: 'Evaluation case fixtures are ready for demo evidence; automated evaluation execution remains future work.',
     markdownReport: '# PatchPilot Evaluation Case Fixture Readiness\n\n- Status: `READY`'
+  };
+}
+
+function evaluationFixtureBaselineSummary() {
+  return {
+    status: 'READY',
+    totalCaseCount: 3,
+    executedCaseCount: 2,
+    passedCaseCount: 2,
+    failedCaseCount: 0,
+    skippedCaseCount: 1,
+    cases: [
+      {
+        caseId: 'java-maven-doc-fix',
+        title: 'Java Maven documentation fix',
+        category: 'SUPPORTED_FIX',
+        status: 'PASSED',
+        executed: true,
+        fixturePath: 'docs/demo-repositories/java-maven',
+        language: 'java',
+        buildSystem: 'maven',
+        verificationCommand: ['mvn', 'test'],
+        exitCode: 0,
+        outputSnippet: 'maven ok',
+        reason: 'Fixture verification command exited with code 0.',
+        nextAction: 'Keep this fixture as passing demo evidence.'
+      },
+      {
+        caseId: 'node-npm-unit-fix',
+        title: 'Node npm unit fix',
+        category: 'SUPPORTED_FIX',
+        status: 'PASSED',
+        executed: true,
+        fixturePath: 'docs/demo-repositories/node-npm',
+        language: 'node',
+        buildSystem: 'npm',
+        verificationCommand: ['npm', 'test'],
+        exitCode: 0,
+        outputSnippet: 'npm ok',
+        reason: 'Fixture verification command exited with code 0.',
+        nextAction: 'Keep this fixture as passing demo evidence.'
+      },
+      {
+        caseId: 'unsafe-secret-exfiltration-rejection',
+        title: 'Reject secret exfiltration',
+        category: 'SAFETY_REJECTION',
+        status: 'SKIPPED',
+        executed: false,
+        fixturePath: 'none',
+        language: 'none',
+        buildSystem: 'none',
+        verificationCommand: [],
+        exitCode: null,
+        outputSnippet: '',
+        reason: 'Safety rejection cases validate trigger gating and do not run repository verification.',
+        nextAction: 'Validate this case through trigger rejection tests instead.'
+      }
+    ],
+    sideEffectContract: 'Evaluation fixture baseline runs local checked-in fixture verification commands only; it does not create tasks, call the model, mutate Git, or write to GitHub.',
+    nextAction: 'Fixture baseline is passing; use the report as demo evidence for supported language adapters.',
+    markdownReport: '# PatchPilot Evaluation Fixture Baseline\n\n- Status: `READY`'
   };
 }

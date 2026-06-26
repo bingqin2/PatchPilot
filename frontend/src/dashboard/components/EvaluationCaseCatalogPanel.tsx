@@ -3,6 +3,8 @@ import type {
   EvaluationCaseFixtureReadiness,
   EvaluationCaseFixtureReadinessSummary,
   EvaluationCaseSummary,
+  EvaluationFixtureBaselineCase,
+  EvaluationFixtureBaselineSummary,
   EvaluationRunPreview,
   EvaluationRunSnapshotArchive
 } from '../../types';
@@ -11,13 +13,17 @@ interface EvaluationCaseCatalogPanelProps {
   cases: EvaluationCase[];
   summary: EvaluationCaseSummary | null;
   caseReadiness: EvaluationCaseFixtureReadinessSummary | null;
+  fixtureBaseline: EvaluationFixtureBaselineSummary | null;
+  fixtureBaselineLoading: boolean;
   runPreview: EvaluationRunPreview | null;
   archives: EvaluationRunSnapshotArchive[];
   error: string | null;
   summaryError: string | null;
   caseReadinessError: string | null;
+  fixtureBaselineError: string | null;
   runPreviewError: string | null;
   archiveError: string | null;
+  onRunFixtureBaseline: () => Promise<EvaluationFixtureBaselineSummary>;
   onArchiveRunSnapshot: () => Promise<EvaluationRunSnapshotArchive>;
   onDownloadArchiveReport: (snapshotId: string) => Promise<Blob>;
 }
@@ -26,13 +32,17 @@ export function EvaluationCaseCatalogPanel({
   cases,
   summary,
   caseReadiness,
+  fixtureBaseline,
+  fixtureBaselineLoading,
   runPreview,
   archives,
   error,
   summaryError,
   caseReadinessError,
+  fixtureBaselineError,
   runPreviewError,
   archiveError,
+  onRunFixtureBaseline,
   onArchiveRunSnapshot,
   onDownloadArchiveReport
 }: EvaluationCaseCatalogPanelProps) {
@@ -70,6 +80,16 @@ export function EvaluationCaseCatalogPanel({
   async function copyFixtureReadinessReport() {
     if (caseReadiness) {
       await navigator.clipboard?.writeText(caseReadiness.markdownReport);
+    }
+  }
+
+  async function runFixtureBaseline() {
+    await onRunFixtureBaseline();
+  }
+
+  async function copyFixtureBaselineReport() {
+    if (fixtureBaseline) {
+      await navigator.clipboard?.writeText(fixtureBaseline.markdownReport);
     }
   }
 
@@ -118,6 +138,12 @@ export function EvaluationCaseCatalogPanel({
         <div className="adapter-api-error">
           <strong>Evaluation case fixture readiness incomplete</strong>
           <span>{caseReadinessError}</span>
+        </div>
+      ) : null}
+      {fixtureBaselineError ? (
+        <div className="adapter-api-error">
+          <strong>Evaluation fixture baseline incomplete</strong>
+          <span>{fixtureBaselineError}</span>
         </div>
       ) : null}
       {runPreviewError ? (
@@ -199,6 +225,57 @@ export function EvaluationCaseCatalogPanel({
           </div>
         </div>
       ) : null}
+      <div className="adapter-readiness-section evaluation-fixture-baseline-section">
+        <div className="panel-subheader">
+          <div>
+            <h3>Evaluation fixture baseline</h3>
+            <p>{fixtureBaseline ? `${fixtureBaseline.executedCaseCount} executed cases` : 'Run supported fixture verification on demand'}</p>
+          </div>
+          <div className="panel-actions">
+            <button type="button" className="secondary-button" onClick={runFixtureBaseline} disabled={fixtureBaselineLoading}>
+              {fixtureBaselineLoading ? 'Running fixture baseline' : 'Run fixture baseline'}
+            </button>
+            {fixtureBaseline ? (
+              <button type="button" className="secondary-button" onClick={copyFixtureBaselineReport}>
+                Copy fixture baseline report
+              </button>
+            ) : null}
+          </div>
+        </div>
+        {fixtureBaseline ? (
+          <>
+            <div className="adapter-readiness-summary">
+              <div>
+                <span>Baseline status</span>
+                <strong>{fixtureBaseline.status}</strong>
+                <p>{fixtureBaseline.nextAction}</p>
+              </div>
+              <div>
+                <span>Passed</span>
+                <strong>{fixtureBaseline.passedCaseCount} passed {fixtureBaseline.passedCaseCount === 1 ? 'case' : 'cases'}</strong>
+                <p>{fixtureBaseline.executedCaseCount} executed cases</p>
+              </div>
+              <div>
+                <span>Failed</span>
+                <strong>{fixtureBaseline.failedCaseCount} failed {fixtureBaseline.failedCaseCount === 1 ? 'case' : 'cases'}</strong>
+                <p>Failing commands need fixture or adapter attention.</p>
+              </div>
+              <div>
+                <span>Skipped</span>
+                <strong>{fixtureBaseline.skippedCaseCount} skipped {fixtureBaseline.skippedCaseCount === 1 ? 'case' : 'cases'}</strong>
+                <p>{fixtureBaseline.sideEffectContract}</p>
+              </div>
+            </div>
+            <div className="evaluation-case-list">
+              {fixtureBaseline.cases.map((baselineCase) => (
+                <EvaluationFixtureBaselineRow baselineCase={baselineCase} key={baselineCase.caseId} />
+              ))}
+            </div>
+          </>
+        ) : (
+          <p className="empty-state compact-empty-state">No fixture baseline run has been executed in this dashboard session.</p>
+        )}
+      </div>
       {runPreview ? (
         <div className="adapter-readiness-section evaluation-run-preview-section">
           <div className="panel-subheader">
@@ -354,6 +431,42 @@ function EvaluationCaseReadinessRow({ readiness }: { readiness: EvaluationCaseFi
       <div className="evaluation-case-detail">
         <span>Next action</span>
         <p>{readiness.nextAction}</p>
+      </div>
+    </article>
+  );
+}
+
+function EvaluationFixtureBaselineRow({ baselineCase }: { baselineCase: EvaluationFixtureBaselineCase }) {
+  return (
+    <article className="evaluation-case-row">
+      <div>
+        <strong>{baselineCase.title}</strong>
+        <span>{baselineCase.caseId}</span>
+      </div>
+      <div className="evaluation-case-facts">
+        <span>{baselineCase.status}</span>
+        <span>{baselineCase.executed ? 'executed' : 'not executed'}</span>
+        <span>{baselineCase.language}/{baselineCase.buildSystem}</span>
+        <code>{commandLabel(baselineCase.verificationCommand)}</code>
+        <span>exit {baselineCase.exitCode ?? 'none'}</span>
+      </div>
+      <div className="evaluation-case-detail">
+        <span>Fixture</span>
+        <p>{baselineCase.fixturePath}</p>
+      </div>
+      <div className="evaluation-case-detail">
+        <span>Evidence</span>
+        <p>{baselineCase.reason}</p>
+      </div>
+      {baselineCase.outputSnippet ? (
+        <div className="evaluation-case-detail">
+          <span>Output</span>
+          <p>{baselineCase.outputSnippet}</p>
+        </div>
+      ) : null}
+      <div className="evaluation-case-detail">
+        <span>Next action</span>
+        <p>{baselineCase.nextAction}</p>
       </div>
     </article>
   );

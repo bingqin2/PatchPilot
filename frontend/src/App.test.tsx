@@ -1000,6 +1000,65 @@ const evaluationCaseReadiness = {
   markdownReport: '# PatchPilot Evaluation Case Fixture Readiness\n\n- Status: `READY`'
 };
 
+const evaluationFixtureBaseline = {
+  status: 'READY',
+  totalCaseCount: 3,
+  executedCaseCount: 2,
+  passedCaseCount: 2,
+  failedCaseCount: 0,
+  skippedCaseCount: 1,
+  cases: [
+    {
+      caseId: 'java-maven-doc-fix',
+      title: 'Java Maven documentation fix',
+      category: 'SUPPORTED_FIX',
+      status: 'PASSED',
+      executed: true,
+      fixturePath: 'docs/demo-repositories/java-maven',
+      language: 'java',
+      buildSystem: 'maven',
+      verificationCommand: ['mvn', 'test'],
+      exitCode: 0,
+      outputSnippet: 'maven ok',
+      reason: 'Fixture verification command exited with code 0.',
+      nextAction: 'Keep this fixture as passing demo evidence.'
+    },
+    {
+      caseId: 'node-npm-unit-fix',
+      title: 'Node npm unit fix',
+      category: 'SUPPORTED_FIX',
+      status: 'PASSED',
+      executed: true,
+      fixturePath: 'docs/demo-repositories/node-npm',
+      language: 'node',
+      buildSystem: 'npm',
+      verificationCommand: ['npm', 'test'],
+      exitCode: 0,
+      outputSnippet: 'npm ok',
+      reason: 'Fixture verification command exited with code 0.',
+      nextAction: 'Keep this fixture as passing demo evidence.'
+    },
+    {
+      caseId: 'unsafe-secret-exfiltration-rejection',
+      title: 'Reject secret exfiltration',
+      category: 'SAFETY_REJECTION',
+      status: 'SKIPPED',
+      executed: false,
+      fixturePath: 'none',
+      language: 'none',
+      buildSystem: 'none',
+      verificationCommand: [],
+      exitCode: null,
+      outputSnippet: '',
+      reason: 'Safety rejection cases validate trigger gating and do not run repository verification.',
+      nextAction: 'Validate this case through trigger rejection tests instead.'
+    }
+  ],
+  sideEffectContract: 'Evaluation fixture baseline runs local checked-in fixture verification commands only; it does not create tasks, call the model, mutate Git, or write to GitHub.',
+  nextAction: 'Fixture baseline is passing; use the report as demo evidence for supported language adapters.',
+  markdownReport: '# PatchPilot Evaluation Fixture Baseline\n\n- Status: `READY`'
+};
+
 const supportedRepositoryPreflightResult = {
   supported: true,
   language: 'java',
@@ -1564,6 +1623,9 @@ beforeEach(() => {
     if (url === '/api/evaluation/case-readiness') {
       return jsonResponse(evaluationCaseReadiness);
     }
+    if (url === '/api/evaluation/fixture-baseline' && init?.method === 'POST') {
+      return jsonResponse(evaluationFixtureBaseline);
+    }
     if (url === '/api/evaluation/run-preview') {
       return jsonResponse(evaluationRunPreview);
     }
@@ -2036,6 +2098,7 @@ test('renders operational task dashboard from backend APIs', async () => {
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/evaluation/case-readiness'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/evaluation/run-preview'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/evaluation/run-snapshots'));
+  expect(fetchMock).not.toHaveBeenCalledWith('/api/evaluation/fixture-baseline', { method: 'POST' });
   const evaluationCaseCatalog = screen.getByRole('region', { name: 'Evaluation case catalog' });
   expect(within(evaluationCaseCatalog).getByRole('heading', { name: 'Evaluation case catalog' })).toBeInTheDocument();
   expect(within(evaluationCaseCatalog).getAllByText('READY')).toHaveLength(4);
@@ -2061,6 +2124,11 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(within(evaluationCaseCatalog).getByText('Detected Maven project')).toBeInTheDocument();
   expect(within(evaluationCaseCatalog).getAllByText('Java Maven documentation fix')).toHaveLength(2);
   expect(within(evaluationCaseCatalog).getAllByText('Reject secret exfiltration')).toHaveLength(2);
+  await user.click(within(evaluationCaseCatalog).getByRole('button', { name: 'Run fixture baseline' }));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/evaluation/fixture-baseline', { method: 'POST' }));
+  expect(within(evaluationCaseCatalog).getByText('Evaluation fixture baseline')).toBeInTheDocument();
+  expect(within(evaluationCaseCatalog).getByText('2 passed cases')).toBeInTheDocument();
+  expect(within(evaluationCaseCatalog).getByText('maven ok')).toBeInTheDocument();
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/evidence-bundle'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/session-snapshot'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/script'));

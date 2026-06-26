@@ -605,6 +605,37 @@ export interface EvaluationCaseFixtureReadinessSummary {
   markdownReport: string;
 }
 
+export type EvaluationFixtureBaselineCaseStatus = 'PASSED' | 'FAILED' | 'SKIPPED';
+
+export interface EvaluationFixtureBaselineCase {
+  caseId: string;
+  title: string;
+  category: EvaluationCaseCategory;
+  status: EvaluationFixtureBaselineCaseStatus;
+  executed: boolean;
+  fixturePath: string;
+  language: string;
+  buildSystem: string;
+  verificationCommand: string[];
+  exitCode: number | null;
+  outputSnippet: string;
+  reason: string;
+  nextAction: string;
+}
+
+export interface EvaluationFixtureBaselineSummary {
+  status: EvaluationSummaryStatus;
+  totalCaseCount: number;
+  executedCaseCount: number;
+  passedCaseCount: number;
+  failedCaseCount: number;
+  skippedCaseCount: number;
+  cases: EvaluationFixtureBaselineCase[];
+  sideEffectContract: string;
+  nextAction: string;
+  markdownReport: string;
+}
+
 export interface EvaluationRunPreview {
   status: EvaluationSummaryStatus;
   title: string;

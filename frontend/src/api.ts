@@ -21,6 +21,7 @@ import type {
   EvaluationCase,
   EvaluationCaseFixtureReadinessSummary,
   EvaluationCaseSummary,
+  EvaluationFixtureBaselineSummary,
   EvaluationRunPreview,
   EvaluationRunSnapshotArchive,
   FixTask,
@@ -295,6 +296,10 @@ export async function getEvaluationSummary(): Promise<EvaluationCaseSummary> {
 
 export async function getEvaluationCaseReadiness(): Promise<EvaluationCaseFixtureReadinessSummary> {
   return getApi<EvaluationCaseFixtureReadinessSummary>('/api/evaluation/case-readiness');
+}
+
+export async function runEvaluationFixtureBaseline(): Promise<EvaluationFixtureBaselineSummary> {
+  return postApi<EvaluationFixtureBaselineSummary>('/api/evaluation/fixture-baseline');
 }
 
 export async function getEvaluationRunPreview(): Promise<EvaluationRunPreview> {
