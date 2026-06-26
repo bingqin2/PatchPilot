@@ -14,6 +14,7 @@ import type {
   DemoLaunchPreflightInput,
   DemoReadiness,
   DemoReadinessSnapshotArchive,
+  DemoReadinessSnapshotTrend,
   DemoScript,
   DemoSessionArchive,
   DemoSessionReportInput,
@@ -219,6 +220,10 @@ export async function archiveDemoReadinessSnapshot(): Promise<DemoReadinessSnaps
 
 export async function listDemoReadinessSnapshots(): Promise<DemoReadinessSnapshotArchive[]> {
   return getApi<DemoReadinessSnapshotArchive[]>('/api/demo/readiness-snapshots');
+}
+
+export async function getDemoReadinessSnapshotTrend(): Promise<DemoReadinessSnapshotTrend> {
+  return getApi<DemoReadinessSnapshotTrend>('/api/demo/readiness-snapshots/summary');
 }
 
 export async function downloadDemoReadinessSnapshotReport(snapshotId: string): Promise<Blob> {

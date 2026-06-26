@@ -16,6 +16,8 @@ import io.patchpilot.backend.task.domain.vo.TriggerEvaluationResultVo;
 import io.patchpilot.backend.demo.domain.DemoScriptStepVo;
 import io.patchpilot.backend.demo.domain.DemoScriptVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessSnapshotArchiveVo;
+import io.patchpilot.backend.demo.domain.DemoReadinessSnapshotTrendStatus;
+import io.patchpilot.backend.demo.domain.DemoReadinessSnapshotTrendVo;
 import io.patchpilot.backend.demo.domain.DemoSessionArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoSessionSnapshotVo;
 import io.patchpilot.backend.safety.domain.RecordOperatorSafetyAuditCommand;
@@ -77,6 +79,9 @@ class DemoReadinessControllerTests {
 
     @MockitoBean
     private DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
+
+    @MockitoBean
+    private DemoReadinessSnapshotTrendService demoReadinessSnapshotTrendService;
 
     @MockitoBean
     private DemoLaunchPreflightService demoLaunchPreflightService;
@@ -878,5 +883,37 @@ class DemoReadinessControllerTests {
 
         mockMvc.perform(get("/api/demo/readiness-snapshots/missing-snapshot/report/download"))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void should_return_demo_readiness_snapshot_trend_summary() throws Exception {
+        when(demoReadinessSnapshotTrendService.getTrendSummary()).thenReturn(new DemoReadinessSnapshotTrendVo(
+                DemoReadinessSnapshotTrendStatus.IMPROVING,
+                "Demo readiness improved from BLOCKED to READY.",
+                "readiness-snapshot-new",
+                "readiness-snapshot-old",
+                DemoReadinessStatus.READY,
+                DemoReadinessStatus.BLOCKED,
+                4,
+                -2,
+                -2,
+                "Use the latest readiness snapshot as demo evidence or archive one more snapshot immediately before the live run.",
+                "# PatchPilot Demo Readiness Snapshot Trend\n\n- Status: `IMPROVING`"
+        ));
+
+        mockMvc.perform(get("/api/demo/readiness-snapshots/summary"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.status").value("IMPROVING"))
+                .andExpect(jsonPath("$.data.summary").value("Demo readiness improved from BLOCKED to READY."))
+                .andExpect(jsonPath("$.data.latestSnapshotId").value("readiness-snapshot-new"))
+                .andExpect(jsonPath("$.data.previousSnapshotId").value("readiness-snapshot-old"))
+                .andExpect(jsonPath("$.data.latestReadinessStatus").value("READY"))
+                .andExpect(jsonPath("$.data.previousReadinessStatus").value("BLOCKED"))
+                .andExpect(jsonPath("$.data.readyCheckDelta").value(4))
+                .andExpect(jsonPath("$.data.needsAttentionCheckDelta").value(-2))
+                .andExpect(jsonPath("$.data.blockedCheckDelta").value(-2))
+                .andExpect(jsonPath("$.data.nextAction").value("Use the latest readiness snapshot as demo evidence or archive one more snapshot immediately before the live run."))
+                .andExpect(jsonPath("$.data.markdownReport").value(org.hamcrest.Matchers.containsString("# PatchPilot Demo Readiness Snapshot Trend")));
     }
 }

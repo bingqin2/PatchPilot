@@ -327,6 +327,22 @@ export interface DemoReadinessSnapshotArchive {
   report: string;
 }
 
+export type DemoReadinessSnapshotTrendStatus = 'NO_BASELINE' | 'IMPROVING' | 'STABLE' | 'REGRESSING';
+
+export interface DemoReadinessSnapshotTrend {
+  status: DemoReadinessSnapshotTrendStatus;
+  summary: string;
+  latestSnapshotId: string | null;
+  previousSnapshotId: string | null;
+  latestReadinessStatus: DemoReadinessStatus | null;
+  previousReadinessStatus: DemoReadinessStatus | null;
+  readyCheckDelta: number;
+  needsAttentionCheckDelta: number;
+  blockedCheckDelta: number;
+  nextAction: string;
+  markdownReport: string;
+}
+
 export interface DemoLaunchPreflightInput {
   repositoryOwner: string;
   repositoryName: string;

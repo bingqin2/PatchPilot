@@ -1274,6 +1274,20 @@ const demoReadinessSnapshotArchive = {
   report: '# PatchPilot Demo Readiness Snapshot\n\n- Status: `NEEDS_ATTENTION`'
 };
 
+const demoReadinessSnapshotTrend = {
+  status: 'IMPROVING',
+  summary: 'Demo readiness improved from BLOCKED to NEEDS_ATTENTION.',
+  latestSnapshotId: 'readiness-snapshot-1',
+  previousSnapshotId: 'readiness-snapshot-0',
+  latestReadinessStatus: 'NEEDS_ATTENTION',
+  previousReadinessStatus: 'BLOCKED',
+  readyCheckDelta: 2,
+  needsAttentionCheckDelta: -1,
+  blockedCheckDelta: -1,
+  nextAction: 'Use the latest readiness snapshot as demo evidence or archive one more snapshot immediately before the live run.',
+  markdownReport: '# PatchPilot Demo Readiness Snapshot Trend\n\n- Status: `IMPROVING`'
+};
+
 const demoLaunchPreflight = {
   status: 'READY',
   readyToPost: true,
@@ -1631,6 +1645,9 @@ beforeEach(() => {
     }
     if (url === '/api/demo/readiness-snapshots' && init?.method === 'POST') {
       return jsonResponse(demoReadinessSnapshotArchive);
+    }
+    if (url === '/api/demo/readiness-snapshots/summary') {
+      return jsonResponse(demoReadinessSnapshotTrend);
     }
     if (url === '/api/demo/readiness-snapshots') {
       return jsonResponse([demoReadinessSnapshotArchive]);
@@ -2053,6 +2070,10 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(within(demoReadinessPanel).getByText('Fixture baseline regression status is STABLE with no latest failed cases.')).toBeInTheDocument();
   expect(within(demoReadinessPanel).getAllByText('Run one controlled issue-to-PR smoke task before a live demo.')).toHaveLength(2);
   expect(within(demoReadinessPanel).getByRole('heading', { name: 'Recent readiness snapshots' })).toBeInTheDocument();
+  expect(within(demoReadinessPanel).getByRole('heading', { name: 'Snapshot trend' })).toBeInTheDocument();
+  expect(within(demoReadinessPanel).getByText('Improving')).toBeInTheDocument();
+  expect(within(demoReadinessPanel).getByText('Demo readiness improved from BLOCKED to NEEDS_ATTENTION.')).toBeInTheDocument();
+  expect(within(demoReadinessPanel).getByText('+2 ready / -1 warning / -1 blocked')).toBeInTheDocument();
   expect(within(demoReadinessPanel).getByText('readiness-snapshot-1')).toBeInTheDocument();
   expect(within(demoReadinessPanel).getByText('6 ready / 1 warning / 0 blocked')).toBeInTheDocument();
   const smokeChecklistPanel = screen.getByRole('region', { name: 'Live demo smoke checklist' });

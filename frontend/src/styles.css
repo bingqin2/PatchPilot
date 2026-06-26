@@ -960,6 +960,86 @@ h3 {
   padding: 9px 10px;
 }
 
+.demo-readiness-snapshot-trend {
+  border-top: 1px solid #e6ebef;
+  padding: 12px 16px 16px;
+}
+
+.demo-readiness-snapshot-trend-header {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.demo-readiness-snapshot-trend-body {
+  background: #f7f9fb;
+  border: 1px solid #dbe3ea;
+  border-radius: 6px;
+  display: grid;
+  gap: 10px;
+  padding: 10px;
+}
+
+.demo-readiness-snapshot-trend-body p {
+  color: #384858;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.demo-readiness-snapshot-trend-grid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.demo-readiness-snapshot-trend-grid span {
+  background: #ffffff;
+  border: 1px solid #dfe7ee;
+  border-radius: 6px;
+  color: #52606e;
+  font-size: 12px;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+  padding: 8px 10px;
+}
+
+.demo-readiness-trend-action {
+  background: #eef4f8;
+  border: 1px solid #d8e2ea;
+  border-radius: 6px;
+  padding: 8px 10px;
+}
+
+.demo-readiness-trend-status {
+  border-radius: 999px;
+  flex: 0 0 auto;
+  font-size: 12px;
+  font-weight: 850;
+  padding: 6px 10px;
+}
+
+.demo-readiness-trend-status-no-baseline {
+  background: #edf2f7;
+  color: #475569;
+}
+
+.demo-readiness-trend-status-improving {
+  background: #dff6e7;
+  color: #126b35;
+}
+
+.demo-readiness-trend-status-stable {
+  background: #e5eef9;
+  color: #28568a;
+}
+
+.demo-readiness-trend-status-regressing {
+  background: #fde5df;
+  color: #a13724;
+}
+
 .demo-readiness-snapshots {
   border-top: 1px solid #e6ebef;
   padding: 12px 16px 16px;

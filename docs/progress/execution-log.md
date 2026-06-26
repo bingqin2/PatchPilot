@@ -4,6 +4,25 @@ This file records dated implementation progress, validation commands, and import
 
 ## 2026-06-27
 
+Implemented demo readiness snapshot trend summary from `docs/plans/221-demo-readiness-snapshot-trend.md`.
+
+Changes:
+
+- Added admin-protected `GET /api/demo/readiness-snapshots/summary`.
+- Added a read-only trend service that compares the two latest readiness snapshots and returns `NO_BASELINE`, `IMPROVING`, `STABLE`, or `REGRESSING`.
+- Returned latest and previous snapshot ids, readiness statuses, ready/warning/blocked deltas, next action, and copyable Markdown trend report.
+- Added dashboard API helper, App refresh wiring, post-archive trend refresh, and a `Snapshot trend` section in `Demo readiness` with a copyable Markdown report.
+- Updated README, product spec, frontend design docs, AI infrastructure target, the plan document, and this execution log.
+
+Validation so far:
+
+- `mvn -pl PatchPilot -Dtest=DemoReadinessSnapshotTrendServiceTests,DemoReadinessControllerTests test`: first failed because `DemoReadinessSnapshotTrendStatus`, `DemoReadinessSnapshotTrendVo`, and `DemoReadinessSnapshotTrendService` did not exist; then passed after backend implementation, 30 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts src/dashboard/components/DemoReadinessPanel.test.tsx src/App.test.tsx --reporter=basic`: first failed because `getDemoReadinessSnapshotTrend` and the dashboard `Snapshot trend` section did not exist; then passed after frontend implementation, 152 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed after full backend regression verification, 775 tests run, 0 failures.
+- `npm test -- --reporter=basic`: passed after full frontend regression verification, 26 test files and 273 tests run.
+- `npm run build`: passed after TypeScript and production Vite build verification.
+- `git diff --check`: passed.
+
 Implemented demo readiness snapshot archive from `docs/plans/220-demo-readiness-snapshot-archive.md`.
 
 Changes:
