@@ -49,6 +49,7 @@ public class DemoSessionReportService {
         appendRecentTask(report, snapshot.evidenceBundle().recentTask());
         appendList(report, "Operator Checklist", snapshot.operatorChecklist(), "No operator checklist items recorded.");
         appendPreparedLaunchCommands(report, request.preparedLaunchCommands());
+        appendArchivedLaunchOutcomes(report, request.archivedLaunchOutcomes());
         appendScriptSteps(report, snapshot.script().steps());
         appendList(report, "Health Contract", withReportHealthContract(snapshot.healthContract()), "No health contract recorded.");
         appendList(report, "Next Actions", snapshot.nextActions(), "No next actions recorded.");
@@ -103,6 +104,42 @@ public class DemoSessionReportService {
         });
     }
 
+    private static void appendArchivedLaunchOutcomes(
+            StringBuilder report,
+            List<DemoArchivedLaunchOutcomeRequestDto> archivedLaunchOutcomes
+    ) {
+        report.append("\n## Archived Launch Outcomes\n\n");
+        List<DemoArchivedLaunchOutcomeRequestDto> outcomes = archivedLaunchOutcomes.stream()
+                .filter(outcome -> !isBlank(outcome.triggerComment()))
+                .limit(5)
+                .toList();
+        if (outcomes.isEmpty()) {
+            report.append("- No archived launch outcomes recorded for this browser session.\n");
+            return;
+        }
+
+        outcomes.forEach(outcome -> {
+            report.append("- `").append(outcome.triggerComment().trim()).append("`\n")
+                    .append("  - Target: `")
+                    .append(valueOrNone(outcome.repositoryOwner()))
+                    .append("/")
+                    .append(valueOrNone(outcome.repositoryName()))
+                    .append("#")
+                    .append(outcome.issueNumber() == null ? "none" : outcome.issueNumber())
+                    .append("`\n")
+                    .append("  - Trigger user: `").append(valueOrNone(outcome.triggerUser())).append("`\n")
+                    .append("  - Task: `").append(valueOrNone(outcome.taskId())).append("` (`")
+                    .append(valueOrNone(outcome.taskStatus()))
+                    .append("`)\n")
+                    .append("  - Pull Request: ").append(valueOrNone(outcome.pullRequestUrl())).append("\n")
+                    .append("  - Archived at: `").append(valueOrNone(outcome.archivedAt())).append("`\n");
+            String summary = summarizeOutcomeReport(outcome.report());
+            if (!isBlank(summary)) {
+                report.append("  - Report: `").append(summary).append("`\n");
+            }
+        });
+    }
+
     private static void appendScriptSteps(StringBuilder report, List<DemoScriptStepVo> steps) {
         report.append("\n## Script Steps\n\n");
         if (steps.isEmpty()) {
@@ -144,5 +181,20 @@ public class DemoSessionReportService {
 
     private static boolean isBlank(String value) {
         return value == null || value.isBlank();
+    }
+
+    private static String summarizeOutcomeReport(String report) {
+        if (isBlank(report)) {
+            return "";
+        }
+        String summary = report.replace("`", "'")
+                .replace("\r", "")
+                .replace("\n", " ")
+                .replaceAll("\\s+", " ")
+                .trim();
+        if (summary.length() <= 280) {
+            return summary;
+        }
+        return summary.substring(0, 277) + "...";
     }
 }

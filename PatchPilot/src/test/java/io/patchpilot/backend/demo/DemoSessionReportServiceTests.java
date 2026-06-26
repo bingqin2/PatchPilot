@@ -76,7 +76,7 @@ class DemoSessionReportServiceTests {
                         null,
                         "2026-06-26T01:05:00Z"
                 )
-        ));
+        ), List.of());
 
         String report = service.getSessionReport(request);
 
@@ -91,6 +91,53 @@ class DemoSessionReportServiceTests {
                 .contains("  - Target: `bingqin2/PatchPilot#2`")
                 .contains("  - Operation: `touch` on `docs/history.md`")
                 .contains("  - Saved at: `2026-06-26T01:05:00Z`");
+    }
+
+    @Test
+    void should_include_archived_launch_outcomes_when_report_context_provides_them() {
+        DemoSessionReportService service = new DemoSessionReportService(() -> snapshot());
+        DemoSessionReportRequestDto request = new DemoSessionReportRequestDto(List.of(), List.of(
+                new DemoArchivedLaunchOutcomeRequestDto(
+                        "/agent fix replace docs/demo.md PatchPilot smoke test",
+                        "bingqin2",
+                        "PatchPilot",
+                        1L,
+                        "bingqin2",
+                        "task-1",
+                        "COMPLETED",
+                        "https://github.com/bingqin2/PatchPilot/pull/42",
+                        "2026-06-26T01:10:00Z",
+                        "# PatchPilot Demo Launch Outcome Report\n\n- Task: `task-1`\n- Pull Request: https://github.com/bingqin2/PatchPilot/pull/42"
+                ),
+                new DemoArchivedLaunchOutcomeRequestDto(
+                        "/agent fix touch docs/history.md",
+                        "bingqin2",
+                        "PatchPilot",
+                        2L,
+                        "bingqin2",
+                        null,
+                        "PENDING",
+                        null,
+                        "2026-06-26T01:12:00Z",
+                        ""
+                )
+        ));
+
+        String report = service.getSessionReport(request);
+
+        assertThat(report)
+                .contains("## Archived Launch Outcomes")
+                .contains("- `/agent fix replace docs/demo.md PatchPilot smoke test`")
+                .contains("  - Target: `bingqin2/PatchPilot#1`")
+                .contains("  - Task: `task-1` (`COMPLETED`)")
+                .contains("  - Pull Request: https://github.com/bingqin2/PatchPilot/pull/42")
+                .contains("  - Archived at: `2026-06-26T01:10:00Z`")
+                .contains("  - Report: `# PatchPilot Demo Launch Outcome Report - Task: 'task-1' - Pull Request: https://github.com/bingqin2/PatchPilot/pull/42`")
+                .contains("- `/agent fix touch docs/history.md`")
+                .contains("  - Target: `bingqin2/PatchPilot#2`")
+                .contains("  - Task: `none` (`PENDING`)")
+                .contains("  - Pull Request: none")
+                .contains("  - Archived at: `2026-06-26T01:12:00Z`");
     }
 
     @Test

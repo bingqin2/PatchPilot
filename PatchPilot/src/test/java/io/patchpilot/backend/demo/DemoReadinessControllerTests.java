@@ -543,6 +543,44 @@ class DemoReadinessControllerTests {
     }
 
     @Test
+    void should_return_demo_session_report_markdown_with_archived_launch_outcomes() throws Exception {
+        when(demoSessionReportService.getSessionReport(argThat(request ->
+                request.archivedLaunchOutcomes().size() == 1
+                        && request.archivedLaunchOutcomes().get(0).taskId().equals("task-1")
+                        && request.archivedLaunchOutcomes().get(0).pullRequestUrl().equals("https://github.com/bingqin2/PatchPilot/pull/42")
+        ))).thenReturn("""
+                # PatchPilot Demo Session Report
+
+                ## Archived Launch Outcomes
+                """);
+
+        mockMvc.perform(post("/api/demo/session-report")
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "preparedLaunchCommands": [],
+                                  "archivedLaunchOutcomes": [
+                                    {
+                                      "triggerComment": "/agent fix replace docs/demo.md PatchPilot smoke test",
+                                      "repositoryOwner": "bingqin2",
+                                      "repositoryName": "PatchPilot",
+                                      "issueNumber": 1,
+                                      "triggerUser": "bingqin2",
+                                      "taskId": "task-1",
+                                      "taskStatus": "COMPLETED",
+                                      "pullRequestUrl": "https://github.com/bingqin2/PatchPilot/pull/42",
+                                      "archivedAt": "2026-06-26T01:10:00Z",
+                                      "report": "# PatchPilot Demo Launch Outcome Report"
+                                    }
+                                  ]
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("Archived Launch Outcomes")));
+    }
+
+    @Test
     void should_download_demo_session_report_with_prepared_launch_commands() throws Exception {
         when(demoSessionReportService.getSessionReport(any(DemoSessionReportRequestDto.class))).thenReturn("""
                 # PatchPilot Demo Session Report

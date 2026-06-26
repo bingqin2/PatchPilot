@@ -100,7 +100,7 @@ The current implementation target is local self-hosted development first. Hosted
 - Operators should be able to copy a final demo launch package after launch preflight that includes the GitHub issue URL, exact `/agent fix` comment, readiness and trigger-gate evidence, prepared command history from the current browser, and next actions without creating a task or mutating GitHub.
 - Operators should be able to track prepared demo launch commands after posting them by correlating browser-local command history with recent webhook delivery, task, and Pull Request evidence without creating tasks or mutating GitHub.
 - Operators should be able to copy a Markdown outcome report for a tracked demo launch that includes the exact command, webhook outcome, task result, Pull Request URL, and next action without creating tasks or mutating GitHub.
-- Operators should be able to save recent demo launch outcome reports in browser-local history, reopen task and Pull Request links from that archive, copy archived reports again, and clear the archive without creating tasks or mutating GitHub.
+- Operators should be able to save recent demo launch outcome reports in browser-local history, include those saved outcomes in demo session reports, reopen task and Pull Request links from that archive, copy archived reports again, and clear the archive without creating tasks or mutating GitHub.
 - Task execution must pass a repository language-adapter preflight after workspace preparation and before model patch generation.
 - Operators should be able to run a local repository preflight diagnostic that uses the same language adapter registry without creating a task, running tests, mutating Git, or opening a Pull Request.
 - Local repository preflight diagnostics must reject paths outside configured allowed roots before adapter detection.
@@ -310,11 +310,11 @@ MVP frontend scope:
 - Inspect tool-call summaries.
 - Inspect verification output.
 - Inspect a single demo evidence bundle before posting a live `/agent fix` comment.
-- Inspect a single demo session snapshot that combines evidence, prepared launch commands from browser-local history, script, runbook, checklist, health contract, share summary, and next actions.
+- Inspect a single demo session snapshot that combines evidence, prepared launch commands from browser-local history, archived launch outcomes from browser-local history, script, runbook, checklist, health contract, share summary, and next actions.
 - Follow a read-only demo script that gives ordered operator actions, verification commands, troubleshooting targets, and health-contract guarantees before and during a live smoke run.
 - Copy a Markdown demo runbook generated from the current evidence bundle.
-- Copy or download a Markdown demo session report generated from the current session snapshot and current browser's prepared demo launch commands.
-- Archive the current demo session report into a recent list, including prepared demo launch command context when supplied by the dashboard, and copy or download archived Markdown reports during or after a live demo. Database-backed local profiles should persist these archives across backend restarts.
+- Copy or download a Markdown demo session report generated from the current session snapshot, current browser's prepared demo launch commands, and current browser's archived launch outcomes.
+- Archive the current demo session report into a recent list, including prepared demo launch command and archived outcome context when supplied by the dashboard, and copy or download archived Markdown reports during or after a live demo. Database-backed local profiles should persist these archives across backend restarts.
 - Inspect queue worker readiness, last poll age, and operator action before a live issue-to-PR demo.
 - Evaluate a manual `/agent fix` trigger before creating a task and see the gate decisions plus next operator action.
 - Evaluate a pasted GitHub webhook payload before redelivery and see whether the temporary URL, webhook secret, event type, action, and `/agent fix` comment shape look correct.
@@ -358,10 +358,10 @@ PatchPilot MVP is successful when:
 - A successful task creates a Pull Request.
 - GitHub issue comments and Pull Request bodies can link back to the matching dashboard task detail page when the operator configures a public Dashboard URL.
 - An operator can verify demo readiness through a single evidence bundle covering setup, safety, queue, webhook, and recent PR signals.
-- An operator can inspect a single demo session snapshot before or after a live run without manually assembling evidence, prepared launch commands, script, runbook, checklist, and health-contract responses.
+- An operator can inspect a single demo session snapshot before or after a live run without manually assembling evidence, prepared launch commands, archived launch outcomes, script, runbook, checklist, and health-contract responses.
 - An operator can follow an ordered demo script whose endpoint is explicitly read-only and whose steps point to dashboard evidence and curl verification commands.
 - An operator can copy a Markdown runbook that explains the current demo status and next actions without manually assembling API responses.
-- An operator can copy or download a Markdown session report that includes the snapshot, prepared launch commands from the current browser, script, checklist, health contract, next actions, and runbook.
+- An operator can copy or download a Markdown session report that includes the snapshot, prepared launch commands from the current browser, archived launch outcomes from the current browser, script, checklist, health contract, next actions, and runbook.
 - An operator can copy an adapter readiness report that proves current multi-language coverage and highlights fixture drift before a live run.
 - An operator can see whether each adapter's verification executable is available in the current backend runtime before a live run.
 - An operator can see missing adapter verification executables reflected in the demo readiness gate instead of only in the adapter report.

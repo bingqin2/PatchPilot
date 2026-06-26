@@ -12,6 +12,7 @@ interface DemoLaunchTrackerPanelProps {
   preparedLaunchCommands: DemoPreparedLaunchCommand[];
   tasks: FixTask[];
   webhookDeliveries: WebhookDeliveryDiagnostic[];
+  onOutcomeArchiveChange?: () => void;
 }
 
 interface TrackedLaunch {
@@ -25,7 +26,8 @@ interface TrackedLaunch {
 export function DemoLaunchTrackerPanel({
   preparedLaunchCommands,
   tasks,
-  webhookDeliveries
+  webhookDeliveries,
+  onOutcomeArchiveChange
 }: DemoLaunchTrackerPanelProps) {
   const [archive, setArchive] = useState<DemoLaunchOutcomeArchiveItem[]>(loadDemoLaunchOutcomeArchive);
   const trackedLaunches = preparedLaunchCommands.slice(0, 5).map((command) => trackLaunch(command, tasks, webhookDeliveries));
@@ -35,6 +37,7 @@ export function DemoLaunchTrackerPanel({
     setArchive((currentArchive) => {
       const updatedArchive = addDemoLaunchOutcomeArchiveItem(currentArchive, item);
       persistDemoLaunchOutcomeArchive(updatedArchive);
+      onOutcomeArchiveChange?.();
       return updatedArchive;
     });
   }
@@ -42,6 +45,7 @@ export function DemoLaunchTrackerPanel({
   function clearArchive() {
     setArchive([]);
     persistDemoLaunchOutcomeArchive([]);
+    onOutcomeArchiveChange?.();
   }
 
   return (

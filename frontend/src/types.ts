@@ -450,6 +450,20 @@ export interface DemoPreparedLaunchCommand {
 
 export interface DemoSessionReportInput {
   preparedLaunchCommands: DemoPreparedLaunchCommand[];
+  archivedLaunchOutcomes: DemoArchivedLaunchOutcome[];
+}
+
+export interface DemoArchivedLaunchOutcome {
+  triggerComment: string;
+  repositoryOwner: string;
+  repositoryName: string;
+  issueNumber: number;
+  triggerUser: string;
+  taskId: string | null;
+  taskStatus: TaskStatus | 'PENDING';
+  pullRequestUrl: string | null;
+  archivedAt: string;
+  report: string;
 }
 
 export interface DemoSessionArchive {

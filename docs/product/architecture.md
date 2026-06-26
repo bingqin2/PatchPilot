@@ -331,8 +331,8 @@ Responsibilities:
 - Expose a demo session snapshot that combines one current evidence bundle, script, runbook, operator checklist, health contract, share summary, and next actions.
 - Expose a demo script that turns the current evidence bundle into ordered operator actions, verification commands, success criteria, troubleshooting panels, and a health contract.
 - Format the evidence bundle as copyable Markdown for operator handoff without adding side effects.
-- Format the session snapshot as copyable or downloadable Markdown for review notes, issue comments, saved files, or handoff messages without adding side effects. Dashboard clients may supply browser-local prepared launch commands as report context; the backend includes that bounded context in the generated Markdown but does not persist browser history separately.
-- Store a capped archive of recent demo session reports, including supplied prepared launch command context, so an operator can keep copyable and downloadable handoff records during a live demo. The default profile may keep archives in memory, while database-backed profiles persist them through MySQL.
+- Format the session snapshot as copyable or downloadable Markdown for review notes, issue comments, saved files, or handoff messages without adding side effects. Dashboard clients may supply browser-local prepared launch commands and archived launch outcomes as report context; the backend includes that bounded context in the generated Markdown but does not persist browser history separately.
+- Store a capped archive of recent demo session reports, including supplied prepared launch command and archived outcome context, so an operator can keep copyable and downloadable handoff records during a live demo. The default profile may keep archives in memory, while database-backed profiles persist them through MySQL.
 - Treat adapter fixture drift as blocking because repository support may be misdetected.
 - Treat queue failures, delayed work, running work, missing model cost configuration, or missing recent PR evidence as operator attention items.
 - Return concrete next actions for the dashboard and curl users.

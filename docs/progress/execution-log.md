@@ -4,6 +4,30 @@ This file records dated implementation progress, validation commands, and import
 
 ## 2026-06-26
 
+Implemented demo launch outcome session integration from `docs/plans/209-demo-launch-outcome-session-integration.md`.
+
+Changes:
+
+- Added `archivedLaunchOutcomes` to demo session report requests and rendered an `Archived Launch Outcomes` Markdown section.
+- Loaded browser-local `patchpilot.demoLaunchOutcomeArchive` in the dashboard coordinator and passed it into demo session report copy, download, and archive actions.
+- Rendered archived launch outcomes in the demo session snapshot panel so operators can inspect prepared commands and observed outcomes in one place.
+- Notified the session report context when the demo launch tracker archives or clears local outcome reports.
+- Sanitized embedded outcome-report summaries before placing them inside inline Markdown.
+- Updated README, product docs, the plan document, and this execution log.
+
+Validation:
+
+- `npm test -- --run src/api.test.ts src/dashboard/components/DemoSessionSnapshotPanel.test.tsx --reporter=basic`: first failed because session report actions omitted archived outcomes; then passed after wiring the frontend context, 63 tests run, 0 failures.
+- `mvn -pl PatchPilot -Dtest=DemoSessionReportServiceTests test`: first failed because `DemoArchivedLaunchOutcomeRequestDto` and the expanded report request did not exist.
+- `mvn -pl PatchPilot -Dtest=DemoSessionReportServiceTests,DemoReadinessControllerTests,DemoSessionArchiveServiceTests test`: passed after backend DTO, controller binding, Markdown rendering, and archive-service coverage, 26 tests run, 0 failures.
+- `npm test -- --run src/App.test.tsx src/api.test.ts src/dashboard/components/DemoSessionSnapshotPanel.test.tsx src/dashboard/components/DemoLaunchTrackerPanel.test.tsx --reporter=basic`: passed after App-level localStorage handoff coverage, 136 tests run, 0 failures.
+- `npm test -- --reporter=basic`: passed after full frontend regression verification, 25 test files and 237 tests run.
+- `npm run build`: passed after TypeScript and production Vite build verification.
+- `mvn -pl PatchPilot test -q`: passed after full backend regression verification.
+- `git diff --check`: passed.
+
+## 2026-06-26
+
 Implemented demo launch history outcome archive from `docs/plans/208-demo-launch-history-outcome-archive.md`.
 
 Changes:
