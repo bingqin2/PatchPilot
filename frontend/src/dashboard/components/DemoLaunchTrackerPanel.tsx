@@ -61,6 +61,14 @@ function TrackedLaunchRow({ launch }: { launch: TrackedLaunch }) {
       <div className="demo-launch-tracker-links">
         {launch.task ? <a href={`/tasks/${launch.task.id}`}>Open task {launch.task.id}</a> : null}
         {launch.task?.pullRequestUrl ? <a href={launch.task.pullRequestUrl}>Open Pull Request</a> : null}
+        <button
+          className="secondary-button"
+          type="button"
+          onClick={() => void copyOutcomeReport(launch)}
+          aria-label={`Copy outcome report for ${launch.command.triggerComment}`}
+        >
+          Copy outcome report
+        </button>
       </div>
       <p>{launch.nextAction}</p>
     </article>
@@ -171,4 +179,37 @@ function taskStatusTone(launch: TrackedLaunch): 'completed' | 'failed' | 'pendin
 
 function repositoryLabel(command: DemoPreparedLaunchCommand) {
   return `${command.repositoryOwner}/${command.repositoryName} #${command.issueNumber}`;
+}
+
+async function copyOutcomeReport(launch: TrackedLaunch) {
+  await navigator.clipboard?.writeText(buildDemoLaunchOutcomeReport(launch));
+}
+
+function buildDemoLaunchOutcomeReport(launch: TrackedLaunch) {
+  return [
+    '# PatchPilot Demo Launch Outcome Report',
+    '',
+    `- Repository: \`${launch.command.repositoryOwner}/${launch.command.repositoryName}\``,
+    `- Issue: \`#${launch.command.issueNumber}\``,
+    `- Trigger user: \`${launch.command.triggerUser}\``,
+    `- Command: \`${launch.command.triggerComment}\``,
+    `- Prepared at: \`${launch.command.savedAt}\``,
+    `- Launch status: \`${launch.status}\``,
+    '',
+    '## Webhook Evidence',
+    `- Webhook status: \`${launch.webhookDelivery?.status ?? 'NOT_RECEIVED'}\``,
+    `- Webhook delivery id: \`${launch.webhookDelivery?.deliveryId ?? 'none'}\``,
+    `- Webhook outcome: \`${launch.webhookDelivery?.outcomeType ?? 'none'}\``,
+    `- Webhook message: ${launch.webhookDelivery?.message ?? 'No webhook delivery matched this prepared command.'}`,
+    '',
+    '## Task Evidence',
+    `- Task: \`${launch.task?.id ?? 'none'}\``,
+    `- Task status: \`${launch.task?.status ?? 'PENDING'}\``,
+    `- Failure reason: ${launch.task?.failureReason ?? 'none'}`,
+    `- Completed at: \`${launch.task?.completedAt ?? 'none'}\``,
+    `- Pull Request: ${launch.task?.pullRequestUrl ?? 'none'}`,
+    '',
+    '## Operator Action',
+    `- Next action: ${launch.nextAction}`
+  ].join('\n');
 }
