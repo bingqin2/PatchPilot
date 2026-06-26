@@ -141,6 +141,58 @@ class DemoSessionReportServiceTests {
     }
 
     @Test
+    void should_format_demo_handoff_package_with_session_context_and_outcome_evidence() {
+        DemoSessionReportService service = new DemoSessionReportService(() -> snapshot());
+        DemoSessionReportRequestDto request = new DemoSessionReportRequestDto(List.of(
+                new DemoPreparedLaunchCommandRequestDto(
+                        "/agent fix replace docs/demo.md PatchPilot smoke test",
+                        "bingqin2",
+                        "PatchPilot",
+                        1L,
+                        "bingqin2",
+                        "replace",
+                        "docs/demo.md",
+                        "PatchPilot smoke test",
+                        "2026-06-26T01:00:00Z"
+                )
+        ), List.of(
+                new DemoArchivedLaunchOutcomeRequestDto(
+                        "/agent fix replace docs/demo.md PatchPilot smoke test",
+                        "bingqin2",
+                        "PatchPilot",
+                        1L,
+                        "bingqin2",
+                        "task-1",
+                        "COMPLETED",
+                        "https://github.com/bingqin2/PatchPilot/pull/42",
+                        "2026-06-26T01:10:00Z",
+                        "# PatchPilot Demo Launch Outcome Report\n\n- Task: `task-1`"
+                )
+        ));
+
+        String packageReport = service.getHandoffPackage(request);
+
+        assertThat(packageReport)
+                .contains("# PatchPilot Demo Handoff Package")
+                .contains("- Session: `demo-session-20260624T003000Z`")
+                .contains("- Demo status: `READY`")
+                .contains("- Recent task: `task-1` (`COMPLETED`)")
+                .contains("- Recent Pull Request: https://github.com/bingqin2/PatchPilot/pull/42")
+                .contains("- Prepared commands: `1`")
+                .contains("- Archived launch outcomes: `1`")
+                .contains("## Handoff Summary")
+                .contains("- Demo evidence bundle is ready.")
+                .contains("- Status READY; recent task task-1; recent PR https://github.com/bingqin2/PatchPilot/pull/42.")
+                .contains("## Prepared Launch Commands")
+                .contains("- `/agent fix replace docs/demo.md PatchPilot smoke test`")
+                .contains("## Archived Launch Outcomes")
+                .contains("- `task-1` (`COMPLETED`) -> https://github.com/bingqin2/PatchPilot/pull/42")
+                .contains("## Embedded Session Report")
+                .contains("# PatchPilot Demo Session Report")
+                .contains("GET /api/demo/handoff-package is read-only: it does not create tasks, call the model, run tests, mutate Git, or write to GitHub.");
+    }
+
+    @Test
     void should_render_empty_lists_and_missing_evidence_as_none() {
         DemoSessionReportService service = new DemoSessionReportService(() -> new DemoSessionSnapshotVo(
                 "demo-session-20260624T003000Z",

@@ -1355,6 +1355,9 @@ beforeEach(() => {
     if (url === '/api/demo/session-report') {
       return jsonResponse('# PatchPilot Demo Session Report\n\n- Status: `READY`');
     }
+    if (url === '/api/demo/handoff-package') {
+      return jsonResponse('# PatchPilot Demo Handoff Package\n\n- Status: `READY`');
+    }
     if (url === '/api/demo/session-archives' && init?.method === 'POST') {
       return jsonResponse(demoSessionArchive);
     }
@@ -2324,6 +2327,52 @@ test('copies demo session report from backend API', async () => {
   });
   expect(writeText).toHaveBeenCalledWith('# PatchPilot Demo Session Report\n\n- Status: `READY`');
   expect(within(sessionPanel).getByText('Demo session report copied')).toBeInTheDocument();
+});
+
+test('copies demo handoff package from backend API with browser evidence context', async () => {
+  const user = userEvent.setup();
+  const fetchMock = vi.mocked(fetch);
+  const writeText = vi.fn().mockResolvedValue(undefined);
+  Object.defineProperty(navigator, 'clipboard', {
+    configurable: true,
+    value: { writeText }
+  });
+  localStorage.setItem('patchpilot.demoLaunchOutcomeArchive', JSON.stringify([
+    {
+      id: 'archived-outcome-1',
+      archivedAt: '2026-06-26T02:00:00.000Z',
+      repositoryOwner: 'bingqin2',
+      repositoryName: 'PatchPilot',
+      issueNumber: 1,
+      triggerUser: 'bingqin2',
+      triggerComment: '/agent fix replace docs/demo.md PatchPilot smoke test',
+      taskId: 'task-1',
+      taskStatus: 'COMPLETED',
+      pullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+      report: '# PatchPilot Demo Launch Outcome Report\n\n- Task: `task-1`\n- Pull Request: https://github.com/bingqin2/PatchPilot/pull/8'
+    }
+  ]));
+
+  render(<App />);
+
+  const commandPanel = await screen.findByRole('region', { name: 'Demo launch command composer' });
+  await user.click(within(commandPanel).getByRole('button', { name: 'Generate command' }));
+
+  const sessionPanel = await screen.findByRole('region', { name: 'Demo session snapshot' });
+  await user.click(within(sessionPanel).getByRole('button', { name: 'Copy handoff package' }));
+
+  await waitFor(() => expect(handoffPackageRequestBody(fetchMock).preparedLaunchCommands[0].triggerComment).toBe(
+    '/agent fix replace docs/demo.md PatchPilot smoke test'
+  ));
+  const reportInput = handoffPackageRequestBody(fetchMock);
+  expect(reportInput.archivedLaunchOutcomes[0]).toMatchObject({
+    triggerComment: '/agent fix replace docs/demo.md PatchPilot smoke test',
+    taskId: 'task-1',
+    taskStatus: 'COMPLETED',
+    pullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8'
+  });
+  expect(writeText).toHaveBeenCalledWith('# PatchPilot Demo Handoff Package\n\n- Status: `READY`');
+  expect(within(sessionPanel).getByText('Demo handoff package copied')).toBeInTheDocument();
 });
 
 test('creates a manual task from the dashboard and refreshes task data', async () => {
@@ -3956,6 +4005,16 @@ function sessionReportRequestBody(fetchMock: ReturnType<typeof vi.mocked<typeof 
     throw new Error('session report POST was not called');
   }
   return JSON.parse(sessionReportCall[1]?.body as string);
+}
+
+function handoffPackageRequestBody(fetchMock: ReturnType<typeof vi.mocked<typeof fetch>>) {
+  const handoffPackageCall = fetchMock.mock.calls.find(([url, init]) => (
+    url.toString() === '/api/demo/handoff-package' && init?.method === 'POST'
+  ));
+  if (!handoffPackageCall) {
+    throw new Error('handoff package POST was not called');
+  }
+  return JSON.parse(handoffPackageCall[1]?.body as string);
 }
 
 function taskPage(items: unknown[], limit = 50, offset = 0, hasMore = false, total = items.length) {

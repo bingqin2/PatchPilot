@@ -9,6 +9,7 @@ import {
   createTask,
   createTriggerQuarantine,
   downloadDemoSessionArchiveReport,
+  downloadDemoHandoffPackage,
   downloadDemoSessionReport,
   evaluateTrigger,
   evaluateWebhookPayloadDiagnostic,
@@ -16,6 +17,7 @@ import {
   getConfigurationSummary,
   getDashboardBootstrap,
   getDemoEvidenceBundle,
+  getDemoHandoffPackage,
   getDemoSessionSnapshot,
   getDemoSessionReport,
   getDemoScript,
@@ -823,6 +825,10 @@ export default function App() {
   const handleDownloadDemoSessionReport = useCallback((input: DemoSessionReportInput) => (
     downloadDemoSessionReport(input)
   ), []);
+  const handleCopyDemoHandoffPackage = useCallback((input: DemoSessionReportInput) => getDemoHandoffPackage(input), []);
+  const handleDownloadDemoHandoffPackage = useCallback((input: DemoSessionReportInput) => (
+    downloadDemoHandoffPackage(input)
+  ), []);
   const handleDownloadDemoSessionArchiveReport = useCallback((archiveId: string) => (
     downloadDemoSessionArchiveReport(archiveId)
   ), []);
@@ -1127,6 +1133,8 @@ export default function App() {
         onCopyReport={handleCopyDemoSessionReport}
         onDownloadReport={handleDownloadDemoSessionReport}
         onArchiveSession={handleArchiveDemoSession}
+        onCopyHandoffPackage={handleCopyDemoHandoffPackage}
+        onDownloadHandoffPackage={handleDownloadDemoHandoffPackage}
         onDownloadArchiveReport={handleDownloadDemoSessionArchiveReport}
       />
 

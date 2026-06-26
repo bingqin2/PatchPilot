@@ -123,6 +123,19 @@ public class DemoReadinessController {
         );
     }
 
+    @PostMapping("/handoff-package")
+    public ApiResponse<String> getHandoffPackage(@RequestBody(required = false) DemoSessionReportRequestDto request) {
+        return ApiResponse.ok(demoSessionReportService.getHandoffPackage(normalizeReportRequest(request)));
+    }
+
+    @PostMapping(value = "/handoff-package/download", produces = "text/markdown;charset=UTF-8")
+    public ResponseEntity<String> downloadHandoffPackage(@RequestBody(required = false) DemoSessionReportRequestDto request) {
+        return markdownAttachment(
+                "patchpilot-demo-handoff-package.md",
+                demoSessionReportService.getHandoffPackage(normalizeReportRequest(request))
+        );
+    }
+
     @PostMapping("/session-archives")
     public ApiResponse<DemoSessionArchiveVo> archiveCurrentSession(
             @RequestBody(required = false) DemoSessionReportRequestDto request

@@ -614,6 +614,79 @@ class DemoReadinessControllerTests {
     }
 
     @Test
+    void should_return_demo_handoff_package_with_browser_context() throws Exception {
+        when(demoSessionReportService.getHandoffPackage(argThat(request ->
+                request.preparedLaunchCommands().size() == 1
+                        && request.archivedLaunchOutcomes().size() == 1
+                        && request.archivedLaunchOutcomes().get(0).taskId().equals("task-1")
+        ))).thenReturn("""
+                # PatchPilot Demo Handoff Package
+
+                ## Handoff Summary
+                """);
+
+        mockMvc.perform(post("/api/demo/handoff-package")
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "preparedLaunchCommands": [
+                                    {
+                                      "triggerComment": "/agent fix replace docs/demo.md PatchPilot smoke test",
+                                      "repositoryOwner": "bingqin2",
+                                      "repositoryName": "PatchPilot",
+                                      "issueNumber": 1,
+                                      "triggerUser": "bingqin2",
+                                      "operation": "replace",
+                                      "targetPath": "docs/demo.md",
+                                      "replacementText": "PatchPilot smoke test",
+                                      "savedAt": "2026-06-26T01:00:00Z"
+                                    }
+                                  ],
+                                  "archivedLaunchOutcomes": [
+                                    {
+                                      "triggerComment": "/agent fix replace docs/demo.md PatchPilot smoke test",
+                                      "repositoryOwner": "bingqin2",
+                                      "repositoryName": "PatchPilot",
+                                      "issueNumber": 1,
+                                      "triggerUser": "bingqin2",
+                                      "taskId": "task-1",
+                                      "taskStatus": "COMPLETED",
+                                      "pullRequestUrl": "https://github.com/bingqin2/PatchPilot/pull/42",
+                                      "archivedAt": "2026-06-26T01:10:00Z",
+                                      "report": "# PatchPilot Demo Launch Outcome Report"
+                                    }
+                                  ]
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("# PatchPilot Demo Handoff Package")));
+    }
+
+    @Test
+    void should_download_demo_handoff_package_with_browser_context() throws Exception {
+        when(demoSessionReportService.getHandoffPackage(any(DemoSessionReportRequestDto.class))).thenReturn("""
+                # PatchPilot Demo Handoff Package
+
+                ## Handoff Summary
+                """);
+
+        mockMvc.perform(post("/api/demo/handoff-package/download")
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "preparedLaunchCommands": [],
+                                  "archivedLaunchOutcomes": []
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("attachment;")))
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("patchpilot-demo-handoff-package.md")))
+                .andExpect(content().contentTypeCompatibleWith("text/markdown"))
+                .andExpect(content().string(containsString("# PatchPilot Demo Handoff Package")));
+    }
+
+    @Test
     void should_archive_current_demo_session_report() throws Exception {
         when(demoSessionArchiveService.archiveCurrentSession(any(DemoSessionReportRequestDto.class))).thenReturn(new DemoSessionArchiveVo(
                 "archive-1",
