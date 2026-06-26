@@ -2,6 +2,7 @@ import { Archive, Copy, Download } from 'lucide-react';
 import { useState } from 'react';
 import type {
   DemoArchivedLaunchOutcome,
+  DemoHandoffPackageArchive,
   DemoPreparedLaunchCommand,
   DemoReadinessSnapshotTrendStatus,
   DemoReadinessStatus,
@@ -16,14 +17,18 @@ interface DemoSessionSnapshotPanelProps {
   preparedLaunchCommands: DemoPreparedLaunchCommand[];
   archivedLaunchOutcomes: DemoArchivedLaunchOutcome[];
   archives: DemoSessionArchive[];
+  handoffPackageArchives: DemoHandoffPackageArchive[];
   error: string | null;
   archiveError: string | null;
+  handoffPackageArchiveError: string | null;
   onCopyReport: (input: DemoSessionReportInput) => Promise<string>;
   onDownloadReport: (input: DemoSessionReportInput) => Promise<Blob>;
   onArchiveSession: (input: DemoSessionReportInput) => Promise<DemoSessionArchive>;
   onCopyHandoffPackage: (input: DemoSessionReportInput) => Promise<string>;
   onDownloadHandoffPackage: (input: DemoSessionReportInput) => Promise<Blob>;
+  onArchiveHandoffPackage: (input: DemoSessionReportInput) => Promise<DemoHandoffPackageArchive>;
   onDownloadArchiveReport: (archiveId: string) => Promise<Blob>;
+  onDownloadHandoffPackageArchiveReport: (archiveId: string) => Promise<Blob>;
 }
 
 export function DemoSessionSnapshotPanel({
@@ -31,14 +36,18 @@ export function DemoSessionSnapshotPanel({
   preparedLaunchCommands,
   archivedLaunchOutcomes,
   archives,
+  handoffPackageArchives,
   error,
   archiveError,
+  handoffPackageArchiveError,
   onCopyReport,
   onDownloadReport,
   onArchiveSession,
   onCopyHandoffPackage,
   onDownloadHandoffPackage,
-  onDownloadArchiveReport
+  onArchiveHandoffPackage,
+  onDownloadArchiveReport,
+  onDownloadHandoffPackageArchiveReport
 }: DemoSessionSnapshotPanelProps) {
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
   const [downloadStatus, setDownloadStatus] = useState<string | null>(null);
@@ -104,6 +113,15 @@ export function DemoSessionSnapshotPanel({
     }
   }
 
+  async function archiveHandoffPackage() {
+    try {
+      await onArchiveHandoffPackage(reportInput);
+      setArchiveStatus('Demo handoff package archived');
+    } catch {
+      setArchiveStatus('Archive failed');
+    }
+  }
+
   async function copyArchivedReport(archive: DemoSessionArchive) {
     try {
       await navigator.clipboard.writeText(archive.report);
@@ -118,6 +136,25 @@ export function DemoSessionSnapshotPanel({
       const report = await onDownloadArchiveReport(archive.id);
       downloadMarkdown(report, `patchpilot-demo-session-${archive.id}.md`);
       setDownloadStatus('Archived session report downloaded');
+    } catch {
+      setDownloadStatus('Download failed');
+    }
+  }
+
+  async function copyArchivedHandoffPackage(archive: DemoHandoffPackageArchive) {
+    try {
+      await navigator.clipboard.writeText(archive.report);
+      setCopyStatus('Archived handoff package copied');
+    } catch {
+      setCopyStatus('Copy failed');
+    }
+  }
+
+  async function downloadArchivedHandoffPackage(archive: DemoHandoffPackageArchive) {
+    try {
+      const report = await onDownloadHandoffPackageArchiveReport(archive.id);
+      downloadMarkdown(report, `patchpilot-demo-handoff-package-${archive.id}.md`);
+      setDownloadStatus('Archived handoff package downloaded');
     } catch {
       setDownloadStatus('Download failed');
     }
@@ -156,6 +193,10 @@ export function DemoSessionSnapshotPanel({
               <Archive size={14} />
               Archive session
             </button>
+            <button className="secondary-button" type="button" onClick={() => void archiveHandoffPackage()}>
+              <Archive size={14} />
+              Archive handoff package
+            </button>
             {copyStatus ? <span className="copy-status">{copyStatus}</span> : null}
             {downloadStatus ? <span className="copy-status">{downloadStatus}</span> : null}
             {archiveStatus ? <span className="copy-status">{archiveStatus}</span> : null}
@@ -174,6 +215,13 @@ export function DemoSessionSnapshotPanel({
         <div className="adapter-api-error">
           <strong>Demo session archive unavailable</strong>
           <span>{archiveError}</span>
+        </div>
+      ) : null}
+
+      {handoffPackageArchiveError ? (
+        <div className="adapter-api-error">
+          <strong>Demo handoff package archive unavailable</strong>
+          <span>{handoffPackageArchiveError}</span>
         </div>
       ) : null}
 
@@ -283,6 +331,46 @@ export function DemoSessionSnapshotPanel({
               </ul>
             ) : (
               <p className="empty-state">No demo session archives recorded.</p>
+            )}
+          </div>
+
+          <div className="demo-session-archives">
+            <h3>Recent handoff package archives</h3>
+            {handoffPackageArchives.length ? (
+              <ul>
+                {handoffPackageArchives.map((archive) => (
+                  <li key={archive.id}>
+                    <div>
+                      <strong>{archive.id}</strong>
+                      <span>{archive.sessionId}</span>
+                      <small>{archive.shareSummary}</small>
+                    </div>
+                    <div className="demo-session-archive-actions">
+                      <time dateTime={archive.createdAt}>{compactDateTime(archive.createdAt)}</time>
+                      <button
+                        className="secondary-button"
+                        type="button"
+                        onClick={() => void copyArchivedHandoffPackage(archive)}
+                        aria-label={`Copy archived handoff package ${archive.id}`}
+                      >
+                        <Copy size={14} />
+                        Copy package
+                      </button>
+                      <button
+                        className="secondary-button"
+                        type="button"
+                        onClick={() => void downloadArchivedHandoffPackage(archive)}
+                        aria-label={`Download archived handoff package ${archive.id}`}
+                      >
+                        <Download size={14} />
+                        Download package
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="empty-state">No demo handoff package archives recorded.</p>
             )}
           </div>
         </>

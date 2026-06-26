@@ -102,7 +102,7 @@ class DemoSessionArchiveServiceTests {
         assertThat(archives.get(19).id()).isEqualTo("archive-6");
     }
 
-    private static DemoSessionSnapshotVo snapshot(String sessionId, DemoReadinessStatus status) {
+    static DemoSessionSnapshotVo snapshot(String sessionId, DemoReadinessStatus status) {
         return new DemoSessionSnapshotVo(
                 sessionId,
                 status,

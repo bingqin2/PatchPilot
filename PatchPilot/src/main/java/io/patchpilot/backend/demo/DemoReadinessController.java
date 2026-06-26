@@ -2,6 +2,7 @@ package io.patchpilot.backend.demo;
 
 import io.patchpilot.backend.common.response.ApiResponse;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
+import io.patchpilot.backend.demo.domain.DemoHandoffPackageArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchCommandVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchPreflightVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessSnapshotArchiveVo;
@@ -43,6 +44,7 @@ public class DemoReadinessController {
     private final DemoSessionSnapshotService demoSessionSnapshotService;
     private final DemoSessionReportService demoSessionReportService;
     private final DemoSessionArchiveService demoSessionArchiveService;
+    private final DemoHandoffPackageArchiveService demoHandoffPackageArchiveService;
     private final DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
     private final DemoReadinessSnapshotTrendService demoReadinessSnapshotTrendService;
     private final DemoLaunchPreflightService demoLaunchPreflightService;
@@ -167,6 +169,40 @@ public class DemoReadinessController {
         return demoSessionArchiveService.findArchive(archiveId)
                 .map(archive -> markdownAttachment(
                         "patchpilot-demo-session-" + safeFilenamePart(archive.id()) + ".md",
+                        archive.report()
+                ))
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/handoff-package-archives")
+    public ApiResponse<DemoHandoffPackageArchiveVo> archiveCurrentHandoffPackage(
+            @RequestBody(required = false) DemoSessionReportRequestDto request
+    ) {
+        DemoHandoffPackageArchiveVo archive = demoHandoffPackageArchiveService.archiveCurrentHandoffPackage(
+                normalizeReportRequest(request)
+        );
+        operatorSafetyAuditService.recordSafetyAudit(new RecordOperatorSafetyAuditCommand(
+                "DEMO_HANDOFF_PACKAGE_ARCHIVED",
+                "DEMO_HANDOFF_PACKAGE_ARCHIVE",
+                archive.id(),
+                TriggerQuarantineScope.REPOSITORY,
+                "patchpilot/local-demo",
+                "admin-api",
+                "Archived demo handoff package " + archive.sessionId()
+        ));
+        return ApiResponse.ok(archive);
+    }
+
+    @GetMapping("/handoff-package-archives")
+    public ApiResponse<List<DemoHandoffPackageArchiveVo>> listHandoffPackageArchives() {
+        return ApiResponse.ok(demoHandoffPackageArchiveService.listRecentArchives());
+    }
+
+    @GetMapping(value = "/handoff-package-archives/{archiveId}/report/download", produces = "text/markdown;charset=UTF-8")
+    public ResponseEntity<String> downloadArchivedHandoffPackage(@PathVariable String archiveId) {
+        return demoHandoffPackageArchiveService.findArchive(archiveId)
+                .map(archive -> markdownAttachment(
+                        "patchpilot-demo-handoff-package-" + safeFilenamePart(archive.id()) + ".md",
                         archive.report()
                 ))
                 .orElseGet(() -> ResponseEntity.notFound().build());

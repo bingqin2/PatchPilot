@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react
 import {
   ADMIN_TOKEN_STORAGE_KEY,
   approveTaskReview,
+  archiveDemoHandoffPackage,
   archiveDemoReadinessSnapshot,
   archiveDemoSession,
   archiveEvaluationRunSnapshot,
@@ -11,6 +12,7 @@ import {
   createTask,
   createTriggerQuarantine,
   downloadDemoSessionArchiveReport,
+  downloadDemoHandoffPackageArchiveReport,
   downloadDemoReadinessSnapshotReport,
   downloadEvaluationFixtureBaselineRunReport,
   downloadEvaluationRunSnapshotReport,
@@ -60,6 +62,7 @@ import {
   listLanguageAdapterFixtures,
   listLanguageAdapterRuntimeReadiness,
   listLanguageAdapters,
+  listDemoHandoffPackageArchives,
   listDemoSessionArchives,
   listDemoReadinessSnapshots,
   listQueueItems,
@@ -116,6 +119,7 @@ import type {
   DemoReadinessSnapshotArchive,
   DemoReadinessSnapshotTrend,
   DemoEvidenceBundle,
+  DemoHandoffPackageArchive,
   DemoLaunchCommand,
   DemoLaunchCommandInput,
   DemoLaunchPreflight,
@@ -223,6 +227,8 @@ export default function App() {
   const [demoSessionSnapshotError, setDemoSessionSnapshotError] = useState<string | null>(null);
   const [demoSessionArchives, setDemoSessionArchives] = useState<DemoSessionArchive[]>([]);
   const [demoSessionArchiveError, setDemoSessionArchiveError] = useState<string | null>(null);
+  const [demoHandoffPackageArchives, setDemoHandoffPackageArchives] = useState<DemoHandoffPackageArchive[]>([]);
+  const [demoHandoffPackageArchiveError, setDemoHandoffPackageArchiveError] = useState<string | null>(null);
   const [demoScript, setDemoScript] = useState<DemoScript | null>(null);
   const [demoScriptError, setDemoScriptError] = useState<string | null>(null);
   const [demoSmokeChecklist, setDemoSmokeChecklist] = useState<DemoSmokeChecklist | null>(null);
@@ -539,6 +545,7 @@ export default function App() {
         demoEvidenceBundleResult,
         demoSessionSnapshotResult,
         demoSessionArchiveResult,
+        demoHandoffPackageArchiveResult,
         demoScriptResult,
         demoReadinessResult,
         demoReadinessSnapshotResult,
@@ -593,6 +600,10 @@ export default function App() {
           (caught) => ({ snapshot: null, error: errorMessage(caught) })
         ),
         listDemoSessionArchives().then(
+          (archives) => ({ archives, error: null as string | null }),
+          (caught) => ({ archives: null, error: errorMessage(caught) })
+        ),
+        listDemoHandoffPackageArchives().then(
           (archives) => ({ archives, error: null as string | null }),
           (caught) => ({ archives: null, error: errorMessage(caught) })
         ),
@@ -722,6 +733,10 @@ export default function App() {
         setDemoSessionArchives(demoSessionArchiveResult.archives);
       }
       setDemoSessionArchiveError(demoSessionArchiveResult.error);
+      if (demoHandoffPackageArchiveResult.archives) {
+        setDemoHandoffPackageArchives(demoHandoffPackageArchiveResult.archives);
+      }
+      setDemoHandoffPackageArchiveError(demoHandoffPackageArchiveResult.error);
       if (demoScriptResult.script) {
         setDemoScript(demoScriptResult.script);
       }
@@ -962,10 +977,19 @@ export default function App() {
   const handleDownloadDemoSessionArchiveReport = useCallback((archiveId: string) => (
     downloadDemoSessionArchiveReport(archiveId)
   ), []);
+  const handleDownloadDemoHandoffPackageArchiveReport = useCallback((archiveId: string) => (
+    downloadDemoHandoffPackageArchiveReport(archiveId)
+  ), []);
   const handleArchiveDemoSession = useCallback(async (input: DemoSessionReportInput) => {
     const archive = await archiveDemoSession(input);
     setDemoSessionArchives((current) => [archive, ...current.filter((item) => item.id !== archive.id)].slice(0, 20));
     setDemoSessionArchiveError(null);
+    return archive;
+  }, []);
+  const handleArchiveDemoHandoffPackage = useCallback(async (input: DemoSessionReportInput) => {
+    const archive = await archiveDemoHandoffPackage(input);
+    setDemoHandoffPackageArchives((current) => [archive, ...current.filter((item) => item.id !== archive.id)].slice(0, 20));
+    setDemoHandoffPackageArchiveError(null);
     return archive;
   }, []);
 
@@ -1329,14 +1353,18 @@ export default function App() {
         preparedLaunchCommands={preparedDemoLaunchCommands}
         archivedLaunchOutcomes={archivedDemoLaunchOutcomes}
         archives={demoSessionArchives}
+        handoffPackageArchives={demoHandoffPackageArchives}
         error={demoSessionSnapshotError}
         archiveError={demoSessionArchiveError}
+        handoffPackageArchiveError={demoHandoffPackageArchiveError}
         onCopyReport={handleCopyDemoSessionReport}
         onDownloadReport={handleDownloadDemoSessionReport}
         onArchiveSession={handleArchiveDemoSession}
         onCopyHandoffPackage={handleCopyDemoHandoffPackage}
         onDownloadHandoffPackage={handleDownloadDemoHandoffPackage}
+        onArchiveHandoffPackage={handleArchiveDemoHandoffPackage}
         onDownloadArchiveReport={handleDownloadDemoSessionArchiveReport}
+        onDownloadHandoffPackageArchiveReport={handleDownloadDemoHandoffPackageArchiveReport}
       />
 
       <DemoScriptPanel script={demoScript} error={demoScriptError} />

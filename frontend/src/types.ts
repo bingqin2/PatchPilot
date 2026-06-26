@@ -505,6 +505,8 @@ export interface DemoSessionArchive {
   report: string;
 }
 
+export type DemoHandoffPackageArchive = DemoSessionArchive;
+
 export interface BackendHealth {
   status: string;
   service: string;

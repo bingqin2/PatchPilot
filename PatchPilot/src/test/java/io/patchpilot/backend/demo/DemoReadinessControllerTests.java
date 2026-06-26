@@ -11,6 +11,7 @@ import io.patchpilot.backend.demo.domain.DemoSmokeChecklistStepVo;
 import io.patchpilot.backend.demo.domain.DemoSmokeChecklistVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchCommandVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchPreflightVo;
+import io.patchpilot.backend.demo.domain.DemoHandoffPackageArchiveVo;
 import io.patchpilot.backend.task.domain.vo.TriggerEvaluationDecisionVo;
 import io.patchpilot.backend.task.domain.vo.TriggerEvaluationResultVo;
 import io.patchpilot.backend.demo.domain.DemoScriptStepVo;
@@ -76,6 +77,9 @@ class DemoReadinessControllerTests {
 
     @MockitoBean
     private DemoSessionArchiveService demoSessionArchiveService;
+
+    @MockitoBean
+    private DemoHandoffPackageArchiveService demoHandoffPackageArchiveService;
 
     @MockitoBean
     private DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
@@ -810,6 +814,101 @@ class DemoReadinessControllerTests {
         when(demoSessionArchiveService.findArchive("missing-archive")).thenReturn(Optional.empty());
 
         mockMvc.perform(get("/api/demo/session-archives/missing-archive/report/download"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void should_archive_current_demo_handoff_package() throws Exception {
+        when(demoHandoffPackageArchiveService.archiveCurrentHandoffPackage(any(DemoSessionReportRequestDto.class)))
+                .thenReturn(new DemoHandoffPackageArchiveVo(
+                        "handoff-archive-1",
+                        "demo-session-20260624T003000Z",
+                        DemoReadinessStatus.READY,
+                        "Demo session snapshot is ready.",
+                        "Status READY; recent PR https://github.com/bingqin2/PatchPilot/pull/42.",
+                        "https://github.com/bingqin2/PatchPilot/pull/42",
+                        Instant.parse("2026-06-24T04:00:00Z"),
+                        "# PatchPilot Demo Handoff Package\n\n- Status: `READY`"
+                ));
+
+        mockMvc.perform(post("/api/demo/handoff-package-archives")
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "preparedLaunchCommands": [],
+                                  "archivedLaunchOutcomes": []
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value("handoff-archive-1"))
+                .andExpect(jsonPath("$.data.sessionId").value("demo-session-20260624T003000Z"))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.recentPullRequestUrl").value("https://github.com/bingqin2/PatchPilot/pull/42"))
+                .andExpect(jsonPath("$.data.report").value(org.hamcrest.Matchers.containsString("# PatchPilot Demo Handoff Package")));
+
+        verify(operatorSafetyAuditService).recordSafetyAudit(argThat(this::isDemoHandoffPackageArchiveAudit));
+    }
+
+    private boolean isDemoHandoffPackageArchiveAudit(RecordOperatorSafetyAuditCommand command) {
+        return command != null
+                && "DEMO_HANDOFF_PACKAGE_ARCHIVED".equals(command.action())
+                && "DEMO_HANDOFF_PACKAGE_ARCHIVE".equals(command.resourceType())
+                && "handoff-archive-1".equals(command.resourceId())
+                && command.scope() == TriggerQuarantineScope.REPOSITORY
+                && "patchpilot/local-demo".equals(command.scopeKey())
+                && "admin-api".equals(command.operator())
+                && "Archived demo handoff package demo-session-20260624T003000Z".equals(command.reason());
+    }
+
+    @Test
+    void should_return_recent_demo_handoff_package_archives() throws Exception {
+        when(demoHandoffPackageArchiveService.listRecentArchives()).thenReturn(List.of(new DemoHandoffPackageArchiveVo(
+                "handoff-archive-1",
+                "demo-session-20260624T003000Z",
+                DemoReadinessStatus.READY,
+                "Demo session snapshot is ready.",
+                "Status READY; recent PR https://github.com/bingqin2/PatchPilot/pull/42.",
+                "https://github.com/bingqin2/PatchPilot/pull/42",
+                Instant.parse("2026-06-24T04:00:00Z"),
+                "# PatchPilot Demo Handoff Package\n\n- Status: `READY`"
+        )));
+
+        mockMvc.perform(get("/api/demo/handoff-package-archives"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].id").value("handoff-archive-1"))
+                .andExpect(jsonPath("$.data[0].sessionId").value("demo-session-20260624T003000Z"))
+                .andExpect(jsonPath("$.data[0].shareSummary").value(org.hamcrest.Matchers.containsString("READY")));
+    }
+
+    @Test
+    void should_download_archived_demo_handoff_package_as_markdown_attachment() throws Exception {
+        when(demoHandoffPackageArchiveService.findArchive("handoff-archive-1")).thenReturn(Optional.of(new DemoHandoffPackageArchiveVo(
+                "handoff-archive-1",
+                "demo-session-20260624T003000Z",
+                DemoReadinessStatus.READY,
+                "Demo session snapshot is ready.",
+                "Status READY; recent PR https://github.com/bingqin2/PatchPilot/pull/42.",
+                "https://github.com/bingqin2/PatchPilot/pull/42",
+                Instant.parse("2026-06-24T04:00:00Z"),
+                "# PatchPilot Demo Handoff Package\n\n- Status: `READY`"
+        )));
+
+        mockMvc.perform(get("/api/demo/handoff-package-archives/handoff-archive-1/report/download"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("attachment;")))
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("patchpilot-demo-handoff-package-handoff-archive-1.md")))
+                .andExpect(content().contentTypeCompatibleWith("text/markdown"))
+                .andExpect(content().string(containsString("# PatchPilot Demo Handoff Package")))
+                .andExpect(content().string(containsString("`READY`")));
+    }
+
+    @Test
+    void should_return_not_found_when_archived_demo_handoff_package_is_missing() throws Exception {
+        when(demoHandoffPackageArchiveService.findArchive("missing-archive")).thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/api/demo/handoff-package-archives/missing-archive/report/download"))
                 .andExpect(status().isNotFound());
     }
 
