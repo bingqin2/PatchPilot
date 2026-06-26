@@ -4,6 +4,8 @@ import io.patchpilot.backend.demo.domain.DemoAdapterFixtureEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessCheckVo;
+import io.patchpilot.backend.demo.domain.DemoReadinessSnapshotTrendStatus;
+import io.patchpilot.backend.demo.domain.DemoReadinessSnapshotTrendVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessStatus;
 import io.patchpilot.backend.demo.domain.DemoReadinessVo;
 import io.patchpilot.backend.demo.domain.DemoSessionSnapshotVo;
@@ -29,6 +31,7 @@ class DemoSessionSnapshotServiceTests {
     void should_build_ready_demo_session_snapshot_from_single_evidence_bundle() {
         DemoSessionSnapshotService service = new DemoSessionSnapshotService(
                 () -> bundle(DemoReadinessStatus.READY, List.of("Follow the script from step 1 through Pull Request review.")),
+                DemoSessionSnapshotServiceTests::trend,
                 () -> Instant.parse("2026-06-24T00:30:00Z")
         );
 
@@ -42,6 +45,9 @@ class DemoSessionSnapshotServiceTests {
         assertThat(snapshot.script().steps()).hasSize(6);
         assertThat(snapshot.runbook()).contains("# PatchPilot Demo Runbook");
         assertThat(snapshot.runbook()).contains("https://github.com/bingqin2/PatchPilot/pull/42");
+        assertThat(snapshot.readinessSnapshotTrend().status()).isEqualTo(DemoReadinessSnapshotTrendStatus.IMPROVING);
+        assertThat(snapshot.readinessSnapshotTrend().latestSnapshotId()).isEqualTo("readiness-snapshot-new");
+        assertThat(snapshot.readinessSnapshotTrend().nextAction()).contains("Use the latest readiness snapshot as demo evidence");
         assertThat(snapshot.operatorChecklist()).contains(
                 "Open the dashboard and confirm the demo session snapshot status.",
                 "Confirm adapter runtime executables are available on the backend PATH.",
@@ -62,6 +68,7 @@ class DemoSessionSnapshotServiceTests {
     void should_surface_attention_state_and_next_actions() {
         DemoSessionSnapshotService service = new DemoSessionSnapshotService(
                 () -> bundle(DemoReadinessStatus.NEEDS_ATTENTION, List.of("Fix failing adapter fixtures before a live demo.")),
+                DemoSessionSnapshotServiceTests::trend,
                 () -> Instant.parse("2026-06-24T00:30:00Z")
         );
 
@@ -72,6 +79,22 @@ class DemoSessionSnapshotServiceTests {
         assertThat(snapshot.shareSummary()).contains("NEEDS_ATTENTION");
         assertThat(snapshot.operatorChecklist()).contains("Install missing adapter executables on the backend PATH before demonstrating affected languages.");
         assertThat(snapshot.nextActions()).containsExactly("Fix failing adapter fixtures before a live demo.");
+    }
+
+    private static DemoReadinessSnapshotTrendVo trend() {
+        return new DemoReadinessSnapshotTrendVo(
+                DemoReadinessSnapshotTrendStatus.IMPROVING,
+                "Demo readiness improved from BLOCKED to READY.",
+                "readiness-snapshot-new",
+                "readiness-snapshot-old",
+                DemoReadinessStatus.READY,
+                DemoReadinessStatus.BLOCKED,
+                4,
+                -2,
+                -2,
+                "Use the latest readiness snapshot as demo evidence or archive one more snapshot immediately before the live run.",
+                "# PatchPilot Demo Readiness Snapshot Trend\n\n- Status: `IMPROVING`"
+        );
     }
 
     private static DemoEvidenceBundleVo bundle(DemoReadinessStatus status, List<String> nextActions) {

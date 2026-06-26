@@ -3,6 +3,8 @@ package io.patchpilot.backend.demo;
 import io.patchpilot.backend.demo.domain.DemoAdapterFixtureEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
+import io.patchpilot.backend.demo.domain.DemoReadinessSnapshotTrendStatus;
+import io.patchpilot.backend.demo.domain.DemoReadinessSnapshotTrendVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessStatus;
 import io.patchpilot.backend.demo.domain.DemoReadinessVo;
 import io.patchpilot.backend.demo.domain.DemoScriptVo;
@@ -125,10 +127,27 @@ class DemoSessionArchiveServiceTests {
                 ),
                 new DemoScriptVo(status, "Demo script is ready.", List.of(), List.of(), List.of(), Instant.parse("2026-06-24T00:30:00Z")),
                 "# PatchPilot Demo Runbook\n\n- Status: `" + status + "`",
+                trend(status),
                 List.of("Open the dashboard."),
                 List.of("GET /api/demo/session-snapshot is read-only."),
                 "Status " + status + "; session " + sessionId + ".",
                 List.of("Follow the script.")
+        );
+    }
+
+    private static DemoReadinessSnapshotTrendVo trend(DemoReadinessStatus status) {
+        return new DemoReadinessSnapshotTrendVo(
+                DemoReadinessSnapshotTrendStatus.STABLE,
+                "Demo readiness stayed at " + status + ".",
+                "readiness-snapshot-new",
+                "readiness-snapshot-old",
+                status,
+                status,
+                0,
+                0,
+                0,
+                "Keep the latest readiness snapshot and resolve remaining warnings before the live run.",
+                "# PatchPilot Demo Readiness Snapshot Trend\n\n- Status: `STABLE`"
         );
     }
 

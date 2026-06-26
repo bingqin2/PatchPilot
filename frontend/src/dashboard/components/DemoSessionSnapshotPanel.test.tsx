@@ -103,6 +103,19 @@ const snapshot: DemoSessionSnapshot = {
     generatedAt: '2026-06-24T00:30:00Z'
   },
   runbook: '# PatchPilot Demo Runbook\n\n- Status: `READY`',
+  readinessSnapshotTrend: {
+    status: 'IMPROVING',
+    summary: 'Demo readiness improved from BLOCKED to READY.',
+    latestSnapshotId: 'readiness-snapshot-new',
+    previousSnapshotId: 'readiness-snapshot-old',
+    latestReadinessStatus: 'READY',
+    previousReadinessStatus: 'BLOCKED',
+    readyCheckDelta: 4,
+    needsAttentionCheckDelta: -2,
+    blockedCheckDelta: -2,
+    nextAction: 'Use the latest readiness snapshot as demo evidence or archive one more snapshot immediately before the live run.',
+    markdownReport: '# PatchPilot Demo Readiness Snapshot Trend\n\n- Status: `IMPROVING`'
+  },
   operatorChecklist: [
     'Open the dashboard and confirm the demo session snapshot status.',
     'Verify the latest webhook delivery and recent task before posting a live trigger.'
@@ -206,6 +219,10 @@ test('renders demo session snapshot summary, evidence, checklist, contract, and 
   expect(within(panel).getAllByText('https://github.com/bingqin2/PatchPilot/pull/42')).toHaveLength(2);
   expect(within(panel).getByText('task-1')).toBeInTheDocument();
   expect(within(panel).getByText('1 step')).toBeInTheDocument();
+  expect(within(panel).getByText('Readiness trend')).toBeInTheDocument();
+  expect(within(panel).getByText('Improving')).toBeInTheDocument();
+  expect(within(panel).getByText('+4 ready / -2 warning / -2 blocked')).toBeInTheDocument();
+  expect(within(panel).getByText(/Use the latest readiness snapshot as demo evidence/)).toBeInTheDocument();
   expect(within(panel).getByText('Open the dashboard and confirm the demo session snapshot status.')).toBeInTheDocument();
   expect(within(panel).getByText(/does not create tasks, call the model, run tests, mutate Git, or write to GitHub/)).toBeInTheDocument();
   expect(within(panel).getByRole('heading', { name: 'Recent session archives' })).toBeInTheDocument();

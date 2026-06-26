@@ -457,6 +457,7 @@ export interface DemoSessionSnapshot {
   evidenceBundle: DemoEvidenceBundle;
   script: DemoScript;
   runbook: string;
+  readinessSnapshotTrend: DemoReadinessSnapshotTrend;
   operatorChecklist: string[];
   healthContract: string[];
   shareSummary: string;

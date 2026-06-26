@@ -319,11 +319,11 @@ MVP frontend scope:
 - Inspect tool-call summaries.
 - Inspect verification output.
 - Inspect a single demo evidence bundle before posting a live `/agent fix` comment.
-- Inspect a single demo session snapshot that combines evidence, prepared launch commands from browser-local history, archived launch outcomes from browser-local history, script, runbook, checklist, health contract, share summary, and next actions.
+- Inspect a single demo session snapshot that combines evidence, readiness snapshot trend, prepared launch commands from browser-local history, archived launch outcomes from browser-local history, script, runbook, checklist, health contract, share summary, and next actions.
 - Follow a read-only demo script that gives ordered operator actions, verification commands, troubleshooting targets, and health-contract guarantees before and during a live smoke run.
 - Copy a Markdown demo runbook generated from the current evidence bundle.
-- Copy or download a Markdown demo session report generated from the current session snapshot, current browser's prepared demo launch commands, and current browser's archived launch outcomes.
-- Copy or download a Markdown demo handoff package that summarizes current demo evidence, prepared command count, archived outcome count, recent task and Pull Request evidence, next actions, and the embedded session report.
+- Copy or download a Markdown demo session report generated from the current session snapshot, readiness trend, current browser's prepared demo launch commands, and current browser's archived launch outcomes.
+- Copy or download a Markdown demo handoff package that summarizes current demo evidence, readiness trend, prepared command count, archived outcome count, recent task and Pull Request evidence, next actions, and the embedded session report.
 - Archive the current demo readiness gate into a recent list, then copy or download the archived Markdown report as point-in-time readiness evidence. Database-backed local profiles should persist these readiness snapshots across backend restarts.
 - Inspect whether recent demo readiness snapshots are improving, stable, or regressing, and copy the Markdown trend report before a live run.
 - Archive the current demo session report into a recent list, including prepared demo launch command and archived outcome context when supplied by the dashboard, and copy or download archived Markdown reports during or after a live demo. Database-backed local profiles should persist these archives across backend restarts.
@@ -371,11 +371,11 @@ PatchPilot MVP is successful when:
 - A successful task creates a Pull Request.
 - GitHub issue comments and Pull Request bodies can link back to the matching dashboard task detail page when the operator configures a public Dashboard URL.
 - An operator can verify demo readiness through a single evidence bundle covering setup, safety, queue, webhook, and recent PR signals.
-- An operator can inspect a single demo session snapshot before or after a live run without manually assembling evidence, prepared launch commands, archived launch outcomes, script, runbook, checklist, and health-contract responses.
+- An operator can inspect a single demo session snapshot before or after a live run without manually assembling evidence, readiness trend, prepared launch commands, archived launch outcomes, script, runbook, checklist, and health-contract responses.
 - An operator can follow an ordered demo script whose endpoint is explicitly read-only and whose steps point to dashboard evidence and curl verification commands.
 - An operator can copy a Markdown runbook that explains the current demo status and next actions without manually assembling API responses.
-- An operator can copy or download a Markdown session report that includes the snapshot, prepared launch commands from the current browser, archived launch outcomes from the current browser, script, checklist, health contract, next actions, and runbook.
-- An operator can copy or download a Markdown handoff package that combines the session report with a concise summary, recent task and Pull Request evidence, browser-local prepared commands, browser-local archived outcomes, and next actions.
+- An operator can copy or download a Markdown session report that includes the snapshot, readiness trend status and deltas, prepared launch commands from the current browser, archived launch outcomes from the current browser, script, checklist, health contract, next actions, and runbook.
+- An operator can copy or download a Markdown handoff package that combines the session report with a concise summary, readiness trend evidence, recent task and Pull Request evidence, browser-local prepared commands, browser-local archived outcomes, and next actions.
 - An operator can archive the current demo readiness gate as a timestamped Markdown report and later prove why the system was ready, warned, or blocked before a live run.
 - An operator can compare the two latest archived readiness gates and prove whether setup has improved, stayed stable, or regressed before posting a live `/agent fix` comment.
 - An operator can copy an adapter readiness report that proves current multi-language coverage and highlights fixture drift before a live run.

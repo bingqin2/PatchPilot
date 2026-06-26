@@ -788,6 +788,19 @@ test('gets demo session snapshot through backend API', async () => {
           generatedAt: '2026-06-24T00:30:00Z'
         },
         runbook: '# PatchPilot Demo Runbook\n\n- Status: `READY`',
+        readinessSnapshotTrend: {
+          status: 'IMPROVING',
+          summary: 'Demo readiness improved from BLOCKED to READY.',
+          latestSnapshotId: 'readiness-snapshot-new',
+          previousSnapshotId: 'readiness-snapshot-old',
+          latestReadinessStatus: 'READY',
+          previousReadinessStatus: 'BLOCKED',
+          readyCheckDelta: 4,
+          needsAttentionCheckDelta: -2,
+          blockedCheckDelta: -2,
+          nextAction: 'Use the latest readiness snapshot as demo evidence or archive one more snapshot immediately before the live run.',
+          markdownReport: '# PatchPilot Demo Readiness Snapshot Trend\n\n- Status: `IMPROVING`'
+        },
         operatorChecklist: ['Open the dashboard and confirm the demo session snapshot status.'],
         healthContract: [
           'GET /api/demo/session-snapshot is read-only: it does not create tasks, call the model, run tests, mutate Git, or write to GitHub.'
@@ -806,6 +819,8 @@ test('gets demo session snapshot through backend API', async () => {
   expect(snapshot.sessionId).toBe('demo-session-20260624T003000Z');
   expect(snapshot.status).toBe('READY');
   expect(snapshot.evidenceBundle.recentPullRequestUrl).toBe('https://github.com/bingqin2/PatchPilot/pull/42');
+  expect(snapshot.readinessSnapshotTrend.status).toBe('IMPROVING');
+  expect(snapshot.readinessSnapshotTrend.readyCheckDelta).toBe(4);
   expect(snapshot.operatorChecklist[0]).toContain('demo session snapshot status');
   expect(snapshot.healthContract[0]).toContain('read-only');
 });

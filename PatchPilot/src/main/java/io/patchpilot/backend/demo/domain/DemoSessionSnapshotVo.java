@@ -11,6 +11,7 @@ public record DemoSessionSnapshotVo(
         DemoEvidenceBundleVo evidenceBundle,
         DemoScriptVo script,
         String runbook,
+        DemoReadinessSnapshotTrendVo readinessSnapshotTrend,
         List<String> operatorChecklist,
         List<String> healthContract,
         String shareSummary,

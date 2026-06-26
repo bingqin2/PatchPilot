@@ -3,6 +3,7 @@ import { useState } from 'react';
 import type {
   DemoArchivedLaunchOutcome,
   DemoPreparedLaunchCommand,
+  DemoReadinessSnapshotTrendStatus,
   DemoReadinessStatus,
   DemoSessionArchive,
   DemoSessionReportInput,
@@ -207,6 +208,16 @@ export function DemoSessionSnapshotPanel({
               value={`${scriptStepCount} ${scriptStepCount === 1 ? 'step' : 'steps'}`}
               detail={snapshot.script.summary}
             />
+            <SnapshotFact
+              label="Readiness trend"
+              value={trendStatusLabel(snapshot.readinessSnapshotTrend.status)}
+              detail={snapshot.readinessSnapshotTrend.summary}
+            />
+            <SnapshotFact
+              label="Trend delta"
+              value={trendDelta(snapshot.readinessSnapshotTrend)}
+              detail={snapshot.readinessSnapshotTrend.nextAction}
+            />
           </div>
 
           <div className="demo-session-lists">
@@ -366,6 +377,29 @@ function statusLabel(status: DemoReadinessStatus) {
 
 function statusClass(status: DemoReadinessStatus) {
   return status.toLowerCase().replace('_', '-');
+}
+
+function trendStatusLabel(status: DemoReadinessSnapshotTrendStatus) {
+  switch (status) {
+    case 'NO_BASELINE':
+      return 'No baseline';
+    case 'IMPROVING':
+      return 'Improving';
+    case 'STABLE':
+      return 'Stable';
+    case 'REGRESSING':
+      return 'Regressing';
+  }
+}
+
+function trendDelta(snapshotTrend: DemoSessionSnapshot['readinessSnapshotTrend']) {
+  return `${signed(snapshotTrend.readyCheckDelta)} ready / ${signed(snapshotTrend.needsAttentionCheckDelta)} warning / ${signed(
+    snapshotTrend.blockedCheckDelta
+  )} blocked`;
+}
+
+function signed(value: number) {
+  return value > 0 ? `+${value}` : `${value}`;
 }
 
 function downloadMarkdown(blob: Blob, filename: string) {
