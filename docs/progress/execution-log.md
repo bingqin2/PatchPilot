@@ -4,6 +4,29 @@ This file records dated implementation progress, validation commands, and import
 
 ## 2026-06-26
 
+Implemented demo launch history outcome archive from `docs/plans/208-demo-launch-history-outcome-archive.md`.
+
+Changes:
+
+- Added browser-local `patchpilot.demoLaunchOutcomeArchive` storage for the five most recent unique launch outcome reports.
+- Added `Archive outcome` to tracked launch rows while keeping `Copy outcome report`.
+- Rendered a `Demo launch outcome archive` section with archived command, repository/issue, task status, archived timestamp, task link, Pull Request link, copied report action, and clear action.
+- Restored archived outcomes after dashboard reload from the same browser.
+- Kept the feature read-only with no backend endpoint, task creation, queue mutation, GitHub mutation, or command-history mutation.
+- Updated README, product spec, frontend design docs, the plan document, and this execution log.
+
+Validation:
+
+- `npm test -- --run src/dashboard/components/DemoLaunchTrackerPanel.test.tsx -t "archives and clears" --reporter=basic`: first failed because the outcome archive section did not exist; then passed after adding local archive storage and UI.
+- `npm test -- --run src/App.test.tsx -t "restores archived demo launch outcomes" --reporter=basic`: first failed because the dashboard did not restore archived outcomes; then passed after adding archive loading.
+- `npm test -- --run src/dashboard/components/DemoLaunchTrackerPanel.test.tsx src/App.test.tsx -t "launch outcome|tracks a prepared demo launch|restores archived demo launch outcomes|archives and clears" --reporter=basic`: passed after focused cross-component verification, 5 tests run.
+- `npm test -- --reporter=basic`: passed after full frontend regression verification, 236 tests run.
+- `npm run build`: passed after TypeScript and production Vite build verification.
+- `mvn -pl PatchPilot test -q`: passed after full backend regression verification.
+- `git diff --check`: passed.
+
+## 2026-06-26
+
 Implemented demo launch outcome reports from `docs/plans/207-demo-launch-outcome-report.md`.
 
 Changes:

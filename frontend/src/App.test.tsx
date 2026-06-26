@@ -2624,6 +2624,46 @@ test('copies a prepared demo launch outcome report from the dashboard', async ()
   expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- Pull Request: https://github.com/bingqin2/PatchPilot/pull/8'));
 });
 
+test('restores archived demo launch outcomes and copies archived reports from the dashboard', async () => {
+  const user = userEvent.setup();
+  const writeText = vi.fn().mockResolvedValue(undefined);
+  Object.defineProperty(window.navigator, 'clipboard', {
+    configurable: true,
+    value: { writeText }
+  });
+  localStorage.setItem('patchpilot.demoLaunchOutcomeArchive', JSON.stringify([
+    {
+      id: 'archived-outcome-1',
+      archivedAt: '2026-06-26T02:00:00.000Z',
+      repositoryOwner: 'bingqin2',
+      repositoryName: 'PatchPilot',
+      issueNumber: 1,
+      triggerUser: 'bingqin2',
+      triggerComment: '/agent fix replace docs/demo.md PatchPilot smoke test',
+      taskId: 'task-1',
+      taskStatus: 'COMPLETED',
+      pullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+      report: '# PatchPilot Demo Launch Outcome Report\n\n- Task: `task-1`\n- Pull Request: https://github.com/bingqin2/PatchPilot/pull/8'
+    }
+  ]));
+
+  render(<App />);
+
+  const trackerPanel = await screen.findByRole('region', { name: 'Demo launch tracker' });
+  const archive = within(trackerPanel).getByRole('region', { name: 'Demo launch outcome archive' });
+  expect(within(archive).getByText('1 outcome saved locally in this browser.')).toBeInTheDocument();
+  expect(within(archive).getByText('/agent fix replace docs/demo.md PatchPilot smoke test')).toBeInTheDocument();
+  expect(within(archive).getByRole('link', { name: 'Open archived task task-1' })).toHaveAttribute('href', '/tasks/task-1');
+  expect(within(archive).getByRole('link', { name: 'Open archived Pull Request' })).toHaveAttribute(
+    'href',
+    'https://github.com/bingqin2/PatchPilot/pull/8'
+  );
+
+  await user.click(within(archive).getByRole('button', { name: 'Copy archived outcome report task-1' }));
+  expect(writeText).toHaveBeenCalledWith(expect.stringContaining('# PatchPilot Demo Launch Outcome Report'));
+  expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- Task: `task-1`'));
+});
+
 test('persists demo launch command history across dashboard reloads', async () => {
   const user = userEvent.setup();
 

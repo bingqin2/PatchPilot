@@ -125,6 +125,46 @@ test('copies a launch outcome report with webhook, task, and Pull Request eviden
   );
 });
 
+test('archives and clears launch outcome reports in local browser storage', async () => {
+  const user = userEvent.setup();
+  const writeText = vi.fn().mockResolvedValue(undefined);
+  Object.defineProperty(window.navigator, 'clipboard', {
+    configurable: true,
+    value: { writeText }
+  });
+
+  render(
+    <DemoLaunchTrackerPanel
+      preparedLaunchCommands={[preparedCommand]}
+      tasks={[completedTask]}
+      webhookDeliveries={[webhookDelivery]}
+    />
+  );
+
+  const panel = screen.getByRole('region', { name: 'Demo launch tracker' });
+  expect(within(panel).getByText('No archived demo launch outcomes yet.')).toBeInTheDocument();
+
+  await user.click(
+    within(panel).getByRole('button', {
+      name: 'Archive outcome for /agent fix replace docs/demo.md PatchPilot smoke test'
+    })
+  );
+
+  expect(within(panel).getByRole('region', { name: 'Demo launch outcome archive' })).toHaveTextContent(
+    '1 outcome saved locally in this browser.'
+  );
+  expect(within(panel).getByText(/Archived at/)).toBeInTheDocument();
+  expect(localStorage.getItem('patchpilot.demoLaunchOutcomeArchive')).toContain('PatchPilot Demo Launch Outcome Report');
+
+  await user.click(within(panel).getByRole('button', { name: 'Copy archived outcome report task-1' }));
+  expect(writeText).toHaveBeenCalledWith(expect.stringContaining('# PatchPilot Demo Launch Outcome Report'));
+  expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- Task: `task-1`'));
+
+  await user.click(within(panel).getByRole('button', { name: 'Clear outcome archive' }));
+  expect(localStorage.getItem('patchpilot.demoLaunchOutcomeArchive')).toBeNull();
+  expect(within(panel).getByText('No archived demo launch outcomes yet.')).toBeInTheDocument();
+});
+
 test('shows waiting guidance when a prepared launch has no webhook yet', () => {
   render(
     <DemoLaunchTrackerPanel
