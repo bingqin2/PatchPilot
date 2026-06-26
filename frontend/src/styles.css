@@ -725,6 +725,21 @@ h3 {
   gap: 10px;
 }
 
+.panel-subheader {
+  align-items: start;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.panel-subheader p {
+  color: #637181;
+  font-size: 13px;
+  font-weight: 800;
+  margin: 4px 0 0;
+}
+
 .evaluation-case-row {
   background: #ffffff;
   border: 1px solid #dbe3ea;

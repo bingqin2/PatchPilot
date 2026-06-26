@@ -28,6 +28,7 @@ import {
   getDemoEvidenceBundle,
   getDemoRunbook,
   getEvaluationSummary,
+  getEvaluationRunPreview,
   getRejectedTriggerSummary,
   getTriggerQuarantineEvidence,
   getWorkerHealth,
@@ -2221,6 +2222,62 @@ test('loads evaluation case readiness summary from backend API', async () => {
     nextAction: 'Evaluation catalog is ready for demo evidence; automated evaluation runs are still future work.',
     readOnly: true,
     healthContract: 'Summary is derived from checked-in evaluation case metadata only; it does not create tasks, call the model, run tests, mutate Git, or write to GitHub.'
+  });
+});
+
+test('loads evaluation run preview report from backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        status: 'READY',
+        title: 'Evaluation run preview',
+        previewRunId: 'preview-current-catalog',
+        caseCount: 6,
+        supportedFixCaseCount: 4,
+        safetyRejectionCaseCount: 2,
+        coveredLanguages: ['go', 'java', 'node', 'python'],
+        coveredBuildSystems: ['go', 'maven', 'npm', 'pytest'],
+        expectedVerificationCommands: ['go test ./...', 'mvn test', 'npm test', 'python3 -m pytest'],
+        safetyRejectionCategories: ['DANGEROUS_INSTRUCTION', 'NOT_ACTIONABLE'],
+        gaps: [
+          'Automated benchmark execution is not implemented yet.',
+          'Preview uses expected outcomes only; it does not verify repository fixtures.'
+        ],
+        nextAction: 'Use this preview as demo evidence now; implement stored evaluation runs next to measure real issue-to-PR outcomes.',
+        readOnly: true,
+        sideEffectContract: 'Preview is derived from checked-in evaluation case metadata only; it does not create tasks, call the model, clone repositories, run verification commands, mutate Git, or write to GitHub.',
+        markdownReport: '# PatchPilot Evaluation Run Preview\n\n- Status: `READY`'
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const preview = await getEvaluationRunPreview();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/evaluation/run-preview');
+  expect(preview).toEqual({
+    status: 'READY',
+    title: 'Evaluation run preview',
+    previewRunId: 'preview-current-catalog',
+    caseCount: 6,
+    supportedFixCaseCount: 4,
+    safetyRejectionCaseCount: 2,
+    coveredLanguages: ['go', 'java', 'node', 'python'],
+    coveredBuildSystems: ['go', 'maven', 'npm', 'pytest'],
+    expectedVerificationCommands: ['go test ./...', 'mvn test', 'npm test', 'python3 -m pytest'],
+    safetyRejectionCategories: ['DANGEROUS_INSTRUCTION', 'NOT_ACTIONABLE'],
+    gaps: [
+      'Automated benchmark execution is not implemented yet.',
+      'Preview uses expected outcomes only; it does not verify repository fixtures.'
+    ],
+    nextAction: 'Use this preview as demo evidence now; implement stored evaluation runs next to measure real issue-to-PR outcomes.',
+    readOnly: true,
+    sideEffectContract: 'Preview is derived from checked-in evaluation case metadata only; it does not create tasks, call the model, clone repositories, run verification commands, mutate Git, or write to GitHub.',
+    markdownReport: '# PatchPilot Evaluation Run Preview\n\n- Status: `READY`'
   });
 });
 

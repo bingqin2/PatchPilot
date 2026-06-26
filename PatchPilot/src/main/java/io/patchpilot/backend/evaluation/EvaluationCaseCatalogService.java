@@ -1,9 +1,11 @@
 package io.patchpilot.backend.evaluation;
 
 import io.patchpilot.backend.evaluation.domain.EvaluationCaseVo;
+import io.patchpilot.backend.evaluation.domain.EvaluationRunPreviewVo;
 import io.patchpilot.backend.evaluation.domain.EvaluationSummaryVo;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -19,6 +21,14 @@ public class EvaluationCaseCatalogService {
     private static final String READY_NEXT_ACTION = "Evaluation catalog is ready for demo evidence; automated evaluation runs are still future work.";
     private static final String NEEDS_ATTENTION_NEXT_ACTION = "Add supported fix and safety rejection evaluation cases before using the catalog as demo evidence.";
     private static final String HEALTH_CONTRACT = "Summary is derived from checked-in evaluation case metadata only; it does not create tasks, call the model, run tests, mutate Git, or write to GitHub.";
+    private static final String PREVIEW_RUN_ID = "preview-current-catalog";
+    private static final String PREVIEW_TITLE = "Evaluation run preview";
+    private static final String PREVIEW_SIDE_EFFECT_CONTRACT = "Preview is derived from checked-in evaluation case metadata only; it does not create tasks, call the model, clone repositories, run verification commands, mutate Git, or write to GitHub.";
+    private static final String PREVIEW_NEXT_ACTION = "Use this preview as demo evidence now; implement stored evaluation runs next to measure real issue-to-PR outcomes.";
+    private static final List<String> PREVIEW_GAPS = List.of(
+            "Automated benchmark execution is not implemented yet.",
+            "Preview uses expected outcomes only; it does not verify repository fixtures."
+    );
 
     private static final List<EvaluationCaseVo> CASES = List.of(
             supportedCase(
@@ -153,6 +163,112 @@ public class EvaluationCaseCatalogService {
                 true,
                 HEALTH_CONTRACT
         );
+    }
+
+    public EvaluationRunPreviewVo getEvaluationRunPreview() {
+        EvaluationSummaryVo summary = getEvaluationSummary();
+        List<EvaluationCaseVo> supportedCases = supportedCases();
+        List<EvaluationCaseVo> rejectionCases = rejectionCases();
+        List<String> expectedVerificationCommands = supportedCases.stream()
+                .map(evaluationCase -> commandLabel(evaluationCase.expectedVerificationCommand()))
+                .filter(command -> !command.isBlank())
+                .distinct()
+                .sorted()
+                .toList();
+        String markdownReport = buildMarkdownReport(summary, supportedCases, rejectionCases, expectedVerificationCommands);
+        return new EvaluationRunPreviewVo(
+                summary.status(),
+                PREVIEW_TITLE,
+                PREVIEW_RUN_ID,
+                summary.totalCaseCount(),
+                summary.supportedFixCaseCount(),
+                summary.safetyRejectionCaseCount(),
+                summary.coveredLanguages(),
+                summary.coveredBuildSystems(),
+                expectedVerificationCommands,
+                summary.rejectionCategories(),
+                PREVIEW_GAPS,
+                PREVIEW_NEXT_ACTION,
+                true,
+                PREVIEW_SIDE_EFFECT_CONTRACT,
+                markdownReport
+        );
+    }
+
+    private static List<EvaluationCaseVo> supportedCases() {
+        return CASES.stream()
+                .filter(evaluationCase -> SUPPORTED_FIX.equals(evaluationCase.category()))
+                .toList();
+    }
+
+    private static List<EvaluationCaseVo> rejectionCases() {
+        return CASES.stream()
+                .filter(evaluationCase -> SAFETY_REJECTION.equals(evaluationCase.category()))
+                .toList();
+    }
+
+    private static String buildMarkdownReport(
+            EvaluationSummaryVo summary,
+            List<EvaluationCaseVo> supportedCases,
+            List<EvaluationCaseVo> rejectionCases,
+            List<String> expectedVerificationCommands
+    ) {
+        List<String> lines = new ArrayList<>();
+        lines.add("# PatchPilot Evaluation Run Preview");
+        lines.add("");
+        lines.add("- Status: `" + summary.status() + "`");
+        lines.add("- Preview run id: `" + PREVIEW_RUN_ID + "`");
+        lines.add("- Cases: " + summary.totalCaseCount());
+        lines.add("- Supported fix cases: " + summary.supportedFixCaseCount());
+        lines.add("- Safety rejection cases: " + summary.safetyRejectionCaseCount());
+        lines.add("- Languages: " + joinOrNone(summary.coveredLanguages()));
+        lines.add("- Build systems: " + joinOrNone(summary.coveredBuildSystems()));
+        lines.add("- Expected verification commands: " + joinOrNone(expectedVerificationCommands));
+        lines.add("- Safety rejection categories: " + joinOrNone(summary.rejectionCategories()));
+        lines.add("- Side-effect contract: " + PREVIEW_SIDE_EFFECT_CONTRACT);
+        lines.add("- Next action: " + PREVIEW_NEXT_ACTION);
+        lines.add("");
+        lines.add("## Gaps");
+        lines.add("");
+        PREVIEW_GAPS.forEach(gap -> lines.add("- " + gap));
+        lines.add("");
+        lines.add("## Supported Fix Coverage");
+        lines.add("");
+        supportedCases.forEach(evaluationCase -> {
+            lines.add("- `" + evaluationCase.id() + "`: " + evaluationCase.title());
+            lines.add("  - Adapter: `" + evaluationCase.language() + "/" + evaluationCase.buildSystem() + "`");
+            lines.add("  - Fixture: `" + evaluationCase.repositoryFixturePath() + "`");
+            lines.add("  - Expected command: `" + commandLabel(evaluationCase.expectedVerificationCommand()) + "`");
+            lines.add("  - Expected files: " + joinCodeLabels(evaluationCase.expectedChangedFiles()));
+        });
+        lines.add("");
+        lines.add("## Safety Rejection Coverage");
+        lines.add("");
+        rejectionCases.forEach(evaluationCase -> {
+            lines.add("- `" + evaluationCase.id() + "`: " + evaluationCase.title());
+            lines.add("  - Rejection: `" + evaluationCase.expectedRejectionCategory() + "`");
+            lines.add("  - Decision: `" + evaluationCase.expectedDecision() + "`");
+            lines.add("  - Safety: " + evaluationCase.safetyExpectation());
+        });
+        return String.join("\n", lines);
+    }
+
+    private static String commandLabel(List<String> command) {
+        return String.join(" ", command);
+    }
+
+    private static String joinOrNone(List<String> values) {
+        return values.isEmpty() ? "none" : String.join(", ", values);
+    }
+
+    private static String joinCodeLabels(List<String> values) {
+        if (values.isEmpty()) {
+            return "none";
+        }
+        return values.stream()
+                .map(value -> "`" + value + "`")
+                .reduce((left, right) -> left + ", " + right)
+                .orElse("none");
     }
 
     private static EvaluationCaseVo supportedCase(

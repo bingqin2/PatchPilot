@@ -1,13 +1,22 @@
-import type { EvaluationCase, EvaluationCaseSummary } from '../../types';
+import type { EvaluationCase, EvaluationCaseSummary, EvaluationRunPreview } from '../../types';
 
 interface EvaluationCaseCatalogPanelProps {
   cases: EvaluationCase[];
   summary: EvaluationCaseSummary | null;
+  runPreview: EvaluationRunPreview | null;
   error: string | null;
   summaryError: string | null;
+  runPreviewError: string | null;
 }
 
-export function EvaluationCaseCatalogPanel({ cases, summary, error, summaryError }: EvaluationCaseCatalogPanelProps) {
+export function EvaluationCaseCatalogPanel({
+  cases,
+  summary,
+  runPreview,
+  error,
+  summaryError,
+  runPreviewError
+}: EvaluationCaseCatalogPanelProps) {
   const supportedCases = cases.filter((evaluationCase) => evaluationCase.category === 'SUPPORTED_FIX');
   const rejectionCases = cases.filter((evaluationCase) => evaluationCase.category === 'SAFETY_REJECTION');
   const fallbackLanguages = Array.from(
@@ -33,6 +42,12 @@ export function EvaluationCaseCatalogPanel({ cases, summary, error, summaryError
     await navigator.clipboard?.writeText(buildEvaluationCaseCatalogReport(cases, summary, error, summaryError));
   }
 
+  async function copyRunPreview() {
+    if (runPreview) {
+      await navigator.clipboard?.writeText(runPreview.markdownReport);
+    }
+  }
+
   return (
     <section className="panel evaluation-case-panel" aria-label="Evaluation case catalog">
       <div className="panel-header">
@@ -54,6 +69,12 @@ export function EvaluationCaseCatalogPanel({ cases, summary, error, summaryError
         <div className="adapter-api-error">
           <strong>Evaluation summary incomplete</strong>
           <span>{summaryError}</span>
+        </div>
+      ) : null}
+      {runPreviewError ? (
+        <div className="adapter-api-error">
+          <strong>Evaluation run preview incomplete</strong>
+          <span>{runPreviewError}</span>
         </div>
       ) : null}
       <div className="adapter-readiness-summary">
@@ -83,6 +104,51 @@ export function EvaluationCaseCatalogPanel({ cases, summary, error, summaryError
           <p>{healthContract}</p>
         </div>
       </div>
+      {runPreview ? (
+        <div className="adapter-readiness-section evaluation-run-preview-section">
+          <div className="panel-subheader">
+            <div>
+              <h3>{runPreview.title}</h3>
+              <p>{runPreview.previewRunId}</p>
+            </div>
+            <button type="button" className="secondary-button" onClick={copyRunPreview}>
+              Copy evaluation run preview
+            </button>
+          </div>
+          <div className="adapter-readiness-summary">
+            <div>
+              <span>Preview status</span>
+              <strong>{runPreview.status}</strong>
+              <p>{runPreview.caseCount} expected cases</p>
+            </div>
+            <div>
+              <span>Expected commands</span>
+              <strong>{runPreview.expectedVerificationCommands.length} commands</strong>
+              <p>{runPreview.expectedVerificationCommands.join(', ') || 'No commands loaded'}</p>
+            </div>
+            <div>
+              <span>Safety categories</span>
+              <strong>{runPreview.safetyRejectionCategories.length} categories</strong>
+              <p>{runPreview.safetyRejectionCategories.join(', ') || 'No safety categories loaded'}</p>
+            </div>
+            <div>
+              <span>Run contract</span>
+              <strong>{runPreview.nextAction}</strong>
+              <p>{runPreview.sideEffectContract}</p>
+            </div>
+          </div>
+          {runPreview.gaps.length > 0 ? (
+            <div className="evaluation-case-detail">
+              <span>Known gaps before automated runs</span>
+              <ul>
+                {runPreview.gaps.map((gap) => (
+                  <li key={gap}>{gap}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
       <div className="adapter-readiness-section">
         <h3>Supported issue-to-PR cases</h3>
         {supportedCases.length > 0 ? (
