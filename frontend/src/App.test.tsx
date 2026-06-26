@@ -833,9 +833,9 @@ const evaluationCases = [
     language: 'java',
     buildSystem: 'maven',
     repositoryFixturePath: 'docs/demo-repositories/java-maven',
-    issueText: '/agent fix update GreetingService to return the issue-requested text',
+    issueText: '/agent fix update Calculator to return the issue-requested sum',
     expectedVerificationCommand: ['mvn', 'test'],
-    expectedChangedFiles: ['src/main/java/io/patchpilot/demo/GreetingService.java'],
+    expectedChangedFiles: ['src/main/java/demo/Calculator.java'],
     successCriteria: ['Patch changes only the expected source file', 'Maven tests pass'],
     expectedDecision: 'ACCEPT_AND_CREATE_PR',
     expectedRejectionCategory: null,
@@ -850,7 +850,7 @@ const evaluationCases = [
     repositoryFixturePath: 'docs/demo-repositories/node-npm',
     issueText: '/agent fix make the sum helper return correct totals',
     expectedVerificationCommand: ['npm', 'test'],
-    expectedChangedFiles: ['src/sum.js'],
+    expectedChangedFiles: ['src/calculator.js'],
     successCriteria: ['npm test passes'],
     expectedDecision: 'ACCEPT_AND_CREATE_PR',
     expectedRejectionCategory: null,
@@ -922,6 +922,82 @@ const evaluationRunSnapshotArchive = {
   createdAt: '2026-06-26T04:00:00Z',
   sideEffectContract: 'Archive stores the current evaluation run preview as PatchPilot-local evidence only; it does not create tasks, call the model, clone repositories, run verification commands, mutate Git, or write to GitHub.',
   report: '# PatchPilot Evaluation Run Snapshot\n\n- Snapshot id: `snapshot-1`'
+};
+
+const evaluationCaseReadiness = {
+  status: 'READY',
+  totalCaseCount: 3,
+  passingCaseCount: 2,
+  noFixtureRequiredCaseCount: 1,
+  failingCaseCount: 0,
+  cases: [
+    {
+      caseId: 'java-maven-doc-fix',
+      title: 'Java Maven documentation fix',
+      category: 'SUPPORTED_FIX',
+      status: 'PASS',
+      fixtureRequired: true,
+      fixturePath: 'docs/demo-repositories/java-maven',
+      fixtureExists: true,
+      expectedLanguage: 'java',
+      actualLanguage: 'java',
+      expectedBuildSystem: 'maven',
+      actualBuildSystem: 'maven',
+      expectedVerificationCommand: ['mvn', 'test'],
+      actualVerificationCommand: ['mvn', 'test'],
+      adapterMatches: true,
+      expectedChangedFiles: ['src/main/java/demo/Calculator.java'],
+      missingExpectedFiles: [],
+      expectedFilesExist: true,
+      reason: 'Detected Maven project',
+      nextAction: 'Fixture readiness is verified for this supported evaluation case.'
+    },
+    {
+      caseId: 'node-npm-unit-fix',
+      title: 'Node npm unit fix',
+      category: 'SUPPORTED_FIX',
+      status: 'PASS',
+      fixtureRequired: true,
+      fixturePath: 'docs/demo-repositories/node-npm',
+      fixtureExists: true,
+      expectedLanguage: 'node',
+      actualLanguage: 'node',
+      expectedBuildSystem: 'npm',
+      actualBuildSystem: 'npm',
+      expectedVerificationCommand: ['npm', 'test'],
+      actualVerificationCommand: ['npm', 'test'],
+      adapterMatches: true,
+      expectedChangedFiles: ['src/calculator.js'],
+      missingExpectedFiles: [],
+      expectedFilesExist: true,
+      reason: 'Detected npm project with test script',
+      nextAction: 'Fixture readiness is verified for this supported evaluation case.'
+    },
+    {
+      caseId: 'unsafe-secret-exfiltration-rejection',
+      title: 'Reject secret exfiltration',
+      category: 'SAFETY_REJECTION',
+      status: 'NO_FIXTURE_REQUIRED',
+      fixtureRequired: false,
+      fixturePath: 'none',
+      fixtureExists: false,
+      expectedLanguage: 'none',
+      actualLanguage: 'none',
+      expectedBuildSystem: 'none',
+      actualBuildSystem: 'none',
+      expectedVerificationCommand: [],
+      actualVerificationCommand: [],
+      adapterMatches: false,
+      expectedChangedFiles: [],
+      missingExpectedFiles: [],
+      expectedFilesExist: false,
+      reason: 'Safety rejection cases validate trigger gating and do not require repository fixtures.',
+      nextAction: 'Keep this case in the safety rejection catalog; no fixture verification is required.'
+    }
+  ],
+  sideEffectContract: 'Evaluation case fixture readiness checks local checked-in fixtures and adapter metadata only; it does not create tasks, call the model, run verification commands, mutate Git, or write to GitHub.',
+  nextAction: 'Evaluation case fixtures are ready for demo evidence; automated evaluation execution remains future work.',
+  markdownReport: '# PatchPilot Evaluation Case Fixture Readiness\n\n- Status: `READY`'
 };
 
 const supportedRepositoryPreflightResult = {
@@ -1485,6 +1561,9 @@ beforeEach(() => {
     if (url === '/api/evaluation/summary') {
       return jsonResponse(evaluationSummary);
     }
+    if (url === '/api/evaluation/case-readiness') {
+      return jsonResponse(evaluationCaseReadiness);
+    }
     if (url === '/api/evaluation/run-preview') {
       return jsonResponse(evaluationRunPreview);
     }
@@ -1954,11 +2033,12 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(within(adapterReadinessReport).getByText('Ready - 13/13 fixtures passing, 13/13 runtimes ready')).toBeInTheDocument();
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/evaluation/cases'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/evaluation/summary'));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/evaluation/case-readiness'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/evaluation/run-preview'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/evaluation/run-snapshots'));
   const evaluationCaseCatalog = screen.getByRole('region', { name: 'Evaluation case catalog' });
   expect(within(evaluationCaseCatalog).getByRole('heading', { name: 'Evaluation case catalog' })).toBeInTheDocument();
-  expect(within(evaluationCaseCatalog).getAllByText('READY')).toHaveLength(3);
+  expect(within(evaluationCaseCatalog).getAllByText('READY')).toHaveLength(4);
   expect(within(evaluationCaseCatalog).getByText('Ready for demo evidence')).toBeInTheDocument();
   expect(within(evaluationCaseCatalog).getByText('3 cases across 2 languages')).toBeInTheDocument();
   expect(within(evaluationCaseCatalog).getByText('2 supported fix cases')).toBeInTheDocument();
@@ -1975,8 +2055,12 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(within(evaluationCaseCatalog).getByText('Archived evaluation run snapshots')).toBeInTheDocument();
   expect(within(evaluationCaseCatalog).getByText('snapshot-1')).toBeInTheDocument();
   expect(within(evaluationCaseCatalog).getByText('2026-06-26T04:00:00Z')).toBeInTheDocument();
-  expect(within(evaluationCaseCatalog).getByText('Java Maven documentation fix')).toBeInTheDocument();
-  expect(within(evaluationCaseCatalog).getByText('Reject secret exfiltration')).toBeInTheDocument();
+  expect(within(evaluationCaseCatalog).getByText('Evaluation case fixture readiness')).toBeInTheDocument();
+  expect(within(evaluationCaseCatalog).getByText('2 passing cases')).toBeInTheDocument();
+  expect(within(evaluationCaseCatalog).getByText('1 no-fixture-required case')).toBeInTheDocument();
+  expect(within(evaluationCaseCatalog).getByText('Detected Maven project')).toBeInTheDocument();
+  expect(within(evaluationCaseCatalog).getAllByText('Java Maven documentation fix')).toHaveLength(2);
+  expect(within(evaluationCaseCatalog).getAllByText('Reject secret exfiltration')).toHaveLength(2);
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/evidence-bundle'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/session-snapshot'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/script'));

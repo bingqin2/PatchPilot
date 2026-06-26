@@ -1,12 +1,21 @@
-import type { EvaluationCase, EvaluationCaseSummary, EvaluationRunPreview, EvaluationRunSnapshotArchive } from '../../types';
+import type {
+  EvaluationCase,
+  EvaluationCaseFixtureReadiness,
+  EvaluationCaseFixtureReadinessSummary,
+  EvaluationCaseSummary,
+  EvaluationRunPreview,
+  EvaluationRunSnapshotArchive
+} from '../../types';
 
 interface EvaluationCaseCatalogPanelProps {
   cases: EvaluationCase[];
   summary: EvaluationCaseSummary | null;
+  caseReadiness: EvaluationCaseFixtureReadinessSummary | null;
   runPreview: EvaluationRunPreview | null;
   archives: EvaluationRunSnapshotArchive[];
   error: string | null;
   summaryError: string | null;
+  caseReadinessError: string | null;
   runPreviewError: string | null;
   archiveError: string | null;
   onArchiveRunSnapshot: () => Promise<EvaluationRunSnapshotArchive>;
@@ -16,10 +25,12 @@ interface EvaluationCaseCatalogPanelProps {
 export function EvaluationCaseCatalogPanel({
   cases,
   summary,
+  caseReadiness,
   runPreview,
   archives,
   error,
   summaryError,
+  caseReadinessError,
   runPreviewError,
   archiveError,
   onArchiveRunSnapshot,
@@ -53,6 +64,12 @@ export function EvaluationCaseCatalogPanel({
   async function copyRunPreview() {
     if (runPreview) {
       await navigator.clipboard?.writeText(runPreview.markdownReport);
+    }
+  }
+
+  async function copyFixtureReadinessReport() {
+    if (caseReadiness) {
+      await navigator.clipboard?.writeText(caseReadiness.markdownReport);
     }
   }
 
@@ -97,6 +114,12 @@ export function EvaluationCaseCatalogPanel({
           <span>{summaryError}</span>
         </div>
       ) : null}
+      {caseReadinessError ? (
+        <div className="adapter-api-error">
+          <strong>Evaluation case fixture readiness incomplete</strong>
+          <span>{caseReadinessError}</span>
+        </div>
+      ) : null}
       {runPreviewError ? (
         <div className="adapter-api-error">
           <strong>Evaluation run preview incomplete</strong>
@@ -136,6 +159,46 @@ export function EvaluationCaseCatalogPanel({
           <p>{healthContract}</p>
         </div>
       </div>
+      {caseReadiness ? (
+        <div className="adapter-readiness-section evaluation-case-readiness-section">
+          <div className="panel-subheader">
+            <div>
+              <h3>Evaluation case fixture readiness</h3>
+              <p>{caseReadiness.totalCaseCount} checked cases</p>
+            </div>
+            <button type="button" className="secondary-button" onClick={copyFixtureReadinessReport}>
+              Copy fixture readiness report
+            </button>
+          </div>
+          <div className="adapter-readiness-summary">
+            <div>
+              <span>Fixture status</span>
+              <strong>{caseReadiness.status}</strong>
+              <p>{caseReadiness.nextAction}</p>
+            </div>
+            <div>
+              <span>Passing</span>
+              <strong>{caseReadiness.passingCaseCount} passing {caseReadiness.passingCaseCount === 1 ? 'case' : 'cases'}</strong>
+              <p>Adapter and expected-file checks match.</p>
+            </div>
+            <div>
+              <span>No fixture required</span>
+              <strong>{caseReadiness.noFixtureRequiredCaseCount} no-fixture-required {caseReadiness.noFixtureRequiredCaseCount === 1 ? 'case' : 'cases'}</strong>
+              <p>Safety rejection coverage does not need repository files.</p>
+            </div>
+            <div>
+              <span>Failing</span>
+              <strong>{caseReadiness.failingCaseCount} failing {caseReadiness.failingCaseCount === 1 ? 'case' : 'cases'}</strong>
+              <p>{caseReadiness.sideEffectContract}</p>
+            </div>
+          </div>
+          <div className="evaluation-case-list">
+            {caseReadiness.cases.map((readiness) => (
+              <EvaluationCaseReadinessRow readiness={readiness} key={readiness.caseId} />
+            ))}
+          </div>
+        </div>
+      ) : null}
       {runPreview ? (
         <div className="adapter-readiness-section evaluation-run-preview-section">
           <div className="panel-subheader">
@@ -247,6 +310,52 @@ export function EvaluationCaseCatalogPanel({
         )}
       </div>
     </section>
+  );
+}
+
+function EvaluationCaseReadinessRow({ readiness }: { readiness: EvaluationCaseFixtureReadiness }) {
+  return (
+    <article className="evaluation-case-row">
+      <div>
+        <strong>{readiness.title}</strong>
+        <span>{readiness.caseId}</span>
+      </div>
+      <div className="evaluation-case-facts">
+        <span>{readiness.status}</span>
+        <span>{readiness.fixtureRequired ? 'fixture required' : 'fixture not required'}</span>
+        <span>{readiness.fixtureExists ? 'fixture exists' : 'no fixture'}</span>
+        <span>{readiness.adapterMatches ? 'adapter matches' : 'adapter not matched'}</span>
+        <span>{readiness.expectedFilesExist ? 'expected files present' : 'expected files missing'}</span>
+      </div>
+      <div className="evaluation-case-detail">
+        <span>Fixture</span>
+        <p>{readiness.fixturePath}</p>
+      </div>
+      <div className="evaluation-case-detail">
+        <span>Adapter</span>
+        <p>{`${readiness.expectedLanguage}/${readiness.expectedBuildSystem} -> ${readiness.actualLanguage}/${readiness.actualBuildSystem}`}</p>
+      </div>
+      <div className="evaluation-case-detail">
+        <span>Commands</span>
+        <p>{`${commandLabel(readiness.expectedVerificationCommand)} -> ${commandLabel(readiness.actualVerificationCommand)}`}</p>
+      </div>
+      <div className="evaluation-case-detail">
+        <span>Expected files</span>
+        <p>{readiness.expectedChangedFiles.join(', ') || 'none'}</p>
+      </div>
+      <div className="evaluation-case-detail">
+        <span>Missing files</span>
+        <p>{readiness.missingExpectedFiles.join(', ') || 'none'}</p>
+      </div>
+      <div className="evaluation-case-detail">
+        <span>Evidence</span>
+        <p>{readiness.reason}</p>
+      </div>
+      <div className="evaluation-case-detail">
+        <span>Next action</span>
+        <p>{readiness.nextAction}</p>
+      </div>
+    </article>
   );
 }
 

@@ -569,6 +569,42 @@ export interface EvaluationCaseSummary {
   healthContract: string;
 }
 
+export type EvaluationCaseFixtureReadinessStatus = 'PASS' | 'FAIL' | 'NO_FIXTURE_REQUIRED';
+
+export interface EvaluationCaseFixtureReadiness {
+  caseId: string;
+  title: string;
+  category: EvaluationCaseCategory;
+  status: EvaluationCaseFixtureReadinessStatus;
+  fixtureRequired: boolean;
+  fixturePath: string;
+  fixtureExists: boolean;
+  expectedLanguage: string;
+  actualLanguage: string;
+  expectedBuildSystem: string;
+  actualBuildSystem: string;
+  expectedVerificationCommand: string[];
+  actualVerificationCommand: string[];
+  adapterMatches: boolean;
+  expectedChangedFiles: string[];
+  missingExpectedFiles: string[];
+  expectedFilesExist: boolean;
+  reason: string;
+  nextAction: string;
+}
+
+export interface EvaluationCaseFixtureReadinessSummary {
+  status: EvaluationSummaryStatus;
+  totalCaseCount: number;
+  passingCaseCount: number;
+  noFixtureRequiredCaseCount: number;
+  failingCaseCount: number;
+  cases: EvaluationCaseFixtureReadiness[];
+  sideEffectContract: string;
+  nextAction: string;
+  markdownReport: string;
+}
+
 export interface EvaluationRunPreview {
   status: EvaluationSummaryStatus;
   title: string;

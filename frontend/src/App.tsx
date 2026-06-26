@@ -26,6 +26,7 @@ import {
   getDemoRunbook,
   getDemoReadiness,
   getDemoSmokeChecklist,
+  getEvaluationCaseReadiness,
   getEvaluationSummary,
   getEvaluationRunPreview,
   preflightDemoLaunch,
@@ -114,6 +115,7 @@ import type {
   DemoSessionSnapshot,
   DemoSmokeChecklist,
   EvaluationCase,
+  EvaluationCaseFixtureReadinessSummary,
   EvaluationCaseSummary,
   EvaluationRunPreview,
   EvaluationRunSnapshotArchive,
@@ -224,10 +226,12 @@ export default function App() {
   const [adapterRuntimeReadinessError, setAdapterRuntimeReadinessError] = useState<string | null>(null);
   const [evaluationCases, setEvaluationCases] = useState<EvaluationCase[]>([]);
   const [evaluationSummary, setEvaluationSummary] = useState<EvaluationCaseSummary | null>(null);
+  const [evaluationCaseReadiness, setEvaluationCaseReadiness] = useState<EvaluationCaseFixtureReadinessSummary | null>(null);
   const [evaluationRunPreview, setEvaluationRunPreview] = useState<EvaluationRunPreview | null>(null);
   const [evaluationRunSnapshots, setEvaluationRunSnapshots] = useState<EvaluationRunSnapshotArchive[]>([]);
   const [evaluationCaseError, setEvaluationCaseError] = useState<string | null>(null);
   const [evaluationSummaryError, setEvaluationSummaryError] = useState<string | null>(null);
+  const [evaluationCaseReadinessError, setEvaluationCaseReadinessError] = useState<string | null>(null);
   const [evaluationRunPreviewError, setEvaluationRunPreviewError] = useState<string | null>(null);
   const [evaluationRunSnapshotError, setEvaluationRunSnapshotError] = useState<string | null>(null);
   const [repositoryPreflightResult, setRepositoryPreflightResult] = useState<RepositoryPreflightResult | null>(null);
@@ -519,6 +523,7 @@ export default function App() {
         adapterRuntimeReadinessResult,
         evaluationCaseResult,
         evaluationSummaryResult,
+        evaluationCaseReadinessResult,
         evaluationRunPreviewResult,
         evaluationRunSnapshotResult,
         queueSummaryData,
@@ -594,6 +599,10 @@ export default function App() {
         getEvaluationSummary().then(
           (summary) => ({ summary, error: null as string | null }),
           (caught) => ({ summary: null, error: errorMessage(caught) })
+        ),
+        getEvaluationCaseReadiness().then(
+          (readiness) => ({ readiness, error: null as string | null }),
+          (caught) => ({ readiness: null, error: errorMessage(caught) })
         ),
         getEvaluationRunPreview().then(
           (preview) => ({ preview, error: null as string | null }),
@@ -701,6 +710,10 @@ export default function App() {
         setEvaluationSummary(evaluationSummaryResult.summary);
       }
       setEvaluationSummaryError(evaluationSummaryResult.error);
+      if (evaluationCaseReadinessResult.readiness) {
+        setEvaluationCaseReadiness(evaluationCaseReadinessResult.readiness);
+      }
+      setEvaluationCaseReadinessError(evaluationCaseReadinessResult.error);
       if (evaluationRunPreviewResult.preview) {
         setEvaluationRunPreview(evaluationRunPreviewResult.preview);
       }
@@ -1338,10 +1351,12 @@ export default function App() {
       <EvaluationCaseCatalogPanel
         cases={evaluationCases}
         summary={evaluationSummary}
+        caseReadiness={evaluationCaseReadiness}
         runPreview={evaluationRunPreview}
         archives={evaluationRunSnapshots}
         error={evaluationCaseError}
         summaryError={evaluationSummaryError}
+        caseReadinessError={evaluationCaseReadinessError}
         runPreviewError={evaluationRunPreviewError}
         archiveError={evaluationRunSnapshotError}
         onArchiveRunSnapshot={handleArchiveEvaluationRunSnapshot}

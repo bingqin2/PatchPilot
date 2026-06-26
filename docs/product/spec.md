@@ -161,6 +161,7 @@ The current implementation target is local self-hosted development first. Hosted
 - Evaluation cases should define repository fixture, issue text, expected changed files, expected verification command, and success criteria.
 - Operators should be able to inspect a read-only evaluation case catalog that covers supported language fixes and safety rejections before benchmark execution exists.
 - Operators should be able to inspect a read-only evaluation readiness summary with case counts, covered languages, covered build systems, rejection categories, health contract, and next action.
+- Operators should be able to inspect read-only evaluation fixture readiness that verifies checked-in fixture directories, expected changed files, and adapter metadata for supported cases while marking safety rejections as no-fixture-required.
 - Operators should be able to inspect and copy a read-only evaluation run preview report with expected commands, known gaps, side-effect contract, and next action before stored benchmark execution exists.
 - Evaluation runs should record model, prompt version, repository revision, success metrics, failure categories, cost, latency, and a copyable Markdown report.
 - Dashboard and API surfaces should make model usage, tool usage, retrieval evidence, evaluation results, budget state, and safety decisions inspectable without exposing secrets.
@@ -323,7 +324,7 @@ MVP frontend scope:
 - Evaluate a manual `/agent fix` trigger before creating a task and see the gate decisions plus next operator action.
 - Evaluate a pasted GitHub webhook payload before redelivery and see whether the temporary URL, webhook secret, event type, action, and `/agent fix` comment shape look correct.
 - Inspect and copy a single adapter readiness report covering supported languages, allowlisted verification commands, fixture pass rate, and fixture failures.
-- Inspect and copy a read-only evaluation case catalog, readiness summary, and run preview covering supported Java/Maven, Node/npm, Python/pytest, Go, unsafe-trigger rejection, and vague-trigger rejection scenarios.
+- Inspect and copy a read-only evaluation case catalog, readiness summary, fixture-readiness report, and run preview covering supported Java/Maven, Node/npm, Python/pytest, Go, unsafe-trigger rejection, and vague-trigger rejection scenarios.
 - Copy a Markdown repository preflight report after checking a local path so supported and unsupported repository evidence can be shared before task creation.
 
 The frontend does not need to trigger the first backend workflow. GitHub issue comments remain the first trigger.
@@ -371,6 +372,7 @@ PatchPilot MVP is successful when:
 - An operator can copy an adapter readiness report that proves current multi-language coverage and highlights fixture drift before a live run.
 - An operator can inspect evaluation cases that prove planned multi-language issue-to-PR coverage and safety rejection coverage without creating tasks, running model calls, executing tests, mutating Git, or writing to GitHub.
 - An operator can inspect an evaluation readiness summary that states whether the current catalog is ready for demo evidence and what follow-up is still needed before automated evaluation runs exist.
+- An operator can inspect evaluation fixture readiness that confirms supported cases still map to checked-in fixtures, expected adapter metadata, and expected changed files before using the catalog as demo evidence.
 - An operator can copy an evaluation run preview report that packages expected benchmark coverage and known gaps without cloning repositories, running verification commands, or recording a real benchmark run.
 - An operator can see whether each adapter's verification executable is available in the current backend runtime before a live run.
 - An operator can see missing adapter verification executables reflected in the demo readiness gate instead of only in the adapter report.
