@@ -45,6 +45,9 @@ export function DemoSessionSnapshotPanel({
   const [archiveStatus, setArchiveStatus] = useState<string | null>(null);
   const scriptStepCount = snapshot?.script.steps.length ?? 0;
   const reportInput = { preparedLaunchCommands, archivedLaunchOutcomes };
+  const handoffReadiness = snapshot
+    ? getHandoffReadiness(snapshot, preparedLaunchCommands, archivedLaunchOutcomes)
+    : null;
 
   async function copySessionReport() {
     try {
@@ -218,6 +221,20 @@ export function DemoSessionSnapshotPanel({
               value={trendDelta(snapshot.readinessSnapshotTrend)}
               detail={snapshot.readinessSnapshotTrend.nextAction}
             />
+            {handoffReadiness ? (
+              <>
+                <SnapshotFact
+                  label="Handoff readiness"
+                  value={statusLabel(handoffReadiness.status)}
+                  detail={handoffReadiness.summary}
+                />
+                <SnapshotFact
+                  label="Handoff evidence"
+                  value={handoffEvidenceLabel(preparedLaunchCommands.length, archivedLaunchOutcomes.length)}
+                  detail={handoffReadiness.nextAction}
+                />
+              </>
+            ) : null}
           </div>
 
           <div className="demo-session-lists">
@@ -396,6 +413,76 @@ function trendDelta(snapshotTrend: DemoSessionSnapshot['readinessSnapshotTrend']
   return `${signed(snapshotTrend.readyCheckDelta)} ready / ${signed(snapshotTrend.needsAttentionCheckDelta)} warning / ${signed(
     snapshotTrend.blockedCheckDelta
   )} blocked`;
+}
+
+interface HandoffReadinessSummary {
+  status: DemoReadinessStatus;
+  summary: string;
+  nextAction: string;
+}
+
+function getHandoffReadiness(
+  snapshot: DemoSessionSnapshot,
+  preparedLaunchCommands: DemoPreparedLaunchCommand[],
+  archivedLaunchOutcomes: DemoArchivedLaunchOutcome[]
+): HandoffReadinessSummary {
+  const missing: string[] = [];
+  const hasCompletedTask = snapshot.evidenceBundle.recentTask?.status === 'COMPLETED';
+  const hasPullRequest = Boolean(snapshot.evidenceBundle.recentPullRequestUrl);
+  const hasPreparedCommand = preparedLaunchCommands.some((command) => command.triggerComment.trim().length > 0);
+  const hasArchivedOutcomeEvidence = archivedLaunchOutcomes.some(
+    (outcome) => outcome.triggerComment.trim().length > 0 && (outcome.taskStatus === 'COMPLETED' || Boolean(outcome.pullRequestUrl))
+  );
+  const hasTrendBaseline = snapshot.readinessSnapshotTrend.status !== 'NO_BASELINE';
+
+  if (!hasCompletedTask) {
+    missing.push('completed task');
+  }
+  if (!hasPullRequest) {
+    missing.push('Pull Request');
+  }
+  if (!hasPreparedCommand) {
+    missing.push('prepared command');
+  }
+  if (!hasArchivedOutcomeEvidence) {
+    missing.push('archived outcome evidence');
+  }
+  if (!hasTrendBaseline) {
+    missing.push('readiness trend baseline');
+  }
+
+  if (snapshot.status === 'BLOCKED' || snapshot.readinessSnapshotTrend.status === 'REGRESSING') {
+    return {
+      status: 'BLOCKED',
+      summary: 'Handoff package has a blocking readiness signal that should be resolved before a live-demo handoff.',
+      nextAction:
+        snapshot.readinessSnapshotTrend.status === 'REGRESSING'
+          ? 'Resolve the readiness regression or archive a fresh passing snapshot before handoff.'
+          : 'Resolve the blocked demo session status before handoff.'
+    };
+  }
+
+  if (missing.length > 0) {
+    return {
+      status: 'NEEDS_ATTENTION',
+      summary: 'Handoff package is missing evidence required for a credible live-demo handoff.',
+      nextAction: `Missing ${missing.join(', ')}.`
+    };
+  }
+
+  return {
+    status: 'READY',
+    summary: 'Handoff package has current PR, command, outcome, and readiness trend evidence.',
+    nextAction: 'No missing handoff evidence.'
+  };
+}
+
+function handoffEvidenceLabel(commandCount: number, outcomeCount: number) {
+  return `${commandCount} ${plural(commandCount, 'command')} / ${outcomeCount} ${plural(outcomeCount, 'outcome')}`;
+}
+
+function plural(count: number, noun: string) {
+  return count === 1 ? noun : `${noun}s`;
 }
 
 function signed(value: number) {

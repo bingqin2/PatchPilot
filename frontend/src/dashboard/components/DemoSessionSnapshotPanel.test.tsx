@@ -212,7 +212,7 @@ test('renders demo session snapshot summary, evidence, checklist, contract, and 
   expect(within(panel).getByRole('heading', { name: 'Demo session snapshot' })).toBeInTheDocument();
   expect(within(panel).getAllByText('demo-session-20260624T003000Z')).toHaveLength(2);
   expect(within(panel).getByText('Demo session snapshot is ready.')).toBeInTheDocument();
-  expect(within(panel).getAllByText('Ready')).toHaveLength(2);
+  expect(within(panel).getAllByText('Ready')).toHaveLength(3);
   expect(
     within(panel).getAllByText('Status READY; recent task task-1; recent PR https://github.com/bingqin2/PatchPilot/pull/42.')
   ).toHaveLength(2);
@@ -223,6 +223,10 @@ test('renders demo session snapshot summary, evidence, checklist, contract, and 
   expect(within(panel).getByText('Improving')).toBeInTheDocument();
   expect(within(panel).getByText('+4 ready / -2 warning / -2 blocked')).toBeInTheDocument();
   expect(within(panel).getByText(/Use the latest readiness snapshot as demo evidence/)).toBeInTheDocument();
+  expect(within(panel).getByText('Handoff readiness')).toBeInTheDocument();
+  expect(within(panel).getByText('Handoff package has current PR, command, outcome, and readiness trend evidence.')).toBeInTheDocument();
+  expect(within(panel).getByText('Handoff evidence')).toBeInTheDocument();
+  expect(within(panel).getByText('2 commands / 1 outcome')).toBeInTheDocument();
   expect(within(panel).getByText('Open the dashboard and confirm the demo session snapshot status.')).toBeInTheDocument();
   expect(within(panel).getByText(/does not create tasks, call the model, run tests, mutate Git, or write to GitHub/)).toBeInTheDocument();
   expect(within(panel).getByRole('heading', { name: 'Recent session archives' })).toBeInTheDocument();
@@ -275,6 +279,41 @@ test('shows loading and API errors without hiding snapshot data', () => {
   expect(screen.getByText('Backend request failed')).toBeInTheDocument();
   expect(screen.getByText('Archive request failed')).toBeInTheDocument();
   expect(screen.getAllByText('demo-session-20260624T003000Z')).toHaveLength(2);
+});
+
+test('shows handoff readiness gaps when launch context is missing', () => {
+  render(
+    <DemoSessionSnapshotPanel
+      snapshot={{
+        ...snapshot,
+        evidenceBundle: {
+          ...snapshot.evidenceBundle,
+          recentTask: null,
+          recentPullRequestUrl: null
+        },
+        shareSummary: 'Status READY; recent task none; recent PR none.'
+      }}
+      preparedLaunchCommands={[]}
+      archivedLaunchOutcomes={[]}
+      archives={[]}
+      error={null}
+      archiveError={null}
+      onCopyReport={vi.fn()}
+      onDownloadReport={vi.fn()}
+      onArchiveSession={vi.fn()}
+      onCopyHandoffPackage={vi.fn()}
+      onDownloadHandoffPackage={vi.fn()}
+      onDownloadArchiveReport={vi.fn()}
+    />
+  );
+
+  const panel = screen.getByRole('region', { name: 'Demo session snapshot' });
+  expect(within(panel).getByText('Handoff readiness')).toBeInTheDocument();
+  expect(within(panel).getAllByText('Needs attention')).toHaveLength(1);
+  expect(
+    within(panel).getByText('Missing completed task, Pull Request, prepared command, archived outcome evidence.')
+  ).toBeInTheDocument();
+  expect(within(panel).getByText('0 commands / 0 outcomes')).toBeInTheDocument();
 });
 
 test('copies demo session report markdown', async () => {
