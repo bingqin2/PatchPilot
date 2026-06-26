@@ -536,6 +536,25 @@ export interface LanguageAdapterRuntimeReadiness {
   reason: string;
 }
 
+export type EvaluationCaseCategory = 'SUPPORTED_FIX' | 'SAFETY_REJECTION';
+export type EvaluationCaseExpectedDecision = 'ACCEPT_AND_CREATE_PR' | 'REJECT_BEFORE_TASK';
+
+export interface EvaluationCase {
+  id: string;
+  title: string;
+  category: EvaluationCaseCategory;
+  language: string | null;
+  buildSystem: string | null;
+  repositoryFixturePath: string | null;
+  issueText: string;
+  expectedVerificationCommand: string[];
+  expectedChangedFiles: string[];
+  successCriteria: string[];
+  expectedDecision: EvaluationCaseExpectedDecision;
+  expectedRejectionCategory: string | null;
+  safetyExpectation: string;
+}
+
 export interface FixTaskQueueSummary {
   totalCount: number;
   pendingCount: number;

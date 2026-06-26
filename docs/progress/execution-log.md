@@ -4,6 +4,26 @@ This file records dated implementation progress, validation commands, and import
 
 ## 2026-06-26
 
+Implemented evaluation case catalog from `docs/plans/211-evaluation-case-catalog.md`.
+
+Changes:
+
+- Added read-only `GET /api/evaluation/cases`.
+- Added an in-memory catalog for Java/Maven, Node/npm, Python/pytest, Go, unsafe secret exfiltration rejection, and vague trigger rejection cases.
+- Added dashboard API/client support and an `Evaluation case catalog` panel with language coverage, supported fix count, safety rejection count, expected commands, expected files, success criteria, safety expectations, and copyable Markdown report.
+- Updated README, product docs, AI infrastructure target, frontend design docs, the plan document, and this execution log.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=EvaluationCaseCatalogServiceTests,EvaluationCaseControllerTests test`: first failed because `EvaluationCaseVo`, the catalog service, and controller did not exist; then passed after backend implementation, 2 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts src/dashboard/components/EvaluationCaseCatalogPanel.test.tsx src/App.test.tsx -t "evaluation case|operational task dashboard" --reporter=basic`: first failed because `listEvaluationCases`, `EvaluationCaseCatalogPanel`, and App-level loading did not exist; then passed after frontend implementation, 4 relevant tests run, 0 failures.
+- `mvn -pl PatchPilot test -q`: passed after full backend regression verification.
+- `npm test -- --reporter=basic`: passed after full frontend regression verification, 26 test files and 246 tests run.
+- `npm run build`: passed after TypeScript and production Vite build verification.
+- `git diff --check`: passed.
+
+## 2026-06-26
+
 Implemented demo handoff package export from `docs/plans/210-demo-handoff-package-export.md`.
 
 Changes:

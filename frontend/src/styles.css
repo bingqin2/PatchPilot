@@ -716,6 +716,93 @@ h3 {
   margin: 0;
 }
 
+.evaluation-case-panel {
+  margin-bottom: 16px;
+}
+
+.evaluation-case-list {
+  display: grid;
+  gap: 10px;
+}
+
+.evaluation-case-row {
+  background: #ffffff;
+  border: 1px solid #dbe3ea;
+  border-radius: 6px;
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+}
+
+.evaluation-case-row > div:first-child {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.evaluation-case-row strong {
+  color: #17202a;
+  font-size: 14px;
+}
+
+.evaluation-case-row > div:first-child span,
+.evaluation-case-detail span {
+  color: #637181;
+  font-size: 12px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.evaluation-case-row p {
+  color: #52606e;
+  font-size: 13px;
+  font-weight: 750;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.evaluation-case-facts {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.evaluation-case-facts span,
+.evaluation-case-facts code {
+  background: #eef3f6;
+  border: 1px solid #d6dee6;
+  border-radius: 6px;
+  color: #17202a;
+  font-size: 12px;
+  font-weight: 850;
+  padding: 6px 8px;
+}
+
+.evaluation-case-facts code {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+
+.evaluation-case-detail {
+  display: grid;
+  gap: 6px;
+}
+
+.evaluation-case-detail ul {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding-left: 18px;
+}
+
+.evaluation-case-detail li {
+  color: #52606e;
+  font-size: 13px;
+  font-weight: 750;
+}
+
 .adapter-api-error {
   align-items: center;
   background: #fff4f2;
