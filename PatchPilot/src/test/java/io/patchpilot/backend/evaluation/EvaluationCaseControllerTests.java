@@ -1,18 +1,25 @@
 package io.patchpilot.backend.evaluation;
 
+import io.patchpilot.backend.evaluation.service.impl.InMemoryEvaluationRunSnapshotArchiveRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
+
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 class EvaluationCaseControllerTests {
 
     private final MockMvc mockMvc = MockMvcBuilders
-            .standaloneSetup(new EvaluationCaseController(new EvaluationCaseCatalogService()))
+            .standaloneSetup(new EvaluationCaseController(new EvaluationCaseCatalogService(), archiveService("snapshot-default")))
             .build();
 
     @Test
@@ -94,5 +101,55 @@ class EvaluationCaseControllerTests {
                 .andExpect(jsonPath("$.data.readOnly").value(true))
                 .andExpect(jsonPath("$.data.sideEffectContract").value("Preview is derived from checked-in evaluation case metadata only; it does not create tasks, call the model, clone repositories, run verification commands, mutate Git, or write to GitHub."))
                 .andExpect(jsonPath("$.data.markdownReport").value(org.hamcrest.Matchers.containsString("# PatchPilot Evaluation Run Preview")));
+    }
+
+    @Test
+    void should_archive_and_list_evaluation_run_snapshots() throws Exception {
+        MockMvc snapshotMockMvc = MockMvcBuilders
+                .standaloneSetup(new EvaluationCaseController(new EvaluationCaseCatalogService(), archiveService("snapshot-1")))
+                .build();
+
+        snapshotMockMvc.perform(post("/api/evaluation/run-snapshots"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.previewRunId").value("preview-current-catalog"))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.caseCount").value(6))
+                .andExpect(jsonPath("$.data.sideEffectContract").value("Archive stores the current evaluation run preview as PatchPilot-local evidence only; it does not create tasks, call the model, clone repositories, run verification commands, mutate Git, or write to GitHub."))
+                .andExpect(jsonPath("$.data.report").value(org.hamcrest.Matchers.containsString("# PatchPilot Evaluation Run Snapshot")));
+
+        snapshotMockMvc.perform(get("/api/evaluation/run-snapshots"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data", hasSize(1)))
+                .andExpect(jsonPath("$.data[0].previewRunId").value("preview-current-catalog"))
+                .andExpect(jsonPath("$.data[0].title").value("Evaluation run preview"));
+    }
+
+    @Test
+    void should_download_archived_evaluation_run_snapshot_report() throws Exception {
+        MockMvc snapshotMockMvc = MockMvcBuilders
+                .standaloneSetup(new EvaluationCaseController(new EvaluationCaseCatalogService(), archiveService("snapshot-1")))
+                .build();
+
+        String response = snapshotMockMvc.perform(post("/api/evaluation/run-snapshots"))
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        String snapshotId = response.replaceAll(".*\"id\":\"([^\"]+)\".*", "$1");
+
+        snapshotMockMvc.perform(get("/api/evaluation/run-snapshots/" + snapshotId + "/report/download"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("# PatchPilot Evaluation Run Snapshot")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("- Snapshot id: `" + snapshotId + "`")));
+    }
+
+    private static EvaluationRunSnapshotArchiveService archiveService(String snapshotId) {
+        return new EvaluationRunSnapshotArchiveService(
+                new EvaluationCaseCatalogService(),
+                new InMemoryEvaluationRunSnapshotArchiveRepository(),
+                Clock.fixed(Instant.parse("2026-06-26T04:00:00Z"), ZoneOffset.UTC),
+                () -> snapshotId
+        );
     }
 }

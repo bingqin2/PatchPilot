@@ -907,6 +907,23 @@ const evaluationRunPreview = {
   markdownReport: '# PatchPilot Evaluation Run Preview\n\n- Status: `READY`\n- Expected verification commands: mvn test, npm test'
 };
 
+const evaluationRunSnapshotArchive = {
+  id: 'snapshot-1',
+  previewRunId: 'preview-current-catalog',
+  title: 'Evaluation run preview',
+  status: 'READY',
+  caseCount: 3,
+  supportedFixCaseCount: 2,
+  safetyRejectionCaseCount: 1,
+  coveredLanguages: ['java', 'node'],
+  coveredBuildSystems: ['maven', 'npm'],
+  expectedVerificationCommands: ['mvn test', 'npm test'],
+  safetyRejectionCategories: ['DANGEROUS_INSTRUCTION'],
+  createdAt: '2026-06-26T04:00:00Z',
+  sideEffectContract: 'Archive stores the current evaluation run preview as PatchPilot-local evidence only; it does not create tasks, call the model, clone repositories, run verification commands, mutate Git, or write to GitHub.',
+  report: '# PatchPilot Evaluation Run Snapshot\n\n- Snapshot id: `snapshot-1`'
+};
+
 const supportedRepositoryPreflightResult = {
   supported: true,
   language: 'java',
@@ -1471,6 +1488,12 @@ beforeEach(() => {
     if (url === '/api/evaluation/run-preview') {
       return jsonResponse(evaluationRunPreview);
     }
+    if (url === '/api/evaluation/run-snapshots' && init?.method === 'POST') {
+      return jsonResponse(evaluationRunSnapshotArchive);
+    }
+    if (url === '/api/evaluation/run-snapshots') {
+      return jsonResponse([evaluationRunSnapshotArchive]);
+    }
     if (url === '/api/repository-preflight' && init?.method === 'POST') {
       return jsonResponse(supportedRepositoryPreflightResult);
     }
@@ -1932,9 +1955,10 @@ test('renders operational task dashboard from backend APIs', async () => {
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/evaluation/cases'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/evaluation/summary'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/evaluation/run-preview'));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/evaluation/run-snapshots'));
   const evaluationCaseCatalog = screen.getByRole('region', { name: 'Evaluation case catalog' });
   expect(within(evaluationCaseCatalog).getByRole('heading', { name: 'Evaluation case catalog' })).toBeInTheDocument();
-  expect(within(evaluationCaseCatalog).getAllByText('READY')).toHaveLength(2);
+  expect(within(evaluationCaseCatalog).getAllByText('READY')).toHaveLength(3);
   expect(within(evaluationCaseCatalog).getByText('Ready for demo evidence')).toBeInTheDocument();
   expect(within(evaluationCaseCatalog).getByText('3 cases across 2 languages')).toBeInTheDocument();
   expect(within(evaluationCaseCatalog).getByText('2 supported fix cases')).toBeInTheDocument();
@@ -1942,12 +1966,15 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(within(evaluationCaseCatalog).getByText('maven, npm')).toBeInTheDocument();
   expect(within(evaluationCaseCatalog).getByText('Evaluation catalog is ready for demo evidence; automated evaluation runs are still future work.')).toBeInTheDocument();
   expect(within(evaluationCaseCatalog).getByText(/does not create tasks, call the model, run tests, mutate Git, or write to GitHub/)).toBeInTheDocument();
-  expect(within(evaluationCaseCatalog).getByText('Evaluation run preview')).toBeInTheDocument();
-  expect(within(evaluationCaseCatalog).getByText('preview-current-catalog')).toBeInTheDocument();
+  expect(within(evaluationCaseCatalog).getAllByText('Evaluation run preview')).toHaveLength(2);
+  expect(within(evaluationCaseCatalog).getAllByText('preview-current-catalog')).toHaveLength(2);
   expect(within(evaluationCaseCatalog).getByText('mvn test, npm test')).toBeInTheDocument();
   expect(within(evaluationCaseCatalog).getByText('Automated benchmark execution is not implemented yet.')).toBeInTheDocument();
   expect(within(evaluationCaseCatalog).getByText('Use this preview as demo evidence now; implement stored evaluation runs next to measure real issue-to-PR outcomes.')).toBeInTheDocument();
-  expect(within(evaluationCaseCatalog).getByText(/does not create tasks, call the model, clone repositories, run verification commands, mutate Git, or write to GitHub/)).toBeInTheDocument();
+  expect(within(evaluationCaseCatalog).getAllByText(/does not create tasks, call the model, clone repositories, run verification commands, mutate Git, or write to GitHub/)).toHaveLength(2);
+  expect(within(evaluationCaseCatalog).getByText('Archived evaluation run snapshots')).toBeInTheDocument();
+  expect(within(evaluationCaseCatalog).getByText('snapshot-1')).toBeInTheDocument();
+  expect(within(evaluationCaseCatalog).getByText('2026-06-26T04:00:00Z')).toBeInTheDocument();
   expect(within(evaluationCaseCatalog).getByText('Java Maven documentation fix')).toBeInTheDocument();
   expect(within(evaluationCaseCatalog).getByText('Reject secret exfiltration')).toBeInTheDocument();
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/evidence-bundle'));

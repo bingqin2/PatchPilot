@@ -21,6 +21,7 @@ import type {
   EvaluationCase,
   EvaluationCaseSummary,
   EvaluationRunPreview,
+  EvaluationRunSnapshotArchive,
   FixTask,
   FixTaskFailureCauseSummary,
   FixTaskLatencySummary,
@@ -293,6 +294,18 @@ export async function getEvaluationSummary(): Promise<EvaluationCaseSummary> {
 
 export async function getEvaluationRunPreview(): Promise<EvaluationRunPreview> {
   return getApi<EvaluationRunPreview>('/api/evaluation/run-preview');
+}
+
+export async function archiveEvaluationRunSnapshot(): Promise<EvaluationRunSnapshotArchive> {
+  return postApi<EvaluationRunSnapshotArchive>('/api/evaluation/run-snapshots');
+}
+
+export async function listEvaluationRunSnapshots(): Promise<EvaluationRunSnapshotArchive[]> {
+  return getApi<EvaluationRunSnapshotArchive[]>('/api/evaluation/run-snapshots');
+}
+
+export async function downloadEvaluationRunSnapshotReport(snapshotId: string): Promise<Blob> {
+  return getBlobApi(`/api/evaluation/run-snapshots/${encodeURIComponent(snapshotId)}/report/download`);
 }
 
 export async function preflightRepository(input: RepositoryPreflightInput): Promise<RepositoryPreflightResult> {

@@ -1,21 +1,29 @@
-import type { EvaluationCase, EvaluationCaseSummary, EvaluationRunPreview } from '../../types';
+import type { EvaluationCase, EvaluationCaseSummary, EvaluationRunPreview, EvaluationRunSnapshotArchive } from '../../types';
 
 interface EvaluationCaseCatalogPanelProps {
   cases: EvaluationCase[];
   summary: EvaluationCaseSummary | null;
   runPreview: EvaluationRunPreview | null;
+  archives: EvaluationRunSnapshotArchive[];
   error: string | null;
   summaryError: string | null;
   runPreviewError: string | null;
+  archiveError: string | null;
+  onArchiveRunSnapshot: () => Promise<EvaluationRunSnapshotArchive>;
+  onDownloadArchiveReport: (snapshotId: string) => Promise<Blob>;
 }
 
 export function EvaluationCaseCatalogPanel({
   cases,
   summary,
   runPreview,
+  archives,
   error,
   summaryError,
-  runPreviewError
+  runPreviewError,
+  archiveError,
+  onArchiveRunSnapshot,
+  onDownloadArchiveReport
 }: EvaluationCaseCatalogPanelProps) {
   const supportedCases = cases.filter((evaluationCase) => evaluationCase.category === 'SUPPORTED_FIX');
   const rejectionCases = cases.filter((evaluationCase) => evaluationCase.category === 'SAFETY_REJECTION');
@@ -48,6 +56,24 @@ export function EvaluationCaseCatalogPanel({
     }
   }
 
+  async function archiveRunSnapshot() {
+    await onArchiveRunSnapshot();
+  }
+
+  async function copyArchivedReport(archive: EvaluationRunSnapshotArchive) {
+    await navigator.clipboard?.writeText(archive.report);
+  }
+
+  async function downloadArchivedReport(archive: EvaluationRunSnapshotArchive) {
+    const blob = await onDownloadArchiveReport(archive.id);
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `patchpilot-evaluation-run-snapshot-${archive.id}.md`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <section className="panel evaluation-case-panel" aria-label="Evaluation case catalog">
       <div className="panel-header">
@@ -75,6 +101,12 @@ export function EvaluationCaseCatalogPanel({
         <div className="adapter-api-error">
           <strong>Evaluation run preview incomplete</strong>
           <span>{runPreviewError}</span>
+        </div>
+      ) : null}
+      {archiveError ? (
+        <div className="adapter-api-error">
+          <strong>Evaluation run snapshot archive incomplete</strong>
+          <span>{archiveError}</span>
         </div>
       ) : null}
       <div className="adapter-readiness-summary">
@@ -111,9 +143,14 @@ export function EvaluationCaseCatalogPanel({
               <h3>{runPreview.title}</h3>
               <p>{runPreview.previewRunId}</p>
             </div>
-            <button type="button" className="secondary-button" onClick={copyRunPreview}>
-              Copy evaluation run preview
-            </button>
+            <div className="panel-actions">
+              <button type="button" className="secondary-button" onClick={copyRunPreview}>
+                Copy evaluation run preview
+              </button>
+              <button type="button" className="secondary-button" onClick={archiveRunSnapshot}>
+                Archive evaluation run snapshot
+              </button>
+            </div>
           </div>
           <div className="adapter-readiness-summary">
             <div>
@@ -149,6 +186,42 @@ export function EvaluationCaseCatalogPanel({
           ) : null}
         </div>
       ) : null}
+      <div className="adapter-readiness-section evaluation-run-archive-section">
+        <h3>Archived evaluation run snapshots</h3>
+        {archives.length > 0 ? (
+          <div className="evaluation-case-list">
+            {archives.map((archive) => (
+              <article className="evaluation-case-row" key={archive.id}>
+                <div>
+                  <strong>{archive.title}</strong>
+                  <span>{archive.id}</span>
+                </div>
+                <p>{archive.createdAt}</p>
+                <div className="evaluation-case-facts">
+                  <span>{archive.status}</span>
+                  <span>{archive.previewRunId}</span>
+                  <span>{archive.caseCount} cases</span>
+                  <span>{archive.coveredLanguages.join(', ') || 'No languages'}</span>
+                </div>
+                <div className="evaluation-case-detail">
+                  <span>Archive contract</span>
+                  <p>{archive.sideEffectContract}</p>
+                </div>
+                <div className="panel-actions">
+                  <button type="button" className="secondary-button" onClick={() => copyArchivedReport(archive)}>
+                    Copy {archive.id} report
+                  </button>
+                  <button type="button" className="secondary-button" onClick={() => downloadArchivedReport(archive)}>
+                    Download {archive.id} report
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <p className="empty-state compact-empty-state">No evaluation run snapshots archived yet.</p>
+        )}
+      </div>
       <div className="adapter-readiness-section">
         <h3>Supported issue-to-PR cases</h3>
         {supportedCases.length > 0 ? (
