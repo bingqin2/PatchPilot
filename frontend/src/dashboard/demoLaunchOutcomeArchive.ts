@@ -1,4 +1,4 @@
-import type { TaskStatus } from '../types';
+import type { DemoArchivedLaunchOutcome, TaskStatus } from '../types';
 
 export interface DemoLaunchOutcomeArchiveItem {
   id: string;
@@ -63,6 +63,21 @@ export function persistDemoLaunchOutcomeArchive(archive: DemoLaunchOutcomeArchiv
   } catch {
     // Browsers may reject localStorage writes in private contexts; archive is optional.
   }
+}
+
+export function toArchivedLaunchOutcomes(archive: DemoLaunchOutcomeArchiveItem[]): DemoArchivedLaunchOutcome[] {
+  return archive.slice(0, DEMO_LAUNCH_OUTCOME_ARCHIVE_LIMIT).map((item) => ({
+    triggerComment: item.triggerComment,
+    repositoryOwner: item.repositoryOwner,
+    repositoryName: item.repositoryName,
+    issueNumber: item.issueNumber,
+    triggerUser: item.triggerUser,
+    taskId: item.taskId,
+    taskStatus: item.taskStatus,
+    pullRequestUrl: item.pullRequestUrl,
+    archivedAt: item.archivedAt,
+    report: item.report
+  }));
 }
 
 function archiveKey(item: DemoLaunchOutcomeArchiveItem) {

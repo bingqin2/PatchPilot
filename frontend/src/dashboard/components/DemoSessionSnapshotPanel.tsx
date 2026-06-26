@@ -1,11 +1,19 @@
 import { Archive, Copy, Download } from 'lucide-react';
 import { useState } from 'react';
-import type { DemoPreparedLaunchCommand, DemoReadinessStatus, DemoSessionArchive, DemoSessionReportInput, DemoSessionSnapshot } from '../../types';
+import type {
+  DemoArchivedLaunchOutcome,
+  DemoPreparedLaunchCommand,
+  DemoReadinessStatus,
+  DemoSessionArchive,
+  DemoSessionReportInput,
+  DemoSessionSnapshot
+} from '../../types';
 import { compactDateTime } from '../format';
 
 interface DemoSessionSnapshotPanelProps {
   snapshot: DemoSessionSnapshot | null;
   preparedLaunchCommands: DemoPreparedLaunchCommand[];
+  archivedLaunchOutcomes: DemoArchivedLaunchOutcome[];
   archives: DemoSessionArchive[];
   error: string | null;
   archiveError: string | null;
@@ -18,6 +26,7 @@ interface DemoSessionSnapshotPanelProps {
 export function DemoSessionSnapshotPanel({
   snapshot,
   preparedLaunchCommands,
+  archivedLaunchOutcomes,
   archives,
   error,
   archiveError,
@@ -30,7 +39,7 @@ export function DemoSessionSnapshotPanel({
   const [downloadStatus, setDownloadStatus] = useState<string | null>(null);
   const [archiveStatus, setArchiveStatus] = useState<string | null>(null);
   const scriptStepCount = snapshot?.script.steps.length ?? 0;
-  const reportInput = { preparedLaunchCommands };
+  const reportInput = { preparedLaunchCommands, archivedLaunchOutcomes };
 
   async function copySessionReport() {
     try {
@@ -172,6 +181,7 @@ export function DemoSessionSnapshotPanel({
           </div>
 
           <PreparedLaunchCommandList commands={preparedLaunchCommands} />
+          <ArchivedLaunchOutcomeList outcomes={archivedLaunchOutcomes} />
 
           <div className="demo-session-archives">
             <h3>Recent session archives</h3>
@@ -217,6 +227,30 @@ export function DemoSessionSnapshotPanel({
         <div className="empty-state">Demo session snapshot has not loaded yet.</div>
       )}
     </section>
+  );
+}
+
+function ArchivedLaunchOutcomeList({ outcomes }: { outcomes: DemoArchivedLaunchOutcome[] }) {
+  return (
+    <div className="demo-session-prepared-commands">
+      <h3>Archived launch outcomes</h3>
+      {outcomes.length ? (
+        <ul>
+          {outcomes.map((outcome) => (
+            <li key={`${outcome.triggerComment}-${outcome.archivedAt}`}>
+              <code>{outcome.triggerComment}</code>
+              <span>
+                {outcome.repositoryOwner}/{outcome.repositoryName} #{outcome.issueNumber} - {outcome.taskStatus}
+              </span>
+              {outcome.pullRequestUrl ? <small>{outcome.pullRequestUrl}</small> : null}
+              <time dateTime={outcome.archivedAt}>{compactDateTime(outcome.archivedAt)}</time>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="empty-state compact-empty-state">No archived launch outcomes recorded in this browser.</p>
+      )}
+    </div>
   );
 }
 

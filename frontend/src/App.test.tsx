@@ -2286,6 +2286,21 @@ test('copies demo session report from backend API', async () => {
     configurable: true,
     value: { writeText }
   });
+  localStorage.setItem('patchpilot.demoLaunchOutcomeArchive', JSON.stringify([
+    {
+      id: 'archived-outcome-1',
+      archivedAt: '2026-06-26T02:00:00.000Z',
+      repositoryOwner: 'bingqin2',
+      repositoryName: 'PatchPilot',
+      issueNumber: 1,
+      triggerUser: 'bingqin2',
+      triggerComment: '/agent fix replace docs/demo.md PatchPilot smoke test',
+      taskId: 'task-1',
+      taskStatus: 'COMPLETED',
+      pullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+      report: '# PatchPilot Demo Launch Outcome Report\n\n- Task: `task-1`\n- Pull Request: https://github.com/bingqin2/PatchPilot/pull/8'
+    }
+  ]));
 
   render(<App />);
 
@@ -2294,14 +2309,19 @@ test('copies demo session report from backend API', async () => {
 
   const sessionPanel = await screen.findByRole('region', { name: 'Demo session snapshot' });
   expect(within(sessionPanel).getByRole('heading', { name: 'Prepared launch commands' })).toBeInTheDocument();
-  expect(within(sessionPanel).getByText('/agent fix replace docs/demo.md PatchPilot smoke test')).toBeInTheDocument();
+  expect(within(sessionPanel).getAllByText('/agent fix replace docs/demo.md PatchPilot smoke test')).toHaveLength(2);
   await user.click(within(sessionPanel).getByRole('button', { name: 'Copy session report' }));
 
-  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/session-report', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: expect.stringContaining('/agent fix replace docs/demo.md PatchPilot smoke test')
-  }));
+  await waitFor(() => expect(sessionReportRequestBody(fetchMock).preparedLaunchCommands[0].triggerComment).toBe(
+    '/agent fix replace docs/demo.md PatchPilot smoke test'
+  ));
+  const reportInput = sessionReportRequestBody(fetchMock);
+  expect(reportInput.archivedLaunchOutcomes[0]).toMatchObject({
+    triggerComment: '/agent fix replace docs/demo.md PatchPilot smoke test',
+    taskId: 'task-1',
+    taskStatus: 'COMPLETED',
+    pullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8'
+  });
   expect(writeText).toHaveBeenCalledWith('# PatchPilot Demo Session Report\n\n- Status: `READY`');
   expect(within(sessionPanel).getByText('Demo session report copied')).toBeInTheDocument();
 });
@@ -3926,6 +3946,16 @@ function headersRecord(headers?: HeadersInit): Record<string, string> {
     return Object.fromEntries(headers);
   }
   return { ...headers };
+}
+
+function sessionReportRequestBody(fetchMock: ReturnType<typeof vi.mocked<typeof fetch>>) {
+  const sessionReportCall = fetchMock.mock.calls.find(([url, init]) => (
+    url.toString() === '/api/demo/session-report' && init?.method === 'POST'
+  ));
+  if (!sessionReportCall) {
+    throw new Error('session report POST was not called');
+  }
+  return JSON.parse(sessionReportCall[1]?.body as string);
 }
 
 function taskPage(items: unknown[], limit = 50, offset = 0, hasMore = false, total = items.length) {

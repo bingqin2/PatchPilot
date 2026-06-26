@@ -844,7 +844,8 @@ test('loads demo session report markdown with prepared launch command context', 
         replacementText: 'PatchPilot smoke test',
         savedAt: '2026-06-26T01:00:00Z'
       }
-    ]
+    ],
+    archivedLaunchOutcomes: []
   };
   const fetchMock = vi.fn(async () => ({
     ok: true,
@@ -865,6 +866,45 @@ test('loads demo session report markdown with prepared launch command context', 
     body: JSON.stringify(input)
   });
   expect(report).toContain('Prepared Launch Commands');
+});
+
+test('loads demo session report markdown with archived launch outcome context', async () => {
+  const input: DemoSessionReportInput = {
+    preparedLaunchCommands: [],
+    archivedLaunchOutcomes: [
+      {
+        triggerComment: '/agent fix replace docs/demo.md PatchPilot smoke test',
+        repositoryOwner: 'bingqin2',
+        repositoryName: 'PatchPilot',
+        issueNumber: 1,
+        triggerUser: 'bingqin2',
+        taskId: 'task-1',
+        taskStatus: 'COMPLETED',
+        pullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+        archivedAt: '2026-06-26T01:10:00Z',
+        report: '# PatchPilot Demo Launch Outcome Report\n\n- Task: `task-1`'
+      }
+    ]
+  };
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: '# PatchPilot Demo Session Report\n\n## Archived Launch Outcomes',
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const report = await getDemoSessionReport(input);
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/session-report', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input)
+  });
+  expect(report).toContain('Archived Launch Outcomes');
 });
 
 test('downloads demo session report markdown from backend API', async () => {
@@ -898,7 +938,8 @@ test('downloads demo session report markdown with prepared launch command contex
         replacementText: null,
         savedAt: '2026-06-26T01:05:00Z'
       }
-    ]
+    ],
+    archivedLaunchOutcomes: []
   };
   const reportBlob = new Blob(['# PatchPilot Demo Session Report'], {
     type: 'text/markdown;charset=UTF-8'
@@ -979,7 +1020,8 @@ test('archives current demo session with prepared launch command context', async
         replacementText: 'PatchPilot smoke test',
         savedAt: '2026-06-26T01:00:00Z'
       }
-    ]
+    ],
+    archivedLaunchOutcomes: []
   };
   const fetchMock = vi.fn(async () => ({
     ok: true,

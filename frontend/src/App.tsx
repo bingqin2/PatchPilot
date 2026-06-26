@@ -82,6 +82,7 @@ import { TriggerDecisionPanel } from './dashboard/components/TriggerDecisionPane
 import { WebhookDeliveryPanel } from './dashboard/components/WebhookDeliveryPanel';
 import { compactDateTime, duration, percent } from './dashboard/format';
 import { loadDemoLaunchCommandHistory, toPreparedLaunchCommands } from './dashboard/demoLaunchCommandHistory';
+import { loadDemoLaunchOutcomeArchive, toArchivedLaunchOutcomes } from './dashboard/demoLaunchOutcomeArchive';
 import { emptyDetail } from './dashboard/types';
 import type { TaskDetailState } from './dashboard/types';
 import { AdminAuditPanel } from './dashboard/components/AdminAuditPanel';
@@ -197,6 +198,7 @@ export default function App() {
   const [demoLaunchCommandError, setDemoLaunchCommandError] = useState<string | null>(null);
   const [demoLaunchCommandPending, setDemoLaunchCommandPending] = useState(false);
   const [demoLaunchCommandHistoryRevision, setDemoLaunchCommandHistoryRevision] = useState(0);
+  const [demoLaunchOutcomeArchiveRevision, setDemoLaunchOutcomeArchiveRevision] = useState(0);
   const [composedPreflightInput, setComposedPreflightInput] = useState<DemoLaunchPreflightInput | null>(null);
   const [demoLaunchPreflight, setDemoLaunchPreflight] = useState<DemoLaunchPreflight | null>(null);
   const [demoLaunchPreflightError, setDemoLaunchPreflightError] = useState<string | null>(null);
@@ -269,6 +271,10 @@ export default function App() {
   const preparedDemoLaunchCommands = useMemo(
     () => toPreparedLaunchCommands(loadDemoLaunchCommandHistory()),
     [demoLaunchCommandHistoryRevision]
+  );
+  const archivedDemoLaunchOutcomes = useMemo(
+    () => toArchivedLaunchOutcomes(loadDemoLaunchOutcomeArchive()),
+    [demoLaunchOutcomeArchiveRevision]
   );
 
   const selectTask = useCallback((taskId: string) => {
@@ -850,6 +856,10 @@ export default function App() {
     setDemoLaunchCommandHistoryRevision((currentRevision) => currentRevision + 1);
   }, []);
 
+  const handleDemoLaunchOutcomeArchiveChange = useCallback(() => {
+    setDemoLaunchOutcomeArchiveRevision((currentRevision) => currentRevision + 1);
+  }, []);
+
   const handleDemoLaunchPreflight = useCallback(async (input: DemoLaunchPreflightInput) => {
     setDemoLaunchPreflightPending(true);
     setDemoLaunchPreflightError(null);
@@ -1110,6 +1120,7 @@ export default function App() {
       <DemoSessionSnapshotPanel
         snapshot={demoSessionSnapshot}
         preparedLaunchCommands={preparedDemoLaunchCommands}
+        archivedLaunchOutcomes={archivedDemoLaunchOutcomes}
         archives={demoSessionArchives}
         error={demoSessionSnapshotError}
         archiveError={demoSessionArchiveError}
@@ -1147,6 +1158,7 @@ export default function App() {
         preparedLaunchCommands={preparedDemoLaunchCommands}
         tasks={tasks}
         webhookDeliveries={webhookDeliveries}
+        onOutcomeArchiveChange={handleDemoLaunchOutcomeArchiveChange}
       />
 
       <section className="metrics-grid" aria-label="Task metrics">
