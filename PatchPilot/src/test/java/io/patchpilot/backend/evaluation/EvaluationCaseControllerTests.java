@@ -1,6 +1,7 @@
 package io.patchpilot.backend.evaluation;
 
 import io.patchpilot.backend.evaluation.service.impl.InMemoryEvaluationRunSnapshotArchiveRepository;
+import io.patchpilot.backend.evaluation.service.impl.InMemoryEvaluationFixtureBaselineRunArchiveRepository;
 import io.patchpilot.backend.language.LanguageAdapterRegistry;
 import io.patchpilot.backend.language.impl.GoLanguageAdapter;
 import io.patchpilot.backend.language.impl.JavaMavenLanguageAdapter;
@@ -164,6 +165,52 @@ class EvaluationCaseControllerTests {
     }
 
     @Test
+    void should_run_archive_and_list_evaluation_fixture_baseline_runs() throws Exception {
+        MockMvc baselineRunMockMvc = MockMvcBuilders
+                .standaloneSetup(controller("snapshot-unused", "baseline-run-1"))
+                .build();
+
+        baselineRunMockMvc.perform(post("/api/evaluation/fixture-baseline-runs"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value("baseline-run-1"))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.totalCaseCount").value(6))
+                .andExpect(jsonPath("$.data.executedCaseCount").value(4))
+                .andExpect(jsonPath("$.data.passedCaseCount").value(4))
+                .andExpect(jsonPath("$.data.failedCaseCount").value(0))
+                .andExpect(jsonPath("$.data.skippedCaseCount").value(2))
+                .andExpect(jsonPath("$.data.sideEffectContract").value("Archive stores a local fixture baseline execution report only; it does not create tasks, call the model, mutate Git, or write to GitHub."))
+                .andExpect(jsonPath("$.data.report").value(org.hamcrest.Matchers.containsString("# PatchPilot Evaluation Fixture Baseline Run")))
+                .andExpect(jsonPath("$.data.report").value(org.hamcrest.Matchers.containsString("# PatchPilot Evaluation Fixture Baseline")));
+
+        baselineRunMockMvc.perform(get("/api/evaluation/fixture-baseline-runs"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data", hasSize(1)))
+                .andExpect(jsonPath("$.data[0].id").value("baseline-run-1"))
+                .andExpect(jsonPath("$.data[0].status").value("READY"));
+    }
+
+    @Test
+    void should_download_archived_evaluation_fixture_baseline_run_report() throws Exception {
+        MockMvc baselineRunMockMvc = MockMvcBuilders
+                .standaloneSetup(controller("snapshot-unused", "baseline-run-1"))
+                .build();
+
+        String response = baselineRunMockMvc.perform(post("/api/evaluation/fixture-baseline-runs"))
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        String baselineRunId = response.replaceAll(".*\"id\":\"([^\"]+)\".*", "$1");
+
+        baselineRunMockMvc.perform(get("/api/evaluation/fixture-baseline-runs/" + baselineRunId + "/report/download"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("# PatchPilot Evaluation Fixture Baseline Run")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("- Baseline run id: `" + baselineRunId + "`")));
+    }
+
+    @Test
     void should_archive_and_list_evaluation_run_snapshots() throws Exception {
         MockMvc snapshotMockMvc = MockMvcBuilders
                 .standaloneSetup(controller("snapshot-1"))
@@ -214,6 +261,10 @@ class EvaluationCaseControllerTests {
     }
 
     private static EvaluationCaseController controller(String snapshotId) {
+        return controller(snapshotId, "baseline-run-default");
+    }
+
+    private static EvaluationCaseController controller(String snapshotId, String baselineRunId) {
         EvaluationCaseCatalogService catalogService = new EvaluationCaseCatalogService();
         LanguageAdapterRegistry languageAdapterRegistry = new LanguageAdapterRegistry(List.of(
                 new JavaMavenLanguageAdapter(),
@@ -225,15 +276,22 @@ class EvaluationCaseControllerTests {
                 catalogService,
                 languageAdapterRegistry
         );
+        EvaluationFixtureBaselineService baselineService = new EvaluationFixtureBaselineService(
+                catalogService,
+                readinessService,
+                languageAdapterRegistry,
+                (caseId, repositoryRoot, command) -> new TestRunResult(String.join(" ", command), 0, "fixture ok")
+        );
         return new EvaluationCaseController(
                 catalogService,
                 archiveService(snapshotId),
                 readinessService,
-                new EvaluationFixtureBaselineService(
-                        catalogService,
-                        readinessService,
-                        languageAdapterRegistry,
-                        (caseId, repositoryRoot, command) -> new TestRunResult(String.join(" ", command), 0, "fixture ok")
+                baselineService,
+                new EvaluationFixtureBaselineRunArchiveService(
+                        baselineService,
+                        new InMemoryEvaluationFixtureBaselineRunArchiveRepository(),
+                        Clock.fixed(Instant.parse("2026-06-26T04:00:00Z"), ZoneOffset.UTC),
+                        () -> baselineRunId
                 )
         );
     }

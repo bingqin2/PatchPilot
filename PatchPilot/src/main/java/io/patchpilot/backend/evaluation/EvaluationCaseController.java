@@ -3,6 +3,7 @@ package io.patchpilot.backend.evaluation;
 import io.patchpilot.backend.common.response.ApiResponse;
 import io.patchpilot.backend.evaluation.domain.EvaluationCaseVo;
 import io.patchpilot.backend.evaluation.domain.EvaluationCaseFixtureReadinessSummaryVo;
+import io.patchpilot.backend.evaluation.domain.EvaluationFixtureBaselineRunArchiveVo;
 import io.patchpilot.backend.evaluation.domain.EvaluationFixtureBaselineSummaryVo;
 import io.patchpilot.backend.evaluation.domain.EvaluationRunPreviewVo;
 import io.patchpilot.backend.evaluation.domain.EvaluationRunSnapshotArchiveVo;
@@ -31,6 +32,7 @@ public class EvaluationCaseController {
     private final EvaluationRunSnapshotArchiveService evaluationRunSnapshotArchiveService;
     private final EvaluationCaseFixtureReadinessService evaluationCaseFixtureReadinessService;
     private final EvaluationFixtureBaselineService evaluationFixtureBaselineService;
+    private final EvaluationFixtureBaselineRunArchiveService evaluationFixtureBaselineRunArchiveService;
 
     @GetMapping("/cases")
     public ApiResponse<List<EvaluationCaseVo>> listEvaluationCases() {
@@ -55,6 +57,26 @@ public class EvaluationCaseController {
     @PostMapping("/fixture-baseline")
     public ApiResponse<EvaluationFixtureBaselineSummaryVo> runEvaluationFixtureBaseline() {
         return ApiResponse.ok(evaluationFixtureBaselineService.runBaseline());
+    }
+
+    @PostMapping("/fixture-baseline-runs")
+    public ApiResponse<EvaluationFixtureBaselineRunArchiveVo> runAndArchiveEvaluationFixtureBaseline() {
+        return ApiResponse.ok(evaluationFixtureBaselineRunArchiveService.runAndArchiveBaseline());
+    }
+
+    @GetMapping("/fixture-baseline-runs")
+    public ApiResponse<List<EvaluationFixtureBaselineRunArchiveVo>> listEvaluationFixtureBaselineRuns() {
+        return ApiResponse.ok(evaluationFixtureBaselineRunArchiveService.listRecentArchives());
+    }
+
+    @GetMapping(value = "/fixture-baseline-runs/{runId}/report/download", produces = "text/markdown;charset=UTF-8")
+    public ResponseEntity<String> downloadEvaluationFixtureBaselineRunReport(@PathVariable String runId) {
+        return evaluationFixtureBaselineRunArchiveService.findArchive(runId)
+                .map(archive -> markdownAttachment(
+                        "patchpilot-evaluation-fixture-baseline-run-" + safeFilenamePart(archive.id()) + ".md",
+                        archive.report()
+                ))
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @PostMapping("/run-snapshots")

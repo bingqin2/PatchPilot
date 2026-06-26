@@ -21,6 +21,7 @@ import type {
   EvaluationCase,
   EvaluationCaseFixtureReadinessSummary,
   EvaluationCaseSummary,
+  EvaluationFixtureBaselineRunArchive,
   EvaluationFixtureBaselineSummary,
   EvaluationRunPreview,
   EvaluationRunSnapshotArchive,
@@ -300,6 +301,18 @@ export async function getEvaluationCaseReadiness(): Promise<EvaluationCaseFixtur
 
 export async function runEvaluationFixtureBaseline(): Promise<EvaluationFixtureBaselineSummary> {
   return postApi<EvaluationFixtureBaselineSummary>('/api/evaluation/fixture-baseline');
+}
+
+export async function runAndArchiveEvaluationFixtureBaseline(): Promise<EvaluationFixtureBaselineRunArchive> {
+  return postApi<EvaluationFixtureBaselineRunArchive>('/api/evaluation/fixture-baseline-runs');
+}
+
+export async function listEvaluationFixtureBaselineRuns(): Promise<EvaluationFixtureBaselineRunArchive[]> {
+  return getApi<EvaluationFixtureBaselineRunArchive[]>('/api/evaluation/fixture-baseline-runs');
+}
+
+export async function downloadEvaluationFixtureBaselineRunReport(runId: string): Promise<Blob> {
+  return getBlobApi(`/api/evaluation/fixture-baseline-runs/${encodeURIComponent(runId)}/report/download`);
 }
 
 export async function getEvaluationRunPreview(): Promise<EvaluationRunPreview> {

@@ -924,6 +924,20 @@ const evaluationRunSnapshotArchive = {
   report: '# PatchPilot Evaluation Run Snapshot\n\n- Snapshot id: `snapshot-1`'
 };
 
+const evaluationFixtureBaselineRunArchive = {
+  id: 'baseline-run-1',
+  status: 'READY',
+  totalCaseCount: 3,
+  executedCaseCount: 2,
+  passedCaseCount: 2,
+  failedCaseCount: 0,
+  skippedCaseCount: 1,
+  createdAt: '2026-06-26T06:00:00Z',
+  sideEffectContract: 'Archive stores a local fixture baseline execution report only; it does not create tasks, call the model, mutate Git, or write to GitHub.',
+  nextAction: 'Fixture baseline is passing; use the archived report as demo evidence for supported language adapters.',
+  report: '# PatchPilot Evaluation Fixture Baseline Run\n\n- Baseline run id: `baseline-run-1`'
+};
+
 const evaluationCaseReadiness = {
   status: 'READY',
   totalCaseCount: 3,
@@ -1626,6 +1640,12 @@ beforeEach(() => {
     if (url === '/api/evaluation/fixture-baseline' && init?.method === 'POST') {
       return jsonResponse(evaluationFixtureBaseline);
     }
+    if (url === '/api/evaluation/fixture-baseline-runs' && init?.method === 'POST') {
+      return jsonResponse(evaluationFixtureBaselineRunArchive);
+    }
+    if (url === '/api/evaluation/fixture-baseline-runs') {
+      return jsonResponse([evaluationFixtureBaselineRunArchive]);
+    }
     if (url === '/api/evaluation/run-preview') {
       return jsonResponse(evaluationRunPreview);
     }
@@ -2096,12 +2116,13 @@ test('renders operational task dashboard from backend APIs', async () => {
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/evaluation/cases'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/evaluation/summary'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/evaluation/case-readiness'));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/evaluation/fixture-baseline-runs'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/evaluation/run-preview'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/evaluation/run-snapshots'));
   expect(fetchMock).not.toHaveBeenCalledWith('/api/evaluation/fixture-baseline', { method: 'POST' });
   const evaluationCaseCatalog = screen.getByRole('region', { name: 'Evaluation case catalog' });
   expect(within(evaluationCaseCatalog).getByRole('heading', { name: 'Evaluation case catalog' })).toBeInTheDocument();
-  expect(within(evaluationCaseCatalog).getAllByText('READY')).toHaveLength(4);
+  expect(within(evaluationCaseCatalog).getAllByText('READY')).toHaveLength(5);
   expect(within(evaluationCaseCatalog).getByText('Ready for demo evidence')).toBeInTheDocument();
   expect(within(evaluationCaseCatalog).getByText('3 cases across 2 languages')).toBeInTheDocument();
   expect(within(evaluationCaseCatalog).getByText('2 supported fix cases')).toBeInTheDocument();
@@ -2118,6 +2139,9 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(within(evaluationCaseCatalog).getByText('Archived evaluation run snapshots')).toBeInTheDocument();
   expect(within(evaluationCaseCatalog).getByText('snapshot-1')).toBeInTheDocument();
   expect(within(evaluationCaseCatalog).getByText('2026-06-26T04:00:00Z')).toBeInTheDocument();
+  expect(within(evaluationCaseCatalog).getByText('Archived evaluation fixture baseline runs')).toBeInTheDocument();
+  expect(within(evaluationCaseCatalog).getByText('baseline-run-1')).toBeInTheDocument();
+  expect(within(evaluationCaseCatalog).getByText('2026-06-26T06:00:00Z')).toBeInTheDocument();
   expect(within(evaluationCaseCatalog).getByText('Evaluation case fixture readiness')).toBeInTheDocument();
   expect(within(evaluationCaseCatalog).getByText('2 passing cases')).toBeInTheDocument();
   expect(within(evaluationCaseCatalog).getByText('1 no-fixture-required case')).toBeInTheDocument();
@@ -2129,6 +2153,8 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(within(evaluationCaseCatalog).getByText('Evaluation fixture baseline')).toBeInTheDocument();
   expect(within(evaluationCaseCatalog).getByText('2 passed cases')).toBeInTheDocument();
   expect(within(evaluationCaseCatalog).getByText('maven ok')).toBeInTheDocument();
+  await user.click(within(evaluationCaseCatalog).getByRole('button', { name: 'Run and archive fixture baseline' }));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/evaluation/fixture-baseline-runs', { method: 'POST' }));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/evidence-bundle'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/session-snapshot'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/script'));

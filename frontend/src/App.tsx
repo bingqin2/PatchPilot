@@ -10,6 +10,7 @@ import {
   createTask,
   createTriggerQuarantine,
   downloadDemoSessionArchiveReport,
+  downloadEvaluationFixtureBaselineRunReport,
   downloadEvaluationRunSnapshotReport,
   downloadDemoHandoffPackage,
   downloadDemoSessionReport,
@@ -29,6 +30,7 @@ import {
   getEvaluationCaseReadiness,
   getEvaluationSummary,
   getEvaluationRunPreview,
+  runAndArchiveEvaluationFixtureBaseline,
   runEvaluationFixtureBaseline,
   preflightDemoLaunch,
   getGitHubCredentialReadiness,
@@ -49,6 +51,7 @@ import {
   listAcceptedTriggerDecisions,
   listAdminAuditEvents,
   listEvaluationCases,
+  listEvaluationFixtureBaselineRuns,
   listEvaluationRunSnapshots,
   listLanguageAdapterFixtures,
   listLanguageAdapterRuntimeReadiness,
@@ -118,6 +121,7 @@ import type {
   EvaluationCase,
   EvaluationCaseFixtureReadinessSummary,
   EvaluationCaseSummary,
+  EvaluationFixtureBaselineRunArchive,
   EvaluationFixtureBaselineSummary,
   EvaluationRunPreview,
   EvaluationRunSnapshotArchive,
@@ -230,6 +234,7 @@ export default function App() {
   const [evaluationSummary, setEvaluationSummary] = useState<EvaluationCaseSummary | null>(null);
   const [evaluationCaseReadiness, setEvaluationCaseReadiness] = useState<EvaluationCaseFixtureReadinessSummary | null>(null);
   const [evaluationFixtureBaseline, setEvaluationFixtureBaseline] = useState<EvaluationFixtureBaselineSummary | null>(null);
+  const [evaluationFixtureBaselineRuns, setEvaluationFixtureBaselineRuns] = useState<EvaluationFixtureBaselineRunArchive[]>([]);
   const [evaluationRunPreview, setEvaluationRunPreview] = useState<EvaluationRunPreview | null>(null);
   const [evaluationRunSnapshots, setEvaluationRunSnapshots] = useState<EvaluationRunSnapshotArchive[]>([]);
   const [evaluationCaseError, setEvaluationCaseError] = useState<string | null>(null);
@@ -529,6 +534,7 @@ export default function App() {
         evaluationCaseResult,
         evaluationSummaryResult,
         evaluationCaseReadinessResult,
+        evaluationFixtureBaselineRunResult,
         evaluationRunPreviewResult,
         evaluationRunSnapshotResult,
         queueSummaryData,
@@ -608,6 +614,10 @@ export default function App() {
         getEvaluationCaseReadiness().then(
           (readiness) => ({ readiness, error: null as string | null }),
           (caught) => ({ readiness: null, error: errorMessage(caught) })
+        ),
+        listEvaluationFixtureBaselineRuns().then(
+          (archives) => ({ archives, error: null as string | null }),
+          (caught) => ({ archives: null, error: errorMessage(caught) })
         ),
         getEvaluationRunPreview().then(
           (preview) => ({ preview, error: null as string | null }),
@@ -719,6 +729,12 @@ export default function App() {
         setEvaluationCaseReadiness(evaluationCaseReadinessResult.readiness);
       }
       setEvaluationCaseReadinessError(evaluationCaseReadinessResult.error);
+      if (evaluationFixtureBaselineRunResult.archives) {
+        setEvaluationFixtureBaselineRuns(evaluationFixtureBaselineRunResult.archives);
+      }
+      if (evaluationFixtureBaselineRunResult.error && !evaluationFixtureBaselineError) {
+        setEvaluationFixtureBaselineError(evaluationFixtureBaselineRunResult.error);
+      }
       if (evaluationRunPreviewResult.preview) {
         setEvaluationRunPreview(evaluationRunPreviewResult.preview);
       }
@@ -766,7 +782,7 @@ export default function App() {
     } finally {
       setLoading(false);
     }
-  }, [adminAuditFilters, buildSystemFilter, createdAfterFilter, createdBeforeFilter, languageFilter, rejectedTriggerCategoryFilter, repositoryNameFilter, repositoryOwnerFilter, searchQuery, statusFilter, taskSort]);
+  }, [adminAuditFilters, buildSystemFilter, createdAfterFilter, createdBeforeFilter, evaluationFixtureBaselineError, languageFilter, rejectedTriggerCategoryFilter, repositoryNameFilter, repositoryOwnerFilter, searchQuery, statusFilter, taskSort]);
 
   const handleLoadMoreTasks = useCallback(async () => {
     setLoadingMoreTasks(true);
@@ -933,6 +949,25 @@ export default function App() {
       setEvaluationFixtureBaselineLoading(false);
     }
   }, []);
+
+  const handleRunAndArchiveEvaluationFixtureBaseline = useCallback(async () => {
+    setEvaluationFixtureBaselineLoading(true);
+    setEvaluationFixtureBaselineError(null);
+    try {
+      const archive = await runAndArchiveEvaluationFixtureBaseline();
+      setEvaluationFixtureBaselineRuns((current) => [archive, ...current.filter((item) => item.id !== archive.id)].slice(0, 20));
+      return archive;
+    } catch (caught) {
+      setEvaluationFixtureBaselineError(errorMessage(caught));
+      throw caught;
+    } finally {
+      setEvaluationFixtureBaselineLoading(false);
+    }
+  }, []);
+
+  const handleDownloadEvaluationFixtureBaselineRunReport = useCallback((runId: string) => (
+    downloadEvaluationFixtureBaselineRunReport(runId)
+  ), []);
 
   const handleDownloadEvaluationRunSnapshotReport = useCallback((snapshotId: string) => (
     downloadEvaluationRunSnapshotReport(snapshotId)
@@ -1374,6 +1409,7 @@ export default function App() {
         caseReadiness={evaluationCaseReadiness}
         fixtureBaseline={evaluationFixtureBaseline}
         fixtureBaselineLoading={evaluationFixtureBaselineLoading}
+        fixtureBaselineRuns={evaluationFixtureBaselineRuns}
         runPreview={evaluationRunPreview}
         archives={evaluationRunSnapshots}
         error={evaluationCaseError}
@@ -1383,6 +1419,8 @@ export default function App() {
         runPreviewError={evaluationRunPreviewError}
         archiveError={evaluationRunSnapshotError}
         onRunFixtureBaseline={handleRunEvaluationFixtureBaseline}
+        onRunAndArchiveFixtureBaseline={handleRunAndArchiveEvaluationFixtureBaseline}
+        onDownloadFixtureBaselineRunReport={handleDownloadEvaluationFixtureBaselineRunReport}
         onArchiveRunSnapshot={handleArchiveEvaluationRunSnapshot}
         onDownloadArchiveReport={handleDownloadEvaluationRunSnapshotReport}
       />

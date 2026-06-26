@@ -636,6 +636,20 @@ export interface EvaluationFixtureBaselineSummary {
   markdownReport: string;
 }
 
+export interface EvaluationFixtureBaselineRunArchive {
+  id: string;
+  status: EvaluationSummaryStatus;
+  totalCaseCount: number;
+  executedCaseCount: number;
+  passedCaseCount: number;
+  failedCaseCount: number;
+  skippedCaseCount: number;
+  createdAt: string;
+  sideEffectContract: string;
+  nextAction: string;
+  report: string;
+}
+
 export interface EvaluationRunPreview {
   status: EvaluationSummaryStatus;
   title: string;

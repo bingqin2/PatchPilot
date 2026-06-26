@@ -163,6 +163,7 @@ The current implementation target is local self-hosted development first. Hosted
 - Operators should be able to inspect a read-only evaluation readiness summary with case counts, covered languages, covered build systems, rejection categories, health contract, and next action.
 - Operators should be able to inspect read-only evaluation fixture readiness that verifies checked-in fixture directories, expected changed files, and adapter metadata for supported cases while marking safety rejections as no-fixture-required.
 - Operators should be able to inspect and copy a read-only evaluation run preview report with expected commands, known gaps, side-effect contract, and next action before stored benchmark execution exists.
+- Operators should be able to execute and archive local fixture baseline runs for supported checked-in fixtures, then list, copy, or download the archived Markdown reports without creating tasks, calling the model, mutating Git, or writing to GitHub.
 - Evaluation runs should record model, prompt version, repository revision, success metrics, failure categories, cost, latency, and a copyable Markdown report.
 - Dashboard and API surfaces should make model usage, tool usage, retrieval evidence, evaluation results, budget state, and safety decisions inspectable without exposing secrets.
 

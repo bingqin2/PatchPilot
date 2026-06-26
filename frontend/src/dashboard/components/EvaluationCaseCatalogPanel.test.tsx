@@ -4,6 +4,7 @@ import type {
   EvaluationCase,
   EvaluationCaseFixtureReadinessSummary,
   EvaluationCaseSummary,
+  EvaluationFixtureBaselineRunArchive,
   EvaluationFixtureBaselineSummary,
   EvaluationRunPreview,
   EvaluationRunSnapshotArchive
@@ -246,6 +247,22 @@ const fixtureBaseline: EvaluationFixtureBaselineSummary = {
   markdownReport: '# PatchPilot Evaluation Fixture Baseline\n\n- Status: `READY`'
 };
 
+const fixtureBaselineRuns: EvaluationFixtureBaselineRunArchive[] = [
+  {
+    id: 'baseline-run-1',
+    status: 'READY',
+    totalCaseCount: 3,
+    executedCaseCount: 2,
+    passedCaseCount: 2,
+    failedCaseCount: 0,
+    skippedCaseCount: 1,
+    createdAt: '2026-06-26T06:00:00Z',
+    sideEffectContract: 'Archive stores a local fixture baseline execution report only; it does not create tasks, call the model, mutate Git, or write to GitHub.',
+    nextAction: 'Fixture baseline is passing; use the archived report as demo evidence for supported language adapters.',
+    report: '# PatchPilot Evaluation Fixture Baseline Run\n\n- Baseline run id: `baseline-run-1`'
+  }
+];
+
 function renderPanel(overrides: Partial<React.ComponentProps<typeof EvaluationCaseCatalogPanel>> = {}) {
   return render(
     <EvaluationCaseCatalogPanel
@@ -254,6 +271,7 @@ function renderPanel(overrides: Partial<React.ComponentProps<typeof EvaluationCa
       caseReadiness={caseReadiness}
       fixtureBaseline={fixtureBaseline}
       fixtureBaselineLoading={false}
+      fixtureBaselineRuns={fixtureBaselineRuns}
       runPreview={runPreview}
       archives={archives}
       error={null}
@@ -263,6 +281,8 @@ function renderPanel(overrides: Partial<React.ComponentProps<typeof EvaluationCa
       runPreviewError={null}
       archiveError={null}
       onRunFixtureBaseline={vi.fn()}
+      onRunAndArchiveFixtureBaseline={vi.fn()}
+      onDownloadFixtureBaselineRunReport={vi.fn()}
       onArchiveRunSnapshot={vi.fn()}
       onDownloadArchiveReport={vi.fn()}
       {...overrides}
@@ -274,7 +294,7 @@ test('summarizes supported evaluation cases and safety rejections', () => {
   renderPanel();
 
   const panel = screen.getByRole('region', { name: 'Evaluation case catalog' });
-  expect(within(panel).getAllByText('READY')).toHaveLength(5);
+  expect(within(panel).getAllByText('READY')).toHaveLength(6);
   expect(within(panel).getByText('Ready for demo evidence')).toBeInTheDocument();
   expect(within(panel).getByText('3 cases across 2 languages')).toBeInTheDocument();
   expect(within(panel).getByText('2 supported fix cases')).toBeInTheDocument();
@@ -312,6 +332,10 @@ test('summarizes supported evaluation cases and safety rejections', () => {
   expect(within(panel).getByText('1 skipped case')).toBeInTheDocument();
   expect(within(panel).getByText('maven ok')).toBeInTheDocument();
   expect(within(panel).getByText('Evaluation fixture baseline runs local checked-in fixture verification commands only; it does not create tasks, call the model, mutate Git, or write to GitHub.')).toBeInTheDocument();
+  expect(within(panel).getByText('Archived evaluation fixture baseline runs')).toBeInTheDocument();
+  expect(within(panel).getByText('baseline-run-1')).toBeInTheDocument();
+  expect(within(panel).getByText('2026-06-26T06:00:00Z')).toBeInTheDocument();
+  expect(within(panel).getByText('Archive stores a local fixture baseline execution report only; it does not create tasks, call the model, mutate Git, or write to GitHub.')).toBeInTheDocument();
 });
 
 test('copies evaluation case catalog report markdown', async () => {
@@ -413,6 +437,38 @@ test('runs and copies evaluation fixture baseline report from the panel', async 
 
   expect(onRunFixtureBaseline).toHaveBeenCalledTimes(1);
   expect(writeText).toHaveBeenCalledWith('# PatchPilot Evaluation Fixture Baseline\n\n- Status: `READY`');
+});
+
+test('runs archives copies and downloads evaluation fixture baseline run reports', async () => {
+  const user = userEvent.setup();
+  const writeText = vi.fn().mockResolvedValue(undefined);
+  const onRunAndArchiveFixtureBaseline = vi.fn().mockResolvedValue(fixtureBaselineRuns[0]);
+  const reportBlob = new Blob(['# PatchPilot Evaluation Fixture Baseline Run']);
+  const onDownloadFixtureBaselineRunReport = vi.fn().mockResolvedValue(reportBlob);
+  const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+  const createObjectURL = vi.fn(() => 'blob:evaluation-fixture-baseline-run');
+  const revokeObjectURL = vi.fn();
+  vi.stubGlobal('URL', {
+    ...globalThis.URL,
+    createObjectURL,
+    revokeObjectURL
+  });
+  Object.defineProperty(navigator, 'clipboard', {
+    configurable: true,
+    value: { writeText }
+  });
+  renderPanel({ onRunAndArchiveFixtureBaseline, onDownloadFixtureBaselineRunReport });
+
+  await user.click(screen.getByRole('button', { name: 'Run and archive fixture baseline' }));
+  await user.click(screen.getByRole('button', { name: 'Copy baseline-run-1 baseline report' }));
+  await user.click(screen.getByRole('button', { name: 'Download baseline-run-1 baseline report' }));
+
+  expect(onRunAndArchiveFixtureBaseline).toHaveBeenCalledTimes(1);
+  expect(writeText).toHaveBeenCalledWith('# PatchPilot Evaluation Fixture Baseline Run\n\n- Baseline run id: `baseline-run-1`');
+  expect(onDownloadFixtureBaselineRunReport).toHaveBeenCalledWith('baseline-run-1');
+  expect(createObjectURL).toHaveBeenCalledWith(reportBlob);
+  expect(click).toHaveBeenCalledTimes(1);
+  expect(revokeObjectURL).toHaveBeenCalledWith('blob:evaluation-fixture-baseline-run');
 });
 
 test('shows evaluation fixture baseline loading and error states', () => {
