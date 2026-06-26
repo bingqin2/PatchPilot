@@ -37,9 +37,9 @@ public class EvaluationCaseCatalogService {
                     "java",
                     "maven",
                     "docs/demo-repositories/java-maven",
-                    "/agent fix update GreetingService to return the issue-requested text",
+                    "/agent fix update Calculator to return the issue-requested sum",
                     List.of("mvn", "test"),
-                    List.of("src/main/java/io/patchpilot/demo/GreetingService.java"),
+                    List.of("src/main/java/demo/Calculator.java"),
                     List.of(
                             "Patch changes only the expected source file",
                             "Maven tests pass",
@@ -55,7 +55,7 @@ public class EvaluationCaseCatalogService {
                     "docs/demo-repositories/node-npm",
                     "/agent fix make the sum helper return correct totals",
                     List.of("npm", "test"),
-                    List.of("src/sum.js"),
+                    List.of("src/calculator.js"),
                     List.of(
                             "Patch changes only the expected source file",
                             "npm test passes",
@@ -87,7 +87,7 @@ public class EvaluationCaseCatalogService {
                     "docs/demo-repositories/go-module",
                     "/agent fix correct the greeting behavior covered by Go tests",
                     List.of("go", "test", "./..."),
-                    List.of("greeting.go"),
+                    List.of("calculator.go"),
                     List.of(
                             "Patch changes only the expected Go source file",
                             "go test ./... passes",

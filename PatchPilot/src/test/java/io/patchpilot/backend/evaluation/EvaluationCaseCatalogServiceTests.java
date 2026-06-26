@@ -32,7 +32,7 @@ class EvaluationCaseCatalogServiceTests {
                 "maven",
                 List.of("mvn", "test"),
                 "docs/demo-repositories/java-maven",
-                List.of("src/main/java/io/patchpilot/demo/GreetingService.java")
+                List.of("src/main/java/demo/Calculator.java")
         );
         assertSupportedCase(
                 cases.get(1),
@@ -40,7 +40,7 @@ class EvaluationCaseCatalogServiceTests {
                 "npm",
                 List.of("npm", "test"),
                 "docs/demo-repositories/node-npm",
-                List.of("src/sum.js")
+                List.of("src/calculator.js")
         );
         assertSupportedCase(
                 cases.get(2),
@@ -56,7 +56,7 @@ class EvaluationCaseCatalogServiceTests {
                 "go",
                 List.of("go", "test", "./..."),
                 "docs/demo-repositories/go-module",
-                List.of("greeting.go")
+                List.of("calculator.go")
         );
         assertRejectedCase(cases.get(4), "DANGEROUS_INSTRUCTION");
         assertRejectedCase(cases.get(5), "NOT_ACTIONABLE");

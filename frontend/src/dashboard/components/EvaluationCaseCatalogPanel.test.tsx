@@ -1,6 +1,12 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { EvaluationCase, EvaluationCaseSummary, EvaluationRunPreview, EvaluationRunSnapshotArchive } from '../../types';
+import type {
+  EvaluationCase,
+  EvaluationCaseFixtureReadinessSummary,
+  EvaluationCaseSummary,
+  EvaluationRunPreview,
+  EvaluationRunSnapshotArchive
+} from '../../types';
 import { EvaluationCaseCatalogPanel } from './EvaluationCaseCatalogPanel';
 
 const cases: EvaluationCase[] = [
@@ -11,9 +17,9 @@ const cases: EvaluationCase[] = [
     language: 'java',
     buildSystem: 'maven',
     repositoryFixturePath: 'docs/demo-repositories/java-maven',
-    issueText: '/agent fix update GreetingService to return the issue-requested text',
+    issueText: '/agent fix update Calculator to return the issue-requested sum',
     expectedVerificationCommand: ['mvn', 'test'],
-    expectedChangedFiles: ['src/main/java/io/patchpilot/demo/GreetingService.java'],
+    expectedChangedFiles: ['src/main/java/demo/Calculator.java'],
     successCriteria: ['Patch changes only the expected source file', 'Maven tests pass'],
     expectedDecision: 'ACCEPT_AND_CREATE_PR',
     expectedRejectionCategory: null,
@@ -28,7 +34,7 @@ const cases: EvaluationCase[] = [
     repositoryFixturePath: 'docs/demo-repositories/node-npm',
     issueText: '/agent fix make the sum helper return correct totals',
     expectedVerificationCommand: ['npm', 'test'],
-    expectedChangedFiles: ['src/sum.js'],
+    expectedChangedFiles: ['src/calculator.js'],
     successCriteria: ['npm test passes'],
     expectedDecision: 'ACCEPT_AND_CREATE_PR',
     expectedRejectionCategory: null,
@@ -104,15 +110,93 @@ const archives: EvaluationRunSnapshotArchive[] = [
   }
 ];
 
+const caseReadiness: EvaluationCaseFixtureReadinessSummary = {
+  status: 'READY',
+  totalCaseCount: 3,
+  passingCaseCount: 2,
+  noFixtureRequiredCaseCount: 1,
+  failingCaseCount: 0,
+  cases: [
+    {
+      caseId: 'java-maven-doc-fix',
+      title: 'Java Maven documentation fix',
+      category: 'SUPPORTED_FIX',
+      status: 'PASS',
+      fixtureRequired: true,
+      fixturePath: 'docs/demo-repositories/java-maven',
+      fixtureExists: true,
+      expectedLanguage: 'java',
+      actualLanguage: 'java',
+      expectedBuildSystem: 'maven',
+      actualBuildSystem: 'maven',
+      expectedVerificationCommand: ['mvn', 'test'],
+      actualVerificationCommand: ['mvn', 'test'],
+      adapterMatches: true,
+      expectedChangedFiles: ['src/main/java/demo/Calculator.java'],
+      missingExpectedFiles: [],
+      expectedFilesExist: true,
+      reason: 'Detected Maven project',
+      nextAction: 'Fixture readiness is verified for this supported evaluation case.'
+    },
+    {
+      caseId: 'node-npm-unit-fix',
+      title: 'Node npm unit fix',
+      category: 'SUPPORTED_FIX',
+      status: 'PASS',
+      fixtureRequired: true,
+      fixturePath: 'docs/demo-repositories/node-npm',
+      fixtureExists: true,
+      expectedLanguage: 'node',
+      actualLanguage: 'node',
+      expectedBuildSystem: 'npm',
+      actualBuildSystem: 'npm',
+      expectedVerificationCommand: ['npm', 'test'],
+      actualVerificationCommand: ['npm', 'test'],
+      adapterMatches: true,
+      expectedChangedFiles: ['src/calculator.js'],
+      missingExpectedFiles: [],
+      expectedFilesExist: true,
+      reason: 'Detected npm project with test script',
+      nextAction: 'Fixture readiness is verified for this supported evaluation case.'
+    },
+    {
+      caseId: 'unsafe-secret-exfiltration-rejection',
+      title: 'Reject secret exfiltration',
+      category: 'SAFETY_REJECTION',
+      status: 'NO_FIXTURE_REQUIRED',
+      fixtureRequired: false,
+      fixturePath: 'none',
+      fixtureExists: false,
+      expectedLanguage: 'none',
+      actualLanguage: 'none',
+      expectedBuildSystem: 'none',
+      actualBuildSystem: 'none',
+      expectedVerificationCommand: [],
+      actualVerificationCommand: [],
+      adapterMatches: false,
+      expectedChangedFiles: [],
+      missingExpectedFiles: [],
+      expectedFilesExist: false,
+      reason: 'Safety rejection cases validate trigger gating and do not require repository fixtures.',
+      nextAction: 'Keep this case in the safety rejection catalog; no fixture verification is required.'
+    }
+  ],
+  sideEffectContract: 'Evaluation case fixture readiness checks local checked-in fixtures and adapter metadata only; it does not create tasks, call the model, run verification commands, mutate Git, or write to GitHub.',
+  nextAction: 'Evaluation case fixtures are ready for demo evidence; automated evaluation execution remains future work.',
+  markdownReport: '# PatchPilot Evaluation Case Fixture Readiness\n\n- Status: `READY`'
+};
+
 test('summarizes supported evaluation cases and safety rejections', () => {
   render(
     <EvaluationCaseCatalogPanel
       cases={cases}
       summary={summary}
+      caseReadiness={caseReadiness}
       runPreview={runPreview}
       archives={archives}
       error={null}
       summaryError={null}
+      caseReadinessError={null}
       runPreviewError={null}
       archiveError={null}
       onArchiveRunSnapshot={vi.fn()}
@@ -121,7 +205,7 @@ test('summarizes supported evaluation cases and safety rejections', () => {
   );
 
   const panel = screen.getByRole('region', { name: 'Evaluation case catalog' });
-  expect(within(panel).getAllByText('READY')).toHaveLength(3);
+  expect(within(panel).getAllByText('READY')).toHaveLength(4);
   expect(within(panel).getByText('Ready for demo evidence')).toBeInTheDocument();
   expect(within(panel).getByText('3 cases across 2 languages')).toBeInTheDocument();
   expect(within(panel).getByText('2 supported fix cases')).toBeInTheDocument();
@@ -130,11 +214,12 @@ test('summarizes supported evaluation cases and safety rejections', () => {
   expect(within(panel).getByText('Evaluation catalog is ready for demo evidence; automated evaluation runs are still future work.')).toBeInTheDocument();
   expect(within(panel).getByText('Summary is derived from checked-in evaluation case metadata only; it does not create tasks, call the model, run tests, mutate Git, or write to GitHub.')).toBeInTheDocument();
   expect(within(panel).getAllByText('java, node')).toHaveLength(2);
-  expect(within(panel).getByText('Java Maven documentation fix')).toBeInTheDocument();
-  expect(within(panel).getByText('docs/demo-repositories/java-maven')).toBeInTheDocument();
+  expect(within(panel).getAllByText('Java Maven documentation fix')).toHaveLength(2);
+  expect(within(panel).getAllByText('docs/demo-repositories/java-maven')).toHaveLength(2);
   expect(within(panel).getByText('mvn test')).toBeInTheDocument();
-  expect(within(panel).getByText('src/main/java/io/patchpilot/demo/GreetingService.java')).toBeInTheDocument();
-  expect(within(panel).getByText('Reject secret exfiltration')).toBeInTheDocument();
+  expect(within(panel).getByText('mvn test -> mvn test')).toBeInTheDocument();
+  expect(within(panel).getAllByText('src/main/java/demo/Calculator.java')).toHaveLength(2);
+  expect(within(panel).getAllByText('Reject secret exfiltration')).toHaveLength(2);
   expect(within(panel).getAllByText('DANGEROUS_INSTRUCTION')).toHaveLength(3);
   expect(within(panel).getByText('Rejected before task creation, queueing, model calls, Git commands, and GitHub writes.')).toBeInTheDocument();
   expect(within(panel).getAllByText('Evaluation run preview')).toHaveLength(2);
@@ -146,6 +231,13 @@ test('summarizes supported evaluation cases and safety rejections', () => {
   expect(within(panel).getByText('Archived evaluation run snapshots')).toBeInTheDocument();
   expect(within(panel).getByText('snapshot-1')).toBeInTheDocument();
   expect(within(panel).getByText('2026-06-26T04:00:00Z')).toBeInTheDocument();
+  expect(within(panel).getByText('Evaluation case fixture readiness')).toBeInTheDocument();
+  expect(within(panel).getByText('2 passing cases')).toBeInTheDocument();
+  expect(within(panel).getByText('1 no-fixture-required case')).toBeInTheDocument();
+  expect(within(panel).getByText('0 failing cases')).toBeInTheDocument();
+  expect(within(panel).getByText('Evaluation case fixtures are ready for demo evidence; automated evaluation execution remains future work.')).toBeInTheDocument();
+  expect(within(panel).getByText('Detected Maven project')).toBeInTheDocument();
+  expect(within(panel).getByText('NO_FIXTURE_REQUIRED')).toBeInTheDocument();
 });
 
 test('copies evaluation case catalog report markdown', async () => {
@@ -159,10 +251,12 @@ test('copies evaluation case catalog report markdown', async () => {
     <EvaluationCaseCatalogPanel
       cases={cases}
       summary={summary}
+      caseReadiness={caseReadiness}
       runPreview={runPreview}
       archives={archives}
       error={null}
       summaryError={null}
+      caseReadinessError={null}
       runPreviewError={null}
       archiveError={null}
       onArchiveRunSnapshot={vi.fn()}
@@ -195,10 +289,12 @@ test('copies evaluation run preview markdown from the backend report', async () 
     <EvaluationCaseCatalogPanel
       cases={cases}
       summary={summary}
+      caseReadiness={caseReadiness}
       runPreview={runPreview}
       archives={archives}
       error={null}
       summaryError={null}
+      caseReadinessError={null}
       runPreviewError={null}
       archiveError={null}
       onArchiveRunSnapshot={vi.fn()}
@@ -234,10 +330,12 @@ test('archives current evaluation run preview and copies archived reports', asyn
     <EvaluationCaseCatalogPanel
       cases={cases}
       summary={summary}
+      caseReadiness={caseReadiness}
       runPreview={runPreview}
       archives={archives}
       error={null}
       summaryError={null}
+      caseReadinessError={null}
       runPreviewError={null}
       archiveError={null}
       onArchiveRunSnapshot={onArchiveRunSnapshot}
@@ -257,15 +355,46 @@ test('archives current evaluation run preview and copies archived reports', asyn
   expect(revokeObjectURL).toHaveBeenCalledWith('blob:evaluation-run-snapshot');
 });
 
+test('copies evaluation case fixture readiness markdown from the backend report', async () => {
+  const user = userEvent.setup();
+  const writeText = vi.fn().mockResolvedValue(undefined);
+  Object.defineProperty(navigator, 'clipboard', {
+    configurable: true,
+    value: { writeText }
+  });
+  render(
+    <EvaluationCaseCatalogPanel
+      cases={cases}
+      summary={summary}
+      caseReadiness={caseReadiness}
+      runPreview={runPreview}
+      archives={archives}
+      error={null}
+      summaryError={null}
+      caseReadinessError={null}
+      runPreviewError={null}
+      archiveError={null}
+      onArchiveRunSnapshot={vi.fn()}
+      onDownloadArchiveReport={vi.fn()}
+    />
+  );
+
+  await user.click(screen.getByRole('button', { name: 'Copy fixture readiness report' }));
+
+  expect(writeText).toHaveBeenCalledWith('# PatchPilot Evaluation Case Fixture Readiness\n\n- Status: `READY`');
+});
+
 test('shows catalog load errors without hiding stale cases', () => {
   render(
     <EvaluationCaseCatalogPanel
       cases={cases}
       summary={summary}
+      caseReadiness={caseReadiness}
       runPreview={runPreview}
       archives={archives}
       error="Evaluation catalog unavailable"
       summaryError="Evaluation summary unavailable"
+      caseReadinessError="Evaluation case fixture readiness unavailable"
       runPreviewError="Evaluation run preview unavailable"
       archiveError="Evaluation run snapshot archive unavailable"
       onArchiveRunSnapshot={vi.fn()}
@@ -276,7 +405,8 @@ test('shows catalog load errors without hiding stale cases', () => {
   expect(screen.getByText('Evaluation catalog incomplete')).toBeInTheDocument();
   expect(screen.getByText('Evaluation catalog unavailable')).toBeInTheDocument();
   expect(screen.getByText('Evaluation summary unavailable')).toBeInTheDocument();
+  expect(screen.getByText('Evaluation case fixture readiness unavailable')).toBeInTheDocument();
   expect(screen.getByText('Evaluation run preview unavailable')).toBeInTheDocument();
   expect(screen.getByText('Evaluation run snapshot archive unavailable')).toBeInTheDocument();
-  expect(screen.getByText('Java Maven documentation fix')).toBeInTheDocument();
+  expect(screen.getAllByText('Java Maven documentation fix')).toHaveLength(2);
 });

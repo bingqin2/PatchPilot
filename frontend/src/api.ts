@@ -19,6 +19,7 @@ import type {
   DemoSessionSnapshot,
   DemoSmokeChecklist,
   EvaluationCase,
+  EvaluationCaseFixtureReadinessSummary,
   EvaluationCaseSummary,
   EvaluationRunPreview,
   EvaluationRunSnapshotArchive,
@@ -290,6 +291,10 @@ export async function listEvaluationCases(): Promise<EvaluationCase[]> {
 
 export async function getEvaluationSummary(): Promise<EvaluationCaseSummary> {
   return getApi<EvaluationCaseSummary>('/api/evaluation/summary');
+}
+
+export async function getEvaluationCaseReadiness(): Promise<EvaluationCaseFixtureReadinessSummary> {
+  return getApi<EvaluationCaseFixtureReadinessSummary>('/api/evaluation/case-readiness');
 }
 
 export async function getEvaluationRunPreview(): Promise<EvaluationRunPreview> {

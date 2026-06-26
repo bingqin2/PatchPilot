@@ -4,6 +4,29 @@ This file records dated implementation progress, validation commands, and import
 
 ## 2026-06-26
 
+Implemented evaluation case fixture readiness from `docs/plans/215-evaluation-case-fixture-readiness.md`.
+
+Changes:
+
+- Added read-only `GET /api/evaluation/case-readiness`.
+- Checked supported evaluation cases against the real language adapter registry, fixture directory existence, expected verification command, and expected changed files.
+- Marked safety-rejection evaluation cases as `NO_FIXTURE_REQUIRED` because they validate trigger gates rather than repository files.
+- Added aggregate readiness counts, side-effect contract, next action, and a copyable Markdown readiness report.
+- Added dashboard API helpers and a fixture-readiness section in `Evaluation case catalog`.
+- Aligned Java/Maven and Node/npm evaluation expected files with the checked-in demo fixtures.
+- Updated README, product spec, frontend design docs, AI infrastructure target, the plan document, and this execution log.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=EvaluationCaseFixtureReadinessServiceTests,EvaluationCaseCatalogServiceTests,EvaluationCaseControllerTests test`: first failed because the fixture-readiness service and response models did not exist; then passed after backend implementation, 12 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts src/dashboard/components/EvaluationCaseCatalogPanel.test.tsx src/App.test.tsx --reporter=basic`: first failed because the new API helper and dashboard section did not exist; then failed while old uniqueness assertions were updated for the new catalog-plus-readiness layout; then passed after frontend integration, 141 tests run, 0 failures.
+- `mvn -pl PatchPilot test -q`: passed after full backend regression verification.
+- `npm test -- --reporter=basic`: passed after full frontend regression verification, 26 test files and 255 tests run.
+- `npm run build`: passed after TypeScript and production Vite build verification.
+- `git diff --check`: passed.
+
+## 2026-06-26
+
 Implemented evaluation run snapshot archive from `docs/plans/214-evaluation-run-snapshot-archive.md`.
 
 Changes:

@@ -1,6 +1,11 @@
 package io.patchpilot.backend.evaluation;
 
 import io.patchpilot.backend.evaluation.service.impl.InMemoryEvaluationRunSnapshotArchiveRepository;
+import io.patchpilot.backend.language.LanguageAdapterRegistry;
+import io.patchpilot.backend.language.impl.GoLanguageAdapter;
+import io.patchpilot.backend.language.impl.JavaMavenLanguageAdapter;
+import io.patchpilot.backend.language.impl.NodeNpmLanguageAdapter;
+import io.patchpilot.backend.language.impl.PythonPytestLanguageAdapter;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -8,6 +13,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.List;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -19,7 +25,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class EvaluationCaseControllerTests {
 
     private final MockMvc mockMvc = MockMvcBuilders
-            .standaloneSetup(new EvaluationCaseController(new EvaluationCaseCatalogService(), archiveService("snapshot-default")))
+            .standaloneSetup(controller("snapshot-default"))
             .build();
 
     @Test
@@ -35,7 +41,7 @@ class EvaluationCaseControllerTests {
                 .andExpect(jsonPath("$.data[0].repositoryFixturePath").value("docs/demo-repositories/java-maven"))
                 .andExpect(jsonPath("$.data[0].expectedVerificationCommand[0]").value("mvn"))
                 .andExpect(jsonPath("$.data[0].expectedVerificationCommand[1]").value("test"))
-                .andExpect(jsonPath("$.data[0].expectedChangedFiles[0]").value("src/main/java/io/patchpilot/demo/GreetingService.java"))
+                .andExpect(jsonPath("$.data[0].expectedChangedFiles[0]").value("src/main/java/demo/Calculator.java"))
                 .andExpect(jsonPath("$.data[0].expectedDecision").value("ACCEPT_AND_CREATE_PR"))
                 .andExpect(jsonPath("$.data[0].expectedRejectionCategory").doesNotExist())
                 .andExpect(jsonPath("$.data[4].id").value("unsafe-secret-exfiltration-rejection"))
@@ -104,9 +110,34 @@ class EvaluationCaseControllerTests {
     }
 
     @Test
+    void should_return_evaluation_case_fixture_readiness() throws Exception {
+        mockMvc.perform(get("/api/evaluation/case-readiness"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.totalCaseCount").value(6))
+                .andExpect(jsonPath("$.data.passingCaseCount").value(4))
+                .andExpect(jsonPath("$.data.noFixtureRequiredCaseCount").value(2))
+                .andExpect(jsonPath("$.data.failingCaseCount").value(0))
+                .andExpect(jsonPath("$.data.cases", hasSize(6)))
+                .andExpect(jsonPath("$.data.cases[0].caseId").value("java-maven-doc-fix"))
+                .andExpect(jsonPath("$.data.cases[0].status").value("PASS"))
+                .andExpect(jsonPath("$.data.cases[0].fixtureRequired").value(true))
+                .andExpect(jsonPath("$.data.cases[0].fixtureExists").value(true))
+                .andExpect(jsonPath("$.data.cases[0].adapterMatches").value(true))
+                .andExpect(jsonPath("$.data.cases[0].expectedFilesExist").value(true))
+                .andExpect(jsonPath("$.data.cases[0].expectedChangedFiles[0]").value("src/main/java/demo/Calculator.java"))
+                .andExpect(jsonPath("$.data.cases[0].missingExpectedFiles", hasSize(0)))
+                .andExpect(jsonPath("$.data.cases[4].caseId").value("unsafe-secret-exfiltration-rejection"))
+                .andExpect(jsonPath("$.data.cases[4].status").value("NO_FIXTURE_REQUIRED"))
+                .andExpect(jsonPath("$.data.sideEffectContract").value("Evaluation case fixture readiness checks local checked-in fixtures and adapter metadata only; it does not create tasks, call the model, run verification commands, mutate Git, or write to GitHub."))
+                .andExpect(jsonPath("$.data.markdownReport").value(org.hamcrest.Matchers.containsString("# PatchPilot Evaluation Case Fixture Readiness")));
+    }
+
+    @Test
     void should_archive_and_list_evaluation_run_snapshots() throws Exception {
         MockMvc snapshotMockMvc = MockMvcBuilders
-                .standaloneSetup(new EvaluationCaseController(new EvaluationCaseCatalogService(), archiveService("snapshot-1")))
+                .standaloneSetup(controller("snapshot-1"))
                 .build();
 
         snapshotMockMvc.perform(post("/api/evaluation/run-snapshots"))
@@ -129,7 +160,7 @@ class EvaluationCaseControllerTests {
     @Test
     void should_download_archived_evaluation_run_snapshot_report() throws Exception {
         MockMvc snapshotMockMvc = MockMvcBuilders
-                .standaloneSetup(new EvaluationCaseController(new EvaluationCaseCatalogService(), archiveService("snapshot-1")))
+                .standaloneSetup(controller("snapshot-1"))
                 .build();
 
         String response = snapshotMockMvc.perform(post("/api/evaluation/run-snapshots"))
@@ -150,6 +181,23 @@ class EvaluationCaseControllerTests {
                 new InMemoryEvaluationRunSnapshotArchiveRepository(),
                 Clock.fixed(Instant.parse("2026-06-26T04:00:00Z"), ZoneOffset.UTC),
                 () -> snapshotId
+        );
+    }
+
+    private static EvaluationCaseController controller(String snapshotId) {
+        EvaluationCaseCatalogService catalogService = new EvaluationCaseCatalogService();
+        return new EvaluationCaseController(
+                catalogService,
+                archiveService(snapshotId),
+                new EvaluationCaseFixtureReadinessService(
+                        catalogService,
+                        new LanguageAdapterRegistry(List.of(
+                                new JavaMavenLanguageAdapter(),
+                                new NodeNpmLanguageAdapter(),
+                                new PythonPytestLanguageAdapter(),
+                                new GoLanguageAdapter()
+                        ))
+                )
         );
     }
 }

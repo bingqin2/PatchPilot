@@ -100,7 +100,7 @@ PatchPilot should be measured through repeatable issue-to-PR fixtures, not only 
 Target capabilities:
 
 - Checked-in evaluation cases with repository fixture, issue text, expected changed files, expected verification command, and success criteria.
-- The first implementation surface is a read-only evaluation case catalog, readiness summary, and run preview API/dashboard panel, so operators can inspect supported language and safety-rejection scenarios and copy benchmark-shaped evidence before automated benchmark execution exists.
+- The first implementation surface is a read-only evaluation case catalog, readiness summary, fixture-readiness report, and run preview API/dashboard panel, so operators can inspect supported language and safety-rejection scenarios, verify checked-in fixture coverage, and copy benchmark-shaped evidence before automated benchmark execution exists.
 - Smoke benchmarks for Java/Maven, Java/Gradle, Go, Node, and Python adapters.
 - Metrics for trigger acceptance accuracy, unsupported-repository rejection accuracy, patch application success, verification pass rate, PR creation success, false rejection rate, false acceptance rate, model cost, and latency.
 - Stored evaluation runs that can compare model, prompt version, adapter, and code revision.
