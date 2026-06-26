@@ -4,6 +4,7 @@ import type {
   EvaluationCaseFixtureReadinessSummary,
   EvaluationCaseSummary,
   EvaluationFixtureBaselineCase,
+  EvaluationFixtureBaselineRunArchive,
   EvaluationFixtureBaselineSummary,
   EvaluationRunPreview,
   EvaluationRunSnapshotArchive
@@ -15,6 +16,7 @@ interface EvaluationCaseCatalogPanelProps {
   caseReadiness: EvaluationCaseFixtureReadinessSummary | null;
   fixtureBaseline: EvaluationFixtureBaselineSummary | null;
   fixtureBaselineLoading: boolean;
+  fixtureBaselineRuns: EvaluationFixtureBaselineRunArchive[];
   runPreview: EvaluationRunPreview | null;
   archives: EvaluationRunSnapshotArchive[];
   error: string | null;
@@ -24,6 +26,8 @@ interface EvaluationCaseCatalogPanelProps {
   runPreviewError: string | null;
   archiveError: string | null;
   onRunFixtureBaseline: () => Promise<EvaluationFixtureBaselineSummary>;
+  onRunAndArchiveFixtureBaseline: () => Promise<EvaluationFixtureBaselineRunArchive>;
+  onDownloadFixtureBaselineRunReport: (runId: string) => Promise<Blob>;
   onArchiveRunSnapshot: () => Promise<EvaluationRunSnapshotArchive>;
   onDownloadArchiveReport: (snapshotId: string) => Promise<Blob>;
 }
@@ -34,6 +38,7 @@ export function EvaluationCaseCatalogPanel({
   caseReadiness,
   fixtureBaseline,
   fixtureBaselineLoading,
+  fixtureBaselineRuns,
   runPreview,
   archives,
   error,
@@ -43,6 +48,8 @@ export function EvaluationCaseCatalogPanel({
   runPreviewError,
   archiveError,
   onRunFixtureBaseline,
+  onRunAndArchiveFixtureBaseline,
+  onDownloadFixtureBaselineRunReport,
   onArchiveRunSnapshot,
   onDownloadArchiveReport
 }: EvaluationCaseCatalogPanelProps) {
@@ -87,10 +94,28 @@ export function EvaluationCaseCatalogPanel({
     await onRunFixtureBaseline();
   }
 
+  async function runAndArchiveFixtureBaseline() {
+    await onRunAndArchiveFixtureBaseline();
+  }
+
   async function copyFixtureBaselineReport() {
     if (fixtureBaseline) {
       await navigator.clipboard?.writeText(fixtureBaseline.markdownReport);
     }
+  }
+
+  async function copyFixtureBaselineRunReport(archive: EvaluationFixtureBaselineRunArchive) {
+    await navigator.clipboard?.writeText(archive.report);
+  }
+
+  async function downloadFixtureBaselineRunReport(archive: EvaluationFixtureBaselineRunArchive) {
+    const blob = await onDownloadFixtureBaselineRunReport(archive.id);
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `patchpilot-evaluation-fixture-baseline-run-${archive.id}.md`;
+    anchor.click();
+    URL.revokeObjectURL(url);
   }
 
   async function archiveRunSnapshot() {
@@ -235,6 +260,9 @@ export function EvaluationCaseCatalogPanel({
             <button type="button" className="secondary-button" onClick={runFixtureBaseline} disabled={fixtureBaselineLoading}>
               {fixtureBaselineLoading ? 'Running fixture baseline' : 'Run fixture baseline'}
             </button>
+            <button type="button" className="secondary-button" onClick={runAndArchiveFixtureBaseline} disabled={fixtureBaselineLoading}>
+              Run and archive fixture baseline
+            </button>
             {fixtureBaseline ? (
               <button type="button" className="secondary-button" onClick={copyFixtureBaselineReport}>
                 Copy fixture baseline report
@@ -274,6 +302,47 @@ export function EvaluationCaseCatalogPanel({
           </>
         ) : (
           <p className="empty-state compact-empty-state">No fixture baseline run has been executed in this dashboard session.</p>
+        )}
+      </div>
+      <div className="adapter-readiness-section evaluation-fixture-baseline-archive-section">
+        <h3>Archived evaluation fixture baseline runs</h3>
+        {fixtureBaselineRuns.length > 0 ? (
+          <div className="evaluation-case-list">
+            {fixtureBaselineRuns.map((archive) => (
+              <article className="evaluation-case-row" key={archive.id}>
+                <div>
+                  <strong>{archive.status}</strong>
+                  <span>{archive.id}</span>
+                </div>
+                <p>{archive.createdAt}</p>
+                <div className="evaluation-case-facts">
+                  <span>{archive.totalCaseCount} cases</span>
+                  <span>{archive.executedCaseCount} executed</span>
+                  <span>{archive.passedCaseCount} passed</span>
+                  <span>{archive.failedCaseCount} failed</span>
+                  <span>{archive.skippedCaseCount} skipped</span>
+                </div>
+                <div className="evaluation-case-detail">
+                  <span>Archive contract</span>
+                  <p>{archive.sideEffectContract}</p>
+                </div>
+                <div className="evaluation-case-detail">
+                  <span>Next action</span>
+                  <p>{archive.nextAction}</p>
+                </div>
+                <div className="panel-actions">
+                  <button type="button" className="secondary-button" onClick={() => copyFixtureBaselineRunReport(archive)}>
+                    Copy {archive.id} baseline report
+                  </button>
+                  <button type="button" className="secondary-button" onClick={() => downloadFixtureBaselineRunReport(archive)}>
+                    Download {archive.id} baseline report
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <p className="empty-state compact-empty-state">No evaluation fixture baseline runs archived yet.</p>
         )}
       </div>
       {runPreview ? (

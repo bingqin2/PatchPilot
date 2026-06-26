@@ -33,6 +33,9 @@ import {
   getEvaluationCaseReadiness,
   getEvaluationRunPreview,
   runEvaluationFixtureBaseline,
+  runAndArchiveEvaluationFixtureBaseline,
+  listEvaluationFixtureBaselineRuns,
+  downloadEvaluationFixtureBaselineRunReport,
   getRejectedTriggerSummary,
   getTriggerQuarantineEvidence,
   getWorkerHealth,
@@ -2334,6 +2337,61 @@ test('runs evaluation fixture baseline through backend API', async () => {
   expect(baseline.markdownReport).toContain('# PatchPilot Evaluation Fixture Baseline');
 });
 
+test('runs and archives evaluation fixture baseline through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: evaluationFixtureBaselineRunArchive(),
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const archive = await runAndArchiveEvaluationFixtureBaseline();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/evaluation/fixture-baseline-runs', { method: 'POST' });
+  expect(archive.id).toBe('baseline-run-1');
+  expect(archive.passedCaseCount).toBe(4);
+  expect(archive.report).toContain('# PatchPilot Evaluation Fixture Baseline Run');
+});
+
+test('lists evaluation fixture baseline run archives through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: [evaluationFixtureBaselineRunArchive()],
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const archives = await listEvaluationFixtureBaselineRuns();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/evaluation/fixture-baseline-runs');
+  expect(archives[0].id).toBe('baseline-run-1');
+});
+
+test('downloads archived evaluation fixture baseline run report markdown from backend API', async () => {
+  const reportBlob = new Blob(['# PatchPilot Evaluation Fixture Baseline Run\n\n- Baseline run id: `baseline-run-1`'], {
+    type: 'text/markdown;charset=UTF-8'
+  });
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    blob: async () => reportBlob
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const downloadedReport = await downloadEvaluationFixtureBaselineRunReport('baseline-run/1');
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/evaluation/fixture-baseline-runs/baseline-run%2F1/report/download');
+  expect(downloadedReport).toBe(reportBlob);
+});
+
 test('archives evaluation run snapshot through backend API', async () => {
   const fetchMock = vi.fn(async () => ({
     ok: true,
@@ -2855,6 +2913,22 @@ function evaluationRunSnapshotArchive() {
     createdAt: '2026-06-26T04:00:00Z',
     sideEffectContract: 'Archive stores the current evaluation run preview as PatchPilot-local evidence only; it does not create tasks, call the model, clone repositories, run verification commands, mutate Git, or write to GitHub.',
     report: '# PatchPilot Evaluation Run Snapshot\n\n- Status: `READY`'
+  };
+}
+
+function evaluationFixtureBaselineRunArchive() {
+  return {
+    id: 'baseline-run-1',
+    status: 'READY',
+    totalCaseCount: 6,
+    executedCaseCount: 4,
+    passedCaseCount: 4,
+    failedCaseCount: 0,
+    skippedCaseCount: 2,
+    createdAt: '2026-06-26T06:00:00Z',
+    sideEffectContract: 'Archive stores a local fixture baseline execution report only; it does not create tasks, call the model, mutate Git, or write to GitHub.',
+    nextAction: 'Fixture baseline is passing; use the archived report as demo evidence for supported language adapters.',
+    report: '# PatchPilot Evaluation Fixture Baseline Run\n\n- Status: `READY`'
   };
 }
 

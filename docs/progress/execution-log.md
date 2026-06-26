@@ -4,6 +4,25 @@ This file records dated implementation progress, validation commands, and import
 
 ## 2026-06-26
 
+Implemented evaluation fixture baseline run history from `docs/plans/217-evaluation-baseline-run-history.md`.
+
+Changes:
+
+- Added `POST /api/evaluation/fixture-baseline-runs`, `GET /api/evaluation/fixture-baseline-runs`, and `GET /api/evaluation/fixture-baseline-runs/{runId}/report/download`.
+- Added in-memory and MySQL-backed evaluation fixture baseline run archive repositories, conversion, mapper, and Flyway schema.
+- Archived executed fixture baseline reports as PatchPilot-local evidence after the existing adapter-selected fixture baseline service runs.
+- Added dashboard API helpers and `Evaluation case catalog` actions to run and archive the fixture baseline, inspect recent runs, copy archived reports, and download archived reports.
+- Updated README, product docs, frontend design notes, the plan document, and this execution log.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=EvaluationFixtureBaselineRunArchiveServiceTests,InMemoryEvaluationFixtureBaselineRunArchiveRepositoryTests,MyBatisEvaluationFixtureBaselineRunArchiveRepositoryTests,EvaluationFixtureBaselineRunArchiveMigrationTests,EvaluationCaseControllerTests test`: first failed because the archive service, repository, mapper, controller endpoints, and migration did not exist; then passed after backend implementation, 15 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts -t "evaluation fixture baseline run|evaluation fixture baseline" --reporter=basic`: first failed because the baseline run archive API helpers did not exist; then passed after frontend API implementation, 4 tests passed and 66 skipped.
+- `npm test -- --run src/dashboard/components/EvaluationCaseCatalogPanel.test.tsx -t "fixture baseline run|evaluation cases" --reporter=basic`: first failed because the panel had no archived baseline run UI; then passed after adding run-and-archive, copy, and download actions, 2 tests passed and 7 skipped.
+- `npm test -- --run src/App.test.tsx src/api.test.ts src/dashboard/components/EvaluationCaseCatalogPanel.test.tsx -t "evaluation fixture baseline run|operational task dashboard|evaluation cases|evaluation fixture baseline" --reporter=basic`: passed after App-level loading and action wiring, 9 tests passed and 139 skipped.
+
+## 2026-06-26
+
 Implemented evaluation fixture execution baseline from `docs/plans/216-evaluation-fixture-execution-baseline.md`.
 
 Changes:
