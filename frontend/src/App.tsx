@@ -61,6 +61,7 @@ import { DemoReadinessPanel } from './dashboard/components/DemoReadinessPanel';
 import { DemoEvidenceBundlePanel } from './dashboard/components/DemoEvidenceBundlePanel';
 import { DemoLaunchCommandPanel } from './dashboard/components/DemoLaunchCommandPanel';
 import { DemoLaunchPreflightPanel } from './dashboard/components/DemoLaunchPreflightPanel';
+import { DemoLaunchTrackerPanel } from './dashboard/components/DemoLaunchTrackerPanel';
 import { DemoSessionSnapshotPanel } from './dashboard/components/DemoSessionSnapshotPanel';
 import { DemoScriptPanel } from './dashboard/components/DemoScriptPanel';
 import { DemoSmokeChecklistPanel } from './dashboard/components/DemoSmokeChecklistPanel';
@@ -1140,6 +1141,12 @@ export default function App() {
         preparedLaunchCommands={preparedDemoLaunchCommands}
         composedPreflightInput={composedPreflightInput}
         onRunPreflight={handleDemoLaunchPreflight}
+      />
+
+      <DemoLaunchTrackerPanel
+        preparedLaunchCommands={preparedDemoLaunchCommands}
+        tasks={tasks}
+        webhookDeliveries={webhookDeliveries}
       />
 
       <section className="metrics-grid" aria-label="Task metrics">

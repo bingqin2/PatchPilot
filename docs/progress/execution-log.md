@@ -4,6 +4,28 @@ This file records dated implementation progress, validation commands, and import
 
 ## 2026-06-26
 
+Implemented demo launch tracker from `docs/plans/206-demo-launch-tracker.md`.
+
+Changes:
+
+- Added `DemoLaunchTrackerPanel` to correlate browser-local prepared demo launch commands with recent webhook deliveries, task records, and Pull Request URLs.
+- Matched prepared commands to tasks by repository, issue number, trigger user, and trigger comment.
+- Matched prepared commands to webhook deliveries by trigger fields, with a task-id fallback when delivery trigger text differs but the delivery created the matched task.
+- Rendered webhook, task, and Pull Request launch states with task and Pull Request links plus the next operator action.
+- Kept the feature read-only with no new backend endpoint, task creation, queue mutation, GitHub mutation, or localStorage writes.
+- Updated README, product spec, frontend design docs, and this execution log.
+
+Validation:
+
+- `npm test -- --run src/App.test.tsx -t "tracks a prepared demo launch" --reporter=basic`: first failed because `Demo launch tracker` did not exist; then passed after adding the panel and App wiring.
+- `npm test -- --run src/dashboard/components/DemoLaunchTrackerPanel.test.tsx --reporter=basic`: passed after covering successful, waiting-for-webhook, and failed-task launch states, 3 tests run.
+- `npm test -- --run src/dashboard/components/DemoLaunchTrackerPanel.test.tsx src/App.test.tsx -t "tracks a prepared demo launch|tracks a successful launch|shows waiting guidance|shows failure guidance" --reporter=basic`: passed after focused cross-component verification, 4 tests run.
+- `npm test -- --reporter=basic`: passed after full frontend regression verification, 232 tests run.
+- `npm run build`: passed after TypeScript and production Vite build verification.
+- `mvn -pl PatchPilot test -q`: passed after full backend regression verification.
+
+## 2026-06-26
+
 Implemented demo launch package from `docs/plans/205-demo-launch-package.md`.
 
 Changes:

@@ -2544,6 +2544,45 @@ test('composes a demo launch command and applies it to preflight from the dashbo
   expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- `/agent fix replace docs/demo.md PatchPilot smoke test`'));
 });
 
+test('tracks a prepared demo launch through webhook, task, and pull request evidence', async () => {
+  localStorage.setItem('patchpilot.demoLaunchCommandHistory', JSON.stringify([
+    {
+      id: 'saved-launch-command',
+      savedAt: '2026-06-26T01:00:00.000Z',
+      input: {
+        repositoryOwner: 'bingqin2',
+        repositoryName: 'PatchPilot',
+        issueNumber: 1,
+        triggerUser: 'bingqin2',
+        operation: 'replace',
+        targetPath: 'docs/demo.md',
+        replacementText: 'PatchPilot smoke test'
+      },
+      result: demoLaunchCommand
+    }
+  ]));
+
+  render(<App />);
+
+  const trackerPanel = await screen.findByRole('region', { name: 'Demo launch tracker' });
+  expect(within(trackerPanel).getByText('/agent fix replace docs/demo.md PatchPilot smoke test')).toBeInTheDocument();
+  expect(within(trackerPanel).getByText('bingqin2/PatchPilot #1')).toBeInTheDocument();
+  expect(within(trackerPanel).getByText('Webhook received')).toBeInTheDocument();
+  expect(within(trackerPanel).getByText('Task completed')).toBeInTheDocument();
+  expect(within(trackerPanel).getByText('Pull Request ready')).toBeInTheDocument();
+  expect(within(trackerPanel).getByRole('link', { name: 'Open task task-1' })).toHaveAttribute(
+    'href',
+    '/tasks/task-1'
+  );
+  expect(within(trackerPanel).getByRole('link', { name: 'Open Pull Request' })).toHaveAttribute(
+    'href',
+    'https://github.com/bingqin2/PatchPilot/pull/8'
+  );
+  expect(
+    within(trackerPanel).getByText('Launch succeeded. Open the Pull Request and review the generated patch.')
+  ).toBeInTheDocument();
+});
+
 test('persists demo launch command history across dashboard reloads', async () => {
   const user = userEvent.setup();
 
