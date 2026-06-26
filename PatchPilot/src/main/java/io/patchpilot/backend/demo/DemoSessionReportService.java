@@ -2,6 +2,7 @@ package io.patchpilot.backend.demo;
 
 import io.patchpilot.backend.demo.domain.DemoScriptStepVo;
 import io.patchpilot.backend.demo.domain.DemoSessionSnapshotVo;
+import io.patchpilot.backend.demo.domain.DemoReadinessSnapshotTrendVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -52,6 +53,7 @@ public class DemoSessionReportService {
                 .append("- Recent Pull Request: ").append(valueOrNone(snapshot.evidenceBundle().recentPullRequestUrl())).append("\n");
 
         appendRecentTask(report, snapshot.evidenceBundle().recentTask());
+        appendReadinessSnapshotTrend(report, snapshot.readinessSnapshotTrend());
         appendList(report, "Operator Checklist", snapshot.operatorChecklist(), "No operator checklist items recorded.");
         appendPreparedLaunchCommands(report, request.preparedLaunchCommands());
         appendArchivedLaunchOutcomes(report, request.archivedLaunchOutcomes());
@@ -76,12 +78,29 @@ public class DemoSessionReportService {
         report.append("\n## Handoff Summary\n\n")
                 .append("- ").append(snapshot.evidenceBundle().summary()).append("\n")
                 .append("- ").append(snapshot.shareSummary()).append("\n")
+                .append("- Readiness trend: `").append(snapshot.readinessSnapshotTrend().status()).append("` - ")
+                .append(snapshot.readinessSnapshotTrend().summary()).append("\n")
                 .append("- Health contract: GET /api/demo/handoff-package is read-only: it does not create tasks, call the model, run tests, mutate Git, or write to GitHub.\n");
         appendList(report, "Next Actions", snapshot.nextActions(), "No next actions recorded.");
         appendPreparedLaunchCommands(report, request.preparedLaunchCommands());
         appendArchivedLaunchOutcomeSummary(report, request.archivedLaunchOutcomes());
         report.append("\n## Embedded Session Report\n\n").append(sessionReport);
         return report.toString();
+    }
+
+    private static void appendReadinessSnapshotTrend(StringBuilder report, DemoReadinessSnapshotTrendVo trend) {
+        report.append("\n## Readiness Snapshot Trend\n\n")
+                .append("- Trend: `").append(trend.status()).append("`\n")
+                .append("- Summary: ").append(trend.summary()).append("\n")
+                .append("- Latest snapshot: `").append(valueOrNone(trend.latestSnapshotId())).append("`\n")
+                .append("- Previous snapshot: `").append(valueOrNone(trend.previousSnapshotId())).append("`\n")
+                .append("- Latest readiness: `").append(valueOrNone(trend.latestReadinessStatus())).append("`\n")
+                .append("- Previous readiness: `").append(valueOrNone(trend.previousReadinessStatus())).append("`\n")
+                .append("- Delta: `")
+                .append(signed(trend.readyCheckDelta())).append(" ready / ")
+                .append(signed(trend.needsAttentionCheckDelta())).append(" warning / ")
+                .append(signed(trend.blockedCheckDelta())).append(" blocked`\n")
+                .append("- Next action: ").append(trend.nextAction()).append("\n");
     }
 
     private static void appendRecentTask(StringBuilder report, FixTaskVo task) {
@@ -228,6 +247,14 @@ public class DemoSessionReportService {
 
     private static String valueOrNone(String value) {
         return value == null || value.isBlank() ? "none" : value;
+    }
+
+    private static String valueOrNone(Object value) {
+        return value == null ? "none" : value.toString();
+    }
+
+    private static String signed(int value) {
+        return value > 0 ? "+" + value : Integer.toString(value);
     }
 
     private static long countNonBlankCommands(List<DemoPreparedLaunchCommandRequestDto> commands) {

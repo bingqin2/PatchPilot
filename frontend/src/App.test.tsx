@@ -1465,6 +1465,7 @@ const demoSessionSnapshot = {
   evidenceBundle: demoEvidenceBundle,
   script: demoScript,
   runbook: '# PatchPilot Demo Runbook\n\n- Status: `READY`',
+  readinessSnapshotTrend: demoReadinessSnapshotTrend,
   operatorChecklist: [
     'Open the dashboard and confirm the demo session snapshot status.',
     'Confirm adapter runtime executables are available on the backend PATH.',
@@ -2265,6 +2266,10 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(screen.getByText('Pull request opened')).toBeInTheDocument();
   expect(screen.getAllByText('demo-session-20260624T003000Z')).toHaveLength(2);
   expect(screen.getAllByText('Status READY; recent task task-1; recent PR https://github.com/bingqin2/PatchPilot/pull/8.')).toHaveLength(2);
+  const sessionPanel = screen.getByRole('region', { name: 'Demo session snapshot' });
+  expect(within(sessionPanel).getByText('Readiness trend')).toBeInTheDocument();
+  expect(within(sessionPanel).getByText('Improving')).toBeInTheDocument();
+  expect(within(sessionPanel).getByText('+2 ready / -1 warning / -1 blocked')).toBeInTheDocument();
   expect(screen.getByText('Tests run: 247, Failures: 0, Errors: 0')).toBeInTheDocument();
   expect(screen.getByText('replace')).toBeInTheDocument();
   expect(screen.getAllByText('gpt-5.5')).toHaveLength(2);

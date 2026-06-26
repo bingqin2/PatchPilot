@@ -4,6 +4,8 @@ import io.patchpilot.backend.demo.domain.DemoAdapterFixtureEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessCheckVo;
+import io.patchpilot.backend.demo.domain.DemoReadinessSnapshotTrendStatus;
+import io.patchpilot.backend.demo.domain.DemoReadinessSnapshotTrendVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessStatus;
 import io.patchpilot.backend.demo.domain.DemoReadinessVo;
 import io.patchpilot.backend.demo.domain.DemoScriptStepVo;
@@ -37,6 +39,12 @@ class DemoSessionReportServiceTests {
                 .contains("- Share summary: Status READY; recent task task-1; recent PR https://github.com/bingqin2/PatchPilot/pull/42.")
                 .contains("- Recent Pull Request: https://github.com/bingqin2/PatchPilot/pull/42")
                 .contains("- Recent task: `task-1` (`COMPLETED`)")
+                .contains("## Readiness Snapshot Trend")
+                .contains("- Trend: `IMPROVING`")
+                .contains("- Latest snapshot: `readiness-snapshot-new`")
+                .contains("- Previous snapshot: `readiness-snapshot-old`")
+                .contains("- Delta: `+4 ready / -2 warning / -2 blocked`")
+                .contains("- Next action: Use the latest readiness snapshot as demo evidence or archive one more snapshot immediately before the live run.")
                 .contains("## Operator Checklist")
                 .contains("- Open the dashboard and confirm the demo session snapshot status.")
                 .contains("## Script Steps")
@@ -183,6 +191,9 @@ class DemoSessionReportServiceTests {
                 .contains("## Handoff Summary")
                 .contains("- Demo evidence bundle is ready.")
                 .contains("- Status READY; recent task task-1; recent PR https://github.com/bingqin2/PatchPilot/pull/42.")
+                .contains("- Readiness trend: `IMPROVING` - Demo readiness improved from BLOCKED to READY.")
+                .contains("## Readiness Snapshot Trend")
+                .contains("- Delta: `+4 ready / -2 warning / -2 blocked`")
                 .contains("## Prepared Launch Commands")
                 .contains("- `/agent fix replace docs/demo.md PatchPilot smoke test`")
                 .contains("## Archived Launch Outcomes")
@@ -218,6 +229,7 @@ class DemoSessionReportServiceTests {
                 ),
                 new DemoScriptVo(DemoReadinessStatus.READY, "Demo script is ready.", List.of(), List.of(), List.of(), Instant.parse("2026-06-24T00:30:00Z")),
                 "# PatchPilot Demo Runbook\n\n- Status: `READY`",
+                trend(),
                 List.of(),
                 List.of(),
                 "Status READY; recent task none; recent PR none.",
@@ -244,10 +256,27 @@ class DemoSessionReportServiceTests {
                 evidenceBundle(),
                 script(),
                 "# PatchPilot Demo Runbook\n\n- Status: `READY`",
+                trend(),
                 List.of("Open the dashboard and confirm the demo session snapshot status."),
                 List.of("GET /api/demo/session-snapshot is read-only: it does not create tasks, call the model, run tests, mutate Git, or write to GitHub."),
                 "Status READY; recent task task-1; recent PR https://github.com/bingqin2/PatchPilot/pull/42.",
                 List.of("Follow the script from step 1 through Pull Request review.")
+        );
+    }
+
+    private static DemoReadinessSnapshotTrendVo trend() {
+        return new DemoReadinessSnapshotTrendVo(
+                DemoReadinessSnapshotTrendStatus.IMPROVING,
+                "Demo readiness improved from BLOCKED to READY.",
+                "readiness-snapshot-new",
+                "readiness-snapshot-old",
+                DemoReadinessStatus.READY,
+                DemoReadinessStatus.BLOCKED,
+                4,
+                -2,
+                -2,
+                "Use the latest readiness snapshot as demo evidence or archive one more snapshot immediately before the live run.",
+                "# PatchPilot Demo Readiness Snapshot Trend\n\n- Status: `IMPROVING`"
         );
     }
 

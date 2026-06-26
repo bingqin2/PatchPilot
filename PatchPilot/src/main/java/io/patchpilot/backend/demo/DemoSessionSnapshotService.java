@@ -1,6 +1,7 @@
 package io.patchpilot.backend.demo;
 
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
+import io.patchpilot.backend.demo.domain.DemoReadinessSnapshotTrendVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessStatus;
 import io.patchpilot.backend.demo.domain.DemoSessionSnapshotVo;
 import io.patchpilot.backend.demo.domain.DemoScriptVo;
@@ -22,15 +23,24 @@ public class DemoSessionSnapshotService {
             .withZone(ZoneOffset.UTC);
 
     private final Supplier<DemoEvidenceBundleVo> bundleSupplier;
+    private final Supplier<DemoReadinessSnapshotTrendVo> readinessSnapshotTrendSupplier;
     private final Supplier<Instant> nowSupplier;
 
     @Autowired
-    public DemoSessionSnapshotService(DemoEvidenceBundleService demoEvidenceBundleService) {
-        this(demoEvidenceBundleService::getEvidenceBundle, Instant::now);
+    public DemoSessionSnapshotService(
+            DemoEvidenceBundleService demoEvidenceBundleService,
+            DemoReadinessSnapshotTrendService demoReadinessSnapshotTrendService
+    ) {
+        this(demoEvidenceBundleService::getEvidenceBundle, demoReadinessSnapshotTrendService::getTrendSummary, Instant::now);
     }
 
-    DemoSessionSnapshotService(Supplier<DemoEvidenceBundleVo> bundleSupplier, Supplier<Instant> nowSupplier) {
+    DemoSessionSnapshotService(
+            Supplier<DemoEvidenceBundleVo> bundleSupplier,
+            Supplier<DemoReadinessSnapshotTrendVo> readinessSnapshotTrendSupplier,
+            Supplier<Instant> nowSupplier
+    ) {
         this.bundleSupplier = bundleSupplier;
+        this.readinessSnapshotTrendSupplier = readinessSnapshotTrendSupplier;
         this.nowSupplier = nowSupplier;
     }
 
@@ -39,6 +49,7 @@ public class DemoSessionSnapshotService {
         DemoEvidenceBundleVo bundle = bundleSupplier.get();
         DemoScriptVo script = new DemoScriptService(() -> bundle, () -> generatedAt).getScript();
         String runbook = new DemoRunbookService(() -> bundle).getRunbook();
+        DemoReadinessSnapshotTrendVo readinessSnapshotTrend = readinessSnapshotTrendSupplier.get();
 
         return new DemoSessionSnapshotVo(
                 "demo-session-" + SESSION_ID_FORMATTER.format(generatedAt),
@@ -48,6 +59,7 @@ public class DemoSessionSnapshotService {
                 bundle,
                 script,
                 runbook,
+                readinessSnapshotTrend,
                 operatorChecklist(bundle),
                 healthContract(),
                 shareSummary(bundle),

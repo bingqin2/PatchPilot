@@ -466,6 +466,19 @@ class DemoReadinessControllerTests {
                 List.of("Follow the script from step 1 through Pull Request review."),
                 Instant.parse("2026-06-24T00:30:00Z")
         );
+        DemoReadinessSnapshotTrendVo trend = new DemoReadinessSnapshotTrendVo(
+                DemoReadinessSnapshotTrendStatus.IMPROVING,
+                "Demo readiness improved from BLOCKED to READY.",
+                "readiness-snapshot-new",
+                "readiness-snapshot-old",
+                DemoReadinessStatus.READY,
+                DemoReadinessStatus.BLOCKED,
+                4,
+                -2,
+                -2,
+                "Use the latest readiness snapshot as demo evidence or archive one more snapshot immediately before the live run.",
+                "# PatchPilot Demo Readiness Snapshot Trend\n\n- Status: `IMPROVING`"
+        );
         when(demoSessionSnapshotService.getSessionSnapshot()).thenReturn(new DemoSessionSnapshotVo(
                 "demo-session-20260624T003000Z",
                 DemoReadinessStatus.READY,
@@ -474,6 +487,7 @@ class DemoReadinessControllerTests {
                 bundle,
                 script,
                 "# PatchPilot Demo Runbook\n\n- Status: `READY`",
+                trend,
                 List.of("Open the dashboard and confirm the demo session snapshot status."),
                 List.of("GET /api/demo/session-snapshot is read-only: it does not create tasks, call the model, run tests, mutate Git, or write to GitHub."),
                 "Status READY; recent PR https://github.com/bingqin2/PatchPilot/pull/42.",
@@ -489,6 +503,9 @@ class DemoReadinessControllerTests {
                 .andExpect(jsonPath("$.data.evidenceBundle.recentPullRequestUrl").value("https://github.com/bingqin2/PatchPilot/pull/42"))
                 .andExpect(jsonPath("$.data.script.steps[0].name").value("Confirm backend and dashboard access"))
                 .andExpect(jsonPath("$.data.runbook").value(org.hamcrest.Matchers.containsString("# PatchPilot Demo Runbook")))
+                .andExpect(jsonPath("$.data.readinessSnapshotTrend.status").value("IMPROVING"))
+                .andExpect(jsonPath("$.data.readinessSnapshotTrend.latestSnapshotId").value("readiness-snapshot-new"))
+                .andExpect(jsonPath("$.data.readinessSnapshotTrend.readyCheckDelta").value(4))
                 .andExpect(jsonPath("$.data.operatorChecklist[0]").value("Open the dashboard and confirm the demo session snapshot status."))
                 .andExpect(jsonPath("$.data.healthContract[0]").value("GET /api/demo/session-snapshot is read-only: it does not create tasks, call the model, run tests, mutate Git, or write to GitHub."))
                 .andExpect(jsonPath("$.data.shareSummary").value(org.hamcrest.Matchers.containsString("READY")))
