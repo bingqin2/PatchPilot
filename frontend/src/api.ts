@@ -22,6 +22,7 @@ import type {
   EvaluationCaseFixtureReadinessSummary,
   EvaluationCaseSummary,
   EvaluationFixtureBaselineRunArchive,
+  EvaluationFixtureBaselineRunRegressionSummary,
   EvaluationFixtureBaselineSummary,
   EvaluationRunPreview,
   EvaluationRunSnapshotArchive,
@@ -309,6 +310,10 @@ export async function runAndArchiveEvaluationFixtureBaseline(): Promise<Evaluati
 
 export async function listEvaluationFixtureBaselineRuns(): Promise<EvaluationFixtureBaselineRunArchive[]> {
   return getApi<EvaluationFixtureBaselineRunArchive[]>('/api/evaluation/fixture-baseline-runs');
+}
+
+export async function getEvaluationFixtureBaselineRunRegressionSummary(): Promise<EvaluationFixtureBaselineRunRegressionSummary> {
+  return getApi<EvaluationFixtureBaselineRunRegressionSummary>('/api/evaluation/fixture-baseline-runs/summary');
 }
 
 export async function downloadEvaluationFixtureBaselineRunReport(runId: string): Promise<Blob> {

@@ -193,6 +193,29 @@ class EvaluationCaseControllerTests {
     }
 
     @Test
+    void should_return_evaluation_fixture_baseline_regression_summary() throws Exception {
+        MockMvc baselineRunMockMvc = MockMvcBuilders
+                .standaloneSetup(controller("snapshot-unused", "baseline-run-1"))
+                .build();
+
+        baselineRunMockMvc.perform(post("/api/evaluation/fixture-baseline-runs"))
+                .andExpect(status().isOk());
+
+        baselineRunMockMvc.perform(get("/api/evaluation/fixture-baseline-runs/summary"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.status").value("SINGLE_ARCHIVE"))
+                .andExpect(jsonPath("$.data.latestRun.id").value("baseline-run-1"))
+                .andExpect(jsonPath("$.data.previousRun").doesNotExist())
+                .andExpect(jsonPath("$.data.latestRun.passedCaseCount").value(4))
+                .andExpect(jsonPath("$.data.latestRun.failedCaseCount").value(0))
+                .andExpect(jsonPath("$.data.newlyFailedCaseIds", hasSize(0)))
+                .andExpect(jsonPath("$.data.recoveredCaseIds", hasSize(0)))
+                .andExpect(jsonPath("$.data.sideEffectContract").value("Fixture baseline regression summary reads archived local baseline runs only; it does not create tasks, call the model, mutate Git, or write to GitHub."))
+                .andExpect(jsonPath("$.data.markdownReport").value(org.hamcrest.Matchers.containsString("# PatchPilot Evaluation Fixture Baseline Regression Summary")));
+    }
+
+    @Test
     void should_download_archived_evaluation_fixture_baseline_run_report() throws Exception {
         MockMvc baselineRunMockMvc = MockMvcBuilders
                 .standaloneSetup(controller("snapshot-unused", "baseline-run-1"))
@@ -282,17 +305,20 @@ class EvaluationCaseControllerTests {
                 languageAdapterRegistry,
                 (caseId, repositoryRoot, command) -> new TestRunResult(String.join(" ", command), 0, "fixture ok")
         );
+        InMemoryEvaluationFixtureBaselineRunArchiveRepository baselineRunArchiveRepository = new InMemoryEvaluationFixtureBaselineRunArchiveRepository();
+        EvaluationFixtureBaselineRunArchiveService baselineRunArchiveService = new EvaluationFixtureBaselineRunArchiveService(
+                baselineService,
+                baselineRunArchiveRepository,
+                Clock.fixed(Instant.parse("2026-06-26T04:00:00Z"), ZoneOffset.UTC),
+                () -> baselineRunId
+        );
         return new EvaluationCaseController(
                 catalogService,
                 archiveService(snapshotId),
                 readinessService,
                 baselineService,
-                new EvaluationFixtureBaselineRunArchiveService(
-                        baselineService,
-                        new InMemoryEvaluationFixtureBaselineRunArchiveRepository(),
-                        Clock.fixed(Instant.parse("2026-06-26T04:00:00Z"), ZoneOffset.UTC),
-                        () -> baselineRunId
-                )
+                baselineRunArchiveService,
+                new EvaluationFixtureBaselineRunRegressionSummaryService(baselineRunArchiveRepository)
         );
     }
 }

@@ -5,6 +5,7 @@ import type {
   EvaluationCaseFixtureReadinessSummary,
   EvaluationCaseSummary,
   EvaluationFixtureBaselineRunArchive,
+  EvaluationFixtureBaselineRunRegressionSummary,
   EvaluationFixtureBaselineSummary,
   EvaluationRunPreview,
   EvaluationRunSnapshotArchive
@@ -263,6 +264,39 @@ const fixtureBaselineRuns: EvaluationFixtureBaselineRunArchive[] = [
   }
 ];
 
+const fixtureBaselineRegressionSummary: EvaluationFixtureBaselineRunRegressionSummary = {
+  status: 'REGRESSED',
+  latestRun: {
+    id: 'baseline-run-new',
+    status: 'NEEDS_ATTENTION',
+    totalCaseCount: 3,
+    executedCaseCount: 2,
+    passedCaseCount: 1,
+    failedCaseCount: 1,
+    skippedCaseCount: 1,
+    createdAt: '2026-06-26T07:00:00Z'
+  },
+  previousRun: {
+    id: 'baseline-run-old',
+    status: 'READY',
+    totalCaseCount: 3,
+    executedCaseCount: 2,
+    passedCaseCount: 2,
+    failedCaseCount: 0,
+    skippedCaseCount: 1,
+    createdAt: '2026-06-26T06:00:00Z'
+  },
+  passedDelta: -1,
+  failedDelta: 1,
+  skippedDelta: 0,
+  latestFailedCaseIds: ['java-maven-doc-fix'],
+  newlyFailedCaseIds: ['java-maven-doc-fix'],
+  recoveredCaseIds: [],
+  sideEffectContract: 'Fixture baseline regression summary reads archived local baseline runs only; it does not create tasks, call the model, mutate Git, or write to GitHub.',
+  nextAction: 'Investigate newly failed fixture cases before using the baseline as demo evidence.',
+  markdownReport: '# PatchPilot Evaluation Fixture Baseline Regression Summary\n\n- Status: `REGRESSED`'
+};
+
 function renderPanel(overrides: Partial<React.ComponentProps<typeof EvaluationCaseCatalogPanel>> = {}) {
   return render(
     <EvaluationCaseCatalogPanel
@@ -272,12 +306,14 @@ function renderPanel(overrides: Partial<React.ComponentProps<typeof EvaluationCa
       fixtureBaseline={fixtureBaseline}
       fixtureBaselineLoading={false}
       fixtureBaselineRuns={fixtureBaselineRuns}
+      fixtureBaselineRegressionSummary={fixtureBaselineRegressionSummary}
       runPreview={runPreview}
       archives={archives}
       error={null}
       summaryError={null}
       caseReadinessError={null}
       fixtureBaselineError={null}
+      fixtureBaselineRegressionError={null}
       runPreviewError={null}
       archiveError={null}
       onRunFixtureBaseline={vi.fn()}
@@ -333,9 +369,33 @@ test('summarizes supported evaluation cases and safety rejections', () => {
   expect(within(panel).getByText('maven ok')).toBeInTheDocument();
   expect(within(panel).getByText('Evaluation fixture baseline runs local checked-in fixture verification commands only; it does not create tasks, call the model, mutate Git, or write to GitHub.')).toBeInTheDocument();
   expect(within(panel).getByText('Archived evaluation fixture baseline runs')).toBeInTheDocument();
+  expect(within(panel).getByText('Evaluation fixture baseline regression')).toBeInTheDocument();
+  expect(within(panel).getByText('REGRESSED')).toBeInTheDocument();
+  expect(within(panel).getByText('baseline-run-new')).toBeInTheDocument();
+  expect(within(panel).getByText('baseline-run-old')).toBeInTheDocument();
+  expect(within(panel).getByText('Passed -1')).toBeInTheDocument();
+  expect(within(panel).getByText('Failed +1')).toBeInTheDocument();
+  expect(within(panel).getByText('Skipped 0')).toBeInTheDocument();
+  expect(within(panel).getByText('Newly failed: java-maven-doc-fix')).toBeInTheDocument();
+  expect(within(panel).getByText('Recovered: none')).toBeInTheDocument();
+  expect(within(panel).getByText('Investigate newly failed fixture cases before using the baseline as demo evidence.')).toBeInTheDocument();
   expect(within(panel).getByText('baseline-run-1')).toBeInTheDocument();
   expect(within(panel).getByText('2026-06-26T06:00:00Z')).toBeInTheDocument();
   expect(within(panel).getByText('Archive stores a local fixture baseline execution report only; it does not create tasks, call the model, mutate Git, or write to GitHub.')).toBeInTheDocument();
+});
+
+test('copies evaluation fixture baseline regression markdown from the backend report', async () => {
+  const user = userEvent.setup();
+  const writeText = vi.fn().mockResolvedValue(undefined);
+  Object.defineProperty(navigator, 'clipboard', {
+    configurable: true,
+    value: { writeText }
+  });
+  renderPanel();
+
+  await user.click(screen.getByRole('button', { name: 'Copy fixture baseline regression report' }));
+
+  expect(writeText).toHaveBeenCalledWith('# PatchPilot Evaluation Fixture Baseline Regression Summary\n\n- Status: `REGRESSED`');
 });
 
 test('copies evaluation case catalog report markdown', async () => {
@@ -489,6 +549,7 @@ test('shows catalog load errors without hiding stale cases', () => {
     summaryError: 'Evaluation summary unavailable',
     caseReadinessError: 'Evaluation case fixture readiness unavailable',
     fixtureBaselineError: 'Evaluation fixture baseline unavailable',
+    fixtureBaselineRegressionError: 'Evaluation fixture baseline regression unavailable',
     runPreviewError: 'Evaluation run preview unavailable',
     archiveError: 'Evaluation run snapshot archive unavailable'
   });
@@ -498,6 +559,7 @@ test('shows catalog load errors without hiding stale cases', () => {
   expect(screen.getByText('Evaluation summary unavailable')).toBeInTheDocument();
   expect(screen.getByText('Evaluation case fixture readiness unavailable')).toBeInTheDocument();
   expect(screen.getByText('Evaluation fixture baseline unavailable')).toBeInTheDocument();
+  expect(screen.getByText('Evaluation fixture baseline regression unavailable')).toBeInTheDocument();
   expect(screen.getByText('Evaluation run preview unavailable')).toBeInTheDocument();
   expect(screen.getByText('Evaluation run snapshot archive unavailable')).toBeInTheDocument();
   expect(screen.getAllByText('Java Maven documentation fix')).toHaveLength(3);

@@ -4,6 +4,29 @@ This file records dated implementation progress, validation commands, and import
 
 ## 2026-06-26
 
+Implemented evaluation baseline regression summary from `docs/plans/218-evaluation-baseline-regression-summary.md`.
+
+Changes:
+
+- Added `GET /api/evaluation/fixture-baseline-runs/summary`.
+- Added a read-only regression summary service that compares the latest two archived fixture baseline runs.
+- Extracted failed case ids from archived baseline Markdown reports so existing archive rows can still be compared.
+- Returned latest and previous run digests, pass/fail/skip deltas, latest failed cases, newly failed cases, recovered cases, next action, side-effect contract, and copyable Markdown report.
+- Added dashboard API helper, App refresh wiring, post-archive summary refresh, and `Evaluation case catalog` regression summary UI with copyable report.
+- Updated README, product spec, frontend design docs, the plan document, and this execution log.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=EvaluationFixtureBaselineRunRegressionSummaryServiceTests,EvaluationCaseControllerTests test`: first failed because `EvaluationFixtureBaselineRunRegressionSummaryService` did not exist; then passed after backend implementation, 14 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts src/dashboard/components/EvaluationCaseCatalogPanel.test.tsx --reporter=basic`: first failed because the API helper and panel regression section did not exist; then passed after frontend implementation, 81 tests run, 0 failures.
+- `npm test -- --run src/App.test.tsx src/api.test.ts src/dashboard/components/EvaluationCaseCatalogPanel.test.tsx --reporter=basic`: first exposed that a post-archive regression-summary refresh failure was also shown as a fixture-baseline failure; then passed after splitting the error state, 151 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed after full backend regression verification, 758 tests run, 0 failures.
+- `npm test -- --reporter=basic`: passed after full frontend regression verification, 26 test files and 265 tests run.
+- `npm run build`: passed after TypeScript and production Vite build verification.
+- `git diff --check`: passed.
+
+## 2026-06-26
+
 Implemented evaluation fixture baseline run history from `docs/plans/217-evaluation-baseline-run-history.md`.
 
 Changes:
