@@ -20,6 +20,8 @@ interface DemoSessionSnapshotPanelProps {
   onCopyReport: (input: DemoSessionReportInput) => Promise<string>;
   onDownloadReport: (input: DemoSessionReportInput) => Promise<Blob>;
   onArchiveSession: (input: DemoSessionReportInput) => Promise<DemoSessionArchive>;
+  onCopyHandoffPackage: (input: DemoSessionReportInput) => Promise<string>;
+  onDownloadHandoffPackage: (input: DemoSessionReportInput) => Promise<Blob>;
   onDownloadArchiveReport: (archiveId: string) => Promise<Blob>;
 }
 
@@ -33,6 +35,8 @@ export function DemoSessionSnapshotPanel({
   onCopyReport,
   onDownloadReport,
   onArchiveSession,
+  onCopyHandoffPackage,
+  onDownloadHandoffPackage,
   onDownloadArchiveReport
 }: DemoSessionSnapshotPanelProps) {
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
@@ -59,6 +63,29 @@ export function DemoSessionSnapshotPanel({
       const report = await onDownloadReport(reportInput);
       downloadMarkdown(report, `patchpilot-demo-session-${snapshot.sessionId}.md`);
       setDownloadStatus('Demo session report downloaded');
+    } catch {
+      setDownloadStatus('Download failed');
+    }
+  }
+
+  async function copyHandoffPackage() {
+    try {
+      const report = await onCopyHandoffPackage(reportInput);
+      await navigator.clipboard.writeText(report);
+      setCopyStatus('Demo handoff package copied');
+    } catch {
+      setCopyStatus('Copy failed');
+    }
+  }
+
+  async function downloadHandoffPackage() {
+    if (!snapshot) {
+      return;
+    }
+    try {
+      const report = await onDownloadHandoffPackage(reportInput);
+      downloadMarkdown(report, `patchpilot-demo-handoff-${snapshot.sessionId}.md`);
+      setDownloadStatus('Demo handoff package downloaded');
     } catch {
       setDownloadStatus('Download failed');
     }
@@ -112,6 +139,14 @@ export function DemoSessionSnapshotPanel({
             <button className="secondary-button" type="button" onClick={() => void downloadSessionReport()}>
               <Download size={14} />
               Download session report
+            </button>
+            <button className="secondary-button" type="button" onClick={() => void copyHandoffPackage()}>
+              <Copy size={14} />
+              Copy handoff package
+            </button>
+            <button className="secondary-button" type="button" onClick={() => void downloadHandoffPackage()}>
+              <Download size={14} />
+              Download handoff package
             </button>
             <button className="secondary-button" type="button" onClick={() => void archiveSession()}>
               <Archive size={14} />

@@ -32,6 +32,11 @@ public class DemoSessionReportService {
         return formatSessionReport(snapshot, request);
     }
 
+    public String getHandoffPackage(DemoSessionReportRequestDto request) {
+        DemoSessionSnapshotVo snapshot = snapshotSupplier.get();
+        return formatHandoffPackage(snapshot, request);
+    }
+
     String formatSessionReport(DemoSessionSnapshotVo snapshot) {
         return formatSessionReport(snapshot, new DemoSessionReportRequestDto(List.of()));
     }
@@ -54,6 +59,28 @@ public class DemoSessionReportService {
         appendList(report, "Health Contract", withReportHealthContract(snapshot.healthContract()), "No health contract recorded.");
         appendList(report, "Next Actions", snapshot.nextActions(), "No next actions recorded.");
         report.append("\n## Runbook\n\n").append(snapshot.runbook());
+        return report.toString();
+    }
+
+    String formatHandoffPackage(DemoSessionSnapshotVo snapshot, DemoSessionReportRequestDto request) {
+        String sessionReport = formatSessionReport(snapshot, request);
+        StringBuilder report = new StringBuilder()
+                .append("# PatchPilot Demo Handoff Package\n\n")
+                .append("- Session: `").append(snapshot.sessionId()).append("`\n")
+                .append("- Demo status: `").append(snapshot.status()).append("`\n")
+                .append("- Generated at: `").append(snapshot.generatedAt()).append("`\n")
+                .append("- Recent Pull Request: ").append(valueOrNone(snapshot.evidenceBundle().recentPullRequestUrl())).append("\n")
+                .append("- Prepared commands: `").append(countNonBlankCommands(request.preparedLaunchCommands())).append("`\n")
+                .append("- Archived launch outcomes: `").append(countNonBlankOutcomes(request.archivedLaunchOutcomes())).append("`\n");
+        appendRecentTask(report, snapshot.evidenceBundle().recentTask());
+        report.append("\n## Handoff Summary\n\n")
+                .append("- ").append(snapshot.evidenceBundle().summary()).append("\n")
+                .append("- ").append(snapshot.shareSummary()).append("\n")
+                .append("- Health contract: GET /api/demo/handoff-package is read-only: it does not create tasks, call the model, run tests, mutate Git, or write to GitHub.\n");
+        appendList(report, "Next Actions", snapshot.nextActions(), "No next actions recorded.");
+        appendPreparedLaunchCommands(report, request.preparedLaunchCommands());
+        appendArchivedLaunchOutcomeSummary(report, request.archivedLaunchOutcomes());
+        report.append("\n## Embedded Session Report\n\n").append(sessionReport);
         return report.toString();
     }
 
@@ -140,6 +167,30 @@ public class DemoSessionReportService {
         });
     }
 
+    private static void appendArchivedLaunchOutcomeSummary(
+            StringBuilder report,
+            List<DemoArchivedLaunchOutcomeRequestDto> archivedLaunchOutcomes
+    ) {
+        report.append("\n## Archived Launch Outcomes\n\n");
+        List<DemoArchivedLaunchOutcomeRequestDto> outcomes = archivedLaunchOutcomes.stream()
+                .filter(outcome -> !isBlank(outcome.triggerComment()))
+                .limit(5)
+                .toList();
+        if (outcomes.isEmpty()) {
+            report.append("- No archived launch outcomes recorded for this browser session.\n");
+            return;
+        }
+
+        outcomes.forEach(outcome -> report
+                .append("- `").append(valueOrNone(outcome.taskId())).append("` (`")
+                .append(valueOrNone(outcome.taskStatus()))
+                .append("`) -> ")
+                .append(valueOrNone(outcome.pullRequestUrl()))
+                .append("\n")
+                .append("  - Command: `").append(outcome.triggerComment().trim()).append("`\n")
+                .append("  - Archived at: `").append(valueOrNone(outcome.archivedAt())).append("`\n"));
+    }
+
     private static void appendScriptSteps(StringBuilder report, List<DemoScriptStepVo> steps) {
         report.append("\n## Script Steps\n\n");
         if (steps.isEmpty()) {
@@ -177,6 +228,20 @@ public class DemoSessionReportService {
 
     private static String valueOrNone(String value) {
         return value == null || value.isBlank() ? "none" : value;
+    }
+
+    private static long countNonBlankCommands(List<DemoPreparedLaunchCommandRequestDto> commands) {
+        return commands.stream()
+                .filter(command -> !isBlank(command.triggerComment()))
+                .limit(5)
+                .count();
+    }
+
+    private static long countNonBlankOutcomes(List<DemoArchivedLaunchOutcomeRequestDto> outcomes) {
+        return outcomes.stream()
+                .filter(outcome -> !isBlank(outcome.triggerComment()))
+                .limit(5)
+                .count();
     }
 
     private static boolean isBlank(String value) {

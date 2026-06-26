@@ -232,8 +232,16 @@ export async function getDemoSessionReport(input?: DemoSessionReportInput): Prom
   return input ? postApi<string>('/api/demo/session-report', input) : getApi<string>('/api/demo/session-report');
 }
 
+export async function getDemoHandoffPackage(input: DemoSessionReportInput): Promise<string> {
+  return postApi<string>('/api/demo/handoff-package', input);
+}
+
 export async function downloadDemoSessionReport(input?: DemoSessionReportInput): Promise<Blob> {
   return input ? postBlobApi('/api/demo/session-report/download', input) : getBlobApi('/api/demo/session-report/download');
+}
+
+export async function downloadDemoHandoffPackage(input: DemoSessionReportInput): Promise<Blob> {
+  return postBlobApi('/api/demo/handoff-package/download', input);
 }
 
 export async function archiveDemoSession(input?: DemoSessionReportInput): Promise<DemoSessionArchive> {

@@ -314,6 +314,7 @@ MVP frontend scope:
 - Follow a read-only demo script that gives ordered operator actions, verification commands, troubleshooting targets, and health-contract guarantees before and during a live smoke run.
 - Copy a Markdown demo runbook generated from the current evidence bundle.
 - Copy or download a Markdown demo session report generated from the current session snapshot, current browser's prepared demo launch commands, and current browser's archived launch outcomes.
+- Copy or download a Markdown demo handoff package that summarizes current demo evidence, prepared command count, archived outcome count, recent task and Pull Request evidence, next actions, and the embedded session report.
 - Archive the current demo session report into a recent list, including prepared demo launch command and archived outcome context when supplied by the dashboard, and copy or download archived Markdown reports during or after a live demo. Database-backed local profiles should persist these archives across backend restarts.
 - Inspect queue worker readiness, last poll age, and operator action before a live issue-to-PR demo.
 - Evaluate a manual `/agent fix` trigger before creating a task and see the gate decisions plus next operator action.
@@ -362,6 +363,7 @@ PatchPilot MVP is successful when:
 - An operator can follow an ordered demo script whose endpoint is explicitly read-only and whose steps point to dashboard evidence and curl verification commands.
 - An operator can copy a Markdown runbook that explains the current demo status and next actions without manually assembling API responses.
 - An operator can copy or download a Markdown session report that includes the snapshot, prepared launch commands from the current browser, archived launch outcomes from the current browser, script, checklist, health contract, next actions, and runbook.
+- An operator can copy or download a Markdown handoff package that combines the session report with a concise summary, recent task and Pull Request evidence, browser-local prepared commands, browser-local archived outcomes, and next actions.
 - An operator can copy an adapter readiness report that proves current multi-language coverage and highlights fixture drift before a live run.
 - An operator can see whether each adapter's verification executable is available in the current backend runtime before a live run.
 - An operator can see missing adapter verification executables reflected in the demo readiness gate instead of only in the adapter report.

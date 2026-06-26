@@ -20,7 +20,9 @@ import {
   preflightDemoLaunch,
   getDemoSessionSnapshot,
   getDemoSessionReport,
+  getDemoHandoffPackage,
   downloadDemoSessionReport,
+  downloadDemoHandoffPackage,
   downloadDemoSessionArchiveReport,
   getDemoSmokeChecklist,
   getDemoEvidenceBundle,
@@ -954,6 +956,82 @@ test('downloads demo session report markdown with prepared launch command contex
   const downloadedReport = await downloadDemoSessionReport(input);
 
   expect(fetchMock).toHaveBeenCalledWith('/api/demo/session-report/download', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input)
+  });
+  expect(downloadedReport).toBe(reportBlob);
+});
+
+test('loads demo handoff package markdown with browser context', async () => {
+  const input: DemoSessionReportInput = {
+    preparedLaunchCommands: [
+      {
+        triggerComment: '/agent fix replace docs/demo.md PatchPilot smoke test',
+        repositoryOwner: 'bingqin2',
+        repositoryName: 'PatchPilot',
+        issueNumber: 1,
+        triggerUser: 'bingqin2',
+        operation: 'replace',
+        targetPath: 'docs/demo.md',
+        replacementText: 'PatchPilot smoke test',
+        savedAt: '2026-06-26T01:00:00Z'
+      }
+    ],
+    archivedLaunchOutcomes: [
+      {
+        triggerComment: '/agent fix replace docs/demo.md PatchPilot smoke test',
+        repositoryOwner: 'bingqin2',
+        repositoryName: 'PatchPilot',
+        issueNumber: 1,
+        triggerUser: 'bingqin2',
+        taskId: 'task-1',
+        taskStatus: 'COMPLETED',
+        pullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+        archivedAt: '2026-06-26T01:10:00Z',
+        report: '# PatchPilot Demo Launch Outcome Report'
+      }
+    ]
+  };
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: '# PatchPilot Demo Handoff Package\n\n## Handoff Summary',
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const report = await getDemoHandoffPackage(input);
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/handoff-package', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input)
+  });
+  expect(report).toContain('Demo Handoff Package');
+});
+
+test('downloads demo handoff package markdown with browser context', async () => {
+  const input: DemoSessionReportInput = {
+    preparedLaunchCommands: [],
+    archivedLaunchOutcomes: []
+  };
+  const reportBlob = new Blob(['# PatchPilot Demo Handoff Package'], {
+    type: 'text/markdown;charset=UTF-8'
+  });
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    blob: async () => reportBlob
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const downloadedReport = await downloadDemoHandoffPackage(input);
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/handoff-package/download', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input)

@@ -4,6 +4,28 @@ This file records dated implementation progress, validation commands, and import
 
 ## 2026-06-26
 
+Implemented demo handoff package export from `docs/plans/210-demo-handoff-package-export.md`.
+
+Changes:
+
+- Added read-only `POST /api/demo/handoff-package` and `POST /api/demo/handoff-package/download` endpoints.
+- Added a demo handoff Markdown package that wraps the session report with summary, recent task/Pull Request evidence, prepared command counts, archived outcome counts, next actions, prepared commands, and archived outcomes.
+- Added dashboard API helpers and `Copy handoff package` / `Download handoff package` actions to the demo session snapshot panel.
+- Wired App-level browser-local prepared command and archived outcome context into handoff package requests.
+- Updated README, product docs, the plan document, and this execution log.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=DemoSessionReportServiceTests,DemoReadinessControllerTests test`: first failed because `getHandoffPackage` and the handoff endpoints did not exist; then passed after backend implementation, 26 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts src/dashboard/components/DemoSessionSnapshotPanel.test.tsx --reporter=basic`: first failed because the API helpers and handoff buttons did not exist; then passed after frontend implementation, 67 tests run, 0 failures.
+- `npm test -- --run src/App.test.tsx -t "handoff package|copies demo session report" --reporter=basic`: passed after App-level handoff wiring, 2 tests run, 0 failures.
+- `mvn -pl PatchPilot test -q`: passed after full backend regression verification.
+- `npm test -- --reporter=basic`: passed after full frontend regression verification, 25 test files and 242 tests run.
+- `npm run build`: passed after TypeScript and production Vite build verification.
+- `git diff --check`: passed.
+
+## 2026-06-26
+
 Implemented demo launch outcome session integration from `docs/plans/209-demo-launch-outcome-session-integration.md`.
 
 Changes:
