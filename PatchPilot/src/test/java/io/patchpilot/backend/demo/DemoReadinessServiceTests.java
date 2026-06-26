@@ -4,6 +4,8 @@ import io.patchpilot.backend.configuration.ConfigurationSummaryVo;
 import io.patchpilot.backend.agent.provider.domain.ModelProviderHealthVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessStatus;
 import io.patchpilot.backend.demo.domain.DemoReadinessVo;
+import io.patchpilot.backend.evaluation.domain.EvaluationFixtureBaselineRunDigestVo;
+import io.patchpilot.backend.evaluation.domain.EvaluationFixtureBaselineRunRegressionSummaryVo;
 import io.patchpilot.backend.github.credential.domain.GitHubCredentialReadinessVo;
 import io.patchpilot.backend.github.credential.domain.GitHubRepositoryAccessReadinessVo;
 import io.patchpilot.backend.language.domain.LanguageAdapterFixtureVerificationVo;
@@ -55,6 +57,7 @@ class DemoReadinessServiceTests {
                         "Adapter runtimes",
                         "Queue",
                         "Worker heartbeat",
+                        "Evaluation baseline",
                         "Recent Pull Request"
                 );
         assertThat(readiness.checks())
@@ -566,6 +569,80 @@ class DemoReadinessServiceTests {
         );
     }
 
+    @Test
+    void should_block_demo_when_evaluation_baseline_regressed() {
+        DemoReadinessService service = new DemoReadinessService(
+                () -> configuration(true, true, true, true),
+                () -> List.of(fixture("java-maven", "PASS")),
+                () -> List.of(runtime("java", "maven", "mvn", "READY")),
+                DemoReadinessServiceTests::readyGitHubCredential,
+                DemoReadinessServiceTests::readyRepositoryAccess,
+                DemoReadinessServiceTests::readyModelProvider,
+                () -> FixTaskQueueSummaryVo.empty(),
+                DemoReadinessServiceTests::readyWorker,
+                () -> baselineRegression(
+                        "REGRESSED",
+                        digest("baseline-latest", "FAILED", 3, 2, 1, 0),
+                        digest("baseline-previous", "PASSED", 3, 3, 0, 0),
+                        List.of("node-npm-basic-fix"),
+                        List.of("node-npm-basic-fix"),
+                        List.of(),
+                        "Investigate newly failed fixture cases before using the baseline as demo evidence."
+                ),
+                () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/12"))
+        );
+
+        DemoReadinessVo readiness = service.getReadiness();
+
+        assertThat(readiness.status()).isEqualTo(DemoReadinessStatus.BLOCKED);
+        assertThat(readiness.checks())
+                .filteredOn(check -> check.name().equals("Evaluation baseline"))
+                .singleElement()
+                .satisfies(check -> {
+                    assertThat(check.status()).isEqualTo(DemoReadinessStatus.BLOCKED);
+                    assertThat(check.message()).contains("Latest fixture baseline regressed");
+                    assertThat(check.message()).contains("node-npm-basic-fix");
+                    assertThat(check.action()).isEqualTo("Investigate newly failed fixture cases before using the baseline as demo evidence.");
+                });
+        assertThat(readiness.nextActions()).contains("Investigate newly failed fixture cases before using the baseline as demo evidence.");
+    }
+
+    @Test
+    void should_need_attention_when_evaluation_baseline_history_is_missing() {
+        DemoReadinessService service = new DemoReadinessService(
+                () -> configuration(true, true, true, true),
+                () -> List.of(fixture("java-maven", "PASS")),
+                () -> List.of(runtime("java", "maven", "mvn", "READY")),
+                DemoReadinessServiceTests::readyGitHubCredential,
+                DemoReadinessServiceTests::readyRepositoryAccess,
+                DemoReadinessServiceTests::readyModelProvider,
+                () -> FixTaskQueueSummaryVo.empty(),
+                DemoReadinessServiceTests::readyWorker,
+                () -> baselineRegression(
+                        "NO_ARCHIVES",
+                        null,
+                        null,
+                        List.of(),
+                        List.of(),
+                        List.of(),
+                        "Run and archive at least two fixture baselines before using regression comparison."
+                ),
+                () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/12"))
+        );
+
+        DemoReadinessVo readiness = service.getReadiness();
+
+        assertThat(readiness.status()).isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
+        assertThat(readiness.checks())
+                .filteredOn(check -> check.name().equals("Evaluation baseline"))
+                .singleElement()
+                .satisfies(check -> {
+                    assertThat(check.status()).isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
+                    assertThat(check.message()).contains("No archived fixture baseline runs");
+                    assertThat(check.action()).isEqualTo("Run and archive at least two fixture baselines before using regression comparison.");
+                });
+    }
+
     private static ConfigurationSummaryVo configuration(
             boolean agentApiKeyConfigured,
             boolean githubTokenConfigured,
@@ -781,6 +858,63 @@ class DemoReadinessServiceTests {
                 1000,
                 "READY",
                 "No action needed."
+        );
+    }
+
+    private static EvaluationFixtureBaselineRunRegressionSummaryVo stableBaselineRegression() {
+        return baselineRegression(
+                "STABLE",
+                digest("baseline-latest", "PASSED", 3, 3, 0, 0),
+                digest("baseline-previous", "PASSED", 3, 3, 0, 0),
+                List.of(),
+                List.of(),
+                List.of(),
+                "Fixture baseline is stable; keep the latest archive as current demo evidence."
+        );
+    }
+
+    private static EvaluationFixtureBaselineRunRegressionSummaryVo baselineRegression(
+            String status,
+            EvaluationFixtureBaselineRunDigestVo latestRun,
+            EvaluationFixtureBaselineRunDigestVo previousRun,
+            List<String> latestFailedCaseIds,
+            List<String> newlyFailedCaseIds,
+            List<String> recoveredCaseIds,
+            String nextAction
+    ) {
+        return new EvaluationFixtureBaselineRunRegressionSummaryVo(
+                status,
+                latestRun,
+                previousRun,
+                latestRun == null || previousRun == null ? 0 : latestRun.passedCaseCount() - previousRun.passedCaseCount(),
+                latestRun == null || previousRun == null ? 0 : latestRun.failedCaseCount() - previousRun.failedCaseCount(),
+                latestRun == null || previousRun == null ? 0 : latestRun.skippedCaseCount() - previousRun.skippedCaseCount(),
+                latestFailedCaseIds,
+                newlyFailedCaseIds,
+                recoveredCaseIds,
+                "Fixture baseline regression summary reads archived local baseline runs only; it does not create tasks, call the model, mutate Git, or write to GitHub.",
+                nextAction,
+                "# PatchPilot Evaluation Fixture Baseline Regression Summary"
+        );
+    }
+
+    private static EvaluationFixtureBaselineRunDigestVo digest(
+            String id,
+            String status,
+            int totalCaseCount,
+            int passedCaseCount,
+            int failedCaseCount,
+            int skippedCaseCount
+    ) {
+        return new EvaluationFixtureBaselineRunDigestVo(
+                id,
+                status,
+                totalCaseCount,
+                passedCaseCount + failedCaseCount,
+                passedCaseCount,
+                failedCaseCount,
+                skippedCaseCount,
+                Instant.parse("2026-06-26T08:00:00Z")
         );
     }
 

@@ -83,7 +83,34 @@ test('shows blockers and warnings before a demo', () => {
   expect(screen.getByRole('listitem', { name: /Queue needs attention/i })).toBeInTheDocument();
   expect(screen.getByRole('listitem', { name: /Safety policy needs attention/i })).toBeInTheDocument();
   expect(screen.getByText('Trigger user allowlist is open; Review approval allowlist is missing.')).toBeInTheDocument();
-  expect(screen.getByText('Configure missing credentials in .env and restart the backend.')).toBeInTheDocument();
+  expect(screen.getAllByText('Configure missing credentials in .env and restart the backend.')).toHaveLength(2);
+});
+
+test('shows evaluation baseline gate action inside the blocked check row', () => {
+  render(
+    <DemoReadinessPanel
+      readiness={{
+        status: 'BLOCKED',
+        summary: 'PatchPilot is blocked for demo use.',
+        checks: [
+          {
+            name: 'Evaluation baseline',
+            status: 'BLOCKED',
+            message: 'Latest fixture baseline regressed. Newly failed cases: node-npm-basic-fix.',
+            action: 'Investigate newly failed fixture cases before using the baseline as demo evidence.'
+          }
+        ],
+        nextActions: ['Investigate newly failed fixture cases before using the baseline as demo evidence.']
+      }}
+      error={null}
+    />
+  );
+
+  const baselineRow = screen.getByRole('listitem', { name: /Evaluation baseline blocked/i });
+  expect(within(baselineRow).getByText('Latest fixture baseline regressed. Newly failed cases: node-npm-basic-fix.')).toBeInTheDocument();
+  expect(
+    within(baselineRow).getByText('Investigate newly failed fixture cases before using the baseline as demo evidence.')
+  ).toBeInTheDocument();
 });
 
 test('shows readiness API errors without hiding previous readiness data', () => {

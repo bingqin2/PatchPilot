@@ -129,6 +129,7 @@ The current implementation target is local self-hosted development first. Hosted
 - Demo readiness and the operator setup checklist should warn when the configured OpenAI-compatible model provider cannot answer a minimal health probe, even if model credentials are present.
 - Demo readiness, the smoke checklist, the demo script, the session snapshot checklist, and the operator setup checklist should warn when a supported adapter's selected verification executable is not available on the backend process `PATH`.
 - Demo readiness and the operator setup checklist should warn when the queue worker has not started, has most recently errored, or has stopped polling within the configured stale threshold.
+- Demo readiness should include a read-only evaluation baseline gate that needs attention when archived fixture baseline evidence is insufficient and blocks the live demo when the latest archived baseline regressed or still contains failed fixture cases.
 - Demo launch command composition should reject unsupported operations, protected repository metadata paths, absolute paths, parent-directory segments, empty path segments, whitespace in target paths, and blank replacement text for `replace` commands before the operator copies the command.
 - If project detection is possible from webhook or repository metadata before cloning, the system may reject even earlier.
 - The system must never follow user instructions that request secret exfiltration, destructive repository changes, arbitrary shell execution, or permission escalation.
@@ -378,6 +379,7 @@ PatchPilot MVP is successful when:
 - An operator can copy an evaluation run preview report that packages expected benchmark coverage and known gaps without cloning repositories, running verification commands, or recording a real benchmark run.
 - An operator can see whether each adapter's verification executable is available in the current backend runtime before a live run.
 - An operator can see missing adapter verification executables reflected in the demo readiness gate instead of only in the adapter report.
+- An operator can see fixture baseline regressions reflected in the demo readiness gate instead of only in the evaluation catalog panel.
 - An operator can copy a repository preflight report that shows whether a local path is supported and which allowlisted command would run.
 - A failed task records and reports a clear failure reason.
 - An unsupported repository failure reports the supported adapter matrix back to the GitHub issue without attempting model, test, Git, or Pull Request work.

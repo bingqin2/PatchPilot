@@ -8,6 +8,8 @@ import io.patchpilot.backend.demo.config.DemoProperties;
 import io.patchpilot.backend.demo.domain.DemoReadinessCheckVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessStatus;
 import io.patchpilot.backend.demo.domain.DemoReadinessVo;
+import io.patchpilot.backend.evaluation.EvaluationFixtureBaselineRunRegressionSummaryService;
+import io.patchpilot.backend.evaluation.domain.EvaluationFixtureBaselineRunRegressionSummaryVo;
 import io.patchpilot.backend.github.credential.GitHubCredentialReadinessService;
 import io.patchpilot.backend.github.credential.GitHubRepositoryAccessReadinessService;
 import io.patchpilot.backend.github.credential.domain.GitHubCredentialReadinessVo;
@@ -43,6 +45,7 @@ public class DemoReadinessService {
     private final Supplier<ModelProviderHealthVo> modelProviderHealthSupplier;
     private final Supplier<FixTaskQueueSummaryVo> queueSummarySupplier;
     private final Supplier<FixTaskWorkerHealthVo> workerHealthSupplier;
+    private final Supplier<EvaluationFixtureBaselineRunRegressionSummaryVo> evaluationBaselineRegressionSupplier;
     private final Supplier<List<FixTaskVo>> recentTasksSupplier;
 
     @Autowired
@@ -56,6 +59,7 @@ public class DemoReadinessService {
             ModelProviderHealthService modelProviderHealthService,
             FixTaskQueueQueryService fixTaskQueueQueryService,
             FixTaskWorkerHealthService fixTaskWorkerHealthService,
+            EvaluationFixtureBaselineRunRegressionSummaryService evaluationBaselineRegressionSummaryService,
             FixTaskService fixTaskService
     ) {
         this(
@@ -70,6 +74,7 @@ public class DemoReadinessService {
                 modelProviderHealthService::getHealth,
                 fixTaskQueueQueryService::summary,
                 fixTaskWorkerHealthService::getHealth,
+                evaluationBaselineRegressionSummaryService::getRegressionSummary,
                 () -> fixTaskService.listTasks(new FixTaskListQuery(
                         null,
                         null,
@@ -94,6 +99,32 @@ public class DemoReadinessService {
             Supplier<FixTaskWorkerHealthVo> workerHealthSupplier,
             Supplier<List<FixTaskVo>> recentTasksSupplier
     ) {
+        this(
+                configurationSupplier,
+                fixtureSupplier,
+                runtimeReadinessSupplier,
+                gitHubCredentialReadinessSupplier,
+                gitHubRepositoryAccessReadinessSupplier,
+                modelProviderHealthSupplier,
+                queueSummarySupplier,
+                workerHealthSupplier,
+                DemoReadinessService::defaultStableEvaluationBaselineRegression,
+                recentTasksSupplier
+        );
+    }
+
+    DemoReadinessService(
+            Supplier<ConfigurationSummaryVo> configurationSupplier,
+            Supplier<List<LanguageAdapterFixtureVerificationVo>> fixtureSupplier,
+            Supplier<List<LanguageAdapterRuntimeReadinessVo>> runtimeReadinessSupplier,
+            Supplier<GitHubCredentialReadinessVo> gitHubCredentialReadinessSupplier,
+            Supplier<GitHubRepositoryAccessReadinessVo> gitHubRepositoryAccessReadinessSupplier,
+            Supplier<ModelProviderHealthVo> modelProviderHealthSupplier,
+            Supplier<FixTaskQueueSummaryVo> queueSummarySupplier,
+            Supplier<FixTaskWorkerHealthVo> workerHealthSupplier,
+            Supplier<EvaluationFixtureBaselineRunRegressionSummaryVo> evaluationBaselineRegressionSupplier,
+            Supplier<List<FixTaskVo>> recentTasksSupplier
+    ) {
         this.configurationSupplier = configurationSupplier;
         this.fixtureSupplier = fixtureSupplier;
         this.runtimeReadinessSupplier = runtimeReadinessSupplier;
@@ -102,6 +133,7 @@ public class DemoReadinessService {
         this.modelProviderHealthSupplier = modelProviderHealthSupplier;
         this.queueSummarySupplier = queueSummarySupplier;
         this.workerHealthSupplier = workerHealthSupplier;
+        this.evaluationBaselineRegressionSupplier = evaluationBaselineRegressionSupplier;
         this.recentTasksSupplier = recentTasksSupplier;
     }
 
@@ -114,6 +146,7 @@ public class DemoReadinessService {
         ModelProviderHealthVo modelProviderHealth = modelProviderHealthSupplier.get();
         FixTaskQueueSummaryVo queueSummary = queueSummarySupplier.get();
         FixTaskWorkerHealthVo workerHealth = workerHealthSupplier.get();
+        EvaluationFixtureBaselineRunRegressionSummaryVo evaluationBaselineRegression = evaluationBaselineRegressionSupplier.get();
         List<FixTaskVo> recentTasks = recentTasksSupplier.get();
 
         List<DemoReadinessCheckVo> checks = List.of(
@@ -129,6 +162,7 @@ public class DemoReadinessService {
                 adapterRuntimeCheck(runtimes),
                 queueCheck(queueSummary),
                 workerHeartbeatCheck(workerHealth),
+                evaluationBaselineCheck(evaluationBaselineRegression),
                 recentPullRequestCheck(recentTasks)
         );
         DemoReadinessStatus status = aggregateStatus(checks);
@@ -459,6 +493,55 @@ public class DemoReadinessService {
         );
     }
 
+    private static DemoReadinessCheckVo evaluationBaselineCheck(EvaluationFixtureBaselineRunRegressionSummaryVo summary) {
+        if (summary == null) {
+            return new DemoReadinessCheckVo(
+                    "Evaluation baseline",
+                    DemoReadinessStatus.NEEDS_ATTENTION,
+                    "Evaluation fixture baseline regression evidence is not available.",
+                    "Run and archive at least two fixture baselines before using regression comparison."
+            );
+        }
+        if ("NO_ARCHIVES".equals(summary.status())) {
+            return new DemoReadinessCheckVo(
+                    "Evaluation baseline",
+                    DemoReadinessStatus.NEEDS_ATTENTION,
+                    "No archived fixture baseline runs are available for demo readiness.",
+                    summary.nextAction()
+            );
+        }
+        if ("SINGLE_ARCHIVE".equals(summary.status())) {
+            return new DemoReadinessCheckVo(
+                    "Evaluation baseline",
+                    DemoReadinessStatus.NEEDS_ATTENTION,
+                    "Only one archived fixture baseline run is available; regression movement is not comparable yet.",
+                    summary.nextAction()
+            );
+        }
+        if ("REGRESSED".equals(summary.status())) {
+            return new DemoReadinessCheckVo(
+                    "Evaluation baseline",
+                    DemoReadinessStatus.BLOCKED,
+                    "Latest fixture baseline regressed. Newly failed cases: " + csv(summary.newlyFailedCaseIds()) + ".",
+                    summary.nextAction()
+            );
+        }
+        if (!summary.latestFailedCaseIds().isEmpty()) {
+            return new DemoReadinessCheckVo(
+                    "Evaluation baseline",
+                    DemoReadinessStatus.BLOCKED,
+                    "Latest fixture baseline has failed cases: " + csv(summary.latestFailedCaseIds()) + ".",
+                    summary.nextAction()
+            );
+        }
+        return new DemoReadinessCheckVo(
+                "Evaluation baseline",
+                DemoReadinessStatus.READY,
+                "Fixture baseline regression status is " + summary.status() + " with no latest failed cases.",
+                "No action needed."
+        );
+    }
+
     private static DemoReadinessStatus aggregateStatus(List<DemoReadinessCheckVo> checks) {
         if (checks.stream().anyMatch(check -> check.status() == DemoReadinessStatus.BLOCKED)) {
             return DemoReadinessStatus.BLOCKED;
@@ -501,5 +584,26 @@ public class DemoReadinessService {
         return missing.stream()
                 .map(runtime -> runtime.language() + "-" + runtime.buildSystem() + " requires `" + runtime.executable() + "`")
                 .collect(java.util.stream.Collectors.joining(", "));
+    }
+
+    private static EvaluationFixtureBaselineRunRegressionSummaryVo defaultStableEvaluationBaselineRegression() {
+        return new EvaluationFixtureBaselineRunRegressionSummaryVo(
+                "STABLE",
+                null,
+                null,
+                0,
+                0,
+                0,
+                List.of(),
+                List.of(),
+                List.of(),
+                "Fixture baseline regression summary reads archived local baseline runs only; it does not create tasks, call the model, mutate Git, or write to GitHub.",
+                "Fixture baseline is stable; keep the latest archive as current demo evidence.",
+                "# PatchPilot Evaluation Fixture Baseline Regression Summary"
+        );
+    }
+
+    private static String csv(List<String> values) {
+        return values.isEmpty() ? "none" : String.join(", ", values);
     }
 }
