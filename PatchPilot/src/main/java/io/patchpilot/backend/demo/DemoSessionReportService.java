@@ -1,8 +1,11 @@
 package io.patchpilot.backend.demo;
 
+import io.patchpilot.backend.demo.domain.DemoReadinessSnapshotTrendStatus;
+import io.patchpilot.backend.demo.domain.DemoReadinessSnapshotTrendVo;
+import io.patchpilot.backend.demo.domain.DemoReadinessStatus;
 import io.patchpilot.backend.demo.domain.DemoScriptStepVo;
 import io.patchpilot.backend.demo.domain.DemoSessionSnapshotVo;
-import io.patchpilot.backend.demo.domain.DemoReadinessSnapshotTrendVo;
+import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -54,6 +57,7 @@ public class DemoSessionReportService {
 
         appendRecentTask(report, snapshot.evidenceBundle().recentTask());
         appendReadinessSnapshotTrend(report, snapshot.readinessSnapshotTrend());
+        appendHandoffReadiness(report, snapshot, request);
         appendList(report, "Operator Checklist", snapshot.operatorChecklist(), "No operator checklist items recorded.");
         appendPreparedLaunchCommands(report, request.preparedLaunchCommands());
         appendArchivedLaunchOutcomes(report, request.archivedLaunchOutcomes());
@@ -81,11 +85,161 @@ public class DemoSessionReportService {
                 .append("- Readiness trend: `").append(snapshot.readinessSnapshotTrend().status()).append("` - ")
                 .append(snapshot.readinessSnapshotTrend().summary()).append("\n")
                 .append("- Health contract: GET /api/demo/handoff-package is read-only: it does not create tasks, call the model, run tests, mutate Git, or write to GitHub.\n");
+        appendHandoffReadiness(report, snapshot, request);
         appendList(report, "Next Actions", snapshot.nextActions(), "No next actions recorded.");
         appendPreparedLaunchCommands(report, request.preparedLaunchCommands());
         appendArchivedLaunchOutcomeSummary(report, request.archivedLaunchOutcomes());
         report.append("\n## Embedded Session Report\n\n").append(sessionReport);
         return report.toString();
+    }
+
+    private static void appendHandoffReadiness(
+            StringBuilder report,
+            DemoSessionSnapshotVo snapshot,
+            DemoSessionReportRequestDto request
+    ) {
+        HandoffReadiness readiness = handoffReadiness(snapshot, request);
+        report.append("\n## Handoff Readiness\n\n")
+                .append("- Overall: `")
+                .append(readiness.status())
+                .append("` - ")
+                .append(readiness.summary())
+                .append("\n");
+        readiness.checks().forEach(check -> report
+                .append("- ")
+                .append(check.name())
+                .append(": `")
+                .append(check.status())
+                .append("` - ")
+                .append(check.summary())
+                .append("\n"));
+    }
+
+    private static HandoffReadiness handoffReadiness(DemoSessionSnapshotVo snapshot, DemoSessionReportRequestDto request) {
+        List<HandoffReadinessCheck> checks = List.of(
+                snapshotStatusCheck(snapshot),
+                recentTaskCheck(snapshot.evidenceBundle().recentTask()),
+                recentPullRequestCheck(snapshot.evidenceBundle().recentPullRequestUrl()),
+                preparedCommandCheck(request.preparedLaunchCommands()),
+                archivedOutcomeCheck(request.archivedLaunchOutcomes()),
+                readinessTrendCheck(snapshot.readinessSnapshotTrend())
+        );
+        DemoReadinessStatus overallStatus = overallHandoffStatus(checks);
+        return new HandoffReadiness(overallStatus, handoffSummary(overallStatus), checks);
+    }
+
+    private static HandoffReadinessCheck snapshotStatusCheck(DemoSessionSnapshotVo snapshot) {
+        return new HandoffReadinessCheck("Demo snapshot status", snapshot.status(), snapshot.summary());
+    }
+
+    private static HandoffReadinessCheck recentTaskCheck(FixTaskVo task) {
+        if (task == null) {
+            return new HandoffReadinessCheck(
+                    "Recent task evidence",
+                    DemoReadinessStatus.NEEDS_ATTENTION,
+                    "No recent completed task is available in the session snapshot."
+            );
+        }
+        if (task.status() == FixTaskStatus.COMPLETED) {
+            return new HandoffReadinessCheck(
+                    "Recent task evidence",
+                    DemoReadinessStatus.READY,
+                    task.id() + " is completed."
+            );
+        }
+        return new HandoffReadinessCheck(
+                "Recent task evidence",
+                DemoReadinessStatus.NEEDS_ATTENTION,
+                task.id() + " is " + task.status() + ", not completed."
+        );
+    }
+
+    private static HandoffReadinessCheck recentPullRequestCheck(String pullRequestUrl) {
+        if (isBlank(pullRequestUrl)) {
+            return new HandoffReadinessCheck(
+                    "Recent Pull Request evidence",
+                    DemoReadinessStatus.NEEDS_ATTENTION,
+                    "No recent Pull Request URL is available."
+            );
+        }
+        return new HandoffReadinessCheck(
+                "Recent Pull Request evidence",
+                DemoReadinessStatus.READY,
+                pullRequestUrl
+        );
+    }
+
+    private static HandoffReadinessCheck preparedCommandCheck(List<DemoPreparedLaunchCommandRequestDto> commands) {
+        long commandCount = countNonBlankCommands(commands);
+        if (commandCount == 0) {
+            return new HandoffReadinessCheck(
+                    "Prepared command context",
+                    DemoReadinessStatus.NEEDS_ATTENTION,
+                    "No prepared launch command was captured in this browser session."
+            );
+        }
+        return new HandoffReadinessCheck(
+                "Prepared command context",
+                DemoReadinessStatus.READY,
+                commandCount + " prepared " + plural(commandCount, "command") + " recorded."
+        );
+    }
+
+    private static HandoffReadinessCheck archivedOutcomeCheck(List<DemoArchivedLaunchOutcomeRequestDto> outcomes) {
+        long evidenceCount = countOutcomeEvidence(outcomes);
+        if (evidenceCount == 0) {
+            return new HandoffReadinessCheck(
+                    "Archived launch outcome context",
+                    DemoReadinessStatus.NEEDS_ATTENTION,
+                    "No archived launch outcome with completed task or Pull Request evidence was captured."
+            );
+        }
+        return new HandoffReadinessCheck(
+                "Archived launch outcome context",
+                DemoReadinessStatus.READY,
+                evidenceCount + " archived " + plural(evidenceCount, "outcome")
+                        + " has completed task or Pull Request evidence."
+        );
+    }
+
+    private static HandoffReadinessCheck readinessTrendCheck(DemoReadinessSnapshotTrendVo trend) {
+        if (trend.status() == DemoReadinessSnapshotTrendStatus.REGRESSING) {
+            return new HandoffReadinessCheck(
+                    "Readiness trend baseline",
+                    DemoReadinessStatus.BLOCKED,
+                    "Readiness trend is REGRESSING; address the regression or archive a fresh passing snapshot before handoff."
+            );
+        }
+        if (trend.status() == DemoReadinessSnapshotTrendStatus.NO_BASELINE) {
+            return new HandoffReadinessCheck(
+                    "Readiness trend baseline",
+                    DemoReadinessStatus.NEEDS_ATTENTION,
+                    "No previous readiness snapshot is available for comparison."
+            );
+        }
+        return new HandoffReadinessCheck(
+                "Readiness trend baseline",
+                DemoReadinessStatus.READY,
+                trend.status() + "; latest readiness " + valueOrNone(trend.latestReadinessStatus()) + "."
+        );
+    }
+
+    private static DemoReadinessStatus overallHandoffStatus(List<HandoffReadinessCheck> checks) {
+        if (checks.stream().anyMatch(check -> check.status() == DemoReadinessStatus.BLOCKED)) {
+            return DemoReadinessStatus.BLOCKED;
+        }
+        if (checks.stream().anyMatch(check -> check.status() == DemoReadinessStatus.NEEDS_ATTENTION)) {
+            return DemoReadinessStatus.NEEDS_ATTENTION;
+        }
+        return DemoReadinessStatus.READY;
+    }
+
+    private static String handoffSummary(DemoReadinessStatus status) {
+        return switch (status) {
+            case READY -> "Handoff package has current PR, command, outcome, and readiness trend evidence.";
+            case NEEDS_ATTENTION -> "Handoff package is missing evidence required for a credible live-demo handoff.";
+            case BLOCKED -> "Handoff package has a blocking readiness signal that should be resolved before a live-demo handoff.";
+        };
     }
 
     private static void appendReadinessSnapshotTrend(StringBuilder report, DemoReadinessSnapshotTrendVo trend) {
@@ -271,6 +425,18 @@ public class DemoSessionReportService {
                 .count();
     }
 
+    private static long countOutcomeEvidence(List<DemoArchivedLaunchOutcomeRequestDto> outcomes) {
+        return outcomes.stream()
+                .filter(outcome -> !isBlank(outcome.triggerComment()))
+                .filter(outcome -> "COMPLETED".equals(outcome.taskStatus()) || !isBlank(outcome.pullRequestUrl()))
+                .limit(5)
+                .count();
+    }
+
+    private static String plural(long count, String noun) {
+        return count == 1 ? noun : noun + "s";
+    }
+
     private static boolean isBlank(String value) {
         return value == null || value.isBlank();
     }
@@ -288,5 +454,19 @@ public class DemoSessionReportService {
             return summary;
         }
         return summary.substring(0, 277) + "...";
+    }
+
+    private record HandoffReadiness(
+            DemoReadinessStatus status,
+            String summary,
+            List<HandoffReadinessCheck> checks
+    ) {
+    }
+
+    private record HandoffReadinessCheck(
+            String name,
+            DemoReadinessStatus status,
+            String summary
+    ) {
     }
 }

@@ -192,6 +192,14 @@ class DemoSessionReportServiceTests {
                 .contains("- Demo evidence bundle is ready.")
                 .contains("- Status READY; recent task task-1; recent PR https://github.com/bingqin2/PatchPilot/pull/42.")
                 .contains("- Readiness trend: `IMPROVING` - Demo readiness improved from BLOCKED to READY.")
+                .contains("## Handoff Readiness")
+                .contains("- Overall: `READY` - Handoff package has current PR, command, outcome, and readiness trend evidence.")
+                .contains("- Demo snapshot status: `READY` - Demo session snapshot is ready.")
+                .contains("- Recent task evidence: `READY` - task-1 is completed.")
+                .contains("- Recent Pull Request evidence: `READY` - https://github.com/bingqin2/PatchPilot/pull/42")
+                .contains("- Prepared command context: `READY` - 1 prepared command recorded.")
+                .contains("- Archived launch outcome context: `READY` - 1 archived outcome has completed task or Pull Request evidence.")
+                .contains("- Readiness trend baseline: `READY` - IMPROVING; latest readiness READY.")
                 .contains("## Readiness Snapshot Trend")
                 .contains("- Delta: `+4 ready / -2 warning / -2 blocked`")
                 .contains("## Prepared Launch Commands")
@@ -204,8 +212,38 @@ class DemoSessionReportServiceTests {
     }
 
     @Test
+    void should_mark_handoff_readiness_needs_attention_when_required_context_is_missing() {
+        DemoSessionReportService service = new DemoSessionReportService(() -> snapshotWithoutTaskOrPullRequest());
+
+        String packageReport = service.getHandoffPackage(new DemoSessionReportRequestDto(List.of(), List.of()));
+
+        assertThat(packageReport)
+                .contains("## Handoff Readiness")
+                .contains("- Overall: `NEEDS_ATTENTION` - Handoff package is missing evidence required for a credible live-demo handoff.")
+                .contains("- Recent task evidence: `NEEDS_ATTENTION` - No recent completed task is available in the session snapshot.")
+                .contains("- Recent Pull Request evidence: `NEEDS_ATTENTION` - No recent Pull Request URL is available.")
+                .contains("- Prepared command context: `NEEDS_ATTENTION` - No prepared launch command was captured in this browser session.")
+                .contains("- Archived launch outcome context: `NEEDS_ATTENTION` - No archived launch outcome with completed task or Pull Request evidence was captured.")
+                .contains("- Readiness trend baseline: `READY` - IMPROVING; latest readiness READY.");
+    }
+
+    @Test
     void should_render_empty_lists_and_missing_evidence_as_none() {
-        DemoSessionReportService service = new DemoSessionReportService(() -> new DemoSessionSnapshotVo(
+        DemoSessionReportService service = new DemoSessionReportService(() -> snapshotWithoutTaskOrPullRequest());
+
+        String report = service.getSessionReport();
+
+        assertThat(report)
+                .contains("- Recent Pull Request: none")
+                .contains("- Recent task: none")
+                .contains("- No operator checklist items recorded.")
+                .contains("- No script steps recorded.")
+                .contains("- GET /api/demo/session-report is read-only: it does not create tasks, call the model, run tests, mutate Git, or write to GitHub.")
+                .contains("- No next actions recorded.");
+    }
+
+    private static DemoSessionSnapshotVo snapshotWithoutTaskOrPullRequest() {
+        return new DemoSessionSnapshotVo(
                 "demo-session-20260624T003000Z",
                 DemoReadinessStatus.READY,
                 "Demo session snapshot is ready.",
@@ -234,17 +272,7 @@ class DemoSessionReportServiceTests {
                 List.of(),
                 "Status READY; recent task none; recent PR none.",
                 List.of()
-        ));
-
-        String report = service.getSessionReport();
-
-        assertThat(report)
-                .contains("- Recent Pull Request: none")
-                .contains("- Recent task: none")
-                .contains("- No operator checklist items recorded.")
-                .contains("- No script steps recorded.")
-                .contains("- GET /api/demo/session-report is read-only: it does not create tasks, call the model, run tests, mutate Git, or write to GitHub.")
-                .contains("- No next actions recorded.");
+        );
     }
 
     private static DemoSessionSnapshotVo snapshot() {
