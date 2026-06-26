@@ -971,7 +971,8 @@ h3 {
 }
 
 .demo-launch-command-panel,
-.demo-launch-preflight-panel {
+.demo-launch-preflight-panel,
+.demo-launch-tracker-panel {
   margin-bottom: 16px;
 }
 
@@ -1261,6 +1262,82 @@ h3 {
   font-size: 13px;
   font-weight: 750;
   padding: 9px 10px;
+}
+
+.demo-launch-tracker-list {
+  border-top: 1px solid #dce3e9;
+  display: grid;
+  gap: 12px;
+  padding: 14px 16px 16px;
+}
+
+.demo-launch-tracker-row {
+  background: #f8fafc;
+  border: 1px solid #dfe7ee;
+  border-radius: 6px;
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+}
+
+.demo-launch-tracker-command {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.demo-launch-tracker-command code {
+  color: #17202a;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 13px;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.demo-launch-tracker-command span,
+.demo-launch-tracker-row p {
+  color: #52606e;
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1.4;
+}
+
+.demo-launch-tracker-steps {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.demo-launch-tracker-steps div {
+  background: #ffffff;
+  border: 1px solid #dfe7ee;
+  border-radius: 6px;
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  padding: 9px 10px;
+}
+
+.demo-launch-tracker-steps span {
+  color: #637181;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.demo-launch-tracker-steps strong {
+  justify-self: start;
+}
+
+.demo-launch-tracker-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.demo-launch-tracker-links a {
+  color: #166b68;
+  font-size: 13px;
+  font-weight: 800;
 }
 
 .demo-evidence-panel {
