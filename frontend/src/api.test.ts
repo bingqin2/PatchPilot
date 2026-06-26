@@ -16,6 +16,7 @@ import {
   getModelUsageSummary,
   getDemoScript,
   archiveDemoSession,
+  archiveEvaluationRunSnapshot,
   listDemoSessionArchives,
   preflightDemoLaunch,
   getDemoSessionSnapshot,
@@ -24,6 +25,7 @@ import {
   downloadDemoSessionReport,
   downloadDemoHandoffPackage,
   downloadDemoSessionArchiveReport,
+  downloadEvaluationRunSnapshotReport,
   getDemoSmokeChecklist,
   getDemoEvidenceBundle,
   getDemoRunbook,
@@ -35,6 +37,7 @@ import {
   listAcceptedTriggerDecisions,
   listAdminAuditEvents,
   listEvaluationCases,
+  listEvaluationRunSnapshots,
   listLanguageAdapterFixtures,
   listLanguageAdapterRuntimeReadiness,
   listLanguageAdapters,
@@ -2281,6 +2284,60 @@ test('loads evaluation run preview report from backend API', async () => {
   });
 });
 
+test('archives evaluation run snapshot through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: evaluationRunSnapshotArchive(),
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const archive = await archiveEvaluationRunSnapshot();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/evaluation/run-snapshots', { method: 'POST' });
+  expect(archive.id).toBe('snapshot-1');
+  expect(archive.report).toContain('# PatchPilot Evaluation Run Snapshot');
+});
+
+test('lists evaluation run snapshot archives through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: [evaluationRunSnapshotArchive()],
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const archives = await listEvaluationRunSnapshots();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/evaluation/run-snapshots');
+  expect(archives[0].previewRunId).toBe('preview-current-catalog');
+});
+
+test('downloads archived evaluation run snapshot report markdown from backend API', async () => {
+  const reportBlob = new Blob(['# PatchPilot Evaluation Run Snapshot\n\n- Snapshot id: `snapshot-1`'], {
+    type: 'text/markdown;charset=UTF-8'
+  });
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    blob: async () => reportBlob
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const downloadedReport = await downloadEvaluationRunSnapshotReport('snapshot-1');
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/evaluation/run-snapshots/snapshot-1/report/download');
+  expect(downloadedReport).toBe(reportBlob);
+});
+
 test('runs repository preflight through backend API', async () => {
   const fetchMock = vi.fn(async () => ({
     ok: true,
@@ -2731,3 +2788,22 @@ test('shows actionable backend guidance when API response is not JSON', async ()
     'Backend request failed. Check that PatchPilot backend is running and the frontend proxy target is correct.'
   );
 });
+
+function evaluationRunSnapshotArchive() {
+  return {
+    id: 'snapshot-1',
+    previewRunId: 'preview-current-catalog',
+    title: 'Evaluation run preview',
+    status: 'READY',
+    caseCount: 6,
+    supportedFixCaseCount: 4,
+    safetyRejectionCaseCount: 2,
+    coveredLanguages: ['go', 'java', 'node', 'python'],
+    coveredBuildSystems: ['go', 'maven', 'npm', 'pytest'],
+    expectedVerificationCommands: ['go test ./...', 'mvn test', 'npm test', 'python3 -m pytest'],
+    safetyRejectionCategories: ['DANGEROUS_INSTRUCTION', 'NOT_ACTIONABLE'],
+    createdAt: '2026-06-26T04:00:00Z',
+    sideEffectContract: 'Archive stores the current evaluation run preview as PatchPilot-local evidence only; it does not create tasks, call the model, clone repositories, run verification commands, mutate Git, or write to GitHub.',
+    report: '# PatchPilot Evaluation Run Snapshot\n\n- Status: `READY`'
+  };
+}

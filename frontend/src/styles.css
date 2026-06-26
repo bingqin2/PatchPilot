@@ -733,6 +733,13 @@ h3 {
   justify-content: space-between;
 }
 
+.panel-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .panel-subheader p {
   color: #637181;
   font-size: 13px;

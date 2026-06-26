@@ -4,6 +4,28 @@ This file records dated implementation progress, validation commands, and import
 
 ## 2026-06-26
 
+Implemented evaluation run snapshot archive from `docs/plans/214-evaluation-run-snapshot-archive.md`.
+
+Changes:
+
+- Added `POST /api/evaluation/run-snapshots`, `GET /api/evaluation/run-snapshots`, and `GET /api/evaluation/run-snapshots/{snapshotId}/report/download`.
+- Added in-memory and MySQL-backed evaluation run snapshot archive repositories, conversion, mapper, and Flyway schema.
+- Archived the current evaluation run preview as PatchPilot-local Markdown evidence without creating tasks, calling the model, cloning repositories, running verification commands, mutating Git, or writing to GitHub.
+- Added dashboard API helpers and an archive section with copy/download report actions in `Evaluation case catalog`.
+- Updated README, the plan document, and this execution log.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=EvaluationRunSnapshotArchiveServiceTests,EvaluationCaseControllerTests,InMemoryEvaluationRunSnapshotArchiveRepositoryTests,MyBatisEvaluationRunSnapshotArchiveRepositoryTests,EvaluationRunSnapshotArchiveMigrationTests test`: first failed because the archive service, repository, mapper, controller endpoints, and migration did not exist; then passed after backend implementation, 11 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts src/dashboard/components/EvaluationCaseCatalogPanel.test.tsx`: first failed because the archive API helpers and panel archive workflow did not exist; then passed after frontend implementation, 2 test files and 70 tests passed.
+- `npm test -- --run src/api.test.ts src/dashboard/components/EvaluationCaseCatalogPanel.test.tsx src/App.test.tsx --reporter=basic`: initially exposed an App-level duplicate safety-contract assertion after archives rendered beside previews; then passed after tightening the assertion, 3 test files and 139 tests passed.
+- `mvn -pl PatchPilot test -q`: passed after full backend regression verification.
+- `npm test -- --reporter=basic`: passed after full frontend regression verification, 26 test files and 253 tests run.
+- `npm run build`: passed after TypeScript and production Vite build verification.
+- `git diff --check`: passed.
+
+## 2026-06-26
+
 Implemented evaluation run preview report from `docs/plans/213-evaluation-run-preview-report.md`.
 
 Changes:

@@ -587,6 +587,23 @@ export interface EvaluationRunPreview {
   markdownReport: string;
 }
 
+export interface EvaluationRunSnapshotArchive {
+  id: string;
+  previewRunId: string;
+  title: string;
+  status: EvaluationSummaryStatus;
+  caseCount: number;
+  supportedFixCaseCount: number;
+  safetyRejectionCaseCount: number;
+  coveredLanguages: string[];
+  coveredBuildSystems: string[];
+  expectedVerificationCommands: string[];
+  safetyRejectionCategories: string[];
+  createdAt: string;
+  sideEffectContract: string;
+  report: string;
+}
+
 export interface FixTaskQueueSummary {
   totalCount: number;
   pendingCount: number;

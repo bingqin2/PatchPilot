@@ -4,11 +4,13 @@ import {
   ADMIN_TOKEN_STORAGE_KEY,
   approveTaskReview,
   archiveDemoSession,
+  archiveEvaluationRunSnapshot,
   cancelTask,
   composeDemoLaunchCommand,
   createTask,
   createTriggerQuarantine,
   downloadDemoSessionArchiveReport,
+  downloadEvaluationRunSnapshotReport,
   downloadDemoHandoffPackage,
   downloadDemoSessionReport,
   evaluateTrigger,
@@ -45,6 +47,7 @@ import {
   listAcceptedTriggerDecisions,
   listAdminAuditEvents,
   listEvaluationCases,
+  listEvaluationRunSnapshots,
   listLanguageAdapterFixtures,
   listLanguageAdapterRuntimeReadiness,
   listLanguageAdapters,
@@ -113,6 +116,7 @@ import type {
   EvaluationCase,
   EvaluationCaseSummary,
   EvaluationRunPreview,
+  EvaluationRunSnapshotArchive,
   FixTask,
   FixTaskFailureCauseSummary,
   FixTaskLatencySummary,
@@ -221,9 +225,11 @@ export default function App() {
   const [evaluationCases, setEvaluationCases] = useState<EvaluationCase[]>([]);
   const [evaluationSummary, setEvaluationSummary] = useState<EvaluationCaseSummary | null>(null);
   const [evaluationRunPreview, setEvaluationRunPreview] = useState<EvaluationRunPreview | null>(null);
+  const [evaluationRunSnapshots, setEvaluationRunSnapshots] = useState<EvaluationRunSnapshotArchive[]>([]);
   const [evaluationCaseError, setEvaluationCaseError] = useState<string | null>(null);
   const [evaluationSummaryError, setEvaluationSummaryError] = useState<string | null>(null);
   const [evaluationRunPreviewError, setEvaluationRunPreviewError] = useState<string | null>(null);
+  const [evaluationRunSnapshotError, setEvaluationRunSnapshotError] = useState<string | null>(null);
   const [repositoryPreflightResult, setRepositoryPreflightResult] = useState<RepositoryPreflightResult | null>(null);
   const [repositoryPreflightError, setRepositoryPreflightError] = useState<string | null>(null);
   const [repositoryPreflightLoading, setRepositoryPreflightLoading] = useState(false);
@@ -514,6 +520,7 @@ export default function App() {
         evaluationCaseResult,
         evaluationSummaryResult,
         evaluationRunPreviewResult,
+        evaluationRunSnapshotResult,
         queueSummaryData,
         queueItemList,
         workerHealthData,
@@ -591,6 +598,10 @@ export default function App() {
         getEvaluationRunPreview().then(
           (preview) => ({ preview, error: null as string | null }),
           (caught) => ({ preview: null, error: errorMessage(caught) })
+        ),
+        listEvaluationRunSnapshots().then(
+          (snapshots) => ({ snapshots, error: null as string | null }),
+          (caught) => ({ snapshots: null, error: errorMessage(caught) })
         ),
         getQueueSummary(),
         listQueueItems(),
@@ -694,6 +705,10 @@ export default function App() {
         setEvaluationRunPreview(evaluationRunPreviewResult.preview);
       }
       setEvaluationRunPreviewError(evaluationRunPreviewResult.error);
+      if (evaluationRunSnapshotResult.snapshots) {
+        setEvaluationRunSnapshots(evaluationRunSnapshotResult.snapshots);
+      }
+      setEvaluationRunSnapshotError(evaluationRunSnapshotResult.error);
       setQueueSummary(queueSummaryData);
       setQueueItems(queueItemList);
       setWorkerHealth(workerHealthData);
@@ -878,6 +893,17 @@ export default function App() {
     setDemoSessionArchiveError(null);
     return archive;
   }, []);
+
+  const handleArchiveEvaluationRunSnapshot = useCallback(async () => {
+    const archive = await archiveEvaluationRunSnapshot();
+    setEvaluationRunSnapshots((current) => [archive, ...current.filter((item) => item.id !== archive.id)].slice(0, 20));
+    setEvaluationRunSnapshotError(null);
+    return archive;
+  }, []);
+
+  const handleDownloadEvaluationRunSnapshotReport = useCallback((snapshotId: string) => (
+    downloadEvaluationRunSnapshotReport(snapshotId)
+  ), []);
 
   const handleComposeDemoLaunchCommand = useCallback(async (input: DemoLaunchCommandInput) => {
     setDemoLaunchCommandPending(true);
@@ -1313,9 +1339,13 @@ export default function App() {
         cases={evaluationCases}
         summary={evaluationSummary}
         runPreview={evaluationRunPreview}
+        archives={evaluationRunSnapshots}
         error={evaluationCaseError}
         summaryError={evaluationSummaryError}
         runPreviewError={evaluationRunPreviewError}
+        archiveError={evaluationRunSnapshotError}
+        onArchiveRunSnapshot={handleArchiveEvaluationRunSnapshot}
+        onDownloadArchiveReport={handleDownloadEvaluationRunSnapshotReport}
       />
 
       <SupportedAdaptersPanel adapters={supportedAdapters} error={adapterError} />
