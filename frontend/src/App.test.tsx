@@ -1263,6 +1263,17 @@ const demoReadiness = {
   nextActions: ['Run one controlled issue-to-PR smoke task before a live demo.']
 };
 
+const demoReadinessSnapshotArchive = {
+  id: 'readiness-snapshot-1',
+  status: 'NEEDS_ATTENTION',
+  summary: 'PatchPilot needs attention before a live demo.',
+  readyCheckCount: 6,
+  needsAttentionCheckCount: 1,
+  blockedCheckCount: 0,
+  createdAt: '2026-06-27T04:00:00Z',
+  report: '# PatchPilot Demo Readiness Snapshot\n\n- Status: `NEEDS_ATTENTION`'
+};
+
 const demoLaunchPreflight = {
   status: 'READY',
   readyToPost: true,
@@ -1617,6 +1628,12 @@ beforeEach(() => {
     }
     if (url === '/api/demo/readiness') {
       return jsonResponse(demoReadiness);
+    }
+    if (url === '/api/demo/readiness-snapshots' && init?.method === 'POST') {
+      return jsonResponse(demoReadinessSnapshotArchive);
+    }
+    if (url === '/api/demo/readiness-snapshots') {
+      return jsonResponse([demoReadinessSnapshotArchive]);
     }
     if (url === '/api/demo/launch-preflight' && init?.method === 'POST') {
       return jsonResponse(demoLaunchPreflight);
@@ -2030,11 +2047,14 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(screen.getByText('Queue attempts 3')).toBeInTheDocument();
   const demoReadinessPanel = screen.getByRole('region', { name: 'Demo readiness' });
   expect(within(demoReadinessPanel).getByRole('heading', { name: 'Demo readiness' })).toBeInTheDocument();
-  expect(within(demoReadinessPanel).getByText('Needs attention')).toBeInTheDocument();
-  expect(within(demoReadinessPanel).getByText('PatchPilot needs attention before a live demo.')).toBeInTheDocument();
+  expect(within(demoReadinessPanel).getAllByText('Needs attention')).toHaveLength(2);
+  expect(within(demoReadinessPanel).getAllByText('PatchPilot needs attention before a live demo.')).toHaveLength(2);
   expect(within(demoReadinessPanel).getByText('Evaluation baseline')).toBeInTheDocument();
   expect(within(demoReadinessPanel).getByText('Fixture baseline regression status is STABLE with no latest failed cases.')).toBeInTheDocument();
   expect(within(demoReadinessPanel).getAllByText('Run one controlled issue-to-PR smoke task before a live demo.')).toHaveLength(2);
+  expect(within(demoReadinessPanel).getByRole('heading', { name: 'Recent readiness snapshots' })).toBeInTheDocument();
+  expect(within(demoReadinessPanel).getByText('readiness-snapshot-1')).toBeInTheDocument();
+  expect(within(demoReadinessPanel).getByText('6 ready / 1 warning / 0 blocked')).toBeInTheDocument();
   const smokeChecklistPanel = screen.getByRole('region', { name: 'Live demo smoke checklist' });
   expect(within(smokeChecklistPanel).getByRole('heading', { name: 'Live demo smoke checklist' })).toBeInTheDocument();
   expect(within(smokeChecklistPanel).getByText('Live demo smoke checklist needs attention.')).toBeInTheDocument();
@@ -2680,6 +2700,32 @@ test('copies demo runbook from backend API', async () => {
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/runbook'));
   expect(writeText).toHaveBeenCalledWith('# PatchPilot Demo Runbook\n\n- Status: `READY`');
   expect(within(evidenceBundlePanel).getByText('Demo runbook copied')).toBeInTheDocument();
+});
+
+test('archives demo readiness snapshot from the dashboard', async () => {
+  const user = userEvent.setup();
+  const fetchMock = vi.mocked(fetch);
+  const writeText = vi.fn().mockResolvedValue(undefined);
+  Object.defineProperty(navigator, 'clipboard', {
+    configurable: true,
+    value: { writeText }
+  });
+
+  render(<App />);
+
+  const readinessPanel = await screen.findByRole('region', { name: 'Demo readiness' });
+  expect(within(readinessPanel).getByRole('heading', { name: 'Recent readiness snapshots' })).toBeInTheDocument();
+  expect(within(readinessPanel).getByText('readiness-snapshot-1')).toBeInTheDocument();
+
+  await user.click(within(readinessPanel).getByRole('button', { name: 'Archive readiness' }));
+
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/readiness-snapshots', { method: 'POST' }));
+  expect(within(readinessPanel).getByText('Demo readiness snapshot archived')).toBeInTheDocument();
+
+  await user.click(within(readinessPanel).getByRole('button', { name: 'Copy readiness snapshot report readiness-snapshot-1' }));
+
+  expect(writeText).toHaveBeenCalledWith('# PatchPilot Demo Readiness Snapshot\n\n- Status: `NEEDS_ATTENTION`');
+  expect(within(readinessPanel).getByText('Readiness snapshot report copied')).toBeInTheDocument();
 });
 
 test('copies demo session report from backend API', async () => {

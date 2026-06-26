@@ -55,6 +55,9 @@ import {
   retryRejectedTrigger,
   evaluateWebhookPayloadDiagnostic,
   getDemoReadiness,
+  archiveDemoReadinessSnapshot,
+  downloadDemoReadinessSnapshotReport,
+  listDemoReadinessSnapshots,
   getTaskReport,
   getTaskDetail,
   getTaskRetryPreflight,
@@ -2589,6 +2592,81 @@ test('loads demo readiness from backend API', async () => {
     ],
     nextActions: ['Run one controlled issue-to-PR smoke task before a live demo.']
   });
+});
+
+test('archives demo readiness snapshot through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        id: 'readiness-snapshot-1',
+        status: 'BLOCKED',
+        summary: 'PatchPilot is blocked before a live demo.',
+        readyCheckCount: 1,
+        needsAttentionCheckCount: 1,
+        blockedCheckCount: 1,
+        createdAt: '2026-06-27T04:00:00Z',
+        report: '# PatchPilot Demo Readiness Snapshot\n\n- Status: `BLOCKED`'
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const archive = await archiveDemoReadinessSnapshot();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/readiness-snapshots', { method: 'POST' });
+  expect(archive.id).toBe('readiness-snapshot-1');
+  expect(archive.status).toBe('BLOCKED');
+  expect(archive.blockedCheckCount).toBe(1);
+  expect(archive.report).toContain('# PatchPilot Demo Readiness Snapshot');
+});
+
+test('lists demo readiness snapshot archives from backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: [
+        {
+          id: 'readiness-snapshot-1',
+          status: 'READY',
+          summary: 'PatchPilot is ready for a controlled demo.',
+          readyCheckCount: 9,
+          needsAttentionCheckCount: 0,
+          blockedCheckCount: 0,
+          createdAt: '2026-06-27T04:00:00Z',
+          report: '# PatchPilot Demo Readiness Snapshot\n\n- Status: `READY`'
+        }
+      ],
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const archives = await listDemoReadinessSnapshots();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/readiness-snapshots');
+  expect(archives).toHaveLength(1);
+  expect(archives[0].readyCheckCount).toBe(9);
+});
+
+test('downloads demo readiness snapshot archive report from backend API', async () => {
+  const blob = new Blob(['# PatchPilot Demo Readiness Snapshot'], { type: 'text/markdown' });
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    blob: async () => blob
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const report = await downloadDemoReadinessSnapshotReport('readiness/snapshot-1');
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/readiness-snapshots/readiness%2Fsnapshot-1/report/download');
+  expect(report).toBe(blob);
 });
 
 test('loads demo smoke checklist from backend API', async () => {

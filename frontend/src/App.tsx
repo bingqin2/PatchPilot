@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react
 import {
   ADMIN_TOKEN_STORAGE_KEY,
   approveTaskReview,
+  archiveDemoReadinessSnapshot,
   archiveDemoSession,
   archiveEvaluationRunSnapshot,
   cancelTask,
@@ -10,6 +11,7 @@ import {
   createTask,
   createTriggerQuarantine,
   downloadDemoSessionArchiveReport,
+  downloadDemoReadinessSnapshotReport,
   downloadEvaluationFixtureBaselineRunReport,
   downloadEvaluationRunSnapshotReport,
   downloadDemoHandoffPackage,
@@ -58,6 +60,7 @@ import {
   listLanguageAdapterRuntimeReadiness,
   listLanguageAdapters,
   listDemoSessionArchives,
+  listDemoReadinessSnapshots,
   listQueueItems,
   listRejectedTriggers,
   listTriggerQuarantines,
@@ -109,6 +112,7 @@ import type {
   CreateTaskInput,
   CreateTriggerQuarantineInput,
   DemoReadiness,
+  DemoReadinessSnapshotArchive,
   DemoEvidenceBundle,
   DemoLaunchCommand,
   DemoLaunchCommandInput,
@@ -207,6 +211,8 @@ export default function App() {
   const [backendHealth, setBackendHealth] = useState<BackendHealth | null>(null);
   const [demoReadiness, setDemoReadiness] = useState<DemoReadiness | null>(null);
   const [demoReadinessError, setDemoReadinessError] = useState<string | null>(null);
+  const [demoReadinessSnapshots, setDemoReadinessSnapshots] = useState<DemoReadinessSnapshotArchive[]>([]);
+  const [demoReadinessSnapshotError, setDemoReadinessSnapshotError] = useState<string | null>(null);
   const [demoEvidenceBundle, setDemoEvidenceBundle] = useState<DemoEvidenceBundle | null>(null);
   const [demoEvidenceBundleError, setDemoEvidenceBundleError] = useState<string | null>(null);
   const [demoSessionSnapshot, setDemoSessionSnapshot] = useState<DemoSessionSnapshot | null>(null);
@@ -531,6 +537,7 @@ export default function App() {
         demoSessionArchiveResult,
         demoScriptResult,
         demoReadinessResult,
+        demoReadinessSnapshotResult,
         demoSmokeChecklistResult,
         adapterListResult,
         adapterFixtureResult,
@@ -591,6 +598,10 @@ export default function App() {
         getDemoReadiness().then(
           (readiness) => ({ readiness, error: null as string | null }),
           (caught) => ({ readiness: null, error: errorMessage(caught) })
+        ),
+        listDemoReadinessSnapshots().then(
+          (snapshots) => ({ snapshots, error: null as string | null }),
+          (caught) => ({ snapshots: null, error: errorMessage(caught) })
         ),
         getDemoSmokeChecklist().then(
           (checklist) => ({ checklist, error: null as string | null }),
@@ -710,6 +721,10 @@ export default function App() {
         setDemoReadiness(demoReadinessResult.readiness);
       }
       setDemoReadinessError(demoReadinessResult.error);
+      if (demoReadinessSnapshotResult.snapshots) {
+        setDemoReadinessSnapshots(demoReadinessSnapshotResult.snapshots);
+      }
+      setDemoReadinessSnapshotError(demoReadinessSnapshotResult.error);
       if (demoSmokeChecklistResult.checklist) {
         setDemoSmokeChecklist(demoSmokeChecklistResult.checklist);
       }
@@ -940,6 +955,17 @@ export default function App() {
     setDemoSessionArchiveError(null);
     return archive;
   }, []);
+
+  const handleArchiveDemoReadinessSnapshot = useCallback(async () => {
+    const archive = await archiveDemoReadinessSnapshot();
+    setDemoReadinessSnapshots((current) => [archive, ...current.filter((item) => item.id !== archive.id)].slice(0, 20));
+    setDemoReadinessSnapshotError(null);
+    return archive;
+  }, []);
+
+  const handleDownloadDemoReadinessSnapshotReport = useCallback((snapshotId: string) => (
+    downloadDemoReadinessSnapshotReport(snapshotId)
+  ), []);
 
   const handleArchiveEvaluationRunSnapshot = useCallback(async () => {
     const archive = await archiveEvaluationRunSnapshot();
@@ -1295,7 +1321,14 @@ export default function App() {
 
       <DemoScriptPanel script={demoScript} error={demoScriptError} />
 
-      <DemoReadinessPanel readiness={demoReadiness} error={demoReadinessError} />
+      <DemoReadinessPanel
+        readiness={demoReadiness}
+        error={demoReadinessError}
+        snapshots={demoReadinessSnapshots}
+        snapshotError={demoReadinessSnapshotError}
+        onArchiveReadiness={handleArchiveDemoReadinessSnapshot}
+        onDownloadSnapshotReport={handleDownloadDemoReadinessSnapshotReport}
+      />
 
       <DemoSmokeChecklistPanel checklist={demoSmokeChecklist} error={demoSmokeChecklistError} />
 
