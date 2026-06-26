@@ -2,6 +2,29 @@
 
 This file records dated implementation progress, validation commands, and important outcomes.
 
+## 2026-06-27
+
+Implemented evaluation baseline demo readiness gate from `docs/plans/219-evaluation-baseline-demo-readiness-gate.md`.
+
+Changes:
+
+- Added an `Evaluation baseline` check to `GET /api/demo/readiness`.
+- Reused the archived fixture baseline regression summary as a read-only demo gate.
+- Marked demo readiness as needing attention when archived baseline evidence is missing or only one baseline run exists.
+- Marked demo readiness as blocked when the latest archived fixture baseline regressed or still has failed cases.
+- Updated the dashboard demo readiness panel to show per-check operator actions directly in each check row.
+- Updated README, product spec, frontend design, AI infrastructure target, and the plan document.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=DemoReadinessServiceTests test`: first failed because the new tests required a baseline regression supplier that `DemoReadinessService` did not yet accept; then passed after backend implementation, 17 tests run, 0 failures.
+- `mvn -pl PatchPilot -Dtest=DemoReadinessServiceTests,DemoReadinessControllerTests test`: passed after controller serialization coverage, 38 tests run, 0 failures.
+- `npm test -- --run src/dashboard/components/DemoReadinessPanel.test.tsx --reporter=basic`: first failed because per-check actions were not rendered in the check row; then passed after panel implementation, 4 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed after full backend regression verification, 760 tests run, 0 failures.
+- `npm test -- --reporter=basic`: passed after full frontend regression verification, 26 test files and 266 tests run.
+- `npm run build`: passed after TypeScript and production Vite build verification.
+- `git diff --check`: passed.
+
 ## 2026-06-26
 
 Implemented evaluation baseline regression summary from `docs/plans/218-evaluation-baseline-regression-summary.md`.

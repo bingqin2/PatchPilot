@@ -100,9 +100,18 @@ class DemoReadinessControllerTests {
                                 DemoReadinessStatus.NEEDS_ATTENTION,
                                 "No completed task with a Pull Request URL was found.",
                                 "Run one controlled issue-to-PR smoke task before a live demo."
+                        ),
+                        new DemoReadinessCheckVo(
+                                "Evaluation baseline",
+                                DemoReadinessStatus.BLOCKED,
+                                "Latest fixture baseline regressed. Newly failed cases: node-npm-basic-fix.",
+                                "Investigate newly failed fixture cases before using the baseline as demo evidence."
                         )
                 ),
-                List.of("Run one controlled issue-to-PR smoke task before a live demo.")
+                List.of(
+                        "Run one controlled issue-to-PR smoke task before a live demo.",
+                        "Investigate newly failed fixture cases before using the baseline as demo evidence."
+                )
         ));
 
         mockMvc.perform(get("/api/demo/readiness"))
@@ -110,11 +119,16 @@ class DemoReadinessControllerTests {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.status").value("NEEDS_ATTENTION"))
                 .andExpect(jsonPath("$.data.summary").value("PatchPilot needs attention before a live demo."))
-                .andExpect(jsonPath("$.data.checks.length()").value(2))
+                .andExpect(jsonPath("$.data.checks.length()").value(3))
                 .andExpect(jsonPath("$.data.checks[0].name").value("Credentials"))
                 .andExpect(jsonPath("$.data.checks[0].status").value("READY"))
                 .andExpect(jsonPath("$.data.checks[1].name").value("Recent Pull Request"))
-                .andExpect(jsonPath("$.data.nextActions[0]").value("Run one controlled issue-to-PR smoke task before a live demo."));
+                .andExpect(jsonPath("$.data.checks[2].name").value("Evaluation baseline"))
+                .andExpect(jsonPath("$.data.checks[2].status").value("BLOCKED"))
+                .andExpect(jsonPath("$.data.checks[2].message").value("Latest fixture baseline regressed. Newly failed cases: node-npm-basic-fix."))
+                .andExpect(jsonPath("$.data.checks[2].action").value("Investigate newly failed fixture cases before using the baseline as demo evidence."))
+                .andExpect(jsonPath("$.data.nextActions[0]").value("Run one controlled issue-to-PR smoke task before a live demo."))
+                .andExpect(jsonPath("$.data.nextActions[1]").value("Investigate newly failed fixture cases before using the baseline as demo evidence."));
     }
 
     @Test

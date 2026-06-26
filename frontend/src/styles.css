@@ -902,6 +902,11 @@ h3 {
   overflow-wrap: anywhere;
 }
 
+.demo-readiness-check .demo-readiness-check-action {
+  color: #334155;
+  font-weight: 650;
+}
+
 .demo-readiness-check span {
   align-self: end;
   border-radius: 4px;

@@ -39,6 +39,9 @@ export function DemoReadinessPanel({ readiness, error }: DemoReadinessPanelProps
                 <div>
                   <strong>{check.name}</strong>
                   <p>{check.message}</p>
+                  {check.action && check.action !== 'No action needed.' ? (
+                    <p className="demo-readiness-check-action">{check.action}</p>
+                  ) : null}
                 </div>
                 <span className="demo-readiness-check-marker" aria-hidden="true" />
               </li>

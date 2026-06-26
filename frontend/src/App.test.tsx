@@ -1248,6 +1248,12 @@ const demoReadiness = {
       action: 'No action needed.'
     },
     {
+      name: 'Evaluation baseline',
+      status: 'READY',
+      message: 'Fixture baseline regression status is STABLE with no latest failed cases.',
+      action: 'No action needed.'
+    },
+    {
       name: 'Recent Pull Request',
       status: 'NEEDS_ATTENTION',
       message: 'No completed task with a Pull Request URL was found in recent task history.',
@@ -2026,7 +2032,9 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(within(demoReadinessPanel).getByRole('heading', { name: 'Demo readiness' })).toBeInTheDocument();
   expect(within(demoReadinessPanel).getByText('Needs attention')).toBeInTheDocument();
   expect(within(demoReadinessPanel).getByText('PatchPilot needs attention before a live demo.')).toBeInTheDocument();
-  expect(within(demoReadinessPanel).getByText('Run one controlled issue-to-PR smoke task before a live demo.')).toBeInTheDocument();
+  expect(within(demoReadinessPanel).getByText('Evaluation baseline')).toBeInTheDocument();
+  expect(within(demoReadinessPanel).getByText('Fixture baseline regression status is STABLE with no latest failed cases.')).toBeInTheDocument();
+  expect(within(demoReadinessPanel).getAllByText('Run one controlled issue-to-PR smoke task before a live demo.')).toHaveLength(2);
   const smokeChecklistPanel = screen.getByRole('region', { name: 'Live demo smoke checklist' });
   expect(within(smokeChecklistPanel).getByRole('heading', { name: 'Live demo smoke checklist' })).toBeInTheDocument();
   expect(within(smokeChecklistPanel).getByText('Live demo smoke checklist needs attention.')).toBeInTheDocument();
