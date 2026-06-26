@@ -938,6 +938,39 @@ const evaluationFixtureBaselineRunArchive = {
   report: '# PatchPilot Evaluation Fixture Baseline Run\n\n- Baseline run id: `baseline-run-1`'
 };
 
+const evaluationFixtureBaselineRegressionSummary = {
+  status: 'REGRESSED',
+  latestRun: {
+    id: 'baseline-run-new',
+    status: 'NEEDS_ATTENTION',
+    totalCaseCount: 3,
+    executedCaseCount: 2,
+    passedCaseCount: 1,
+    failedCaseCount: 1,
+    skippedCaseCount: 1,
+    createdAt: '2026-06-26T07:00:00Z'
+  },
+  previousRun: {
+    id: 'baseline-run-old',
+    status: 'READY',
+    totalCaseCount: 3,
+    executedCaseCount: 2,
+    passedCaseCount: 2,
+    failedCaseCount: 0,
+    skippedCaseCount: 1,
+    createdAt: '2026-06-26T06:00:00Z'
+  },
+  passedDelta: -1,
+  failedDelta: 1,
+  skippedDelta: 0,
+  latestFailedCaseIds: ['java-maven-doc-fix'],
+  newlyFailedCaseIds: ['java-maven-doc-fix'],
+  recoveredCaseIds: [],
+  sideEffectContract: 'Fixture baseline regression summary reads archived local baseline runs only; it does not create tasks, call the model, mutate Git, or write to GitHub.',
+  nextAction: 'Investigate newly failed fixture cases before using the baseline as demo evidence.',
+  markdownReport: '# PatchPilot Evaluation Fixture Baseline Regression Summary\n\n- Status: `REGRESSED`'
+};
+
 const evaluationCaseReadiness = {
   status: 'READY',
   totalCaseCount: 3,
@@ -1643,6 +1676,9 @@ beforeEach(() => {
     if (url === '/api/evaluation/fixture-baseline-runs' && init?.method === 'POST') {
       return jsonResponse(evaluationFixtureBaselineRunArchive);
     }
+    if (url === '/api/evaluation/fixture-baseline-runs/summary') {
+      return jsonResponse(evaluationFixtureBaselineRegressionSummary);
+    }
     if (url === '/api/evaluation/fixture-baseline-runs') {
       return jsonResponse([evaluationFixtureBaselineRunArchive]);
     }
@@ -2117,6 +2153,7 @@ test('renders operational task dashboard from backend APIs', async () => {
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/evaluation/summary'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/evaluation/case-readiness'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/evaluation/fixture-baseline-runs'));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/evaluation/fixture-baseline-runs/summary'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/evaluation/run-preview'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/evaluation/run-snapshots'));
   expect(fetchMock).not.toHaveBeenCalledWith('/api/evaluation/fixture-baseline', { method: 'POST' });
@@ -2140,6 +2177,11 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(within(evaluationCaseCatalog).getByText('snapshot-1')).toBeInTheDocument();
   expect(within(evaluationCaseCatalog).getByText('2026-06-26T04:00:00Z')).toBeInTheDocument();
   expect(within(evaluationCaseCatalog).getByText('Archived evaluation fixture baseline runs')).toBeInTheDocument();
+  expect(within(evaluationCaseCatalog).getByText('Evaluation fixture baseline regression')).toBeInTheDocument();
+  expect(within(evaluationCaseCatalog).getByText('REGRESSED')).toBeInTheDocument();
+  expect(within(evaluationCaseCatalog).getByText('baseline-run-new')).toBeInTheDocument();
+  expect(within(evaluationCaseCatalog).getByText('baseline-run-old')).toBeInTheDocument();
+  expect(within(evaluationCaseCatalog).getByText('Newly failed: java-maven-doc-fix')).toBeInTheDocument();
   expect(within(evaluationCaseCatalog).getByText('baseline-run-1')).toBeInTheDocument();
   expect(within(evaluationCaseCatalog).getByText('2026-06-26T06:00:00Z')).toBeInTheDocument();
   expect(within(evaluationCaseCatalog).getByText('Evaluation case fixture readiness')).toBeInTheDocument();
@@ -2155,6 +2197,10 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(within(evaluationCaseCatalog).getByText('maven ok')).toBeInTheDocument();
   await user.click(within(evaluationCaseCatalog).getByRole('button', { name: 'Run and archive fixture baseline' }));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/evaluation/fixture-baseline-runs', { method: 'POST' }));
+  await waitFor(() => {
+    const regressionSummaryCalls = fetchMock.mock.calls.filter(([url]) => url === '/api/evaluation/fixture-baseline-runs/summary');
+    expect(regressionSummaryCalls.length).toBeGreaterThanOrEqual(2);
+  });
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/evidence-bundle'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/session-snapshot'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/script'));
@@ -2175,6 +2221,36 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(screen.getAllByText('gpt-5.5')).toHaveLength(2);
   expect(screen.getByText('Generated diff')).toBeInTheDocument();
   expect(screen.getByLabelText('Generated diff preview')).toHaveTextContent('+PatchPilot smoke test');
+}, 10000);
+
+test('keeps archived fixture baseline evidence when regression summary refresh fails', async () => {
+  const user = userEvent.setup();
+  let archiveRequested = false;
+  const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = input.toString();
+    if (url === '/api/evaluation/fixture-baseline-runs' && init?.method === 'POST') {
+      archiveRequested = true;
+      return defaultAppResponse(input, init);
+    }
+    if (archiveRequested && url === '/api/evaluation/fixture-baseline-runs/summary') {
+      return jsonResponse(null, false, 'Regression summary unavailable', 500);
+    }
+    return defaultAppResponse(input, init);
+  });
+  vi.stubGlobal('fetch', fetchMock);
+
+  render(<App />);
+
+  const evaluationCaseCatalog = await screen.findByRole('region', { name: 'Evaluation case catalog' });
+  await waitFor(() => expect(within(evaluationCaseCatalog).getByText('baseline-run-new')).toBeInTheDocument());
+
+  await user.click(within(evaluationCaseCatalog).getByRole('button', { name: 'Run and archive fixture baseline' }));
+
+  await waitFor(() => expect(archiveRequested).toBe(true));
+  expect(within(evaluationCaseCatalog).getByText('baseline-run-1')).toBeInTheDocument();
+  expect(within(evaluationCaseCatalog).getByText('Evaluation fixture baseline regression incomplete')).toBeInTheDocument();
+  expect(within(evaluationCaseCatalog).getByText('Regression summary unavailable')).toBeInTheDocument();
+  expect(within(evaluationCaseCatalog).queryByText('Evaluation fixture baseline incomplete')).not.toBeInTheDocument();
 }, 10000);
 
 test('filters admin audit events through backend query parameters', async () => {
@@ -3131,6 +3207,27 @@ test('shows manual task creation failures without clearing the form', async () =
     if (url === '/api/language-adapters/runtime-readiness') {
       return jsonResponse(adapterRuntimeReadiness);
     }
+    if (url === '/api/evaluation/cases') {
+      return jsonResponse([]);
+    }
+    if (url === '/api/evaluation/summary') {
+      return jsonResponse(evaluationSummary);
+    }
+    if (url === '/api/evaluation/case-readiness') {
+      return jsonResponse(evaluationCaseReadiness);
+    }
+    if (url === '/api/evaluation/fixture-baseline-runs/summary') {
+      return jsonResponse(evaluationFixtureBaselineRegressionSummary);
+    }
+    if (url === '/api/evaluation/fixture-baseline-runs') {
+      return jsonResponse([]);
+    }
+    if (url === '/api/evaluation/run-preview') {
+      return jsonResponse(evaluationRunPreview);
+    }
+    if (url === '/api/evaluation/run-snapshots') {
+      return jsonResponse([]);
+    }
     if (url === '/api/task-queue/summary') {
       return jsonResponse(queueSummary);
     }
@@ -3742,6 +3839,27 @@ test('shows dashboard refresh progress while top-level data is loading', async (
     if (url === '/api/language-adapters/runtime-readiness') {
       return jsonResponse(adapterRuntimeReadiness);
     }
+    if (url === '/api/evaluation/cases') {
+      return jsonResponse([]);
+    }
+    if (url === '/api/evaluation/summary') {
+      return jsonResponse(evaluationSummary);
+    }
+    if (url === '/api/evaluation/case-readiness') {
+      return jsonResponse(evaluationCaseReadiness);
+    }
+    if (url === '/api/evaluation/fixture-baseline-runs/summary') {
+      return jsonResponse(evaluationFixtureBaselineRegressionSummary);
+    }
+    if (url === '/api/evaluation/fixture-baseline-runs') {
+      return jsonResponse([]);
+    }
+    if (url === '/api/evaluation/run-preview') {
+      return jsonResponse(evaluationRunPreview);
+    }
+    if (url === '/api/evaluation/run-snapshots') {
+      return jsonResponse([]);
+    }
     if (url === '/api/task-queue/summary') {
       return jsonResponse(queueSummary);
     }
@@ -4218,6 +4336,36 @@ function defaultAppResponse(input: RequestInfo | URL, init?: RequestInit) {
   }
   if (url === '/api/language-adapters/runtime-readiness') {
     return jsonResponse(adapterRuntimeReadiness);
+  }
+  if (url === '/api/evaluation/cases') {
+    return jsonResponse(evaluationCases);
+  }
+  if (url === '/api/evaluation/summary') {
+    return jsonResponse(evaluationSummary);
+  }
+  if (url === '/api/evaluation/case-readiness') {
+    return jsonResponse(evaluationCaseReadiness);
+  }
+  if (url === '/api/evaluation/fixture-baseline' && init?.method === 'POST') {
+    return jsonResponse(evaluationFixtureBaseline);
+  }
+  if (url === '/api/evaluation/fixture-baseline-runs' && init?.method === 'POST') {
+    return jsonResponse(evaluationFixtureBaselineRunArchive);
+  }
+  if (url === '/api/evaluation/fixture-baseline-runs/summary') {
+    return jsonResponse(evaluationFixtureBaselineRegressionSummary);
+  }
+  if (url === '/api/evaluation/fixture-baseline-runs') {
+    return jsonResponse([evaluationFixtureBaselineRunArchive]);
+  }
+  if (url === '/api/evaluation/run-preview') {
+    return jsonResponse(evaluationRunPreview);
+  }
+  if (url === '/api/evaluation/run-snapshots' && init?.method === 'POST') {
+    return jsonResponse(evaluationRunSnapshotArchive);
+  }
+  if (url === '/api/evaluation/run-snapshots') {
+    return jsonResponse([evaluationRunSnapshotArchive]);
   }
   if (url === '/api/repository-preflight' && init?.method === 'POST') {
     return jsonResponse(supportedRepositoryPreflightResult);

@@ -34,6 +34,7 @@ import {
   getEvaluationRunPreview,
   runEvaluationFixtureBaseline,
   runAndArchiveEvaluationFixtureBaseline,
+  getEvaluationFixtureBaselineRunRegressionSummary,
   listEvaluationFixtureBaselineRuns,
   downloadEvaluationFixtureBaselineRunReport,
   getRejectedTriggerSummary,
@@ -2375,6 +2376,30 @@ test('lists evaluation fixture baseline run archives through backend API', async
   expect(archives[0].id).toBe('baseline-run-1');
 });
 
+test('gets evaluation fixture baseline regression summary through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: evaluationFixtureBaselineRunRegressionSummary(),
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const summary = await getEvaluationFixtureBaselineRunRegressionSummary();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/evaluation/fixture-baseline-runs/summary');
+  expect(summary.status).toBe('REGRESSED');
+  expect(summary.latestRun?.id).toBe('baseline-run-new');
+  expect(summary.previousRun?.id).toBe('baseline-run-old');
+  expect(summary.failedDelta).toBe(1);
+  expect(summary.newlyFailedCaseIds).toEqual(['java-maven-doc-fix']);
+  expect(summary.recoveredCaseIds).toEqual([]);
+  expect(summary.markdownReport).toContain('# PatchPilot Evaluation Fixture Baseline Regression Summary');
+});
+
 test('downloads archived evaluation fixture baseline run report markdown from backend API', async () => {
   const reportBlob = new Blob(['# PatchPilot Evaluation Fixture Baseline Run\n\n- Baseline run id: `baseline-run-1`'], {
     type: 'text/markdown;charset=UTF-8'
@@ -2929,6 +2954,41 @@ function evaluationFixtureBaselineRunArchive() {
     sideEffectContract: 'Archive stores a local fixture baseline execution report only; it does not create tasks, call the model, mutate Git, or write to GitHub.',
     nextAction: 'Fixture baseline is passing; use the archived report as demo evidence for supported language adapters.',
     report: '# PatchPilot Evaluation Fixture Baseline Run\n\n- Status: `READY`'
+  };
+}
+
+function evaluationFixtureBaselineRunRegressionSummary() {
+  return {
+    status: 'REGRESSED',
+    latestRun: {
+      id: 'baseline-run-new',
+      status: 'NEEDS_ATTENTION',
+      totalCaseCount: 6,
+      executedCaseCount: 4,
+      passedCaseCount: 3,
+      failedCaseCount: 1,
+      skippedCaseCount: 2,
+      createdAt: '2026-06-26T07:00:00Z'
+    },
+    previousRun: {
+      id: 'baseline-run-old',
+      status: 'READY',
+      totalCaseCount: 6,
+      executedCaseCount: 4,
+      passedCaseCount: 4,
+      failedCaseCount: 0,
+      skippedCaseCount: 2,
+      createdAt: '2026-06-26T06:00:00Z'
+    },
+    passedDelta: -1,
+    failedDelta: 1,
+    skippedDelta: 0,
+    latestFailedCaseIds: ['java-maven-doc-fix'],
+    newlyFailedCaseIds: ['java-maven-doc-fix'],
+    recoveredCaseIds: [],
+    sideEffectContract: 'Fixture baseline regression summary reads archived local baseline runs only; it does not create tasks, call the model, mutate Git, or write to GitHub.',
+    nextAction: 'Investigate newly failed fixture cases before using the baseline as demo evidence.',
+    markdownReport: '# PatchPilot Evaluation Fixture Baseline Regression Summary\n\n- Status: `REGRESSED`'
   };
 }
 

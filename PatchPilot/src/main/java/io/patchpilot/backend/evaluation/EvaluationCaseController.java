@@ -4,6 +4,7 @@ import io.patchpilot.backend.common.response.ApiResponse;
 import io.patchpilot.backend.evaluation.domain.EvaluationCaseVo;
 import io.patchpilot.backend.evaluation.domain.EvaluationCaseFixtureReadinessSummaryVo;
 import io.patchpilot.backend.evaluation.domain.EvaluationFixtureBaselineRunArchiveVo;
+import io.patchpilot.backend.evaluation.domain.EvaluationFixtureBaselineRunRegressionSummaryVo;
 import io.patchpilot.backend.evaluation.domain.EvaluationFixtureBaselineSummaryVo;
 import io.patchpilot.backend.evaluation.domain.EvaluationRunPreviewVo;
 import io.patchpilot.backend.evaluation.domain.EvaluationRunSnapshotArchiveVo;
@@ -33,6 +34,7 @@ public class EvaluationCaseController {
     private final EvaluationCaseFixtureReadinessService evaluationCaseFixtureReadinessService;
     private final EvaluationFixtureBaselineService evaluationFixtureBaselineService;
     private final EvaluationFixtureBaselineRunArchiveService evaluationFixtureBaselineRunArchiveService;
+    private final EvaluationFixtureBaselineRunRegressionSummaryService evaluationFixtureBaselineRunRegressionSummaryService;
 
     @GetMapping("/cases")
     public ApiResponse<List<EvaluationCaseVo>> listEvaluationCases() {
@@ -67,6 +69,11 @@ public class EvaluationCaseController {
     @GetMapping("/fixture-baseline-runs")
     public ApiResponse<List<EvaluationFixtureBaselineRunArchiveVo>> listEvaluationFixtureBaselineRuns() {
         return ApiResponse.ok(evaluationFixtureBaselineRunArchiveService.listRecentArchives());
+    }
+
+    @GetMapping("/fixture-baseline-runs/summary")
+    public ApiResponse<EvaluationFixtureBaselineRunRegressionSummaryVo> getEvaluationFixtureBaselineRunRegressionSummary() {
+        return ApiResponse.ok(evaluationFixtureBaselineRunRegressionSummaryService.getRegressionSummary());
     }
 
     @GetMapping(value = "/fixture-baseline-runs/{runId}/report/download", produces = "text/markdown;charset=UTF-8")

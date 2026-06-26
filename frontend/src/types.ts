@@ -650,6 +650,39 @@ export interface EvaluationFixtureBaselineRunArchive {
   report: string;
 }
 
+export interface EvaluationFixtureBaselineRunDigest {
+  id: string;
+  status: EvaluationSummaryStatus;
+  totalCaseCount: number;
+  executedCaseCount: number;
+  passedCaseCount: number;
+  failedCaseCount: number;
+  skippedCaseCount: number;
+  createdAt: string;
+}
+
+export type EvaluationFixtureBaselineRegressionStatus =
+  | 'NO_ARCHIVES'
+  | 'SINGLE_ARCHIVE'
+  | 'STABLE'
+  | 'REGRESSED'
+  | 'IMPROVED';
+
+export interface EvaluationFixtureBaselineRunRegressionSummary {
+  status: EvaluationFixtureBaselineRegressionStatus;
+  latestRun: EvaluationFixtureBaselineRunDigest | null;
+  previousRun: EvaluationFixtureBaselineRunDigest | null;
+  passedDelta: number;
+  failedDelta: number;
+  skippedDelta: number;
+  latestFailedCaseIds: string[];
+  newlyFailedCaseIds: string[];
+  recoveredCaseIds: string[];
+  sideEffectContract: string;
+  nextAction: string;
+  markdownReport: string;
+}
+
 export interface EvaluationRunPreview {
   status: EvaluationSummaryStatus;
   title: string;

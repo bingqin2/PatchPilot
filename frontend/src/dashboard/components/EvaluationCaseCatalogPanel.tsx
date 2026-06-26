@@ -4,7 +4,9 @@ import type {
   EvaluationCaseFixtureReadinessSummary,
   EvaluationCaseSummary,
   EvaluationFixtureBaselineCase,
+  EvaluationFixtureBaselineRunDigest,
   EvaluationFixtureBaselineRunArchive,
+  EvaluationFixtureBaselineRunRegressionSummary,
   EvaluationFixtureBaselineSummary,
   EvaluationRunPreview,
   EvaluationRunSnapshotArchive
@@ -17,12 +19,14 @@ interface EvaluationCaseCatalogPanelProps {
   fixtureBaseline: EvaluationFixtureBaselineSummary | null;
   fixtureBaselineLoading: boolean;
   fixtureBaselineRuns: EvaluationFixtureBaselineRunArchive[];
+  fixtureBaselineRegressionSummary: EvaluationFixtureBaselineRunRegressionSummary | null;
   runPreview: EvaluationRunPreview | null;
   archives: EvaluationRunSnapshotArchive[];
   error: string | null;
   summaryError: string | null;
   caseReadinessError: string | null;
   fixtureBaselineError: string | null;
+  fixtureBaselineRegressionError: string | null;
   runPreviewError: string | null;
   archiveError: string | null;
   onRunFixtureBaseline: () => Promise<EvaluationFixtureBaselineSummary>;
@@ -39,12 +43,14 @@ export function EvaluationCaseCatalogPanel({
   fixtureBaseline,
   fixtureBaselineLoading,
   fixtureBaselineRuns,
+  fixtureBaselineRegressionSummary,
   runPreview,
   archives,
   error,
   summaryError,
   caseReadinessError,
   fixtureBaselineError,
+  fixtureBaselineRegressionError,
   runPreviewError,
   archiveError,
   onRunFixtureBaseline,
@@ -108,6 +114,12 @@ export function EvaluationCaseCatalogPanel({
     await navigator.clipboard?.writeText(archive.report);
   }
 
+  async function copyFixtureBaselineRegressionReport() {
+    if (fixtureBaselineRegressionSummary) {
+      await navigator.clipboard?.writeText(fixtureBaselineRegressionSummary.markdownReport);
+    }
+  }
+
   async function downloadFixtureBaselineRunReport(archive: EvaluationFixtureBaselineRunArchive) {
     const blob = await onDownloadFixtureBaselineRunReport(archive.id);
     const url = URL.createObjectURL(blob);
@@ -169,6 +181,12 @@ export function EvaluationCaseCatalogPanel({
         <div className="adapter-api-error">
           <strong>Evaluation fixture baseline incomplete</strong>
           <span>{fixtureBaselineError}</span>
+        </div>
+      ) : null}
+      {fixtureBaselineRegressionError ? (
+        <div className="adapter-api-error">
+          <strong>Evaluation fixture baseline regression incomplete</strong>
+          <span>{fixtureBaselineRegressionError}</span>
         </div>
       ) : null}
       {runPreviewError ? (
@@ -302,6 +320,51 @@ export function EvaluationCaseCatalogPanel({
           </>
         ) : (
           <p className="empty-state compact-empty-state">No fixture baseline run has been executed in this dashboard session.</p>
+        )}
+      </div>
+      <div className="adapter-readiness-section evaluation-fixture-baseline-archive-section">
+        <div className="panel-subheader">
+          <div>
+            <h3>Evaluation fixture baseline regression</h3>
+            <p>{fixtureBaselineRegressionSummary ? fixtureBaselineRegressionSummary.nextAction : 'Archive baseline runs to compare regression movement'}</p>
+          </div>
+          {fixtureBaselineRegressionSummary ? (
+            <button type="button" className="secondary-button" onClick={copyFixtureBaselineRegressionReport}>
+              Copy fixture baseline regression report
+            </button>
+          ) : null}
+        </div>
+        {fixtureBaselineRegressionSummary ? (
+          <div className="adapter-readiness-summary">
+            <div>
+              <span>Regression status</span>
+              <strong>{fixtureBaselineRegressionSummary.status}</strong>
+              <p>{fixtureBaselineRegressionSummary.sideEffectContract}</p>
+            </div>
+            <div>
+              <span>Latest</span>
+              <strong>{fixtureBaselineRegressionSummary.latestRun?.id ?? 'none'}</strong>
+              <p>{baselineRunDigestLabel(fixtureBaselineRegressionSummary.latestRun)}</p>
+            </div>
+            <div>
+              <span>Previous</span>
+              <strong>{fixtureBaselineRegressionSummary.previousRun?.id ?? 'none'}</strong>
+              <p>{baselineRunDigestLabel(fixtureBaselineRegressionSummary.previousRun)}</p>
+            </div>
+            <div>
+              <span>Deltas</span>
+              <strong>{`Passed ${signedCount(fixtureBaselineRegressionSummary.passedDelta)}`}</strong>
+              <p>{`Failed ${signedCount(fixtureBaselineRegressionSummary.failedDelta)}`}</p>
+              <p>{`Skipped ${signedCount(fixtureBaselineRegressionSummary.skippedDelta)}`}</p>
+            </div>
+            <div>
+              <span>Case movement</span>
+              <strong>{`Newly failed: ${listLabel(fixtureBaselineRegressionSummary.newlyFailedCaseIds)}`}</strong>
+              <p>{`Recovered: ${listLabel(fixtureBaselineRegressionSummary.recoveredCaseIds)}`}</p>
+            </div>
+          </div>
+        ) : (
+          <p className="empty-state compact-empty-state">No fixture baseline regression summary loaded yet.</p>
         )}
       </div>
       <div className="adapter-readiness-section evaluation-fixture-baseline-archive-section">
@@ -640,4 +703,19 @@ function formatCaseReport(evaluationCase: EvaluationCase) {
 
 function commandLabel(command: string[]) {
   return command.length > 0 ? command.join(' ') : 'none';
+}
+
+function signedCount(value: number) {
+  return value > 0 ? `+${value}` : String(value);
+}
+
+function listLabel(values: string[]) {
+  return values.length > 0 ? values.join(', ') : 'none';
+}
+
+function baselineRunDigestLabel(run: EvaluationFixtureBaselineRunDigest | null) {
+  if (!run) {
+    return 'No archived run available';
+  }
+  return `${run.status} · ${run.passedCaseCount} passed · ${run.failedCaseCount} failed · ${run.skippedCaseCount} skipped`;
 }
