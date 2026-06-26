@@ -15,6 +15,7 @@ import io.patchpilot.backend.task.domain.vo.TriggerEvaluationDecisionVo;
 import io.patchpilot.backend.task.domain.vo.TriggerEvaluationResultVo;
 import io.patchpilot.backend.demo.domain.DemoScriptStepVo;
 import io.patchpilot.backend.demo.domain.DemoScriptVo;
+import io.patchpilot.backend.demo.domain.DemoReadinessSnapshotArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoSessionArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoSessionSnapshotVo;
 import io.patchpilot.backend.safety.domain.RecordOperatorSafetyAuditCommand;
@@ -73,6 +74,9 @@ class DemoReadinessControllerTests {
 
     @MockitoBean
     private DemoSessionArchiveService demoSessionArchiveService;
+
+    @MockitoBean
+    private DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
 
     @MockitoBean
     private DemoLaunchPreflightService demoLaunchPreflightService;
@@ -784,6 +788,95 @@ class DemoReadinessControllerTests {
         when(demoSessionArchiveService.findArchive("missing-archive")).thenReturn(Optional.empty());
 
         mockMvc.perform(get("/api/demo/session-archives/missing-archive/report/download"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void should_archive_current_demo_readiness_snapshot() throws Exception {
+        when(demoReadinessSnapshotArchiveService.archiveCurrentReadiness()).thenReturn(new DemoReadinessSnapshotArchiveVo(
+                "readiness-snapshot-1",
+                DemoReadinessStatus.BLOCKED,
+                "PatchPilot is blocked before a live demo.",
+                1,
+                1,
+                1,
+                Instant.parse("2026-06-27T04:00:00Z"),
+                "# PatchPilot Demo Readiness Snapshot\n\n- Status: `BLOCKED`"
+        ));
+
+        mockMvc.perform(post("/api/demo/readiness-snapshots"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value("readiness-snapshot-1"))
+                .andExpect(jsonPath("$.data.status").value("BLOCKED"))
+                .andExpect(jsonPath("$.data.readyCheckCount").value(1))
+                .andExpect(jsonPath("$.data.needsAttentionCheckCount").value(1))
+                .andExpect(jsonPath("$.data.blockedCheckCount").value(1))
+                .andExpect(jsonPath("$.data.report").value(org.hamcrest.Matchers.containsString("# PatchPilot Demo Readiness Snapshot")));
+
+        verify(operatorSafetyAuditService).recordSafetyAudit(argThat(this::isDemoReadinessSnapshotArchiveAudit));
+    }
+
+    private boolean isDemoReadinessSnapshotArchiveAudit(RecordOperatorSafetyAuditCommand command) {
+        return command != null
+                && "DEMO_READINESS_SNAPSHOT_ARCHIVED".equals(command.action())
+                && "DEMO_READINESS_SNAPSHOT_ARCHIVE".equals(command.resourceType())
+                && "readiness-snapshot-1".equals(command.resourceId())
+                && command.scope() == TriggerQuarantineScope.REPOSITORY
+                && "patchpilot/local-demo".equals(command.scopeKey())
+                && "admin-api".equals(command.operator())
+                && "Archived demo readiness snapshot BLOCKED".equals(command.reason());
+    }
+
+    @Test
+    void should_return_recent_demo_readiness_snapshot_archives() throws Exception {
+        when(demoReadinessSnapshotArchiveService.listRecentArchives()).thenReturn(List.of(new DemoReadinessSnapshotArchiveVo(
+                "readiness-snapshot-1",
+                DemoReadinessStatus.NEEDS_ATTENTION,
+                "PatchPilot needs attention before a live demo.",
+                7,
+                2,
+                0,
+                Instant.parse("2026-06-27T04:00:00Z"),
+                "# PatchPilot Demo Readiness Snapshot\n\n- Status: `NEEDS_ATTENTION`"
+        )));
+
+        mockMvc.perform(get("/api/demo/readiness-snapshots"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].id").value("readiness-snapshot-1"))
+                .andExpect(jsonPath("$.data[0].status").value("NEEDS_ATTENTION"))
+                .andExpect(jsonPath("$.data[0].summary").value("PatchPilot needs attention before a live demo."))
+                .andExpect(jsonPath("$.data[0].readyCheckCount").value(7));
+    }
+
+    @Test
+    void should_download_archived_demo_readiness_snapshot_report_as_markdown_attachment() throws Exception {
+        when(demoReadinessSnapshotArchiveService.findArchive("readiness-snapshot-1")).thenReturn(Optional.of(new DemoReadinessSnapshotArchiveVo(
+                "readiness-snapshot-1",
+                DemoReadinessStatus.READY,
+                "PatchPilot is ready for a controlled demo.",
+                9,
+                0,
+                0,
+                Instant.parse("2026-06-27T04:00:00Z"),
+                "# PatchPilot Demo Readiness Snapshot\n\n- Status: `READY`"
+        )));
+
+        mockMvc.perform(get("/api/demo/readiness-snapshots/readiness-snapshot-1/report/download"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("attachment;")))
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("patchpilot-demo-readiness-readiness-snapshot-1.md")))
+                .andExpect(content().contentTypeCompatibleWith("text/markdown"))
+                .andExpect(content().string(containsString("# PatchPilot Demo Readiness Snapshot")))
+                .andExpect(content().string(containsString("`READY`")));
+    }
+
+    @Test
+    void should_return_not_found_when_archived_demo_readiness_snapshot_report_is_missing() throws Exception {
+        when(demoReadinessSnapshotArchiveService.findArchive("missing-snapshot")).thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/api/demo/readiness-snapshots/missing-snapshot/report/download"))
                 .andExpect(status().isNotFound());
     }
 }

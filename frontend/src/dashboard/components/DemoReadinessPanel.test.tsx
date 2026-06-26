@@ -1,5 +1,6 @@
 import { render, screen, within } from '@testing-library/react';
 import type { DemoReadiness } from '../../types';
+import userEvent from '@testing-library/user-event';
 import { DemoReadinessPanel } from './DemoReadinessPanel';
 
 const readyReadiness: DemoReadiness = {
@@ -119,4 +120,42 @@ test('shows readiness API errors without hiding previous readiness data', () => 
   expect(screen.getByText('Demo readiness unavailable')).toBeInTheDocument();
   expect(screen.getByText('Backend request failed')).toBeInTheDocument();
   expect(screen.getByText('PatchPilot is ready for a controlled demo.')).toBeInTheDocument();
+});
+
+test('archives current readiness and copies recent snapshot reports', async () => {
+  const writeText = vi.fn(async () => undefined);
+  Object.assign(navigator, { clipboard: { writeText } });
+  const archivedSnapshot = {
+    id: 'readiness-snapshot-1',
+    status: 'BLOCKED' as const,
+    summary: 'PatchPilot is blocked before a live demo.',
+    readyCheckCount: 1,
+    needsAttentionCheckCount: 1,
+    blockedCheckCount: 1,
+    createdAt: '2026-06-27T04:00:00Z',
+    report: '# PatchPilot Demo Readiness Snapshot\n\n- Status: `BLOCKED`'
+  };
+  const onArchiveReadiness = vi.fn(async () => archivedSnapshot);
+
+  render(
+    <DemoReadinessPanel
+      readiness={readyReadiness}
+      error={null}
+      snapshots={[archivedSnapshot]}
+      snapshotError={null}
+      onArchiveReadiness={onArchiveReadiness}
+      onDownloadSnapshotReport={vi.fn()}
+    />
+  );
+
+  await userEvent.click(screen.getByRole('button', { name: 'Archive readiness' }));
+  expect(onArchiveReadiness).toHaveBeenCalledTimes(1);
+  expect(screen.getByText('Demo readiness snapshot archived')).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: 'Recent readiness snapshots' })).toBeInTheDocument();
+  expect(screen.getByText('readiness-snapshot-1')).toBeInTheDocument();
+  expect(screen.getByText('1 ready / 1 warning / 1 blocked')).toBeInTheDocument();
+
+  await userEvent.click(screen.getByRole('button', { name: 'Copy readiness snapshot report readiness-snapshot-1' }));
+  expect(writeText).toHaveBeenCalledWith('# PatchPilot Demo Readiness Snapshot\n\n- Status: `BLOCKED`');
+  expect(screen.getByText('Readiness snapshot report copied')).toBeInTheDocument();
 });

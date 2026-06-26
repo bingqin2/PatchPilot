@@ -77,6 +77,7 @@ Target capabilities:
 - Separate read-only tools from mutation tools.
 - Tool-call audit records for input summary, output summary, duration, success state, error category, and artifact references.
 - Operator-visible tool traces in task detail and copied reports.
+- Operator-visible readiness evidence archives that prove the system's demo gate state without triggering tasks, model calls, repository mutation, GitHub writes, or verification commands.
 
 ## Repository Retrieval And RAG
 

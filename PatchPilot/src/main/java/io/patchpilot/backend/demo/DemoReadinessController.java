@@ -4,6 +4,7 @@ import io.patchpilot.backend.common.response.ApiResponse;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchCommandVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchPreflightVo;
+import io.patchpilot.backend.demo.domain.DemoReadinessSnapshotArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessVo;
 import io.patchpilot.backend.demo.domain.DemoScriptVo;
 import io.patchpilot.backend.demo.domain.DemoSessionArchiveVo;
@@ -41,6 +42,7 @@ public class DemoReadinessController {
     private final DemoSessionSnapshotService demoSessionSnapshotService;
     private final DemoSessionReportService demoSessionReportService;
     private final DemoSessionArchiveService demoSessionArchiveService;
+    private final DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
     private final DemoLaunchPreflightService demoLaunchPreflightService;
     private final DemoLaunchCommandService demoLaunchCommandService;
     private final OperatorSafetyAuditService operatorSafetyAuditService;
@@ -163,6 +165,36 @@ public class DemoReadinessController {
         return demoSessionArchiveService.findArchive(archiveId)
                 .map(archive -> markdownAttachment(
                         "patchpilot-demo-session-" + safeFilenamePart(archive.id()) + ".md",
+                        archive.report()
+                ))
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/readiness-snapshots")
+    public ApiResponse<DemoReadinessSnapshotArchiveVo> archiveCurrentReadinessSnapshot() {
+        DemoReadinessSnapshotArchiveVo archive = demoReadinessSnapshotArchiveService.archiveCurrentReadiness();
+        operatorSafetyAuditService.recordSafetyAudit(new RecordOperatorSafetyAuditCommand(
+                "DEMO_READINESS_SNAPSHOT_ARCHIVED",
+                "DEMO_READINESS_SNAPSHOT_ARCHIVE",
+                archive.id(),
+                TriggerQuarantineScope.REPOSITORY,
+                "patchpilot/local-demo",
+                "admin-api",
+                "Archived demo readiness snapshot " + archive.status()
+        ));
+        return ApiResponse.ok(archive);
+    }
+
+    @GetMapping("/readiness-snapshots")
+    public ApiResponse<List<DemoReadinessSnapshotArchiveVo>> listReadinessSnapshotArchives() {
+        return ApiResponse.ok(demoReadinessSnapshotArchiveService.listRecentArchives());
+    }
+
+    @GetMapping(value = "/readiness-snapshots/{archiveId}/report/download", produces = "text/markdown;charset=UTF-8")
+    public ResponseEntity<String> downloadReadinessSnapshotReport(@PathVariable String archiveId) {
+        return demoReadinessSnapshotArchiveService.findArchive(archiveId)
+                .map(archive -> markdownAttachment(
+                        "patchpilot-demo-readiness-" + safeFilenamePart(archive.id()) + ".md",
                         archive.report()
                 ))
                 .orElseGet(() -> ResponseEntity.notFound().build());

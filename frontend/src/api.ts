@@ -13,6 +13,7 @@ import type {
   DemoLaunchPreflight,
   DemoLaunchPreflightInput,
   DemoReadiness,
+  DemoReadinessSnapshotArchive,
   DemoScript,
   DemoSessionArchive,
   DemoSessionReportInput,
@@ -210,6 +211,18 @@ export async function getGitHubRepositoryAccessReadiness(
 
 export async function getDemoReadiness(): Promise<DemoReadiness> {
   return getApi<DemoReadiness>('/api/demo/readiness');
+}
+
+export async function archiveDemoReadinessSnapshot(): Promise<DemoReadinessSnapshotArchive> {
+  return postApi<DemoReadinessSnapshotArchive>('/api/demo/readiness-snapshots');
+}
+
+export async function listDemoReadinessSnapshots(): Promise<DemoReadinessSnapshotArchive[]> {
+  return getApi<DemoReadinessSnapshotArchive[]>('/api/demo/readiness-snapshots');
+}
+
+export async function downloadDemoReadinessSnapshotReport(snapshotId: string): Promise<Blob> {
+  return getBlobApi(`/api/demo/readiness-snapshots/${encodeURIComponent(snapshotId)}/report/download`);
 }
 
 export async function preflightDemoLaunch(input: DemoLaunchPreflightInput): Promise<DemoLaunchPreflight> {

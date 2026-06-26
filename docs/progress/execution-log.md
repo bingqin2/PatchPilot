@@ -4,6 +4,28 @@ This file records dated implementation progress, validation commands, and import
 
 ## 2026-06-27
 
+Implemented demo readiness snapshot archive from `docs/plans/220-demo-readiness-snapshot-archive.md`.
+
+Changes:
+
+- Added `POST /api/demo/readiness-snapshots`, `GET /api/demo/readiness-snapshots`, and `GET /api/demo/readiness-snapshots/{snapshotId}/report/download`.
+- Added a readiness snapshot archive service that stores the current readiness status, summary, check counts, created time, and Markdown report.
+- Added in-memory and MySQL-backed archive repositories, conversion, mapper, and Flyway schema.
+- Recorded snapshot creation as a protected admin audit event while keeping the archive operation PatchPilot-local.
+- Added dashboard API helpers and `Demo readiness` controls to archive the current gate, show recent snapshots, copy reports, and download Markdown reports.
+- Updated README, product spec, frontend design docs, AI infrastructure target, the plan document, and this execution log.
+
+Validation so far:
+
+- `mvn -pl PatchPilot -Dtest=DemoReadinessSnapshotArchiveServiceTests test`: first failed because the snapshot value object and repository did not exist; then passed after implementing the service and in-memory archive, 2 tests run, 0 failures.
+- `mvn -pl PatchPilot -Dtest=DemoReadinessSnapshotArchiveServiceTests,MyBatisDemoReadinessSnapshotArchiveRepositoryTests,DemoReadinessSnapshotArchiveMigrationTests,DemoReadinessControllerTests test`: first failed because the MyBatis repository, mapper, entity, and migration did not exist; then passed after persistence and controller implementation, 31 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts src/dashboard/components/DemoReadinessPanel.test.tsx --reporter=basic`: first failed because the snapshot API helpers and archive button did not exist; then passed after frontend API and panel implementation, 79 tests run, 0 failures.
+- `npm test -- --run src/App.test.tsx src/api.test.ts src/dashboard/components/DemoReadinessPanel.test.tsx --reporter=basic`: first failed because the main dashboard test expected unique readiness text after recent snapshots duplicated the same summary; then passed after scoping repeated readiness/snapshot assertions, 150 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed after full backend regression verification, 770 tests run, 0 failures.
+- `npm test -- --reporter=basic`: passed after full frontend regression verification, 26 test files and 271 tests run.
+- `npm run build`: passed after TypeScript and production Vite build verification.
+- `git diff --check`: passed.
+
 Implemented evaluation baseline demo readiness gate from `docs/plans/219-evaluation-baseline-demo-readiness-gate.md`.
 
 Changes:

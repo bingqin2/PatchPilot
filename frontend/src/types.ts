@@ -316,6 +316,17 @@ export interface DemoReadiness {
   nextActions: string[];
 }
 
+export interface DemoReadinessSnapshotArchive {
+  id: string;
+  status: DemoReadinessStatus;
+  summary: string;
+  readyCheckCount: number;
+  needsAttentionCheckCount: number;
+  blockedCheckCount: number;
+  createdAt: string;
+  report: string;
+}
+
 export interface DemoLaunchPreflightInput {
   repositoryOwner: string;
   repositoryName: string;
