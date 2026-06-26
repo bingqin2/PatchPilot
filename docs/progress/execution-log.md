@@ -4,6 +4,29 @@ This file records dated implementation progress, validation commands, and import
 
 ## 2026-06-26
 
+Implemented evaluation fixture execution baseline from `docs/plans/216-evaluation-fixture-execution-baseline.md`.
+
+Changes:
+
+- Added `POST /api/evaluation/fixture-baseline`.
+- Added a fixture-baseline service that executes only supported evaluation fixtures whose readiness already passes.
+- Selected verification commands from the detected language adapter instead of issue text or request input.
+- Skipped safety-rejection cases because they are validated through trigger rejection gates.
+- Returned aggregate pass/fail/skip counts, per-case command output snippets, side-effect contract, next action, and a copyable Markdown baseline report.
+- Added a dashboard action that runs the fixture baseline on demand, shows loading/error states, renders the latest baseline result, and copies the report.
+- Updated README, frontend design docs, AI infrastructure target, the plan document, and this execution log.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=EvaluationFixtureBaselineServiceTests,EvaluationCaseControllerTests test`: first failed because the fixture-baseline service, runner contract, and response models did not exist; then passed after backend implementation, 9 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts src/dashboard/components/EvaluationCaseCatalogPanel.test.tsx src/App.test.tsx`: first failed because the new API helper and dashboard action did not exist; then passed after frontend integration and assertion updates, 144 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed after full backend regression verification, 745 tests run, 0 failures.
+- `npm test -- --reporter=basic`: passed after full frontend regression verification, 26 test files and 258 tests run.
+- `npm run build`: passed after TypeScript and production Vite build verification.
+- `git diff --check`: passed.
+
+## 2026-06-26
+
 Implemented evaluation case fixture readiness from `docs/plans/215-evaluation-case-fixture-readiness.md`.
 
 Changes:

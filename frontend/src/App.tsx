@@ -29,6 +29,7 @@ import {
   getEvaluationCaseReadiness,
   getEvaluationSummary,
   getEvaluationRunPreview,
+  runEvaluationFixtureBaseline,
   preflightDemoLaunch,
   getGitHubCredentialReadiness,
   getGitHubRepositoryAccessReadiness,
@@ -117,6 +118,7 @@ import type {
   EvaluationCase,
   EvaluationCaseFixtureReadinessSummary,
   EvaluationCaseSummary,
+  EvaluationFixtureBaselineSummary,
   EvaluationRunPreview,
   EvaluationRunSnapshotArchive,
   FixTask,
@@ -227,11 +229,14 @@ export default function App() {
   const [evaluationCases, setEvaluationCases] = useState<EvaluationCase[]>([]);
   const [evaluationSummary, setEvaluationSummary] = useState<EvaluationCaseSummary | null>(null);
   const [evaluationCaseReadiness, setEvaluationCaseReadiness] = useState<EvaluationCaseFixtureReadinessSummary | null>(null);
+  const [evaluationFixtureBaseline, setEvaluationFixtureBaseline] = useState<EvaluationFixtureBaselineSummary | null>(null);
   const [evaluationRunPreview, setEvaluationRunPreview] = useState<EvaluationRunPreview | null>(null);
   const [evaluationRunSnapshots, setEvaluationRunSnapshots] = useState<EvaluationRunSnapshotArchive[]>([]);
   const [evaluationCaseError, setEvaluationCaseError] = useState<string | null>(null);
   const [evaluationSummaryError, setEvaluationSummaryError] = useState<string | null>(null);
   const [evaluationCaseReadinessError, setEvaluationCaseReadinessError] = useState<string | null>(null);
+  const [evaluationFixtureBaselineError, setEvaluationFixtureBaselineError] = useState<string | null>(null);
+  const [evaluationFixtureBaselineLoading, setEvaluationFixtureBaselineLoading] = useState(false);
   const [evaluationRunPreviewError, setEvaluationRunPreviewError] = useState<string | null>(null);
   const [evaluationRunSnapshotError, setEvaluationRunSnapshotError] = useState<string | null>(null);
   const [repositoryPreflightResult, setRepositoryPreflightResult] = useState<RepositoryPreflightResult | null>(null);
@@ -914,6 +919,21 @@ export default function App() {
     return archive;
   }, []);
 
+  const handleRunEvaluationFixtureBaseline = useCallback(async () => {
+    setEvaluationFixtureBaselineLoading(true);
+    setEvaluationFixtureBaselineError(null);
+    try {
+      const baseline = await runEvaluationFixtureBaseline();
+      setEvaluationFixtureBaseline(baseline);
+      return baseline;
+    } catch (caught) {
+      setEvaluationFixtureBaselineError(errorMessage(caught));
+      throw caught;
+    } finally {
+      setEvaluationFixtureBaselineLoading(false);
+    }
+  }, []);
+
   const handleDownloadEvaluationRunSnapshotReport = useCallback((snapshotId: string) => (
     downloadEvaluationRunSnapshotReport(snapshotId)
   ), []);
@@ -1352,13 +1372,17 @@ export default function App() {
         cases={evaluationCases}
         summary={evaluationSummary}
         caseReadiness={evaluationCaseReadiness}
+        fixtureBaseline={evaluationFixtureBaseline}
+        fixtureBaselineLoading={evaluationFixtureBaselineLoading}
         runPreview={evaluationRunPreview}
         archives={evaluationRunSnapshots}
         error={evaluationCaseError}
         summaryError={evaluationSummaryError}
         caseReadinessError={evaluationCaseReadinessError}
+        fixtureBaselineError={evaluationFixtureBaselineError}
         runPreviewError={evaluationRunPreviewError}
         archiveError={evaluationRunSnapshotError}
+        onRunFixtureBaseline={handleRunEvaluationFixtureBaseline}
         onArchiveRunSnapshot={handleArchiveEvaluationRunSnapshot}
         onDownloadArchiveReport={handleDownloadEvaluationRunSnapshotReport}
       />

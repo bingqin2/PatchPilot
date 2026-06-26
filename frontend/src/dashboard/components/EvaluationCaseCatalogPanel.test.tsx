@@ -4,6 +4,7 @@ import type {
   EvaluationCase,
   EvaluationCaseFixtureReadinessSummary,
   EvaluationCaseSummary,
+  EvaluationFixtureBaselineSummary,
   EvaluationRunPreview,
   EvaluationRunSnapshotArchive
 } from '../../types';
@@ -186,26 +187,94 @@ const caseReadiness: EvaluationCaseFixtureReadinessSummary = {
   markdownReport: '# PatchPilot Evaluation Case Fixture Readiness\n\n- Status: `READY`'
 };
 
-test('summarizes supported evaluation cases and safety rejections', () => {
-  render(
+const fixtureBaseline: EvaluationFixtureBaselineSummary = {
+  status: 'READY',
+  totalCaseCount: 3,
+  executedCaseCount: 2,
+  passedCaseCount: 2,
+  failedCaseCount: 0,
+  skippedCaseCount: 1,
+  cases: [
+    {
+      caseId: 'java-maven-doc-fix',
+      title: 'Java Maven documentation fix',
+      category: 'SUPPORTED_FIX',
+      status: 'PASSED',
+      executed: true,
+      fixturePath: 'docs/demo-repositories/java-maven',
+      language: 'java',
+      buildSystem: 'maven',
+      verificationCommand: ['mvn', 'test'],
+      exitCode: 0,
+      outputSnippet: 'maven ok',
+      reason: 'Fixture verification command exited with code 0.',
+      nextAction: 'Keep this fixture as passing demo evidence.'
+    },
+    {
+      caseId: 'node-npm-unit-fix',
+      title: 'Node npm unit fix',
+      category: 'SUPPORTED_FIX',
+      status: 'PASSED',
+      executed: true,
+      fixturePath: 'docs/demo-repositories/node-npm',
+      language: 'node',
+      buildSystem: 'npm',
+      verificationCommand: ['npm', 'test'],
+      exitCode: 0,
+      outputSnippet: 'npm ok',
+      reason: 'Fixture verification command exited with code 0.',
+      nextAction: 'Keep this fixture as passing demo evidence.'
+    },
+    {
+      caseId: 'unsafe-secret-exfiltration-rejection',
+      title: 'Reject secret exfiltration',
+      category: 'SAFETY_REJECTION',
+      status: 'SKIPPED',
+      executed: false,
+      fixturePath: 'none',
+      language: 'none',
+      buildSystem: 'none',
+      verificationCommand: [],
+      exitCode: null,
+      outputSnippet: '',
+      reason: 'Safety rejection cases validate trigger gating and do not run repository verification.',
+      nextAction: 'Validate this case through trigger rejection tests instead.'
+    }
+  ],
+  sideEffectContract: 'Evaluation fixture baseline runs local checked-in fixture verification commands only; it does not create tasks, call the model, mutate Git, or write to GitHub.',
+  nextAction: 'Fixture baseline is passing; use the report as demo evidence for supported language adapters.',
+  markdownReport: '# PatchPilot Evaluation Fixture Baseline\n\n- Status: `READY`'
+};
+
+function renderPanel(overrides: Partial<React.ComponentProps<typeof EvaluationCaseCatalogPanel>> = {}) {
+  return render(
     <EvaluationCaseCatalogPanel
       cases={cases}
       summary={summary}
       caseReadiness={caseReadiness}
+      fixtureBaseline={fixtureBaseline}
+      fixtureBaselineLoading={false}
       runPreview={runPreview}
       archives={archives}
       error={null}
       summaryError={null}
       caseReadinessError={null}
+      fixtureBaselineError={null}
       runPreviewError={null}
       archiveError={null}
+      onRunFixtureBaseline={vi.fn()}
       onArchiveRunSnapshot={vi.fn()}
       onDownloadArchiveReport={vi.fn()}
+      {...overrides}
     />
   );
+}
+
+test('summarizes supported evaluation cases and safety rejections', () => {
+  renderPanel();
 
   const panel = screen.getByRole('region', { name: 'Evaluation case catalog' });
-  expect(within(panel).getAllByText('READY')).toHaveLength(4);
+  expect(within(panel).getAllByText('READY')).toHaveLength(5);
   expect(within(panel).getByText('Ready for demo evidence')).toBeInTheDocument();
   expect(within(panel).getByText('3 cases across 2 languages')).toBeInTheDocument();
   expect(within(panel).getByText('2 supported fix cases')).toBeInTheDocument();
@@ -214,12 +283,12 @@ test('summarizes supported evaluation cases and safety rejections', () => {
   expect(within(panel).getByText('Evaluation catalog is ready for demo evidence; automated evaluation runs are still future work.')).toBeInTheDocument();
   expect(within(panel).getByText('Summary is derived from checked-in evaluation case metadata only; it does not create tasks, call the model, run tests, mutate Git, or write to GitHub.')).toBeInTheDocument();
   expect(within(panel).getAllByText('java, node')).toHaveLength(2);
-  expect(within(panel).getAllByText('Java Maven documentation fix')).toHaveLength(2);
-  expect(within(panel).getAllByText('docs/demo-repositories/java-maven')).toHaveLength(2);
-  expect(within(panel).getByText('mvn test')).toBeInTheDocument();
+  expect(within(panel).getAllByText('Java Maven documentation fix')).toHaveLength(3);
+  expect(within(panel).getAllByText('docs/demo-repositories/java-maven')).toHaveLength(3);
+  expect(within(panel).getAllByText('mvn test').length).toBeGreaterThanOrEqual(2);
   expect(within(panel).getByText('mvn test -> mvn test')).toBeInTheDocument();
   expect(within(panel).getAllByText('src/main/java/demo/Calculator.java')).toHaveLength(2);
-  expect(within(panel).getAllByText('Reject secret exfiltration')).toHaveLength(2);
+  expect(within(panel).getAllByText('Reject secret exfiltration')).toHaveLength(3);
   expect(within(panel).getAllByText('DANGEROUS_INSTRUCTION')).toHaveLength(3);
   expect(within(panel).getByText('Rejected before task creation, queueing, model calls, Git commands, and GitHub writes.')).toBeInTheDocument();
   expect(within(panel).getAllByText('Evaluation run preview')).toHaveLength(2);
@@ -238,6 +307,11 @@ test('summarizes supported evaluation cases and safety rejections', () => {
   expect(within(panel).getByText('Evaluation case fixtures are ready for demo evidence; automated evaluation execution remains future work.')).toBeInTheDocument();
   expect(within(panel).getByText('Detected Maven project')).toBeInTheDocument();
   expect(within(panel).getByText('NO_FIXTURE_REQUIRED')).toBeInTheDocument();
+  expect(within(panel).getByText('Evaluation fixture baseline')).toBeInTheDocument();
+  expect(within(panel).getByText('2 passed cases')).toBeInTheDocument();
+  expect(within(panel).getByText('1 skipped case')).toBeInTheDocument();
+  expect(within(panel).getByText('maven ok')).toBeInTheDocument();
+  expect(within(panel).getByText('Evaluation fixture baseline runs local checked-in fixture verification commands only; it does not create tasks, call the model, mutate Git, or write to GitHub.')).toBeInTheDocument();
 });
 
 test('copies evaluation case catalog report markdown', async () => {
@@ -247,22 +321,7 @@ test('copies evaluation case catalog report markdown', async () => {
     configurable: true,
     value: { writeText }
   });
-  render(
-    <EvaluationCaseCatalogPanel
-      cases={cases}
-      summary={summary}
-      caseReadiness={caseReadiness}
-      runPreview={runPreview}
-      archives={archives}
-      error={null}
-      summaryError={null}
-      caseReadinessError={null}
-      runPreviewError={null}
-      archiveError={null}
-      onArchiveRunSnapshot={vi.fn()}
-      onDownloadArchiveReport={vi.fn()}
-    />
-  );
+  renderPanel();
 
   await user.click(screen.getByRole('button', { name: 'Copy evaluation catalog report' }));
 
@@ -285,22 +344,7 @@ test('copies evaluation run preview markdown from the backend report', async () 
     configurable: true,
     value: { writeText }
   });
-  render(
-    <EvaluationCaseCatalogPanel
-      cases={cases}
-      summary={summary}
-      caseReadiness={caseReadiness}
-      runPreview={runPreview}
-      archives={archives}
-      error={null}
-      summaryError={null}
-      caseReadinessError={null}
-      runPreviewError={null}
-      archiveError={null}
-      onArchiveRunSnapshot={vi.fn()}
-      onDownloadArchiveReport={vi.fn()}
-    />
-  );
+  renderPanel();
 
   await user.click(screen.getByRole('button', { name: 'Copy evaluation run preview' }));
 
@@ -326,22 +370,7 @@ test('archives current evaluation run preview and copies archived reports', asyn
     revokeObjectURL
   });
 
-  render(
-    <EvaluationCaseCatalogPanel
-      cases={cases}
-      summary={summary}
-      caseReadiness={caseReadiness}
-      runPreview={runPreview}
-      archives={archives}
-      error={null}
-      summaryError={null}
-      caseReadinessError={null}
-      runPreviewError={null}
-      archiveError={null}
-      onArchiveRunSnapshot={onArchiveRunSnapshot}
-      onDownloadArchiveReport={onDownloadArchiveReport}
-    />
-  );
+  renderPanel({ onArchiveRunSnapshot, onDownloadArchiveReport });
 
   await user.click(screen.getByRole('button', { name: 'Archive evaluation run snapshot' }));
   await user.click(screen.getByRole('button', { name: 'Copy snapshot-1 report' }));
@@ -362,51 +391,58 @@ test('copies evaluation case fixture readiness markdown from the backend report'
     configurable: true,
     value: { writeText }
   });
-  render(
-    <EvaluationCaseCatalogPanel
-      cases={cases}
-      summary={summary}
-      caseReadiness={caseReadiness}
-      runPreview={runPreview}
-      archives={archives}
-      error={null}
-      summaryError={null}
-      caseReadinessError={null}
-      runPreviewError={null}
-      archiveError={null}
-      onArchiveRunSnapshot={vi.fn()}
-      onDownloadArchiveReport={vi.fn()}
-    />
-  );
+  renderPanel();
 
   await user.click(screen.getByRole('button', { name: 'Copy fixture readiness report' }));
 
   expect(writeText).toHaveBeenCalledWith('# PatchPilot Evaluation Case Fixture Readiness\n\n- Status: `READY`');
 });
 
+test('runs and copies evaluation fixture baseline report from the panel', async () => {
+  const user = userEvent.setup();
+  const writeText = vi.fn().mockResolvedValue(undefined);
+  const onRunFixtureBaseline = vi.fn().mockResolvedValue(fixtureBaseline);
+  Object.defineProperty(navigator, 'clipboard', {
+    configurable: true,
+    value: { writeText }
+  });
+  renderPanel({ onRunFixtureBaseline });
+
+  await user.click(screen.getByRole('button', { name: 'Run fixture baseline' }));
+  await user.click(screen.getByRole('button', { name: 'Copy fixture baseline report' }));
+
+  expect(onRunFixtureBaseline).toHaveBeenCalledTimes(1);
+  expect(writeText).toHaveBeenCalledWith('# PatchPilot Evaluation Fixture Baseline\n\n- Status: `READY`');
+});
+
+test('shows evaluation fixture baseline loading and error states', () => {
+  renderPanel({
+    fixtureBaseline: null,
+    fixtureBaselineLoading: true,
+    fixtureBaselineError: 'Fixture baseline unavailable'
+  });
+
+  expect(screen.getByRole('button', { name: 'Running fixture baseline' })).toBeDisabled();
+  expect(screen.getByText('Evaluation fixture baseline incomplete')).toBeInTheDocument();
+  expect(screen.getByText('Fixture baseline unavailable')).toBeInTheDocument();
+});
+
 test('shows catalog load errors without hiding stale cases', () => {
-  render(
-    <EvaluationCaseCatalogPanel
-      cases={cases}
-      summary={summary}
-      caseReadiness={caseReadiness}
-      runPreview={runPreview}
-      archives={archives}
-      error="Evaluation catalog unavailable"
-      summaryError="Evaluation summary unavailable"
-      caseReadinessError="Evaluation case fixture readiness unavailable"
-      runPreviewError="Evaluation run preview unavailable"
-      archiveError="Evaluation run snapshot archive unavailable"
-      onArchiveRunSnapshot={vi.fn()}
-      onDownloadArchiveReport={vi.fn()}
-    />
-  );
+  renderPanel({
+    error: 'Evaluation catalog unavailable',
+    summaryError: 'Evaluation summary unavailable',
+    caseReadinessError: 'Evaluation case fixture readiness unavailable',
+    fixtureBaselineError: 'Evaluation fixture baseline unavailable',
+    runPreviewError: 'Evaluation run preview unavailable',
+    archiveError: 'Evaluation run snapshot archive unavailable'
+  });
 
   expect(screen.getByText('Evaluation catalog incomplete')).toBeInTheDocument();
   expect(screen.getByText('Evaluation catalog unavailable')).toBeInTheDocument();
   expect(screen.getByText('Evaluation summary unavailable')).toBeInTheDocument();
   expect(screen.getByText('Evaluation case fixture readiness unavailable')).toBeInTheDocument();
+  expect(screen.getByText('Evaluation fixture baseline unavailable')).toBeInTheDocument();
   expect(screen.getByText('Evaluation run preview unavailable')).toBeInTheDocument();
   expect(screen.getByText('Evaluation run snapshot archive unavailable')).toBeInTheDocument();
-  expect(screen.getAllByText('Java Maven documentation fix')).toHaveLength(2);
+  expect(screen.getAllByText('Java Maven documentation fix')).toHaveLength(3);
 });

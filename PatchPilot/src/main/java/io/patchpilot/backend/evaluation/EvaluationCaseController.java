@@ -3,6 +3,7 @@ package io.patchpilot.backend.evaluation;
 import io.patchpilot.backend.common.response.ApiResponse;
 import io.patchpilot.backend.evaluation.domain.EvaluationCaseVo;
 import io.patchpilot.backend.evaluation.domain.EvaluationCaseFixtureReadinessSummaryVo;
+import io.patchpilot.backend.evaluation.domain.EvaluationFixtureBaselineSummaryVo;
 import io.patchpilot.backend.evaluation.domain.EvaluationRunPreviewVo;
 import io.patchpilot.backend.evaluation.domain.EvaluationRunSnapshotArchiveVo;
 import io.patchpilot.backend.evaluation.domain.EvaluationSummaryVo;
@@ -29,6 +30,7 @@ public class EvaluationCaseController {
     private final EvaluationCaseCatalogService evaluationCaseCatalogService;
     private final EvaluationRunSnapshotArchiveService evaluationRunSnapshotArchiveService;
     private final EvaluationCaseFixtureReadinessService evaluationCaseFixtureReadinessService;
+    private final EvaluationFixtureBaselineService evaluationFixtureBaselineService;
 
     @GetMapping("/cases")
     public ApiResponse<List<EvaluationCaseVo>> listEvaluationCases() {
@@ -48,6 +50,11 @@ public class EvaluationCaseController {
     @GetMapping("/case-readiness")
     public ApiResponse<EvaluationCaseFixtureReadinessSummaryVo> getEvaluationCaseFixtureReadiness() {
         return ApiResponse.ok(evaluationCaseFixtureReadinessService.getReadinessSummary());
+    }
+
+    @PostMapping("/fixture-baseline")
+    public ApiResponse<EvaluationFixtureBaselineSummaryVo> runEvaluationFixtureBaseline() {
+        return ApiResponse.ok(evaluationFixtureBaselineService.runBaseline());
     }
 
     @PostMapping("/run-snapshots")

@@ -6,10 +6,12 @@ import io.patchpilot.backend.language.impl.GoLanguageAdapter;
 import io.patchpilot.backend.language.impl.JavaMavenLanguageAdapter;
 import io.patchpilot.backend.language.impl.NodeNpmLanguageAdapter;
 import io.patchpilot.backend.language.impl.PythonPytestLanguageAdapter;
+import io.patchpilot.backend.runner.domain.vo.TestRunResult;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -135,6 +137,33 @@ class EvaluationCaseControllerTests {
     }
 
     @Test
+    void should_run_evaluation_fixture_baseline() throws Exception {
+        mockMvc.perform(post("/api/evaluation/fixture-baseline"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.totalCaseCount").value(6))
+                .andExpect(jsonPath("$.data.executedCaseCount").value(4))
+                .andExpect(jsonPath("$.data.passedCaseCount").value(4))
+                .andExpect(jsonPath("$.data.failedCaseCount").value(0))
+                .andExpect(jsonPath("$.data.skippedCaseCount").value(2))
+                .andExpect(jsonPath("$.data.cases", hasSize(6)))
+                .andExpect(jsonPath("$.data.cases[0].caseId").value("java-maven-doc-fix"))
+                .andExpect(jsonPath("$.data.cases[0].status").value("PASSED"))
+                .andExpect(jsonPath("$.data.cases[0].executed").value(true))
+                .andExpect(jsonPath("$.data.cases[0].verificationCommand[0]").value("mvn"))
+                .andExpect(jsonPath("$.data.cases[0].verificationCommand[1]").value("test"))
+                .andExpect(jsonPath("$.data.cases[0].exitCode").value(0))
+                .andExpect(jsonPath("$.data.cases[0].outputSnippet").value("fixture ok"))
+                .andExpect(jsonPath("$.data.cases[4].caseId").value("unsafe-secret-exfiltration-rejection"))
+                .andExpect(jsonPath("$.data.cases[4].status").value("SKIPPED"))
+                .andExpect(jsonPath("$.data.cases[4].executed").value(false))
+                .andExpect(jsonPath("$.data.cases[4].verificationCommand", hasSize(0)))
+                .andExpect(jsonPath("$.data.sideEffectContract").value("Evaluation fixture baseline runs local checked-in fixture verification commands only; it does not create tasks, call the model, mutate Git, or write to GitHub."))
+                .andExpect(jsonPath("$.data.markdownReport").value(org.hamcrest.Matchers.containsString("# PatchPilot Evaluation Fixture Baseline")));
+    }
+
+    @Test
     void should_archive_and_list_evaluation_run_snapshots() throws Exception {
         MockMvc snapshotMockMvc = MockMvcBuilders
                 .standaloneSetup(controller("snapshot-1"))
@@ -186,17 +215,25 @@ class EvaluationCaseControllerTests {
 
     private static EvaluationCaseController controller(String snapshotId) {
         EvaluationCaseCatalogService catalogService = new EvaluationCaseCatalogService();
+        LanguageAdapterRegistry languageAdapterRegistry = new LanguageAdapterRegistry(List.of(
+                new JavaMavenLanguageAdapter(),
+                new NodeNpmLanguageAdapter(),
+                new PythonPytestLanguageAdapter(),
+                new GoLanguageAdapter()
+        ));
+        EvaluationCaseFixtureReadinessService readinessService = new EvaluationCaseFixtureReadinessService(
+                catalogService,
+                languageAdapterRegistry
+        );
         return new EvaluationCaseController(
                 catalogService,
                 archiveService(snapshotId),
-                new EvaluationCaseFixtureReadinessService(
+                readinessService,
+                new EvaluationFixtureBaselineService(
                         catalogService,
-                        new LanguageAdapterRegistry(List.of(
-                                new JavaMavenLanguageAdapter(),
-                                new NodeNpmLanguageAdapter(),
-                                new PythonPytestLanguageAdapter(),
-                                new GoLanguageAdapter()
-                        ))
+                        readinessService,
+                        languageAdapterRegistry,
+                        (caseId, repositoryRoot, command) -> new TestRunResult(String.join(" ", command), 0, "fixture ok")
                 )
         );
     }
