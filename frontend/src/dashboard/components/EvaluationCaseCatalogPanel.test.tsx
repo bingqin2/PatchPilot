@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { EvaluationCase } from '../../types';
+import type { EvaluationCase, EvaluationCaseSummary } from '../../types';
 import { EvaluationCaseCatalogPanel } from './EvaluationCaseCatalogPanel';
 
 const cases: EvaluationCase[] = [
@@ -51,13 +51,31 @@ const cases: EvaluationCase[] = [
   }
 ];
 
+const summary: EvaluationCaseSummary = {
+  status: 'READY',
+  totalCaseCount: 3,
+  supportedFixCaseCount: 2,
+  safetyRejectionCaseCount: 1,
+  coveredLanguages: ['java', 'node'],
+  coveredBuildSystems: ['maven', 'npm'],
+  rejectionCategories: ['DANGEROUS_INSTRUCTION'],
+  nextAction: 'Evaluation catalog is ready for demo evidence; automated evaluation runs are still future work.',
+  readOnly: true,
+  healthContract: 'Summary is derived from checked-in evaluation case metadata only; it does not create tasks, call the model, run tests, mutate Git, or write to GitHub.'
+};
+
 test('summarizes supported evaluation cases and safety rejections', () => {
-  render(<EvaluationCaseCatalogPanel cases={cases} error={null} />);
+  render(<EvaluationCaseCatalogPanel cases={cases} summary={summary} error={null} summaryError={null} />);
 
   const panel = screen.getByRole('region', { name: 'Evaluation case catalog' });
+  expect(within(panel).getByText('READY')).toBeInTheDocument();
+  expect(within(panel).getByText('Ready for demo evidence')).toBeInTheDocument();
   expect(within(panel).getByText('3 cases across 2 languages')).toBeInTheDocument();
   expect(within(panel).getByText('2 supported fix cases')).toBeInTheDocument();
   expect(within(panel).getByText('1 safety rejection case')).toBeInTheDocument();
+  expect(within(panel).getByText('maven, npm')).toBeInTheDocument();
+  expect(within(panel).getByText('Evaluation catalog is ready for demo evidence; automated evaluation runs are still future work.')).toBeInTheDocument();
+  expect(within(panel).getByText('Summary is derived from checked-in evaluation case metadata only; it does not create tasks, call the model, run tests, mutate Git, or write to GitHub.')).toBeInTheDocument();
   expect(within(panel).getByText('java, node')).toBeInTheDocument();
   expect(within(panel).getByText('Java Maven documentation fix')).toBeInTheDocument();
   expect(within(panel).getByText('docs/demo-repositories/java-maven')).toBeInTheDocument();
@@ -75,13 +93,16 @@ test('copies evaluation case catalog report markdown', async () => {
     configurable: true,
     value: { writeText }
   });
-  render(<EvaluationCaseCatalogPanel cases={cases} error={null} />);
+  render(<EvaluationCaseCatalogPanel cases={cases} summary={summary} error={null} summaryError={null} />);
 
   await user.click(screen.getByRole('button', { name: 'Copy evaluation catalog report' }));
 
   expect(writeText).toHaveBeenCalledWith(expect.stringContaining('# PatchPilot Evaluation Case Catalog'));
+  expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- Status: `READY`'));
   expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- Cases: 3'));
   expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- Languages: java, node'));
+  expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- Build systems: maven, npm'));
+  expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- Next action: Evaluation catalog is ready for demo evidence; automated evaluation runs are still future work.'));
   expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- `java-maven-doc-fix`: Java Maven documentation fix'));
   expect(writeText).toHaveBeenCalledWith(expect.stringContaining('  - Command: `mvn test`'));
   expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- `unsafe-secret-exfiltration-rejection`: Reject secret exfiltration'));
@@ -89,9 +110,10 @@ test('copies evaluation case catalog report markdown', async () => {
 });
 
 test('shows catalog load errors without hiding stale cases', () => {
-  render(<EvaluationCaseCatalogPanel cases={cases} error="Evaluation catalog unavailable" />);
+  render(<EvaluationCaseCatalogPanel cases={cases} summary={summary} error="Evaluation catalog unavailable" summaryError="Evaluation summary unavailable" />);
 
   expect(screen.getByText('Evaluation catalog incomplete')).toBeInTheDocument();
   expect(screen.getByText('Evaluation catalog unavailable')).toBeInTheDocument();
+  expect(screen.getByText('Evaluation summary unavailable')).toBeInTheDocument();
   expect(screen.getByText('Java Maven documentation fix')).toBeInTheDocument();
 });

@@ -1,9 +1,11 @@
 package io.patchpilot.backend.evaluation;
 
 import io.patchpilot.backend.evaluation.domain.EvaluationCaseVo;
+import io.patchpilot.backend.evaluation.domain.EvaluationSummaryVo;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class EvaluationCaseCatalogService {
@@ -12,6 +14,11 @@ public class EvaluationCaseCatalogService {
     private static final String SAFETY_REJECTION = "SAFETY_REJECTION";
     private static final String ACCEPT_AND_CREATE_PR = "ACCEPT_AND_CREATE_PR";
     private static final String REJECT_BEFORE_TASK = "REJECT_BEFORE_TASK";
+    private static final String READY = "READY";
+    private static final String NEEDS_ATTENTION = "NEEDS_ATTENTION";
+    private static final String READY_NEXT_ACTION = "Evaluation catalog is ready for demo evidence; automated evaluation runs are still future work.";
+    private static final String NEEDS_ATTENTION_NEXT_ACTION = "Add supported fix and safety rejection evaluation cases before using the catalog as demo evidence.";
+    private static final String HEALTH_CONTRACT = "Summary is derived from checked-in evaluation case metadata only; it does not create tasks, call the model, run tests, mutate Git, or write to GitHub.";
 
     private static final List<EvaluationCaseVo> CASES = List.of(
             supportedCase(
@@ -106,6 +113,46 @@ public class EvaluationCaseCatalogService {
 
     public List<EvaluationCaseVo> listEvaluationCases() {
         return CASES;
+    }
+
+    public EvaluationSummaryVo getEvaluationSummary() {
+        List<EvaluationCaseVo> supportedCases = CASES.stream()
+                .filter(evaluationCase -> SUPPORTED_FIX.equals(evaluationCase.category()))
+                .toList();
+        List<EvaluationCaseVo> rejectionCases = CASES.stream()
+                .filter(evaluationCase -> SAFETY_REJECTION.equals(evaluationCase.category()))
+                .toList();
+        List<String> coveredLanguages = supportedCases.stream()
+                .map(EvaluationCaseVo::language)
+                .filter(Objects::nonNull)
+                .distinct()
+                .sorted()
+                .toList();
+        List<String> coveredBuildSystems = supportedCases.stream()
+                .map(EvaluationCaseVo::buildSystem)
+                .filter(Objects::nonNull)
+                .distinct()
+                .sorted()
+                .toList();
+        List<String> rejectionCategories = rejectionCases.stream()
+                .map(EvaluationCaseVo::expectedRejectionCategory)
+                .filter(Objects::nonNull)
+                .distinct()
+                .sorted()
+                .toList();
+        boolean ready = !supportedCases.isEmpty() && !rejectionCases.isEmpty();
+        return new EvaluationSummaryVo(
+                ready ? READY : NEEDS_ATTENTION,
+                CASES.size(),
+                supportedCases.size(),
+                rejectionCases.size(),
+                coveredLanguages,
+                coveredBuildSystems,
+                rejectionCategories,
+                ready ? READY_NEXT_ACTION : NEEDS_ATTENTION_NEXT_ACTION,
+                true,
+                HEALTH_CONTRACT
+        );
     }
 
     private static EvaluationCaseVo supportedCase(
