@@ -1,19 +1,36 @@
-import type { EvaluationCase } from '../../types';
+import type { EvaluationCase, EvaluationCaseSummary } from '../../types';
 
 interface EvaluationCaseCatalogPanelProps {
   cases: EvaluationCase[];
+  summary: EvaluationCaseSummary | null;
   error: string | null;
+  summaryError: string | null;
 }
 
-export function EvaluationCaseCatalogPanel({ cases, error }: EvaluationCaseCatalogPanelProps) {
+export function EvaluationCaseCatalogPanel({ cases, summary, error, summaryError }: EvaluationCaseCatalogPanelProps) {
   const supportedCases = cases.filter((evaluationCase) => evaluationCase.category === 'SUPPORTED_FIX');
   const rejectionCases = cases.filter((evaluationCase) => evaluationCase.category === 'SAFETY_REJECTION');
-  const languages = Array.from(
+  const fallbackLanguages = Array.from(
     new Set(supportedCases.map((evaluationCase) => evaluationCase.language).filter((language): language is string => Boolean(language)))
   ).sort();
+  const fallbackBuildSystems = Array.from(
+    new Set(supportedCases.map((evaluationCase) => evaluationCase.buildSystem).filter((buildSystem): buildSystem is string => Boolean(buildSystem)))
+  ).sort();
+  const fallbackRejectionCategories = Array.from(
+    new Set(rejectionCases.map((evaluationCase) => evaluationCase.expectedRejectionCategory).filter((category): category is string => Boolean(category)))
+  ).sort();
+  const status = summary?.status ?? (error || summaryError ? 'NEEDS_ATTENTION' : 'READY');
+  const languages = summary?.coveredLanguages ?? fallbackLanguages;
+  const buildSystems = summary?.coveredBuildSystems ?? fallbackBuildSystems;
+  const rejectionCategories = summary?.rejectionCategories ?? fallbackRejectionCategories;
+  const totalCaseCount = summary?.totalCaseCount ?? cases.length;
+  const supportedFixCaseCount = summary?.supportedFixCaseCount ?? supportedCases.length;
+  const safetyRejectionCaseCount = summary?.safetyRejectionCaseCount ?? rejectionCases.length;
+  const nextAction = summary?.nextAction ?? (error || summaryError ? 'Refresh the catalog after fixing the evaluation API.' : 'Evaluation catalog is ready for demo evidence.');
+  const healthContract = summary?.healthContract ?? 'This panel is read-only and does not create tasks, call the model, run tests, mutate Git, or write to GitHub.';
 
   async function copyReport() {
-    await navigator.clipboard?.writeText(buildEvaluationCaseCatalogReport(cases, error));
+    await navigator.clipboard?.writeText(buildEvaluationCaseCatalogReport(cases, summary, error, summaryError));
   }
 
   return (
@@ -21,7 +38,7 @@ export function EvaluationCaseCatalogPanel({ cases, error }: EvaluationCaseCatal
       <div className="panel-header">
         <div>
           <h2>Evaluation case catalog</h2>
-          <p>{cases.length} cases across {languages.length} {languages.length === 1 ? 'language' : 'languages'}</p>
+          <p>{totalCaseCount} cases across {languages.length} {languages.length === 1 ? 'language' : 'languages'}</p>
         </div>
         <button type="button" className="secondary-button" onClick={copyReport}>
           Copy evaluation catalog report
@@ -33,21 +50,37 @@ export function EvaluationCaseCatalogPanel({ cases, error }: EvaluationCaseCatal
           <span>{error}</span>
         </div>
       ) : null}
+      {summaryError ? (
+        <div className="adapter-api-error">
+          <strong>Evaluation summary incomplete</strong>
+          <span>{summaryError}</span>
+        </div>
+      ) : null}
       <div className="adapter-readiness-summary">
         <div>
+          <span>Readiness</span>
+          <strong>{status}</strong>
+          <p>{status === 'READY' ? 'Ready for demo evidence' : 'Needs catalog attention'}</p>
+        </div>
+        <div>
           <span>Supported fixes</span>
-          <strong>{supportedCases.length} supported fix {supportedCases.length === 1 ? 'case' : 'cases'}</strong>
+          <strong>{supportedFixCaseCount} supported fix {supportedFixCaseCount === 1 ? 'case' : 'cases'}</strong>
           <p>{languages.join(', ') || 'No supported language cases loaded'}</p>
         </div>
         <div>
           <span>Safety rejections</span>
-          <strong>{rejectionCases.length} safety rejection {rejectionCases.length === 1 ? 'case' : 'cases'}</strong>
-          <p>{rejectionCases.map((evaluationCase) => evaluationCase.expectedRejectionCategory).filter(Boolean).join(', ') || 'No rejection cases loaded'}</p>
+          <strong>{safetyRejectionCaseCount} safety rejection {safetyRejectionCaseCount === 1 ? 'case' : 'cases'}</strong>
+          <p>{rejectionCategories.join(', ') || 'No rejection cases loaded'}</p>
+        </div>
+        <div>
+          <span>Build systems</span>
+          <strong>{buildSystems.length} covered {buildSystems.length === 1 ? 'system' : 'systems'}</strong>
+          <p>{buildSystems.join(', ') || 'No build systems loaded'}</p>
         </div>
         <div>
           <span>Contract</span>
-          <strong>Read-only benchmark map</strong>
-          <p>No tasks, model calls, tests, Git commands, or GitHub writes are run from this panel.</p>
+          <strong>{nextAction}</strong>
+          <p>{healthContract}</p>
         </div>
       </div>
       <div className="adapter-readiness-section">
@@ -114,21 +147,39 @@ function EvaluationCaseRow({ evaluationCase }: { evaluationCase: EvaluationCase 
   );
 }
 
-function buildEvaluationCaseCatalogReport(cases: EvaluationCase[], error: string | null) {
+function buildEvaluationCaseCatalogReport(
+  cases: EvaluationCase[],
+  summary: EvaluationCaseSummary | null,
+  error: string | null,
+  summaryError: string | null
+) {
   const supportedCases = cases.filter((evaluationCase) => evaluationCase.category === 'SUPPORTED_FIX');
   const rejectionCases = cases.filter((evaluationCase) => evaluationCase.category === 'SAFETY_REJECTION');
-  const languages = Array.from(
+  const fallbackLanguages = Array.from(
     new Set(supportedCases.map((evaluationCase) => evaluationCase.language).filter((language): language is string => Boolean(language)))
   ).sort();
+  const fallbackBuildSystems = Array.from(
+    new Set(supportedCases.map((evaluationCase) => evaluationCase.buildSystem).filter((buildSystem): buildSystem is string => Boolean(buildSystem)))
+  ).sort();
+  const status = summary?.status ?? (error || summaryError ? 'NEEDS_ATTENTION' : 'READY');
+  const totalCaseCount = summary?.totalCaseCount ?? cases.length;
+  const supportedFixCaseCount = summary?.supportedFixCaseCount ?? supportedCases.length;
+  const safetyRejectionCaseCount = summary?.safetyRejectionCaseCount ?? rejectionCases.length;
+  const languages = summary?.coveredLanguages ?? fallbackLanguages;
+  const buildSystems = summary?.coveredBuildSystems ?? fallbackBuildSystems;
+  const nextAction = summary?.nextAction ?? (error || summaryError ? 'Refresh the catalog after fixing the evaluation API.' : 'Evaluation catalog is ready for demo evidence.');
   return [
     '# PatchPilot Evaluation Case Catalog',
     '',
-    `- Status: \`${error ? 'NEEDS_ATTENTION' : 'READY'}\``,
-    `- Cases: ${cases.length}`,
-    `- Supported fix cases: ${supportedCases.length}`,
-    `- Safety rejection cases: ${rejectionCases.length}`,
+    `- Status: \`${status}\``,
+    `- Cases: ${totalCaseCount}`,
+    `- Supported fix cases: ${supportedFixCaseCount}`,
+    `- Safety rejection cases: ${safetyRejectionCaseCount}`,
     `- Languages: ${languages.join(', ') || 'none'}`,
+    `- Build systems: ${buildSystems.join(', ') || 'none'}`,
+    `- Next action: ${nextAction}`,
     error ? `- Error: ${error}` : null,
+    summaryError ? `- Summary error: ${summaryError}` : null,
     '',
     '## Supported Issue-to-PR Cases',
     '',

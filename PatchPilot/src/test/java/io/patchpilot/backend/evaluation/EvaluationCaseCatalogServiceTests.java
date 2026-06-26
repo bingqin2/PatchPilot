@@ -69,6 +69,24 @@ class EvaluationCaseCatalogServiceTests {
         });
     }
 
+    @Test
+    void should_summarize_evaluation_case_readiness() {
+        EvaluationCaseCatalogService service = new EvaluationCaseCatalogService();
+
+        var summary = service.getEvaluationSummary();
+
+        assertThat(summary.status()).isEqualTo("READY");
+        assertThat(summary.totalCaseCount()).isEqualTo(6);
+        assertThat(summary.supportedFixCaseCount()).isEqualTo(4);
+        assertThat(summary.safetyRejectionCaseCount()).isEqualTo(2);
+        assertThat(summary.coveredLanguages()).containsExactly("go", "java", "node", "python");
+        assertThat(summary.coveredBuildSystems()).containsExactly("go", "maven", "npm", "pytest");
+        assertThat(summary.rejectionCategories()).containsExactly("DANGEROUS_INSTRUCTION", "NOT_ACTIONABLE");
+        assertThat(summary.nextAction()).isEqualTo("Evaluation catalog is ready for demo evidence; automated evaluation runs are still future work.");
+        assertThat(summary.readOnly()).isTrue();
+        assertThat(summary.healthContract()).isEqualTo("Summary is derived from checked-in evaluation case metadata only; it does not create tasks, call the model, run tests, mutate Git, or write to GitHub.");
+    }
+
     private static void assertSupportedCase(
             EvaluationCaseVo evaluationCase,
             String language,

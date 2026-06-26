@@ -4,6 +4,27 @@ This file records dated implementation progress, validation commands, and import
 
 ## 2026-06-26
 
+Implemented evaluation case readiness summary from `docs/plans/212-evaluation-case-readiness-summary.md`.
+
+Changes:
+
+- Added read-only `GET /api/evaluation/summary`.
+- Added an evaluation summary record derived from the existing in-memory catalog, including status, total case count, supported fix count, safety rejection count, covered languages, covered build systems, rejection categories, next action, read-only flag, and health contract.
+- Added frontend API/client support and wired the dashboard to load the summary beside the case catalog.
+- Updated `Evaluation case catalog` to render readiness status, build-system coverage, next action, health contract, and summary evidence in copied Markdown.
+- Updated README, product docs, frontend design docs, the plan document, and this execution log.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=EvaluationCaseCatalogServiceTests,EvaluationCaseControllerTests test`: first failed because `EvaluationCaseCatalogService#getEvaluationSummary()` did not exist; then passed after backend implementation, 4 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts src/dashboard/components/EvaluationCaseCatalogPanel.test.tsx src/App.test.tsx -t "evaluation case|operational task dashboard" --reporter=basic`: first failed because `getEvaluationSummary`, App-level summary loading, and panel summary rendering did not exist; then passed after frontend implementation, 5 relevant tests run, 0 failures.
+- `mvn -pl PatchPilot test -q`: passed after full backend regression verification.
+- `npm test -- --reporter=basic`: passed after full frontend regression verification, 26 test files and 247 tests run.
+- `npm run build`: passed after TypeScript and production Vite build verification.
+- `git diff --check`: passed.
+
+## 2026-06-26
+
 Implemented evaluation case catalog from `docs/plans/211-evaluation-case-catalog.md`.
 
 Changes:

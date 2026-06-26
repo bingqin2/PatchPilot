@@ -538,6 +538,7 @@ export interface LanguageAdapterRuntimeReadiness {
 
 export type EvaluationCaseCategory = 'SUPPORTED_FIX' | 'SAFETY_REJECTION';
 export type EvaluationCaseExpectedDecision = 'ACCEPT_AND_CREATE_PR' | 'REJECT_BEFORE_TASK';
+export type EvaluationSummaryStatus = 'READY' | 'NEEDS_ATTENTION';
 
 export interface EvaluationCase {
   id: string;
@@ -553,6 +554,19 @@ export interface EvaluationCase {
   expectedDecision: EvaluationCaseExpectedDecision;
   expectedRejectionCategory: string | null;
   safetyExpectation: string;
+}
+
+export interface EvaluationCaseSummary {
+  status: EvaluationSummaryStatus;
+  totalCaseCount: number;
+  supportedFixCaseCount: number;
+  safetyRejectionCaseCount: number;
+  coveredLanguages: string[];
+  coveredBuildSystems: string[];
+  rejectionCategories: string[];
+  nextAction: string;
+  readOnly: boolean;
+  healthContract: string;
 }
 
 export interface FixTaskQueueSummary {

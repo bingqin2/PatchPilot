@@ -873,6 +873,19 @@ const evaluationCases = [
   }
 ];
 
+const evaluationSummary = {
+  status: 'READY',
+  totalCaseCount: 3,
+  supportedFixCaseCount: 2,
+  safetyRejectionCaseCount: 1,
+  coveredLanguages: ['java', 'node'],
+  coveredBuildSystems: ['maven', 'npm'],
+  rejectionCategories: ['DANGEROUS_INSTRUCTION'],
+  nextAction: 'Evaluation catalog is ready for demo evidence; automated evaluation runs are still future work.',
+  readOnly: true,
+  healthContract: 'Summary is derived from checked-in evaluation case metadata only; it does not create tasks, call the model, run tests, mutate Git, or write to GitHub.'
+};
+
 const supportedRepositoryPreflightResult = {
   supported: true,
   language: 'java',
@@ -1431,6 +1444,9 @@ beforeEach(() => {
     if (url === '/api/evaluation/cases') {
       return jsonResponse(evaluationCases);
     }
+    if (url === '/api/evaluation/summary') {
+      return jsonResponse(evaluationSummary);
+    }
     if (url === '/api/repository-preflight' && init?.method === 'POST') {
       return jsonResponse(supportedRepositoryPreflightResult);
     }
@@ -1890,11 +1906,17 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(adapterReadinessReport).toBeInTheDocument();
   expect(within(adapterReadinessReport).getByText('Ready - 13/13 fixtures passing, 13/13 runtimes ready')).toBeInTheDocument();
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/evaluation/cases'));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/evaluation/summary'));
   const evaluationCaseCatalog = screen.getByRole('region', { name: 'Evaluation case catalog' });
   expect(within(evaluationCaseCatalog).getByRole('heading', { name: 'Evaluation case catalog' })).toBeInTheDocument();
+  expect(within(evaluationCaseCatalog).getByText('READY')).toBeInTheDocument();
+  expect(within(evaluationCaseCatalog).getByText('Ready for demo evidence')).toBeInTheDocument();
   expect(within(evaluationCaseCatalog).getByText('3 cases across 2 languages')).toBeInTheDocument();
   expect(within(evaluationCaseCatalog).getByText('2 supported fix cases')).toBeInTheDocument();
   expect(within(evaluationCaseCatalog).getByText('1 safety rejection case')).toBeInTheDocument();
+  expect(within(evaluationCaseCatalog).getByText('maven, npm')).toBeInTheDocument();
+  expect(within(evaluationCaseCatalog).getByText('Evaluation catalog is ready for demo evidence; automated evaluation runs are still future work.')).toBeInTheDocument();
+  expect(within(evaluationCaseCatalog).getByText(/does not create tasks, call the model, run tests, mutate Git, or write to GitHub/)).toBeInTheDocument();
   expect(within(evaluationCaseCatalog).getByText('Java Maven documentation fix')).toBeInTheDocument();
   expect(within(evaluationCaseCatalog).getByText('Reject secret exfiltration')).toBeInTheDocument();
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/evidence-bundle'));

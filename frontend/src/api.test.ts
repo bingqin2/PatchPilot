@@ -27,6 +27,7 @@ import {
   getDemoSmokeChecklist,
   getDemoEvidenceBundle,
   getDemoRunbook,
+  getEvaluationSummary,
   getRejectedTriggerSummary,
   getTriggerQuarantineEvidence,
   getWorkerHealth,
@@ -2181,6 +2182,46 @@ test('loads evaluation case catalog from backend API', async () => {
       safetyExpectation: 'Allowed only after deterministic and model-assisted trigger checks pass.'
     }
   ]);
+});
+
+test('loads evaluation case readiness summary from backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        status: 'READY',
+        totalCaseCount: 6,
+        supportedFixCaseCount: 4,
+        safetyRejectionCaseCount: 2,
+        coveredLanguages: ['go', 'java', 'node', 'python'],
+        coveredBuildSystems: ['go', 'maven', 'npm', 'pytest'],
+        rejectionCategories: ['DANGEROUS_INSTRUCTION', 'NOT_ACTIONABLE'],
+        nextAction: 'Evaluation catalog is ready for demo evidence; automated evaluation runs are still future work.',
+        readOnly: true,
+        healthContract: 'Summary is derived from checked-in evaluation case metadata only; it does not create tasks, call the model, run tests, mutate Git, or write to GitHub.'
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const summary = await getEvaluationSummary();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/evaluation/summary');
+  expect(summary).toEqual({
+    status: 'READY',
+    totalCaseCount: 6,
+    supportedFixCaseCount: 4,
+    safetyRejectionCaseCount: 2,
+    coveredLanguages: ['go', 'java', 'node', 'python'],
+    coveredBuildSystems: ['go', 'maven', 'npm', 'pytest'],
+    rejectionCategories: ['DANGEROUS_INSTRUCTION', 'NOT_ACTIONABLE'],
+    nextAction: 'Evaluation catalog is ready for demo evidence; automated evaluation runs are still future work.',
+    readOnly: true,
+    healthContract: 'Summary is derived from checked-in evaluation case metadata only; it does not create tasks, call the model, run tests, mutate Git, or write to GitHub.'
+  });
 });
 
 test('runs repository preflight through backend API', async () => {
