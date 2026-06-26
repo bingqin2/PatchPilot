@@ -4,6 +4,27 @@ This file records dated implementation progress, validation commands, and import
 
 ## 2026-06-26
 
+Implemented evaluation run preview report from `docs/plans/213-evaluation-run-preview-report.md`.
+
+Changes:
+
+- Added read-only `GET /api/evaluation/run-preview`.
+- Added an evaluation run preview record derived from the checked-in evaluation catalog, including preview run id, case counts, covered languages, covered build systems, expected verification commands, safety rejection categories, known gaps, next action, side-effect contract, and Markdown report.
+- Added frontend API/client support and wired the dashboard to load the preview beside the evaluation catalog and readiness summary.
+- Updated `Evaluation case catalog` to render the preview report, known gaps, side-effect contract, and `Copy evaluation run preview`.
+- Updated README, product docs, frontend design docs, the plan document, and this execution log.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=EvaluationCaseCatalogServiceTests,EvaluationCaseControllerTests test`: first failed because `EvaluationCaseCatalogService#getEvaluationRunPreview()` did not exist; then passed after backend implementation, 6 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts src/dashboard/components/EvaluationCaseCatalogPanel.test.tsx src/App.test.tsx -t "evaluation run preview|operational task dashboard" --reporter=basic`: first failed because `getEvaluationRunPreview`, App-level preview loading, and panel preview copying did not exist; then passed after frontend implementation, 3 relevant tests run, 0 failures.
+- `mvn -pl PatchPilot test -q`: passed after full backend regression verification.
+- `npm test -- --reporter=basic`: passed after full frontend regression verification, 26 test files and 249 tests run.
+- `npm run build`: passed after TypeScript and production Vite build verification.
+- `git diff --check`: passed.
+
+## 2026-06-26
+
 Implemented evaluation case readiness summary from `docs/plans/212-evaluation-case-readiness-summary.md`.
 
 Changes:

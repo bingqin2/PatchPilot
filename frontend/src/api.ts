@@ -20,6 +20,7 @@ import type {
   DemoSmokeChecklist,
   EvaluationCase,
   EvaluationCaseSummary,
+  EvaluationRunPreview,
   FixTask,
   FixTaskFailureCauseSummary,
   FixTaskLatencySummary,
@@ -288,6 +289,10 @@ export async function listEvaluationCases(): Promise<EvaluationCase[]> {
 
 export async function getEvaluationSummary(): Promise<EvaluationCaseSummary> {
   return getApi<EvaluationCaseSummary>('/api/evaluation/summary');
+}
+
+export async function getEvaluationRunPreview(): Promise<EvaluationRunPreview> {
+  return getApi<EvaluationRunPreview>('/api/evaluation/run-preview');
 }
 
 export async function preflightRepository(input: RepositoryPreflightInput): Promise<RepositoryPreflightResult> {

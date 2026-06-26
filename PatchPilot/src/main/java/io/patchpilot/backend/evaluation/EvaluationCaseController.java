@@ -2,6 +2,7 @@ package io.patchpilot.backend.evaluation;
 
 import io.patchpilot.backend.common.response.ApiResponse;
 import io.patchpilot.backend.evaluation.domain.EvaluationCaseVo;
+import io.patchpilot.backend.evaluation.domain.EvaluationRunPreviewVo;
 import io.patchpilot.backend.evaluation.domain.EvaluationSummaryVo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -25,5 +26,10 @@ public class EvaluationCaseController {
     @GetMapping("/summary")
     public ApiResponse<EvaluationSummaryVo> getEvaluationSummary() {
         return ApiResponse.ok(evaluationCaseCatalogService.getEvaluationSummary());
+    }
+
+    @GetMapping("/run-preview")
+    public ApiResponse<EvaluationRunPreviewVo> getEvaluationRunPreview() {
+        return ApiResponse.ok(evaluationCaseCatalogService.getEvaluationRunPreview());
     }
 }

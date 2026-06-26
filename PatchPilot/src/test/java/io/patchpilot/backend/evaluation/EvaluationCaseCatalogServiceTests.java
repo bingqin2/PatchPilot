@@ -87,6 +87,46 @@ class EvaluationCaseCatalogServiceTests {
         assertThat(summary.healthContract()).isEqualTo("Summary is derived from checked-in evaluation case metadata only; it does not create tasks, call the model, run tests, mutate Git, or write to GitHub.");
     }
 
+    @Test
+    void should_build_evaluation_run_preview_report_without_side_effects() {
+        EvaluationCaseCatalogService service = new EvaluationCaseCatalogService();
+
+        var preview = service.getEvaluationRunPreview();
+
+        assertThat(preview.status()).isEqualTo("READY");
+        assertThat(preview.title()).isEqualTo("Evaluation run preview");
+        assertThat(preview.caseCount()).isEqualTo(6);
+        assertThat(preview.supportedFixCaseCount()).isEqualTo(4);
+        assertThat(preview.safetyRejectionCaseCount()).isEqualTo(2);
+        assertThat(preview.previewRunId()).isEqualTo("preview-current-catalog");
+        assertThat(preview.coveredLanguages()).containsExactly("go", "java", "node", "python");
+        assertThat(preview.coveredBuildSystems()).containsExactly("go", "maven", "npm", "pytest");
+        assertThat(preview.expectedVerificationCommands()).containsExactly(
+                "go test ./...",
+                "mvn test",
+                "npm test",
+                "python3 -m pytest"
+        );
+        assertThat(preview.safetyRejectionCategories()).containsExactly("DANGEROUS_INSTRUCTION", "NOT_ACTIONABLE");
+        assertThat(preview.readOnly()).isTrue();
+        assertThat(preview.sideEffectContract()).isEqualTo("Preview is derived from checked-in evaluation case metadata only; it does not create tasks, call the model, clone repositories, run verification commands, mutate Git, or write to GitHub.");
+        assertThat(preview.nextAction()).isEqualTo("Use this preview as demo evidence now; implement stored evaluation runs next to measure real issue-to-PR outcomes.");
+        assertThat(preview.gaps()).containsExactly(
+                "Automated benchmark execution is not implemented yet.",
+                "Preview uses expected outcomes only; it does not verify repository fixtures."
+        );
+        assertThat(preview.markdownReport())
+                .contains("# PatchPilot Evaluation Run Preview")
+                .contains("- Status: `READY`")
+                .contains("- Cases: 6")
+                .contains("- Expected verification commands: go test ./..., mvn test, npm test, python3 -m pytest")
+                .contains("- Side-effect contract: Preview is derived from checked-in evaluation case metadata only; it does not create tasks, call the model, clone repositories, run verification commands, mutate Git, or write to GitHub.")
+                .contains("## Supported Fix Coverage")
+                .contains("- `java-maven-doc-fix`: Java Maven documentation fix")
+                .contains("## Safety Rejection Coverage")
+                .contains("- `unsafe-secret-exfiltration-rejection`: Reject secret exfiltration");
+    }
+
     private static void assertSupportedCase(
             EvaluationCaseVo evaluationCase,
             String language,

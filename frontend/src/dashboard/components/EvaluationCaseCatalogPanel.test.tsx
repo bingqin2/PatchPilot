@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { EvaluationCase, EvaluationCaseSummary } from '../../types';
+import type { EvaluationCase, EvaluationCaseSummary, EvaluationRunPreview } from '../../types';
 import { EvaluationCaseCatalogPanel } from './EvaluationCaseCatalogPanel';
 
 const cases: EvaluationCase[] = [
@@ -64,11 +64,32 @@ const summary: EvaluationCaseSummary = {
   healthContract: 'Summary is derived from checked-in evaluation case metadata only; it does not create tasks, call the model, run tests, mutate Git, or write to GitHub.'
 };
 
+const runPreview: EvaluationRunPreview = {
+  status: 'READY',
+  title: 'Evaluation run preview',
+  previewRunId: 'preview-current-catalog',
+  caseCount: 3,
+  supportedFixCaseCount: 2,
+  safetyRejectionCaseCount: 1,
+  coveredLanguages: ['java', 'node'],
+  coveredBuildSystems: ['maven', 'npm'],
+  expectedVerificationCommands: ['mvn test', 'npm test'],
+  safetyRejectionCategories: ['DANGEROUS_INSTRUCTION'],
+  gaps: [
+    'Automated benchmark execution is not implemented yet.',
+    'Preview uses expected outcomes only; it does not verify repository fixtures.'
+  ],
+  nextAction: 'Use this preview as demo evidence now; implement stored evaluation runs next to measure real issue-to-PR outcomes.',
+  readOnly: true,
+  sideEffectContract: 'Preview is derived from checked-in evaluation case metadata only; it does not create tasks, call the model, clone repositories, run verification commands, mutate Git, or write to GitHub.',
+  markdownReport: '# PatchPilot Evaluation Run Preview\n\n- Status: `READY`\n- Expected verification commands: mvn test, npm test'
+};
+
 test('summarizes supported evaluation cases and safety rejections', () => {
-  render(<EvaluationCaseCatalogPanel cases={cases} summary={summary} error={null} summaryError={null} />);
+  render(<EvaluationCaseCatalogPanel cases={cases} summary={summary} runPreview={runPreview} error={null} summaryError={null} runPreviewError={null} />);
 
   const panel = screen.getByRole('region', { name: 'Evaluation case catalog' });
-  expect(within(panel).getByText('READY')).toBeInTheDocument();
+  expect(within(panel).getAllByText('READY')).toHaveLength(2);
   expect(within(panel).getByText('Ready for demo evidence')).toBeInTheDocument();
   expect(within(panel).getByText('3 cases across 2 languages')).toBeInTheDocument();
   expect(within(panel).getByText('2 supported fix cases')).toBeInTheDocument();
@@ -82,8 +103,14 @@ test('summarizes supported evaluation cases and safety rejections', () => {
   expect(within(panel).getByText('mvn test')).toBeInTheDocument();
   expect(within(panel).getByText('src/main/java/io/patchpilot/demo/GreetingService.java')).toBeInTheDocument();
   expect(within(panel).getByText('Reject secret exfiltration')).toBeInTheDocument();
-  expect(within(panel).getAllByText('DANGEROUS_INSTRUCTION')).toHaveLength(2);
+  expect(within(panel).getAllByText('DANGEROUS_INSTRUCTION')).toHaveLength(3);
   expect(within(panel).getByText('Rejected before task creation, queueing, model calls, Git commands, and GitHub writes.')).toBeInTheDocument();
+  expect(within(panel).getByText('Evaluation run preview')).toBeInTheDocument();
+  expect(within(panel).getByText('preview-current-catalog')).toBeInTheDocument();
+  expect(within(panel).getByText('mvn test, npm test')).toBeInTheDocument();
+  expect(within(panel).getByText('Automated benchmark execution is not implemented yet.')).toBeInTheDocument();
+  expect(within(panel).getByText('Use this preview as demo evidence now; implement stored evaluation runs next to measure real issue-to-PR outcomes.')).toBeInTheDocument();
+  expect(within(panel).getByText('Preview is derived from checked-in evaluation case metadata only; it does not create tasks, call the model, clone repositories, run verification commands, mutate Git, or write to GitHub.')).toBeInTheDocument();
 });
 
 test('copies evaluation case catalog report markdown', async () => {
@@ -93,7 +120,7 @@ test('copies evaluation case catalog report markdown', async () => {
     configurable: true,
     value: { writeText }
   });
-  render(<EvaluationCaseCatalogPanel cases={cases} summary={summary} error={null} summaryError={null} />);
+  render(<EvaluationCaseCatalogPanel cases={cases} summary={summary} runPreview={runPreview} error={null} summaryError={null} runPreviewError={null} />);
 
   await user.click(screen.getByRole('button', { name: 'Copy evaluation catalog report' }));
 
@@ -109,11 +136,35 @@ test('copies evaluation case catalog report markdown', async () => {
   expect(writeText).toHaveBeenCalledWith(expect.stringContaining('  - Rejection: `DANGEROUS_INSTRUCTION`'));
 });
 
+test('copies evaluation run preview markdown from the backend report', async () => {
+  const user = userEvent.setup();
+  const writeText = vi.fn().mockResolvedValue(undefined);
+  Object.defineProperty(navigator, 'clipboard', {
+    configurable: true,
+    value: { writeText }
+  });
+  render(<EvaluationCaseCatalogPanel cases={cases} summary={summary} runPreview={runPreview} error={null} summaryError={null} runPreviewError={null} />);
+
+  await user.click(screen.getByRole('button', { name: 'Copy evaluation run preview' }));
+
+  expect(writeText).toHaveBeenCalledWith('# PatchPilot Evaluation Run Preview\n\n- Status: `READY`\n- Expected verification commands: mvn test, npm test');
+});
+
 test('shows catalog load errors without hiding stale cases', () => {
-  render(<EvaluationCaseCatalogPanel cases={cases} summary={summary} error="Evaluation catalog unavailable" summaryError="Evaluation summary unavailable" />);
+  render(
+    <EvaluationCaseCatalogPanel
+      cases={cases}
+      summary={summary}
+      runPreview={runPreview}
+      error="Evaluation catalog unavailable"
+      summaryError="Evaluation summary unavailable"
+      runPreviewError="Evaluation run preview unavailable"
+    />
+  );
 
   expect(screen.getByText('Evaluation catalog incomplete')).toBeInTheDocument();
   expect(screen.getByText('Evaluation catalog unavailable')).toBeInTheDocument();
   expect(screen.getByText('Evaluation summary unavailable')).toBeInTheDocument();
+  expect(screen.getByText('Evaluation run preview unavailable')).toBeInTheDocument();
   expect(screen.getByText('Java Maven documentation fix')).toBeInTheDocument();
 });

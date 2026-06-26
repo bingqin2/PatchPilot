@@ -569,6 +569,24 @@ export interface EvaluationCaseSummary {
   healthContract: string;
 }
 
+export interface EvaluationRunPreview {
+  status: EvaluationSummaryStatus;
+  title: string;
+  previewRunId: string;
+  caseCount: number;
+  supportedFixCaseCount: number;
+  safetyRejectionCaseCount: number;
+  coveredLanguages: string[];
+  coveredBuildSystems: string[];
+  expectedVerificationCommands: string[];
+  safetyRejectionCategories: string[];
+  gaps: string[];
+  nextAction: string;
+  readOnly: boolean;
+  sideEffectContract: string;
+  markdownReport: string;
+}
+
 export interface FixTaskQueueSummary {
   totalCount: number;
   pendingCount: number;

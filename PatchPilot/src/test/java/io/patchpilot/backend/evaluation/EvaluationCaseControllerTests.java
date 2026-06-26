@@ -62,4 +62,37 @@ class EvaluationCaseControllerTests {
                 .andExpect(jsonPath("$.data.readOnly").value(true))
                 .andExpect(jsonPath("$.data.healthContract").value("Summary is derived from checked-in evaluation case metadata only; it does not create tasks, call the model, run tests, mutate Git, or write to GitHub."));
     }
+
+    @Test
+    void should_return_evaluation_run_preview_report() throws Exception {
+        mockMvc.perform(get("/api/evaluation/run-preview"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.title").value("Evaluation run preview"))
+                .andExpect(jsonPath("$.data.previewRunId").value("preview-current-catalog"))
+                .andExpect(jsonPath("$.data.caseCount").value(6))
+                .andExpect(jsonPath("$.data.supportedFixCaseCount").value(4))
+                .andExpect(jsonPath("$.data.safetyRejectionCaseCount").value(2))
+                .andExpect(jsonPath("$.data.coveredLanguages[0]").value("go"))
+                .andExpect(jsonPath("$.data.coveredLanguages[1]").value("java"))
+                .andExpect(jsonPath("$.data.coveredLanguages[2]").value("node"))
+                .andExpect(jsonPath("$.data.coveredLanguages[3]").value("python"))
+                .andExpect(jsonPath("$.data.coveredBuildSystems[0]").value("go"))
+                .andExpect(jsonPath("$.data.coveredBuildSystems[1]").value("maven"))
+                .andExpect(jsonPath("$.data.coveredBuildSystems[2]").value("npm"))
+                .andExpect(jsonPath("$.data.coveredBuildSystems[3]").value("pytest"))
+                .andExpect(jsonPath("$.data.expectedVerificationCommands[0]").value("go test ./..."))
+                .andExpect(jsonPath("$.data.expectedVerificationCommands[1]").value("mvn test"))
+                .andExpect(jsonPath("$.data.expectedVerificationCommands[2]").value("npm test"))
+                .andExpect(jsonPath("$.data.expectedVerificationCommands[3]").value("python3 -m pytest"))
+                .andExpect(jsonPath("$.data.safetyRejectionCategories[0]").value("DANGEROUS_INSTRUCTION"))
+                .andExpect(jsonPath("$.data.safetyRejectionCategories[1]").value("NOT_ACTIONABLE"))
+                .andExpect(jsonPath("$.data.gaps[0]").value("Automated benchmark execution is not implemented yet."))
+                .andExpect(jsonPath("$.data.gaps[1]").value("Preview uses expected outcomes only; it does not verify repository fixtures."))
+                .andExpect(jsonPath("$.data.nextAction").value("Use this preview as demo evidence now; implement stored evaluation runs next to measure real issue-to-PR outcomes."))
+                .andExpect(jsonPath("$.data.readOnly").value(true))
+                .andExpect(jsonPath("$.data.sideEffectContract").value("Preview is derived from checked-in evaluation case metadata only; it does not create tasks, call the model, clone repositories, run verification commands, mutate Git, or write to GitHub."))
+                .andExpect(jsonPath("$.data.markdownReport").value(org.hamcrest.Matchers.containsString("# PatchPilot Evaluation Run Preview")));
+    }
 }

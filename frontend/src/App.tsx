@@ -25,6 +25,7 @@ import {
   getDemoReadiness,
   getDemoSmokeChecklist,
   getEvaluationSummary,
+  getEvaluationRunPreview,
   preflightDemoLaunch,
   getGitHubCredentialReadiness,
   getGitHubRepositoryAccessReadiness,
@@ -111,6 +112,7 @@ import type {
   DemoSmokeChecklist,
   EvaluationCase,
   EvaluationCaseSummary,
+  EvaluationRunPreview,
   FixTask,
   FixTaskFailureCauseSummary,
   FixTaskLatencySummary,
@@ -218,8 +220,10 @@ export default function App() {
   const [adapterRuntimeReadinessError, setAdapterRuntimeReadinessError] = useState<string | null>(null);
   const [evaluationCases, setEvaluationCases] = useState<EvaluationCase[]>([]);
   const [evaluationSummary, setEvaluationSummary] = useState<EvaluationCaseSummary | null>(null);
+  const [evaluationRunPreview, setEvaluationRunPreview] = useState<EvaluationRunPreview | null>(null);
   const [evaluationCaseError, setEvaluationCaseError] = useState<string | null>(null);
   const [evaluationSummaryError, setEvaluationSummaryError] = useState<string | null>(null);
+  const [evaluationRunPreviewError, setEvaluationRunPreviewError] = useState<string | null>(null);
   const [repositoryPreflightResult, setRepositoryPreflightResult] = useState<RepositoryPreflightResult | null>(null);
   const [repositoryPreflightError, setRepositoryPreflightError] = useState<string | null>(null);
   const [repositoryPreflightLoading, setRepositoryPreflightLoading] = useState(false);
@@ -509,6 +513,7 @@ export default function App() {
         adapterRuntimeReadinessResult,
         evaluationCaseResult,
         evaluationSummaryResult,
+        evaluationRunPreviewResult,
         queueSummaryData,
         queueItemList,
         workerHealthData,
@@ -582,6 +587,10 @@ export default function App() {
         getEvaluationSummary().then(
           (summary) => ({ summary, error: null as string | null }),
           (caught) => ({ summary: null, error: errorMessage(caught) })
+        ),
+        getEvaluationRunPreview().then(
+          (preview) => ({ preview, error: null as string | null }),
+          (caught) => ({ preview: null, error: errorMessage(caught) })
         ),
         getQueueSummary(),
         listQueueItems(),
@@ -681,6 +690,10 @@ export default function App() {
         setEvaluationSummary(evaluationSummaryResult.summary);
       }
       setEvaluationSummaryError(evaluationSummaryResult.error);
+      if (evaluationRunPreviewResult.preview) {
+        setEvaluationRunPreview(evaluationRunPreviewResult.preview);
+      }
+      setEvaluationRunPreviewError(evaluationRunPreviewResult.error);
       setQueueSummary(queueSummaryData);
       setQueueItems(queueItemList);
       setWorkerHealth(workerHealthData);
@@ -1299,8 +1312,10 @@ export default function App() {
       <EvaluationCaseCatalogPanel
         cases={evaluationCases}
         summary={evaluationSummary}
+        runPreview={evaluationRunPreview}
         error={evaluationCaseError}
         summaryError={evaluationSummaryError}
+        runPreviewError={evaluationRunPreviewError}
       />
 
       <SupportedAdaptersPanel adapters={supportedAdapters} error={adapterError} />
