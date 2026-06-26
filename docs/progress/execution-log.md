@@ -4,6 +4,28 @@ This file records dated implementation progress, validation commands, and import
 
 ## 2026-06-27
 
+Implemented demo handoff package archive from `docs/plans/224-demo-handoff-package-archive.md`.
+
+Changes:
+
+- Added a separate `demo_handoff_package_archive` store for final demo handoff packages.
+- Added in-memory and MySQL-backed repositories, conversion, mapper, and Flyway schema for package archives.
+- Added `POST /api/demo/handoff-package-archives`, `GET /api/demo/handoff-package-archives`, and `GET /api/demo/handoff-package-archives/{archiveId}/report/download`.
+- Recorded handoff package archive creation as a protected admin audit event while keeping the archive operation PatchPilot-local.
+- Added dashboard API helpers, refresh wiring, `Archive handoff package`, recent package archive listing, copy actions, and download actions.
+- Updated README, product spec, architecture notes, frontend design docs, the plan document, and this execution log.
+
+Validation so far:
+
+- `mvn -pl PatchPilot -Dtest=DemoHandoffPackageArchiveServiceTests,InMemoryDemoHandoffPackageArchiveRepositoryTests,DemoHandoffPackageArchiveMigrationTests test`: first failed because `DemoHandoffPackageArchiveVo` and `InMemoryDemoHandoffPackageArchiveRepository` did not exist; then passed after backend archive implementation, 3 tests run, 0 failures.
+- `mvn -pl PatchPilot -Dtest=DemoReadinessControllerTests test`: first failed because `/api/demo/handoff-package-archives` endpoints returned 404; then passed after controller implementation, 30 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts src/dashboard/components/DemoSessionSnapshotPanel.test.tsx --reporter=basic`: first failed because the frontend API helpers and handoff package archive UI did not exist; then passed after frontend implementation, 89 tests run, 0 failures.
+- `npm test -- --run src/App.test.tsx --reporter=basic`: passed after App-level handoff archive refresh and action wiring, 72 tests run, 0 failures.
+- `mvn -pl PatchPilot -Dtest=DemoHandoffPackageArchiveServiceTests,InMemoryDemoHandoffPackageArchiveRepositoryTests,MyBatisDemoHandoffPackageArchiveRepositoryTests,DemoHandoffPackageArchiveMigrationTests,DemoReadinessControllerTests test`: passed after MyBatis repository coverage, 36 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed after full backend regression verification, 786 tests run, 0 failures.
+- `npm test -- --reporter=basic`: passed after full frontend regression verification, 26 test files and 280 tests run.
+- `npm run build`: passed after TypeScript and production Vite build verification.
+
 Implemented demo handoff readiness check from `docs/plans/223-demo-handoff-readiness-check.md`.
 
 Changes:

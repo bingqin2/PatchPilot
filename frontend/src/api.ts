@@ -8,6 +8,7 @@ import type {
   CreateTaskInput,
   DashboardBootstrap,
   DemoEvidenceBundle,
+  DemoHandoffPackageArchive,
   DemoLaunchCommand,
   DemoLaunchCommandInput,
   DemoLaunchPreflight,
@@ -268,6 +269,18 @@ export async function downloadDemoSessionReport(input?: DemoSessionReportInput):
 
 export async function downloadDemoHandoffPackage(input: DemoSessionReportInput): Promise<Blob> {
   return postBlobApi('/api/demo/handoff-package/download', input);
+}
+
+export async function archiveDemoHandoffPackage(input?: DemoSessionReportInput): Promise<DemoHandoffPackageArchive> {
+  return postApi<DemoHandoffPackageArchive>('/api/demo/handoff-package-archives', input);
+}
+
+export async function listDemoHandoffPackageArchives(): Promise<DemoHandoffPackageArchive[]> {
+  return getApi<DemoHandoffPackageArchive[]>('/api/demo/handoff-package-archives');
+}
+
+export async function downloadDemoHandoffPackageArchiveReport(archiveId: string): Promise<Blob> {
+  return getBlobApi(`/api/demo/handoff-package-archives/${encodeURIComponent(archiveId)}/report/download`);
 }
 
 export async function archiveDemoSession(input?: DemoSessionReportInput): Promise<DemoSessionArchive> {

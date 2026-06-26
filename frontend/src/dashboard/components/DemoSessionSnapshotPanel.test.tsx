@@ -1,6 +1,12 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { DemoArchivedLaunchOutcome, DemoPreparedLaunchCommand, DemoSessionArchive, DemoSessionSnapshot } from '../../types';
+import type {
+  DemoArchivedLaunchOutcome,
+  DemoHandoffPackageArchive,
+  DemoPreparedLaunchCommand,
+  DemoSessionArchive,
+  DemoSessionSnapshot
+} from '../../types';
 import { DemoSessionSnapshotPanel } from './DemoSessionSnapshotPanel';
 
 const snapshot: DemoSessionSnapshot = {
@@ -140,6 +146,19 @@ const archives: DemoSessionArchive[] = [
   }
 ];
 
+const handoffPackageArchives: DemoHandoffPackageArchive[] = [
+  {
+    id: 'handoff-archive-1',
+    sessionId: 'demo-session-20260624T003000Z',
+    status: 'READY',
+    summary: 'Demo session snapshot is ready.',
+    shareSummary: 'Status READY; recent task task-1; recent PR https://github.com/bingqin2/PatchPilot/pull/42.',
+    recentPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+    createdAt: '2026-06-24T04:05:00Z',
+    report: '# PatchPilot Demo Handoff Package\n\n- Status: `READY`'
+  }
+];
+
 const preparedLaunchCommands: DemoPreparedLaunchCommand[] = [
   {
     triggerComment: '/agent fix replace docs/demo.md PatchPilot smoke test',
@@ -197,25 +216,29 @@ test('renders demo session snapshot summary, evidence, checklist, contract, and 
       preparedLaunchCommands={preparedLaunchCommands}
       archivedLaunchOutcomes={archivedLaunchOutcomes}
       archives={archives}
+      handoffPackageArchives={handoffPackageArchives}
       error={null}
       archiveError={null}
+      handoffPackageArchiveError={null}
       onCopyReport={vi.fn()}
       onDownloadReport={vi.fn()}
       onArchiveSession={vi.fn()}
       onCopyHandoffPackage={vi.fn()}
       onDownloadHandoffPackage={vi.fn()}
+      onArchiveHandoffPackage={vi.fn()}
       onDownloadArchiveReport={vi.fn()}
+      onDownloadHandoffPackageArchiveReport={vi.fn()}
     />
   );
 
   const panel = screen.getByRole('region', { name: 'Demo session snapshot' });
   expect(within(panel).getByRole('heading', { name: 'Demo session snapshot' })).toBeInTheDocument();
-  expect(within(panel).getAllByText('demo-session-20260624T003000Z')).toHaveLength(2);
+  expect(within(panel).getAllByText('demo-session-20260624T003000Z')).toHaveLength(3);
   expect(within(panel).getByText('Demo session snapshot is ready.')).toBeInTheDocument();
   expect(within(panel).getAllByText('Ready')).toHaveLength(3);
   expect(
     within(panel).getAllByText('Status READY; recent task task-1; recent PR https://github.com/bingqin2/PatchPilot/pull/42.')
-  ).toHaveLength(2);
+  ).toHaveLength(3);
   expect(within(panel).getAllByText('https://github.com/bingqin2/PatchPilot/pull/42')).toHaveLength(2);
   expect(within(panel).getByText('task-1')).toBeInTheDocument();
   expect(within(panel).getByText('1 step')).toBeInTheDocument();
@@ -231,6 +254,8 @@ test('renders demo session snapshot summary, evidence, checklist, contract, and 
   expect(within(panel).getByText(/does not create tasks, call the model, run tests, mutate Git, or write to GitHub/)).toBeInTheDocument();
   expect(within(panel).getByRole('heading', { name: 'Recent session archives' })).toBeInTheDocument();
   expect(within(panel).getByText('archive-1')).toBeInTheDocument();
+  expect(within(panel).getByRole('heading', { name: 'Recent handoff package archives' })).toBeInTheDocument();
+  expect(within(panel).getByText('handoff-archive-1')).toBeInTheDocument();
   expect(within(panel).getByRole('heading', { name: 'Prepared launch commands' })).toBeInTheDocument();
   expect(within(panel).getAllByText('/agent fix replace docs/demo.md PatchPilot smoke test')).toHaveLength(2);
   expect(within(panel).getByText('/agent fix touch docs/history.md')).toBeInTheDocument();
@@ -245,14 +270,18 @@ test('shows loading and API errors without hiding snapshot data', () => {
       preparedLaunchCommands={[]}
       archivedLaunchOutcomes={[]}
       archives={[]}
+      handoffPackageArchives={[]}
       error={null}
       archiveError={null}
+      handoffPackageArchiveError={null}
       onCopyReport={vi.fn()}
       onDownloadReport={vi.fn()}
       onArchiveSession={vi.fn()}
       onCopyHandoffPackage={vi.fn()}
       onDownloadHandoffPackage={vi.fn()}
+      onArchiveHandoffPackage={vi.fn()}
       onDownloadArchiveReport={vi.fn()}
+      onDownloadHandoffPackageArchiveReport={vi.fn()}
     />
   );
 
@@ -264,21 +293,26 @@ test('shows loading and API errors without hiding snapshot data', () => {
       preparedLaunchCommands={preparedLaunchCommands}
       archivedLaunchOutcomes={archivedLaunchOutcomes}
       archives={archives}
+      handoffPackageArchives={handoffPackageArchives}
       error="Backend request failed"
       archiveError="Archive request failed"
+      handoffPackageArchiveError="Handoff package archive request failed"
       onCopyReport={vi.fn()}
       onDownloadReport={vi.fn()}
       onArchiveSession={vi.fn()}
       onCopyHandoffPackage={vi.fn()}
       onDownloadHandoffPackage={vi.fn()}
+      onArchiveHandoffPackage={vi.fn()}
       onDownloadArchiveReport={vi.fn()}
+      onDownloadHandoffPackageArchiveReport={vi.fn()}
     />
   );
 
   expect(screen.getByText('Demo session snapshot unavailable')).toBeInTheDocument();
   expect(screen.getByText('Backend request failed')).toBeInTheDocument();
   expect(screen.getByText('Archive request failed')).toBeInTheDocument();
-  expect(screen.getAllByText('demo-session-20260624T003000Z')).toHaveLength(2);
+  expect(screen.getByText('Handoff package archive request failed')).toBeInTheDocument();
+  expect(screen.getAllByText('demo-session-20260624T003000Z')).toHaveLength(3);
 });
 
 test('shows handoff readiness gaps when launch context is missing', () => {
@@ -296,14 +330,18 @@ test('shows handoff readiness gaps when launch context is missing', () => {
       preparedLaunchCommands={[]}
       archivedLaunchOutcomes={[]}
       archives={[]}
+      handoffPackageArchives={[]}
       error={null}
       archiveError={null}
+      handoffPackageArchiveError={null}
       onCopyReport={vi.fn()}
       onDownloadReport={vi.fn()}
       onArchiveSession={vi.fn()}
       onCopyHandoffPackage={vi.fn()}
       onDownloadHandoffPackage={vi.fn()}
+      onArchiveHandoffPackage={vi.fn()}
       onDownloadArchiveReport={vi.fn()}
+      onDownloadHandoffPackageArchiveReport={vi.fn()}
     />
   );
 
@@ -331,13 +369,17 @@ test('copies demo session report markdown', async () => {
       archivedLaunchOutcomes={archivedLaunchOutcomes}
       archives={[]}
       error={null}
+      handoffPackageArchives={[]}
+      handoffPackageArchiveError={null}
       archiveError={null}
       onCopyReport={onCopyReport}
       onDownloadReport={vi.fn()}
       onArchiveSession={vi.fn()}
       onCopyHandoffPackage={vi.fn()}
       onDownloadHandoffPackage={vi.fn()}
+      onArchiveHandoffPackage={vi.fn()}
       onDownloadArchiveReport={vi.fn()}
+      onDownloadHandoffPackageArchiveReport={vi.fn()}
     />
   );
 
@@ -363,13 +405,17 @@ test('copies demo handoff package markdown', async () => {
       archivedLaunchOutcomes={archivedLaunchOutcomes}
       archives={[]}
       error={null}
+      handoffPackageArchives={[]}
+      handoffPackageArchiveError={null}
       archiveError={null}
       onCopyReport={vi.fn()}
       onDownloadReport={vi.fn()}
       onArchiveSession={vi.fn()}
       onCopyHandoffPackage={onCopyHandoffPackage}
       onDownloadHandoffPackage={vi.fn()}
+      onArchiveHandoffPackage={vi.fn()}
       onDownloadArchiveReport={vi.fn()}
+      onDownloadHandoffPackageArchiveReport={vi.fn()}
     />
   );
 
@@ -399,13 +445,17 @@ test('downloads demo session report markdown', async () => {
       archivedLaunchOutcomes={archivedLaunchOutcomes}
       archives={[]}
       error={null}
+      handoffPackageArchives={[]}
+      handoffPackageArchiveError={null}
       archiveError={null}
       onCopyReport={vi.fn()}
       onDownloadReport={onDownloadReport}
       onArchiveSession={vi.fn()}
       onCopyHandoffPackage={vi.fn()}
       onDownloadHandoffPackage={vi.fn()}
+      onArchiveHandoffPackage={vi.fn()}
       onDownloadArchiveReport={vi.fn()}
+      onDownloadHandoffPackageArchiveReport={vi.fn()}
     />
   );
 
@@ -437,13 +487,17 @@ test('downloads demo handoff package markdown', async () => {
       archivedLaunchOutcomes={archivedLaunchOutcomes}
       archives={[]}
       error={null}
+      handoffPackageArchives={[]}
+      handoffPackageArchiveError={null}
       archiveError={null}
       onCopyReport={vi.fn()}
       onDownloadReport={vi.fn()}
       onArchiveSession={vi.fn()}
       onCopyHandoffPackage={vi.fn()}
       onDownloadHandoffPackage={onDownloadHandoffPackage}
+      onArchiveHandoffPackage={vi.fn()}
       onDownloadArchiveReport={vi.fn()}
+      onDownloadHandoffPackageArchiveReport={vi.fn()}
     />
   );
 
@@ -471,13 +525,17 @@ test('archives current demo session and copies archived report markdown', async 
       archivedLaunchOutcomes={archivedLaunchOutcomes}
       archives={archives}
       error={null}
+      handoffPackageArchives={handoffPackageArchives}
+      handoffPackageArchiveError={null}
       archiveError={null}
       onCopyReport={vi.fn()}
       onDownloadReport={vi.fn()}
       onArchiveSession={onArchiveSession}
       onCopyHandoffPackage={vi.fn()}
       onDownloadHandoffPackage={vi.fn()}
+      onArchiveHandoffPackage={vi.fn()}
       onDownloadArchiveReport={vi.fn()}
+      onDownloadHandoffPackageArchiveReport={vi.fn()}
     />
   );
 
@@ -488,6 +546,44 @@ test('archives current demo session and copies archived report markdown', async 
   expect(screen.getByText('Demo session archived')).toBeInTheDocument();
   expect(writeText).toHaveBeenCalledWith('# PatchPilot Demo Session Report\n\n- Status: `READY`');
   expect(screen.getByText('Archived session report copied')).toBeInTheDocument();
+});
+
+test('archives current demo handoff package and copies archived package markdown', async () => {
+  const writeText = vi.fn().mockResolvedValue(undefined);
+  const onArchiveHandoffPackage = vi.fn().mockResolvedValue(handoffPackageArchives[0]);
+  Object.defineProperty(navigator, 'clipboard', {
+    configurable: true,
+    value: { writeText }
+  });
+
+  render(
+    <DemoSessionSnapshotPanel
+      snapshot={snapshot}
+      preparedLaunchCommands={preparedLaunchCommands}
+      archivedLaunchOutcomes={archivedLaunchOutcomes}
+      archives={[]}
+      handoffPackageArchives={handoffPackageArchives}
+      error={null}
+      archiveError={null}
+      handoffPackageArchiveError={null}
+      onCopyReport={vi.fn()}
+      onDownloadReport={vi.fn()}
+      onArchiveSession={vi.fn()}
+      onCopyHandoffPackage={vi.fn()}
+      onDownloadHandoffPackage={vi.fn()}
+      onArchiveHandoffPackage={onArchiveHandoffPackage}
+      onDownloadArchiveReport={vi.fn()}
+      onDownloadHandoffPackageArchiveReport={vi.fn()}
+    />
+  );
+
+  await userEvent.click(screen.getByRole('button', { name: 'Archive handoff package' }));
+  await userEvent.click(screen.getByRole('button', { name: 'Copy archived handoff package handoff-archive-1' }));
+
+  expect(onArchiveHandoffPackage).toHaveBeenCalledWith(sessionReportInput);
+  expect(screen.getByText('Demo handoff package archived')).toBeInTheDocument();
+  expect(writeText).toHaveBeenCalledWith('# PatchPilot Demo Handoff Package\n\n- Status: `READY`');
+  expect(screen.getByText('Archived handoff package copied')).toBeInTheDocument();
 });
 
 test('downloads archived demo session report markdown', async () => {
@@ -509,13 +605,17 @@ test('downloads archived demo session report markdown', async () => {
       archivedLaunchOutcomes={archivedLaunchOutcomes}
       archives={archives}
       error={null}
+      handoffPackageArchives={handoffPackageArchives}
+      handoffPackageArchiveError={null}
       archiveError={null}
       onCopyReport={vi.fn()}
       onDownloadReport={vi.fn()}
       onArchiveSession={vi.fn()}
       onCopyHandoffPackage={vi.fn()}
       onDownloadHandoffPackage={vi.fn()}
+      onArchiveHandoffPackage={vi.fn()}
       onDownloadArchiveReport={onDownloadArchiveReport}
+      onDownloadHandoffPackageArchiveReport={vi.fn()}
     />
   );
 
@@ -526,4 +626,46 @@ test('downloads archived demo session report markdown', async () => {
   expect(click).toHaveBeenCalledTimes(1);
   expect(revokeObjectURL).toHaveBeenCalledWith('blob:demo-session-archive-report');
   expect(screen.getByText('Archived session report downloaded')).toBeInTheDocument();
+});
+
+test('downloads archived demo handoff package markdown', async () => {
+  const reportBlob = new Blob(['# PatchPilot Demo Handoff Package'], { type: 'text/markdown;charset=UTF-8' });
+  const onDownloadHandoffPackageArchiveReport = vi.fn().mockResolvedValue(reportBlob);
+  const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+  const createObjectURL = vi.fn(() => 'blob:demo-handoff-package-archive-report');
+  const revokeObjectURL = vi.fn();
+  vi.stubGlobal('URL', {
+    ...globalThis.URL,
+    createObjectURL,
+    revokeObjectURL
+  });
+
+  render(
+    <DemoSessionSnapshotPanel
+      snapshot={snapshot}
+      preparedLaunchCommands={preparedLaunchCommands}
+      archivedLaunchOutcomes={archivedLaunchOutcomes}
+      archives={[]}
+      handoffPackageArchives={handoffPackageArchives}
+      error={null}
+      archiveError={null}
+      handoffPackageArchiveError={null}
+      onCopyReport={vi.fn()}
+      onDownloadReport={vi.fn()}
+      onArchiveSession={vi.fn()}
+      onCopyHandoffPackage={vi.fn()}
+      onDownloadHandoffPackage={vi.fn()}
+      onArchiveHandoffPackage={vi.fn()}
+      onDownloadArchiveReport={vi.fn()}
+      onDownloadHandoffPackageArchiveReport={onDownloadHandoffPackageArchiveReport}
+    />
+  );
+
+  await userEvent.click(screen.getByRole('button', { name: 'Download archived handoff package handoff-archive-1' }));
+
+  expect(onDownloadHandoffPackageArchiveReport).toHaveBeenCalledWith('handoff-archive-1');
+  expect(createObjectURL).toHaveBeenCalledWith(reportBlob);
+  expect(click).toHaveBeenCalledTimes(1);
+  expect(revokeObjectURL).toHaveBeenCalledWith('blob:demo-handoff-package-archive-report');
+  expect(screen.getByText('Archived handoff package downloaded')).toBeInTheDocument();
 });

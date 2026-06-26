@@ -1491,6 +1491,17 @@ const demoSessionArchive = {
   report: '# PatchPilot Demo Session Report\n\n- Status: `READY`'
 };
 
+const demoHandoffPackageArchive = {
+  id: 'handoff-archive-1',
+  sessionId: 'demo-session-20260624T003000Z',
+  status: 'READY',
+  summary: 'Demo session snapshot is ready.',
+  shareSummary: 'Status READY; recent task task-1; recent PR https://github.com/bingqin2/PatchPilot/pull/8.',
+  recentPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+  createdAt: '2026-06-24T04:05:00Z',
+  report: '# PatchPilot Demo Handoff Package\n\n- Status: `READY`'
+};
+
 beforeEach(() => {
   let manualTaskCreated = false;
   vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -1685,6 +1696,12 @@ beforeEach(() => {
     }
     if (url === '/api/demo/session-archives') {
       return jsonResponse([demoSessionArchive]);
+    }
+    if (url === '/api/demo/handoff-package-archives' && init?.method === 'POST') {
+      return jsonResponse(demoHandoffPackageArchive);
+    }
+    if (url === '/api/demo/handoff-package-archives') {
+      return jsonResponse([demoHandoffPackageArchive]);
     }
     if (url === '/health') {
       return jsonResponse({
@@ -2264,8 +2281,8 @@ test('renders operational task dashboard from backend APIs', async () => {
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/admin-audit-events?limit=20'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks/task-1/detail'));
   expect(screen.getByText('Pull request opened')).toBeInTheDocument();
-  expect(screen.getAllByText('demo-session-20260624T003000Z')).toHaveLength(2);
-  expect(screen.getAllByText('Status READY; recent task task-1; recent PR https://github.com/bingqin2/PatchPilot/pull/8.')).toHaveLength(2);
+  expect(screen.getAllByText('demo-session-20260624T003000Z')).toHaveLength(3);
+  expect(screen.getAllByText('Status READY; recent task task-1; recent PR https://github.com/bingqin2/PatchPilot/pull/8.')).toHaveLength(3);
   const sessionPanel = screen.getByRole('region', { name: 'Demo session snapshot' });
   expect(within(sessionPanel).getByText('Readiness trend')).toBeInTheDocument();
   expect(within(sessionPanel).getByText('Improving')).toBeInTheDocument();
@@ -2846,6 +2863,24 @@ test('copies demo handoff package from backend API with browser evidence context
   });
   expect(writeText).toHaveBeenCalledWith('# PatchPilot Demo Handoff Package\n\n- Status: `READY`');
   expect(within(sessionPanel).getByText('Demo handoff package copied')).toBeInTheDocument();
+});
+
+test('archives demo handoff package from the session snapshot panel', async () => {
+  const user = userEvent.setup();
+  const fetchMock = vi.mocked(fetch);
+
+  render(<App />);
+
+  const sessionPanel = await screen.findByRole('region', { name: 'Demo session snapshot' });
+  await user.click(within(sessionPanel).getByRole('button', { name: 'Archive handoff package' }));
+
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/handoff-package-archives', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ preparedLaunchCommands: [], archivedLaunchOutcomes: [] })
+  }));
+  expect(within(sessionPanel).getByText('Demo handoff package archived')).toBeInTheDocument();
+  expect(within(sessionPanel).getByText('handoff-archive-1')).toBeInTheDocument();
 });
 
 test('creates a manual task from the dashboard and refreshes task data', async () => {

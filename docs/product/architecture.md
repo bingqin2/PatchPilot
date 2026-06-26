@@ -334,12 +334,13 @@ Responsibilities:
 - Format the session snapshot as copyable or downloadable Markdown for review notes, issue comments, saved files, or handoff messages without adding side effects. Dashboard clients may supply browser-local prepared launch commands and archived launch outcomes as report context; the backend includes that bounded context plus a computed handoff readiness check in the generated Markdown but does not persist browser history separately.
 - Format a handoff package as copyable or downloadable Markdown that wraps the session report with concise status, handoff readiness, task, Pull Request, prepared-command, archived-outcome, and next-action evidence for post-demo sharing.
 - Store a capped archive of recent demo session reports, including supplied prepared launch command and archived outcome context, so an operator can keep copyable and downloadable handoff records during a live demo. The default profile may keep archives in memory, while database-backed profiles persist them through MySQL.
+- Store a separate capped archive of recent demo handoff packages so the final post-demo package is preserved independently from session reports. The same profile split applies: the default profile keeps package archives in memory, and `local`, `docker`, and `idea` profiles persist them through MySQL.
 - Treat adapter fixture drift as blocking because repository support may be misdetected.
 - Treat queue failures, delayed work, running work, missing model cost configuration, or missing recent PR evidence as operator attention items.
 - Return concrete next actions for the dashboard and curl users.
 
 This layer must not create tasks, call the model, clone repositories, execute tests, mutate queue state, write comments, or weaken safety gates. Its evidence bundle, session snapshot, session report, session report download, archived report download, demo script, runbook, and webhook payload diagnostic endpoints are read models over configuration, fixture verification, queue state, rejected-trigger safety state, webhook diagnostics, recent task history, pasted payload metadata, and stored demo archives.
-Creating a session archive is the only local write in this layer. It captures the generated session report in the configured archive store and still does not create tasks, call the model, run tests, mutate Git, write GitHub comments, or open Pull Requests.
+Creating a session archive or handoff package archive is the only local write in this layer. It captures generated Markdown evidence in the configured archive store and still does not create tasks, call the model, run tests, mutate Git, write GitHub comments, or open Pull Requests.
 
 ## Data Model
 

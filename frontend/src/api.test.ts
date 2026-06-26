@@ -15,7 +15,9 @@ import {
   getModelProviderHealth,
   getModelUsageSummary,
   getDemoScript,
+  archiveDemoHandoffPackage,
   archiveDemoSession,
+  listDemoHandoffPackageArchives,
   archiveEvaluationRunSnapshot,
   listDemoSessionArchives,
   preflightDemoLaunch,
@@ -24,6 +26,7 @@ import {
   getDemoHandoffPackage,
   downloadDemoSessionReport,
   downloadDemoHandoffPackage,
+  downloadDemoHandoffPackageArchiveReport,
   downloadDemoSessionArchiveReport,
   downloadEvaluationRunSnapshotReport,
   getDemoSmokeChecklist,
@@ -1067,6 +1070,88 @@ test('downloads demo handoff package markdown with browser context', async () =>
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input)
   });
+  expect(downloadedReport).toBe(reportBlob);
+});
+
+test('archives current demo handoff package with browser context', async () => {
+  const input: DemoSessionReportInput = {
+    preparedLaunchCommands: [],
+    archivedLaunchOutcomes: []
+  };
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        id: 'handoff-archive-1',
+        sessionId: 'demo-session-20260624T003000Z',
+        status: 'READY',
+        summary: 'Demo session snapshot is ready.',
+        shareSummary: 'Status READY; recent PR https://github.com/bingqin2/PatchPilot/pull/42.',
+        recentPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+        createdAt: '2026-06-24T04:00:00Z',
+        report: '# PatchPilot Demo Handoff Package\n\n## Handoff Summary'
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const archive = await archiveDemoHandoffPackage(input);
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/handoff-package-archives', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input)
+  });
+  expect(archive.id).toBe('handoff-archive-1');
+  expect(archive.report).toContain('Demo Handoff Package');
+});
+
+test('lists demo handoff package archives through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: [
+        {
+          id: 'handoff-archive-1',
+          sessionId: 'demo-session-20260624T003000Z',
+          status: 'READY',
+          summary: 'Demo session snapshot is ready.',
+          shareSummary: 'Status READY; recent PR https://github.com/bingqin2/PatchPilot/pull/42.',
+          recentPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+          createdAt: '2026-06-24T04:00:00Z',
+          report: '# PatchPilot Demo Handoff Package\n\n- Status: `READY`'
+        }
+      ],
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const archives = await listDemoHandoffPackageArchives();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/handoff-package-archives');
+  expect(archives[0].id).toBe('handoff-archive-1');
+});
+
+test('downloads archived demo handoff package markdown from backend API', async () => {
+  const reportBlob = new Blob(['# PatchPilot Demo Handoff Package\n\n- Archive: `handoff-archive-1`'], {
+    type: 'text/markdown;charset=UTF-8'
+  });
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    blob: async () => reportBlob
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const downloadedReport = await downloadDemoHandoffPackageArchiveReport('handoff-archive-1');
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/handoff-package-archives/handoff-archive-1/report/download');
   expect(downloadedReport).toBe(reportBlob);
 });
 
