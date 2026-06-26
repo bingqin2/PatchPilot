@@ -1,4 +1,12 @@
+import { Archive, Clipboard, Trash2 } from 'lucide-react';
+import { useState } from 'react';
 import type { DemoPreparedLaunchCommand, FixTask, WebhookDeliveryDiagnostic } from '../../types';
+import {
+  addDemoLaunchOutcomeArchiveItem,
+  loadDemoLaunchOutcomeArchive,
+  persistDemoLaunchOutcomeArchive,
+  type DemoLaunchOutcomeArchiveItem
+} from '../demoLaunchOutcomeArchive';
 
 interface DemoLaunchTrackerPanelProps {
   preparedLaunchCommands: DemoPreparedLaunchCommand[];
@@ -19,7 +27,22 @@ export function DemoLaunchTrackerPanel({
   tasks,
   webhookDeliveries
 }: DemoLaunchTrackerPanelProps) {
+  const [archive, setArchive] = useState<DemoLaunchOutcomeArchiveItem[]>(loadDemoLaunchOutcomeArchive);
   const trackedLaunches = preparedLaunchCommands.slice(0, 5).map((command) => trackLaunch(command, tasks, webhookDeliveries));
+
+  function archiveOutcome(launch: TrackedLaunch) {
+    const item = createArchiveItem(launch);
+    setArchive((currentArchive) => {
+      const updatedArchive = addDemoLaunchOutcomeArchiveItem(currentArchive, item);
+      persistDemoLaunchOutcomeArchive(updatedArchive);
+      return updatedArchive;
+    });
+  }
+
+  function clearArchive() {
+    setArchive([]);
+    persistDemoLaunchOutcomeArchive([]);
+  }
 
   return (
     <section className="panel demo-launch-tracker-panel" aria-label="Demo launch tracker">
@@ -36,17 +59,28 @@ export function DemoLaunchTrackerPanel({
       {trackedLaunches.length ? (
         <div className="demo-launch-tracker-list">
           {trackedLaunches.map((launch) => (
-            <TrackedLaunchRow launch={launch} key={`${launch.command.triggerComment}-${launch.command.savedAt}`} />
+            <TrackedLaunchRow
+              launch={launch}
+              key={`${launch.command.triggerComment}-${launch.command.savedAt}`}
+              onArchiveOutcome={archiveOutcome}
+            />
           ))}
         </div>
       ) : (
         <p className="empty-state">No prepared launch commands recorded in this browser.</p>
       )}
+      <DemoLaunchOutcomeArchive archive={archive} onClearArchive={clearArchive} />
     </section>
   );
 }
 
-function TrackedLaunchRow({ launch }: { launch: TrackedLaunch }) {
+function TrackedLaunchRow({
+  launch,
+  onArchiveOutcome
+}: {
+  launch: TrackedLaunch;
+  onArchiveOutcome: (launch: TrackedLaunch) => void;
+}) {
   return (
     <article className="demo-launch-tracker-row">
       <div className="demo-launch-tracker-command">
@@ -67,11 +101,81 @@ function TrackedLaunchRow({ launch }: { launch: TrackedLaunch }) {
           onClick={() => void copyOutcomeReport(launch)}
           aria-label={`Copy outcome report for ${launch.command.triggerComment}`}
         >
+          <Clipboard size={16} />
           Copy outcome report
+        </button>
+        <button
+          className="secondary-button"
+          type="button"
+          onClick={() => onArchiveOutcome(launch)}
+          aria-label={`Archive outcome for ${launch.command.triggerComment}`}
+        >
+          <Archive size={16} />
+          Archive outcome
         </button>
       </div>
       <p>{launch.nextAction}</p>
     </article>
+  );
+}
+
+function DemoLaunchOutcomeArchive({
+  archive,
+  onClearArchive
+}: {
+  archive: DemoLaunchOutcomeArchiveItem[];
+  onClearArchive: () => void;
+}) {
+  return (
+    <section className="demo-launch-outcome-archive" aria-label="Demo launch outcome archive">
+      <div className="demo-launch-command-history-header">
+        <div>
+          <h3>Demo launch outcome archive</h3>
+          <p>
+            {archive.length > 0
+              ? `${archive.length} outcome${archive.length === 1 ? '' : 's'} saved locally in this browser.`
+              : 'Saved only in this browser.'}
+          </p>
+        </div>
+        {archive.length > 0 ? (
+          <button className="secondary-button" type="button" onClick={onClearArchive}>
+            <Trash2 size={16} />
+            Clear outcome archive
+          </button>
+        ) : null}
+      </div>
+
+      {archive.length > 0 ? (
+        <ul aria-label="Archived demo launch outcomes">
+          {archive.map((item) => (
+            <li key={item.id}>
+              <div className="demo-launch-command-history-copy">
+                <code>{item.triggerComment}</code>
+                <span>
+                  {item.repositoryOwner}/{item.repositoryName} #{item.issueNumber} - {item.taskStatus} - Archived at{' '}
+                  {formatArchiveTimestamp(item.archivedAt)}
+                </span>
+              </div>
+              <div className="demo-launch-command-history-actions">
+                {item.taskId ? <a href={`/tasks/${item.taskId}`}>Open archived task {item.taskId}</a> : null}
+                {item.pullRequestUrl ? <a href={item.pullRequestUrl}>Open archived Pull Request</a> : null}
+                <button
+                  className="secondary-button"
+                  type="button"
+                  onClick={() => void copyArchivedOutcomeReport(item)}
+                  aria-label={`Copy archived outcome report ${item.taskId ?? item.id}`}
+                >
+                  <Clipboard size={16} />
+                  Copy archived report
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="empty-state compact-empty-state">No archived demo launch outcomes yet.</p>
+      )}
+    </section>
   );
 }
 
@@ -185,6 +289,27 @@ async function copyOutcomeReport(launch: TrackedLaunch) {
   await navigator.clipboard?.writeText(buildDemoLaunchOutcomeReport(launch));
 }
 
+async function copyArchivedOutcomeReport(item: DemoLaunchOutcomeArchiveItem) {
+  await navigator.clipboard?.writeText(item.report);
+}
+
+function createArchiveItem(launch: TrackedLaunch): DemoLaunchOutcomeArchiveItem {
+  const archivedAt = new Date().toISOString();
+  return {
+    id: `${archivedAt}-${launch.task?.id ?? launch.command.triggerComment}`,
+    archivedAt,
+    repositoryOwner: launch.command.repositoryOwner,
+    repositoryName: launch.command.repositoryName,
+    issueNumber: launch.command.issueNumber,
+    triggerUser: launch.command.triggerUser,
+    triggerComment: launch.command.triggerComment,
+    taskId: launch.task?.id ?? null,
+    taskStatus: launch.task?.status ?? 'PENDING',
+    pullRequestUrl: launch.task?.pullRequestUrl ?? null,
+    report: buildDemoLaunchOutcomeReport(launch)
+  };
+}
+
 function buildDemoLaunchOutcomeReport(launch: TrackedLaunch) {
   return [
     '# PatchPilot Demo Launch Outcome Report',
@@ -212,4 +337,12 @@ function buildDemoLaunchOutcomeReport(launch: TrackedLaunch) {
     '## Operator Action',
     `- Next action: ${launch.nextAction}`
   ].join('\n');
+}
+
+function formatArchiveTimestamp(archivedAt: string) {
+  const timestamp = new Date(archivedAt);
+  if (Number.isNaN(timestamp.getTime())) {
+    return 'saved locally';
+  }
+  return timestamp.toLocaleString();
 }

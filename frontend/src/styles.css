@@ -1097,7 +1097,8 @@ h3 {
   padding: 9px 10px;
 }
 
-.demo-launch-command-history {
+.demo-launch-command-history,
+.demo-launch-outcome-archive {
   border-top: 1px solid #dce3e9;
   display: grid;
   gap: 12px;
@@ -1121,7 +1122,8 @@ h3 {
   font-weight: 750;
 }
 
-.demo-launch-command-history ul {
+.demo-launch-command-history ul,
+.demo-launch-outcome-archive ul {
   display: grid;
   gap: 10px;
   list-style: none;
@@ -1129,7 +1131,8 @@ h3 {
   padding: 0;
 }
 
-.demo-launch-command-history li {
+.demo-launch-command-history li,
+.demo-launch-outcome-archive li {
   background: #f8fafc;
   border: 1px solid #dfe7ee;
   border-radius: 6px;
@@ -1162,6 +1165,15 @@ h3 {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+.demo-launch-command-history-actions a {
+  align-items: center;
+  color: #166b68;
+  display: inline-flex;
+  font-size: 13px;
+  font-weight: 800;
+  min-height: 34px;
 }
 
 .demo-launch-preflight-result {

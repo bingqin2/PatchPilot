@@ -100,6 +100,7 @@ The current implementation target is local self-hosted development first. Hosted
 - Operators should be able to copy a final demo launch package after launch preflight that includes the GitHub issue URL, exact `/agent fix` comment, readiness and trigger-gate evidence, prepared command history from the current browser, and next actions without creating a task or mutating GitHub.
 - Operators should be able to track prepared demo launch commands after posting them by correlating browser-local command history with recent webhook delivery, task, and Pull Request evidence without creating tasks or mutating GitHub.
 - Operators should be able to copy a Markdown outcome report for a tracked demo launch that includes the exact command, webhook outcome, task result, Pull Request URL, and next action without creating tasks or mutating GitHub.
+- Operators should be able to save recent demo launch outcome reports in browser-local history, reopen task and Pull Request links from that archive, copy archived reports again, and clear the archive without creating tasks or mutating GitHub.
 - Task execution must pass a repository language-adapter preflight after workspace preparation and before model patch generation.
 - Operators should be able to run a local repository preflight diagnostic that uses the same language adapter registry without creating a task, running tests, mutating Git, or opening a Pull Request.
 - Local repository preflight diagnostics must reject paths outside configured allowed roots before adapter detection.
