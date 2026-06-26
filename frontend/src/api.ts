@@ -18,6 +18,7 @@ import type {
   DemoSessionReportInput,
   DemoSessionSnapshot,
   DemoSmokeChecklist,
+  EvaluationCase,
   FixTask,
   FixTaskFailureCauseSummary,
   FixTaskLatencySummary,
@@ -278,6 +279,10 @@ export async function listLanguageAdapterFixtures(): Promise<LanguageAdapterFixt
 
 export async function listLanguageAdapterRuntimeReadiness(): Promise<LanguageAdapterRuntimeReadiness[]> {
   return getApi<LanguageAdapterRuntimeReadiness[]>('/api/language-adapters/runtime-readiness');
+}
+
+export async function listEvaluationCases(): Promise<EvaluationCase[]> {
+  return getApi<EvaluationCase[]>('/api/evaluation/cases');
 }
 
 export async function preflightRepository(input: RepositoryPreflightInput): Promise<RepositoryPreflightResult> {

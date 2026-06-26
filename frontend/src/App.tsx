@@ -42,6 +42,7 @@ import {
   getWorkerHealth,
   listAcceptedTriggerDecisions,
   listAdminAuditEvents,
+  listEvaluationCases,
   listLanguageAdapterFixtures,
   listLanguageAdapterRuntimeReadiness,
   listLanguageAdapters,
@@ -67,6 +68,7 @@ import { DemoLaunchTrackerPanel } from './dashboard/components/DemoLaunchTracker
 import { DemoSessionSnapshotPanel } from './dashboard/components/DemoSessionSnapshotPanel';
 import { DemoScriptPanel } from './dashboard/components/DemoScriptPanel';
 import { DemoSmokeChecklistPanel } from './dashboard/components/DemoSmokeChecklistPanel';
+import { EvaluationCaseCatalogPanel } from './dashboard/components/EvaluationCaseCatalogPanel';
 import { FailureCausePanel } from './dashboard/components/FailureCausePanel';
 import { LatencyPanel } from './dashboard/components/LatencyPanel';
 import { MetricCard } from './dashboard/components/MetricCard';
@@ -106,6 +108,7 @@ import type {
   DemoSessionReportInput,
   DemoSessionSnapshot,
   DemoSmokeChecklist,
+  EvaluationCase,
   FixTask,
   FixTaskFailureCauseSummary,
   FixTaskLatencySummary,
@@ -211,6 +214,8 @@ export default function App() {
   const [adapterFixtureError, setAdapterFixtureError] = useState<string | null>(null);
   const [adapterRuntimeReadiness, setAdapterRuntimeReadiness] = useState<LanguageAdapterRuntimeReadiness[]>([]);
   const [adapterRuntimeReadinessError, setAdapterRuntimeReadinessError] = useState<string | null>(null);
+  const [evaluationCases, setEvaluationCases] = useState<EvaluationCase[]>([]);
+  const [evaluationCaseError, setEvaluationCaseError] = useState<string | null>(null);
   const [repositoryPreflightResult, setRepositoryPreflightResult] = useState<RepositoryPreflightResult | null>(null);
   const [repositoryPreflightError, setRepositoryPreflightError] = useState<string | null>(null);
   const [repositoryPreflightLoading, setRepositoryPreflightLoading] = useState(false);
@@ -498,6 +503,7 @@ export default function App() {
         adapterListResult,
         adapterFixtureResult,
         adapterRuntimeReadinessResult,
+        evaluationCaseResult,
         queueSummaryData,
         queueItemList,
         workerHealthData,
@@ -563,6 +569,10 @@ export default function App() {
         listLanguageAdapterRuntimeReadiness().then(
           (readiness) => ({ readiness, error: null as string | null }),
           (caught) => ({ readiness: null, error: errorMessage(caught) })
+        ),
+        listEvaluationCases().then(
+          (cases) => ({ cases, error: null as string | null }),
+          (caught) => ({ cases: null, error: errorMessage(caught) })
         ),
         getQueueSummary(),
         listQueueItems(),
@@ -654,6 +664,10 @@ export default function App() {
         setAdapterRuntimeReadiness(adapterRuntimeReadinessResult.readiness);
       }
       setAdapterRuntimeReadinessError(adapterRuntimeReadinessResult.error);
+      if (evaluationCaseResult.cases) {
+        setEvaluationCases(evaluationCaseResult.cases);
+      }
+      setEvaluationCaseError(evaluationCaseResult.error);
       setQueueSummary(queueSummaryData);
       setQueueItems(queueItemList);
       setWorkerHealth(workerHealthData);
@@ -1268,6 +1282,8 @@ export default function App() {
         runtimeReadiness={adapterRuntimeReadiness}
         error={adapterError ?? adapterFixtureError ?? adapterRuntimeReadinessError}
       />
+
+      <EvaluationCaseCatalogPanel cases={evaluationCases} error={evaluationCaseError} />
 
       <SupportedAdaptersPanel adapters={supportedAdapters} error={adapterError} />
 

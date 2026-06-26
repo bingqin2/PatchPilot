@@ -32,6 +32,7 @@ import {
   getWorkerHealth,
   listAcceptedTriggerDecisions,
   listAdminAuditEvents,
+  listEvaluationCases,
   listLanguageAdapterFixtures,
   listLanguageAdapterRuntimeReadiness,
   listLanguageAdapters,
@@ -2128,6 +2129,56 @@ test('loads language adapter runtime readiness from backend API', async () => {
       verificationCommand: ['npm', 'test'],
       status: 'MISSING',
       reason: 'Executable `npm` is not available on PATH'
+    }
+  ]);
+});
+
+test('loads evaluation case catalog from backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: [
+        {
+          id: 'java-maven-doc-fix',
+          title: 'Java Maven documentation fix',
+          category: 'SUPPORTED_FIX',
+          language: 'java',
+          buildSystem: 'maven',
+          repositoryFixturePath: 'docs/demo-repositories/java-maven',
+          issueText: '/agent fix update GreetingService to return the issue-requested text',
+          expectedVerificationCommand: ['mvn', 'test'],
+          expectedChangedFiles: ['src/main/java/io/patchpilot/demo/GreetingService.java'],
+          successCriteria: ['Patch changes only the expected source file', 'Maven tests pass'],
+          expectedDecision: 'ACCEPT_AND_CREATE_PR',
+          expectedRejectionCategory: null,
+          safetyExpectation: 'Allowed only after deterministic and model-assisted trigger checks pass.'
+        }
+      ],
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const cases = await listEvaluationCases();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/evaluation/cases');
+  expect(cases).toEqual([
+    {
+      id: 'java-maven-doc-fix',
+      title: 'Java Maven documentation fix',
+      category: 'SUPPORTED_FIX',
+      language: 'java',
+      buildSystem: 'maven',
+      repositoryFixturePath: 'docs/demo-repositories/java-maven',
+      issueText: '/agent fix update GreetingService to return the issue-requested text',
+      expectedVerificationCommand: ['mvn', 'test'],
+      expectedChangedFiles: ['src/main/java/io/patchpilot/demo/GreetingService.java'],
+      successCriteria: ['Patch changes only the expected source file', 'Maven tests pass'],
+      expectedDecision: 'ACCEPT_AND_CREATE_PR',
+      expectedRejectionCategory: null,
+      safetyExpectation: 'Allowed only after deterministic and model-assisted trigger checks pass.'
     }
   ]);
 });

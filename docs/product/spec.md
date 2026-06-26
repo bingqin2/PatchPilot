@@ -159,6 +159,7 @@ The current implementation target is local self-hosted development first. Hosted
 - Repository retrieval should start with deterministic tree inspection and lexical search; optional embeddings or vector search are future additions behind a pluggable retrieval boundary.
 - Any repository indexing or retrieval step must exclude secrets, dependency directories, generated artifacts, and files outside the task workspace.
 - Evaluation cases should define repository fixture, issue text, expected changed files, expected verification command, and success criteria.
+- Operators should be able to inspect a read-only evaluation case catalog that covers supported language fixes and safety rejections before benchmark execution exists.
 - Evaluation runs should record model, prompt version, repository revision, success metrics, failure categories, cost, latency, and a copyable Markdown report.
 - Dashboard and API surfaces should make model usage, tool usage, retrieval evidence, evaluation results, budget state, and safety decisions inspectable without exposing secrets.
 
@@ -320,6 +321,7 @@ MVP frontend scope:
 - Evaluate a manual `/agent fix` trigger before creating a task and see the gate decisions plus next operator action.
 - Evaluate a pasted GitHub webhook payload before redelivery and see whether the temporary URL, webhook secret, event type, action, and `/agent fix` comment shape look correct.
 - Inspect and copy a single adapter readiness report covering supported languages, allowlisted verification commands, fixture pass rate, and fixture failures.
+- Inspect and copy a read-only evaluation case catalog covering supported Java/Maven, Node/npm, Python/pytest, Go, unsafe-trigger rejection, and vague-trigger rejection scenarios.
 - Copy a Markdown repository preflight report after checking a local path so supported and unsupported repository evidence can be shared before task creation.
 
 The frontend does not need to trigger the first backend workflow. GitHub issue comments remain the first trigger.
@@ -338,7 +340,7 @@ Planned follow-up capabilities:
 - Redis or queue-backed async execution.
 - RAG over repository code and previous fixes.
 - Provider-neutral model gateway with prompt versioning, structured output validation, retries, fallback policy, and model capability metadata.
-- Evaluation harness for issue-to-PR benchmark cases across supported repository adapters.
+- Evaluation harness for issue-to-PR benchmark cases across supported repository adapters, starting with a read-only case catalog before automated run execution.
 - Retrieval audit records and optional embedding-backed code search behind a pluggable vector-store boundary.
 - Prompt regression tests and model/prompt comparison reports.
 - Per-task, per-repository, and per-instance model budget controls.
@@ -365,6 +367,7 @@ PatchPilot MVP is successful when:
 - An operator can copy or download a Markdown session report that includes the snapshot, prepared launch commands from the current browser, archived launch outcomes from the current browser, script, checklist, health contract, next actions, and runbook.
 - An operator can copy or download a Markdown handoff package that combines the session report with a concise summary, recent task and Pull Request evidence, browser-local prepared commands, browser-local archived outcomes, and next actions.
 - An operator can copy an adapter readiness report that proves current multi-language coverage and highlights fixture drift before a live run.
+- An operator can inspect evaluation cases that prove planned multi-language issue-to-PR coverage and safety rejection coverage without creating tasks, running model calls, executing tests, mutating Git, or writing to GitHub.
 - An operator can see whether each adapter's verification executable is available in the current backend runtime before a live run.
 - An operator can see missing adapter verification executables reflected in the demo readiness gate instead of only in the adapter report.
 - An operator can copy a repository preflight report that shows whether a local path is supported and which allowlisted command would run.
