@@ -61,6 +61,9 @@ const snapshot: DemoSessionSnapshot = {
     handoffShareLatestDeliveryTarget: 'maintainer@example.com',
     handoffShareLatestDeliveryChannel: 'email',
     handoffShareLatestDeliveredAt: '2026-06-24T06:05:00Z',
+    handoffShareDeliveryReceiptFreshness: 'FRESH',
+    handoffShareDeliveryReceiptFresh: true,
+    handoffShareDeliveryReceiptFreshnessSummary: 'Latest delivery receipt matches the current handoff archive and session.',
     configuration: null,
     adapterFixtures: {
       totalCount: 12,
@@ -240,6 +243,9 @@ const handoffShareCenter: DemoHandoffShareCenter = {
   latestDeliveryChannel: 'email',
   latestDeliveredAt: '2026-06-24T06:05:00Z',
   deliveryReceiptRecorded: true,
+  deliveryReceiptFreshness: 'FRESH',
+  deliveryReceiptFresh: true,
+  deliveryReceiptFreshnessSummary: 'Latest delivery receipt matches the current handoff archive and session.',
   downloadActions: [
     'Download handoff package archive handoff-archive-1.',
     'Download handoff package archive summary.',
@@ -478,6 +484,10 @@ test('renders demo session snapshot summary, evidence, checklist, contract, and 
   expect(within(panel).getAllByText('Download handoff share delivery receipt delivery-receipt-1.').length).toBeGreaterThanOrEqual(1);
   expect(within(panel).getByText('Latest package archive is READY.')).toBeInTheDocument();
   expect(within(panel).getByText('Latest delivery')).toBeInTheDocument();
+  expect(within(panel).getByText('Fresh')).toBeInTheDocument();
+  expect(
+    within(panel).getByText('Latest delivery receipt matches the current handoff archive and session.')
+  ).toBeInTheDocument();
   expect(within(panel).getAllByText('delivery-receipt-1').length).toBeGreaterThanOrEqual(2);
   expect(within(panel).getAllByText('email - maintainer@example.com').length).toBeGreaterThanOrEqual(1);
   expect(within(panel).getByRole('button', { name: 'Download handoff share center' })).toBeInTheDocument();

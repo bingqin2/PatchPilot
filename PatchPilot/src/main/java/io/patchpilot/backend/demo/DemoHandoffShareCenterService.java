@@ -52,11 +52,12 @@ public class DemoHandoffShareCenterService {
                 .orElse(null);
         DemoReadinessStatus status = centerStatus(archiveSummary, checklist);
         boolean shareReady = archiveSummary.shareReady() && checklist.status() == DemoReadinessStatus.READY;
+        DeliveryReceiptFreshness receiptFreshness = deliveryReceiptFreshness(archiveSummary, latestReceipt);
         Instant generatedAt = Instant.now(clock);
-        List<String> downloadActions = downloadActions(archiveSummary, checklist, latestReceipt);
-        List<String> evidenceNotes = evidenceNotes(archiveSummary, checklist, latestReceipt);
+        List<String> downloadActions = downloadActions(archiveSummary, checklist, latestReceipt, receiptFreshness);
+        List<String> evidenceNotes = evidenceNotes(archiveSummary, checklist, latestReceipt, receiptFreshness);
         String summary = centerSummary(archiveSummary, checklist, shareReady, status);
-        String nextAction = centerNextAction(archiveSummary, checklist, shareReady, latestReceipt);
+        String nextAction = centerNextAction(archiveSummary, checklist, shareReady, receiptFreshness);
         String latestCreatedAt = archiveSummary.latestCreatedAt() == null ? null : archiveSummary.latestCreatedAt().toString();
         String latestDeliveredAt = latestReceipt == null ? null : latestReceipt.deliveredAt().toString();
         String markdownReport = formatMarkdown(
@@ -67,6 +68,7 @@ public class DemoHandoffShareCenterService {
                 archiveSummary,
                 checklist,
                 latestReceipt,
+                receiptFreshness,
                 downloadActions,
                 evidenceNotes,
                 generatedAt
@@ -84,6 +86,9 @@ public class DemoHandoffShareCenterService {
                 latestReceipt == null ? null : latestReceipt.deliveryChannel(),
                 latestDeliveredAt,
                 latestReceipt != null,
+                receiptFreshness.status(),
+                receiptFreshness.fresh(),
+                receiptFreshness.summary(),
                 downloadActions,
                 evidenceNotes,
                 markdownReport,
@@ -146,7 +151,8 @@ public class DemoHandoffShareCenterService {
     private static List<String> downloadActions(
             DemoHandoffPackageArchiveSummaryVo archiveSummary,
             DemoHandoffShareChecklistVo checklist,
-            DemoHandoffShareDeliveryReceiptVo latestReceipt
+            DemoHandoffShareDeliveryReceiptVo latestReceipt,
+            DeliveryReceiptFreshness receiptFreshness
     ) {
         List<String> actions = new ArrayList<>();
         if (hasText(archiveSummary.latestArchiveId())) {
@@ -158,6 +164,9 @@ public class DemoHandoffShareCenterService {
         actions.add("Download handoff share checklist.");
         if (latestReceipt == null) {
             actions.add("Record a handoff share delivery receipt after sending the package.");
+        } else if (!receiptFreshness.fresh()) {
+            actions.add("Record a new handoff share delivery receipt for archive "
+                    + valueOrNone(archiveSummary.latestArchiveId()) + ".");
         } else {
             actions.add("Download handoff share delivery receipt " + latestReceipt.id() + ".");
         }
@@ -170,7 +179,8 @@ public class DemoHandoffShareCenterService {
     private static List<String> evidenceNotes(
             DemoHandoffPackageArchiveSummaryVo archiveSummary,
             DemoHandoffShareChecklistVo checklist,
-            DemoHandoffShareDeliveryReceiptVo latestReceipt
+            DemoHandoffShareDeliveryReceiptVo latestReceipt,
+            DeliveryReceiptFreshness receiptFreshness
     ) {
         List<String> notes = new ArrayList<>();
         notes.add("Latest package archive status is " + archiveSummary.status() + ".");
@@ -182,6 +192,7 @@ public class DemoHandoffShareCenterService {
                     + " was recorded for " + latestReceipt.deliveryTarget()
                     + " via " + latestReceipt.deliveryChannel() + ".");
         }
+        notes.add(receiptFreshness.summary());
         notes.add("Archive summary: " + archiveSummary.summary());
         notes.add("Checklist summary: " + checklist.summary());
         return List.copyOf(notes);
@@ -212,11 +223,15 @@ public class DemoHandoffShareCenterService {
             DemoHandoffPackageArchiveSummaryVo archiveSummary,
             DemoHandoffShareChecklistVo checklist,
             boolean shareReady,
-            DemoHandoffShareDeliveryReceiptVo latestReceipt
+            DeliveryReceiptFreshness receiptFreshness
     ) {
         if (shareReady) {
-            if (latestReceipt == null) {
+            if ("MISSING".equals(receiptFreshness.status())) {
                 return "Download the package, send the prepared handoff message, then record a delivery receipt.";
+            }
+            if (!receiptFreshness.fresh()) {
+                return "Send the current handoff package and record a new delivery receipt for archive "
+                        + valueOrNone(archiveSummary.latestArchiveId()) + ".";
             }
             return "Download the package, archive summary, and share checklist before sending handoff evidence.";
         }
@@ -234,6 +249,7 @@ public class DemoHandoffShareCenterService {
             DemoHandoffPackageArchiveSummaryVo archiveSummary,
             DemoHandoffShareChecklistVo checklist,
             DemoHandoffShareDeliveryReceiptVo latestReceipt,
+            DeliveryReceiptFreshness receiptFreshness,
             List<String> downloadActions,
             List<String> evidenceNotes,
             Instant generatedAt
@@ -245,6 +261,9 @@ public class DemoHandoffShareCenterService {
         builder.append("- Latest archive: `").append(valueOrNone(archiveSummary.latestArchiveId())).append("`\n");
         builder.append("- Latest session: `").append(valueOrNone(archiveSummary.latestSessionId())).append("`\n");
         builder.append("- Delivery receipt recorded: `").append(latestReceipt != null).append("`\n");
+        builder.append("- Delivery receipt freshness: `").append(receiptFreshness.status()).append("`\n");
+        builder.append("- Delivery receipt fresh: `").append(receiptFreshness.fresh()).append("`\n");
+        builder.append("- Delivery receipt freshness summary: `").append(receiptFreshness.summary()).append("`\n");
         builder.append("- Latest delivery receipt: `").append(latestReceipt == null ? "none" : latestReceipt.id()).append("`\n");
         builder.append("- Delivery target: `").append(latestReceipt == null ? "none" : latestReceipt.deliveryTarget()).append("`\n");
         builder.append("- Delivery channel: `").append(latestReceipt == null ? "none" : latestReceipt.deliveryChannel()).append("`\n");
@@ -375,7 +394,48 @@ public class DemoHandoffShareCenterService {
         return value != null && !value.isBlank();
     }
 
+    private static DeliveryReceiptFreshness deliveryReceiptFreshness(
+            DemoHandoffPackageArchiveSummaryVo archiveSummary,
+            DemoHandoffShareDeliveryReceiptVo latestReceipt
+    ) {
+        if (latestReceipt == null) {
+            return new DeliveryReceiptFreshness(
+                    "MISSING",
+                    false,
+                    "No delivery receipt has been recorded for the current handoff package."
+            );
+        }
+        boolean archiveMatches = safeEquals(latestReceipt.handoffArchiveId(), archiveSummary.latestArchiveId());
+        boolean sessionMatches = safeEquals(latestReceipt.sessionId(), archiveSummary.latestSessionId());
+        if (archiveMatches && sessionMatches) {
+            return new DeliveryReceiptFreshness(
+                    "FRESH",
+                    true,
+                    "Latest delivery receipt matches the current handoff archive and session."
+            );
+        }
+        return new DeliveryReceiptFreshness(
+                "STALE",
+                false,
+                "Latest delivery receipt " + latestReceipt.id()
+                        + " belongs to " + valueOrNone(latestReceipt.handoffArchiveId())
+                        + "/" + valueOrNone(latestReceipt.sessionId())
+                        + ", not current " + valueOrNone(archiveSummary.latestArchiveId())
+                        + "/" + valueOrNone(archiveSummary.latestSessionId()) + "."
+        );
+    }
+
+    private static boolean safeEquals(String first, String second) {
+        if (!hasText(first) || !hasText(second)) {
+            return false;
+        }
+        return first.equals(second);
+    }
+
     private static String valueOrNone(String value) {
         return hasText(value) ? value : "none";
+    }
+
+    private record DeliveryReceiptFreshness(String status, boolean fresh, String summary) {
     }
 }

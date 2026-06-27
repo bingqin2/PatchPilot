@@ -474,6 +474,9 @@ export interface DemoEvidenceBundle {
   handoffShareLatestDeliveryTarget: string | null;
   handoffShareLatestDeliveryChannel: string | null;
   handoffShareLatestDeliveredAt: string | null;
+  handoffShareDeliveryReceiptFreshness: string;
+  handoffShareDeliveryReceiptFresh: boolean;
+  handoffShareDeliveryReceiptFreshnessSummary: string;
   generatedAt: string;
   nextActions: string[];
 }
@@ -621,6 +624,9 @@ export interface DemoHandoffShareCenter {
   latestDeliveryChannel: string | null;
   latestDeliveredAt: string | null;
   deliveryReceiptRecorded: boolean;
+  deliveryReceiptFreshness: string;
+  deliveryReceiptFresh: boolean;
+  deliveryReceiptFreshnessSummary: string;
   downloadActions: string[];
   evidenceNotes: string[];
   markdownReport: string;

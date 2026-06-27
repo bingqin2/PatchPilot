@@ -171,6 +171,9 @@ const bundle: DemoEvidenceBundle = {
   handoffShareLatestDeliveryTarget: 'maintainer@example.com',
   handoffShareLatestDeliveryChannel: 'email',
   handoffShareLatestDeliveredAt: '2026-06-24T06:05:00Z',
+  handoffShareDeliveryReceiptFreshness: 'FRESH',
+  handoffShareDeliveryReceiptFresh: true,
+  handoffShareDeliveryReceiptFreshnessSummary: 'Latest delivery receipt matches the current handoff archive and session.',
   generatedAt: '2026-06-24T00:10:00Z',
   nextActions: ['Fix failing adapter fixtures before a live demo.', 'Inspect active trigger quarantines before a live demo.']
 };
@@ -205,6 +208,10 @@ test('summarizes demo evidence bundle for operators', () => {
   expect(within(panel).getByText('Download handoff package archive handoff-archive-1.')).toBeInTheDocument();
   expect(within(panel).getByText('Download handoff package archive summary.')).toBeInTheDocument();
   expect(within(panel).getByText('Handoff share delivery')).toBeInTheDocument();
+  expect(within(panel).getByText('Fresh')).toBeInTheDocument();
+  expect(
+    within(panel).getByText('Latest delivery receipt matches the current handoff archive and session.')
+  ).toBeInTheDocument();
   expect(within(panel).getByText('delivery-receipt-1')).toBeInTheDocument();
   expect(within(panel).getByText('email - maintainer@example.com')).toBeInTheDocument();
   expect(within(panel).getByText('https://demo.trycloudflare.com/api/github/webhook')).toBeInTheDocument();

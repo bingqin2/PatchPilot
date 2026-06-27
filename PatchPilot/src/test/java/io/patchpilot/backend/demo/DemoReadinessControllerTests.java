@@ -1171,6 +1171,9 @@ class DemoReadinessControllerTests {
                 null,
                 null,
                 false,
+                "MISSING",
+                false,
+                "No delivery receipt has been recorded for the current handoff package.",
                 List.of(
                         "Download handoff package archive handoff-archive-1.",
                         "Download handoff package archive summary.",
@@ -1194,6 +1197,10 @@ class DemoReadinessControllerTests {
                         .value("Download the package, archive summary, and share checklist before sending handoff evidence."))
                 .andExpect(jsonPath("$.data.latestArchiveId").value("handoff-archive-1"))
                 .andExpect(jsonPath("$.data.latestSessionId").value("demo-session-20260624T003000Z"))
+                .andExpect(jsonPath("$.data.deliveryReceiptFreshness").value("MISSING"))
+                .andExpect(jsonPath("$.data.deliveryReceiptFresh").value(false))
+                .andExpect(jsonPath("$.data.deliveryReceiptFreshnessSummary")
+                        .value("No delivery receipt has been recorded for the current handoff package."))
                 .andExpect(jsonPath("$.data.downloadActions[0]").value("Download handoff package archive handoff-archive-1."))
                 .andExpect(jsonPath("$.data.evidenceNotes[1]").value("Share checklist has 4 checks."))
                 .andExpect(jsonPath("$.data.markdownReport")
@@ -1215,6 +1222,9 @@ class DemoReadinessControllerTests {
                 null,
                 null,
                 false,
+                "MISSING",
+                false,
+                "No delivery receipt has been recorded for the current handoff package.",
                 List.of("Download handoff package archive handoff-archive-1."),
                 List.of("Latest package archive is READY."),
                 "# PatchPilot Demo Handoff Share Center\n\n- Status: `READY`",

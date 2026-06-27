@@ -106,7 +106,9 @@ export function DemoEvidenceBundlePanel({ bundle, error, onCopyRunbook }: DemoEv
             </div>
             <div>
               <span>Handoff share delivery</span>
-              <strong>{bundle.handoffShareDeliveryReceiptRecorded ? bundle.handoffShareLatestDeliveryReceiptId : 'No receipt'}</strong>
+              <strong>{deliveryFreshnessLabel(bundle.handoffShareDeliveryReceiptFreshness)}</strong>
+              <small>{bundle.handoffShareDeliveryReceiptFreshnessSummary}</small>
+              <small>{bundle.handoffShareDeliveryReceiptRecorded ? bundle.handoffShareLatestDeliveryReceiptId : 'No receipt'}</small>
               <small>
                 {bundle.handoffShareDeliveryReceiptRecorded
                   ? `${bundle.handoffShareLatestDeliveryChannel} - ${bundle.handoffShareLatestDeliveryTarget}`
@@ -204,6 +206,19 @@ function statusLabel(status: DemoReadinessStatus) {
       return 'Needs attention';
     case 'BLOCKED':
       return 'Blocked';
+  }
+}
+
+function deliveryFreshnessLabel(freshness: string) {
+  switch (freshness) {
+    case 'FRESH':
+      return 'Fresh';
+    case 'STALE':
+      return 'Stale';
+    case 'MISSING':
+      return 'Missing';
+    default:
+      return freshness;
   }
 }
 
