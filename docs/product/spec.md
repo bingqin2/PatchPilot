@@ -179,9 +179,10 @@ The current implementation target is local self-hosted development first. Hosted
 - Operators should be able to inspect a read-only evaluation case catalog that covers supported language fixes and safety rejections before benchmark execution exists.
 - Operators should be able to inspect a read-only evaluation readiness summary with case counts, covered languages, covered build systems, rejection categories, health contract, and next action.
 - Operators should be able to inspect read-only evaluation fixture readiness that verifies checked-in fixture directories, expected changed files, and adapter metadata for supported cases while marking safety rejections as no-fixture-required.
-- Operators should be able to inspect and copy a read-only evaluation run preview report with expected commands, known gaps, side-effect contract, and next action before stored benchmark execution exists.
+- Operators should be able to inspect and copy a read-only evaluation run preview report with expected commands, known gaps, side-effect contract, and next action alongside executable local run archives.
 - Operators should be able to execute and archive local fixture baseline runs for supported checked-in fixtures, then list, copy, or download the archived Markdown reports without creating tasks, calling the model, mutating Git, or writing to GitHub.
-- Evaluation runs should record model, prompt version, repository revision, success metrics, failure categories, cost, latency, and a copyable Markdown report.
+- Local evaluation runs should combine fixture baseline execution output with catalog language/build-system and safety-rejection coverage, record the side-effect contract and next action, and expose a copyable/downloadable Markdown report without creating tasks, calling the model, mutating Git, or writing to GitHub.
+- Future model benchmark runs should record model, prompt version, repository revision, success metrics, failure categories, cost, latency, and a copyable Markdown report.
 - Dashboard and API surfaces should make model usage, tool usage, retrieval evidence, evaluation results, budget state, and safety decisions inspectable without exposing secrets.
 
 ### Agent Workflow
@@ -370,7 +371,7 @@ Planned follow-up capabilities:
 - Redis or queue-backed async execution.
 - RAG over repository code and previous fixes.
 - Provider-neutral model gateway with prompt versioning, structured output validation, retries, fallback policy, and model capability metadata.
-- Evaluation harness for issue-to-PR benchmark cases across supported repository adapters, starting with a read-only case catalog before automated run execution.
+- Evaluation harness for issue-to-PR benchmark cases across supported repository adapters, starting with a case catalog, fixture baseline, local run archive, and safety-rejection coverage before hosted model benchmark execution.
 - Retrieval audit records and optional embedding-backed code search behind a pluggable vector-store boundary.
 - Prompt regression tests and model/prompt comparison reports.
 - Per-task, per-repository, and per-instance model budget controls.
@@ -413,6 +414,7 @@ PatchPilot MVP is successful when:
 - An operator can inspect an evaluation readiness summary that states whether the current catalog is ready for demo evidence and what follow-up is still needed before automated evaluation runs exist.
 - An operator can inspect evaluation fixture readiness that confirms supported cases still map to checked-in fixtures, expected adapter metadata, and expected changed files before using the catalog as demo evidence.
 - An operator can copy an evaluation run preview report that packages expected benchmark coverage and known gaps without cloning repositories, running verification commands, or recording a real benchmark run.
+- An operator can execute and archive a full local evaluation run that combines checked-in fixture baseline output, supported language/build-system coverage, safety rejection coverage, side-effect contract, next action, and a downloadable Markdown report without creating tasks, calling the model, mutating Git, or writing to GitHub.
 - An operator can see whether each adapter's verification executable is available in the current backend runtime before a live run.
 - An operator can see missing adapter verification executables reflected in the demo readiness gate instead of only in the adapter report.
 - An operator can see fixture baseline regressions reflected in the demo readiness gate instead of only in the evaluation catalog panel.

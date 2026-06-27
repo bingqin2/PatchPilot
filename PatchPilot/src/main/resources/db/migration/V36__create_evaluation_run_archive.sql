@@ -1,0 +1,20 @@
+CREATE TABLE evaluation_run_archive (
+    id VARCHAR(36) NOT NULL PRIMARY KEY,
+    status VARCHAR(32) NOT NULL,
+    total_case_count INT NOT NULL,
+    supported_fix_case_count INT NOT NULL,
+    safety_rejection_case_count INT NOT NULL,
+    executed_fix_case_count INT NOT NULL,
+    passed_fix_case_count INT NOT NULL,
+    failed_fix_case_count INT NOT NULL,
+    skipped_case_count INT NOT NULL,
+    covered_languages VARCHAR(512) NOT NULL,
+    covered_build_systems VARCHAR(512) NOT NULL,
+    safety_rejection_categories VARCHAR(512) NOT NULL,
+    created_at TIMESTAMP(6) NOT NULL,
+    side_effect_contract VARCHAR(1024) NOT NULL,
+    next_action VARCHAR(1024) NOT NULL,
+    report MEDIUMTEXT NOT NULL,
+    INDEX idx_eval_run_archive_created (created_at),
+    INDEX idx_eval_run_archive_status_created (status, created_at)
+);

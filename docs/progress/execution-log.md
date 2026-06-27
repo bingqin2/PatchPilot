@@ -4,6 +4,25 @@ This file records dated implementation progress, validation commands, and import
 
 ## 2026-06-28
 
+Implemented evaluation run execution archive from `docs/plans/247-evaluation-run-execution-archive.md`.
+
+Changes:
+
+- Added full local evaluation run archives that combine evaluation catalog coverage, safety rejection coverage, and executable checked-in fixture baseline output.
+- Added `POST /api/evaluation/runs`, `GET /api/evaluation/runs`, and `GET /api/evaluation/runs/{runId}/report/download`.
+- Added in-memory and MySQL-backed archive repositories plus a Flyway migration for durable local evidence.
+- Added dashboard controls to run an evaluation, inspect recent archived runs, copy reports, and download archived Markdown reports from the evaluation catalog panel.
+- Documented the side-effect contract: full evaluation runs execute only local checked-in fixture verification commands and do not create tasks, call the model, clone repositories, mutate Git, push branches, open Pull Requests, send GitHub comments, or write to GitHub.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=EvaluationRunArchiveServiceTests,MyBatisEvaluationRunArchiveRepositoryTests,EvaluationRunArchiveMigrationTests,EvaluationCaseControllerTests test`: first failed because the archive service, repository, migration, and controller endpoints did not exist; passed after backend implementation, 17 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts src/dashboard/components/EvaluationCaseCatalogPanel.test.tsx src/App.test.tsx --reporter=basic`: first failed because frontend API helpers and archive UI did not exist; passed after frontend implementation, 192 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed after full backend regression verification, 860 tests run, 0 failures.
+- `npm test -- --reporter=dot`: passed after full frontend regression verification, 27 test files and 327 tests run.
+- `npm run build`: passed after TypeScript and production Vite build verification.
+- `git diff --check`: passed.
+
 Implemented self-hosted launch readiness archive from `docs/plans/246-self-hosted-launch-readiness-archive.md`.
 
 Changes:

@@ -56,6 +56,7 @@ import {
   getEvaluationSummary,
   getEvaluationCaseReadiness,
   getEvaluationRunPreview,
+  runAndArchiveEvaluation,
   runEvaluationFixtureBaseline,
   runAndArchiveEvaluationFixtureBaseline,
   getEvaluationFixtureBaselineRunRegressionSummary,
@@ -67,6 +68,7 @@ import {
   listAcceptedTriggerDecisions,
   listAdminAuditEvents,
   listEvaluationCases,
+  listEvaluationRuns,
   listEvaluationRunSnapshots,
   listLanguageAdapterFixtures,
   listLanguageAdapterRuntimeReadiness,
@@ -89,6 +91,7 @@ import {
   getTaskStatusCounts,
   listWebhookDeliveries,
   listTasks,
+  downloadEvaluationRunReport,
   retryTask
 } from './api';
 import type { DemoSessionReportInput } from './types';
@@ -3253,6 +3256,63 @@ test('downloads archived evaluation run snapshot report markdown from backend AP
   expect(downloadedReport).toBe(reportBlob);
 });
 
+test('runs and archives full evaluation runs through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: evaluationRunArchive(),
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const archive = await runAndArchiveEvaluation();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/evaluation/runs', { method: 'POST' });
+  expect(archive.id).toBe('evaluation-run-1');
+  expect(archive.executedFixCaseCount).toBe(4);
+  expect(archive.safetyRejectionCategories).toEqual(['DANGEROUS_INSTRUCTION', 'NOT_ACTIONABLE']);
+  expect(archive.report).toContain('# PatchPilot Evaluation Run');
+});
+
+test('lists archived full evaluation runs through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: [evaluationRunArchive()],
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const archives = await listEvaluationRuns();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/evaluation/runs');
+  expect(archives[0].id).toBe('evaluation-run-1');
+  expect(archives[0].status).toBe('READY');
+});
+
+test('downloads archived full evaluation run report markdown from backend API', async () => {
+  const reportBlob = new Blob(['# PatchPilot Evaluation Run\n\n- Evaluation run id: `evaluation-run-1`'], {
+    type: 'text/markdown;charset=UTF-8'
+  });
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    blob: async () => reportBlob
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const downloadedReport = await downloadEvaluationRunReport('evaluation-run/1');
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/evaluation/runs/evaluation-run%2F1/report/download');
+  expect(downloadedReport).toBe(reportBlob);
+});
+
 test('runs repository preflight through backend API', async () => {
   const fetchMock = vi.fn(async () => ({
     ok: true,
@@ -3830,6 +3890,27 @@ function evaluationRunSnapshotArchive() {
     createdAt: '2026-06-26T04:00:00Z',
     sideEffectContract: 'Archive stores the current evaluation run preview as PatchPilot-local evidence only; it does not create tasks, call the model, clone repositories, run verification commands, mutate Git, or write to GitHub.',
     report: '# PatchPilot Evaluation Run Snapshot\n\n- Status: `READY`'
+  };
+}
+
+function evaluationRunArchive() {
+  return {
+    id: 'evaluation-run-1',
+    status: 'READY',
+    totalCaseCount: 6,
+    supportedFixCaseCount: 4,
+    safetyRejectionCaseCount: 2,
+    executedFixCaseCount: 4,
+    passedFixCaseCount: 4,
+    failedFixCaseCount: 0,
+    skippedCaseCount: 2,
+    coveredLanguages: ['go', 'java', 'node', 'python'],
+    coveredBuildSystems: ['go', 'maven', 'npm', 'pytest'],
+    safetyRejectionCategories: ['DANGEROUS_INSTRUCTION', 'NOT_ACTIONABLE'],
+    createdAt: '2026-06-28T04:00:00Z',
+    sideEffectContract: 'Evaluation run executes local checked-in fixture verification commands and records safety coverage only; it does not create tasks, call the model, clone repositories, mutate Git, or write to GitHub.',
+    nextAction: 'Evaluation run passed; use the archived report as measurable demo evidence for supported adapters and safety rejections.',
+    report: '# PatchPilot Evaluation Run\n\n- Status: `READY`'
   };
 }
 

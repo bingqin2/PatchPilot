@@ -18,6 +18,7 @@ import {
   downloadDemoHandoffPackageArchiveSummaryReport,
   downloadDemoReadinessSnapshotReport,
   downloadEvaluationFixtureBaselineRunReport,
+  downloadEvaluationRunReport,
   downloadEvaluationRunSnapshotReport,
   downloadDemoHandoffPackage,
   downloadDemoSessionReport,
@@ -53,6 +54,7 @@ import {
   getEvaluationFixtureBaselineRunRegressionSummary,
   getEvaluationSummary,
   getEvaluationRunPreview,
+  runAndArchiveEvaluation,
   runAndArchiveEvaluationFixtureBaseline,
   runEvaluationFixtureBaseline,
   preflightDemoLaunch,
@@ -77,6 +79,7 @@ import {
   listAdminAuditEvents,
   listEvaluationCases,
   listEvaluationFixtureBaselineRuns,
+  listEvaluationRuns,
   listEvaluationRunSnapshots,
   listLanguageAdapterFixtures,
   listLanguageAdapterRuntimeReadiness,
@@ -167,6 +170,7 @@ import type {
   EvaluationFixtureBaselineRunArchive,
   EvaluationFixtureBaselineRunRegressionSummary,
   EvaluationFixtureBaselineSummary,
+  EvaluationRunArchive,
   EvaluationRunPreview,
   EvaluationRunSnapshotArchive,
   FixTask,
@@ -317,6 +321,7 @@ export default function App() {
   const [evaluationFixtureBaselineRuns, setEvaluationFixtureBaselineRuns] = useState<EvaluationFixtureBaselineRunArchive[]>([]);
   const [evaluationFixtureBaselineRegressionSummary, setEvaluationFixtureBaselineRegressionSummary] = useState<EvaluationFixtureBaselineRunRegressionSummary | null>(null);
   const [evaluationRunPreview, setEvaluationRunPreview] = useState<EvaluationRunPreview | null>(null);
+  const [evaluationRuns, setEvaluationRuns] = useState<EvaluationRunArchive[]>([]);
   const [evaluationRunSnapshots, setEvaluationRunSnapshots] = useState<EvaluationRunSnapshotArchive[]>([]);
   const [evaluationCaseError, setEvaluationCaseError] = useState<string | null>(null);
   const [evaluationSummaryError, setEvaluationSummaryError] = useState<string | null>(null);
@@ -325,6 +330,8 @@ export default function App() {
   const [evaluationFixtureBaselineRegressionError, setEvaluationFixtureBaselineRegressionError] = useState<string | null>(null);
   const [evaluationFixtureBaselineLoading, setEvaluationFixtureBaselineLoading] = useState(false);
   const [evaluationRunPreviewError, setEvaluationRunPreviewError] = useState<string | null>(null);
+  const [evaluationRunError, setEvaluationRunError] = useState<string | null>(null);
+  const [evaluationRunLoading, setEvaluationRunLoading] = useState(false);
   const [evaluationRunSnapshotError, setEvaluationRunSnapshotError] = useState<string | null>(null);
   const [repositoryPreflightResult, setRepositoryPreflightResult] = useState<RepositoryPreflightResult | null>(null);
   const [repositoryPreflightError, setRepositoryPreflightError] = useState<string | null>(null);
@@ -637,6 +644,7 @@ export default function App() {
         evaluationFixtureBaselineRunResult,
         evaluationFixtureBaselineRegressionResult,
         evaluationRunPreviewResult,
+        evaluationRunResult,
         evaluationRunSnapshotResult,
         queueSummaryData,
         queueItemList,
@@ -783,6 +791,10 @@ export default function App() {
         getEvaluationRunPreview().then(
           (preview) => ({ preview, error: null as string | null }),
           (caught) => ({ preview: null, error: errorMessage(caught) })
+        ),
+        listEvaluationRuns().then(
+          (archives) => ({ archives, error: null as string | null }),
+          (caught) => ({ archives: null, error: errorMessage(caught) })
         ),
         listEvaluationRunSnapshots().then(
           (snapshots) => ({ snapshots, error: null as string | null }),
@@ -958,6 +970,10 @@ export default function App() {
         setEvaluationRunPreview(evaluationRunPreviewResult.preview);
       }
       setEvaluationRunPreviewError(evaluationRunPreviewResult.error);
+      if (evaluationRunResult.archives) {
+        setEvaluationRuns(evaluationRunResult.archives);
+      }
+      setEvaluationRunError(evaluationRunResult.error);
       if (evaluationRunSnapshotResult.snapshots) {
         setEvaluationRunSnapshots(evaluationRunSnapshotResult.snapshots);
       }
@@ -1311,6 +1327,21 @@ export default function App() {
     return archive;
   }, []);
 
+  const handleRunAndArchiveEvaluation = useCallback(async () => {
+    setEvaluationRunLoading(true);
+    setEvaluationRunError(null);
+    try {
+      const archive = await runAndArchiveEvaluation();
+      setEvaluationRuns((current) => [archive, ...current.filter((item) => item.id !== archive.id)].slice(0, 20));
+      return archive;
+    } catch (caught) {
+      setEvaluationRunError(errorMessage(caught));
+      throw caught;
+    } finally {
+      setEvaluationRunLoading(false);
+    }
+  }, []);
+
   const handleRunEvaluationFixtureBaseline = useCallback(async () => {
     setEvaluationFixtureBaselineLoading(true);
     setEvaluationFixtureBaselineError(null);
@@ -1355,6 +1386,10 @@ export default function App() {
 
   const handleDownloadEvaluationRunSnapshotReport = useCallback((snapshotId: string) => (
     downloadEvaluationRunSnapshotReport(snapshotId)
+  ), []);
+
+  const handleDownloadEvaluationRunReport = useCallback((runId: string) => (
+    downloadEvaluationRunReport(runId)
   ), []);
 
   const handleComposeDemoLaunchCommand = useCallback(async (input: DemoLaunchCommandInput) => {
@@ -1841,6 +1876,8 @@ export default function App() {
         fixtureBaselineRuns={evaluationFixtureBaselineRuns}
         fixtureBaselineRegressionSummary={evaluationFixtureBaselineRegressionSummary}
         runPreview={evaluationRunPreview}
+        evaluationRuns={evaluationRuns}
+        evaluationRunLoading={evaluationRunLoading}
         archives={evaluationRunSnapshots}
         error={evaluationCaseError}
         summaryError={evaluationSummaryError}
@@ -1848,11 +1885,14 @@ export default function App() {
         fixtureBaselineError={evaluationFixtureBaselineError}
         fixtureBaselineRegressionError={evaluationFixtureBaselineRegressionError}
         runPreviewError={evaluationRunPreviewError}
+        evaluationRunError={evaluationRunError}
         archiveError={evaluationRunSnapshotError}
         onRunFixtureBaseline={handleRunEvaluationFixtureBaseline}
         onRunAndArchiveFixtureBaseline={handleRunAndArchiveEvaluationFixtureBaseline}
         onDownloadFixtureBaselineRunReport={handleDownloadEvaluationFixtureBaselineRunReport}
         onArchiveRunSnapshot={handleArchiveEvaluationRunSnapshot}
+        onRunAndArchiveEvaluation={handleRunAndArchiveEvaluation}
+        onDownloadEvaluationRunReport={handleDownloadEvaluationRunReport}
         onDownloadArchiveReport={handleDownloadEvaluationRunSnapshotReport}
       />
 

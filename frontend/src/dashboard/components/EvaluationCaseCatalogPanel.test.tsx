@@ -8,6 +8,7 @@ import type {
   EvaluationFixtureBaselineRunRegressionSummary,
   EvaluationFixtureBaselineSummary,
   EvaluationRunPreview,
+  EvaluationRunArchive,
   EvaluationRunSnapshotArchive
 } from '../../types';
 import { EvaluationCaseCatalogPanel } from './EvaluationCaseCatalogPanel';
@@ -112,6 +113,28 @@ const archives: EvaluationRunSnapshotArchive[] = [
     report: '# PatchPilot Evaluation Run Snapshot\n\n- Snapshot id: `snapshot-1`'
   }
 ];
+
+const evaluationRuns: EvaluationRunArchive[] = [
+  {
+    id: 'evaluation-run-1',
+    status: 'READY',
+    totalCaseCount: 3,
+    supportedFixCaseCount: 2,
+    safetyRejectionCaseCount: 1,
+    executedFixCaseCount: 2,
+    passedFixCaseCount: 2,
+    failedFixCaseCount: 0,
+    skippedCaseCount: 1,
+    coveredLanguages: ['java', 'node'],
+    coveredBuildSystems: ['maven', 'npm'],
+    safetyRejectionCategories: ['DANGEROUS_INSTRUCTION'],
+    createdAt: '2026-06-28T04:00:00Z',
+    sideEffectContract: 'Evaluation run executes local checked-in fixture verification commands and records safety coverage only; it does not create tasks, call the model, clone repositories, mutate Git, or write to GitHub.',
+    nextAction: 'Evaluation run passed; use the archived report as measurable demo evidence for supported adapters and safety rejections.',
+    report: '# PatchPilot Evaluation Run\n\n- Evaluation run id: `evaluation-run-1`'
+  }
+];
+
 
 const caseReadiness: EvaluationCaseFixtureReadinessSummary = {
   status: 'READY',
@@ -308,6 +331,8 @@ function renderPanel(overrides: Partial<React.ComponentProps<typeof EvaluationCa
       fixtureBaselineRuns={fixtureBaselineRuns}
       fixtureBaselineRegressionSummary={fixtureBaselineRegressionSummary}
       runPreview={runPreview}
+      evaluationRuns={evaluationRuns}
+      evaluationRunLoading={false}
       archives={archives}
       error={null}
       summaryError={null}
@@ -315,11 +340,14 @@ function renderPanel(overrides: Partial<React.ComponentProps<typeof EvaluationCa
       fixtureBaselineError={null}
       fixtureBaselineRegressionError={null}
       runPreviewError={null}
+      evaluationRunError={null}
       archiveError={null}
       onRunFixtureBaseline={vi.fn()}
       onRunAndArchiveFixtureBaseline={vi.fn()}
       onDownloadFixtureBaselineRunReport={vi.fn()}
       onArchiveRunSnapshot={vi.fn()}
+      onRunAndArchiveEvaluation={vi.fn()}
+      onDownloadEvaluationRunReport={vi.fn()}
       onDownloadArchiveReport={vi.fn()}
       {...overrides}
     />
@@ -330,7 +358,7 @@ test('summarizes supported evaluation cases and safety rejections', () => {
   renderPanel();
 
   const panel = screen.getByRole('region', { name: 'Evaluation case catalog' });
-  expect(within(panel).getAllByText('READY')).toHaveLength(6);
+  expect(within(panel).getAllByText('READY')).toHaveLength(7);
   expect(within(panel).getByText('Ready for demo evidence')).toBeInTheDocument();
   expect(within(panel).getByText('3 cases across 2 languages')).toBeInTheDocument();
   expect(within(panel).getByText('2 supported fix cases')).toBeInTheDocument();
@@ -345,7 +373,7 @@ test('summarizes supported evaluation cases and safety rejections', () => {
   expect(within(panel).getByText('mvn test -> mvn test')).toBeInTheDocument();
   expect(within(panel).getAllByText('src/main/java/demo/Calculator.java')).toHaveLength(2);
   expect(within(panel).getAllByText('Reject secret exfiltration')).toHaveLength(3);
-  expect(within(panel).getAllByText('DANGEROUS_INSTRUCTION')).toHaveLength(3);
+  expect(within(panel).getAllByText('DANGEROUS_INSTRUCTION')).toHaveLength(4);
   expect(within(panel).getByText('Rejected before task creation, queueing, model calls, Git commands, and GitHub writes.')).toBeInTheDocument();
   expect(within(panel).getAllByText('Evaluation run preview')).toHaveLength(2);
   expect(within(panel).getAllByText('preview-current-catalog')).toHaveLength(2);
@@ -382,6 +410,42 @@ test('summarizes supported evaluation cases and safety rejections', () => {
   expect(within(panel).getByText('baseline-run-1')).toBeInTheDocument();
   expect(within(panel).getByText('2026-06-26T06:00:00Z')).toBeInTheDocument();
   expect(within(panel).getByText('Archive stores a local fixture baseline execution report only; it does not create tasks, call the model, mutate Git, or write to GitHub.')).toBeInTheDocument();
+  expect(within(panel).getByText('Archived evaluation runs')).toBeInTheDocument();
+  expect(within(panel).getByText('evaluation-run-1')).toBeInTheDocument();
+  expect(within(panel).getByText('2026-06-28T04:00:00Z')).toBeInTheDocument();
+  expect(within(panel).getByText('Evaluation run passed; use the archived report as measurable demo evidence for supported adapters and safety rejections.')).toBeInTheDocument();
+});
+
+test('runs copies and downloads full evaluation run reports', async () => {
+  const user = userEvent.setup();
+  const writeText = vi.fn().mockResolvedValue(undefined);
+  const onRunAndArchiveEvaluation = vi.fn().mockResolvedValue(evaluationRuns[0]);
+  const reportBlob = new Blob(['# PatchPilot Evaluation Run']);
+  const onDownloadEvaluationRunReport = vi.fn().mockResolvedValue(reportBlob);
+  const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+  const createObjectURL = vi.fn(() => 'blob:evaluation-run');
+  const revokeObjectURL = vi.fn();
+  vi.stubGlobal('URL', {
+    ...globalThis.URL,
+    createObjectURL,
+    revokeObjectURL
+  });
+  Object.defineProperty(navigator, 'clipboard', {
+    configurable: true,
+    value: { writeText }
+  });
+  renderPanel({ onRunAndArchiveEvaluation, onDownloadEvaluationRunReport });
+
+  await user.click(screen.getByRole('button', { name: 'Run evaluation' }));
+  await user.click(screen.getByRole('button', { name: 'Copy evaluation-run-1 evaluation report' }));
+  await user.click(screen.getByRole('button', { name: 'Download evaluation-run-1 evaluation report' }));
+
+  expect(onRunAndArchiveEvaluation).toHaveBeenCalledTimes(1);
+  expect(writeText).toHaveBeenCalledWith('# PatchPilot Evaluation Run\n\n- Evaluation run id: `evaluation-run-1`');
+  expect(onDownloadEvaluationRunReport).toHaveBeenCalledWith('evaluation-run-1');
+  expect(createObjectURL).toHaveBeenCalledWith(reportBlob);
+  expect(click).toHaveBeenCalledTimes(1);
+  expect(revokeObjectURL).toHaveBeenCalledWith('blob:evaluation-run');
 });
 
 test('copies evaluation fixture baseline regression markdown from the backend report', async () => {
