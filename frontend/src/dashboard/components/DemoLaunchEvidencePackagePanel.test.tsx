@@ -1,0 +1,110 @@
+import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import type { DemoLaunchEvidencePackage } from '../../types';
+import { DemoLaunchEvidencePackagePanel } from './DemoLaunchEvidencePackagePanel';
+
+const launchEvidencePackage: DemoLaunchEvidencePackage = {
+  status: 'READY',
+  readyToShare: true,
+  summary: 'PatchPilot launch evidence package is ready to share.',
+  sessionId: 'demo-session-20260624T003000Z',
+  launchReadinessStatus: 'READY',
+  evidenceBundleStatus: 'READY',
+  handoffFinalizationStatus: 'READY',
+  latestTaskId: 'task-1',
+  latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+  latestWebhookDeliveryId: 'delivery-1',
+  evaluationRunId: 'evaluation-run-2',
+  evaluationCoverage: ['java', 'python', 'maven', 'pytest'],
+  preLaunchChecks: [
+    {
+      name: 'Demo readiness',
+      status: 'READY',
+      message: 'PatchPilot is ready for a controlled demo.',
+      action: 'No action needed.'
+    },
+    {
+      name: 'Evidence bundle',
+      status: 'READY',
+      message: 'Demo evidence bundle is ready.',
+      action: 'No action needed.'
+    }
+  ],
+  liveRunProof: [
+    'Recent task task-1 reached COMPLETED.',
+    'Recent Pull Request https://github.com/bingqin2/PatchPilot/pull/42 is available.',
+    'Latest webhook delivery delivery-1 created task task-1.'
+  ],
+  postDemoProof: [
+    'Handoff finalization is READY.',
+    'Latest delivery receipt delivery-receipt-1 is fresh.'
+  ],
+  nextActions: [
+    'Post the tested /agent fix comment, watch the task reach COMPLETED, then use the generated Pull Request for review.'
+  ],
+  healthContract: [
+    'GET /api/demo/launch-evidence-package is read-only: it does not create tasks, call the model, run tests, archive records, mutate Git, send messages, or write to GitHub.'
+  ],
+  markdownReport: '# PatchPilot Demo Launch Evidence Package',
+  generatedAt: '2026-06-28T02:00:00Z'
+};
+
+test('renders demo launch evidence package proof and readiness status', () => {
+  render(
+    <DemoLaunchEvidencePackagePanel
+      evidencePackage={launchEvidencePackage}
+      error={null}
+      onDownloadReport={async () => new Blob(['report'], { type: 'text/markdown' })}
+    />
+  );
+
+  const panel = screen.getByRole('region', { name: 'Demo launch evidence package' });
+  expect(within(panel).getByRole('heading', { name: 'Demo launch evidence package' })).toBeInTheDocument();
+  expect(within(panel).getByText('PatchPilot launch evidence package is ready to share.')).toBeInTheDocument();
+  expect(within(panel).getAllByText('Ready').length).toBeGreaterThanOrEqual(3);
+  expect(within(panel).getByText('Ready to share')).toBeInTheDocument();
+  expect(within(panel).getByText('demo-session-20260624T003000Z')).toBeInTheDocument();
+  expect(within(panel).getByText('task-1')).toBeInTheDocument();
+  expect(within(panel).getByRole('link', { name: 'Open launch Pull Request' })).toHaveAttribute(
+    'href',
+    'https://github.com/bingqin2/PatchPilot/pull/42'
+  );
+  expect(within(panel).getByText('delivery-1')).toBeInTheDocument();
+  expect(within(panel).getByText('evaluation-run-2')).toBeInTheDocument();
+  expect(within(panel).getByText('java, python, maven, pytest')).toBeInTheDocument();
+  expect(within(panel).getByText('Recent task task-1 reached COMPLETED.')).toBeInTheDocument();
+  expect(within(panel).getAllByText('Latest delivery receipt delivery-receipt-1 is fresh.').length).toBeGreaterThanOrEqual(2);
+  expect(within(panel).getByText(/does not create tasks, call the model, run tests, archive records/)).toBeInTheDocument();
+});
+
+test('copies and downloads demo launch evidence package markdown report', async () => {
+  const writeText = vi.fn(async () => {});
+  Object.assign(navigator, { clipboard: { writeText } });
+  const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+  const createObjectURL = vi.fn(() => 'blob:launch-evidence-package');
+  const revokeObjectURL = vi.fn();
+  vi.stubGlobal('URL', { createObjectURL, revokeObjectURL });
+  const onDownloadReport = vi.fn(async () => new Blob(['report'], { type: 'text/markdown' }));
+
+  render(
+    <DemoLaunchEvidencePackagePanel
+      evidencePackage={launchEvidencePackage}
+      error={null}
+      onDownloadReport={onDownloadReport}
+    />
+  );
+
+  await userEvent.click(screen.getByRole('button', { name: 'Copy launch evidence report' }));
+  expect(writeText).toHaveBeenCalledWith('# PatchPilot Demo Launch Evidence Package');
+  expect(screen.getByText('Launch evidence report copied')).toBeInTheDocument();
+
+  await userEvent.click(screen.getByRole('button', { name: 'Download launch evidence report' }));
+  expect(onDownloadReport).toHaveBeenCalled();
+  expect(createObjectURL).toHaveBeenCalled();
+  expect(click).toHaveBeenCalled();
+  expect(revokeObjectURL).toHaveBeenCalledWith('blob:launch-evidence-package');
+  expect(screen.getByText('Launch evidence report downloaded')).toBeInTheDocument();
+
+  vi.unstubAllGlobals();
+  click.mockRestore();
+});

@@ -34,6 +34,8 @@ import {
   getDemoHandoffPackageArchiveSummary,
   createDemoHandoffShareDeliveryReceipt,
   downloadDemoHandoffShareDeliveryReceiptReport,
+  getDemoLaunchEvidencePackage,
+  downloadDemoLaunchEvidencePackageReport,
   getDemoHandoffShareCenter,
   getDemoHandoffShareInstructions,
   listDemoHandoffShareDeliveryReceipts,
@@ -306,6 +308,79 @@ test('gets GitHub webhook setup readiness through backend API', async () => {
   expect(readiness.payloadUrl).toBe('https://demo.trycloudflare.com/api/github/webhook');
   expect(readiness.latestDeliveryStatus).toBe('TASK_CREATED');
   expect(readiness.nextActions).toContain('Use the payload URL in GitHub Webhooks and continue the live demo.');
+});
+
+test('gets demo launch evidence package through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        status: 'READY',
+        readyToShare: true,
+        summary: 'PatchPilot launch evidence package is ready to share.',
+        sessionId: 'demo-session-20260624T003000Z',
+        launchReadinessStatus: 'READY',
+        evidenceBundleStatus: 'READY',
+        handoffFinalizationStatus: 'READY',
+        latestTaskId: 'task-1',
+        latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+        latestWebhookDeliveryId: 'delivery-1',
+        evaluationRunId: 'evaluation-run-2',
+        evaluationCoverage: ['java', 'python', 'maven', 'pytest'],
+        preLaunchChecks: [
+          {
+            name: 'Demo readiness',
+            status: 'READY',
+            message: 'PatchPilot is ready for a controlled demo.',
+            action: 'No action needed.'
+          }
+        ],
+        liveRunProof: [
+          'Recent task task-1 reached COMPLETED.',
+          'Recent Pull Request https://github.com/bingqin2/PatchPilot/pull/42 is available.'
+        ],
+        postDemoProof: [
+          'Handoff finalization is READY.',
+          'Latest delivery receipt delivery-receipt-1 is fresh.'
+        ],
+        nextActions: ['Post the tested /agent fix comment, watch the task reach COMPLETED, then use the generated Pull Request for review.'],
+        healthContract: [
+          'GET /api/demo/launch-evidence-package is read-only: it does not create tasks, call the model, run tests, archive records, mutate Git, send messages, or write to GitHub.'
+        ],
+        markdownReport: '# PatchPilot Demo Launch Evidence Package',
+        generatedAt: '2026-06-28T02:00:00Z'
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const evidencePackage = await getDemoLaunchEvidencePackage();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/launch-evidence-package');
+  expect(evidencePackage.status).toBe('READY');
+  expect(evidencePackage.readyToShare).toBe(true);
+  expect(evidencePackage.sessionId).toBe('demo-session-20260624T003000Z');
+  expect(evidencePackage.latestPullRequestUrl).toBe('https://github.com/bingqin2/PatchPilot/pull/42');
+  expect(evidencePackage.evaluationCoverage).toEqual(['java', 'python', 'maven', 'pytest']);
+  expect(evidencePackage.liveRunProof).toContain('Recent task task-1 reached COMPLETED.');
+});
+
+test('downloads demo launch evidence package report through backend API', async () => {
+  const blob = new Blob(['# PatchPilot Demo Launch Evidence Package'], { type: 'text/markdown' });
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    blob: async () => blob
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const report = await downloadDemoLaunchEvidencePackageReport();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/launch-evidence-package/report/download');
+  expect(report).toBe(blob);
 });
 
 test('evaluates trigger without creating manual task through backend API', async () => {

@@ -1820,6 +1820,39 @@ const demoSelfHostedLaunchReadinessArchive = {
   report: '# PatchPilot Self-Hosted Launch Readiness\n\n- Status: `READY`'
 };
 
+const demoLaunchEvidencePackage = {
+  status: 'READY',
+  readyToShare: true,
+  summary: 'PatchPilot launch evidence package is ready to share.',
+  sessionId: 'demo-session-20260624T003000Z',
+  launchReadinessStatus: 'READY',
+  evidenceBundleStatus: 'READY',
+  handoffFinalizationStatus: 'READY',
+  latestTaskId: 'task-1',
+  latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+  latestWebhookDeliveryId: 'delivery-created-status-comment',
+  evaluationRunId: 'evaluation-run-2',
+  evaluationCoverage: ['java', 'python', 'maven', 'pytest'],
+  preLaunchChecks: demoSelfHostedLaunchReadiness.checks,
+  liveRunProof: [
+    'Recent task task-1 reached COMPLETED.',
+    'Recent Pull Request https://github.com/bingqin2/PatchPilot/pull/8 is available.',
+    'Latest webhook delivery delivery-created-status-comment created task task-1.'
+  ],
+  postDemoProof: [
+    'Handoff finalization is READY.',
+    'Latest delivery receipt delivery-receipt-1 is fresh.'
+  ],
+  nextActions: [
+    'Post the tested /agent fix comment, watch the task reach COMPLETED, then use the generated Pull Request for review.'
+  ],
+  healthContract: [
+    'GET /api/demo/launch-evidence-package is read-only: it does not create tasks, call the model, run tests, archive records, mutate Git, send messages, or write to GitHub.'
+  ],
+  markdownReport: '# PatchPilot Demo Launch Evidence Package\n\n- Status: `READY`',
+  generatedAt: '2026-06-24T06:20:00Z'
+};
+
 const demoHandoffShareInstructions = {
   status: 'READY',
   sendReady: true,
@@ -2087,6 +2120,9 @@ beforeEach(() => {
     if (url === '/api/demo/self-hosted-launch-readiness/archives') {
       return jsonResponse([demoSelfHostedLaunchReadinessArchive]);
     }
+    if (url === '/api/demo/launch-evidence-package') {
+      return jsonResponse(demoLaunchEvidencePackage);
+    }
     if (url === '/api/demo/handoff-share-instructions') {
       return jsonResponse(demoHandoffShareInstructions);
     }
@@ -2146,6 +2182,15 @@ beforeEach(() => {
         ok: true,
         status: 200,
         blob: async () => new Blob(['# PatchPilot Self-Hosted Launch Readiness'], {
+          type: 'text/markdown;charset=UTF-8'
+        })
+      } as Response);
+    }
+    if (url === '/api/demo/launch-evidence-package/report/download') {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        blob: async () => new Blob(['# PatchPilot Demo Launch Evidence Package'], {
           type: 'text/markdown;charset=UTF-8'
         })
       } as Response);
@@ -2606,6 +2651,19 @@ test('renders operational task dashboard from backend APIs', async () => {
   await user.click(within(selfHostedLaunchPanel).getByRole('button', { name: 'Archive launch readiness' }));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/self-hosted-launch-readiness/archives', { method: 'POST' }));
   expect(within(selfHostedLaunchPanel).getByText('Launch readiness archived')).toBeInTheDocument();
+  const launchEvidencePanel = screen.getByRole('region', { name: 'Demo launch evidence package' });
+  expect(within(launchEvidencePanel).getByRole('heading', { name: 'Demo launch evidence package' })).toBeInTheDocument();
+  expect(within(launchEvidencePanel).getByText('PatchPilot launch evidence package is ready to share.')).toBeInTheDocument();
+  expect(within(launchEvidencePanel).getByText('Ready to share')).toBeInTheDocument();
+  expect(within(launchEvidencePanel).getByText('evaluation-run-2')).toBeInTheDocument();
+  expect(within(launchEvidencePanel).getByText('java, python, maven, pytest')).toBeInTheDocument();
+  expect(within(launchEvidencePanel).getByText('Recent task task-1 reached COMPLETED.')).toBeInTheDocument();
+  expect(within(launchEvidencePanel).getAllByText('Latest delivery receipt delivery-receipt-1 is fresh.').length).toBeGreaterThanOrEqual(2);
+  expect(within(launchEvidencePanel).getByRole('link', { name: 'Open launch Pull Request' })).toHaveAttribute(
+    'href',
+    'https://github.com/bingqin2/PatchPilot/pull/8'
+  );
+  expect(within(launchEvidencePanel).getByText(/does not create tasks, call the model, run tests, archive records/)).toBeInTheDocument();
   const demoScriptPanel = screen.getByRole('region', { name: 'Demo script' });
   expect(within(demoScriptPanel).getByRole('heading', { name: 'Demo script' })).toBeInTheDocument();
   expect(within(demoScriptPanel).getByText('Demo script is ready.')).toBeInTheDocument();
@@ -2786,6 +2844,7 @@ test('renders operational task dashboard from backend APIs', async () => {
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/handoff-finalization'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/self-hosted-launch-readiness'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/self-hosted-launch-readiness/archives'));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/launch-evidence-package'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/handoff-share-instructions'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/handoff-share-delivery-receipts'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/script'));
@@ -5176,6 +5235,57 @@ function defaultAppResponse(input: RequestInfo | URL, init?: RequestInit) {
   }
   if (url === '/api/demo/smoke-checklist') {
     return jsonResponse(demoSmokeChecklist);
+  }
+  if (url === '/api/demo/evidence-bundle') {
+    return jsonResponse(demoEvidenceBundle);
+  }
+  if (url === '/api/demo/session-snapshot') {
+    return jsonResponse(demoSessionSnapshot);
+  }
+  if (url === '/api/demo/handoff-readiness') {
+    return jsonResponse(demoHandoffReadiness);
+  }
+  if (url === '/api/demo/session-archives') {
+    return jsonResponse([demoSessionArchive]);
+  }
+  if (url === '/api/demo/handoff-package-archives') {
+    return jsonResponse([demoHandoffPackageArchive]);
+  }
+  if (url === '/api/demo/handoff-package-archives/summary') {
+    return jsonResponse(demoHandoffPackageArchiveSummary);
+  }
+  if (url === '/api/demo/handoff-share-checklist') {
+    return jsonResponse(demoHandoffShareChecklist);
+  }
+  if (url === '/api/demo/handoff-share-center') {
+    return jsonResponse(demoHandoffShareCenter);
+  }
+  if (url === '/api/demo/handoff-finalization') {
+    return jsonResponse(demoHandoffFinalization);
+  }
+  if (url === '/api/demo/self-hosted-launch-readiness') {
+    return jsonResponse(demoSelfHostedLaunchReadiness);
+  }
+  if (url === '/api/demo/self-hosted-launch-readiness/archives') {
+    return jsonResponse([demoSelfHostedLaunchReadinessArchive]);
+  }
+  if (url === '/api/demo/launch-evidence-package') {
+    return jsonResponse(demoLaunchEvidencePackage);
+  }
+  if (url === '/api/demo/handoff-share-instructions') {
+    return jsonResponse(demoHandoffShareInstructions);
+  }
+  if (url === '/api/demo/handoff-share-delivery-receipts') {
+    return jsonResponse([demoHandoffShareDeliveryReceipt]);
+  }
+  if (url === '/api/demo/launch-evidence-package/report/download') {
+    return Promise.resolve({
+      ok: true,
+      status: 200,
+      blob: async () => new Blob(['# PatchPilot Demo Launch Evidence Package'], {
+        type: 'text/markdown;charset=UTF-8'
+      })
+    } as Response);
   }
   if (url === '/health') {
     return jsonResponse({
