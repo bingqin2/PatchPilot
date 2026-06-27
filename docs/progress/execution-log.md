@@ -4,6 +4,25 @@ This file records dated implementation progress, validation commands, and import
 
 ## 2026-06-27
 
+Implemented webhook setup readiness summary from `docs/plans/226-webhook-setup-readiness-summary.md`.
+
+Changes:
+
+- Added `GET /api/github/webhook-setup-readiness` as a read-only summary over webhook secret configuration, public URL readiness, latest delivery outcome, redelivery recommendation, next actions, and copyable Markdown evidence.
+- Added `GitHubWebhookSetupReadinessService` and a non-sensitive response object that never exposes the webhook secret value.
+- Added dashboard API helpers, types, App refresh wiring, and a Webhook delivery panel setup summary above recent deliveries and pasted payload diagnostics.
+- Updated README, product spec, architecture notes, frontend design docs, the plan document, and this execution log.
+
+Validation:
+
+- `JAVA_HOME=/Library/Java/JavaVirtualMachines/openjdk-17.jdk/Contents/Home PATH=/Library/Java/JavaVirtualMachines/openjdk-17.jdk/Contents/Home/bin:$PATH mvn -pl PatchPilot -Dtest=GitHubWebhookSetupReadinessServiceTests,GitHubCredentialReadinessControllerTests,GitHubRepositoryAccessReadinessControllerTests test`: passed, 9 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts src/dashboard/components/WebhookDeliveryPanel.test.tsx --reporter=basic`: first failed because the new API helper and panel section did not exist; passed after implementation, 84 tests run.
+- `npm test -- --run src/App.test.tsx --reporter=basic`: passed after App-level webhook setup readiness refresh and rendering, 72 tests run.
+- `JAVA_HOME=/Library/Java/JavaVirtualMachines/openjdk-17.jdk/Contents/Home PATH=/Library/Java/JavaVirtualMachines/openjdk-17.jdk/Contents/Home/bin:$PATH mvn -pl PatchPilot test`: passed after full backend regression verification, 794 tests run, 0 failures.
+- `npm test -- --reporter=basic`: passed after full frontend regression verification, 26 test files and 284 tests run.
+- `npm run build`: passed after TypeScript and production Vite build verification.
+- `git diff --check`: passed.
+
 Implemented GitHub webhook URL readiness from `docs/plans/225-webhook-url-readiness.md`.
 
 Changes:

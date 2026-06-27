@@ -95,6 +95,15 @@ creating tasks, or mutating GitHub settings. `DemoReadinessService` and the
 dashboard setup checklist reuse this readiness state so stale `cloudflared`
 quick-tunnel URLs are visible before an operator posts a live `/agent fix`.
 
+Webhook setup readiness composes the URL readiness result with the non-sensitive
+configuration summary and latest delivery diagnostic. `GET
+/api/github/webhook-setup-readiness` returns `READY`, `NEEDS_ATTENTION`, or
+`BLOCKED` with derived payload and health URLs, webhook-secret configured state,
+latest delivery status/id, redelivery recommendation, next actions, and a
+copyable Markdown report. It is a read model only: it does not expose secret
+values, create tasks, redeliver events, record new delivery diagnostics, write
+GitHub comments, mutate GitHub webhook settings, or call the model.
+
 Real webhook delivery diagnostics persist an outcome correlation target for each
 handled delivery. Task-created, active-task, and duplicate deliveries point to
 the task detail route; rejected deliveries point to the rejected-trigger audit

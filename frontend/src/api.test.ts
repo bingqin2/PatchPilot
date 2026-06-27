@@ -9,6 +9,7 @@ import {
   getBackendHealth,
   getConfigurationSummary,
   getGitHubCredentialReadiness,
+  getGitHubWebhookSetupReadiness,
   getGitHubWebhookUrlReadiness,
   getGitHubRepositoryAccessReadiness,
   getFailureCauseSummary,
@@ -245,6 +246,43 @@ test('gets GitHub webhook URL readiness through backend API', async () => {
   expect(readiness.status).toBe('READY');
   expect(readiness.payloadUrl).toBe('https://demo.trycloudflare.com/api/github/webhook');
   expect(readiness.healthUrl).toBe('https://demo.trycloudflare.com/health');
+});
+
+test('gets GitHub webhook setup readiness through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        status: 'READY',
+        secretConfigured: true,
+        publicUrlReady: true,
+        publicBaseUrl: 'https://demo.trycloudflare.com',
+        payloadUrl: 'https://demo.trycloudflare.com/api/github/webhook',
+        healthUrl: 'https://demo.trycloudflare.com/health',
+        latestDeliveryStatus: 'TASK_CREATED',
+        latestDeliveryId: 'delivery-1',
+        redeliveryRecommended: false,
+        summary: 'Webhook setup is ready for GitHub deliveries.',
+        nextActions: ['Use the payload URL in GitHub Webhooks and continue the live demo.'],
+        checkedAt: '2026-06-27T02:00:00Z',
+        markdownReport: '# PatchPilot Webhook Setup Readiness\n\n- Status: `READY`'
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const readiness = await getGitHubWebhookSetupReadiness();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/github/webhook-setup-readiness');
+  expect(readiness.status).toBe('READY');
+  expect(readiness.secretConfigured).toBe(true);
+  expect(readiness.publicUrlReady).toBe(true);
+  expect(readiness.payloadUrl).toBe('https://demo.trycloudflare.com/api/github/webhook');
+  expect(readiness.latestDeliveryStatus).toBe('TASK_CREATED');
+  expect(readiness.nextActions).toContain('Use the payload URL in GitHub Webhooks and continue the live demo.');
 });
 
 test('evaluates trigger without creating manual task through backend API', async () => {

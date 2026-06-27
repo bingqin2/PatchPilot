@@ -86,6 +86,7 @@ The current implementation target is local self-hosted development first. Hosted
 - Webhook delivery ids should be tracked to support idempotency.
 - Webhook delivery diagnostics should correlate each delivery with its final outcome, including task detail targets, rejected-trigger audit targets, ignored outcomes, duplicate outcomes, and error outcomes.
 - Operators should be able to configure a public webhook base URL, see the derived GitHub Payload URL, and run a read-only health probe against that public URL before posting a live `/agent fix` trigger.
+- Operators should be able to inspect one read-only webhook setup summary that combines webhook secret configuration, public payload URL readiness, latest delivery outcome, redelivery recommendation, next actions, and copyable Markdown evidence without exposing the secret.
 - Operators should be able to paste a GitHub delivery payload into an admin-protected read-only diagnostic endpoint and see signature status, JSON validity, event/action support, `/agent fix` recognition, parsed repository/issue fields, and the next operator action without creating tasks or delivery records.
 
 ### Fix Task Creation
@@ -333,6 +334,7 @@ MVP frontend scope:
 - Inspect queue worker readiness, last poll age, and operator action before a live issue-to-PR demo.
 - Evaluate a manual `/agent fix` trigger before creating a task and see the gate decisions plus next operator action.
 - Evaluate a pasted GitHub webhook payload before redelivery and see whether the temporary URL, webhook secret, event type, action, and `/agent fix` comment shape look correct.
+- Inspect webhook setup readiness before a live trigger and see whether the secret, public payload URL, and latest delivery state are ready, blocked, or need redelivery attention.
 - Inspect and copy a single adapter readiness report covering supported languages, allowlisted verification commands, fixture pass rate, and fixture failures.
 - Inspect and copy a read-only evaluation case catalog, readiness summary, fixture-readiness report, and run preview covering supported Java/Maven, Node/npm, Python/pytest, Go, unsafe-trigger rejection, and vague-trigger rejection scenarios.
 - Copy a Markdown repository preflight report after checking a local path so supported and unsupported repository evidence can be shared before task creation.

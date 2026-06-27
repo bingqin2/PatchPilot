@@ -317,6 +317,24 @@ export interface GitHubWebhookUrlReadiness {
   operatorAction: string;
 }
 
+export type GitHubWebhookSetupReadinessStatus = 'READY' | 'NEEDS_ATTENTION' | 'BLOCKED';
+
+export interface GitHubWebhookSetupReadiness {
+  status: GitHubWebhookSetupReadinessStatus;
+  secretConfigured: boolean;
+  publicUrlReady: boolean;
+  publicBaseUrl: string;
+  payloadUrl: string;
+  healthUrl: string;
+  latestDeliveryStatus: WebhookDeliveryDiagnosticStatus | null;
+  latestDeliveryId: string | null;
+  redeliveryRecommended: boolean;
+  summary: string;
+  nextActions: string[];
+  checkedAt: string;
+  markdownReport: string;
+}
+
 export type DemoReadinessStatus = 'READY' | 'NEEDS_ATTENTION' | 'BLOCKED';
 
 export interface DemoReadinessCheck {

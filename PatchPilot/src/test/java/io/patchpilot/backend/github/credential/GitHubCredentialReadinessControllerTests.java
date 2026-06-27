@@ -3,6 +3,7 @@ package io.patchpilot.backend.github.credential;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.patchpilot.backend.github.credential.domain.GitHubCredentialReadinessVo;
+import io.patchpilot.backend.github.credential.domain.GitHubWebhookSetupReadinessVo;
 import io.patchpilot.backend.github.credential.domain.GitHubWebhookUrlReadinessVo;
 import io.patchpilot.backend.security.AdminApiSecurityFilter;
 import io.patchpilot.backend.security.config.AdminApiSecurityProperties;
@@ -11,6 +12,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.time.Instant;
+import java.util.List;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
@@ -92,6 +94,43 @@ class GitHubCredentialReadinessControllerTests {
                 .andExpect(content().string(not(containsString("webhook-secret"))));
     }
 
+    @Test
+    void should_return_non_sensitive_github_webhook_setup_readiness() throws Exception {
+        GitHubCredentialReadinessService credentialService = new GitHubCredentialReadinessService(() -> null);
+        GitHubWebhookSetupReadinessService setupReadinessService = new GitHubWebhookSetupReadinessService(
+                () -> new GitHubWebhookSetupReadinessVo(
+                        "READY",
+                        true,
+                        true,
+                        "https://demo.trycloudflare.com",
+                        "https://demo.trycloudflare.com/api/github/webhook",
+                        "https://demo.trycloudflare.com/health",
+                        "TASK_CREATED",
+                        "delivery-1",
+                        false,
+                        "Webhook setup is ready for GitHub deliveries.",
+                        List.of("Use the payload URL in GitHub Webhooks and continue the live demo."),
+                        Instant.parse("2026-06-27T02:00:00Z"),
+                        "# PatchPilot Webhook Setup Readiness\n\n- Status: `READY`"
+                )
+        );
+        MockMvc mockMvc = mockMvc(credentialService, new GitHubWebhookUrlReadinessService(() -> null), setupReadinessService);
+
+        mockMvc.perform(get("/api/github/webhook-setup-readiness")
+                        .header("X-PatchPilot-Admin-Token", "test-admin-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.secretConfigured").value(true))
+                .andExpect(jsonPath("$.data.publicUrlReady").value(true))
+                .andExpect(jsonPath("$.data.payloadUrl").value("https://demo.trycloudflare.com/api/github/webhook"))
+                .andExpect(jsonPath("$.data.latestDeliveryStatus").value("TASK_CREATED"))
+                .andExpect(jsonPath("$.data.redeliveryRecommended").value(false))
+                .andExpect(jsonPath("$.data.nextActions[0]").value("Use the payload URL in GitHub Webhooks and continue the live demo."))
+                .andExpect(jsonPath("$.data.markdownReport").value(containsString("# PatchPilot Webhook Setup Readiness")))
+                .andExpect(content().string(not(containsString("webhook-secret"))));
+    }
+
     private static MockMvc mockMvc(GitHubCredentialReadinessService service) {
         return mockMvc(service, new GitHubWebhookUrlReadinessService(() -> null));
     }
@@ -99,6 +138,14 @@ class GitHubCredentialReadinessControllerTests {
     private static MockMvc mockMvc(
             GitHubCredentialReadinessService service,
             GitHubWebhookUrlReadinessService webhookUrlReadinessService
+    ) {
+        return mockMvc(service, webhookUrlReadinessService, new GitHubWebhookSetupReadinessService(() -> null));
+    }
+
+    private static MockMvc mockMvc(
+            GitHubCredentialReadinessService service,
+            GitHubWebhookUrlReadinessService webhookUrlReadinessService,
+            GitHubWebhookSetupReadinessService setupReadinessService
     ) {
         AdminApiSecurityProperties properties = new AdminApiSecurityProperties();
         properties.setAdminToken("test-admin-token");
@@ -108,7 +155,8 @@ class GitHubCredentialReadinessControllerTests {
         return MockMvcBuilders.standaloneSetup(new GitHubCredentialReadinessController(
                         service,
                         new GitHubRepositoryAccessReadinessService((owner, repository) -> null),
-                        webhookUrlReadinessService
+                        webhookUrlReadinessService,
+                        setupReadinessService
                 ))
                 .setMessageConverters(new org.springframework.http.converter.json.MappingJackson2HttpMessageConverter(objectMapper))
                 .addFilters(new AdminApiSecurityFilter(properties, objectMapper))

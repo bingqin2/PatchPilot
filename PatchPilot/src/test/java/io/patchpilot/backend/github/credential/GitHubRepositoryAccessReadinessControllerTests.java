@@ -76,7 +76,8 @@ class GitHubRepositoryAccessReadinessControllerTests {
         return MockMvcBuilders.standaloneSetup(new GitHubCredentialReadinessController(
                         new GitHubCredentialReadinessService(() -> null),
                         service,
-                        new GitHubWebhookUrlReadinessService(() -> null)
+                        new GitHubWebhookUrlReadinessService(() -> null),
+                        new GitHubWebhookSetupReadinessService(() -> null)
                 ))
                 .setMessageConverters(new org.springframework.http.converter.json.MappingJackson2HttpMessageConverter(objectMapper))
                 .addFilters(new AdminApiSecurityFilter(properties, objectMapper))
