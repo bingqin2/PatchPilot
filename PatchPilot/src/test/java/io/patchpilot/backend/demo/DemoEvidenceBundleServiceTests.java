@@ -130,7 +130,8 @@ class DemoEvidenceBundleServiceTests {
         assertThat(bundle.launchEvidenceShareCenterDownloadActions()).containsExactly(
                 "Download launch evidence package archive launch-evidence-archive-1.",
                 "Download launch evidence share center report.",
-                "Open Pull Request https://github.com/bingqin2/PatchPilot/pull/42 for review."
+                "Open Pull Request https://github.com/bingqin2/PatchPilot/pull/42 for review.",
+                "Download launch evidence delivery receipt launch-delivery-receipt-1."
         );
         assertThat(bundle.handoffShareDeliveryReceiptRecorded()).isFalse();
         assertThat(bundle.handoffShareLatestDeliveryReceiptId()).isNull();
@@ -567,10 +568,19 @@ class DemoEvidenceBundleServiceTests {
                 "https://github.com/bingqin2/PatchPilot/pull/42",
                 "delivery-1",
                 "evaluation-run-2",
+                "launch-delivery-receipt-1",
+                "Demo reviewer",
+                "email",
+                "2026-06-24T07:10:00Z",
+                true,
+                "FRESH",
+                true,
+                "Latest delivery receipt matches the current launch evidence archive and session.",
                 List.of(
                         "Download launch evidence package archive launch-evidence-archive-1.",
                         "Download launch evidence share center report.",
-                        "Open Pull Request https://github.com/bingqin2/PatchPilot/pull/42 for review."
+                        "Open Pull Request https://github.com/bingqin2/PatchPilot/pull/42 for review.",
+                        "Download launch evidence delivery receipt launch-delivery-receipt-1."
                 ),
                 List.of("Latest launch evidence archive status is READY."),
                 "# PatchPilot Demo Launch Evidence Share Center",

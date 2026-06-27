@@ -11,9 +11,11 @@ import io.patchpilot.backend.demo.domain.DemoHandoffShareChecklistVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffShareDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffShareInstructionsVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchCommandVo;
+import io.patchpilot.backend.demo.domain.DemoLaunchEvidenceFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchEvidencePackageArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchEvidencePackageVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchEvidenceShareCenterVo;
+import io.patchpilot.backend.demo.domain.DemoLaunchEvidenceShareDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchPreflightVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessSnapshotArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessSnapshotTrendVo;
@@ -66,6 +68,8 @@ public class DemoReadinessController {
     private final DemoLaunchEvidencePackageService demoLaunchEvidencePackageService;
     private final DemoLaunchEvidencePackageArchiveService demoLaunchEvidencePackageArchiveService;
     private final DemoLaunchEvidenceShareCenterService demoLaunchEvidenceShareCenterService;
+    private final DemoLaunchEvidenceShareDeliveryReceiptService demoLaunchEvidenceShareDeliveryReceiptService;
+    private final DemoLaunchEvidenceFinalizationService demoLaunchEvidenceFinalizationService;
     private final DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
     private final DemoReadinessSnapshotTrendService demoReadinessSnapshotTrendService;
     private final DemoLaunchPreflightService demoLaunchPreflightService;
@@ -271,6 +275,11 @@ public class DemoReadinessController {
         return ApiResponse.ok(demoLaunchEvidenceShareCenterService.getShareCenter());
     }
 
+    @GetMapping("/launch-evidence-finalization")
+    public ApiResponse<DemoLaunchEvidenceFinalizationVo> getLaunchEvidenceFinalization() {
+        return ApiResponse.ok(demoLaunchEvidenceFinalizationService.getFinalizationGate());
+    }
+
     @GetMapping(value = "/handoff-share-center/report/download", produces = "text/markdown;charset=UTF-8")
     public ResponseEntity<String> downloadHandoffShareCenterReport() {
         return markdownAttachment(
@@ -319,6 +328,14 @@ public class DemoReadinessController {
         );
     }
 
+    @GetMapping(value = "/launch-evidence-finalization/report/download", produces = "text/markdown;charset=UTF-8")
+    public ResponseEntity<String> downloadLaunchEvidenceFinalizationReport() {
+        return markdownAttachment(
+                "patchpilot-demo-launch-evidence-finalization.md",
+                demoLaunchEvidenceFinalizationService.getFinalizationGate().markdownReport()
+        );
+    }
+
     @PostMapping("/launch-evidence-package/archives")
     public ApiResponse<DemoLaunchEvidencePackageArchiveVo> archiveLaunchEvidencePackage() {
         DemoLaunchEvidencePackageArchiveVo archive = demoLaunchEvidencePackageArchiveService.archiveCurrentPackage();
@@ -345,6 +362,43 @@ public class DemoReadinessController {
                 .map(archive -> markdownAttachment(
                         "patchpilot-demo-launch-evidence-package-" + safeFilenamePart(archive.id()) + ".md",
                         archive.report()
+                ))
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/launch-evidence-share-delivery-receipts")
+    public ResponseEntity<ApiResponse<DemoLaunchEvidenceShareDeliveryReceiptVo>> recordLaunchEvidenceDeliveryReceipt(
+            @RequestBody DemoLaunchEvidenceShareDeliveryReceiptRequestDto request
+    ) {
+        try {
+            DemoLaunchEvidenceShareDeliveryReceiptVo receipt =
+                    demoLaunchEvidenceShareDeliveryReceiptService.recordDeliveryReceipt(request);
+            operatorSafetyAuditService.recordSafetyAudit(new RecordOperatorSafetyAuditCommand(
+                    "DEMO_LAUNCH_EVIDENCE_DELIVERY_RECEIPT_RECORDED",
+                    "DEMO_LAUNCH_EVIDENCE_DELIVERY_RECEIPT",
+                    receipt.id(),
+                    TriggerQuarantineScope.REPOSITORY,
+                    "patchpilot/local-demo",
+                    receipt.operator(),
+                    "Recorded demo launch evidence delivery receipt for " + receipt.launchEvidenceArchiveId()
+            ));
+            return ResponseEntity.ok(ApiResponse.ok(receipt));
+        } catch (IllegalArgumentException | IllegalStateException exception) {
+            return ResponseEntity.badRequest().body(ApiResponse.fail(exception.getMessage()));
+        }
+    }
+
+    @GetMapping("/launch-evidence-share-delivery-receipts")
+    public ApiResponse<List<DemoLaunchEvidenceShareDeliveryReceiptVo>> listLaunchEvidenceDeliveryReceipts() {
+        return ApiResponse.ok(demoLaunchEvidenceShareDeliveryReceiptService.listRecentReceipts());
+    }
+
+    @GetMapping(value = "/launch-evidence-share-delivery-receipts/{receiptId}/report/download", produces = "text/markdown;charset=UTF-8")
+    public ResponseEntity<String> downloadLaunchEvidenceDeliveryReceiptReport(@PathVariable String receiptId) {
+        return demoLaunchEvidenceShareDeliveryReceiptService.findReceipt(receiptId)
+                .map(receipt -> markdownAttachment(
+                        "patchpilot-demo-launch-evidence-delivery-receipt-" + safeFilenamePart(receipt.id()) + ".md",
+                        receipt.markdownReport()
                 ))
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }

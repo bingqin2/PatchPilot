@@ -24,7 +24,10 @@ import io.patchpilot.backend.demo.domain.DemoHandoffShareInstructionsVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffFinalizationCheckVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchEvidencePackageArchiveVo;
+import io.patchpilot.backend.demo.domain.DemoLaunchEvidenceFinalizationCheckVo;
+import io.patchpilot.backend.demo.domain.DemoLaunchEvidenceFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchEvidenceShareCenterVo;
+import io.patchpilot.backend.demo.domain.DemoLaunchEvidenceShareDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchEvidencePackageVo;
 import io.patchpilot.backend.task.domain.vo.TriggerEvaluationDecisionVo;
 import io.patchpilot.backend.task.domain.vo.TriggerEvaluationResultVo;
@@ -124,6 +127,12 @@ class DemoReadinessControllerTests {
 
     @MockitoBean
     private DemoLaunchEvidenceShareCenterService demoLaunchEvidenceShareCenterService;
+
+    @MockitoBean
+    private DemoLaunchEvidenceShareDeliveryReceiptService demoLaunchEvidenceShareDeliveryReceiptService;
+
+    @MockitoBean
+    private DemoLaunchEvidenceFinalizationService demoLaunchEvidenceFinalizationService;
 
     @MockitoBean
     private DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
@@ -288,6 +297,10 @@ class DemoReadinessControllerTests {
                 .andExpect(jsonPath("$.data.latestPullRequestUrl").value("https://github.com/bingqin2/PatchPilot/pull/42"))
                 .andExpect(jsonPath("$.data.latestWebhookDeliveryId").value("delivery-1"))
                 .andExpect(jsonPath("$.data.evaluationRunId").value("evaluation-run-2"))
+                .andExpect(jsonPath("$.data.latestDeliveryReceiptId").value("launch-delivery-receipt-1"))
+                .andExpect(jsonPath("$.data.deliveryReceiptRecorded").value(true))
+                .andExpect(jsonPath("$.data.deliveryReceiptFreshness").value("FRESH"))
+                .andExpect(jsonPath("$.data.deliveryReceiptFresh").value(true))
                 .andExpect(jsonPath("$.data.downloadActions[0]").value("Download launch evidence package archive launch-evidence-archive-1."))
                 .andExpect(jsonPath("$.data.evidenceNotes[0]").value("Latest launch evidence archive status is READY."))
                 .andExpect(jsonPath("$.data.markdownReport").value(containsString("# PatchPilot Demo Launch Evidence Share Center")));
@@ -303,6 +316,141 @@ class DemoReadinessControllerTests {
                 .andExpect(content().contentType("text/markdown;charset=UTF-8"))
                 .andExpect(content().string(containsString("# PatchPilot Demo Launch Evidence Share Center")))
                 .andExpect(content().string(containsString("launch-evidence-archive-1")));
+    }
+
+    @Test
+    void should_return_demo_launch_evidence_finalization() throws Exception {
+        when(demoLaunchEvidenceFinalizationService.getFinalizationGate()).thenReturn(launchEvidenceFinalization());
+
+        mockMvc.perform(get("/api/demo/launch-evidence-finalization"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.finalized").value(true))
+                .andExpect(jsonPath("$.data.latestArchiveId").value("launch-evidence-archive-1"))
+                .andExpect(jsonPath("$.data.latestSessionId").value("demo-session-20260624T003000Z"))
+                .andExpect(jsonPath("$.data.latestDeliveryReceiptId").value("launch-delivery-receipt-1"))
+                .andExpect(jsonPath("$.data.deliveryReceiptFreshness").value("FRESH"))
+                .andExpect(jsonPath("$.data.checks[0].name").value("Launch evidence share readiness"))
+                .andExpect(jsonPath("$.data.markdownReport").value(containsString("# PatchPilot Demo Launch Evidence Finalization Gate")));
+    }
+
+    @Test
+    void should_download_demo_launch_evidence_finalization_report() throws Exception {
+        when(demoLaunchEvidenceFinalizationService.getFinalizationGate()).thenReturn(launchEvidenceFinalization());
+
+        mockMvc.perform(get("/api/demo/launch-evidence-finalization/report/download"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("attachment;")))
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("patchpilot-demo-launch-evidence-finalization.md")))
+                .andExpect(content().contentTypeCompatibleWith("text/markdown"))
+                .andExpect(content().string(containsString("# PatchPilot Demo Launch Evidence Finalization Gate")))
+                .andExpect(content().string(containsString("`READY`")));
+    }
+
+    @Test
+    void should_record_demo_launch_evidence_share_delivery_receipt() throws Exception {
+        when(demoLaunchEvidenceShareDeliveryReceiptService.recordDeliveryReceipt(argThat(request ->
+                request.deliveryChannel().equals("email")
+                        && request.deliveryTarget().equals("reviewer@example.com")
+                        && request.operator().equals("local-operator")
+                        && request.notes().equals("Sent final launch evidence after the smoke demo.")
+                        && request.deliveredAt().equals(Instant.parse("2026-06-28T06:05:00Z"))
+        ))).thenReturn(launchEvidenceDeliveryReceipt());
+
+        mockMvc.perform(post("/api/demo/launch-evidence-share-delivery-receipts")
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "deliveryChannel": "email",
+                                  "deliveryTarget": "reviewer@example.com",
+                                  "operator": "local-operator",
+                                  "notes": "Sent final launch evidence after the smoke demo.",
+                                  "deliveredAt": "2026-06-28T06:05:00Z"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value("launch-delivery-receipt-1"))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.launchEvidenceArchiveId").value("launch-evidence-archive-1"))
+                .andExpect(jsonPath("$.data.sessionId").value("demo-session-20260624T003000Z"))
+                .andExpect(jsonPath("$.data.deliveryChannel").value("email"))
+                .andExpect(jsonPath("$.data.deliveryTarget").value("reviewer@example.com"))
+                .andExpect(jsonPath("$.data.operator").value("local-operator"))
+                .andExpect(jsonPath("$.data.messageSubject").value("PatchPilot demo launch evidence: demo-session-20260624T003000Z"))
+                .andExpect(jsonPath("$.data.markdownReport")
+                        .value(containsString("# PatchPilot Demo Launch Evidence Delivery Receipt")));
+
+        verify(operatorSafetyAuditService).recordSafetyAudit(argThat(this::isDemoLaunchEvidenceShareDeliveryReceiptAudit));
+    }
+
+    private boolean isDemoLaunchEvidenceShareDeliveryReceiptAudit(RecordOperatorSafetyAuditCommand command) {
+        return command != null
+                && "DEMO_LAUNCH_EVIDENCE_DELIVERY_RECEIPT_RECORDED".equals(command.action())
+                && "DEMO_LAUNCH_EVIDENCE_DELIVERY_RECEIPT".equals(command.resourceType())
+                && "launch-delivery-receipt-1".equals(command.resourceId())
+                && command.scope() == TriggerQuarantineScope.REPOSITORY
+                && "patchpilot/local-demo".equals(command.scopeKey())
+                && "local-operator".equals(command.operator())
+                && "Recorded demo launch evidence delivery receipt for launch-evidence-archive-1".equals(command.reason());
+    }
+
+    @Test
+    void should_reject_demo_launch_evidence_share_delivery_receipt_when_not_share_ready() throws Exception {
+        when(demoLaunchEvidenceShareDeliveryReceiptService.recordDeliveryReceipt(any(DemoLaunchEvidenceShareDeliveryReceiptRequestDto.class)))
+                .thenThrow(new IllegalStateException("launch evidence share center is not share-ready"));
+
+        mockMvc.perform(post("/api/demo/launch-evidence-share-delivery-receipts")
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "deliveryChannel": "email",
+                                  "deliveryTarget": "reviewer@example.com",
+                                  "operator": "local-operator",
+                                  "notes": "Sent final launch evidence after the smoke demo.",
+                                  "deliveredAt": "2026-06-28T06:05:00Z"
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("launch evidence share center is not share-ready"));
+    }
+
+    @Test
+    void should_return_recent_demo_launch_evidence_share_delivery_receipts() throws Exception {
+        when(demoLaunchEvidenceShareDeliveryReceiptService.listRecentReceipts())
+                .thenReturn(List.of(launchEvidenceDeliveryReceipt()));
+
+        mockMvc.perform(get("/api/demo/launch-evidence-share-delivery-receipts"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].id").value("launch-delivery-receipt-1"))
+                .andExpect(jsonPath("$.data[0].launchEvidenceArchiveId").value("launch-evidence-archive-1"))
+                .andExpect(jsonPath("$.data[0].deliveryChannel").value("email"))
+                .andExpect(jsonPath("$.data[0].deliveryTarget").value("reviewer@example.com"));
+    }
+
+    @Test
+    void should_download_demo_launch_evidence_share_delivery_receipt_as_markdown_attachment() throws Exception {
+        when(demoLaunchEvidenceShareDeliveryReceiptService.findReceipt("launch-delivery-receipt-1"))
+                .thenReturn(Optional.of(launchEvidenceDeliveryReceipt()));
+
+        mockMvc.perform(get("/api/demo/launch-evidence-share-delivery-receipts/launch-delivery-receipt-1/report/download"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("attachment;")))
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("patchpilot-demo-launch-evidence-delivery-receipt-launch-delivery-receipt-1.md")))
+                .andExpect(content().contentTypeCompatibleWith("text/markdown"))
+                .andExpect(content().string(containsString("# PatchPilot Demo Launch Evidence Delivery Receipt")))
+                .andExpect(content().string(containsString("`READY`")));
+    }
+
+    @Test
+    void should_return_not_found_when_demo_launch_evidence_share_delivery_receipt_is_missing() throws Exception {
+        when(demoLaunchEvidenceShareDeliveryReceiptService.findReceipt("missing-receipt")).thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/api/demo/launch-evidence-share-delivery-receipts/missing-receipt/report/download"))
+                .andExpect(status().isNotFound());
     }
 
     @Test
@@ -2097,16 +2245,84 @@ class DemoReadinessControllerTests {
                 "https://github.com/bingqin2/PatchPilot/pull/42",
                 "delivery-1",
                 "evaluation-run-2",
+                "launch-delivery-receipt-1",
+                "Demo reviewer",
+                "email",
+                "2026-06-28T06:05:00Z",
+                true,
+                "FRESH",
+                true,
+                "Latest delivery receipt matches the current launch evidence archive and session.",
                 List.of(
                         "Download launch evidence package archive launch-evidence-archive-1.",
-                        "Download launch evidence share center report."
+                        "Download launch evidence share center report.",
+                        "Download launch evidence delivery receipt launch-delivery-receipt-1."
                 ),
                 List.of(
                         "Latest launch evidence archive status is READY.",
+                        "Latest delivery receipt launch-delivery-receipt-1 was recorded for Demo reviewer via email.",
                         "Latest Pull Request https://github.com/bingqin2/PatchPilot/pull/42 is ready for review."
                 ),
                 "# PatchPilot Demo Launch Evidence Share Center\n\n- Status: `READY`\n- Latest archive: `launch-evidence-archive-1`",
                 Instant.parse("2026-06-28T02:45:00Z")
+        );
+    }
+
+    private static DemoLaunchEvidenceShareDeliveryReceiptVo launchEvidenceDeliveryReceipt() {
+        return new DemoLaunchEvidenceShareDeliveryReceiptVo(
+                "launch-delivery-receipt-1",
+                "READY",
+                "launch-evidence-archive-1",
+                "demo-session-20260624T003000Z",
+                "email",
+                "reviewer@example.com",
+                "local-operator",
+                "Sent final launch evidence after the smoke demo.",
+                "PatchPilot demo launch evidence: demo-session-20260624T003000Z",
+                Instant.parse("2026-06-28T06:05:00Z"),
+                Instant.parse("2026-06-28T06:10:00Z"),
+                "# PatchPilot Demo Launch Evidence Delivery Receipt\n\n- Status: `READY`"
+        );
+    }
+
+    private static DemoLaunchEvidenceFinalizationVo launchEvidenceFinalization() {
+        return new DemoLaunchEvidenceFinalizationVo(
+                DemoReadinessStatus.READY,
+                true,
+                "Demo launch evidence is finalized with a fresh delivery receipt for the current archive.",
+                "Use the finalization report as the launch evidence delivery acceptance record.",
+                "launch-evidence-archive-1",
+                "demo-session-20260624T003000Z",
+                "launch-delivery-receipt-1",
+                "reviewer@example.com",
+                "email",
+                "2026-06-28T06:05:00Z",
+                "FRESH",
+                true,
+                "Latest delivery receipt matches the current launch evidence archive and session.",
+                List.of(
+                        new DemoLaunchEvidenceFinalizationCheckVo(
+                                "Launch evidence share readiness",
+                                DemoReadinessStatus.READY,
+                                "Latest archived launch evidence package is READY and can be shared.",
+                                "No action needed."
+                        ),
+                        new DemoLaunchEvidenceFinalizationCheckVo(
+                                "Delivery receipt freshness",
+                                DemoReadinessStatus.READY,
+                                "Latest delivery receipt matches the current launch evidence archive and session.",
+                                "No action needed."
+                        ),
+                        new DemoLaunchEvidenceFinalizationCheckVo(
+                                "Launch acceptance evidence",
+                                DemoReadinessStatus.READY,
+                                "Finalization report is ready as the launch acceptance record.",
+                                "Download the finalization report."
+                        )
+                ),
+                List.of("Latest delivery receipt launch-delivery-receipt-1 is fresh."),
+                "# PatchPilot Demo Launch Evidence Finalization Gate\n\n- Status: `READY`",
+                Instant.parse("2026-06-28T06:30:00Z")
         );
     }
 }

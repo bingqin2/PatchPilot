@@ -12,6 +12,7 @@ import {
   cancelTask,
   composeDemoLaunchCommand,
   createDemoHandoffShareDeliveryReceipt,
+  createDemoLaunchEvidenceShareDeliveryReceipt,
   createTask,
   createTriggerQuarantine,
   downloadDemoSessionArchiveReport,
@@ -27,6 +28,8 @@ import {
   downloadDemoHandoffFinalizationReport,
   downloadDemoLaunchEvidencePackageArchiveReport,
   downloadDemoLaunchEvidencePackageReport,
+  downloadDemoLaunchEvidenceFinalizationReport,
+  downloadDemoLaunchEvidenceShareDeliveryReceiptReport,
   downloadDemoLaunchEvidenceShareCenterReport,
   downloadDemoSelfHostedLaunchReadinessArchiveReport,
   downloadDemoSelfHostedLaunchReadinessReport,
@@ -44,6 +47,7 @@ import {
   getDemoHandoffPackageArchiveSummary,
   getDemoHandoffShareCenter,
   getDemoHandoffFinalization,
+  getDemoLaunchEvidenceFinalization,
   getDemoLaunchEvidencePackage,
   getDemoLaunchEvidenceShareCenter,
   getDemoSelfHostedLaunchReadiness,
@@ -56,6 +60,7 @@ import {
   getDemoReadiness,
   getDemoReadinessSnapshotTrend,
   getDemoSmokeChecklist,
+  listDemoLaunchEvidenceShareDeliveryReceipts,
   getEvaluationCaseReadiness,
   getEvaluationFixtureBaselineRunRegressionSummary,
   getEvaluationRunArchiveReadinessSummary,
@@ -166,7 +171,10 @@ import type {
   DemoLaunchCommandInput,
   DemoLaunchEvidencePackageArchive,
   DemoLaunchEvidencePackage,
+  DemoLaunchEvidenceFinalization,
   DemoLaunchEvidenceShareCenter,
+  DemoLaunchEvidenceShareDeliveryReceipt,
+  DemoLaunchEvidenceShareDeliveryReceiptInput,
   DemoLaunchPreflight,
   DemoLaunchPreflightInput,
   DemoScript,
@@ -310,6 +318,13 @@ export default function App() {
   const [demoLaunchEvidenceShareCenter, setDemoLaunchEvidenceShareCenter] =
     useState<DemoLaunchEvidenceShareCenter | null>(null);
   const [demoLaunchEvidenceShareCenterError, setDemoLaunchEvidenceShareCenterError] = useState<string | null>(null);
+  const [demoLaunchEvidenceFinalization, setDemoLaunchEvidenceFinalization] =
+    useState<DemoLaunchEvidenceFinalization | null>(null);
+  const [demoLaunchEvidenceFinalizationError, setDemoLaunchEvidenceFinalizationError] = useState<string | null>(null);
+  const [demoLaunchEvidenceDeliveryReceipts, setDemoLaunchEvidenceDeliveryReceipts] =
+    useState<DemoLaunchEvidenceShareDeliveryReceipt[]>([]);
+  const [demoLaunchEvidenceDeliveryReceiptError, setDemoLaunchEvidenceDeliveryReceiptError] =
+    useState<string | null>(null);
   const [demoHandoffShareInstructions, setDemoHandoffShareInstructions] =
     useState<DemoHandoffShareInstructions | null>(null);
   const [demoHandoffShareInstructionsError, setDemoHandoffShareInstructionsError] = useState<string | null>(null);
@@ -655,6 +670,8 @@ export default function App() {
         demoLaunchEvidencePackageResult,
         demoLaunchEvidencePackageArchiveResult,
         demoLaunchEvidenceShareCenterResult,
+        demoLaunchEvidenceFinalizationResult,
+        demoLaunchEvidenceDeliveryReceiptResult,
         demoHandoffShareInstructionsResult,
         demoHandoffShareDeliveryReceiptResult,
         demoScriptResult,
@@ -767,6 +784,14 @@ export default function App() {
         getDemoLaunchEvidenceShareCenter().then(
           (center) => ({ center, error: null as string | null }),
           (caught) => ({ center: null, error: errorMessage(caught) })
+        ),
+        getDemoLaunchEvidenceFinalization().then(
+          (finalization) => ({ finalization, error: null as string | null }),
+          (caught) => ({ finalization: null, error: errorMessage(caught) })
+        ),
+        listDemoLaunchEvidenceShareDeliveryReceipts().then(
+          (receipts) => ({ receipts, error: null as string | null }),
+          (caught) => ({ receipts: null, error: errorMessage(caught) })
         ),
         getDemoHandoffShareInstructions().then(
           (instructions) => ({ instructions, error: null as string | null }),
@@ -960,6 +985,14 @@ export default function App() {
         setDemoLaunchEvidenceShareCenter(demoLaunchEvidenceShareCenterResult.center);
       }
       setDemoLaunchEvidenceShareCenterError(demoLaunchEvidenceShareCenterResult.error);
+      if (demoLaunchEvidenceFinalizationResult.finalization) {
+        setDemoLaunchEvidenceFinalization(demoLaunchEvidenceFinalizationResult.finalization);
+      }
+      setDemoLaunchEvidenceFinalizationError(demoLaunchEvidenceFinalizationResult.error);
+      if (demoLaunchEvidenceDeliveryReceiptResult.receipts) {
+        setDemoLaunchEvidenceDeliveryReceipts(demoLaunchEvidenceDeliveryReceiptResult.receipts);
+      }
+      setDemoLaunchEvidenceDeliveryReceiptError(demoLaunchEvidenceDeliveryReceiptResult.error);
       if (demoHandoffShareInstructionsResult.instructions) {
         setDemoHandoffShareInstructions(demoHandoffShareInstructionsResult.instructions);
       }
@@ -1265,6 +1298,13 @@ export default function App() {
     } catch (caught) {
       setDemoLaunchEvidenceShareCenterError(errorMessage(caught));
     }
+    try {
+      const finalization = await getDemoLaunchEvidenceFinalization();
+      setDemoLaunchEvidenceFinalization(finalization);
+      setDemoLaunchEvidenceFinalizationError(null);
+    } catch (caught) {
+      setDemoLaunchEvidenceFinalizationError(errorMessage(caught));
+    }
     return archive;
   }, []);
   const handleDownloadDemoLaunchEvidencePackageArchiveReport = useCallback((archiveId: string) => (
@@ -1272,6 +1312,41 @@ export default function App() {
   ), []);
   const handleDownloadDemoLaunchEvidenceShareCenterReport = useCallback(() => (
     downloadDemoLaunchEvidenceShareCenterReport()
+  ), []);
+  const handleDownloadDemoLaunchEvidenceFinalizationReport = useCallback(() => (
+    downloadDemoLaunchEvidenceFinalizationReport()
+  ), []);
+  const handleCreateDemoLaunchEvidenceDeliveryReceipt = useCallback(async (
+    input: DemoLaunchEvidenceShareDeliveryReceiptInput
+  ) => {
+    const receipt = await createDemoLaunchEvidenceShareDeliveryReceipt(input);
+    setDemoLaunchEvidenceDeliveryReceipts((current) => [receipt, ...current.filter((item) => item.id !== receipt.id)].slice(0, 20));
+    setDemoLaunchEvidenceDeliveryReceiptError(null);
+    try {
+      const receipts = await listDemoLaunchEvidenceShareDeliveryReceipts();
+      setDemoLaunchEvidenceDeliveryReceipts(receipts);
+      setDemoLaunchEvidenceDeliveryReceiptError(null);
+    } catch (caught) {
+      setDemoLaunchEvidenceDeliveryReceiptError(errorMessage(caught));
+    }
+    try {
+      const center = await getDemoLaunchEvidenceShareCenter();
+      setDemoLaunchEvidenceShareCenter(center);
+      setDemoLaunchEvidenceShareCenterError(null);
+    } catch (caught) {
+      setDemoLaunchEvidenceShareCenterError(errorMessage(caught));
+    }
+    try {
+      const finalization = await getDemoLaunchEvidenceFinalization();
+      setDemoLaunchEvidenceFinalization(finalization);
+      setDemoLaunchEvidenceFinalizationError(null);
+    } catch (caught) {
+      setDemoLaunchEvidenceFinalizationError(errorMessage(caught));
+    }
+    return receipt;
+  }, []);
+  const handleDownloadDemoLaunchEvidenceDeliveryReceiptReport = useCallback((receiptId: string) => (
+    downloadDemoLaunchEvidenceShareDeliveryReceiptReport(receiptId)
   ), []);
   const handleDownloadDemoHandoffShareInstructionsReport = useCallback(() => (
     downloadDemoHandoffShareInstructionsReport()
@@ -1777,10 +1852,17 @@ export default function App() {
         archiveError={demoLaunchEvidencePackageArchiveError}
         shareCenter={demoLaunchEvidenceShareCenter}
         shareCenterError={demoLaunchEvidenceShareCenterError}
+        finalization={demoLaunchEvidenceFinalization}
+        finalizationError={demoLaunchEvidenceFinalizationError}
+        deliveryReceipts={demoLaunchEvidenceDeliveryReceipts}
+        deliveryReceiptError={demoLaunchEvidenceDeliveryReceiptError}
         onArchivePackage={handleArchiveDemoLaunchEvidencePackage}
         onDownloadReport={handleDownloadDemoLaunchEvidencePackageReport}
         onDownloadArchiveReport={handleDownloadDemoLaunchEvidencePackageArchiveReport}
         onDownloadShareCenterReport={handleDownloadDemoLaunchEvidenceShareCenterReport}
+        onDownloadFinalizationReport={handleDownloadDemoLaunchEvidenceFinalizationReport}
+        onCreateDeliveryReceipt={handleCreateDemoLaunchEvidenceDeliveryReceipt}
+        onDownloadDeliveryReceiptReport={handleDownloadDemoLaunchEvidenceDeliveryReceiptReport}
       />
 
       <DemoEvidenceBundlePanel
