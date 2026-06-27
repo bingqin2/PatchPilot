@@ -23,6 +23,7 @@ public record DemoEvidenceBundleVo(
         String recentPullRequestUrl,
         GitHubWebhookSetupReadinessVo webhookSetupReadiness,
         WebhookDeliveryDiagnosticVo latestWebhookDelivery,
+        List<WebhookDeliveryDiagnosticVo> recentWebhookDeliveries,
         RejectedTriggerAuditSummaryVo rejectedTriggerSummary,
         long activeQuarantineCount,
         Instant generatedAt,

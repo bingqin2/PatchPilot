@@ -121,6 +121,7 @@ class DemoSessionArchiveServiceTests {
                         "https://github.com/bingqin2/PatchPilot/pull/42",
                         null,
                         null,
+                        List.of(),
                         null,
                         0,
                         Instant.parse("2026-06-24T00:00:00Z"),

@@ -4,6 +4,24 @@ This file records dated implementation progress, validation commands, and import
 
 ## 2026-06-27
 
+Implemented demo webhook delivery evidence trail from `docs/plans/229-demo-webhook-delivery-evidence-trail.md`.
+
+Changes:
+
+- Added `recentWebhookDeliveries` to the demo evidence bundle read model while keeping `latestWebhookDelivery` for summary compatibility.
+- Included the capped recent webhook delivery trail in generated demo session reports with delivery id, status, repository, trigger, outcome, and message evidence.
+- Rendered a compact recent webhook delivery trail in the dashboard demo evidence bundle panel.
+- Updated backend/frontend fixtures plus README, product spec, architecture, frontend design docs, and this execution log.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=DemoEvidenceBundleServiceTests,DemoSessionReportServiceTests,DemoReadinessControllerTests test`: first failed because the new evidence-bundle field and report section did not exist and one test used a non-existent `REJECTED_TRIGGER` status; then passed after wiring the field, report output, REST serialization, and existing `REJECTED` status plus `REJECTED_TRIGGER` outcome type.
+- `npm test -- --run src/dashboard/components/DemoEvidenceBundlePanel.test.tsx src/App.test.tsx src/api.test.ts src/dashboard/components/DemoSessionSnapshotPanel.test.tsx --reporter=basic`: first failed because the panel did not render the trail; then failed once because latest delivery and trail intentionally repeat the same delivery id; then passed after targeted assertions were updated to expect repeated evidence, 166 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed after full backend regression verification, 796 tests run, 0 failures.
+- `npm test -- --reporter=basic`: passed after full frontend regression verification, 26 test files and 285 tests run.
+- `npm run build`: passed after TypeScript and production Vite build verification.
+- `git diff --check`: passed.
+
 Implemented demo webhook setup gate from `docs/plans/227-demo-webhook-setup-gate.md`.
 
 Changes:

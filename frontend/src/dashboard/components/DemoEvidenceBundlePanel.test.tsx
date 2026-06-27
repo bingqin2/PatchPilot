@@ -106,6 +106,46 @@ const bundle: DemoEvidenceBundle = {
     outcomeUrl: '/tasks/task-2',
     createdAt: '2026-06-24T00:00:00Z'
   },
+  recentWebhookDeliveries: [
+    {
+      id: 'delivery-1',
+      deliveryId: 'delivery-1',
+      event: 'issue_comment.created',
+      status: 'TASK_CREATED',
+      taskId: 'task-2',
+      repositoryOwner: 'bingqin2',
+      repositoryName: 'PatchPilot',
+      issueNumber: 1,
+      triggerUser: 'bingqin2',
+      triggerComment: '/agent fix replace docs/demo.md demo',
+      message: 'Webhook created a task.',
+      redeliveryRecommended: false,
+      operatorAction: 'Task was created.',
+      outcomeType: 'TASK',
+      outcomeId: 'task-2',
+      outcomeUrl: '/tasks/task-2',
+      createdAt: '2026-06-24T00:00:00Z'
+    },
+    {
+      id: 'delivery-2',
+      deliveryId: 'delivery-2',
+      event: 'issue_comment.created',
+      status: 'REJECTED',
+      taskId: null,
+      repositoryOwner: 'bingqin2',
+      repositoryName: 'PatchPilot',
+      issueNumber: 1,
+      triggerUser: 'bingqin2',
+      triggerComment: 'please do stuff',
+      message: 'Webhook trigger was rejected before task creation.',
+      redeliveryRecommended: false,
+      operatorAction: 'Review rejected trigger evidence.',
+      outcomeType: 'REJECTED_TRIGGER',
+      outcomeId: 'rejected-1',
+      outcomeUrl: '/rejected-triggers/rejected-1',
+      createdAt: '2026-06-24T00:01:00Z'
+    }
+  ],
   rejectedTriggerSummary: {
     totalCount: 4,
     categoryCounts: [{ value: 'MODEL_REJECTED', count: 4 }],
@@ -136,7 +176,12 @@ test('summarizes demo evidence bundle for operators', () => {
   expect(within(panel).getByText('Webhook setup readiness')).toBeInTheDocument();
   expect(within(panel).getByText('Webhook setup is ready for GitHub deliveries.')).toBeInTheDocument();
   expect(within(panel).getByText('https://demo.trycloudflare.com/api/github/webhook')).toBeInTheDocument();
-  expect(within(panel).getByText('delivery-1')).toBeInTheDocument();
+  expect(within(panel).getAllByText('delivery-1')).toHaveLength(2);
+  expect(within(panel).getByText('Recent webhook delivery trail')).toBeInTheDocument();
+  expect(within(panel).getByText('delivery-2')).toBeInTheDocument();
+  expect(within(panel).getByText('REJECTED')).toBeInTheDocument();
+  expect(within(panel).getByText('REJECTED_TRIGGER')).toBeInTheDocument();
+  expect(within(panel).getByText('please do stuff')).toBeInTheDocument();
   expect(within(panel).getByText('Fix failing adapter fixtures before a live demo.')).toBeInTheDocument();
   expect(within(panel).getByText('Inspect active trigger quarantines before a live demo.')).toBeInTheDocument();
 });

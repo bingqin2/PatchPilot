@@ -47,6 +47,13 @@ class DemoSessionReportServiceTests {
                 .contains("- Payload URL: https://demo.trycloudflare.com/api/github/webhook")
                 .contains("- Latest delivery: `TASK_CREATED` (`delivery-1`)")
                 .contains("- Next action: Use the payload URL in GitHub Webhooks and continue the live demo.")
+                .contains("## Recent Webhook Deliveries")
+                .contains("- `delivery-1`: `TASK_CREATED` -> task-1")
+                .contains("  - Repository: `bingqin2/PatchPilot#1`")
+                .contains("  - Trigger: `/agent fix replace docs/demo.md demo`")
+                .contains("- `delivery-2`: `REJECTED` -> rejected-1")
+                .contains("  - Outcome: `REJECTED_TRIGGER`")
+                .contains("  - Message: Webhook trigger was rejected before task creation.")
                 .contains("## Readiness Snapshot Trend")
                 .contains("- Trend: `IMPROVING`")
                 .contains("- Latest snapshot: `readiness-snapshot-new`")
@@ -269,6 +276,7 @@ class DemoSessionReportServiceTests {
                         null,
                         null,
                         null,
+                        List.of(),
                         null,
                         0,
                         Instant.parse("2026-06-24T00:00:00Z"),
@@ -335,7 +343,11 @@ class DemoSessionReportServiceTests {
                 task(),
                 "https://github.com/bingqin2/PatchPilot/pull/42",
                 webhookSetupReadiness(),
-                null,
+                webhookDelivery("delivery-1", "TASK_CREATED", "task-1"),
+                List.of(
+                        webhookDelivery("delivery-1", "TASK_CREATED", "task-1"),
+                        webhookDelivery("delivery-2", "REJECTED", "rejected-1")
+                ),
                 null,
                 0,
                 Instant.parse("2026-06-24T00:00:00Z"),
@@ -378,6 +390,36 @@ class DemoSessionReportServiceTests {
                 List.of("The script endpoint is read-only."),
                 List.of("Follow the script from step 1 through Pull Request review."),
                 Instant.parse("2026-06-24T00:30:00Z")
+        );
+    }
+
+    private static io.patchpilot.backend.github.webhook.domain.WebhookDeliveryDiagnosticVo webhookDelivery(
+            String deliveryId,
+            String status,
+            String outcomeId
+    ) {
+        return new io.patchpilot.backend.github.webhook.domain.WebhookDeliveryDiagnosticVo(
+                "record-" + deliveryId,
+                deliveryId,
+                "issue_comment.created",
+                io.patchpilot.backend.github.webhook.domain.WebhookDeliveryDiagnosticStatus.valueOf(status),
+                "TASK_CREATED".equals(status) ? outcomeId : null,
+                "bingqin2",
+                "PatchPilot",
+                1L,
+                "bingqin2",
+                "/agent fix replace docs/demo.md demo",
+                "TASK_CREATED".equals(status)
+                        ? "Webhook created a task."
+                        : "Webhook trigger was rejected before task creation.",
+                false,
+                "TASK_CREATED".equals(status) ? "Task was created." : "Rejected trigger was recorded.",
+                "TASK_CREATED".equals(status)
+                        ? io.patchpilot.backend.github.webhook.domain.WebhookDeliveryOutcomeType.TASK
+                        : io.patchpilot.backend.github.webhook.domain.WebhookDeliveryOutcomeType.REJECTED_TRIGGER,
+                outcomeId,
+                "TASK_CREATED".equals(status) ? "/tasks/" + outcomeId : "/rejected-triggers/" + outcomeId,
+                Instant.parse("2026-06-24T00:00:00Z")
         );
     }
 
