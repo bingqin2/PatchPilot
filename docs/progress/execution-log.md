@@ -4,6 +4,24 @@ This file records dated implementation progress, validation commands, and import
 
 ## 2026-06-27
 
+Implemented demo handoff webhook delivery check from `docs/plans/230-demo-handoff-webhook-delivery-check.md`.
+
+Changes:
+
+- Added a `Webhook delivery evidence` row to demo handoff readiness.
+- Made handoff readiness `READY` when recent delivery diagnostics include a task-created webhook delivery.
+- Made missing delivery history a `NEEDS_ATTENTION` handoff signal.
+- Made redelivery-required latest delivery failures, such as invalid signature, a `BLOCKED` handoff signal with the diagnostic operator action.
+- Updated README, product spec, architecture notes, the plan document, and this execution log.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=DemoSessionReportServiceTests test`: first failed because handoff readiness did not include webhook delivery evidence; then failed once more because a newer redelivery-required delivery could be hidden by an older task-created delivery; then passed after ordering the check by recent evidence precedence, 7 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed after full backend regression verification, 797 tests run, 0 failures.
+- `npm test -- --reporter=basic`: passed after full frontend regression verification, 26 test files and 285 tests run.
+- `npm run build`: passed after TypeScript and production Vite build verification.
+- `git diff --check`: passed.
+
 Implemented demo webhook delivery evidence trail from `docs/plans/229-demo-webhook-delivery-evidence-trail.md`.
 
 Changes:

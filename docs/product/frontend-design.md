@@ -149,7 +149,7 @@ Target capabilities:
 - Let operators track the posted demo launch from prepared command to webhook delivery, task state, and Pull Request review link without manually comparing multiple panels.
 - Let operators copy a Markdown outcome report for a tracked demo launch so the exact command, webhook result, task result, Pull Request URL, and next action survive after the live run.
 - Let operators keep a browser-local archive of recent demo launch outcome reports so repeated smoke runs remain reviewable after refresh without adding backend state.
-- Let operators copy or download a Markdown handoff package that summarizes session evidence, readiness trend evidence, prepared command counts, archived outcome counts, recent task and Pull Request evidence, next actions, and the embedded session report.
+- Let operators copy or download a Markdown handoff package that summarizes session evidence, webhook delivery readiness, readiness trend evidence, prepared command counts, archived outcome counts, recent task and Pull Request evidence, next actions, and the embedded session report.
 - Let operators archive that final handoff package separately from session reports so the post-demo artifact can be reopened, copied, or downloaded later.
 - Make accepted-trigger intent available inside task detail and copied reports so task-level investigation explains why execution was allowed before showing what the agent did.
 - Show the supported adapter matrix, fixture paths, and fixture pass/fail verification for demo planning and troubleshooting.

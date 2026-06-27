@@ -208,9 +208,10 @@ class DemoSessionReportServiceTests {
                 .contains("- Status READY; recent task task-1; recent PR https://github.com/bingqin2/PatchPilot/pull/42.")
                 .contains("- Readiness trend: `IMPROVING` - Demo readiness improved from BLOCKED to READY.")
                 .contains("## Handoff Readiness")
-                .contains("- Overall: `READY` - Handoff package has current PR, command, outcome, and readiness trend evidence.")
+                .contains("- Overall: `READY` - Handoff package has current webhook delivery, PR, command, outcome, and readiness trend evidence.")
                 .contains("- Demo snapshot status: `READY` - Demo session snapshot is ready.")
                 .contains("- Recent task evidence: `READY` - task-1 is completed.")
+                .contains("- Webhook delivery evidence: `READY` - delivery-1 created task task-1.")
                 .contains("- Recent Pull Request evidence: `READY` - https://github.com/bingqin2/PatchPilot/pull/42")
                 .contains("- Prepared command context: `READY` - 1 prepared command recorded.")
                 .contains("- Archived launch outcome context: `READY` - 1 archived outcome has completed task or Pull Request evidence.")
@@ -236,10 +237,51 @@ class DemoSessionReportServiceTests {
                 .contains("## Handoff Readiness")
                 .contains("- Overall: `NEEDS_ATTENTION` - Handoff package is missing evidence required for a credible live-demo handoff.")
                 .contains("- Recent task evidence: `NEEDS_ATTENTION` - No recent completed task is available in the session snapshot.")
+                .contains("- Webhook delivery evidence: `NEEDS_ATTENTION` - No recent webhook delivery evidence is available in the session snapshot.")
                 .contains("- Recent Pull Request evidence: `NEEDS_ATTENTION` - No recent Pull Request URL is available.")
                 .contains("- Prepared command context: `NEEDS_ATTENTION` - No prepared launch command was captured in this browser session.")
                 .contains("- Archived launch outcome context: `NEEDS_ATTENTION` - No archived launch outcome with completed task or Pull Request evidence was captured.")
                 .contains("- Readiness trend baseline: `READY` - IMPROVING; latest readiness READY.");
+    }
+
+    @Test
+    void should_block_handoff_readiness_when_latest_webhook_delivery_needs_redelivery() {
+        DemoSessionReportService service = new DemoSessionReportService(() -> snapshotWithWebhookDeliveries(List.of(
+                webhookDeliveryRequiringRedelivery(),
+                webhookDelivery("older-delivery-1", "TASK_CREATED", "task-1")
+        )));
+        DemoSessionReportRequestDto request = new DemoSessionReportRequestDto(List.of(
+                new DemoPreparedLaunchCommandRequestDto(
+                        "/agent fix replace docs/demo.md PatchPilot smoke test",
+                        "bingqin2",
+                        "PatchPilot",
+                        1L,
+                        "bingqin2",
+                        "replace",
+                        "docs/demo.md",
+                        "PatchPilot smoke test",
+                        "2026-06-26T01:00:00Z"
+                )
+        ), List.of(
+                new DemoArchivedLaunchOutcomeRequestDto(
+                        "/agent fix replace docs/demo.md PatchPilot smoke test",
+                        "bingqin2",
+                        "PatchPilot",
+                        1L,
+                        "bingqin2",
+                        "task-1",
+                        "COMPLETED",
+                        "https://github.com/bingqin2/PatchPilot/pull/42",
+                        "2026-06-26T01:10:00Z",
+                        "# PatchPilot Demo Launch Outcome Report\n\n- Task: `task-1`"
+                )
+        ));
+
+        String packageReport = service.getHandoffPackage(request);
+
+        assertThat(packageReport)
+                .contains("- Overall: `BLOCKED` - Handoff package has a blocking readiness signal that should be resolved before a live-demo handoff.")
+                .contains("- Webhook delivery evidence: `BLOCKED` - delivery-invalid is INVALID_SIGNATURE; Fix the webhook secret or payload URL first, then use GitHub's Redeliver action for this delivery.");
     }
 
     @Test
@@ -309,6 +351,25 @@ class DemoSessionReportServiceTests {
         );
     }
 
+    private static DemoSessionSnapshotVo snapshotWithWebhookDeliveries(
+            List<io.patchpilot.backend.github.webhook.domain.WebhookDeliveryDiagnosticVo> deliveries
+    ) {
+        return new DemoSessionSnapshotVo(
+                "demo-session-20260624T003000Z",
+                DemoReadinessStatus.READY,
+                "Demo session snapshot is ready.",
+                Instant.parse("2026-06-24T00:30:00Z"),
+                evidenceBundleWithWebhookDeliveries(deliveries),
+                script(),
+                "# PatchPilot Demo Runbook\n\n- Status: `READY`",
+                trend(),
+                List.of("Open the dashboard and confirm the demo session snapshot status."),
+                List.of("GET /api/demo/session-snapshot is read-only: it does not create tasks, call the model, run tests, mutate Git, or write to GitHub."),
+                "Status READY; recent task task-1; recent PR https://github.com/bingqin2/PatchPilot/pull/42.",
+                List.of("Follow the script from step 1 through Pull Request review.")
+        );
+    }
+
     private static DemoReadinessSnapshotTrendVo trend() {
         return new DemoReadinessSnapshotTrendVo(
                 DemoReadinessSnapshotTrendStatus.IMPROVING,
@@ -326,6 +387,15 @@ class DemoSessionReportServiceTests {
     }
 
     private static DemoEvidenceBundleVo evidenceBundle() {
+        return evidenceBundleWithWebhookDeliveries(List.of(
+                webhookDelivery("delivery-1", "TASK_CREATED", "task-1"),
+                webhookDelivery("delivery-2", "REJECTED", "rejected-1")
+        ));
+    }
+
+    private static DemoEvidenceBundleVo evidenceBundleWithWebhookDeliveries(
+            List<io.patchpilot.backend.github.webhook.domain.WebhookDeliveryDiagnosticVo> deliveries
+    ) {
         return new DemoEvidenceBundleVo(
                 DemoReadinessStatus.READY,
                 "Demo evidence bundle is ready.",
@@ -343,11 +413,8 @@ class DemoSessionReportServiceTests {
                 task(),
                 "https://github.com/bingqin2/PatchPilot/pull/42",
                 webhookSetupReadiness(),
-                webhookDelivery("delivery-1", "TASK_CREATED", "task-1"),
-                List.of(
-                        webhookDelivery("delivery-1", "TASK_CREATED", "task-1"),
-                        webhookDelivery("delivery-2", "REJECTED", "rejected-1")
-                ),
+                deliveries.isEmpty() ? null : deliveries.get(0),
+                deliveries,
                 null,
                 0,
                 Instant.parse("2026-06-24T00:00:00Z"),
@@ -419,6 +486,28 @@ class DemoSessionReportServiceTests {
                         : io.patchpilot.backend.github.webhook.domain.WebhookDeliveryOutcomeType.REJECTED_TRIGGER,
                 outcomeId,
                 "TASK_CREATED".equals(status) ? "/tasks/" + outcomeId : "/rejected-triggers/" + outcomeId,
+                Instant.parse("2026-06-24T00:00:00Z")
+        );
+    }
+
+    private static io.patchpilot.backend.github.webhook.domain.WebhookDeliveryDiagnosticVo webhookDeliveryRequiringRedelivery() {
+        return new io.patchpilot.backend.github.webhook.domain.WebhookDeliveryDiagnosticVo(
+                "record-delivery-invalid",
+                "delivery-invalid",
+                "issue_comment.created",
+                io.patchpilot.backend.github.webhook.domain.WebhookDeliveryDiagnosticStatus.INVALID_SIGNATURE,
+                null,
+                "bingqin2",
+                "PatchPilot",
+                1L,
+                "bingqin2",
+                "/agent fix replace docs/demo.md demo",
+                "Webhook signature verification failed.",
+                true,
+                "Fix the webhook secret or payload URL first, then use GitHub's Redeliver action for this delivery.",
+                io.patchpilot.backend.github.webhook.domain.WebhookDeliveryOutcomeType.ERROR,
+                "error-delivery-invalid",
+                "/webhook-deliveries/delivery-invalid",
                 Instant.parse("2026-06-24T00:00:00Z")
         );
     }
