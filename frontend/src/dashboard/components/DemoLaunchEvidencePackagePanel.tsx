@@ -1,6 +1,11 @@
 import { Archive, Copy, Download } from 'lucide-react';
 import { useState } from 'react';
-import type { DemoLaunchEvidencePackage, DemoLaunchEvidencePackageArchive, DemoReadinessStatus } from '../../types';
+import type {
+  DemoLaunchEvidencePackage,
+  DemoLaunchEvidencePackageArchive,
+  DemoLaunchEvidenceShareCenter,
+  DemoReadinessStatus
+} from '../../types';
 import { compactDateTime } from '../format';
 
 interface DemoLaunchEvidencePackagePanelProps {
@@ -8,9 +13,12 @@ interface DemoLaunchEvidencePackagePanelProps {
   error: string | null;
   archives: DemoLaunchEvidencePackageArchive[];
   archiveError: string | null;
+  shareCenter: DemoLaunchEvidenceShareCenter | null;
+  shareCenterError: string | null;
   onArchivePackage: () => Promise<DemoLaunchEvidencePackageArchive>;
   onDownloadReport: () => Promise<Blob>;
   onDownloadArchiveReport: (archiveId: string) => Promise<Blob>;
+  onDownloadShareCenterReport: () => Promise<Blob>;
 }
 
 export function DemoLaunchEvidencePackagePanel({
@@ -18,9 +26,12 @@ export function DemoLaunchEvidencePackagePanel({
   error,
   archives,
   archiveError,
+  shareCenter,
+  shareCenterError,
   onArchivePackage,
   onDownloadReport,
-  onDownloadArchiveReport
+  onDownloadArchiveReport,
+  onDownloadShareCenterReport
 }: DemoLaunchEvidencePackagePanelProps) {
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
   const [downloadStatus, setDownloadStatus] = useState<string | null>(null);
@@ -64,6 +75,16 @@ export function DemoLaunchEvidencePackagePanel({
       setArchiveStatus(`Archived report ${archive.id} downloaded`);
     } catch {
       setArchiveStatus('Archived report download failed');
+    }
+  }
+
+  async function downloadShareCenterReport() {
+    try {
+      const report = await onDownloadShareCenterReport();
+      downloadMarkdown(report, 'patchpilot-demo-launch-evidence-share-center.md');
+      setDownloadStatus('Launch evidence share center downloaded');
+    } catch {
+      setDownloadStatus('Launch evidence share center download failed');
     }
   }
 
@@ -134,6 +155,13 @@ export function DemoLaunchEvidencePackagePanel({
         </div>
       ) : null}
 
+      {shareCenterError ? (
+        <div className="adapter-api-error">
+          <strong>Launch evidence share center unavailable</strong>
+          <span>{shareCenterError}</span>
+        </div>
+      ) : null}
+
       {evidencePackage ? (
         <>
           <div className="demo-evidence-grid">
@@ -186,11 +214,78 @@ export function DemoLaunchEvidencePackagePanel({
             archives={archives}
             onDownloadArchiveReport={(archive) => void downloadArchiveReport(archive)}
           />
+          <LaunchEvidenceShareCenterPanel
+            shareCenter={shareCenter}
+            onDownloadShareCenterReport={() => void downloadShareCenterReport()}
+          />
         </>
       ) : (
         <div className="empty-state">Demo launch evidence package has not loaded yet.</div>
       )}
     </section>
+  );
+}
+
+function LaunchEvidenceShareCenterPanel({
+  shareCenter,
+  onDownloadShareCenterReport
+}: {
+  shareCenter: DemoLaunchEvidenceShareCenter | null;
+  onDownloadShareCenterReport: () => void;
+}) {
+  return (
+    <div className="demo-evidence-actions">
+      <div className="demo-evidence-list-header">
+        <div>
+          <h3>Launch evidence share center</h3>
+          <p>{shareCenter?.summary ?? 'Launch evidence share center has not loaded yet.'}</p>
+        </div>
+        <button
+          className="secondary-button"
+          type="button"
+          onClick={onDownloadShareCenterReport}
+          aria-label="Download launch evidence share center"
+          disabled={!shareCenter}
+        >
+          <Download size={14} />
+          Download share center
+        </button>
+      </div>
+      {shareCenter ? (
+        <>
+          <div className="demo-evidence-records">
+            <div>
+              <span>Status</span>
+              <strong>{shareCenterStatusLabel(shareCenter.status)}</strong>
+              <small>{shareCenter.shareReady ? 'Ready to share' : 'Not share-ready'}</small>
+            </div>
+            <div>
+              <span>Latest archive</span>
+              <strong>{shareCenter.latestArchiveId ?? 'Missing'}</strong>
+              <small>{shareCenter.latestCreatedAt ? compactDateTime(shareCenter.latestCreatedAt) : 'No archive captured'}</small>
+            </div>
+            <div>
+              <span>Session</span>
+              <strong>{shareCenter.latestSessionId ?? 'Missing'}</strong>
+              <small>{shareCenter.archiveCount} archived launch packages</small>
+            </div>
+            <div>
+              <span>Next action</span>
+              <strong>{shareCenter.nextAction}</strong>
+            </div>
+          </div>
+          {shareCenter.latestPullRequestUrl ? (
+            <a href={shareCenter.latestPullRequestUrl} target="_blank" rel="noreferrer">
+              Open archived Pull Request
+            </a>
+          ) : null}
+          <EvidenceList title="Share center downloads" items={shareCenter.downloadActions} />
+          <EvidenceList title="Share center evidence" items={shareCenter.evidenceNotes} />
+        </>
+      ) : (
+        <p>No launch evidence share center loaded.</p>
+      )}
+    </div>
   );
 }
 
@@ -267,6 +362,13 @@ function statusLabel(status: DemoReadinessStatus) {
     case 'BLOCKED':
       return 'Blocked';
   }
+}
+
+function shareCenterStatusLabel(status: DemoLaunchEvidenceShareCenter['status']) {
+  if (status === 'NO_ARCHIVE') {
+    return 'No archive';
+  }
+  return statusLabel(status);
 }
 
 function statusClass(status: DemoReadinessStatus) {

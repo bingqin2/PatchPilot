@@ -20,6 +20,7 @@ import type {
   DemoLaunchCommand,
   DemoLaunchEvidencePackageArchive,
   DemoLaunchEvidencePackage,
+  DemoLaunchEvidenceShareCenter,
   DemoLaunchCommandInput,
   DemoLaunchPreflight,
   DemoLaunchPreflightInput,
@@ -277,6 +278,14 @@ export async function listDemoLaunchEvidencePackageArchives(): Promise<DemoLaunc
 
 export async function downloadDemoLaunchEvidencePackageArchiveReport(archiveId: string): Promise<Blob> {
   return getBlobApi(`/api/demo/launch-evidence-package/archives/${encodeURIComponent(archiveId)}/report/download`);
+}
+
+export async function getDemoLaunchEvidenceShareCenter(): Promise<DemoLaunchEvidenceShareCenter> {
+  return getApi<DemoLaunchEvidenceShareCenter>('/api/demo/launch-evidence-share-center');
+}
+
+export async function downloadDemoLaunchEvidenceShareCenterReport(): Promise<Blob> {
+  return getBlobApi('/api/demo/launch-evidence-share-center/report/download');
 }
 
 export async function archiveDemoReadinessSnapshot(): Promise<DemoReadinessSnapshotArchive> {

@@ -24,6 +24,7 @@ import io.patchpilot.backend.demo.domain.DemoHandoffShareInstructionsVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffFinalizationCheckVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchEvidencePackageArchiveVo;
+import io.patchpilot.backend.demo.domain.DemoLaunchEvidenceShareCenterVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchEvidencePackageVo;
 import io.patchpilot.backend.task.domain.vo.TriggerEvaluationDecisionVo;
 import io.patchpilot.backend.task.domain.vo.TriggerEvaluationResultVo;
@@ -120,6 +121,9 @@ class DemoReadinessControllerTests {
 
     @MockitoBean
     private DemoLaunchEvidencePackageArchiveService demoLaunchEvidencePackageArchiveService;
+
+    @MockitoBean
+    private DemoLaunchEvidenceShareCenterService demoLaunchEvidenceShareCenterService;
 
     @MockitoBean
     private DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
@@ -266,6 +270,39 @@ class DemoReadinessControllerTests {
 
         mockMvc.perform(get("/api/demo/launch-evidence-package/archives/missing-archive/report/download"))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void should_return_demo_launch_evidence_share_center() throws Exception {
+        when(demoLaunchEvidenceShareCenterService.getShareCenter()).thenReturn(launchEvidenceShareCenter());
+
+        mockMvc.perform(get("/api/demo/launch-evidence-share-center"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.shareReady").value(true))
+                .andExpect(jsonPath("$.data.archiveCount").value(1))
+                .andExpect(jsonPath("$.data.latestArchiveId").value("launch-evidence-archive-1"))
+                .andExpect(jsonPath("$.data.latestSessionId").value("demo-session-20260624T003000Z"))
+                .andExpect(jsonPath("$.data.latestTaskId").value("task-1"))
+                .andExpect(jsonPath("$.data.latestPullRequestUrl").value("https://github.com/bingqin2/PatchPilot/pull/42"))
+                .andExpect(jsonPath("$.data.latestWebhookDeliveryId").value("delivery-1"))
+                .andExpect(jsonPath("$.data.evaluationRunId").value("evaluation-run-2"))
+                .andExpect(jsonPath("$.data.downloadActions[0]").value("Download launch evidence package archive launch-evidence-archive-1."))
+                .andExpect(jsonPath("$.data.evidenceNotes[0]").value("Latest launch evidence archive status is READY."))
+                .andExpect(jsonPath("$.data.markdownReport").value(containsString("# PatchPilot Demo Launch Evidence Share Center")));
+    }
+
+    @Test
+    void should_download_demo_launch_evidence_share_center_report() throws Exception {
+        when(demoLaunchEvidenceShareCenterService.getShareCenter()).thenReturn(launchEvidenceShareCenter());
+
+        mockMvc.perform(get("/api/demo/launch-evidence-share-center/report/download"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("patchpilot-demo-launch-evidence-share-center.md")))
+                .andExpect(content().contentType("text/markdown;charset=UTF-8"))
+                .andExpect(content().string(containsString("# PatchPilot Demo Launch Evidence Share Center")))
+                .andExpect(content().string(containsString("launch-evidence-archive-1")));
     }
 
     @Test
@@ -2043,6 +2080,33 @@ class DemoReadinessControllerTests {
                 "evaluation-run-2",
                 Instant.parse("2026-06-28T02:30:00Z"),
                 "# PatchPilot Demo Launch Evidence Package\n\n- Status: `READY`"
+        );
+    }
+
+    private static DemoLaunchEvidenceShareCenterVo launchEvidenceShareCenter() {
+        return new DemoLaunchEvidenceShareCenterVo(
+                "READY",
+                true,
+                "Latest archived launch evidence package is READY and can be shared.",
+                "Download the archived launch evidence package and share it with reviewers.",
+                1,
+                "launch-evidence-archive-1",
+                "demo-session-20260624T003000Z",
+                "2026-06-28T02:30:00Z",
+                "task-1",
+                "https://github.com/bingqin2/PatchPilot/pull/42",
+                "delivery-1",
+                "evaluation-run-2",
+                List.of(
+                        "Download launch evidence package archive launch-evidence-archive-1.",
+                        "Download launch evidence share center report."
+                ),
+                List.of(
+                        "Latest launch evidence archive status is READY.",
+                        "Latest Pull Request https://github.com/bingqin2/PatchPilot/pull/42 is ready for review."
+                ),
+                "# PatchPilot Demo Launch Evidence Share Center\n\n- Status: `READY`\n- Latest archive: `launch-evidence-archive-1`",
+                Instant.parse("2026-06-28T02:45:00Z")
         );
     }
 }
