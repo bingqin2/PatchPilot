@@ -3,8 +3,10 @@ package io.patchpilot.backend.demo;
 import io.patchpilot.backend.demo.domain.DemoHandoffPackageArchiveSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffShareCenterVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffShareChecklistVo;
+import io.patchpilot.backend.demo.domain.DemoHandoffShareDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffShareInstructionsVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessStatus;
+import io.patchpilot.backend.demo.service.DemoHandoffShareDeliveryReceiptRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -18,37 +20,45 @@ public class DemoHandoffShareCenterService {
 
     private final DemoHandoffPackageArchiveSummaryService archiveSummaryService;
     private final DemoHandoffShareChecklistService shareChecklistService;
+    private final DemoHandoffShareDeliveryReceiptRepository receiptRepository;
     private final Clock clock;
 
     @Autowired
     public DemoHandoffShareCenterService(
             DemoHandoffPackageArchiveSummaryService archiveSummaryService,
-            DemoHandoffShareChecklistService shareChecklistService
+            DemoHandoffShareChecklistService shareChecklistService,
+            DemoHandoffShareDeliveryReceiptRepository receiptRepository
     ) {
-        this(archiveSummaryService, shareChecklistService, Clock.systemUTC());
+        this(archiveSummaryService, shareChecklistService, receiptRepository, Clock.systemUTC());
     }
 
     DemoHandoffShareCenterService(
             DemoHandoffPackageArchiveSummaryService archiveSummaryService,
             DemoHandoffShareChecklistService shareChecklistService,
+            DemoHandoffShareDeliveryReceiptRepository receiptRepository,
             Clock clock
     ) {
         this.archiveSummaryService = archiveSummaryService;
         this.shareChecklistService = shareChecklistService;
+        this.receiptRepository = receiptRepository;
         this.clock = clock;
     }
 
     public DemoHandoffShareCenterVo getShareCenter() {
         DemoHandoffPackageArchiveSummaryVo archiveSummary = archiveSummaryService.getArchiveSummary();
         DemoHandoffShareChecklistVo checklist = shareChecklistService.getShareChecklist();
+        DemoHandoffShareDeliveryReceiptVo latestReceipt = receiptRepository.listRecentReceipts(1).stream()
+                .findFirst()
+                .orElse(null);
         DemoReadinessStatus status = centerStatus(archiveSummary, checklist);
         boolean shareReady = archiveSummary.shareReady() && checklist.status() == DemoReadinessStatus.READY;
         Instant generatedAt = Instant.now(clock);
-        List<String> downloadActions = downloadActions(archiveSummary, checklist);
-        List<String> evidenceNotes = evidenceNotes(archiveSummary, checklist);
+        List<String> downloadActions = downloadActions(archiveSummary, checklist, latestReceipt);
+        List<String> evidenceNotes = evidenceNotes(archiveSummary, checklist, latestReceipt);
         String summary = centerSummary(archiveSummary, checklist, shareReady, status);
-        String nextAction = centerNextAction(archiveSummary, checklist, shareReady);
+        String nextAction = centerNextAction(archiveSummary, checklist, shareReady, latestReceipt);
         String latestCreatedAt = archiveSummary.latestCreatedAt() == null ? null : archiveSummary.latestCreatedAt().toString();
+        String latestDeliveredAt = latestReceipt == null ? null : latestReceipt.deliveredAt().toString();
         String markdownReport = formatMarkdown(
                 status,
                 shareReady,
@@ -56,6 +66,7 @@ public class DemoHandoffShareCenterService {
                 nextAction,
                 archiveSummary,
                 checklist,
+                latestReceipt,
                 downloadActions,
                 evidenceNotes,
                 generatedAt
@@ -68,6 +79,11 @@ public class DemoHandoffShareCenterService {
                 archiveSummary.latestArchiveId(),
                 archiveSummary.latestSessionId(),
                 latestCreatedAt,
+                latestReceipt == null ? null : latestReceipt.id(),
+                latestReceipt == null ? null : latestReceipt.deliveryTarget(),
+                latestReceipt == null ? null : latestReceipt.deliveryChannel(),
+                latestDeliveredAt,
+                latestReceipt != null,
                 downloadActions,
                 evidenceNotes,
                 markdownReport,
@@ -129,7 +145,8 @@ public class DemoHandoffShareCenterService {
 
     private static List<String> downloadActions(
             DemoHandoffPackageArchiveSummaryVo archiveSummary,
-            DemoHandoffShareChecklistVo checklist
+            DemoHandoffShareChecklistVo checklist,
+            DemoHandoffShareDeliveryReceiptVo latestReceipt
     ) {
         List<String> actions = new ArrayList<>();
         if (hasText(archiveSummary.latestArchiveId())) {
@@ -139,6 +156,11 @@ public class DemoHandoffShareCenterService {
         }
         actions.add("Download handoff package archive summary.");
         actions.add("Download handoff share checklist.");
+        if (latestReceipt == null) {
+            actions.add("Record a handoff share delivery receipt after sending the package.");
+        } else {
+            actions.add("Download handoff share delivery receipt " + latestReceipt.id() + ".");
+        }
         if (checklist.status() != DemoReadinessStatus.READY) {
             actions.add("Resolve checklist warnings before sending the package.");
         }
@@ -147,11 +169,19 @@ public class DemoHandoffShareCenterService {
 
     private static List<String> evidenceNotes(
             DemoHandoffPackageArchiveSummaryVo archiveSummary,
-            DemoHandoffShareChecklistVo checklist
+            DemoHandoffShareChecklistVo checklist,
+            DemoHandoffShareDeliveryReceiptVo latestReceipt
     ) {
         List<String> notes = new ArrayList<>();
         notes.add("Latest package archive status is " + archiveSummary.status() + ".");
         notes.add("Share checklist has " + checklist.checks().size() + " checks.");
+        if (latestReceipt == null) {
+            notes.add("No handoff share delivery receipt has been recorded yet.");
+        } else {
+            notes.add("Latest delivery receipt " + latestReceipt.id()
+                    + " was recorded for " + latestReceipt.deliveryTarget()
+                    + " via " + latestReceipt.deliveryChannel() + ".");
+        }
         notes.add("Archive summary: " + archiveSummary.summary());
         notes.add("Checklist summary: " + checklist.summary());
         return List.copyOf(notes);
@@ -181,9 +211,13 @@ public class DemoHandoffShareCenterService {
     private static String centerNextAction(
             DemoHandoffPackageArchiveSummaryVo archiveSummary,
             DemoHandoffShareChecklistVo checklist,
-            boolean shareReady
+            boolean shareReady,
+            DemoHandoffShareDeliveryReceiptVo latestReceipt
     ) {
         if (shareReady) {
+            if (latestReceipt == null) {
+                return "Download the package, send the prepared handoff message, then record a delivery receipt.";
+            }
             return "Download the package, archive summary, and share checklist before sending handoff evidence.";
         }
         if (checklist.status() != DemoReadinessStatus.READY) {
@@ -199,6 +233,7 @@ public class DemoHandoffShareCenterService {
             String nextAction,
             DemoHandoffPackageArchiveSummaryVo archiveSummary,
             DemoHandoffShareChecklistVo checklist,
+            DemoHandoffShareDeliveryReceiptVo latestReceipt,
             List<String> downloadActions,
             List<String> evidenceNotes,
             Instant generatedAt
@@ -209,6 +244,11 @@ public class DemoHandoffShareCenterService {
         builder.append("- Share ready: `").append(shareReady).append("`\n");
         builder.append("- Latest archive: `").append(valueOrNone(archiveSummary.latestArchiveId())).append("`\n");
         builder.append("- Latest session: `").append(valueOrNone(archiveSummary.latestSessionId())).append("`\n");
+        builder.append("- Delivery receipt recorded: `").append(latestReceipt != null).append("`\n");
+        builder.append("- Latest delivery receipt: `").append(latestReceipt == null ? "none" : latestReceipt.id()).append("`\n");
+        builder.append("- Delivery target: `").append(latestReceipt == null ? "none" : latestReceipt.deliveryTarget()).append("`\n");
+        builder.append("- Delivery channel: `").append(latestReceipt == null ? "none" : latestReceipt.deliveryChannel()).append("`\n");
+        builder.append("- Delivered at: `").append(latestReceipt == null ? "none" : latestReceipt.deliveredAt()).append("`\n");
         builder.append("- Generated at: `").append(generatedAt).append("`\n\n");
         builder.append("## Summary\n\n").append(summary).append("\n\n");
         builder.append("## Next Action\n\n").append(nextAction).append("\n\n");

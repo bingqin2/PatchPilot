@@ -671,6 +671,16 @@ function HandoffShareCenterPanel({
           <small>{center.latestSessionId ?? 'Archive a handoff package first'}</small>
         </div>
         <div>
+          <span>Latest delivery</span>
+          <strong>{center.deliveryReceiptRecorded ? center.latestDeliveryReceiptId : 'No receipt'}</strong>
+          <small>
+            {center.deliveryReceiptRecorded
+              ? `${center.latestDeliveryChannel} - ${center.latestDeliveryTarget}`
+              : 'Record a delivery receipt after sending the handoff package.'}
+          </small>
+          {center.latestDeliveredAt ? <small>Delivered {compactDateTime(center.latestDeliveredAt)}</small> : null}
+        </div>
+        <div>
           <span>Next action</span>
           <strong>{center.nextAction}</strong>
           <small>Generated {compactDateTime(center.generatedAt)}</small>

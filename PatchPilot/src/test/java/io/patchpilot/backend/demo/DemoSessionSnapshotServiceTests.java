@@ -125,6 +125,11 @@ class DemoSessionSnapshotServiceTests {
                         "Download handoff package archive summary.",
                         "Download handoff share checklist."
                 ),
+                false,
+                null,
+                null,
+                null,
+                null,
                 Instant.parse("2026-06-24T00:00:00Z"),
                 nextActions
         );

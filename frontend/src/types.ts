@@ -469,6 +469,11 @@ export interface DemoEvidenceBundle {
   handoffShareCenterSummary: string;
   handoffShareCenterNextAction: string;
   handoffShareCenterDownloadActions: string[];
+  handoffShareDeliveryReceiptRecorded: boolean;
+  handoffShareLatestDeliveryReceiptId: string | null;
+  handoffShareLatestDeliveryTarget: string | null;
+  handoffShareLatestDeliveryChannel: string | null;
+  handoffShareLatestDeliveredAt: string | null;
   generatedAt: string;
   nextActions: string[];
 }
@@ -611,6 +616,11 @@ export interface DemoHandoffShareCenter {
   latestArchiveId: string | null;
   latestSessionId: string | null;
   latestCreatedAt: string | null;
+  latestDeliveryReceiptId: string | null;
+  latestDeliveryTarget: string | null;
+  latestDeliveryChannel: string | null;
+  latestDeliveredAt: string | null;
+  deliveryReceiptRecorded: boolean;
   downloadActions: string[];
   evidenceNotes: string[];
   markdownReport: string;

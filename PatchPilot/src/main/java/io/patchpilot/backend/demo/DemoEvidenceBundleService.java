@@ -174,6 +174,11 @@ public class DemoEvidenceBundleService {
                 handoffShareCenter.summary(),
                 handoffShareCenter.nextAction(),
                 handoffShareCenter.downloadActions(),
+                handoffShareCenter.deliveryReceiptRecorded(),
+                handoffShareCenter.latestDeliveryReceiptId(),
+                handoffShareCenter.latestDeliveryTarget(),
+                handoffShareCenter.latestDeliveryChannel(),
+                handoffShareCenter.latestDeliveredAt(),
                 Instant.now(),
                 nextActions
         );

@@ -385,6 +385,11 @@ class DemoReadinessControllerTests {
                         "Download handoff package archive summary.",
                         "Download handoff share checklist."
                 ),
+                false,
+                null,
+                null,
+                null,
+                null,
                 Instant.parse("2026-06-24T00:00:00Z"),
                 List.of("Run one controlled issue-to-PR smoke task before a live demo.")
         ));
@@ -504,6 +509,11 @@ class DemoReadinessControllerTests {
                         "Download handoff package archive summary.",
                         "Download handoff share checklist."
                 ),
+                false,
+                null,
+                null,
+                null,
+                null,
                 Instant.parse("2026-06-24T00:00:00Z"),
                 List.of("Follow the script from step 1 through Pull Request review.")
         );
@@ -1156,6 +1166,11 @@ class DemoReadinessControllerTests {
                 "handoff-archive-1",
                 "demo-session-20260624T003000Z",
                 "2026-06-24T04:00:00Z",
+                null,
+                null,
+                null,
+                null,
+                false,
                 List.of(
                         "Download handoff package archive handoff-archive-1.",
                         "Download handoff package archive summary.",
@@ -1195,6 +1210,11 @@ class DemoReadinessControllerTests {
                 "handoff-archive-1",
                 "demo-session-20260624T003000Z",
                 "2026-06-24T04:00:00Z",
+                null,
+                null,
+                null,
+                null,
+                false,
                 List.of("Download handoff package archive handoff-archive-1."),
                 List.of("Latest package archive is READY."),
                 "# PatchPilot Demo Handoff Share Center\n\n- Status: `READY`",

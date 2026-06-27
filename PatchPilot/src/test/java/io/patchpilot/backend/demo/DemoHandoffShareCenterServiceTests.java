@@ -4,7 +4,9 @@ import io.patchpilot.backend.demo.domain.DemoHandoffPackageArchiveSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffShareCenterVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffShareChecklistItemVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffShareChecklistVo;
+import io.patchpilot.backend.demo.domain.DemoHandoffShareDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessStatus;
+import io.patchpilot.backend.demo.service.DemoHandoffShareDeliveryReceiptRepository;
 import org.junit.jupiter.api.Test;
 
 import java.time.Clock;
@@ -22,9 +24,11 @@ class DemoHandoffShareCenterServiceTests {
 
     private final DemoHandoffPackageArchiveSummaryService archiveSummaryService = mock(DemoHandoffPackageArchiveSummaryService.class);
     private final DemoHandoffShareChecklistService shareChecklistService = mock(DemoHandoffShareChecklistService.class);
+    private final DemoHandoffShareDeliveryReceiptRepository receiptRepository = mock(DemoHandoffShareDeliveryReceiptRepository.class);
     private final DemoHandoffShareCenterService service = new DemoHandoffShareCenterService(
             archiveSummaryService,
             shareChecklistService,
+            receiptRepository,
             CLOCK
     );
 
@@ -32,6 +36,7 @@ class DemoHandoffShareCenterServiceTests {
     void should_build_share_ready_center_from_archive_summary_and_checklist() {
         when(archiveSummaryService.getArchiveSummary()).thenReturn(readyArchiveSummary());
         when(shareChecklistService.getShareChecklist()).thenReturn(readyChecklist());
+        when(receiptRepository.listRecentReceipts(1)).thenReturn(List.of(deliveryReceipt()));
 
         DemoHandoffShareCenterVo center = service.getShareCenter();
 
@@ -43,16 +48,23 @@ class DemoHandoffShareCenterServiceTests {
         assertThat(center.latestArchiveId()).isEqualTo("handoff-archive-1");
         assertThat(center.latestSessionId()).isEqualTo("demo-session-20260624T003000Z");
         assertThat(center.latestCreatedAt()).isEqualTo("2026-06-24T04:05:00Z");
+        assertThat(center.latestDeliveryReceiptId()).isEqualTo("receipt-1");
+        assertThat(center.latestDeliveryTarget()).isEqualTo("Demo reviewer");
+        assertThat(center.latestDeliveryChannel()).isEqualTo("email");
+        assertThat(center.latestDeliveredAt()).isEqualTo("2026-06-24T05:20:00Z");
+        assertThat(center.deliveryReceiptRecorded()).isTrue();
         assertThat(center.generatedAt()).isEqualTo(Instant.parse("2026-06-24T05:30:00Z"));
         assertThat(center.downloadActions()).containsExactly(
                 "Download handoff package archive handoff-archive-1.",
                 "Download handoff package archive summary.",
-                "Download handoff share checklist."
+                "Download handoff share checklist.",
+                "Download handoff share delivery receipt receipt-1."
         );
         assertThat(center.evidenceNotes())
                 .contains(
                         "Latest package archive status is READY.",
                         "Share checklist has 2 checks.",
+                        "Latest delivery receipt receipt-1 was recorded for Demo reviewer via email.",
                         "Archive summary: Latest handoff package archive is ready to share.",
                         "Checklist summary: Latest handoff archive is ready to share."
                 );
@@ -60,6 +72,9 @@ class DemoHandoffShareCenterServiceTests {
                 .contains("# PatchPilot Demo Handoff Share Center")
                 .contains("- Status: `READY`")
                 .contains("- Share ready: `true`")
+                .contains("- Delivery receipt recorded: `true`")
+                .contains("- Latest delivery receipt: `receipt-1`")
+                .contains("- Delivery target: `Demo reviewer`")
                 .contains("## Embedded Archive Summary")
                 .contains("# Archive Summary")
                 .contains("## Embedded Share Checklist")
@@ -71,6 +86,7 @@ class DemoHandoffShareCenterServiceTests {
     void should_block_sharing_when_no_archive_is_available_and_checklist_needs_attention() {
         when(archiveSummaryService.getArchiveSummary()).thenReturn(emptyArchiveSummary());
         when(shareChecklistService.getShareChecklist()).thenReturn(checklistNeedingAttention());
+        when(receiptRepository.listRecentReceipts(1)).thenReturn(List.of());
 
         DemoHandoffShareCenterVo center = service.getShareCenter();
 
@@ -82,22 +98,48 @@ class DemoHandoffShareCenterServiceTests {
         assertThat(center.latestArchiveId()).isNull();
         assertThat(center.latestSessionId()).isNull();
         assertThat(center.latestCreatedAt()).isNull();
+        assertThat(center.latestDeliveryReceiptId()).isNull();
+        assertThat(center.deliveryReceiptRecorded()).isFalse();
         assertThat(center.downloadActions()).containsExactly(
                 "Archive a demo handoff package before downloading final handoff evidence.",
                 "Download handoff package archive summary.",
                 "Download handoff share checklist.",
+                "Record a handoff share delivery receipt after sending the package.",
                 "Resolve checklist warnings before sending the package."
         );
         assertThat(center.markdownReport())
                 .contains("- Latest archive: `none`")
                 .contains("- Latest session: `none`")
+                .contains("- Delivery receipt recorded: `false`")
+                .contains("- Latest delivery receipt: `none`")
                 .contains("Resolve checklist warnings before sending the package.");
+    }
+
+    @Test
+    void should_request_delivery_receipt_when_share_center_is_ready_but_not_delivered() {
+        when(archiveSummaryService.getArchiveSummary()).thenReturn(readyArchiveSummary());
+        when(shareChecklistService.getShareChecklist()).thenReturn(readyChecklist());
+        when(receiptRepository.listRecentReceipts(1)).thenReturn(List.of());
+
+        DemoHandoffShareCenterVo center = service.getShareCenter();
+
+        assertThat(center.status()).isEqualTo(DemoReadinessStatus.READY);
+        assertThat(center.shareReady()).isTrue();
+        assertThat(center.deliveryReceiptRecorded()).isFalse();
+        assertThat(center.latestDeliveryReceiptId()).isNull();
+        assertThat(center.downloadActions()).contains(
+                "Record a handoff share delivery receipt after sending the package."
+        );
+        assertThat(center.evidenceNotes()).contains("No handoff share delivery receipt has been recorded yet.");
+        assertThat(center.nextAction())
+                .isEqualTo("Download the package, send the prepared handoff message, then record a delivery receipt.");
     }
 
     @Test
     void should_build_share_instructions_from_share_ready_center() {
         when(archiveSummaryService.getArchiveSummary()).thenReturn(readyArchiveSummary());
         when(shareChecklistService.getShareChecklist()).thenReturn(readyChecklist());
+        when(receiptRepository.listRecentReceipts(1)).thenReturn(List.of(deliveryReceipt()));
 
         var instructions = service.getShareInstructions();
 
@@ -134,6 +176,7 @@ class DemoHandoffShareCenterServiceTests {
     void should_block_share_instructions_when_share_center_is_not_ready() {
         when(archiveSummaryService.getArchiveSummary()).thenReturn(emptyArchiveSummary());
         when(shareChecklistService.getShareChecklist()).thenReturn(checklistNeedingAttention());
+        when(receiptRepository.listRecentReceipts(1)).thenReturn(List.of());
 
         var instructions = service.getShareInstructions();
 
@@ -208,6 +251,23 @@ class DemoHandoffShareCenterServiceTests {
                 )),
                 "# Share Checklist",
                 Instant.parse("2026-06-24T05:00:00Z")
+        );
+    }
+
+    private static DemoHandoffShareDeliveryReceiptVo deliveryReceipt() {
+        return new DemoHandoffShareDeliveryReceiptVo(
+                "receipt-1",
+                DemoReadinessStatus.READY,
+                "handoff-archive-1",
+                "demo-session-20260624T003000Z",
+                "email",
+                "Demo reviewer",
+                "local-operator",
+                "Sent after the demo review.",
+                "PatchPilot demo handoff: demo-session-20260624T003000Z",
+                Instant.parse("2026-06-24T05:20:00Z"),
+                Instant.parse("2026-06-24T05:21:00Z"),
+                "# PatchPilot Demo Handoff Share Delivery Receipt"
         );
     }
 }

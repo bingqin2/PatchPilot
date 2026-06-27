@@ -53,8 +53,14 @@ const snapshot: DemoSessionSnapshot = {
     handoffShareCenterDownloadActions: [
       'Download handoff package archive handoff-archive-1.',
       'Download handoff package archive summary.',
-      'Download handoff share checklist.'
+      'Download handoff share checklist.',
+      'Download handoff share delivery receipt delivery-receipt-1.'
     ],
+    handoffShareDeliveryReceiptRecorded: true,
+    handoffShareLatestDeliveryReceiptId: 'delivery-receipt-1',
+    handoffShareLatestDeliveryTarget: 'maintainer@example.com',
+    handoffShareLatestDeliveryChannel: 'email',
+    handoffShareLatestDeliveredAt: '2026-06-24T06:05:00Z',
     configuration: null,
     adapterFixtures: {
       totalCount: 12,
@@ -229,12 +235,22 @@ const handoffShareCenter: DemoHandoffShareCenter = {
   latestArchiveId: 'handoff-archive-1',
   latestSessionId: 'demo-session-20260624T003000Z',
   latestCreatedAt: '2026-06-24T04:05:00Z',
+  latestDeliveryReceiptId: 'delivery-receipt-1',
+  latestDeliveryTarget: 'maintainer@example.com',
+  latestDeliveryChannel: 'email',
+  latestDeliveredAt: '2026-06-24T06:05:00Z',
+  deliveryReceiptRecorded: true,
   downloadActions: [
     'Download handoff package archive handoff-archive-1.',
     'Download handoff package archive summary.',
-    'Download handoff share checklist.'
+    'Download handoff share checklist.',
+    'Download handoff share delivery receipt delivery-receipt-1.'
   ],
-  evidenceNotes: ['Latest package archive is READY.', 'Share checklist has 2 checks.'],
+  evidenceNotes: [
+    'Latest package archive is READY.',
+    'Share checklist has 2 checks.',
+    'Latest delivery receipt delivery-receipt-1 was recorded for maintainer@example.com via email.'
+  ],
   markdownReport: '# PatchPilot Demo Handoff Share Center\n\n- Status: `READY`',
   generatedAt: '2026-06-24T05:30:00Z'
 };
@@ -459,7 +475,11 @@ test('renders demo session snapshot summary, evidence, checklist, contract, and 
   expect(within(panel).getByRole('heading', { name: 'Handoff share center' })).toBeInTheDocument();
   expect(within(panel).getByText('Post-demo handoff package is ready to share.')).toBeInTheDocument();
   expect(within(panel).getByText('Download handoff package archive handoff-archive-1.')).toBeInTheDocument();
+  expect(within(panel).getAllByText('Download handoff share delivery receipt delivery-receipt-1.').length).toBeGreaterThanOrEqual(1);
   expect(within(panel).getByText('Latest package archive is READY.')).toBeInTheDocument();
+  expect(within(panel).getByText('Latest delivery')).toBeInTheDocument();
+  expect(within(panel).getAllByText('delivery-receipt-1').length).toBeGreaterThanOrEqual(2);
+  expect(within(panel).getAllByText('email - maintainer@example.com').length).toBeGreaterThanOrEqual(1);
   expect(within(panel).getByRole('button', { name: 'Download handoff share center' })).toBeInTheDocument();
   expect(within(panel).getByRole('heading', { name: 'Handoff share instructions' })).toBeInTheDocument();
   expect(within(panel).getByText('Share the current handoff package with repository maintainers and demo reviewers.')).toBeInTheDocument();
@@ -469,8 +489,8 @@ test('renders demo session snapshot summary, evidence, checklist, contract, and 
   expect(within(panel).getByRole('button', { name: 'Copy handoff share instructions' })).toBeInTheDocument();
   expect(within(panel).getByRole('button', { name: 'Download handoff share instructions' })).toBeInTheDocument();
   expect(within(panel).getByRole('heading', { name: 'Handoff share delivery receipts' })).toBeInTheDocument();
-  expect(within(panel).getByText('delivery-receipt-1')).toBeInTheDocument();
-  expect(within(panel).getByText(/email - maintainer@example\.com/)).toBeInTheDocument();
+  expect(within(panel).getAllByText('delivery-receipt-1').length).toBeGreaterThanOrEqual(2);
+  expect(within(panel).getAllByText(/email - maintainer@example\.com/).length).toBeGreaterThanOrEqual(2);
   expect(within(panel).getByRole('button', { name: 'Record handoff share delivery receipt' })).toBeInTheDocument();
   expect(within(panel).getByRole('button', { name: 'Download handoff share delivery receipt delivery-receipt-1' })).toBeInTheDocument();
   expect(within(panel).getByRole('heading', { name: 'Handoff share checklist' })).toBeInTheDocument();
