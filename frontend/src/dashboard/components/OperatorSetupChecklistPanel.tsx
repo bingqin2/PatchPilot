@@ -216,10 +216,12 @@ function githubWebhookUrlCheck(
   githubWebhookUrlReadiness: GitHubWebhookUrlReadiness | null,
   demoReadiness: DemoReadiness | null
 ): SetupCheck {
-  const demoReadinessCheck = demoReadiness?.checks.find((check) => check.name === 'GitHub webhook URL');
+  const demoReadinessCheck = demoReadiness?.checks.find((check) =>
+    check.name === 'GitHub webhook setup' || check.name === 'GitHub webhook URL'
+  );
   if (demoReadinessCheck) {
     return {
-      name: 'Webhook public URL',
+      name: 'Webhook setup',
       ready: demoReadinessCheck.status === 'READY',
       message: demoReadinessCheck.message,
       action: demoReadinessCheck.action,
@@ -229,7 +231,7 @@ function githubWebhookUrlCheck(
 
   const ready = githubWebhookUrlReadiness?.status === 'READY';
   return {
-    name: 'Webhook public URL',
+    name: 'Webhook setup',
     ready,
     message: githubWebhookUrlReadiness?.message ?? 'GitHub webhook URL readiness has not loaded',
     action: githubWebhookUrlReadiness?.operatorAction

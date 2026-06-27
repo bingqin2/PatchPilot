@@ -8,6 +8,7 @@ import io.patchpilot.backend.evaluation.domain.EvaluationFixtureBaselineRunDiges
 import io.patchpilot.backend.evaluation.domain.EvaluationFixtureBaselineRunRegressionSummaryVo;
 import io.patchpilot.backend.github.credential.domain.GitHubCredentialReadinessVo;
 import io.patchpilot.backend.github.credential.domain.GitHubRepositoryAccessReadinessVo;
+import io.patchpilot.backend.github.credential.domain.GitHubWebhookSetupReadinessVo;
 import io.patchpilot.backend.github.credential.domain.GitHubWebhookUrlReadinessVo;
 import io.patchpilot.backend.language.domain.LanguageAdapterFixtureVerificationVo;
 import io.patchpilot.backend.language.domain.LanguageAdapterRuntimeReadinessVo;
@@ -52,7 +53,7 @@ class DemoReadinessServiceTests {
                         "Backend",
                         "Credentials",
                         "GitHub credentials",
-                        "GitHub webhook URL",
+                        "GitHub webhook setup",
                         "GitHub repository access",
                         "Safety policy",
                         "Demo target policy",
@@ -68,6 +69,52 @@ class DemoReadinessServiceTests {
         assertThat(readiness.checks())
                 .allSatisfy(check -> assertThat(check.status()).isEqualTo(DemoReadinessStatus.READY));
         assertThat(readiness.nextActions()).containsExactly("Open a controlled GitHub issue and comment /agent fix with a concrete change request.");
+    }
+
+    @Test
+    void should_block_demo_when_webhook_setup_readiness_is_blocked() {
+        String setupAction = "Set PATCHPILOT_GITHUB_WEBHOOK_SECRET to the same value configured in GitHub Webhooks.";
+        DemoReadinessService service = service(
+                () -> configuration(true, true, true, true),
+                () -> List.of(fixture("java-maven", "PASS")),
+                () -> List.of(runtime("java", "maven", "mvn", "READY")),
+                DemoReadinessServiceTests::readyGitHubCredential,
+                DemoReadinessServiceTests::readyRepositoryAccess,
+                DemoReadinessServiceTests::readyWebhookUrl,
+                () -> new GitHubWebhookSetupReadinessVo(
+                        "BLOCKED",
+                        false,
+                        false,
+                        "https://demo.trycloudflare.com",
+                        "https://demo.trycloudflare.com/api/github/webhook",
+                        "https://demo.trycloudflare.com/health",
+                        null,
+                        null,
+                        false,
+                        "Webhook setup is blocked until required configuration is fixed.",
+                        List.of(setupAction),
+                        Instant.parse("2026-06-27T01:00:00Z"),
+                        "# PatchPilot Webhook Setup Readiness"
+                ),
+                DemoReadinessServiceTests::readyModelProvider,
+                () -> FixTaskQueueSummaryVo.empty(),
+                DemoReadinessServiceTests::readyWorker,
+                DemoReadinessServiceTests::stableBaselineRegression,
+                () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/12"))
+        );
+
+        DemoReadinessVo readiness = service.getReadiness();
+
+        assertThat(readiness.status()).isEqualTo(DemoReadinessStatus.BLOCKED);
+        assertThat(readiness.checks())
+                .filteredOn(check -> check.name().equals("GitHub webhook setup"))
+                .singleElement()
+                .satisfies(check -> {
+                    assertThat(check.status()).isEqualTo(DemoReadinessStatus.BLOCKED);
+                    assertThat(check.message()).contains("Webhook setup is blocked until required configuration is fixed.");
+                    assertThat(check.action()).isEqualTo(setupAction);
+                });
+        assertThat(readiness.nextActions()).contains(setupAction);
     }
 
     @Test
@@ -691,6 +738,36 @@ class DemoReadinessServiceTests {
             Supplier<EvaluationFixtureBaselineRunRegressionSummaryVo> evaluationBaselineRegressionSupplier,
             Supplier<List<FixTaskVo>> recentTasksSupplier
     ) {
+        return service(
+                configurationSupplier,
+                fixtureSupplier,
+                runtimeReadinessSupplier,
+                gitHubCredentialReadinessSupplier,
+                gitHubRepositoryAccessReadinessSupplier,
+                gitHubWebhookUrlReadinessSupplier,
+                DemoReadinessServiceTests::readyWebhookSetup,
+                modelProviderHealthSupplier,
+                queueSummarySupplier,
+                workerHealthSupplier,
+                evaluationBaselineRegressionSupplier,
+                recentTasksSupplier
+        );
+    }
+
+    private static DemoReadinessService service(
+            Supplier<ConfigurationSummaryVo> configurationSupplier,
+            Supplier<List<LanguageAdapterFixtureVerificationVo>> fixtureSupplier,
+            Supplier<List<LanguageAdapterRuntimeReadinessVo>> runtimeReadinessSupplier,
+            Supplier<GitHubCredentialReadinessVo> gitHubCredentialReadinessSupplier,
+            Supplier<GitHubRepositoryAccessReadinessVo> gitHubRepositoryAccessReadinessSupplier,
+            Supplier<GitHubWebhookUrlReadinessVo> gitHubWebhookUrlReadinessSupplier,
+            Supplier<GitHubWebhookSetupReadinessVo> gitHubWebhookSetupReadinessSupplier,
+            Supplier<ModelProviderHealthVo> modelProviderHealthSupplier,
+            Supplier<FixTaskQueueSummaryVo> queueSummarySupplier,
+            Supplier<FixTaskWorkerHealthVo> workerHealthSupplier,
+            Supplier<EvaluationFixtureBaselineRunRegressionSummaryVo> evaluationBaselineRegressionSupplier,
+            Supplier<List<FixTaskVo>> recentTasksSupplier
+    ) {
         return new DemoReadinessService(
                 configurationSupplier,
                 fixtureSupplier,
@@ -698,6 +775,7 @@ class DemoReadinessServiceTests {
                 gitHubCredentialReadinessSupplier,
                 gitHubRepositoryAccessReadinessSupplier,
                 gitHubWebhookUrlReadinessSupplier,
+                gitHubWebhookSetupReadinessSupplier,
                 modelProviderHealthSupplier,
                 queueSummarySupplier,
                 workerHealthSupplier,
@@ -921,6 +999,24 @@ class DemoReadinessServiceTests {
                 44,
                 Instant.parse("2026-06-27T01:00:00Z"),
                 "Use the payload URL in the GitHub webhook settings."
+        );
+    }
+
+    private static GitHubWebhookSetupReadinessVo readyWebhookSetup() {
+        return new GitHubWebhookSetupReadinessVo(
+                "READY",
+                true,
+                true,
+                "https://demo.trycloudflare.com",
+                "https://demo.trycloudflare.com/api/github/webhook",
+                "https://demo.trycloudflare.com/health",
+                "TASK_CREATED",
+                "delivery-ready",
+                false,
+                "Webhook setup is ready for GitHub deliveries.",
+                List.of("Use the payload URL in GitHub Webhooks and continue the live demo."),
+                Instant.parse("2026-06-27T01:00:00Z"),
+                "# PatchPilot Webhook Setup Readiness"
         );
     }
 

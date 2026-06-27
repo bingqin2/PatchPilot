@@ -1273,6 +1273,12 @@ const demoReadiness = {
       action: 'No action needed.'
     },
     {
+      name: 'GitHub webhook setup',
+      status: 'READY',
+      message: 'Webhook setup is ready for GitHub deliveries. Payload URL: https://demo.trycloudflare.com/api/github/webhook. Latest delivery: TASK_CREATED.',
+      action: 'Use the payload URL in GitHub Webhooks and continue the live demo.'
+    },
+    {
       name: 'Demo target policy',
       status: 'READY',
       message: 'Demo repository and recent trigger user align with configured safety allowlists.',
@@ -2121,6 +2127,8 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(within(demoReadinessPanel).getByRole('heading', { name: 'Demo readiness' })).toBeInTheDocument();
   expect(within(demoReadinessPanel).getAllByText('Needs attention')).toHaveLength(2);
   expect(within(demoReadinessPanel).getAllByText('PatchPilot needs attention before a live demo.')).toHaveLength(2);
+  expect(within(demoReadinessPanel).getByText('GitHub webhook setup')).toBeInTheDocument();
+  expect(within(demoReadinessPanel).getByText('Webhook setup is ready for GitHub deliveries. Payload URL: https://demo.trycloudflare.com/api/github/webhook. Latest delivery: TASK_CREATED.')).toBeInTheDocument();
   expect(within(demoReadinessPanel).getByText('Evaluation baseline')).toBeInTheDocument();
   expect(within(demoReadinessPanel).getByText('Fixture baseline regression status is STABLE with no latest failed cases.')).toBeInTheDocument();
   expect(within(demoReadinessPanel).getAllByText('Run one controlled issue-to-PR smoke task before a live demo.')).toHaveLength(2);
@@ -2649,8 +2657,8 @@ test('summarizes operator setup readiness before a demo run', async () => {
   expect(within(setupChecklist).getByText('Ready - GitHub API accepted the configured token.')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Repository access')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Ready - GitHub token can read repository bingqin2/PatchPilot.')).toBeInTheDocument();
-  expect(within(setupChecklist).getByText('Webhook public URL')).toBeInTheDocument();
-  expect(within(setupChecklist).getByText('Ready - Configured public webhook URL reaches PatchPilot health.')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('Webhook setup')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('Ready - Webhook setup is ready for GitHub deliveries. Payload URL: https://demo.trycloudflare.com/api/github/webhook. Latest delivery: TASK_CREATED.')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('https://demo.trycloudflare.com/api/github/webhook')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Safety policy')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Ready - allowlists, review approvers, and trigger rate limits are configured')).toBeInTheDocument();

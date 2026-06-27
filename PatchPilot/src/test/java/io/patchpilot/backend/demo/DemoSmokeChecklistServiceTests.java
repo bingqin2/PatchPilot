@@ -5,6 +5,7 @@ import io.patchpilot.backend.demo.domain.DemoReadinessStatus;
 import io.patchpilot.backend.demo.domain.DemoReadinessVo;
 import io.patchpilot.backend.demo.domain.DemoSmokeChecklistStatus;
 import io.patchpilot.backend.demo.domain.DemoSmokeChecklistVo;
+import io.patchpilot.backend.github.credential.domain.GitHubWebhookSetupReadinessVo;
 import io.patchpilot.backend.github.webhook.domain.WebhookDeliveryDiagnosticStatus;
 import io.patchpilot.backend.github.webhook.domain.WebhookDeliveryDiagnosticVo;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
@@ -36,6 +37,7 @@ class DemoSmokeChecklistServiceTests {
                         "task-1",
                         "Task created from /agent fix"
                 )),
+                DemoSmokeChecklistServiceTests::readyWebhookSetup,
                 () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/12"))
         );
 
@@ -80,6 +82,7 @@ class DemoSmokeChecklistServiceTests {
                         List.of("Configure missing credentials in .env and restart the backend.")
                 ),
                 List::of,
+                DemoSmokeChecklistServiceTests::readyWebhookSetup,
                 List::of
         );
 
@@ -117,6 +120,7 @@ class DemoSmokeChecklistServiceTests {
                         "task-1",
                         "Task created from /agent fix"
                 )),
+                DemoSmokeChecklistServiceTests::readyWebhookSetup,
                 () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/12"))
         );
 
@@ -160,6 +164,7 @@ class DemoSmokeChecklistServiceTests {
                         null,
                         "Invalid GitHub webhook signature"
                 )),
+                DemoSmokeChecklistServiceTests::readyWebhookSetup,
                 () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/12"))
         );
 
@@ -195,6 +200,7 @@ class DemoSmokeChecklistServiceTests {
                         "task-1",
                         "Duplicate delivery was ignored"
                 )),
+                DemoSmokeChecklistServiceTests::readyWebhookSetup,
                 () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/12"))
         );
 
@@ -209,6 +215,58 @@ class DemoSmokeChecklistServiceTests {
                     assertThat(step.evidence()).contains("delivery-duplicate");
                     assertThat(step.action()).contains("already handled");
                 });
+    }
+
+    @Test
+    void should_block_webhook_delivery_step_when_webhook_setup_is_blocked() {
+        String setupAction = "Set PATCHPILOT_GITHUB_WEBHOOK_PUBLIC_BASE_URL and verify /api/github/webhook-url-readiness is READY.";
+        DemoSmokeChecklistService service = new DemoSmokeChecklistService(
+                () -> new DemoReadinessVo(
+                        DemoReadinessStatus.READY,
+                        "PatchPilot is ready for a controlled demo.",
+                        List.of(
+                                check("Credentials", DemoReadinessStatus.READY),
+                                check("Adapter runtimes", DemoReadinessStatus.READY)
+                        ),
+                        List.of("Open a controlled GitHub issue and comment /agent fix with a concrete change request.")
+                ),
+                () -> List.of(delivery(
+                        "delivery-created",
+                        WebhookDeliveryDiagnosticStatus.TASK_CREATED,
+                        "task-1",
+                        "Task created from /agent fix"
+                )),
+                () -> new GitHubWebhookSetupReadinessVo(
+                        "BLOCKED",
+                        true,
+                        false,
+                        "",
+                        "",
+                        "",
+                        "TASK_CREATED",
+                        "delivery-created",
+                        false,
+                        "Webhook setup is blocked until required configuration is fixed.",
+                        List.of(setupAction),
+                        Instant.parse("2026-06-27T01:00:00Z"),
+                        "# PatchPilot Webhook Setup Readiness"
+                ),
+                () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/12"))
+        );
+
+        DemoSmokeChecklistVo checklist = service.getSmokeChecklist();
+
+        assertThat(checklist.status()).isEqualTo(DemoSmokeChecklistStatus.BLOCKED);
+        assertThat(checklist.steps())
+                .filteredOn(step -> step.name().equals("Webhook delivery"))
+                .singleElement()
+                .satisfies(step -> {
+                    assertThat(step.status()).isEqualTo(DemoSmokeChecklistStatus.BLOCKED);
+                    assertThat(step.message()).isEqualTo("Webhook setup is blocked until required configuration is fixed.");
+                    assertThat(step.evidence()).isEqualTo("delivery-created");
+                    assertThat(step.action()).isEqualTo(setupAction);
+                });
+        assertThat(checklist.nextActions()).contains(setupAction);
     }
 
     private static DemoReadinessCheckVo check(String name, DemoReadinessStatus status) {
@@ -259,6 +317,24 @@ class DemoSmokeChecklistServiceTests {
                 "mvn test",
                 456L,
                 "https://github.com/bingqin2/PatchPilot/issues/1#issuecomment-456"
+        );
+    }
+
+    private static GitHubWebhookSetupReadinessVo readyWebhookSetup() {
+        return new GitHubWebhookSetupReadinessVo(
+                "READY",
+                true,
+                true,
+                "https://demo.trycloudflare.com",
+                "https://demo.trycloudflare.com/api/github/webhook",
+                "https://demo.trycloudflare.com/health",
+                "TASK_CREATED",
+                "delivery-created",
+                false,
+                "Webhook setup is ready for GitHub deliveries.",
+                List.of("Use the payload URL in GitHub Webhooks and continue the live demo."),
+                Instant.parse("2026-06-27T01:00:00Z"),
+                "# PatchPilot Webhook Setup Readiness"
         );
     }
 }
