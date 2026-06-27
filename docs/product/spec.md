@@ -88,6 +88,7 @@ The current implementation target is local self-hosted development first. Hosted
 - Operators should be able to configure a public webhook base URL, see the derived GitHub Payload URL, and run a read-only health probe against that public URL before posting a live `/agent fix` trigger.
 - Operators should be able to inspect one read-only webhook setup summary that combines webhook secret configuration, public payload URL readiness, latest delivery outcome, redelivery recommendation, next actions, and copyable Markdown evidence without exposing the secret.
 - Demo readiness and the live smoke checklist should consume the same webhook setup summary so a missing secret, unreachable public payload URL, or redelivery-required delivery blocks or warns before an operator posts a live trigger.
+- Demo handoff packages should include an explicit webhook delivery evidence check so a recent task-created delivery is visible as handoff-ready evidence, missing delivery history needs attention, and redelivery-required delivery failures block the handoff until setup is fixed.
 - Operators should be able to paste a GitHub delivery payload into an admin-protected read-only diagnostic endpoint and see signature status, JSON validity, event/action support, `/agent fix` recognition, parsed repository/issue fields, and the next operator action without creating tasks or delivery records.
 
 ### Fix Task Creation
@@ -107,6 +108,7 @@ The current implementation target is local self-hosted development first. Hosted
 - Operators should be able to track prepared demo launch commands after posting them by correlating browser-local command history with recent webhook delivery, task, and Pull Request evidence without creating tasks or mutating GitHub.
 - Operators should be able to copy a Markdown outcome report for a tracked demo launch that includes the exact command, webhook outcome, task result, Pull Request URL, and next action without creating tasks or mutating GitHub.
 - Operators should be able to save recent demo launch outcome reports in browser-local history, include those saved outcomes in demo session reports, reopen task and Pull Request links from that archive, copy archived reports again, and clear the archive without creating tasks or mutating GitHub.
+- Operators should be able to copy or download a final demo handoff package whose readiness section ties together recent webhook delivery, completed task, Pull Request, prepared command, archived outcome, and readiness trend evidence without creating tasks or mutating GitHub.
 - Task execution must pass a repository language-adapter preflight after workspace preparation and before model patch generation.
 - Operators should be able to run a local repository preflight diagnostic that uses the same language adapter registry without creating a task, running tests, mutating Git, or opening a Pull Request.
 - Local repository preflight diagnostics must reject paths outside configured allowed roots before adapter detection.

@@ -6,6 +6,7 @@ import io.patchpilot.backend.demo.domain.DemoReadinessStatus;
 import io.patchpilot.backend.demo.domain.DemoScriptStepVo;
 import io.patchpilot.backend.demo.domain.DemoSessionSnapshotVo;
 import io.patchpilot.backend.github.credential.domain.GitHubWebhookSetupReadinessVo;
+import io.patchpilot.backend.github.webhook.domain.WebhookDeliveryDiagnosticStatus;
 import io.patchpilot.backend.github.webhook.domain.WebhookDeliveryDiagnosticVo;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
@@ -123,6 +124,7 @@ public class DemoSessionReportService {
         List<HandoffReadinessCheck> checks = List.of(
                 snapshotStatusCheck(snapshot),
                 recentTaskCheck(snapshot.evidenceBundle().recentTask()),
+                webhookDeliveryCheck(snapshot.evidenceBundle().recentWebhookDeliveries()),
                 recentPullRequestCheck(snapshot.evidenceBundle().recentPullRequestUrl()),
                 preparedCommandCheck(request.preparedLaunchCommands()),
                 archivedOutcomeCheck(request.archivedLaunchOutcomes()),
@@ -155,6 +157,54 @@ public class DemoSessionReportService {
                 "Recent task evidence",
                 DemoReadinessStatus.NEEDS_ATTENTION,
                 task.id() + " is " + task.status() + ", not completed."
+        );
+    }
+
+    private static HandoffReadinessCheck webhookDeliveryCheck(List<WebhookDeliveryDiagnosticVo> deliveries) {
+        if (deliveries == null || deliveries.isEmpty()) {
+            return new HandoffReadinessCheck(
+                    "Webhook delivery evidence",
+                    DemoReadinessStatus.NEEDS_ATTENTION,
+                    "No recent webhook delivery evidence is available in the session snapshot."
+            );
+        }
+
+        for (WebhookDeliveryDiagnosticVo delivery : deliveries) {
+            if (delivery.status() == WebhookDeliveryDiagnosticStatus.TASK_CREATED) {
+                return taskCreatedWebhookDeliveryCheck(delivery);
+            }
+            if (delivery.redeliveryRecommended()) {
+                return redeliveryRequiredWebhookDeliveryCheck(delivery);
+            }
+        }
+
+        return nonTaskWebhookDeliveryCheck(deliveries.get(0));
+    }
+
+    private static HandoffReadinessCheck taskCreatedWebhookDeliveryCheck(WebhookDeliveryDiagnosticVo delivery) {
+        return new HandoffReadinessCheck(
+                "Webhook delivery evidence",
+                DemoReadinessStatus.READY,
+                valueOrNone(delivery.deliveryId()) + " created task "
+                        + valueOrNone(firstNonBlank(delivery.taskId(), delivery.outcomeId())) + "."
+        );
+    }
+
+    private static HandoffReadinessCheck redeliveryRequiredWebhookDeliveryCheck(WebhookDeliveryDiagnosticVo delivery) {
+        return new HandoffReadinessCheck(
+                "Webhook delivery evidence",
+                DemoReadinessStatus.BLOCKED,
+                valueOrNone(delivery.deliveryId()) + " is " + valueOrNone(delivery.status())
+                        + "; " + valueOrNone(delivery.operatorAction())
+        );
+    }
+
+    private static HandoffReadinessCheck nonTaskWebhookDeliveryCheck(WebhookDeliveryDiagnosticVo latestDelivery) {
+        return new HandoffReadinessCheck(
+                "Webhook delivery evidence",
+                DemoReadinessStatus.NEEDS_ATTENTION,
+                valueOrNone(latestDelivery.deliveryId()) + " is " + valueOrNone(latestDelivery.status())
+                        + "; " + valueOrNone(latestDelivery.operatorAction())
         );
     }
 
@@ -240,7 +290,7 @@ public class DemoSessionReportService {
 
     private static String handoffSummary(DemoReadinessStatus status) {
         return switch (status) {
-            case READY -> "Handoff package has current PR, command, outcome, and readiness trend evidence.";
+            case READY -> "Handoff package has current webhook delivery, PR, command, outcome, and readiness trend evidence.";
             case NEEDS_ATTENTION -> "Handoff package is missing evidence required for a credible live-demo handoff.";
             case BLOCKED -> "Handoff package has a blocking readiness signal that should be resolved before a live-demo handoff.";
         };

@@ -110,6 +110,13 @@ the task detail route; rejected deliveries point to the rejected-trigger audit
 anchor created during the same webhook handling path; ignored deliveries and
 errors keep a typed outcome without introducing another task-triggering path.
 
+Demo handoff package readiness consumes the same recent delivery diagnostics as
+read-only evidence. A task-created delivery satisfies the webhook evidence
+check, missing delivery history needs attention, and a latest delivery that
+requires redelivery blocks the handoff with the diagnostic operator action. This
+check does not call GitHub, redeliver events, create tasks, mutate queue state,
+archive reports, or write new delivery diagnostics.
+
 ## Worker Runtime Health
 
 The single-process backend records queue worker heartbeat state in memory through
