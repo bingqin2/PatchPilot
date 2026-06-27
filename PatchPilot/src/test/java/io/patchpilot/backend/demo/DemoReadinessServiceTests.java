@@ -6,6 +6,8 @@ import io.patchpilot.backend.demo.domain.DemoReadinessStatus;
 import io.patchpilot.backend.demo.domain.DemoReadinessVo;
 import io.patchpilot.backend.evaluation.domain.EvaluationFixtureBaselineRunDigestVo;
 import io.patchpilot.backend.evaluation.domain.EvaluationFixtureBaselineRunRegressionSummaryVo;
+import io.patchpilot.backend.evaluation.domain.EvaluationRunArchiveDigestVo;
+import io.patchpilot.backend.evaluation.domain.EvaluationRunArchiveReadinessSummaryVo;
 import io.patchpilot.backend.github.credential.domain.GitHubCredentialReadinessVo;
 import io.patchpilot.backend.github.credential.domain.GitHubRepositoryAccessReadinessVo;
 import io.patchpilot.backend.github.credential.domain.GitHubWebhookSetupReadinessVo;
@@ -40,6 +42,7 @@ class DemoReadinessServiceTests {
                 () -> new FixTaskQueueSummaryVo(3, 0, 0, 0, 0, 3, 0, 0),
                 DemoReadinessServiceTests::readyWorker,
                 DemoReadinessServiceTests::stableBaselineRegression,
+                DemoReadinessServiceTests::readyEvaluationRunArchive,
                 () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/12"))
         );
 
@@ -64,6 +67,7 @@ class DemoReadinessServiceTests {
                         "Queue",
                         "Worker heartbeat",
                         "Evaluation baseline",
+                        "Evaluation run archive",
                         "Recent Pull Request"
                 );
         assertThat(readiness.checks())
@@ -100,6 +104,7 @@ class DemoReadinessServiceTests {
                 () -> FixTaskQueueSummaryVo.empty(),
                 DemoReadinessServiceTests::readyWorker,
                 DemoReadinessServiceTests::stableBaselineRegression,
+                DemoReadinessServiceTests::readyEvaluationRunArchive,
                 () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/12"))
         );
 
@@ -725,6 +730,41 @@ class DemoReadinessServiceTests {
                 });
     }
 
+    @Test
+    void should_block_demo_when_latest_full_evaluation_run_archive_failed() {
+        DemoReadinessService service = service(
+                () -> configuration(true, true, true, true),
+                () -> List.of(fixture("java-maven", "PASS")),
+                () -> List.of(runtime("java", "maven", "mvn", "READY")),
+                DemoReadinessServiceTests::readyGitHubCredential,
+                DemoReadinessServiceTests::readyRepositoryAccess,
+                DemoReadinessServiceTests::readyWebhookUrl,
+                DemoReadinessServiceTests::readyModelProvider,
+                () -> FixTaskQueueSummaryVo.empty(),
+                DemoReadinessServiceTests::readyWorker,
+                DemoReadinessServiceTests::stableBaselineRegression,
+                () -> evaluationRunArchiveSummary(
+                        "BLOCKED",
+                        evaluationRunDigest("full-eval-failed", "NEEDS_ATTENTION", 6, 4, 3, 1, 2),
+                        null,
+                        "Fix the latest full evaluation run failures, then rerun and archive evaluation evidence."
+                ),
+                () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/12"))
+        );
+
+        DemoReadinessVo readiness = service.getReadiness();
+
+        assertThat(readiness.status()).isEqualTo(DemoReadinessStatus.BLOCKED);
+        assertThat(readiness.checks())
+                .filteredOn(check -> check.name().equals("Evaluation run archive"))
+                .singleElement()
+                .satisfies(check -> {
+                    assertThat(check.status()).isEqualTo(DemoReadinessStatus.BLOCKED);
+                    assertThat(check.message()).contains("Latest full evaluation run full-eval-failed is not ready");
+                    assertThat(check.action()).isEqualTo("Fix the latest full evaluation run failures, then rerun and archive evaluation evidence.");
+                });
+    }
+
     private static DemoReadinessService service(
             Supplier<ConfigurationSummaryVo> configurationSupplier,
             Supplier<List<LanguageAdapterFixtureVerificationVo>> fixtureSupplier,
@@ -750,6 +790,38 @@ class DemoReadinessServiceTests {
                 queueSummarySupplier,
                 workerHealthSupplier,
                 evaluationBaselineRegressionSupplier,
+                DemoReadinessServiceTests::readyEvaluationRunArchive,
+                recentTasksSupplier
+        );
+    }
+
+    private static DemoReadinessService service(
+            Supplier<ConfigurationSummaryVo> configurationSupplier,
+            Supplier<List<LanguageAdapterFixtureVerificationVo>> fixtureSupplier,
+            Supplier<List<LanguageAdapterRuntimeReadinessVo>> runtimeReadinessSupplier,
+            Supplier<GitHubCredentialReadinessVo> gitHubCredentialReadinessSupplier,
+            Supplier<GitHubRepositoryAccessReadinessVo> gitHubRepositoryAccessReadinessSupplier,
+            Supplier<GitHubWebhookUrlReadinessVo> gitHubWebhookUrlReadinessSupplier,
+            Supplier<ModelProviderHealthVo> modelProviderHealthSupplier,
+            Supplier<FixTaskQueueSummaryVo> queueSummarySupplier,
+            Supplier<FixTaskWorkerHealthVo> workerHealthSupplier,
+            Supplier<EvaluationFixtureBaselineRunRegressionSummaryVo> evaluationBaselineRegressionSupplier,
+            Supplier<EvaluationRunArchiveReadinessSummaryVo> evaluationRunArchiveSummarySupplier,
+            Supplier<List<FixTaskVo>> recentTasksSupplier
+    ) {
+        return service(
+                configurationSupplier,
+                fixtureSupplier,
+                runtimeReadinessSupplier,
+                gitHubCredentialReadinessSupplier,
+                gitHubRepositoryAccessReadinessSupplier,
+                gitHubWebhookUrlReadinessSupplier,
+                DemoReadinessServiceTests::readyWebhookSetup,
+                modelProviderHealthSupplier,
+                queueSummarySupplier,
+                workerHealthSupplier,
+                evaluationBaselineRegressionSupplier,
+                evaluationRunArchiveSummarySupplier,
                 recentTasksSupplier
         );
     }
@@ -766,6 +838,7 @@ class DemoReadinessServiceTests {
             Supplier<FixTaskQueueSummaryVo> queueSummarySupplier,
             Supplier<FixTaskWorkerHealthVo> workerHealthSupplier,
             Supplier<EvaluationFixtureBaselineRunRegressionSummaryVo> evaluationBaselineRegressionSupplier,
+            Supplier<EvaluationRunArchiveReadinessSummaryVo> evaluationRunArchiveSummarySupplier,
             Supplier<List<FixTaskVo>> recentTasksSupplier
     ) {
         return new DemoReadinessService(
@@ -780,6 +853,7 @@ class DemoReadinessServiceTests {
                 queueSummarySupplier,
                 workerHealthSupplier,
                 evaluationBaselineRegressionSupplier,
+                evaluationRunArchiveSummarySupplier,
                 recentTasksSupplier
         );
     }
@@ -1049,6 +1123,60 @@ class DemoReadinessServiceTests {
                 List.of(),
                 List.of(),
                 "Fixture baseline is stable; keep the latest archive as current demo evidence."
+        );
+    }
+
+    private static EvaluationRunArchiveReadinessSummaryVo readyEvaluationRunArchive() {
+        return evaluationRunArchiveSummary(
+                "READY",
+                evaluationRunDigest("full-eval-latest", "READY", 6, 4, 4, 0, 2),
+                evaluationRunDigest("full-eval-previous", "READY", 6, 4, 4, 0, 2),
+                "Full evaluation run archive is ready; use it as current demo evidence."
+        );
+    }
+
+    private static EvaluationRunArchiveReadinessSummaryVo evaluationRunArchiveSummary(
+            String status,
+            EvaluationRunArchiveDigestVo latestRun,
+            EvaluationRunArchiveDigestVo previousRun,
+            String nextAction
+    ) {
+        return new EvaluationRunArchiveReadinessSummaryVo(
+                status,
+                latestRun,
+                previousRun,
+                0,
+                0,
+                0,
+                List.of("go", "java", "node", "python"),
+                List.of("go", "maven", "npm", "pytest"),
+                List.of("DANGEROUS_INSTRUCTION", "NOT_ACTIONABLE"),
+                "Evaluation run readiness summary reads archived full evaluation runs only; it does not create tasks, call the model, mutate Git, or write to GitHub.",
+                nextAction,
+                "# PatchPilot Evaluation Run Readiness Summary"
+        );
+    }
+
+    private static EvaluationRunArchiveDigestVo evaluationRunDigest(
+            String id,
+            String status,
+            int totalCaseCount,
+            int executedFixCaseCount,
+            int passedFixCaseCount,
+            int failedFixCaseCount,
+            int skippedCaseCount
+    ) {
+        return new EvaluationRunArchiveDigestVo(
+                id,
+                status,
+                totalCaseCount,
+                4,
+                2,
+                executedFixCaseCount,
+                passedFixCaseCount,
+                failedFixCaseCount,
+                skippedCaseCount,
+                Instant.parse("2026-06-28T02:00:00Z")
         );
     }
 

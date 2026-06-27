@@ -4,6 +4,27 @@ This file records dated implementation progress, validation commands, and import
 
 ## 2026-06-28
 
+Implemented evaluation run readiness gate from `docs/plans/248-evaluation-run-readiness-gate.md`.
+
+Changes:
+
+- Added `GET /api/evaluation/runs/summary` as a read-only summary over archived full evaluation runs.
+- Added latest and previous full evaluation run digests, pass/fail/skip deltas, language/build-system coverage, safety categories, side-effect contract, next action, and Markdown evidence.
+- Added an `Evaluation run archive` demo readiness check that needs attention when no full evaluation run is archived, blocks when the latest archived run is failed or lacks safety coverage, and reports ready when the latest run passed with safety rejection coverage.
+- Added dashboard API wiring and an evaluation catalog readiness section that refreshes after `Run evaluation` and can copy the full evaluation readiness report.
+- Updated README, product spec, frontend design notes, architecture notes, and this execution log.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=EvaluationRunArchiveReadinessSummaryServiceTests,DemoReadinessServiceTests test`: first failed because the summary service and VO contracts did not exist; passed after backend service and demo readiness implementation, 22 tests run, 0 failures.
+- `mvn -pl PatchPilot -Dtest=EvaluationCaseControllerTests test`: first failed because the controller endpoint dependency was missing; passed after adding `GET /api/evaluation/runs/summary`, 11 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts src/dashboard/components/EvaluationCaseCatalogPanel.test.tsx src/App.test.tsx --reporter=basic`: first failed because the frontend API helper, panel summary section, and App refresh wiring did not exist; passed after implementation, 194 tests run, 0 failures.
+- `mvn -pl PatchPilot -Dtest=EvaluationRunArchiveReadinessSummaryServiceTests,DemoReadinessServiceTests,EvaluationCaseControllerTests test`: passed after combined targeted backend verification.
+- `mvn -pl PatchPilot test`: passed after full backend regression verification, 864 tests run, 0 failures.
+- `npm test -- --reporter=dot`: passed after full frontend regression verification, 27 test files and 329 tests run.
+- `npm run build`: passed after TypeScript and production Vite build verification.
+- `git diff --check`: passed.
+
 Implemented evaluation run execution archive from `docs/plans/247-evaluation-run-execution-archive.md`.
 
 Changes:

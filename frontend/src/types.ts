@@ -995,6 +995,36 @@ export interface EvaluationRunArchive {
   report: string;
 }
 
+export type EvaluationRunArchiveReadinessStatus = 'NO_ARCHIVES' | 'READY' | 'BLOCKED';
+
+export interface EvaluationRunArchiveDigest {
+  id: string;
+  status: EvaluationSummaryStatus;
+  totalCaseCount: number;
+  supportedFixCaseCount: number;
+  safetyRejectionCaseCount: number;
+  executedFixCaseCount: number;
+  passedFixCaseCount: number;
+  failedFixCaseCount: number;
+  skippedCaseCount: number;
+  createdAt: string;
+}
+
+export interface EvaluationRunArchiveReadinessSummary {
+  status: EvaluationRunArchiveReadinessStatus;
+  latestRun: EvaluationRunArchiveDigest | null;
+  previousRun: EvaluationRunArchiveDigest | null;
+  passedDelta: number;
+  failedDelta: number;
+  skippedDelta: number;
+  coveredLanguages: string[];
+  coveredBuildSystems: string[];
+  safetyRejectionCategories: string[];
+  sideEffectContract: string;
+  nextAction: string;
+  markdownReport: string;
+}
+
 export interface FixTaskQueueSummary {
   totalCount: number;
   pendingCount: number;

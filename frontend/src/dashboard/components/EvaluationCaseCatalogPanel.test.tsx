@@ -8,6 +8,7 @@ import type {
   EvaluationFixtureBaselineRunRegressionSummary,
   EvaluationFixtureBaselineSummary,
   EvaluationRunPreview,
+  EvaluationRunArchiveReadinessSummary,
   EvaluationRunArchive,
   EvaluationRunSnapshotArchive
 } from '../../types';
@@ -134,6 +135,43 @@ const evaluationRuns: EvaluationRunArchive[] = [
     report: '# PatchPilot Evaluation Run\n\n- Evaluation run id: `evaluation-run-1`'
   }
 ];
+
+const evaluationRunSummary: EvaluationRunArchiveReadinessSummary = {
+  status: 'READY',
+  latestRun: {
+    id: 'evaluation-run-1',
+    status: 'READY',
+    totalCaseCount: 3,
+    supportedFixCaseCount: 2,
+    safetyRejectionCaseCount: 1,
+    executedFixCaseCount: 2,
+    passedFixCaseCount: 2,
+    failedFixCaseCount: 0,
+    skippedCaseCount: 1,
+    createdAt: '2026-06-28T04:00:00Z'
+  },
+  previousRun: {
+    id: 'evaluation-run-0',
+    status: 'READY',
+    totalCaseCount: 3,
+    supportedFixCaseCount: 2,
+    safetyRejectionCaseCount: 1,
+    executedFixCaseCount: 2,
+    passedFixCaseCount: 1,
+    failedFixCaseCount: 1,
+    skippedCaseCount: 1,
+    createdAt: '2026-06-27T04:00:00Z'
+  },
+  passedDelta: 1,
+  failedDelta: -1,
+  skippedDelta: 0,
+  coveredLanguages: ['java', 'node'],
+  coveredBuildSystems: ['maven', 'npm'],
+  safetyRejectionCategories: ['DANGEROUS_INSTRUCTION'],
+  sideEffectContract: 'Evaluation run readiness summary reads archived full evaluation runs only; it does not create tasks, call the model, mutate Git, or write to GitHub.',
+  nextAction: 'Full evaluation run archive is ready; use it as current demo evidence.',
+  markdownReport: '# PatchPilot Evaluation Run Readiness Summary\n\n- Status: `READY`'
+};
 
 
 const caseReadiness: EvaluationCaseFixtureReadinessSummary = {
@@ -332,6 +370,7 @@ function renderPanel(overrides: Partial<React.ComponentProps<typeof EvaluationCa
       fixtureBaselineRegressionSummary={fixtureBaselineRegressionSummary}
       runPreview={runPreview}
       evaluationRuns={evaluationRuns}
+      evaluationRunSummary={evaluationRunSummary}
       evaluationRunLoading={false}
       archives={archives}
       error={null}
@@ -341,6 +380,7 @@ function renderPanel(overrides: Partial<React.ComponentProps<typeof EvaluationCa
       fixtureBaselineRegressionError={null}
       runPreviewError={null}
       evaluationRunError={null}
+      evaluationRunSummaryError={null}
       archiveError={null}
       onRunFixtureBaseline={vi.fn()}
       onRunAndArchiveFixtureBaseline={vi.fn()}
@@ -358,22 +398,22 @@ test('summarizes supported evaluation cases and safety rejections', () => {
   renderPanel();
 
   const panel = screen.getByRole('region', { name: 'Evaluation case catalog' });
-  expect(within(panel).getAllByText('READY')).toHaveLength(7);
+  expect(within(panel).getAllByText('READY')).toHaveLength(8);
   expect(within(panel).getByText('Ready for demo evidence')).toBeInTheDocument();
   expect(within(panel).getByText('3 cases across 2 languages')).toBeInTheDocument();
   expect(within(panel).getByText('2 supported fix cases')).toBeInTheDocument();
   expect(within(panel).getByText('1 safety rejection case')).toBeInTheDocument();
-  expect(within(panel).getByText('maven, npm')).toBeInTheDocument();
+  expect(within(panel).getAllByText('maven, npm').length).toBeGreaterThanOrEqual(2);
   expect(within(panel).getByText('Evaluation catalog is ready for demo evidence; automated evaluation runs are still future work.')).toBeInTheDocument();
   expect(within(panel).getByText('Summary is derived from checked-in evaluation case metadata only; it does not create tasks, call the model, run tests, mutate Git, or write to GitHub.')).toBeInTheDocument();
-  expect(within(panel).getAllByText('java, node')).toHaveLength(2);
+  expect(within(panel).getAllByText('java, node').length).toBeGreaterThanOrEqual(2);
   expect(within(panel).getAllByText('Java Maven documentation fix')).toHaveLength(3);
   expect(within(panel).getAllByText('docs/demo-repositories/java-maven')).toHaveLength(3);
   expect(within(panel).getAllByText('mvn test').length).toBeGreaterThanOrEqual(2);
   expect(within(panel).getByText('mvn test -> mvn test')).toBeInTheDocument();
   expect(within(panel).getAllByText('src/main/java/demo/Calculator.java')).toHaveLength(2);
   expect(within(panel).getAllByText('Reject secret exfiltration')).toHaveLength(3);
-  expect(within(panel).getAllByText('DANGEROUS_INSTRUCTION')).toHaveLength(4);
+  expect(within(panel).getAllByText('DANGEROUS_INSTRUCTION').length).toBeGreaterThanOrEqual(4);
   expect(within(panel).getByText('Rejected before task creation, queueing, model calls, Git commands, and GitHub writes.')).toBeInTheDocument();
   expect(within(panel).getAllByText('Evaluation run preview')).toHaveLength(2);
   expect(within(panel).getAllByText('preview-current-catalog')).toHaveLength(2);
@@ -403,7 +443,7 @@ test('summarizes supported evaluation cases and safety rejections', () => {
   expect(within(panel).getByText('baseline-run-old')).toBeInTheDocument();
   expect(within(panel).getByText('Passed -1')).toBeInTheDocument();
   expect(within(panel).getByText('Failed +1')).toBeInTheDocument();
-  expect(within(panel).getByText('Skipped 0')).toBeInTheDocument();
+  expect(within(panel).getAllByText('Skipped 0').length).toBeGreaterThanOrEqual(1);
   expect(within(panel).getByText('Newly failed: java-maven-doc-fix')).toBeInTheDocument();
   expect(within(panel).getByText('Recovered: none')).toBeInTheDocument();
   expect(within(panel).getByText('Investigate newly failed fixture cases before using the baseline as demo evidence.')).toBeInTheDocument();
@@ -411,9 +451,31 @@ test('summarizes supported evaluation cases and safety rejections', () => {
   expect(within(panel).getByText('2026-06-26T06:00:00Z')).toBeInTheDocument();
   expect(within(panel).getByText('Archive stores a local fixture baseline execution report only; it does not create tasks, call the model, mutate Git, or write to GitHub.')).toBeInTheDocument();
   expect(within(panel).getByText('Archived evaluation runs')).toBeInTheDocument();
-  expect(within(panel).getByText('evaluation-run-1')).toBeInTheDocument();
+  expect(within(panel).getByText('Full evaluation run readiness')).toBeInTheDocument();
+  expect(within(panel).getAllByText('evaluation-run-1')).toHaveLength(2);
+  expect(within(panel).getByText('evaluation-run-0')).toBeInTheDocument();
+  expect(within(panel).getByText('Passed +1')).toBeInTheDocument();
+  expect(within(panel).getByText('Failed -1')).toBeInTheDocument();
+  expect(within(panel).getAllByText('Skipped 0').length).toBeGreaterThanOrEqual(1);
+  expect(within(panel).getAllByText('Full evaluation run archive is ready; use it as current demo evidence.').length).toBeGreaterThanOrEqual(1);
+  expect(within(panel).getByText('Evaluation run readiness summary reads archived full evaluation runs only; it does not create tasks, call the model, mutate Git, or write to GitHub.')).toBeInTheDocument();
+  expect(within(panel).getAllByText('evaluation-run-1').length).toBeGreaterThanOrEqual(1);
   expect(within(panel).getByText('2026-06-28T04:00:00Z')).toBeInTheDocument();
   expect(within(panel).getByText('Evaluation run passed; use the archived report as measurable demo evidence for supported adapters and safety rejections.')).toBeInTheDocument();
+});
+
+test('copies archived full evaluation run readiness summary markdown', async () => {
+  const user = userEvent.setup();
+  const writeText = vi.fn().mockResolvedValue(undefined);
+  Object.defineProperty(navigator, 'clipboard', {
+    configurable: true,
+    value: { writeText }
+  });
+  renderPanel();
+
+  await user.click(screen.getByRole('button', { name: 'Copy full evaluation readiness report' }));
+
+  expect(writeText).toHaveBeenCalledWith('# PatchPilot Evaluation Run Readiness Summary\n\n- Status: `READY`');
 });
 
 test('runs copies and downloads full evaluation run reports', async () => {

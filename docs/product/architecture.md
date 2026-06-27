@@ -128,6 +128,17 @@ mutate Git, push branches, open Pull Requests, send GitHub comments, or write to
 GitHub. Listing and report-download endpoints are read-only over the same
 archive store.
 
+Full evaluation run readiness is a read model over the same archive store.
+`GET /api/evaluation/runs/summary` reads recent archived full evaluation runs,
+projects latest and previous digests, pass/fail/skip deltas, language and
+build-system coverage, safety-rejection categories, next action, and Markdown
+evidence, and does not execute fixture commands. `DemoReadinessService`
+consumes this summary as the `Evaluation run archive` check: no archived full
+run needs attention, a latest failed or safety-incomplete run blocks the live
+demo, and a ready latest run with safety coverage satisfies the check. This
+keeps demo readiness tied to archived local evidence without creating tasks,
+calling the model, mutating Git, opening Pull Requests, or writing to GitHub.
+
 ## Worker Runtime Health
 
 The single-process backend records queue worker heartbeat state in memory through

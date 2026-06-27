@@ -943,6 +943,43 @@ const evaluationRunArchive = {
   report: '# PatchPilot Evaluation Run\n\n- Evaluation run id: `evaluation-run-1`'
 };
 
+const evaluationRunArchiveReadinessSummary = {
+  status: 'READY',
+  latestRun: {
+    id: 'evaluation-run-1',
+    status: 'READY',
+    totalCaseCount: 3,
+    supportedFixCaseCount: 2,
+    safetyRejectionCaseCount: 1,
+    executedFixCaseCount: 2,
+    passedFixCaseCount: 2,
+    failedFixCaseCount: 0,
+    skippedCaseCount: 1,
+    createdAt: '2026-06-28T04:00:00Z'
+  },
+  previousRun: {
+    id: 'evaluation-run-0',
+    status: 'READY',
+    totalCaseCount: 3,
+    supportedFixCaseCount: 2,
+    safetyRejectionCaseCount: 1,
+    executedFixCaseCount: 2,
+    passedFixCaseCount: 1,
+    failedFixCaseCount: 1,
+    skippedCaseCount: 1,
+    createdAt: '2026-06-27T04:00:00Z'
+  },
+  passedDelta: 1,
+  failedDelta: -1,
+  skippedDelta: 0,
+  coveredLanguages: ['java', 'node'],
+  coveredBuildSystems: ['maven', 'npm'],
+  safetyRejectionCategories: ['DANGEROUS_INSTRUCTION'],
+  sideEffectContract: 'Evaluation run readiness summary reads archived full evaluation runs only; it does not create tasks, call the model, mutate Git, or write to GitHub.',
+  nextAction: 'Full evaluation run archive is ready; use it as current demo evidence.',
+  markdownReport: '# PatchPilot Evaluation Run Readiness Summary\n\n- Status: `READY`'
+};
+
 const evaluationFixtureBaselineRunArchive = {
   id: 'baseline-run-1',
   status: 'READY',
@@ -2167,6 +2204,9 @@ beforeEach(() => {
     if (url === '/api/evaluation/runs') {
       return jsonResponse([evaluationRunArchive]);
     }
+    if (url === '/api/evaluation/runs/summary') {
+      return jsonResponse(evaluationRunArchiveReadinessSummary);
+    }
     if (url === '/api/evaluation/run-snapshots' && init?.method === 'POST') {
       return jsonResponse(evaluationRunSnapshotArchive);
     }
@@ -2662,16 +2702,17 @@ test('renders operational task dashboard from backend APIs', async () => {
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/evaluation/fixture-baseline-runs/summary'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/evaluation/run-preview'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/evaluation/runs'));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/evaluation/runs/summary'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/evaluation/run-snapshots'));
   expect(fetchMock).not.toHaveBeenCalledWith('/api/evaluation/fixture-baseline', { method: 'POST' });
   const evaluationCaseCatalog = screen.getByRole('region', { name: 'Evaluation case catalog' });
   expect(within(evaluationCaseCatalog).getByRole('heading', { name: 'Evaluation case catalog' })).toBeInTheDocument();
-  expect(within(evaluationCaseCatalog).getAllByText('READY')).toHaveLength(6);
+  expect(within(evaluationCaseCatalog).getAllByText('READY')).toHaveLength(7);
   expect(within(evaluationCaseCatalog).getByText('Ready for demo evidence')).toBeInTheDocument();
   expect(within(evaluationCaseCatalog).getByText('3 cases across 2 languages')).toBeInTheDocument();
   expect(within(evaluationCaseCatalog).getByText('2 supported fix cases')).toBeInTheDocument();
   expect(within(evaluationCaseCatalog).getByText('1 safety rejection case')).toBeInTheDocument();
-  expect(within(evaluationCaseCatalog).getByText('maven, npm')).toBeInTheDocument();
+  expect(within(evaluationCaseCatalog).getAllByText('maven, npm').length).toBeGreaterThanOrEqual(2);
   expect(within(evaluationCaseCatalog).getByText('Evaluation catalog is ready for demo evidence; automated evaluation runs are still future work.')).toBeInTheDocument();
   expect(within(evaluationCaseCatalog).getByText(/does not create tasks, call the model, run tests, mutate Git, or write to GitHub/)).toBeInTheDocument();
   expect(within(evaluationCaseCatalog).getAllByText('Evaluation run preview')).toHaveLength(2);
@@ -2684,7 +2725,11 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(within(evaluationCaseCatalog).getByText('snapshot-1')).toBeInTheDocument();
   expect(within(evaluationCaseCatalog).getByText('2026-06-26T04:00:00Z')).toBeInTheDocument();
   expect(within(evaluationCaseCatalog).getByText('Archived evaluation runs')).toBeInTheDocument();
-  expect(within(evaluationCaseCatalog).getByText('evaluation-run-1')).toBeInTheDocument();
+  expect(within(evaluationCaseCatalog).getByText('Full evaluation run readiness')).toBeInTheDocument();
+  expect(within(evaluationCaseCatalog).getByText('evaluation-run-0')).toBeInTheDocument();
+  expect(within(evaluationCaseCatalog).getByText('Passed +1')).toBeInTheDocument();
+  expect(within(evaluationCaseCatalog).getAllByText('Full evaluation run archive is ready; use it as current demo evidence.').length).toBeGreaterThanOrEqual(1);
+  expect(within(evaluationCaseCatalog).getAllByText('evaluation-run-1').length).toBeGreaterThanOrEqual(1);
   expect(within(evaluationCaseCatalog).getByText('2026-06-28T04:00:00Z')).toBeInTheDocument();
   expect(within(evaluationCaseCatalog).getByText('Archived evaluation fixture baseline runs')).toBeInTheDocument();
   expect(within(evaluationCaseCatalog).getByText('Evaluation fixture baseline regression')).toBeInTheDocument();
@@ -2709,6 +2754,10 @@ test('renders operational task dashboard from backend APIs', async () => {
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/evaluation/fixture-baseline-runs', { method: 'POST' }));
   await user.click(within(evaluationCaseCatalog).getByRole('button', { name: 'Run evaluation' }));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/evaluation/runs', { method: 'POST' }));
+  await waitFor(() => {
+    const evaluationRunSummaryCalls = fetchMock.mock.calls.filter(([url]) => url === '/api/evaluation/runs/summary');
+    expect(evaluationRunSummaryCalls.length).toBeGreaterThanOrEqual(2);
+  });
   await waitFor(() => {
     const regressionSummaryCalls = fetchMock.mock.calls.filter(([url]) => url === '/api/evaluation/fixture-baseline-runs/summary');
     expect(regressionSummaryCalls.length).toBeGreaterThanOrEqual(2);
@@ -5157,6 +5206,9 @@ function defaultAppResponse(input: RequestInfo | URL, init?: RequestInit) {
   }
   if (url === '/api/evaluation/runs') {
     return jsonResponse([evaluationRunArchive]);
+  }
+  if (url === '/api/evaluation/runs/summary') {
+    return jsonResponse(evaluationRunArchiveReadinessSummary);
   }
   if (url === '/api/evaluation/run-snapshots' && init?.method === 'POST') {
     return jsonResponse(evaluationRunSnapshotArchive);
