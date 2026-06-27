@@ -475,6 +475,20 @@ export interface DemoAdapterFixtureEvidence {
   failedCount: number;
 }
 
+export interface DemoEvaluationRunReadinessEvidence {
+  status: DemoReadinessStatus;
+  latestRunId: string | null;
+  previousRunId: string | null;
+  passedDelta: number;
+  failedDelta: number;
+  skippedDelta: number;
+  coveredLanguages: string[];
+  coveredBuildSystems: string[];
+  safetyRejectionCategories: string[];
+  sideEffectContract: string;
+  nextAction: string;
+}
+
 export interface DemoEvidenceBundle {
   status: DemoReadinessStatus;
   summary: string;
@@ -483,6 +497,7 @@ export interface DemoEvidenceBundle {
   smokeChecklist: DemoSmokeChecklist;
   configuration: ConfigurationSummary | null;
   adapterFixtures: DemoAdapterFixtureEvidence;
+  evaluationRunReadiness: DemoEvaluationRunReadinessEvidence;
   queueSummary: FixTaskQueueSummary;
   recentTask: FixTask | null;
   recentPullRequestUrl: string | null;

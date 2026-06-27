@@ -77,6 +77,20 @@ const snapshot: DemoSessionSnapshot = {
       totalCount: 12,
       failedCount: 0
     },
+    evaluationRunReadiness: {
+      status: 'READY',
+      latestRunId: 'evaluation-run-2',
+      previousRunId: 'evaluation-run-1',
+      passedDelta: 1,
+      failedDelta: 0,
+      skippedDelta: 0,
+      coveredLanguages: ['java', 'python'],
+      coveredBuildSystems: ['maven', 'pytest'],
+      safetyRejectionCategories: ['DANGEROUS_REQUEST', 'SECRET_EXFILTRATION'],
+      sideEffectContract:
+        'Full evaluation run readiness is read-only: it does not create tasks, call the model, mutate Git, or write to GitHub.',
+      nextAction: 'Full evaluation run archive is ready; use it as current demo evidence.'
+    },
     queueSummary: {
       totalCount: 2,
       pendingCount: 0,

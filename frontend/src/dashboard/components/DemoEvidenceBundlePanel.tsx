@@ -90,6 +90,21 @@ export function DemoEvidenceBundlePanel({ bundle, error, onCopyRunbook }: DemoEv
               <small>{bundle.latestWebhookDelivery?.status ?? 'No webhook status'}</small>
             </div>
             <div>
+              <span>Full evaluation run readiness</span>
+              <strong>{statusLabel(bundle.evaluationRunReadiness.status)}</strong>
+              <small>Latest evaluation run {bundle.evaluationRunReadiness.latestRunId ?? 'none'}</small>
+              <small>Previous evaluation run {bundle.evaluationRunReadiness.previousRunId ?? 'none'}</small>
+              <small>
+                Deltas passed {signed(bundle.evaluationRunReadiness.passedDelta)}, failed {signed(bundle.evaluationRunReadiness.failedDelta)}, skipped{' '}
+                {signed(bundle.evaluationRunReadiness.skippedDelta)}
+              </small>
+              <small>
+                Coverage {csv(bundle.evaluationRunReadiness.coveredLanguages)} / {csv(bundle.evaluationRunReadiness.coveredBuildSystems)}
+              </small>
+              <small>Safety {csv(bundle.evaluationRunReadiness.safetyRejectionCategories)}</small>
+              <small>{bundle.evaluationRunReadiness.nextAction}</small>
+            </div>
+            <div>
               <span>Handoff share checklist</span>
               <strong>{statusLabel(bundle.handoffShareChecklistStatus)}</strong>
               <small>{bundle.handoffShareChecklistSummary}</small>
@@ -232,4 +247,12 @@ function deliveryFreshnessLabel(freshness: string) {
 
 function statusClass(status: DemoReadinessStatus) {
   return status.toLowerCase().replace('_', '-');
+}
+
+function signed(value: number) {
+  return value > 0 ? `+${value}` : String(value);
+}
+
+function csv(values: string[]) {
+  return values.length === 0 ? 'none' : values.join(', ');
 }

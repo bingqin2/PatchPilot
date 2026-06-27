@@ -12,6 +12,8 @@ import io.patchpilot.backend.demo.domain.DemoReadinessVo;
 import io.patchpilot.backend.demo.domain.DemoSmokeChecklistStatus;
 import io.patchpilot.backend.demo.domain.DemoSmokeChecklistStepVo;
 import io.patchpilot.backend.demo.domain.DemoSmokeChecklistVo;
+import io.patchpilot.backend.evaluation.domain.EvaluationRunArchiveDigestVo;
+import io.patchpilot.backend.evaluation.domain.EvaluationRunArchiveReadinessSummaryVo;
 import io.patchpilot.backend.github.credential.domain.GitHubWebhookSetupReadinessVo;
 import io.patchpilot.backend.github.webhook.domain.WebhookDeliveryDiagnosticStatus;
 import io.patchpilot.backend.github.webhook.domain.WebhookDeliveryDiagnosticVo;
@@ -52,6 +54,7 @@ class DemoEvidenceBundleServiceTests {
                 DemoEvidenceBundleServiceTests::webhookSetupReadiness,
                 () -> rejectedTriggerSummary(4),
                 () -> List.of(quarantine("quarantine-1")),
+                DemoEvidenceBundleServiceTests::evaluationRunReadiness,
                 DemoEvidenceBundleServiceTests::handoffPackageArchiveSummary,
                 DemoEvidenceBundleServiceTests::handoffShareCenter,
                 DemoEvidenceBundleServiceTests::handoffFinalizationMissingReceipt
@@ -84,6 +87,19 @@ class DemoEvidenceBundleServiceTests {
                 .containsExactly(WebhookDeliveryOutcomeType.TASK, WebhookDeliveryOutcomeType.REJECTED_TRIGGER);
         assertThat(bundle.rejectedTriggerSummary().totalCount()).isEqualTo(4);
         assertThat(bundle.activeQuarantineCount()).isEqualTo(1);
+        assertThat(bundle.evaluationRunReadiness().status()).isEqualTo(DemoReadinessStatus.READY);
+        assertThat(bundle.evaluationRunReadiness().latestRunId()).isEqualTo("evaluation-run-2");
+        assertThat(bundle.evaluationRunReadiness().previousRunId()).isEqualTo("evaluation-run-1");
+        assertThat(bundle.evaluationRunReadiness().passedDelta()).isEqualTo(1);
+        assertThat(bundle.evaluationRunReadiness().failedDelta()).isZero();
+        assertThat(bundle.evaluationRunReadiness().skippedDelta()).isZero();
+        assertThat(bundle.evaluationRunReadiness().coveredLanguages()).containsExactly("java", "python");
+        assertThat(bundle.evaluationRunReadiness().coveredBuildSystems()).containsExactly("maven", "pytest");
+        assertThat(bundle.evaluationRunReadiness().safetyRejectionCategories()).containsExactly("DANGEROUS_REQUEST", "SECRET_EXFILTRATION");
+        assertThat(bundle.evaluationRunReadiness().nextAction())
+                .isEqualTo("Full evaluation run archive is ready; use it as current demo evidence.");
+        assertThat(bundle.evaluationRunReadiness().sideEffectContract())
+                .contains("does not create tasks, call the model, mutate Git, or write to GitHub");
         assertThat(bundle.handoffShareChecklistStatus()).isEqualTo(DemoReadinessStatus.READY);
         assertThat(bundle.handoffShareChecklistSummary()).isEqualTo("Latest handoff archive is ready to share.");
         assertThat(bundle.handoffShareChecklistNextAction())
@@ -136,6 +152,7 @@ class DemoEvidenceBundleServiceTests {
                 DemoEvidenceBundleServiceTests::webhookSetupReadiness,
                 () -> rejectedTriggerSummary(0),
                 List::of,
+                DemoEvidenceBundleServiceTests::evaluationRunReadiness,
                 DemoEvidenceBundleServiceTests::handoffPackageArchiveSummary,
                 DemoEvidenceBundleServiceTests::deliveredHandoffShareCenter,
                 DemoEvidenceBundleServiceTests::handoffFinalizationReady
@@ -187,6 +204,7 @@ class DemoEvidenceBundleServiceTests {
                 DemoEvidenceBundleServiceTests::webhookSetupReadiness,
                 () -> rejectedTriggerSummary(0),
                 List::of,
+                DemoEvidenceBundleServiceTests::evaluationRunMissingReadiness,
                 DemoEvidenceBundleServiceTests::handoffPackageArchiveSummary,
                 DemoEvidenceBundleServiceTests::handoffShareCenter,
                 DemoEvidenceBundleServiceTests::handoffFinalizationMissingReceipt
@@ -196,9 +214,13 @@ class DemoEvidenceBundleServiceTests {
 
         assertThat(bundle.status()).isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
         assertThat(bundle.summary()).isEqualTo("Demo evidence bundle needs attention.");
+        assertThat(bundle.evaluationRunReadiness().status()).isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
+        assertThat(bundle.evaluationRunReadiness().nextAction())
+                .isEqualTo("Run and archive a full evaluation before using it as demo readiness evidence.");
         assertThat(bundle.handoffFinalizationStatus()).isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
         assertThat(bundle.handoffFinalized()).isFalse();
         assertThat(bundle.nextActions()).containsExactly(
+                "Run and archive a full evaluation before using it as demo readiness evidence.",
                 "Send the current handoff package, record a delivery receipt, then download the finalization report."
         );
     }
@@ -379,6 +401,62 @@ class DemoEvidenceBundleServiceTests {
                 null,
                 null,
                 true
+        );
+    }
+
+    private static EvaluationRunArchiveReadinessSummaryVo evaluationRunReadiness() {
+        return new EvaluationRunArchiveReadinessSummaryVo(
+                "READY",
+                new EvaluationRunArchiveDigestVo(
+                        "evaluation-run-2",
+                        "READY",
+                        6,
+                        4,
+                        2,
+                        4,
+                        4,
+                        0,
+                        0,
+                        Instant.parse("2026-06-24T03:00:00Z")
+                ),
+                new EvaluationRunArchiveDigestVo(
+                        "evaluation-run-1",
+                        "READY",
+                        5,
+                        3,
+                        2,
+                        3,
+                        3,
+                        0,
+                        0,
+                        Instant.parse("2026-06-24T02:00:00Z")
+                ),
+                1,
+                0,
+                0,
+                List.of("java", "python"),
+                List.of("maven", "pytest"),
+                List.of("DANGEROUS_REQUEST", "SECRET_EXFILTRATION"),
+                "Evaluation run readiness summary reads archived full evaluation runs only; it does not create tasks, call the model, mutate Git, or write to GitHub.",
+                "Full evaluation run archive is ready; use it as current demo evidence.",
+                "# PatchPilot Evaluation Run Readiness Summary"
+        );
+    }
+
+    private static EvaluationRunArchiveReadinessSummaryVo evaluationRunMissingReadiness() {
+        return new EvaluationRunArchiveReadinessSummaryVo(
+                "NO_ARCHIVES",
+                null,
+                null,
+                0,
+                0,
+                0,
+                List.of(),
+                List.of(),
+                List.of(),
+                "Evaluation run readiness summary reads archived full evaluation runs only; it does not create tasks, call the model, mutate Git, or write to GitHub.",
+                "Run and archive a full evaluation before using it as demo readiness evidence.",
+                "# PatchPilot Evaluation Run Readiness Summary"
         );
     }
 

@@ -2,6 +2,7 @@ package io.patchpilot.backend.demo;
 
 import io.patchpilot.backend.demo.domain.DemoAdapterFixtureEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleSummaryVo;
+import io.patchpilot.backend.demo.domain.DemoEvaluationRunReadinessEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessCheckVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessStatus;
@@ -38,6 +39,13 @@ class DemoRunbookServiceTests {
                 .contains("- Recent task: `task-1` (`COMPLETED`)")
                 .contains("- Latest webhook delivery: `delivery-1` (`TASK_CREATED`)")
                 .contains("- Adapter fixtures: 2 total, 1 failed")
+                .contains("- Full evaluation run readiness: `READY`")
+                .contains("- Latest evaluation run: `evaluation-run-2`")
+                .contains("- Previous evaluation run: `evaluation-run-1`")
+                .contains("- Evaluation deltas: passed +1, failed 0, skipped 0")
+                .contains("- Evaluation coverage: java, python / maven, pytest")
+                .contains("- Safety rejection categories: DANGEROUS_REQUEST, SECRET_EXFILTRATION")
+                .contains("- Evaluation next action: Full evaluation run archive is ready; use it as current demo evidence.")
                 .contains("- Queue: 3 total, 1 pending, 2 completed, 0 failed")
                 .contains("- Rejected triggers: 4 recent")
                 .contains("- Active quarantines: 1")
@@ -120,6 +128,7 @@ class DemoRunbookServiceTests {
                 ),
                 null,
                 new DemoAdapterFixtureEvidenceVo(2, 1),
+                evaluationRunReadiness(),
                 new FixTaskQueueSummaryVo(3, 1, 1, 0, 0, 2, 0, 0),
                 task(),
                 "https://github.com/bingqin2/PatchPilot/pull/42",
@@ -146,6 +155,22 @@ class DemoRunbookServiceTests {
                 null,
                 Instant.parse("2026-06-24T00:00:00Z"),
                 List.of("Fix the webhook secret or URL, then use GitHub Redeliver before the live demo.")
+        );
+    }
+
+    private static DemoEvaluationRunReadinessEvidenceVo evaluationRunReadiness() {
+        return new DemoEvaluationRunReadinessEvidenceVo(
+                DemoReadinessStatus.READY,
+                "evaluation-run-2",
+                "evaluation-run-1",
+                1,
+                0,
+                0,
+                List.of("java", "python"),
+                List.of("maven", "pytest"),
+                List.of("DANGEROUS_REQUEST", "SECRET_EXFILTRATION"),
+                "Evaluation run readiness summary reads archived full evaluation runs only; it does not create tasks, call the model, mutate Git, or write to GitHub.",
+                "Full evaluation run archive is ready; use it as current demo evidence."
         );
     }
 

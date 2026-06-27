@@ -1507,6 +1507,19 @@ const demoEvidenceBundle = {
     totalCount: adapterFixtureVerifications.length,
     failedCount: 0
   },
+  evaluationRunReadiness: {
+    status: 'READY',
+    latestRunId: 'evaluation-run-2',
+    previousRunId: 'evaluation-run-1',
+    passedDelta: 1,
+    failedDelta: 0,
+    skippedDelta: 0,
+    coveredLanguages: ['java', 'python'],
+    coveredBuildSystems: ['maven', 'pytest'],
+    safetyRejectionCategories: ['DANGEROUS_REQUEST', 'SECRET_EXFILTRATION'],
+    sideEffectContract: 'Evaluation run readiness summary reads archived full evaluation runs only; it does not create tasks, call the model, mutate Git, or write to GitHub.',
+    nextAction: 'Full evaluation run archive is ready; use it as current demo evidence.'
+  },
   queueSummary,
   recentTask: completedTask,
   recentPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
@@ -2572,6 +2585,9 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(within(evidenceBundlePanel).getByRole('heading', { name: 'Demo evidence bundle' })).toBeInTheDocument();
   expect(within(evidenceBundlePanel).getByText('Demo evidence bundle needs attention.')).toBeInTheDocument();
   expect(within(evidenceBundlePanel).getByText('Recent PR available')).toBeInTheDocument();
+  expect(within(evidenceBundlePanel).getByText('Full evaluation run readiness')).toBeInTheDocument();
+  expect(within(evidenceBundlePanel).getByText('Latest evaluation run evaluation-run-2')).toBeInTheDocument();
+  expect(within(evidenceBundlePanel).getByText('Coverage java, python / maven, pytest')).toBeInTheDocument();
   expect(within(evidenceBundlePanel).getAllByText('delivery-created-status-comment')).toHaveLength(2);
   expect(within(evidenceBundlePanel).getByText('Recent webhook delivery trail')).toBeInTheDocument();
   expect(within(evidenceBundlePanel).getByText('delivery-invalid-signature')).toBeInTheDocument();
