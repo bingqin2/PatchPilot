@@ -2,6 +2,7 @@ package io.patchpilot.backend.demo;
 
 import io.patchpilot.backend.common.response.ApiResponse;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
+import io.patchpilot.backend.demo.domain.DemoHandoffFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffReadinessVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffPackageArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffPackageArchiveSummaryVo;
@@ -54,6 +55,7 @@ public class DemoReadinessController {
     private final DemoHandoffShareChecklistService demoHandoffShareChecklistService;
     private final DemoHandoffShareCenterService demoHandoffShareCenterService;
     private final DemoHandoffShareDeliveryReceiptService demoHandoffShareDeliveryReceiptService;
+    private final DemoHandoffFinalizationService demoHandoffFinalizationService;
     private final DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
     private final DemoReadinessSnapshotTrendService demoReadinessSnapshotTrendService;
     private final DemoLaunchPreflightService demoLaunchPreflightService;
@@ -239,6 +241,11 @@ public class DemoReadinessController {
         return ApiResponse.ok(demoHandoffShareCenterService.getShareInstructions());
     }
 
+    @GetMapping("/handoff-finalization")
+    public ApiResponse<DemoHandoffFinalizationVo> getHandoffFinalization() {
+        return ApiResponse.ok(demoHandoffFinalizationService.getFinalizationGate());
+    }
+
     @GetMapping(value = "/handoff-share-center/report/download", produces = "text/markdown;charset=UTF-8")
     public ResponseEntity<String> downloadHandoffShareCenterReport() {
         return markdownAttachment(
@@ -252,6 +259,14 @@ public class DemoReadinessController {
         return markdownAttachment(
                 "patchpilot-demo-handoff-share-instructions.md",
                 demoHandoffShareCenterService.getShareInstructions().markdownReport()
+        );
+    }
+
+    @GetMapping(value = "/handoff-finalization/report/download", produces = "text/markdown;charset=UTF-8")
+    public ResponseEntity<String> downloadHandoffFinalizationReport() {
+        return markdownAttachment(
+                "patchpilot-demo-handoff-finalization.md",
+                demoHandoffFinalizationService.getFinalizationGate().markdownReport()
         );
     }
 

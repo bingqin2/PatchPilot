@@ -5,6 +5,7 @@ import io.patchpilot.backend.configuration.ConfigurationSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoAdapterFixtureEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
+import io.patchpilot.backend.demo.domain.DemoHandoffFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffShareCenterVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffPackageArchiveSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessStatus;
@@ -50,6 +51,7 @@ public class DemoEvidenceBundleService {
     private final Supplier<List<TriggerQuarantineVo>> activeQuarantinesSupplier;
     private final Supplier<DemoHandoffPackageArchiveSummaryVo> handoffPackageArchiveSummarySupplier;
     private final Supplier<DemoHandoffShareCenterVo> handoffShareCenterSupplier;
+    private final Supplier<DemoHandoffFinalizationVo> handoffFinalizationSupplier;
 
     @Autowired
     public DemoEvidenceBundleService(
@@ -64,7 +66,8 @@ public class DemoEvidenceBundleService {
             RejectedTriggerAuditService rejectedTriggerAuditService,
             TriggerQuarantineRecordService triggerQuarantineRecordService,
             DemoHandoffPackageArchiveSummaryService demoHandoffPackageArchiveSummaryService,
-            DemoHandoffShareCenterService demoHandoffShareCenterService
+            DemoHandoffShareCenterService demoHandoffShareCenterService,
+            DemoHandoffFinalizationService demoHandoffFinalizationService
     ) {
         this(
                 demoReadinessService::getReadiness,
@@ -87,7 +90,8 @@ public class DemoEvidenceBundleService {
                 () -> rejectedTriggerAuditService.summarizeRejectedTriggers(100),
                 () -> triggerQuarantineRecordService.listQuarantines(true, 20),
                 demoHandoffPackageArchiveSummaryService::getArchiveSummary,
-                demoHandoffShareCenterService::getShareCenter
+                demoHandoffShareCenterService::getShareCenter,
+                demoHandoffFinalizationService::getFinalizationGate
         );
     }
 
@@ -103,7 +107,8 @@ public class DemoEvidenceBundleService {
             Supplier<RejectedTriggerAuditSummaryVo> rejectedTriggerSummarySupplier,
             Supplier<List<TriggerQuarantineVo>> activeQuarantinesSupplier,
             Supplier<DemoHandoffPackageArchiveSummaryVo> handoffPackageArchiveSummarySupplier,
-            Supplier<DemoHandoffShareCenterVo> handoffShareCenterSupplier
+            Supplier<DemoHandoffShareCenterVo> handoffShareCenterSupplier,
+            Supplier<DemoHandoffFinalizationVo> handoffFinalizationSupplier
     ) {
         this.readinessSupplier = readinessSupplier;
         this.smokeChecklistSupplier = smokeChecklistSupplier;
@@ -117,6 +122,7 @@ public class DemoEvidenceBundleService {
         this.activeQuarantinesSupplier = activeQuarantinesSupplier;
         this.handoffPackageArchiveSummarySupplier = handoffPackageArchiveSummarySupplier;
         this.handoffShareCenterSupplier = handoffShareCenterSupplier;
+        this.handoffFinalizationSupplier = handoffFinalizationSupplier;
     }
 
     public DemoEvidenceBundleVo getEvidenceBundle() {
@@ -132,6 +138,7 @@ public class DemoEvidenceBundleService {
         List<TriggerQuarantineVo> activeQuarantines = activeQuarantinesSupplier.get();
         DemoHandoffPackageArchiveSummaryVo handoffPackageArchiveSummary = handoffPackageArchiveSummarySupplier.get();
         DemoHandoffShareCenterVo handoffShareCenter = handoffShareCenterSupplier.get();
+        DemoHandoffFinalizationVo handoffFinalization = handoffFinalizationSupplier.get();
 
         DemoAdapterFixtureEvidenceVo adapterFixtureEvidence = adapterFixtureEvidence(fixtures);
         FixTaskVo recentTask = recentTasks.isEmpty() ? null : recentTasks.get(0);
@@ -142,8 +149,21 @@ public class DemoEvidenceBundleService {
                 .orElse(null);
         WebhookDeliveryDiagnosticVo latestWebhookDelivery = webhookDeliveries.isEmpty() ? null : webhookDeliveries.get(0);
 
-        List<String> nextActions = nextActions(readiness, smokeChecklist, adapterFixtureEvidence, activeQuarantines.size(), recentPullRequestUrl);
-        DemoReadinessStatus status = aggregateStatus(readiness, smokeChecklist, adapterFixtureEvidence, activeQuarantines.size());
+        List<String> nextActions = nextActions(
+                readiness,
+                smokeChecklist,
+                adapterFixtureEvidence,
+                activeQuarantines.size(),
+                recentPullRequestUrl,
+                handoffFinalization
+        );
+        DemoReadinessStatus status = aggregateStatus(
+                readiness,
+                smokeChecklist,
+                adapterFixtureEvidence,
+                activeQuarantines.size(),
+                handoffFinalization
+        );
 
         return new DemoEvidenceBundleVo(
                 status,
@@ -182,6 +202,13 @@ public class DemoEvidenceBundleService {
                 handoffShareCenter.deliveryReceiptFreshness(),
                 handoffShareCenter.deliveryReceiptFresh(),
                 handoffShareCenter.deliveryReceiptFreshnessSummary(),
+                handoffFinalization.status(),
+                handoffFinalization.finalized(),
+                handoffFinalization.summary(),
+                handoffFinalization.nextAction(),
+                handoffFinalization.deliveryReceiptFreshness(),
+                handoffFinalization.deliveryReceiptFresh(),
+                handoffFinalization.latestDeliveryReceiptId(),
                 Instant.now(),
                 nextActions
         );
@@ -198,15 +225,19 @@ public class DemoEvidenceBundleService {
             DemoReadinessVo readiness,
             DemoSmokeChecklistVo smokeChecklist,
             DemoAdapterFixtureEvidenceVo adapterFixtures,
-            long activeQuarantineCount
+            long activeQuarantineCount,
+            DemoHandoffFinalizationVo handoffFinalization
     ) {
-        if (readiness.status() == DemoReadinessStatus.BLOCKED || smokeChecklist.status() == DemoSmokeChecklistStatus.BLOCKED) {
+        if (readiness.status() == DemoReadinessStatus.BLOCKED
+                || smokeChecklist.status() == DemoSmokeChecklistStatus.BLOCKED
+                || handoffFinalization.status() == DemoReadinessStatus.BLOCKED) {
             return DemoReadinessStatus.BLOCKED;
         }
         if (readiness.status() == DemoReadinessStatus.NEEDS_ATTENTION
                 || smokeChecklist.status() == DemoSmokeChecklistStatus.NEEDS_ATTENTION
                 || adapterFixtures.failedCount() > 0
-                || activeQuarantineCount > 0) {
+                || activeQuarantineCount > 0
+                || handoffFinalization.status() == DemoReadinessStatus.NEEDS_ATTENTION) {
             return DemoReadinessStatus.NEEDS_ATTENTION;
         }
         return DemoReadinessStatus.READY;
@@ -253,7 +284,8 @@ public class DemoEvidenceBundleService {
             DemoSmokeChecklistVo smokeChecklist,
             DemoAdapterFixtureEvidenceVo adapterFixtures,
             long activeQuarantineCount,
-            String recentPullRequestUrl
+            String recentPullRequestUrl,
+            DemoHandoffFinalizationVo handoffFinalization
     ) {
         List<String> actions = new ArrayList<>();
         actions.addAll(readiness.nextActions());
@@ -266,6 +298,9 @@ public class DemoEvidenceBundleService {
         }
         if (!hasText(recentPullRequestUrl)) {
             actions.add("Run one controlled issue-to-PR smoke task before a live demo.");
+        }
+        if (handoffFinalization.status() != DemoReadinessStatus.READY) {
+            actions.add(handoffFinalization.nextAction());
         }
         List<String> distinctActions = actions.stream()
                 .filter(DemoEvidenceBundleService::hasText)

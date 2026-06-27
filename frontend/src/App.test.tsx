@@ -1484,6 +1484,21 @@ const demoEvidenceBundle = {
     'Download handoff package archive summary.',
     'Download handoff share checklist.'
   ],
+  handoffShareDeliveryReceiptRecorded: true,
+  handoffShareLatestDeliveryReceiptId: 'delivery-receipt-1',
+  handoffShareLatestDeliveryTarget: 'maintainer@example.com',
+  handoffShareLatestDeliveryChannel: 'email',
+  handoffShareLatestDeliveredAt: '2026-06-24T06:05:00Z',
+  handoffShareDeliveryReceiptFreshness: 'FRESH',
+  handoffShareDeliveryReceiptFresh: true,
+  handoffShareDeliveryReceiptFreshnessSummary: 'Latest delivery receipt matches the current handoff archive and session.',
+  handoffFinalizationStatus: 'READY',
+  handoffFinalized: true,
+  handoffFinalizationSummary: 'Demo handoff is finalized with a fresh delivery receipt for the current archive.',
+  handoffFinalizationNextAction: 'Use the finalization report as the post-demo delivery acceptance record.',
+  handoffFinalizationDeliveryReceiptFreshness: 'FRESH',
+  handoffFinalizationDeliveryReceiptFresh: true,
+  handoffFinalizationLatestDeliveryReceiptId: 'delivery-receipt-1',
   generatedAt: '2026-06-21T08:15:00Z',
   nextActions: ['Run one controlled issue-to-PR smoke task before a live demo.']
 };
@@ -1632,6 +1647,14 @@ const demoHandoffShareCenter = {
   latestArchiveId: 'handoff-archive-1',
   latestSessionId: 'demo-session-20260624T003000Z',
   latestCreatedAt: '2026-06-24T04:05:00Z',
+  latestDeliveryReceiptId: 'delivery-receipt-1',
+  latestDeliveryTarget: 'maintainer@example.com',
+  latestDeliveryChannel: 'email',
+  latestDeliveredAt: '2026-06-24T06:05:00Z',
+  deliveryReceiptRecorded: true,
+  deliveryReceiptFreshness: 'FRESH',
+  deliveryReceiptFresh: true,
+  deliveryReceiptFreshnessSummary: 'Latest delivery receipt matches the current handoff archive and session.',
   downloadActions: [
     'Download handoff package archive handoff-archive-1.',
     'Download handoff package archive summary.',
@@ -1640,6 +1663,49 @@ const demoHandoffShareCenter = {
   evidenceNotes: ['Latest package archive is READY.', 'Share checklist has 2 checks.'],
   markdownReport: '# PatchPilot Demo Handoff Share Center\n\n- Status: `READY`',
   generatedAt: '2026-06-24T05:30:00Z'
+};
+
+const demoHandoffFinalization = {
+  status: 'READY',
+  finalized: true,
+  summary: 'Demo handoff is finalized with a fresh delivery receipt for the current archive.',
+  nextAction: 'Use the finalization report as the post-demo delivery acceptance record.',
+  latestArchiveId: 'handoff-archive-1',
+  latestSessionId: 'demo-session-20260624T003000Z',
+  latestDeliveryReceiptId: 'delivery-receipt-1',
+  latestDeliveryTarget: 'maintainer@example.com',
+  latestDeliveryChannel: 'email',
+  latestDeliveredAt: '2026-06-24T06:05:00Z',
+  deliveryReceiptFreshness: 'FRESH',
+  deliveryReceiptFresh: true,
+  deliveryReceiptFreshnessSummary: 'Latest delivery receipt matches the current handoff archive and session.',
+  checks: [
+    {
+      name: 'Handoff package share readiness',
+      status: 'READY',
+      summary: 'Share center is ready.',
+      nextAction: 'No action needed.'
+    },
+    {
+      name: 'Delivery receipt freshness',
+      status: 'READY',
+      summary: 'Latest delivery receipt matches the current handoff archive and session.',
+      nextAction: 'No action needed.'
+    },
+    {
+      name: 'Final acceptance evidence',
+      status: 'READY',
+      summary: 'Finalization report is ready.',
+      nextAction: 'Download the finalization report.'
+    }
+  ],
+  evidenceNotes: [
+    'Share center status is READY.',
+    'Latest delivery receipt delivery-receipt-1 is fresh for handoff-archive-1/demo-session-20260624T003000Z.',
+    'Finalization report can be downloaded as the acceptance record.'
+  ],
+  markdownReport: '# PatchPilot Demo Handoff Finalization Gate\n\n- Status: `READY`',
+  generatedAt: '2026-06-24T06:00:00Z'
 };
 
 const demoHandoffShareInstructions = {
@@ -1897,6 +1963,9 @@ beforeEach(() => {
     if (url === '/api/demo/handoff-share-center') {
       return jsonResponse(demoHandoffShareCenter);
     }
+    if (url === '/api/demo/handoff-finalization') {
+      return jsonResponse(demoHandoffFinalization);
+    }
     if (url === '/api/demo/handoff-share-instructions') {
       return jsonResponse(demoHandoffShareInstructions);
     }
@@ -1929,6 +1998,15 @@ beforeEach(() => {
         ok: true,
         status: 200,
         blob: async () => new Blob(['# PatchPilot Demo Handoff Share Center'], {
+          type: 'text/markdown;charset=UTF-8'
+        })
+      } as Response);
+    }
+    if (url === '/api/demo/handoff-finalization/report/download') {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        blob: async () => new Blob(['# PatchPilot Demo Handoff Finalization Gate'], {
           type: 'text/markdown;charset=UTF-8'
         })
       } as Response);
@@ -2528,6 +2606,7 @@ test('renders operational task dashboard from backend APIs', async () => {
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/handoff-package-archives/summary'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/handoff-share-checklist'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/handoff-share-center'));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/handoff-finalization'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/handoff-share-instructions'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/handoff-share-delivery-receipts'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/script'));
@@ -2552,12 +2631,16 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(within(sessionPanel).getByRole('heading', { name: 'Handoff share center' })).toBeInTheDocument();
   expect(within(sessionPanel).getByText('Post-demo handoff package is ready to share.')).toBeInTheDocument();
   expect(within(sessionPanel).getByText('Download handoff package archive handoff-archive-1.')).toBeInTheDocument();
+  expect(within(sessionPanel).getByRole('heading', { name: 'Handoff finalization gate' })).toBeInTheDocument();
+  expect(within(sessionPanel).getByText('Demo handoff is finalized with a fresh delivery receipt for the current archive.')).toBeInTheDocument();
+  expect(within(sessionPanel).getByText('Finalized')).toBeInTheDocument();
+  expect(within(sessionPanel).getByText('Finalization report can be downloaded as the acceptance record.')).toBeInTheDocument();
   expect(within(sessionPanel).getByRole('heading', { name: 'Handoff share instructions' })).toBeInTheDocument();
   expect(within(sessionPanel).getByText('Share the current handoff package with repository maintainers and demo reviewers.')).toBeInTheDocument();
   expect(within(sessionPanel).getAllByText('PatchPilot demo handoff: demo-session-20260624T003000Z').length).toBeGreaterThanOrEqual(2);
   expect(within(sessionPanel).getByRole('heading', { name: 'Handoff share delivery receipts' })).toBeInTheDocument();
-  expect(within(sessionPanel).getByText('delivery-receipt-1')).toBeInTheDocument();
-  expect(within(sessionPanel).getByText(/email - maintainer@example\.com/)).toBeInTheDocument();
+  expect(within(sessionPanel).getAllByText('delivery-receipt-1').length).toBeGreaterThanOrEqual(1);
+  expect(within(sessionPanel).getAllByText(/email - maintainer@example\.com/).length).toBeGreaterThanOrEqual(1);
   expect(within(sessionPanel).getByText('Readiness trend')).toBeInTheDocument();
   expect(within(sessionPanel).getByText('Improving')).toBeInTheDocument();
   expect(within(sessionPanel).getByText('+2 ready / -1 warning / -1 blocked')).toBeInTheDocument();
@@ -3244,6 +3327,30 @@ test('downloads handoff share center evidence from the session snapshot panel', 
   expect(within(sessionPanel).getByText('Handoff share center downloaded')).toBeInTheDocument();
 });
 
+test('downloads handoff finalization evidence from the session snapshot panel', async () => {
+  const user = userEvent.setup();
+  const fetchMock = vi.mocked(fetch);
+  const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+  const createObjectURL = vi.fn(() => 'blob:demo-handoff-finalization');
+  const revokeObjectURL = vi.fn();
+  vi.stubGlobal('URL', {
+    ...globalThis.URL,
+    createObjectURL,
+    revokeObjectURL
+  });
+
+  render(<App />);
+
+  const sessionPanel = await screen.findByRole('region', { name: 'Demo session snapshot' });
+  await user.click(within(sessionPanel).getByRole('button', { name: 'Download handoff finalization' }));
+
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/handoff-finalization/report/download'));
+  expect(createObjectURL).toHaveBeenCalledWith(expect.any(Blob));
+  expect(click).toHaveBeenCalledTimes(1);
+  expect(revokeObjectURL).toHaveBeenCalledWith('blob:demo-handoff-finalization');
+  expect(within(sessionPanel).getByText('Handoff finalization downloaded')).toBeInTheDocument();
+});
+
 test('downloads handoff share instructions from the session snapshot panel', async () => {
   const user = userEvent.setup();
   const fetchMock = vi.mocked(fetch);
@@ -3289,6 +3396,12 @@ test('records handoff share delivery receipt from the session snapshot panel', a
     body: expect.stringContaining('"deliveryTarget":"maintainer@example.com"')
   }));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/handoff-share-delivery-receipts'));
+  await waitFor(() => {
+    const finalizationRefreshes = fetchMock.mock.calls.filter(([url]) => url === '/api/demo/handoff-finalization');
+    expect(finalizationRefreshes.length).toBeGreaterThanOrEqual(2);
+  });
+  expect(fetchMock.mock.calls.filter(([url]) => url === '/api/demo/handoff-share-center').length)
+    .toBeGreaterThanOrEqual(2);
   expect(within(sessionPanel).getByText('Handoff share delivery receipt recorded')).toBeInTheDocument();
 });
 

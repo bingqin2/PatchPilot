@@ -20,6 +20,8 @@ import io.patchpilot.backend.demo.domain.DemoHandoffShareChecklistVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffShareCenterVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffShareDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffShareInstructionsVo;
+import io.patchpilot.backend.demo.domain.DemoHandoffFinalizationCheckVo;
+import io.patchpilot.backend.demo.domain.DemoHandoffFinalizationVo;
 import io.patchpilot.backend.task.domain.vo.TriggerEvaluationDecisionVo;
 import io.patchpilot.backend.task.domain.vo.TriggerEvaluationResultVo;
 import io.patchpilot.backend.demo.domain.DemoScriptStepVo;
@@ -97,6 +99,9 @@ class DemoReadinessControllerTests {
 
     @MockitoBean
     private DemoHandoffShareDeliveryReceiptService demoHandoffShareDeliveryReceiptService;
+
+    @MockitoBean
+    private DemoHandoffFinalizationService demoHandoffFinalizationService;
 
     @MockitoBean
     private DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
@@ -390,6 +395,16 @@ class DemoReadinessControllerTests {
                 null,
                 null,
                 null,
+                "MISSING",
+                false,
+                "No delivery receipt has been recorded for the current handoff package.",
+                DemoReadinessStatus.NEEDS_ATTENTION,
+                false,
+                "Demo handoff package is send-ready but final delivery evidence is not current.",
+                "Send the current handoff package, record a delivery receipt, then download the finalization report.",
+                "MISSING",
+                false,
+                null,
                 Instant.parse("2026-06-24T00:00:00Z"),
                 List.of("Run one controlled issue-to-PR smoke task before a live demo.")
         ));
@@ -414,6 +429,13 @@ class DemoReadinessControllerTests {
                         .value("Download the package, archive summary, and share checklist before sending handoff evidence."))
                 .andExpect(jsonPath("$.data.handoffShareCenterDownloadActions[0]")
                         .value("Download handoff package archive handoff-archive-1."))
+                .andExpect(jsonPath("$.data.handoffFinalizationStatus").value("NEEDS_ATTENTION"))
+                .andExpect(jsonPath("$.data.handoffFinalizationSummary")
+                        .value("Demo handoff package is send-ready but final delivery evidence is not current."))
+                .andExpect(jsonPath("$.data.handoffFinalizationNextAction")
+                        .value("Send the current handoff package, record a delivery receipt, then download the finalization report."))
+                .andExpect(jsonPath("$.data.handoffFinalizationDeliveryReceiptFreshness").value("MISSING"))
+                .andExpect(jsonPath("$.data.handoffFinalizationDeliveryReceiptFresh").value(false))
                 .andExpect(jsonPath("$.data.nextActions[0]").value("Run one controlled issue-to-PR smoke task before a live demo."));
     }
 
@@ -1302,6 +1324,92 @@ class DemoReadinessControllerTests {
                 .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("patchpilot-demo-handoff-share-instructions.md")))
                 .andExpect(content().contentTypeCompatibleWith("text/markdown"))
                 .andExpect(content().string(containsString("# PatchPilot Demo Handoff Share Instructions")))
+                .andExpect(content().string(containsString("`READY`")));
+    }
+
+    @Test
+    void should_return_demo_handoff_finalization_gate() throws Exception {
+        when(demoHandoffFinalizationService.getFinalizationGate()).thenReturn(new DemoHandoffFinalizationVo(
+                DemoReadinessStatus.READY,
+                true,
+                "Demo handoff is finalized with a fresh delivery receipt for the current archive.",
+                "Use the finalization report as the post-demo delivery acceptance record.",
+                "handoff-archive-1",
+                "demo-session-20260624T003000Z",
+                "receipt-1",
+                "Demo reviewer",
+                "email",
+                "2026-06-24T05:20:00Z",
+                "FRESH",
+                true,
+                "Latest delivery receipt matches the current handoff archive and session.",
+                List.of(
+                        new DemoHandoffFinalizationCheckVo(
+                                "Handoff package share readiness",
+                                DemoReadinessStatus.READY,
+                                "Share center is ready.",
+                                "No action needed."
+                        ),
+                        new DemoHandoffFinalizationCheckVo(
+                                "Delivery receipt freshness",
+                                DemoReadinessStatus.READY,
+                                "Latest delivery receipt matches the current handoff archive and session.",
+                                "No action needed."
+                        )
+                ),
+                List.of("Finalization report can be downloaded as the acceptance record."),
+                "# PatchPilot Demo Handoff Finalization Gate\n\n- Status: `READY`",
+                Instant.parse("2026-06-24T06:00:00Z")
+        ));
+
+        mockMvc.perform(get("/api/demo/handoff-finalization"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.finalized").value(true))
+                .andExpect(jsonPath("$.data.summary")
+                        .value("Demo handoff is finalized with a fresh delivery receipt for the current archive."))
+                .andExpect(jsonPath("$.data.nextAction")
+                        .value("Use the finalization report as the post-demo delivery acceptance record."))
+                .andExpect(jsonPath("$.data.latestArchiveId").value("handoff-archive-1"))
+                .andExpect(jsonPath("$.data.latestDeliveryReceiptId").value("receipt-1"))
+                .andExpect(jsonPath("$.data.deliveryReceiptFreshness").value("FRESH"))
+                .andExpect(jsonPath("$.data.deliveryReceiptFresh").value(true))
+                .andExpect(jsonPath("$.data.checks[0].name").value("Handoff package share readiness"))
+                .andExpect(jsonPath("$.data.evidenceNotes[0]")
+                        .value("Finalization report can be downloaded as the acceptance record."))
+                .andExpect(jsonPath("$.data.markdownReport")
+                        .value(containsString("# PatchPilot Demo Handoff Finalization Gate")));
+    }
+
+    @Test
+    void should_download_demo_handoff_finalization_as_markdown_attachment() throws Exception {
+        when(demoHandoffFinalizationService.getFinalizationGate()).thenReturn(new DemoHandoffFinalizationVo(
+                DemoReadinessStatus.READY,
+                true,
+                "Demo handoff is finalized with a fresh delivery receipt for the current archive.",
+                "Use the finalization report as the post-demo delivery acceptance record.",
+                "handoff-archive-1",
+                "demo-session-20260624T003000Z",
+                "receipt-1",
+                "Demo reviewer",
+                "email",
+                "2026-06-24T05:20:00Z",
+                "FRESH",
+                true,
+                "Latest delivery receipt matches the current handoff archive and session.",
+                List.of(),
+                List.of("Finalization report can be downloaded as the acceptance record."),
+                "# PatchPilot Demo Handoff Finalization Gate\n\n- Status: `READY`",
+                Instant.parse("2026-06-24T06:00:00Z")
+        ));
+
+        mockMvc.perform(get("/api/demo/handoff-finalization/report/download"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("attachment;")))
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("patchpilot-demo-handoff-finalization.md")))
+                .andExpect(content().contentTypeCompatibleWith("text/markdown"))
+                .andExpect(content().string(containsString("# PatchPilot Demo Handoff Finalization Gate")))
                 .andExpect(content().string(containsString("`READY`")));
     }
 
