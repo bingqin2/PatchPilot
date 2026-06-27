@@ -70,6 +70,10 @@ class DemoRunbookServiceTests {
                 DemoReadinessStatus.NEEDS_ATTENTION,
                 "No handoff package archive is available for sharing.",
                 "Archive a demo handoff package after a completed live run before sharing handoff evidence.",
+                DemoReadinessStatus.NEEDS_ATTENTION,
+                "No archived handoff package is available for sharing.",
+                "Archive a demo handoff package after a completed live run before sharing handoff evidence.",
+                List.of("Archive a demo handoff package before downloading final handoff evidence."),
                 Instant.parse("2026-06-24T00:00:00Z"),
                 List.of()
         ));
@@ -127,6 +131,14 @@ class DemoRunbookServiceTests {
                 DemoReadinessStatus.READY,
                 "Latest handoff archive is ready to share.",
                 "Share the latest handoff package summary and archived package with the reviewer.",
+                DemoReadinessStatus.READY,
+                "Post-demo handoff package is ready to share.",
+                "Download the package, archive summary, and share checklist before sending handoff evidence.",
+                List.of(
+                        "Download handoff package archive handoff-archive-1.",
+                        "Download handoff package archive summary.",
+                        "Download handoff share checklist."
+                ),
                 Instant.parse("2026-06-24T00:00:00Z"),
                 List.of("Fix the webhook secret or URL, then use GitHub Redeliver before the live demo.")
         );

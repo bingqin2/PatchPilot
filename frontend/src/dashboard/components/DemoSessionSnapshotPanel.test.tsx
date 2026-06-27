@@ -43,6 +43,15 @@ const snapshot: DemoSessionSnapshot = {
     handoffShareChecklistStatus: 'READY',
     handoffShareChecklistSummary: 'Latest handoff package archive is share-ready.',
     handoffShareChecklistNextAction: 'Share the current handoff package.',
+    handoffShareCenterStatus: 'READY',
+    handoffShareCenterSummary: 'Post-demo handoff package is ready to share.',
+    handoffShareCenterNextAction:
+      'Download the package, archive summary, and share checklist before sending handoff evidence.',
+    handoffShareCenterDownloadActions: [
+      'Download handoff package archive handoff-archive-1.',
+      'Download handoff package archive summary.',
+      'Download handoff share checklist.'
+    ],
     configuration: null,
     adapterFixtures: {
       totalCount: 12,

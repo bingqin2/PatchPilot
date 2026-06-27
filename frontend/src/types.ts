@@ -465,6 +465,10 @@ export interface DemoEvidenceBundle {
   handoffShareChecklistStatus: DemoReadinessStatus;
   handoffShareChecklistSummary: string;
   handoffShareChecklistNextAction: string;
+  handoffShareCenterStatus: DemoReadinessStatus;
+  handoffShareCenterSummary: string;
+  handoffShareCenterNextAction: string;
+  handoffShareCenterDownloadActions: string[];
   generatedAt: string;
   nextActions: string[];
 }

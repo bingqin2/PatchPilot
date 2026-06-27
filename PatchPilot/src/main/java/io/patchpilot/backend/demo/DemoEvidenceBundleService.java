@@ -5,6 +5,7 @@ import io.patchpilot.backend.configuration.ConfigurationSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoAdapterFixtureEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
+import io.patchpilot.backend.demo.domain.DemoHandoffShareCenterVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffPackageArchiveSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessStatus;
 import io.patchpilot.backend.demo.domain.DemoReadinessVo;
@@ -48,6 +49,7 @@ public class DemoEvidenceBundleService {
     private final Supplier<RejectedTriggerAuditSummaryVo> rejectedTriggerSummarySupplier;
     private final Supplier<List<TriggerQuarantineVo>> activeQuarantinesSupplier;
     private final Supplier<DemoHandoffPackageArchiveSummaryVo> handoffPackageArchiveSummarySupplier;
+    private final Supplier<DemoHandoffShareCenterVo> handoffShareCenterSupplier;
 
     @Autowired
     public DemoEvidenceBundleService(
@@ -61,7 +63,8 @@ public class DemoEvidenceBundleService {
             GitHubWebhookSetupReadinessService gitHubWebhookSetupReadinessService,
             RejectedTriggerAuditService rejectedTriggerAuditService,
             TriggerQuarantineRecordService triggerQuarantineRecordService,
-            DemoHandoffPackageArchiveSummaryService demoHandoffPackageArchiveSummaryService
+            DemoHandoffPackageArchiveSummaryService demoHandoffPackageArchiveSummaryService,
+            DemoHandoffShareCenterService demoHandoffShareCenterService
     ) {
         this(
                 demoReadinessService::getReadiness,
@@ -83,7 +86,8 @@ public class DemoEvidenceBundleService {
                 gitHubWebhookSetupReadinessService::getReadiness,
                 () -> rejectedTriggerAuditService.summarizeRejectedTriggers(100),
                 () -> triggerQuarantineRecordService.listQuarantines(true, 20),
-                demoHandoffPackageArchiveSummaryService::getArchiveSummary
+                demoHandoffPackageArchiveSummaryService::getArchiveSummary,
+                demoHandoffShareCenterService::getShareCenter
         );
     }
 
@@ -98,7 +102,8 @@ public class DemoEvidenceBundleService {
             Supplier<GitHubWebhookSetupReadinessVo> webhookSetupReadinessSupplier,
             Supplier<RejectedTriggerAuditSummaryVo> rejectedTriggerSummarySupplier,
             Supplier<List<TriggerQuarantineVo>> activeQuarantinesSupplier,
-            Supplier<DemoHandoffPackageArchiveSummaryVo> handoffPackageArchiveSummarySupplier
+            Supplier<DemoHandoffPackageArchiveSummaryVo> handoffPackageArchiveSummarySupplier,
+            Supplier<DemoHandoffShareCenterVo> handoffShareCenterSupplier
     ) {
         this.readinessSupplier = readinessSupplier;
         this.smokeChecklistSupplier = smokeChecklistSupplier;
@@ -111,6 +116,7 @@ public class DemoEvidenceBundleService {
         this.rejectedTriggerSummarySupplier = rejectedTriggerSummarySupplier;
         this.activeQuarantinesSupplier = activeQuarantinesSupplier;
         this.handoffPackageArchiveSummarySupplier = handoffPackageArchiveSummarySupplier;
+        this.handoffShareCenterSupplier = handoffShareCenterSupplier;
     }
 
     public DemoEvidenceBundleVo getEvidenceBundle() {
@@ -125,6 +131,7 @@ public class DemoEvidenceBundleService {
         RejectedTriggerAuditSummaryVo rejectedTriggerSummary = rejectedTriggerSummarySupplier.get();
         List<TriggerQuarantineVo> activeQuarantines = activeQuarantinesSupplier.get();
         DemoHandoffPackageArchiveSummaryVo handoffPackageArchiveSummary = handoffPackageArchiveSummarySupplier.get();
+        DemoHandoffShareCenterVo handoffShareCenter = handoffShareCenterSupplier.get();
 
         DemoAdapterFixtureEvidenceVo adapterFixtureEvidence = adapterFixtureEvidence(fixtures);
         FixTaskVo recentTask = recentTasks.isEmpty() ? null : recentTasks.get(0);
@@ -163,6 +170,10 @@ public class DemoEvidenceBundleService {
                 handoffShareChecklistStatus(handoffPackageArchiveSummary),
                 handoffShareChecklistSummary(handoffPackageArchiveSummary),
                 handoffShareChecklistNextAction(handoffPackageArchiveSummary),
+                handoffShareCenter.status(),
+                handoffShareCenter.summary(),
+                handoffShareCenter.nextAction(),
+                handoffShareCenter.downloadActions(),
                 Instant.now(),
                 nextActions
         );

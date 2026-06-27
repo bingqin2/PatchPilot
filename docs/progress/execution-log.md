@@ -4,6 +4,22 @@ This file records dated implementation progress, validation commands, and import
 
 ## 2026-06-27
 
+Implemented demo share center evidence bundle from `docs/plans/239-demo-share-center-evidence-bundle.md`.
+
+Changes:
+
+- Added handoff share-center status, summary, next action, and download actions to the backend demo evidence bundle read model.
+- Reused the existing handoff share-center service so the evidence bundle and standalone share-center endpoint share the same send/no-send source of truth.
+- Added a `Handoff share center` evidence record to the dashboard demo evidence bundle panel.
+- Updated README, product spec, architecture notes, frontend design docs, and this execution log.
+
+Validation so far:
+
+- `mvn -q -pl PatchPilot -Dtest=DemoEvidenceBundleServiceTests test`: first failed because `DemoEvidenceBundleVo` did not expose handoff share-center fields; passed after backend implementation.
+- `npm test -- --run src/dashboard/components/DemoEvidenceBundlePanel.test.tsx --reporter=basic`: first failed because the evidence bundle panel did not render a handoff share-center record; passed after frontend implementation.
+- `mvn -q -pl PatchPilot -Dtest=DemoEvidenceBundleServiceTests,DemoReadinessControllerTests test`: passed after controller and service contract verification.
+- `npm test -- --run src/dashboard/components/DemoEvidenceBundlePanel.test.tsx src/App.test.tsx --reporter=basic`: passed after App fixtures and panel assertions were aligned with the expanded evidence bundle contract.
+
 Implemented demo handoff share center from `docs/plans/238-demo-handoff-share-center.md`.
 
 Changes:

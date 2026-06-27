@@ -96,6 +96,15 @@ export function DemoEvidenceBundlePanel({ bundle, error, onCopyRunbook }: DemoEv
               <small>{bundle.handoffShareChecklistNextAction}</small>
             </div>
             <div>
+              <span>Handoff share center</span>
+              <strong>{statusLabel(bundle.handoffShareCenterStatus)}</strong>
+              <small>{bundle.handoffShareCenterSummary}</small>
+              <small>{bundle.handoffShareCenterNextAction}</small>
+              {bundle.handoffShareCenterDownloadActions.slice(0, 2).map((action) => (
+                <small key={action}>{action}</small>
+              ))}
+            </div>
+            <div>
               <span>Recent task</span>
               <strong>{bundle.recentTask?.id ?? 'No recent task'}</strong>
               <small>{bundle.recentTask?.status ?? 'No task status'}</small>

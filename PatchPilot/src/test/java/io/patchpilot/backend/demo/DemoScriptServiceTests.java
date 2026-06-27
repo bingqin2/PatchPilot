@@ -93,6 +93,14 @@ class DemoScriptServiceTests {
                 DemoReadinessStatus.READY,
                 "Latest handoff archive is ready to share.",
                 "Share the latest handoff package summary and archived package with the reviewer.",
+                DemoReadinessStatus.READY,
+                "Post-demo handoff package is ready to share.",
+                "Download the package, archive summary, and share checklist before sending handoff evidence.",
+                List.of(
+                        "Download handoff package archive handoff-archive-1.",
+                        "Download handoff package archive summary.",
+                        "Download handoff share checklist."
+                ),
                 Instant.parse("2026-06-24T00:00:00Z"),
                 nextActions
         );
