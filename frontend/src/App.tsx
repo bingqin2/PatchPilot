@@ -41,6 +41,7 @@ import {
   preflightDemoLaunch,
   getGitHubCredentialReadiness,
   getGitHubRepositoryAccessReadiness,
+  getGitHubWebhookSetupReadiness,
   getGitHubWebhookUrlReadiness,
   getRejectedTriggerSummary,
   getTriggerQuarantineEvidence,
@@ -149,6 +150,7 @@ import type {
   FixTaskWorkerHealth,
   GitHubCredentialReadiness,
   GitHubRepositoryAccessReadiness,
+  GitHubWebhookSetupReadiness,
   GitHubWebhookUrlReadiness,
   ModelProviderHealth,
   AdminAuditFilterOptions,
@@ -216,6 +218,7 @@ export default function App() {
   const [githubCredentialReadiness, setGitHubCredentialReadiness] = useState<GitHubCredentialReadiness | null>(null);
   const [githubRepositoryAccessReadiness, setGitHubRepositoryAccessReadiness] = useState<GitHubRepositoryAccessReadiness | null>(null);
   const [githubWebhookUrlReadiness, setGitHubWebhookUrlReadiness] = useState<GitHubWebhookUrlReadiness | null>(null);
+  const [githubWebhookSetupReadiness, setGitHubWebhookSetupReadiness] = useState<GitHubWebhookSetupReadiness | null>(null);
   const [modelProviderHealth, setModelProviderHealth] = useState<ModelProviderHealth | null>(null);
   const [backendHealth, setBackendHealth] = useState<BackendHealth | null>(null);
   const [demoReadiness, setDemoReadiness] = useState<DemoReadiness | null>(null);
@@ -545,6 +548,7 @@ export default function App() {
         configurationSummary,
         githubCredentialReadinessResult,
         githubWebhookUrlReadinessResult,
+        githubWebhookSetupReadinessResult,
         modelProviderHealthResult,
         demoEvidenceBundleResult,
         demoSessionSnapshotResult,
@@ -592,6 +596,10 @@ export default function App() {
           (caught) => ({ readiness: null, error: errorMessage(caught) })
         ),
         getGitHubWebhookUrlReadiness().then(
+          (readiness) => ({ readiness, error: null as string | null }),
+          (caught) => ({ readiness: null, error: errorMessage(caught) })
+        ),
+        getGitHubWebhookSetupReadiness().then(
           (readiness) => ({ readiness, error: null as string | null }),
           (caught) => ({ readiness: null, error: errorMessage(caught) })
         ),
@@ -729,6 +737,9 @@ export default function App() {
       if (githubWebhookUrlReadinessResult.readiness) {
         setGitHubWebhookUrlReadiness(githubWebhookUrlReadinessResult.readiness);
       }
+      if (githubWebhookSetupReadinessResult.readiness) {
+        setGitHubWebhookSetupReadiness(githubWebhookSetupReadinessResult.readiness);
+      }
       if (modelProviderHealthResult.health) {
         setModelProviderHealth(modelProviderHealthResult.health);
       }
@@ -816,7 +827,7 @@ export default function App() {
       if (webhookDeliveryResult.deliveries) {
         setWebhookDeliveries(webhookDeliveryResult.deliveries);
       }
-      setWebhookDeliveryError(webhookDeliveryResult.error);
+      setWebhookDeliveryError(githubWebhookSetupReadinessResult.error ?? webhookDeliveryResult.error);
       if (acceptedTriggerDecisionResult.decisions) {
         setAcceptedTriggerDecisions(acceptedTriggerDecisionResult.decisions);
       }
@@ -1558,6 +1569,7 @@ export default function App() {
       <QueuePanel summary={queueSummary} items={queueItems} workerHealth={workerHealth} />
 
       <WebhookDeliveryPanel
+        setupReadiness={githubWebhookSetupReadiness}
         deliveries={webhookDeliveries}
         error={webhookDeliveryError}
         evaluatingPayload={evaluatingWebhookPayload}

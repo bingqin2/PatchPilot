@@ -1228,6 +1228,22 @@ const githubWebhookUrlReadiness = {
   operatorAction: 'Use the payload URL in the GitHub webhook settings.'
 };
 
+const githubWebhookSetupReadiness = {
+  status: 'READY',
+  secretConfigured: true,
+  publicUrlReady: true,
+  publicBaseUrl: 'https://demo.trycloudflare.com',
+  payloadUrl: 'https://demo.trycloudflare.com/api/github/webhook',
+  healthUrl: 'https://demo.trycloudflare.com/health',
+  latestDeliveryStatus: 'TASK_CREATED',
+  latestDeliveryId: 'delivery-1',
+  redeliveryRecommended: false,
+  summary: 'Webhook setup is ready for GitHub deliveries.',
+  nextActions: ['Use the payload URL in GitHub Webhooks and continue the live demo.'],
+  checkedAt: '2026-06-27T02:00:00Z',
+  markdownReport: '# PatchPilot Webhook Setup Readiness\n\n- Status: `READY`'
+};
+
 const demoReadiness = {
   status: 'NEEDS_ATTENTION',
   summary: 'PatchPilot needs attention before a live demo.',
@@ -1666,6 +1682,9 @@ beforeEach(() => {
     }
     if (url === '/api/github/webhook-url-readiness') {
       return jsonResponse(githubWebhookUrlReadiness);
+    }
+    if (url === '/api/github/webhook-setup-readiness') {
+      return jsonResponse(githubWebhookSetupReadiness);
     }
     if (url === '/api/github/repository-access-readiness?owner=bingqin2&repository=PatchPilot') {
       return jsonResponse(githubRepositoryAccessReadiness);
@@ -2291,6 +2310,7 @@ test('renders operational task dashboard from backend APIs', async () => {
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/script'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/readiness'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/github/credential-readiness'));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/github/webhook-setup-readiness'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/github/repository-access-readiness?owner=bingqin2&repository=PatchPilot'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/smoke-checklist'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/github/webhook-deliveries?limit=10'));
@@ -2299,6 +2319,8 @@ test('renders operational task dashboard from backend APIs', async () => {
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/admin-audit-events?limit=20'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks/task-1/detail'));
   expect(screen.getByText('Pull request opened')).toBeInTheDocument();
+  expect(screen.getByText('Webhook setup is ready for GitHub deliveries.')).toBeInTheDocument();
+  expect(screen.getByLabelText('Webhook setup readiness')).toHaveTextContent('# PatchPilot Webhook Setup Readiness');
   expect(screen.getAllByText('demo-session-20260624T003000Z')).toHaveLength(3);
   expect(screen.getAllByText('Status READY; recent task task-1; recent PR https://github.com/bingqin2/PatchPilot/pull/8.')).toHaveLength(3);
   const sessionPanel = screen.getByRole('region', { name: 'Demo session snapshot' });
@@ -2712,6 +2734,9 @@ test('shows when every operator setup check is ready', async () => {
     }
     if (url === '/api/github/webhook-url-readiness') {
       return jsonResponse(githubWebhookUrlReadiness);
+    }
+    if (url === '/api/github/webhook-setup-readiness') {
+      return jsonResponse(githubWebhookSetupReadiness);
     }
     if (url === '/api/github/repository-access-readiness?owner=bingqin2&repository=PatchPilot') {
       return jsonResponse(githubRepositoryAccessReadiness);
@@ -4451,6 +4476,9 @@ function defaultAppResponse(input: RequestInfo | URL, init?: RequestInit) {
   }
   if (url === '/api/github/webhook-url-readiness') {
     return jsonResponse(githubWebhookUrlReadiness);
+  }
+  if (url === '/api/github/webhook-setup-readiness') {
+    return jsonResponse(githubWebhookSetupReadiness);
   }
   if (url === '/api/github/repository-access-readiness?owner=bingqin2&repository=PatchPilot') {
     return jsonResponse(githubRepositoryAccessReadiness);

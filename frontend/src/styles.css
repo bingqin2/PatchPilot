@@ -3768,6 +3768,75 @@ pre {
   outline: 2px solid rgba(24, 123, 120, 0.16);
 }
 
+.webhook-setup-readiness {
+  background: #f8fbfc;
+  border-top: 1px solid #edf1f5;
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+}
+
+.webhook-setup-readiness-heading {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.webhook-setup-readiness-heading strong {
+  color: #263442;
+  font-size: 13px;
+  font-weight: 850;
+  overflow-wrap: anywhere;
+}
+
+.webhook-setup-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.webhook-setup-grid div {
+  background: #ffffff;
+  border: 1px solid #dfe6ec;
+  border-radius: 6px;
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 8px 10px;
+}
+
+.webhook-setup-grid span {
+  color: #637181;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.webhook-setup-grid p,
+.webhook-setup-actions {
+  color: #263442;
+  font-size: 13px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.webhook-setup-actions {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.webhook-setup-report {
+  background: #17202a;
+  border-radius: 6px;
+  color: #f7fafc;
+  font-size: 12px;
+  margin: 0;
+  max-height: 132px;
+  overflow: auto;
+  padding: 10px;
+  white-space: pre-wrap;
+}
+
 .webhook-payload-result {
   background: #f7fafc;
   border-top: 1px solid #dce4ec;

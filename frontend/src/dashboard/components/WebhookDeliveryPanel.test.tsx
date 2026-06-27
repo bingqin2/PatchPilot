@@ -2,7 +2,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, test, vi } from 'vitest';
 import { WebhookDeliveryPanel } from './WebhookDeliveryPanel';
-import type { WebhookDeliveryDiagnostic, WebhookPayloadDiagnosticResult } from '../../types';
+import type { GitHubWebhookSetupReadiness, WebhookDeliveryDiagnostic, WebhookPayloadDiagnosticResult } from '../../types';
 
 const readyDiagnostic: WebhookPayloadDiagnosticResult = {
   status: 'READY_FOR_WEBHOOK',
@@ -40,6 +40,22 @@ const deliveryWithOutcome: WebhookDeliveryDiagnostic = {
   createdAt: '2026-06-25T00:00:00Z'
 };
 
+const setupReadiness: GitHubWebhookSetupReadiness = {
+  status: 'NEEDS_ATTENTION',
+  secretConfigured: true,
+  publicUrlReady: true,
+  publicBaseUrl: 'https://demo.trycloudflare.com',
+  payloadUrl: 'https://demo.trycloudflare.com/api/github/webhook',
+  healthUrl: 'https://demo.trycloudflare.com/health',
+  latestDeliveryStatus: 'INVALID_SIGNATURE',
+  latestDeliveryId: 'delivery-invalid',
+  redeliveryRecommended: true,
+  summary: 'Webhook setup needs attention before redelivery.',
+  nextActions: ["Fix the latest webhook delivery issue, then use GitHub's Redeliver action for that delivery."],
+  checkedAt: '2026-06-27T02:10:00Z',
+  markdownReport: '# PatchPilot Webhook Setup Readiness\n\n- Status: `NEEDS_ATTENTION`'
+};
+
 describe('WebhookDeliveryPanel', () => {
   test('evaluates a pasted webhook payload diagnostic', async () => {
     const user = userEvent.setup();
@@ -47,6 +63,7 @@ describe('WebhookDeliveryPanel', () => {
 
     render(
       <WebhookDeliveryPanel
+        setupReadiness={null}
         deliveries={[]}
         error={null}
         evaluatingPayload={false}
@@ -74,6 +91,7 @@ describe('WebhookDeliveryPanel', () => {
   test('renders webhook payload diagnostic results', () => {
     render(
       <WebhookDeliveryPanel
+        setupReadiness={null}
         deliveries={[]}
         error={null}
         evaluatingPayload={false}
@@ -95,6 +113,7 @@ describe('WebhookDeliveryPanel', () => {
   test('renders delivery outcome correlation targets', () => {
     render(
       <WebhookDeliveryPanel
+        setupReadiness={null}
         deliveries={[
           deliveryWithOutcome,
           {
@@ -126,5 +145,28 @@ describe('WebhookDeliveryPanel', () => {
       'href',
       '#rejected-trigger-rejected-123'
     );
+  });
+
+  test('renders webhook setup readiness before delivery rows', () => {
+    render(
+      <WebhookDeliveryPanel
+        setupReadiness={setupReadiness}
+        deliveries={[deliveryWithOutcome]}
+        error={null}
+        evaluatingPayload={false}
+        payloadDiagnostic={null}
+        payloadDiagnosticError={null}
+        onEvaluatePayload={vi.fn()}
+      />
+    );
+
+    const setup = screen.getByLabelText('Webhook setup readiness');
+    expect(within(setup).getByText('NEEDS_ATTENTION')).toBeInTheDocument();
+    expect(within(setup).getByText('https://demo.trycloudflare.com/api/github/webhook')).toBeInTheDocument();
+    expect(within(setup).getByText('INVALID_SIGNATURE')).toBeInTheDocument();
+    expect(
+      within(setup).getByText("Fix the latest webhook delivery issue, then use GitHub's Redeliver action for that delivery.")
+    ).toBeInTheDocument();
+    expect(setup).toHaveTextContent('# PatchPilot Webhook Setup Readiness');
   });
 });

@@ -1,8 +1,14 @@
 import { FormEvent, useState } from 'react';
-import type { WebhookDeliveryDiagnostic, WebhookPayloadDiagnosticInput, WebhookPayloadDiagnosticResult } from '../../types';
+import type {
+  GitHubWebhookSetupReadiness,
+  WebhookDeliveryDiagnostic,
+  WebhookPayloadDiagnosticInput,
+  WebhookPayloadDiagnosticResult
+} from '../../types';
 import { compactTime } from '../format';
 
 interface WebhookDeliveryPanelProps {
+  setupReadiness: GitHubWebhookSetupReadiness | null;
   deliveries: WebhookDeliveryDiagnostic[];
   error: string | null;
   evaluatingPayload: boolean;
@@ -12,6 +18,7 @@ interface WebhookDeliveryPanelProps {
 }
 
 export function WebhookDeliveryPanel({
+  setupReadiness,
   deliveries,
   error,
   evaluatingPayload,
@@ -43,6 +50,7 @@ export function WebhookDeliveryPanel({
         </div>
       </div>
       {error ? <p className="panel-error">{error}</p> : null}
+      {setupReadiness ? <WebhookSetupReadinessSummary readiness={setupReadiness} /> : null}
       <form className="webhook-payload-form" onSubmit={(formEvent) => void submitDiagnostic(formEvent)}>
         <label htmlFor="webhook-diagnostic-event">
           GitHub event
@@ -113,6 +121,41 @@ export function WebhookDeliveryPanel({
         ))}
         {deliveries.length === 0 && !error ? <p className="empty-state">No webhook deliveries recorded.</p> : null}
       </div>
+    </section>
+  );
+}
+
+function WebhookSetupReadinessSummary({ readiness }: { readiness: GitHubWebhookSetupReadiness }) {
+  return (
+    <section className="webhook-setup-readiness" aria-label="Webhook setup readiness">
+      <div className="webhook-setup-readiness-heading">
+        <span className={`status-pill status-${readinessStatusClass(readiness.status)}`}>{readiness.status}</span>
+        <strong>{readiness.summary}</strong>
+      </div>
+      <div className="webhook-setup-grid">
+        <div>
+          <span>Payload URL</span>
+          <p>{readiness.payloadUrl || 'Not configured'}</p>
+        </div>
+        <div>
+          <span>Health URL</span>
+          <p>{readiness.healthUrl || 'Not configured'}</p>
+        </div>
+        <div>
+          <span>Secret</span>
+          <p>{readiness.secretConfigured ? 'Configured' : 'Missing'}</p>
+        </div>
+        <div>
+          <span>Latest delivery</span>
+          <p>{readiness.latestDeliveryStatus ?? 'None'}</p>
+        </div>
+      </div>
+      <ul className="webhook-setup-actions">
+        {readiness.nextActions.map((action) => (
+          <li key={action}>{action}</li>
+        ))}
+      </ul>
+      <pre className="webhook-setup-report">{readiness.markdownReport}</pre>
     </section>
   );
 }
@@ -206,6 +249,16 @@ function statusClass(status: WebhookDeliveryDiagnostic['status']) {
 
 function diagnosticStatusClass(status: WebhookPayloadDiagnosticResult['status']) {
   return status === 'READY_FOR_WEBHOOK' ? 'completed' : 'failed';
+}
+
+function readinessStatusClass(status: GitHubWebhookSetupReadiness['status']) {
+  if (status === 'READY') {
+    return 'completed';
+  }
+  if (status === 'NEEDS_ATTENTION') {
+    return 'pending';
+  }
+  return 'failed';
 }
 
 function diagnosticRepositoryLabel(diagnostic: WebhookPayloadDiagnosticResult) {
