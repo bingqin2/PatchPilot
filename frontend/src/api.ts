@@ -304,6 +304,10 @@ export async function getDemoHandoffShareChecklist(): Promise<DemoHandoffShareCh
   return getApi<DemoHandoffShareChecklist>('/api/demo/handoff-share-checklist');
 }
 
+export async function downloadDemoHandoffShareChecklistReport(): Promise<Blob> {
+  return getBlobApi('/api/demo/handoff-share-checklist/report/download');
+}
+
 export async function downloadDemoHandoffPackageArchiveSummaryReport(): Promise<Blob> {
   return getBlobApi('/api/demo/handoff-package-archives/summary-report/download');
 }

@@ -26,6 +26,9 @@ public record DemoEvidenceBundleVo(
         List<WebhookDeliveryDiagnosticVo> recentWebhookDeliveries,
         RejectedTriggerAuditSummaryVo rejectedTriggerSummary,
         long activeQuarantineCount,
+        DemoReadinessStatus handoffShareChecklistStatus,
+        String handoffShareChecklistSummary,
+        String handoffShareChecklistNextAction,
         Instant generatedAt,
         List<String> nextActions
 ) {

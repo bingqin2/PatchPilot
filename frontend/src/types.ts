@@ -462,6 +462,9 @@ export interface DemoEvidenceBundle {
   recentWebhookDeliveries: WebhookDeliveryDiagnostic[];
   rejectedTriggerSummary: RejectedTriggerAuditSummary | null;
   activeQuarantineCount: number;
+  handoffShareChecklistStatus: DemoReadinessStatus;
+  handoffShareChecklistSummary: string;
+  handoffShareChecklistNextAction: string;
   generatedAt: string;
   nextActions: string[];
 }

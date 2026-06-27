@@ -16,9 +16,11 @@ class DemoHandoffPackageArchiveServiceTests {
 
     @Test
     void should_archive_current_demo_handoff_package_and_keep_recent_archives_first() {
+        InMemoryDemoHandoffPackageArchiveRepository repository = new InMemoryDemoHandoffPackageArchiveRepository();
         DemoHandoffPackageArchiveService service = new DemoHandoffPackageArchiveService(
                 new DemoSessionReportService(DemoSessionReportServiceTests::snapshot),
-                new InMemoryDemoHandoffPackageArchiveRepository(),
+                new DemoHandoffPackageArchiveSummaryService(repository),
+                repository,
                 DemoSessionReportServiceTests::snapshot,
                 Clock.fixed(Instant.parse("2026-06-24T04:00:00Z"), ZoneOffset.UTC),
                 () -> "handoff-archive-1"
@@ -52,9 +54,11 @@ class DemoHandoffPackageArchiveServiceTests {
 
     @Test
     void should_summarize_latest_share_ready_demo_handoff_package_archive() {
+        InMemoryDemoHandoffPackageArchiveRepository repository = new InMemoryDemoHandoffPackageArchiveRepository();
         DemoHandoffPackageArchiveService service = new DemoHandoffPackageArchiveService(
                 new DemoSessionReportService(DemoSessionReportServiceTests::snapshot),
-                new InMemoryDemoHandoffPackageArchiveRepository(),
+                new DemoHandoffPackageArchiveSummaryService(repository),
+                repository,
                 DemoSessionReportServiceTests::snapshot,
                 Clock.fixed(Instant.parse("2026-06-24T04:00:00Z"), ZoneOffset.UTC),
                 () -> "handoff-archive-1"
@@ -82,9 +86,11 @@ class DemoHandoffPackageArchiveServiceTests {
 
     @Test
     void should_summarize_missing_demo_handoff_package_archives() {
+        InMemoryDemoHandoffPackageArchiveRepository repository = new InMemoryDemoHandoffPackageArchiveRepository();
         DemoHandoffPackageArchiveService service = new DemoHandoffPackageArchiveService(
                 new DemoSessionReportService(DemoSessionReportServiceTests::snapshot),
-                new InMemoryDemoHandoffPackageArchiveRepository(),
+                new DemoHandoffPackageArchiveSummaryService(repository),
+                repository,
                 DemoSessionReportServiceTests::snapshot,
                 Clock.fixed(Instant.parse("2026-06-24T04:00:00Z"), ZoneOffset.UTC),
                 () -> "handoff-archive-1"

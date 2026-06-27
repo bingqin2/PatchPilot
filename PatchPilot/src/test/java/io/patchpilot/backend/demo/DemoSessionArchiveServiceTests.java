@@ -124,6 +124,9 @@ class DemoSessionArchiveServiceTests {
                         List.of(),
                         null,
                         0,
+                        DemoReadinessStatus.READY,
+                        "Latest handoff archive is ready to share.",
+                        "Share the latest handoff package summary and archived package with the reviewer.",
                         Instant.parse("2026-06-24T00:00:00Z"),
                         List.of()
                 ),

@@ -41,6 +41,7 @@ interface DemoSessionSnapshotPanelProps {
   onDownloadArchiveReport: (archiveId: string) => Promise<Blob>;
   onDownloadHandoffPackageArchiveReport: (archiveId: string) => Promise<Blob>;
   onDownloadHandoffPackageArchiveSummaryReport: () => Promise<Blob>;
+  onDownloadHandoffShareChecklistReport: () => Promise<Blob>;
 }
 
 export function DemoSessionSnapshotPanel({
@@ -66,7 +67,8 @@ export function DemoSessionSnapshotPanel({
   onArchiveHandoffPackage,
   onDownloadArchiveReport,
   onDownloadHandoffPackageArchiveReport,
-  onDownloadHandoffPackageArchiveSummaryReport
+  onDownloadHandoffPackageArchiveSummaryReport,
+  onDownloadHandoffShareChecklistReport
 }: DemoSessionSnapshotPanelProps) {
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
   const [downloadStatus, setDownloadStatus] = useState<string | null>(null);
@@ -197,6 +199,16 @@ export function DemoSessionSnapshotPanel({
       setCopyStatus('Handoff share checklist copied');
     } catch {
       setCopyStatus('Copy failed');
+    }
+  }
+
+  async function downloadHandoffShareChecklist() {
+    try {
+      const report = await onDownloadHandoffShareChecklistReport();
+      downloadMarkdown(report, 'patchpilot-demo-handoff-share-checklist.md');
+      setDownloadStatus('Handoff share checklist downloaded');
+    } catch {
+      setDownloadStatus('Download failed');
     }
   }
 
@@ -416,6 +428,7 @@ export function DemoSessionSnapshotPanel({
           <HandoffShareChecklistPanel
             checklist={handoffShareChecklist}
             onCopyChecklist={copyHandoffShareChecklist}
+            onDownloadChecklist={downloadHandoffShareChecklist}
           />
 
           <div className="demo-session-archives">
@@ -499,10 +512,12 @@ function HandoffReadinessCheckList({ checks }: { checks: DemoHandoffReadinessChe
 
 function HandoffShareChecklistPanel({
   checklist,
-  onCopyChecklist
+  onCopyChecklist,
+  onDownloadChecklist
 }: {
   checklist: DemoHandoffShareChecklist | null;
   onCopyChecklist: () => void;
+  onDownloadChecklist: () => void;
 }) {
   if (!checklist) {
     return null;
@@ -521,6 +536,15 @@ function HandoffShareChecklistPanel({
           >
             <Copy size={14} />
             Copy checklist
+          </button>
+          <button
+            className="secondary-button"
+            type="button"
+            onClick={() => onDownloadChecklist()}
+            aria-label="Download handoff share checklist"
+          >
+            <Download size={14} />
+            Download checklist
           </button>
         </div>
       </div>

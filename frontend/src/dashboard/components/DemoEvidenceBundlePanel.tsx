@@ -90,6 +90,12 @@ export function DemoEvidenceBundlePanel({ bundle, error, onCopyRunbook }: DemoEv
               <small>{bundle.latestWebhookDelivery?.status ?? 'No webhook status'}</small>
             </div>
             <div>
+              <span>Handoff share checklist</span>
+              <strong>{statusLabel(bundle.handoffShareChecklistStatus)}</strong>
+              <small>{bundle.handoffShareChecklistSummary}</small>
+              <small>{bundle.handoffShareChecklistNextAction}</small>
+            </div>
+            <div>
               <span>Recent task</span>
               <strong>{bundle.recentTask?.id ?? 'No recent task'}</strong>
               <small>{bundle.recentTask?.status ?? 'No task status'}</small>

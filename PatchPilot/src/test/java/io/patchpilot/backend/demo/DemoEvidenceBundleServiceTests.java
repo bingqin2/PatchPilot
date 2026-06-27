@@ -2,6 +2,7 @@ package io.patchpilot.backend.demo;
 
 import io.patchpilot.backend.configuration.ConfigurationSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
+import io.patchpilot.backend.demo.domain.DemoHandoffPackageArchiveSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessCheckVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessStatus;
 import io.patchpilot.backend.demo.domain.DemoReadinessVo;
@@ -47,7 +48,8 @@ class DemoEvidenceBundleServiceTests {
                 ),
                 DemoEvidenceBundleServiceTests::webhookSetupReadiness,
                 () -> rejectedTriggerSummary(4),
-                () -> List.of(quarantine("quarantine-1"))
+                () -> List.of(quarantine("quarantine-1")),
+                DemoEvidenceBundleServiceTests::handoffPackageArchiveSummary
         );
 
         DemoEvidenceBundleVo bundle = service.getEvidenceBundle();
@@ -77,6 +79,10 @@ class DemoEvidenceBundleServiceTests {
                 .containsExactly(WebhookDeliveryOutcomeType.TASK, WebhookDeliveryOutcomeType.REJECTED_TRIGGER);
         assertThat(bundle.rejectedTriggerSummary().totalCount()).isEqualTo(4);
         assertThat(bundle.activeQuarantineCount()).isEqualTo(1);
+        assertThat(bundle.handoffShareChecklistStatus()).isEqualTo(DemoReadinessStatus.READY);
+        assertThat(bundle.handoffShareChecklistSummary()).isEqualTo("Latest handoff archive is ready to share.");
+        assertThat(bundle.handoffShareChecklistNextAction())
+                .isEqualTo("Share the latest handoff package summary and archived package with the reviewer.");
         assertThat(bundle.nextActions()).containsExactly(
                 "Fix failing adapter fixtures before a live demo.",
                 "Inspect active trigger quarantines before a live demo."
@@ -95,13 +101,18 @@ class DemoEvidenceBundleServiceTests {
                 () -> List.of(webhookDelivery("delivery-1", WebhookDeliveryDiagnosticStatus.TASK_CREATED, "task-1")),
                 DemoEvidenceBundleServiceTests::webhookSetupReadiness,
                 () -> rejectedTriggerSummary(0),
-                List::of
+                List::of,
+                DemoEvidenceBundleServiceTests::handoffPackageArchiveSummary
         );
 
         DemoEvidenceBundleVo bundle = service.getEvidenceBundle();
 
         assertThat(bundle.status()).isEqualTo(DemoReadinessStatus.READY);
         assertThat(bundle.summary()).isEqualTo("Demo evidence bundle is ready.");
+        assertThat(bundle.handoffShareChecklistStatus()).isEqualTo(DemoReadinessStatus.READY);
+        assertThat(bundle.handoffShareChecklistSummary()).isEqualTo("Latest handoff archive is ready to share.");
+        assertThat(bundle.handoffShareChecklistNextAction())
+                .isEqualTo("Share the latest handoff package summary and archived package with the reviewer.");
         assertThat(bundle.nextActions()).containsExactly("Use this evidence bundle as the live demo baseline.");
     }
 
@@ -281,6 +292,21 @@ class DemoEvidenceBundleServiceTests {
                 null,
                 null,
                 true
+        );
+    }
+
+    private static DemoHandoffPackageArchiveSummaryVo handoffPackageArchiveSummary() {
+        return new DemoHandoffPackageArchiveSummaryVo(
+                "READY",
+                true,
+                1,
+                "handoff-archive-1",
+                "demo-session-20260624T003000Z",
+                DemoReadinessStatus.READY,
+                Instant.parse("2026-06-24T04:00:00Z"),
+                "Latest archived handoff package is READY and can be shared.",
+                "No missing handoff evidence.",
+                "# PatchPilot Handoff Package Archive Summary\n\n- Status: `READY`"
         );
     }
 }

@@ -17,9 +17,13 @@ class DemoHandoffShareChecklistServiceTests {
 
     @Test
     void should_mark_handoff_share_checklist_ready_when_latest_archive_is_share_ready() {
-        DemoHandoffPackageArchiveService archiveService = archiveService();
+        InMemoryDemoHandoffPackageArchiveRepository repository = new InMemoryDemoHandoffPackageArchiveRepository();
+        DemoHandoffPackageArchiveService archiveService = archiveService(repository);
         archiveService.archiveCurrentHandoffPackage(DemoSessionReportServiceTests.readyHandoffRequest());
-        DemoHandoffShareChecklistService service = new DemoHandoffShareChecklistService(archiveService, CLOCK);
+        DemoHandoffShareChecklistService service = new DemoHandoffShareChecklistService(
+                new DemoHandoffPackageArchiveSummaryService(repository),
+                CLOCK
+        );
 
         DemoHandoffShareChecklistVo checklist = service.getShareChecklist();
 
@@ -44,7 +48,10 @@ class DemoHandoffShareChecklistServiceTests {
 
     @Test
     void should_request_archive_before_handoff_share_checklist_can_be_shared() {
-        DemoHandoffShareChecklistService service = new DemoHandoffShareChecklistService(archiveService(), CLOCK);
+        DemoHandoffShareChecklistService service = new DemoHandoffShareChecklistService(
+                new DemoHandoffPackageArchiveSummaryService(new InMemoryDemoHandoffPackageArchiveRepository()),
+                CLOCK
+        );
 
         DemoHandoffShareChecklistVo checklist = service.getShareChecklist();
 
@@ -65,10 +72,11 @@ class DemoHandoffShareChecklistServiceTests {
                 .contains("- Handoff package archive: `NEEDS_ATTENTION`");
     }
 
-    private static DemoHandoffPackageArchiveService archiveService() {
+    private static DemoHandoffPackageArchiveService archiveService(InMemoryDemoHandoffPackageArchiveRepository repository) {
         return new DemoHandoffPackageArchiveService(
                 new DemoSessionReportService(DemoSessionReportServiceTests::snapshot),
-                new InMemoryDemoHandoffPackageArchiveRepository(),
+                new DemoHandoffPackageArchiveSummaryService(repository),
+                repository,
                 DemoSessionReportServiceTests::snapshot,
                 Clock.fixed(Instant.parse("2026-06-24T04:00:00Z"), ZoneOffset.UTC),
                 () -> "handoff-archive-1"

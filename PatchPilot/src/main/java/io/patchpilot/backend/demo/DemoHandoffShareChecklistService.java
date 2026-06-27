@@ -14,21 +14,21 @@ import java.util.List;
 @Service
 public class DemoHandoffShareChecklistService {
 
-    private final DemoHandoffPackageArchiveService archiveService;
+    private final DemoHandoffPackageArchiveSummaryService summaryService;
     private final Clock clock;
 
     @Autowired
-    public DemoHandoffShareChecklistService(DemoHandoffPackageArchiveService archiveService) {
-        this(archiveService, Clock.systemUTC());
+    public DemoHandoffShareChecklistService(DemoHandoffPackageArchiveSummaryService summaryService) {
+        this(summaryService, Clock.systemUTC());
     }
 
-    DemoHandoffShareChecklistService(DemoHandoffPackageArchiveService archiveService, Clock clock) {
-        this.archiveService = archiveService;
+    DemoHandoffShareChecklistService(DemoHandoffPackageArchiveSummaryService summaryService, Clock clock) {
+        this.summaryService = summaryService;
         this.clock = clock;
     }
 
     public DemoHandoffShareChecklistVo getShareChecklist() {
-        DemoHandoffPackageArchiveSummaryVo summary = archiveService.getArchiveSummary();
+        DemoHandoffPackageArchiveSummaryVo summary = summaryService.getArchiveSummary();
         List<DemoHandoffShareChecklistItemVo> checks = List.of(
                 archiveCheck(summary),
                 readinessCheck(summary),
