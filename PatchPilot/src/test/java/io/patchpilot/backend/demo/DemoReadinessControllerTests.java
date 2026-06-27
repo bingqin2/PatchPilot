@@ -23,6 +23,7 @@ import io.patchpilot.backend.demo.domain.DemoHandoffShareDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffShareInstructionsVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffFinalizationCheckVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffFinalizationVo;
+import io.patchpilot.backend.demo.domain.DemoLaunchEvidencePackageVo;
 import io.patchpilot.backend.task.domain.vo.TriggerEvaluationDecisionVo;
 import io.patchpilot.backend.task.domain.vo.TriggerEvaluationResultVo;
 import io.patchpilot.backend.demo.domain.DemoScriptStepVo;
@@ -114,6 +115,9 @@ class DemoReadinessControllerTests {
     private SelfHostedLaunchReadinessArchiveService selfHostedLaunchReadinessArchiveService;
 
     @MockitoBean
+    private DemoLaunchEvidencePackageService demoLaunchEvidencePackageService;
+
+    @MockitoBean
     private DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
 
     @MockitoBean
@@ -156,6 +160,45 @@ class DemoReadinessControllerTests {
                 .andExpect(content().contentType("text/markdown;charset=UTF-8"))
                 .andExpect(content().string(containsString("# PatchPilot Self-Hosted Launch Readiness")))
                 .andExpect(content().string(containsString("Ready to launch: `true`")));
+    }
+
+    @Test
+    void should_return_demo_launch_evidence_package() throws Exception {
+        when(demoLaunchEvidencePackageService.getPackage()).thenReturn(launchEvidencePackage());
+
+        mockMvc.perform(get("/api/demo/launch-evidence-package"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.readyToShare").value(true))
+                .andExpect(jsonPath("$.data.summary").value("PatchPilot launch evidence package is ready to share."))
+                .andExpect(jsonPath("$.data.sessionId").value("demo-session-20260624T003000Z"))
+                .andExpect(jsonPath("$.data.launchReadinessStatus").value("READY"))
+                .andExpect(jsonPath("$.data.evidenceBundleStatus").value("READY"))
+                .andExpect(jsonPath("$.data.handoffFinalizationStatus").value("READY"))
+                .andExpect(jsonPath("$.data.latestTaskId").value("task-1"))
+                .andExpect(jsonPath("$.data.latestPullRequestUrl").value("https://github.com/bingqin2/PatchPilot/pull/42"))
+                .andExpect(jsonPath("$.data.latestWebhookDeliveryId").value("delivery-1"))
+                .andExpect(jsonPath("$.data.evaluationRunId").value("evaluation-run-2"))
+                .andExpect(jsonPath("$.data.evaluationCoverage[0]").value("java"))
+                .andExpect(jsonPath("$.data.preLaunchChecks[0].name").value("Demo readiness"))
+                .andExpect(jsonPath("$.data.liveRunProof[0]").value("Recent task task-1 reached COMPLETED."))
+                .andExpect(jsonPath("$.data.postDemoProof[1]").value("Latest delivery receipt delivery-receipt-1 is fresh."))
+                .andExpect(jsonPath("$.data.healthContract[0]")
+                        .value("GET /api/demo/launch-evidence-package is read-only: it does not create tasks, call the model, run tests, archive records, mutate Git, send messages, or write to GitHub."))
+                .andExpect(jsonPath("$.data.markdownReport").value(containsString("# PatchPilot Demo Launch Evidence Package")));
+    }
+
+    @Test
+    void should_download_demo_launch_evidence_package_report() throws Exception {
+        when(demoLaunchEvidencePackageService.getPackage()).thenReturn(launchEvidencePackage());
+
+        mockMvc.perform(get("/api/demo/launch-evidence-package/report/download"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("patchpilot-demo-launch-evidence-package.md")))
+                .andExpect(content().contentType("text/markdown;charset=UTF-8"))
+                .andExpect(content().string(containsString("# PatchPilot Demo Launch Evidence Package")))
+                .andExpect(content().string(containsString("Recent Pull Request https://github.com/bingqin2/PatchPilot/pull/42 is available.")));
     }
 
     @Test
@@ -1874,6 +1917,46 @@ class DemoReadinessControllerTests {
                 0,
                 Instant.parse("2026-06-28T01:30:00Z"),
                 "# PatchPilot Self-Hosted Launch Readiness\n\n- Status: `READY`\n"
+        );
+    }
+
+    private static DemoLaunchEvidencePackageVo launchEvidencePackage() {
+        return new DemoLaunchEvidencePackageVo(
+                DemoReadinessStatus.READY,
+                true,
+                "PatchPilot launch evidence package is ready to share.",
+                "demo-session-20260624T003000Z",
+                DemoReadinessStatus.READY,
+                DemoReadinessStatus.READY,
+                DemoReadinessStatus.READY,
+                "task-1",
+                "https://github.com/bingqin2/PatchPilot/pull/42",
+                "delivery-1",
+                "evaluation-run-2",
+                List.of("java", "python", "maven", "pytest"),
+                List.of(
+                        new DemoSelfHostedLaunchCheckVo(
+                                "Demo readiness",
+                                DemoReadinessStatus.READY,
+                                "PatchPilot is ready for a controlled demo.",
+                                "No action needed."
+                        )
+                ),
+                List.of(
+                        "Recent task task-1 reached COMPLETED.",
+                        "Recent Pull Request https://github.com/bingqin2/PatchPilot/pull/42 is available.",
+                        "Latest webhook delivery delivery-1 created task task-1."
+                ),
+                List.of(
+                        "Handoff finalization is READY.",
+                        "Latest delivery receipt delivery-receipt-1 is fresh."
+                ),
+                List.of("Post the tested /agent fix comment, watch the task reach COMPLETED, then use the generated Pull Request for review."),
+                List.of(
+                        "GET /api/demo/launch-evidence-package is read-only: it does not create tasks, call the model, run tests, archive records, mutate Git, send messages, or write to GitHub."
+                ),
+                "# PatchPilot Demo Launch Evidence Package\n\nRecent Pull Request https://github.com/bingqin2/PatchPilot/pull/42 is available.",
+                Instant.parse("2026-06-28T02:00:00Z")
         );
     }
 }

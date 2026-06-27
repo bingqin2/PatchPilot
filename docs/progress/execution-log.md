@@ -4,6 +4,25 @@ This file records dated implementation progress, validation commands, and import
 
 ## 2026-06-28
 
+Implemented demo launch evidence package from `docs/plans/250-demo-launch-evidence-package.md`.
+
+Changes:
+
+- Added a read-only `GET /api/demo/launch-evidence-package` endpoint and Markdown download endpoint.
+- Added `DemoLaunchEvidencePackageService` to combine self-hosted launch readiness, demo session snapshot, evidence bundle, live task/Pull Request/webhook proof, evaluation coverage, post-demo handoff proof, next actions, and side-effect contract into one final shareable status.
+- Added a dashboard `DemoLaunchEvidencePackagePanel` with status, share readiness, session/task/webhook/evaluation evidence, live-run proof, post-demo proof, next actions, copy report, and download report actions.
+- Updated backend/frontend API types, controller wiring, dashboard integration, README, product spec, architecture notes, frontend design docs, and this execution log.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=DemoLaunchEvidencePackageServiceTests,DemoReadinessControllerTests test`: first failed because `DemoLaunchEvidencePackageVo` and service/controller wiring did not exist; then passed after implementing the read model and endpoint, 56 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts src/dashboard/components/DemoLaunchEvidencePackagePanel.test.tsx --reporter=basic`: first failed because the API helpers and panel did not exist; then passed after frontend API/panel implementation, 107 tests run, 0 failures.
+- `npm test -- --run src/App.test.tsx src/api.test.ts src/dashboard/components/DemoLaunchEvidencePackagePanel.test.tsx --reporter=basic`: passed after dashboard integration and App fixture coverage, 186 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed after full backend regression verification, 868 tests run, 0 failures.
+- `npm test -- --reporter=basic`: passed after full frontend regression verification, 28 test files and 333 tests run, 0 failures.
+- `npm run build`: passed after production frontend build verification.
+- `git diff --check`: passed.
+
 Implemented evaluation readiness evidence bundle from `docs/plans/249-evaluation-readiness-evidence-bundle.md`.
 
 Changes:

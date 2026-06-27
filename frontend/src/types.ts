@@ -380,6 +380,28 @@ export interface DemoSelfHostedLaunchReadinessArchive {
   report: string;
 }
 
+export interface DemoLaunchEvidencePackage {
+  status: DemoReadinessStatus;
+  readyToShare: boolean;
+  summary: string;
+  sessionId: string;
+  launchReadinessStatus: DemoReadinessStatus;
+  evidenceBundleStatus: DemoReadinessStatus;
+  handoffFinalizationStatus: DemoReadinessStatus;
+  latestTaskId: string | null;
+  latestPullRequestUrl: string | null;
+  latestWebhookDeliveryId: string | null;
+  evaluationRunId: string | null;
+  evaluationCoverage: string[];
+  preLaunchChecks: DemoSelfHostedLaunchCheck[];
+  liveRunProof: string[];
+  postDemoProof: string[];
+  nextActions: string[];
+  healthContract: string[];
+  markdownReport: string;
+  generatedAt: string;
+}
+
 export interface DemoReadinessSnapshotArchive {
   id: string;
   status: DemoReadinessStatus;
