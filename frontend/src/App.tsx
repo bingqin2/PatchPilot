@@ -20,6 +20,7 @@ import {
   downloadDemoHandoffPackage,
   downloadDemoSessionReport,
   downloadDemoHandoffShareCenterReport,
+  downloadDemoHandoffShareInstructionsReport,
   downloadDemoHandoffShareChecklistReport,
   evaluateTrigger,
   evaluateWebhookPayloadDiagnostic,
@@ -31,6 +32,7 @@ import {
   getDemoHandoffReadiness,
   getDemoHandoffPackageArchiveSummary,
   getDemoHandoffShareCenter,
+  getDemoHandoffShareInstructions,
   getDemoHandoffShareChecklist,
   getDemoSessionSnapshot,
   getDemoSessionReport,
@@ -132,6 +134,7 @@ import type {
   DemoHandoffPackageArchive,
   DemoHandoffPackageArchiveSummary,
   DemoHandoffShareCenter,
+  DemoHandoffShareInstructions,
   DemoHandoffShareChecklist,
   DemoLaunchCommand,
   DemoLaunchCommandInput,
@@ -256,6 +259,9 @@ export default function App() {
   const [demoHandoffShareChecklistError, setDemoHandoffShareChecklistError] = useState<string | null>(null);
   const [demoHandoffShareCenter, setDemoHandoffShareCenter] = useState<DemoHandoffShareCenter | null>(null);
   const [demoHandoffShareCenterError, setDemoHandoffShareCenterError] = useState<string | null>(null);
+  const [demoHandoffShareInstructions, setDemoHandoffShareInstructions] =
+    useState<DemoHandoffShareInstructions | null>(null);
+  const [demoHandoffShareInstructionsError, setDemoHandoffShareInstructionsError] = useState<string | null>(null);
   const [demoScript, setDemoScript] = useState<DemoScript | null>(null);
   const [demoScriptError, setDemoScriptError] = useState<string | null>(null);
   const [demoSmokeChecklist, setDemoSmokeChecklist] = useState<DemoSmokeChecklist | null>(null);
@@ -583,6 +589,7 @@ export default function App() {
         demoHandoffPackageArchiveSummaryResult,
         demoHandoffShareChecklistResult,
         demoHandoffShareCenterResult,
+        demoHandoffShareInstructionsResult,
         demoScriptResult,
         demoReadinessResult,
         demoReadinessSnapshotResult,
@@ -667,6 +674,10 @@ export default function App() {
         getDemoHandoffShareCenter().then(
           (center) => ({ center, error: null as string | null }),
           (caught) => ({ center: null, error: errorMessage(caught) })
+        ),
+        getDemoHandoffShareInstructions().then(
+          (instructions) => ({ instructions, error: null as string | null }),
+          (caught) => ({ instructions: null, error: errorMessage(caught) })
         ),
         getDemoScript().then(
           (script) => ({ script, error: null as string | null }),
@@ -820,6 +831,10 @@ export default function App() {
         setDemoHandoffShareCenter(demoHandoffShareCenterResult.center);
       }
       setDemoHandoffShareCenterError(demoHandoffShareCenterResult.error);
+      if (demoHandoffShareInstructionsResult.instructions) {
+        setDemoHandoffShareInstructions(demoHandoffShareInstructionsResult.instructions);
+      }
+      setDemoHandoffShareInstructionsError(demoHandoffShareInstructionsResult.error);
       if (demoScriptResult.script) {
         setDemoScript(demoScriptResult.script);
       }
@@ -1086,6 +1101,9 @@ export default function App() {
   const handleDownloadDemoHandoffShareCenterReport = useCallback(() => (
     downloadDemoHandoffShareCenterReport()
   ), []);
+  const handleDownloadDemoHandoffShareInstructionsReport = useCallback(() => (
+    downloadDemoHandoffShareInstructionsReport()
+  ), []);
   const handleArchiveDemoSession = useCallback(async (input: DemoSessionReportInput) => {
     const archive = await archiveDemoSession(input);
     setDemoSessionArchives((current) => [archive, ...current.filter((item) => item.id !== archive.id)].slice(0, 20));
@@ -1116,6 +1134,13 @@ export default function App() {
       setDemoHandoffShareCenterError(null);
     } catch (caught) {
       setDemoHandoffShareCenterError(errorMessage(caught));
+    }
+    try {
+      const instructions = await getDemoHandoffShareInstructions();
+      setDemoHandoffShareInstructions(instructions);
+      setDemoHandoffShareInstructionsError(null);
+    } catch (caught) {
+      setDemoHandoffShareInstructionsError(errorMessage(caught));
     }
     return archive;
   }, []);
@@ -1486,6 +1511,7 @@ export default function App() {
         handoffPackageArchiveSummary={demoHandoffPackageArchiveSummary}
         handoffShareChecklist={demoHandoffShareChecklist}
         handoffShareCenter={demoHandoffShareCenter}
+        handoffShareInstructions={demoHandoffShareInstructions}
         error={demoSessionSnapshotError}
         handoffReadinessError={demoHandoffReadinessError}
         archiveError={demoSessionArchiveError}
@@ -1493,6 +1519,7 @@ export default function App() {
         handoffPackageArchiveSummaryError={demoHandoffPackageArchiveSummaryError}
         handoffShareChecklistError={demoHandoffShareChecklistError}
         handoffShareCenterError={demoHandoffShareCenterError}
+        handoffShareInstructionsError={demoHandoffShareInstructionsError}
         onCopyReport={handleCopyDemoSessionReport}
         onDownloadReport={handleDownloadDemoSessionReport}
         onArchiveSession={handleArchiveDemoSession}
@@ -1503,6 +1530,7 @@ export default function App() {
         onDownloadHandoffPackageArchiveReport={handleDownloadDemoHandoffPackageArchiveReport}
         onDownloadHandoffPackageArchiveSummaryReport={handleDownloadDemoHandoffPackageArchiveSummaryReport}
         onDownloadHandoffShareCenterReport={handleDownloadDemoHandoffShareCenterReport}
+        onDownloadHandoffShareInstructionsReport={handleDownloadDemoHandoffShareInstructionsReport}
         onDownloadHandoffShareChecklistReport={handleDownloadDemoHandoffShareChecklistReport}
       />
 

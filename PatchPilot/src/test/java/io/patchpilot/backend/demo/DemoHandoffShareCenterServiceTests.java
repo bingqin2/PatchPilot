@@ -94,6 +94,63 @@ class DemoHandoffShareCenterServiceTests {
                 .contains("Resolve checklist warnings before sending the package.");
     }
 
+    @Test
+    void should_build_share_instructions_from_share_ready_center() {
+        when(archiveSummaryService.getArchiveSummary()).thenReturn(readyArchiveSummary());
+        when(shareChecklistService.getShareChecklist()).thenReturn(readyChecklist());
+
+        var instructions = service.getShareInstructions();
+
+        assertThat(instructions.status()).isEqualTo(DemoReadinessStatus.READY);
+        assertThat(instructions.sendReady()).isTrue();
+        assertThat(instructions.recommendedRecipients()).containsExactly(
+                "Repository owner or maintainer",
+                "Demo reviewer"
+        );
+        assertThat(instructions.requiredAttachments()).containsExactly(
+                "Handoff package archive handoff-archive-1",
+                "Handoff package archive summary",
+                "Handoff share checklist",
+                "Handoff share center report"
+        );
+        assertThat(instructions.preSendChecks()).containsExactly(
+                "Confirm the Pull Request link in the handoff package opens correctly.",
+                "Confirm the archived package, archive summary, checklist, and share-center report were downloaded.",
+                "Confirm no handoff share checklist warnings remain."
+        );
+        assertThat(instructions.messageSubject()).isEqualTo("PatchPilot demo handoff: demo-session-20260624T003000Z");
+        assertThat(instructions.messageBody())
+                .contains("The PatchPilot demo handoff package is ready to share.")
+                .contains("handoff-archive-1")
+                .contains("demo-session-20260624T003000Z");
+        assertThat(instructions.markdownReport())
+                .contains("# PatchPilot Demo Handoff Share Instructions")
+                .contains("## Message Template")
+                .contains("## Required Attachments")
+                .contains("GET /api/demo/handoff-share-instructions is read-only");
+    }
+
+    @Test
+    void should_block_share_instructions_when_share_center_is_not_ready() {
+        when(archiveSummaryService.getArchiveSummary()).thenReturn(emptyArchiveSummary());
+        when(shareChecklistService.getShareChecklist()).thenReturn(checklistNeedingAttention());
+
+        var instructions = service.getShareInstructions();
+
+        assertThat(instructions.status()).isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
+        assertThat(instructions.sendReady()).isFalse();
+        assertThat(instructions.requiredAttachments()).containsExactly(
+                "Create a handoff package archive before attaching final handoff evidence."
+        );
+        assertThat(instructions.preSendChecks()).contains(
+                "Resolve the share center next action before sending: Archive a demo handoff package before sharing handoff evidence."
+        );
+        assertThat(instructions.messageSubject()).isEqualTo("PatchPilot demo handoff: not ready");
+        assertThat(instructions.messageBody())
+                .contains("The PatchPilot demo handoff package is not ready to send yet.")
+                .contains("Archive a demo handoff package before sharing handoff evidence.");
+    }
+
     private static DemoHandoffPackageArchiveSummaryVo readyArchiveSummary() {
         return new DemoHandoffPackageArchiveSummaryVo(
                 "READY",

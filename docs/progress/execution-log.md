@@ -4,6 +4,28 @@ This file records dated implementation progress, validation commands, and import
 
 ## 2026-06-27
 
+Implemented demo handoff share instructions from `docs/plans/240-demo-handoff-share-instructions.md`.
+
+Changes:
+
+- Added `DemoHandoffShareInstructionsVo` and `GET /api/demo/handoff-share-instructions` as a read-only handoff sharing guide derived from the existing share center.
+- Added `GET /api/demo/handoff-share-instructions/report/download` so operators can download `patchpilot-demo-handoff-share-instructions.md`.
+- Added recipients, required attachments, pre-send checks, subject, body, generated time, and a read-only no-send side-effect contract to the backend report.
+- Added frontend API helpers, App refresh wiring, post-archive refresh, and a `Handoff share instructions` panel with copy/download actions in the demo session snapshot.
+- Updated README, product spec, architecture notes, frontend design docs, and this execution log.
+
+Validation so far:
+
+- `mvn -q -pl PatchPilot -Dtest=DemoHandoffShareCenterServiceTests,DemoReadinessControllerTests test`: first failed because `DemoHandoffShareInstructionsVo` and share-instructions endpoints did not exist; passed after backend implementation.
+- `npm test -- --run src/api.test.ts src/dashboard/components/DemoSessionSnapshotPanel.test.tsx src/App.test.tsx --reporter=basic`: first failed because the API helpers and dashboard instructions panel did not exist; passed after frontend implementation, 183 tests run, 0 failures.
+
+Final validation:
+
+- `mvn -q -pl PatchPilot test`: passed.
+- `npm test -- --reporter=basic`: passed, 26 test files and 305 tests run.
+- `npm run build`: passed after TypeScript and production Vite build verification.
+- `git diff --check`: passed.
+
 Implemented demo share center evidence bundle from `docs/plans/239-demo-share-center-evidence-bundle.md`.
 
 Changes:

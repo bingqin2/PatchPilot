@@ -7,6 +7,7 @@ import io.patchpilot.backend.demo.domain.DemoHandoffPackageArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffPackageArchiveSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffShareCenterVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffShareChecklistVo;
+import io.patchpilot.backend.demo.domain.DemoHandoffShareInstructionsVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchCommandVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchPreflightVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessSnapshotArchiveVo;
@@ -231,11 +232,24 @@ public class DemoReadinessController {
         return ApiResponse.ok(demoHandoffShareCenterService.getShareCenter());
     }
 
+    @GetMapping("/handoff-share-instructions")
+    public ApiResponse<DemoHandoffShareInstructionsVo> getHandoffShareInstructions() {
+        return ApiResponse.ok(demoHandoffShareCenterService.getShareInstructions());
+    }
+
     @GetMapping(value = "/handoff-share-center/report/download", produces = "text/markdown;charset=UTF-8")
     public ResponseEntity<String> downloadHandoffShareCenterReport() {
         return markdownAttachment(
                 "patchpilot-demo-handoff-share-center.md",
                 demoHandoffShareCenterService.getShareCenter().markdownReport()
+        );
+    }
+
+    @GetMapping(value = "/handoff-share-instructions/report/download", produces = "text/markdown;charset=UTF-8")
+    public ResponseEntity<String> downloadHandoffShareInstructionsReport() {
+        return markdownAttachment(
+                "patchpilot-demo-handoff-share-instructions.md",
+                demoHandoffShareCenterService.getShareInstructions().markdownReport()
         );
     }
 

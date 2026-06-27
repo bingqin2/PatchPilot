@@ -8,6 +8,7 @@ import type {
   DemoHandoffPackageArchiveSummary,
   DemoHandoffPackageArchiveSummaryStatus,
   DemoHandoffShareCenter,
+  DemoHandoffShareInstructions,
   DemoHandoffShareChecklist,
   DemoPreparedLaunchCommand,
   DemoReadinessSnapshotTrendStatus,
@@ -28,6 +29,7 @@ interface DemoSessionSnapshotPanelProps {
   handoffPackageArchiveSummary?: DemoHandoffPackageArchiveSummary | null;
   handoffShareChecklist?: DemoHandoffShareChecklist | null;
   handoffShareCenter?: DemoHandoffShareCenter | null;
+  handoffShareInstructions?: DemoHandoffShareInstructions | null;
   error: string | null;
   handoffReadinessError?: string | null;
   archiveError: string | null;
@@ -35,6 +37,7 @@ interface DemoSessionSnapshotPanelProps {
   handoffPackageArchiveSummaryError?: string | null;
   handoffShareChecklistError?: string | null;
   handoffShareCenterError?: string | null;
+  handoffShareInstructionsError?: string | null;
   onCopyReport: (input: DemoSessionReportInput) => Promise<string>;
   onDownloadReport: (input: DemoSessionReportInput) => Promise<Blob>;
   onArchiveSession: (input: DemoSessionReportInput) => Promise<DemoSessionArchive>;
@@ -45,6 +48,7 @@ interface DemoSessionSnapshotPanelProps {
   onDownloadHandoffPackageArchiveReport: (archiveId: string) => Promise<Blob>;
   onDownloadHandoffPackageArchiveSummaryReport: () => Promise<Blob>;
   onDownloadHandoffShareCenterReport: () => Promise<Blob>;
+  onDownloadHandoffShareInstructionsReport: () => Promise<Blob>;
   onDownloadHandoffShareChecklistReport: () => Promise<Blob>;
 }
 
@@ -58,6 +62,7 @@ export function DemoSessionSnapshotPanel({
   handoffPackageArchiveSummary = null,
   handoffShareChecklist = null,
   handoffShareCenter = null,
+  handoffShareInstructions = null,
   error,
   handoffReadinessError = null,
   archiveError,
@@ -65,6 +70,7 @@ export function DemoSessionSnapshotPanel({
   handoffPackageArchiveSummaryError = null,
   handoffShareChecklistError = null,
   handoffShareCenterError = null,
+  handoffShareInstructionsError = null,
   onCopyReport,
   onDownloadReport,
   onArchiveSession,
@@ -75,6 +81,7 @@ export function DemoSessionSnapshotPanel({
   onDownloadHandoffPackageArchiveReport,
   onDownloadHandoffPackageArchiveSummaryReport,
   onDownloadHandoffShareCenterReport,
+  onDownloadHandoffShareInstructionsReport,
   onDownloadHandoffShareChecklistReport
 }: DemoSessionSnapshotPanelProps) {
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
@@ -229,6 +236,28 @@ export function DemoSessionSnapshotPanel({
     }
   }
 
+  async function copyHandoffShareInstructions() {
+    if (!handoffShareInstructions) {
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(handoffShareInstructions.markdownReport);
+      setCopyStatus('Handoff share instructions copied');
+    } catch {
+      setCopyStatus('Copy failed');
+    }
+  }
+
+  async function downloadHandoffShareInstructions() {
+    try {
+      const report = await onDownloadHandoffShareInstructionsReport();
+      downloadMarkdown(report, 'patchpilot-demo-handoff-share-instructions.md');
+      setDownloadStatus('Handoff share instructions downloaded');
+    } catch {
+      setDownloadStatus('Download failed');
+    }
+  }
+
   async function downloadHandoffPackageArchiveSummary() {
     try {
       const report = await onDownloadHandoffPackageArchiveSummaryReport();
@@ -329,6 +358,13 @@ export function DemoSessionSnapshotPanel({
         <div className="adapter-api-error">
           <strong>Demo handoff share center unavailable</strong>
           <span>{handoffShareCenterError}</span>
+        </div>
+      ) : null}
+
+      {handoffShareInstructionsError ? (
+        <div className="adapter-api-error">
+          <strong>Demo handoff share instructions unavailable</strong>
+          <span>{handoffShareInstructionsError}</span>
         </div>
       ) : null}
 
@@ -452,6 +488,12 @@ export function DemoSessionSnapshotPanel({
           <HandoffShareCenterPanel
             center={handoffShareCenter}
             onDownloadCenter={downloadHandoffShareCenter}
+          />
+
+          <HandoffShareInstructionsPanel
+            instructions={handoffShareInstructions}
+            onCopyInstructions={copyHandoffShareInstructions}
+            onDownloadInstructions={downloadHandoffShareInstructions}
           />
 
           <HandoffShareChecklistPanel
@@ -594,6 +636,86 @@ function HandoffShareCenterPanel({
           items={center.evidenceNotes}
           emptyText="No share evidence available."
         />
+      </div>
+    </div>
+  );
+}
+
+function HandoffShareInstructionsPanel({
+  instructions,
+  onCopyInstructions,
+  onDownloadInstructions
+}: {
+  instructions: DemoHandoffShareInstructions | null;
+  onCopyInstructions: () => void;
+  onDownloadInstructions: () => void;
+}) {
+  if (!instructions) {
+    return null;
+  }
+
+  return (
+    <div className="demo-session-archives">
+      <div className="demo-session-archive-title-row">
+        <h3>Handoff share instructions</h3>
+        <div className="demo-session-archive-actions">
+          <button
+            className="secondary-button"
+            type="button"
+            onClick={() => onCopyInstructions()}
+            aria-label="Copy handoff share instructions"
+          >
+            <Copy size={14} />
+            Copy instructions
+          </button>
+          <button
+            className="secondary-button"
+            type="button"
+            onClick={() => onDownloadInstructions()}
+            aria-label="Download handoff share instructions"
+          >
+            <Download size={14} />
+            Download instructions
+          </button>
+        </div>
+      </div>
+      <div className="demo-session-summary">
+        <div>
+          <span>Send status</span>
+          <strong>{instructions.sendReady ? 'Send-ready' : statusLabel(instructions.status)}</strong>
+          <small>{instructions.summary}</small>
+        </div>
+        <div>
+          <span>Message subject</span>
+          <strong>{instructions.messageSubject}</strong>
+          <small>Generated {compactDateTime(instructions.generatedAt)}</small>
+        </div>
+        <div>
+          <span>Next action</span>
+          <strong>{instructions.nextAction}</strong>
+          <small>Copy or download these instructions before sharing.</small>
+        </div>
+      </div>
+      <div className="demo-session-lists compact-demo-session-lists">
+        <SnapshotList
+          title="Recommended recipients"
+          items={instructions.recommendedRecipients}
+          emptyText="No recommended recipients available."
+        />
+        <SnapshotList
+          title="Required attachments"
+          items={instructions.requiredAttachments}
+          emptyText="No required attachments available."
+        />
+        <SnapshotList
+          title="Pre-send checks"
+          items={instructions.preSendChecks}
+          emptyText="No pre-send checks available."
+        />
+      </div>
+      <div className="demo-session-handoff-checks">
+        <h3>Message template</h3>
+        <p>{instructions.messageBody}</p>
       </div>
     </div>
   );
