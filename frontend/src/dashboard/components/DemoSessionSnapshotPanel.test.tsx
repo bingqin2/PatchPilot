@@ -205,26 +205,31 @@ const archivedLaunchOutcomes: DemoArchivedLaunchOutcome[] = [
 const handoffReadiness: DemoHandoffReadiness = {
   status: 'READY',
   summary: 'Handoff package has current webhook delivery, PR, command, outcome, and readiness trend evidence.',
+  nextAction: 'No missing handoff evidence.',
   checks: [
     {
       name: 'Demo snapshot status',
       status: 'READY',
-      summary: 'Demo session snapshot is ready.'
+      summary: 'Demo session snapshot is ready.',
+      nextAction: 'No action needed.'
     },
     {
       name: 'Recent task evidence',
       status: 'READY',
-      summary: 'task-1 is completed.'
+      summary: 'task-1 is completed.',
+      nextAction: 'No action needed.'
     },
     {
       name: 'Webhook delivery evidence',
       status: 'READY',
-      summary: 'delivery-1 created task task-1.'
+      summary: 'delivery-1 created task task-1.',
+      nextAction: 'No action needed.'
     },
     {
       name: 'Prepared command context',
       status: 'READY',
-      summary: '1 prepared command recorded.'
+      summary: '1 prepared command recorded.',
+      nextAction: 'No action needed.'
     }
   ]
 };
@@ -232,21 +237,25 @@ const handoffReadiness: DemoHandoffReadiness = {
 const missingHandoffReadiness: DemoHandoffReadiness = {
   status: 'NEEDS_ATTENTION',
   summary: 'Handoff package is missing evidence required for a credible live-demo handoff.',
+  nextAction: 'Complete the handoff readiness checks that need attention before sharing the package.',
   checks: [
     {
       name: 'Recent task evidence',
       status: 'NEEDS_ATTENTION',
-      summary: 'No recent completed task is available in the session snapshot.'
+      summary: 'No recent completed task is available in the session snapshot.',
+      nextAction: 'Run one controlled /agent fix task and wait for COMPLETED status.'
     },
     {
       name: 'Webhook delivery evidence',
       status: 'NEEDS_ATTENTION',
-      summary: 'No recent webhook delivery evidence is available in the session snapshot.'
+      summary: 'No recent webhook delivery evidence is available in the session snapshot.',
+      nextAction: 'Deliver one controlled GitHub issue comment and confirm TASK_CREATED webhook evidence.'
     },
     {
       name: 'Prepared command context',
       status: 'NEEDS_ATTENTION',
-      summary: 'No prepared launch command was captured in this browser session.'
+      summary: 'No prepared launch command was captured in this browser session.',
+      nextAction: 'Use the dashboard launch command composer before handoff.'
     }
   ]
 };
@@ -304,10 +313,12 @@ test('renders demo session snapshot summary, evidence, checklist, contract, and 
     within(panel).getByText('Handoff package has current webhook delivery, PR, command, outcome, and readiness trend evidence.')
   ).toBeInTheDocument();
   expect(within(panel).getByText('Handoff evidence')).toBeInTheDocument();
+  expect(within(panel).getByText('No missing handoff evidence.')).toBeInTheDocument();
   expect(within(panel).getByText('2 commands / 1 outcome')).toBeInTheDocument();
   expect(within(panel).getByRole('heading', { name: 'Handoff readiness checks' })).toBeInTheDocument();
   expect(within(panel).getByText('Webhook delivery evidence')).toBeInTheDocument();
   expect(within(panel).getByText('delivery-1 created task task-1.')).toBeInTheDocument();
+  expect(within(panel).getAllByText('Next action: No action needed.').length).toBeGreaterThanOrEqual(1);
   expect(within(panel).getByText('Prepared command context')).toBeInTheDocument();
   expect(within(panel).getByText('1 prepared command recorded.')).toBeInTheDocument();
   expect(within(panel).getByText('Open the dashboard and confirm the demo session snapshot status.')).toBeInTheDocument();
@@ -415,6 +426,8 @@ test('shows handoff readiness gaps when launch context is missing', () => {
     within(panel).getByText('No recent completed task is available in the session snapshot.')
   ).toBeInTheDocument();
   expect(within(panel).getByText('No prepared launch command was captured in this browser session.')).toBeInTheDocument();
+  expect(within(panel).getByText('Complete the handoff readiness checks that need attention before sharing the package.')).toBeInTheDocument();
+  expect(within(panel).getByText('Next action: Use the dashboard launch command composer before handoff.')).toBeInTheDocument();
   expect(within(panel).getByText('0 commands / 0 outcomes')).toBeInTheDocument();
 });
 

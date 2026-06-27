@@ -505,11 +505,13 @@ export interface DemoHandoffReadinessCheck {
   name: string;
   status: DemoReadinessStatus;
   summary: string;
+  nextAction: string;
 }
 
 export interface DemoHandoffReadiness {
   status: DemoReadinessStatus;
   summary: string;
+  nextAction: string;
   checks: DemoHandoffReadinessCheck[];
 }
 

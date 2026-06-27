@@ -187,7 +187,9 @@ class DemoSessionReportServiceTests {
                 .contains("- Readiness trend: `IMPROVING` - Demo readiness improved from BLOCKED to READY.")
                 .contains("## Handoff Readiness")
                 .contains("- Overall: `READY` - Handoff package has current webhook delivery, PR, command, outcome, and readiness trend evidence.")
+                .contains("  - Next action: No missing handoff evidence.")
                 .contains("- Demo snapshot status: `READY` - Demo session snapshot is ready.")
+                .contains("  - Next action: No action needed.")
                 .contains("- Recent task evidence: `READY` - task-1 is completed.")
                 .contains("- Webhook delivery evidence: `READY` - delivery-1 created task task-1.")
                 .contains("- Recent Pull Request evidence: `READY` - https://github.com/bingqin2/PatchPilot/pull/42")
@@ -214,20 +216,22 @@ class DemoSessionReportServiceTests {
         assertThat(readiness.status()).isEqualTo(DemoReadinessStatus.READY);
         assertThat(readiness.summary())
                 .isEqualTo("Handoff package has current webhook delivery, PR, command, outcome, and readiness trend evidence.");
+        assertThat(readiness.nextAction()).isEqualTo("No missing handoff evidence.");
         assertThat(readiness.checks())
                 .extracting(
                         DemoHandoffReadinessCheckVo::name,
                         DemoHandoffReadinessCheckVo::status,
-                        DemoHandoffReadinessCheckVo::summary
+                        DemoHandoffReadinessCheckVo::summary,
+                        DemoHandoffReadinessCheckVo::nextAction
                 )
                 .contains(
-                        tuple("Demo snapshot status", DemoReadinessStatus.READY, "Demo session snapshot is ready."),
-                        tuple("Recent task evidence", DemoReadinessStatus.READY, "task-1 is completed."),
-                        tuple("Webhook delivery evidence", DemoReadinessStatus.READY, "delivery-1 created task task-1."),
-                        tuple("Recent Pull Request evidence", DemoReadinessStatus.READY, "https://github.com/bingqin2/PatchPilot/pull/42"),
-                        tuple("Prepared command context", DemoReadinessStatus.READY, "1 prepared command recorded."),
-                        tuple("Archived launch outcome context", DemoReadinessStatus.READY, "1 archived outcome has completed task or Pull Request evidence."),
-                        tuple("Readiness trend baseline", DemoReadinessStatus.READY, "IMPROVING; latest readiness READY.")
+                        tuple("Demo snapshot status", DemoReadinessStatus.READY, "Demo session snapshot is ready.", "No action needed."),
+                        tuple("Recent task evidence", DemoReadinessStatus.READY, "task-1 is completed.", "No action needed."),
+                        tuple("Webhook delivery evidence", DemoReadinessStatus.READY, "delivery-1 created task task-1.", "No action needed."),
+                        tuple("Recent Pull Request evidence", DemoReadinessStatus.READY, "https://github.com/bingqin2/PatchPilot/pull/42", "No action needed."),
+                        tuple("Prepared command context", DemoReadinessStatus.READY, "1 prepared command recorded.", "No action needed."),
+                        tuple("Archived launch outcome context", DemoReadinessStatus.READY, "1 archived outcome has completed task or Pull Request evidence.", "No action needed."),
+                        tuple("Readiness trend baseline", DemoReadinessStatus.READY, "IMPROVING; latest readiness READY.", "No action needed.")
                 );
     }
 
@@ -243,16 +247,19 @@ class DemoSessionReportServiceTests {
         assertThat(readiness.status()).isEqualTo(DemoReadinessStatus.BLOCKED);
         assertThat(readiness.summary())
                 .isEqualTo("Handoff package has a blocking readiness signal that should be resolved before a live-demo handoff.");
+        assertThat(readiness.nextAction()).isEqualTo("Resolve blocked handoff readiness checks before sharing the package.");
         assertThat(readiness.checks())
                 .extracting(
                         DemoHandoffReadinessCheckVo::name,
                         DemoHandoffReadinessCheckVo::status,
-                        DemoHandoffReadinessCheckVo::summary
+                        DemoHandoffReadinessCheckVo::summary,
+                        DemoHandoffReadinessCheckVo::nextAction
                 )
                 .contains(tuple(
                         "Webhook delivery evidence",
                         DemoReadinessStatus.BLOCKED,
-                        "delivery-invalid is INVALID_SIGNATURE; Fix the webhook secret or payload URL first, then use GitHub's Redeliver action for this delivery."
+                        "delivery-invalid is INVALID_SIGNATURE; Fix the webhook secret or payload URL first, then use GitHub's Redeliver action for this delivery.",
+                        "Fix the webhook secret or payload URL first, then use GitHub's Redeliver action for this delivery."
                 ));
     }
 
@@ -269,7 +276,9 @@ class DemoSessionReportServiceTests {
                 .contains("- Webhook delivery evidence: `NEEDS_ATTENTION` - No recent webhook delivery evidence is available in the session snapshot.")
                 .contains("- Recent Pull Request evidence: `NEEDS_ATTENTION` - No recent Pull Request URL is available.")
                 .contains("- Prepared command context: `NEEDS_ATTENTION` - No prepared launch command was captured in this browser session.")
+                .contains("  - Next action: Use the dashboard launch command composer before handoff.")
                 .contains("- Archived launch outcome context: `NEEDS_ATTENTION` - No archived launch outcome with completed task or Pull Request evidence was captured.")
+                .contains("  - Next action: Archive the launch outcome after the task completes or a Pull Request appears.")
                 .contains("- Readiness trend baseline: `READY` - IMPROVING; latest readiness READY.");
     }
 
@@ -285,7 +294,8 @@ class DemoSessionReportServiceTests {
 
         assertThat(packageReport)
                 .contains("- Overall: `BLOCKED` - Handoff package has a blocking readiness signal that should be resolved before a live-demo handoff.")
-                .contains("- Webhook delivery evidence: `BLOCKED` - delivery-invalid is INVALID_SIGNATURE; Fix the webhook secret or payload URL first, then use GitHub's Redeliver action for this delivery.");
+                .contains("- Webhook delivery evidence: `BLOCKED` - delivery-invalid is INVALID_SIGNATURE; Fix the webhook secret or payload URL first, then use GitHub's Redeliver action for this delivery.")
+                .contains("  - Next action: Fix the webhook secret or payload URL first, then use GitHub's Redeliver action for this delivery.");
     }
 
     @Test

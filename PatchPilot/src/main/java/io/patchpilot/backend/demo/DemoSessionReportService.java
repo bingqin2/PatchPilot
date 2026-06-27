@@ -116,6 +116,9 @@ public class DemoSessionReportService {
                 .append(readiness.status())
                 .append("` - ")
                 .append(readiness.summary())
+                .append("\n")
+                .append("  - Next action: ")
+                .append(readiness.nextAction())
                 .append("\n");
         readiness.checks().forEach(check -> report
                 .append("- ")
@@ -124,6 +127,9 @@ public class DemoSessionReportService {
                 .append(check.status())
                 .append("` - ")
                 .append(check.summary())
+                .append("\n")
+                .append("  - Next action: ")
+                .append(check.nextAction())
                 .append("\n"));
     }
 
@@ -138,11 +144,21 @@ public class DemoSessionReportService {
                 readinessTrendCheck(snapshot.readinessSnapshotTrend())
         );
         DemoReadinessStatus overallStatus = overallHandoffStatus(checks);
-        return new DemoHandoffReadinessVo(overallStatus, handoffSummary(overallStatus), checks);
+        return new DemoHandoffReadinessVo(
+                overallStatus,
+                handoffSummary(overallStatus),
+                handoffNextAction(overallStatus),
+                checks
+        );
     }
 
     private static DemoHandoffReadinessCheckVo snapshotStatusCheck(DemoSessionSnapshotVo snapshot) {
-        return new DemoHandoffReadinessCheckVo("Demo snapshot status", snapshot.status(), snapshot.summary());
+        return new DemoHandoffReadinessCheckVo(
+                "Demo snapshot status",
+                snapshot.status(),
+                snapshot.summary(),
+                readinessStatusNextAction(snapshot.status())
+        );
     }
 
     private static DemoHandoffReadinessCheckVo recentTaskCheck(FixTaskVo task) {
@@ -150,20 +166,23 @@ public class DemoSessionReportService {
             return new DemoHandoffReadinessCheckVo(
                     "Recent task evidence",
                     DemoReadinessStatus.NEEDS_ATTENTION,
-                    "No recent completed task is available in the session snapshot."
+                    "No recent completed task is available in the session snapshot.",
+                    "Run one controlled /agent fix task and wait for COMPLETED status."
             );
         }
         if (task.status() == FixTaskStatus.COMPLETED) {
             return new DemoHandoffReadinessCheckVo(
                     "Recent task evidence",
                     DemoReadinessStatus.READY,
-                    task.id() + " is completed."
+                    task.id() + " is completed.",
+                    "No action needed."
             );
         }
         return new DemoHandoffReadinessCheckVo(
                 "Recent task evidence",
                 DemoReadinessStatus.NEEDS_ATTENTION,
-                task.id() + " is " + task.status() + ", not completed."
+                task.id() + " is " + task.status() + ", not completed.",
+                "Wait for task completion or inspect the task failure before handoff."
         );
     }
 
@@ -172,7 +191,8 @@ public class DemoSessionReportService {
             return new DemoHandoffReadinessCheckVo(
                     "Webhook delivery evidence",
                     DemoReadinessStatus.NEEDS_ATTENTION,
-                    "No recent webhook delivery evidence is available in the session snapshot."
+                    "No recent webhook delivery evidence is available in the session snapshot.",
+                    "Deliver one controlled GitHub issue comment and confirm TASK_CREATED webhook evidence."
             );
         }
 
@@ -193,7 +213,8 @@ public class DemoSessionReportService {
                 "Webhook delivery evidence",
                 DemoReadinessStatus.READY,
                 valueOrNone(delivery.deliveryId()) + " created task "
-                        + valueOrNone(firstNonBlank(delivery.taskId(), delivery.outcomeId())) + "."
+                        + valueOrNone(firstNonBlank(delivery.taskId(), delivery.outcomeId())) + ".",
+                "No action needed."
         );
     }
 
@@ -202,7 +223,8 @@ public class DemoSessionReportService {
                 "Webhook delivery evidence",
                 DemoReadinessStatus.BLOCKED,
                 valueOrNone(delivery.deliveryId()) + " is " + valueOrNone(delivery.status())
-                        + "; " + valueOrNone(delivery.operatorAction())
+                        + "; " + valueOrNone(delivery.operatorAction()),
+                valueOrNone(delivery.operatorAction())
         );
     }
 
@@ -211,7 +233,8 @@ public class DemoSessionReportService {
                 "Webhook delivery evidence",
                 DemoReadinessStatus.NEEDS_ATTENTION,
                 valueOrNone(latestDelivery.deliveryId()) + " is " + valueOrNone(latestDelivery.status())
-                        + "; " + valueOrNone(latestDelivery.operatorAction())
+                        + "; " + valueOrNone(latestDelivery.operatorAction()),
+                valueOrNone(latestDelivery.operatorAction())
         );
     }
 
@@ -220,13 +243,15 @@ public class DemoSessionReportService {
             return new DemoHandoffReadinessCheckVo(
                     "Recent Pull Request evidence",
                     DemoReadinessStatus.NEEDS_ATTENTION,
-                    "No recent Pull Request URL is available."
+                    "No recent Pull Request URL is available.",
+                    "Complete a task that opens a Pull Request before handoff."
             );
         }
         return new DemoHandoffReadinessCheckVo(
                 "Recent Pull Request evidence",
                 DemoReadinessStatus.READY,
-                pullRequestUrl
+                pullRequestUrl,
+                "No action needed."
         );
     }
 
@@ -236,13 +261,15 @@ public class DemoSessionReportService {
             return new DemoHandoffReadinessCheckVo(
                     "Prepared command context",
                     DemoReadinessStatus.NEEDS_ATTENTION,
-                    "No prepared launch command was captured in this browser session."
+                    "No prepared launch command was captured in this browser session.",
+                    "Use the dashboard launch command composer before handoff."
             );
         }
         return new DemoHandoffReadinessCheckVo(
                 "Prepared command context",
                 DemoReadinessStatus.READY,
-                commandCount + " prepared " + plural(commandCount, "command") + " recorded."
+                commandCount + " prepared " + plural(commandCount, "command") + " recorded.",
+                "No action needed."
         );
     }
 
@@ -252,14 +279,16 @@ public class DemoSessionReportService {
             return new DemoHandoffReadinessCheckVo(
                     "Archived launch outcome context",
                     DemoReadinessStatus.NEEDS_ATTENTION,
-                    "No archived launch outcome with completed task or Pull Request evidence was captured."
+                    "No archived launch outcome with completed task or Pull Request evidence was captured.",
+                    "Archive the launch outcome after the task completes or a Pull Request appears."
             );
         }
         return new DemoHandoffReadinessCheckVo(
                 "Archived launch outcome context",
                 DemoReadinessStatus.READY,
                 evidenceCount + " archived " + plural(evidenceCount, "outcome")
-                        + " has completed task or Pull Request evidence."
+                        + " has completed task or Pull Request evidence.",
+                "No action needed."
         );
     }
 
@@ -268,20 +297,23 @@ public class DemoSessionReportService {
             return new DemoHandoffReadinessCheckVo(
                     "Readiness trend baseline",
                     DemoReadinessStatus.BLOCKED,
-                    "Readiness trend is REGRESSING; address the regression or archive a fresh passing snapshot before handoff."
+                    "Readiness trend is REGRESSING; address the regression or archive a fresh passing snapshot before handoff.",
+                    "Archive a fresh passing readiness snapshot or resolve the regression before handoff."
             );
         }
         if (trend.status() == DemoReadinessSnapshotTrendStatus.NO_BASELINE) {
             return new DemoHandoffReadinessCheckVo(
                     "Readiness trend baseline",
                     DemoReadinessStatus.NEEDS_ATTENTION,
-                    "No previous readiness snapshot is available for comparison."
+                    "No previous readiness snapshot is available for comparison.",
+                    "Archive a readiness snapshot before handoff."
             );
         }
         return new DemoHandoffReadinessCheckVo(
                 "Readiness trend baseline",
                 DemoReadinessStatus.READY,
-                trend.status() + "; latest readiness " + valueOrNone(trend.latestReadinessStatus()) + "."
+                trend.status() + "; latest readiness " + valueOrNone(trend.latestReadinessStatus()) + ".",
+                "No action needed."
         );
     }
 
@@ -300,6 +332,22 @@ public class DemoSessionReportService {
             case READY -> "Handoff package has current webhook delivery, PR, command, outcome, and readiness trend evidence.";
             case NEEDS_ATTENTION -> "Handoff package is missing evidence required for a credible live-demo handoff.";
             case BLOCKED -> "Handoff package has a blocking readiness signal that should be resolved before a live-demo handoff.";
+        };
+    }
+
+    private static String handoffNextAction(DemoReadinessStatus status) {
+        return switch (status) {
+            case READY -> "No missing handoff evidence.";
+            case NEEDS_ATTENTION -> "Complete the handoff readiness checks that need attention before sharing the package.";
+            case BLOCKED -> "Resolve blocked handoff readiness checks before sharing the package.";
+        };
+    }
+
+    private static String readinessStatusNextAction(DemoReadinessStatus status) {
+        return switch (status) {
+            case READY -> "No action needed.";
+            case NEEDS_ATTENTION -> "Resolve demo snapshot checks that need attention before handoff.";
+            case BLOCKED -> "Resolve blocked demo snapshot checks before handoff.";
         };
     }
 

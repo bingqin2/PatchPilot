@@ -723,16 +723,19 @@ class DemoReadinessControllerTests {
         ))).thenReturn(new DemoHandoffReadinessVo(
                 DemoReadinessStatus.READY,
                 "Handoff package has current webhook delivery, PR, command, outcome, and readiness trend evidence.",
+                "No missing handoff evidence.",
                 List.of(
                         new DemoHandoffReadinessCheckVo(
                                 "Webhook delivery evidence",
                                 DemoReadinessStatus.READY,
-                                "delivery-1 created task task-1."
+                                "delivery-1 created task task-1.",
+                                "No action needed."
                         ),
                         new DemoHandoffReadinessCheckVo(
                                 "Prepared command context",
                                 DemoReadinessStatus.READY,
-                                "1 prepared command recorded."
+                                "1 prepared command recorded.",
+                                "No action needed."
                         )
                 )
         ));
@@ -774,9 +777,11 @@ class DemoReadinessControllerTests {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.status").value("READY"))
                 .andExpect(jsonPath("$.data.summary").value("Handoff package has current webhook delivery, PR, command, outcome, and readiness trend evidence."))
+                .andExpect(jsonPath("$.data.nextAction").value("No missing handoff evidence."))
                 .andExpect(jsonPath("$.data.checks[0].name").value("Webhook delivery evidence"))
                 .andExpect(jsonPath("$.data.checks[0].status").value("READY"))
                 .andExpect(jsonPath("$.data.checks[0].summary").value("delivery-1 created task task-1."))
+                .andExpect(jsonPath("$.data.checks[0].nextAction").value("No action needed."))
                 .andExpect(jsonPath("$.data.checks[1].name").value("Prepared command context"));
     }
 
