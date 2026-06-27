@@ -376,11 +376,11 @@ PatchPilot MVP is successful when:
 - Adapter-selected verification runs and the result is recorded.
 - A successful task creates a Pull Request.
 - GitHub issue comments and Pull Request bodies can link back to the matching dashboard task detail page when the operator configures a public Dashboard URL.
-- An operator can verify demo readiness through a single evidence bundle covering setup, safety, queue, webhook, and recent PR signals.
+- An operator can verify demo readiness through a single evidence bundle covering setup, safety, queue, webhook setup readiness, latest delivery, and recent PR signals.
 - An operator can inspect a single demo session snapshot before or after a live run without manually assembling evidence, readiness trend, prepared launch commands, archived launch outcomes, script, runbook, checklist, and health-contract responses.
 - An operator can follow an ordered demo script whose endpoint is explicitly read-only and whose steps point to dashboard evidence and curl verification commands.
 - An operator can copy a Markdown runbook that explains the current demo status and next actions without manually assembling API responses.
-- An operator can copy or download a Markdown session report that includes the snapshot, readiness trend status and deltas, handoff readiness checks, prepared launch commands from the current browser, archived launch outcomes from the current browser, script, checklist, health contract, next actions, and runbook.
+- An operator can copy or download a Markdown session report that includes the snapshot, webhook setup readiness, readiness trend status and deltas, handoff readiness checks, prepared launch commands from the current browser, archived launch outcomes from the current browser, script, checklist, health contract, next actions, and runbook.
 - An operator can copy or download a Markdown handoff package that combines the session report with a concise summary, handoff readiness, readiness trend evidence, recent task and Pull Request evidence, browser-local prepared commands, browser-local archived outcomes, and next actions.
 - An operator can archive that final handoff package as durable local evidence and retrieve it from the dashboard after refresh or backend restart when using a database-backed profile.
 - An operator can archive the current demo readiness gate as a timestamped Markdown report and later prove why the system was ready, warned, or blocked before a live run.

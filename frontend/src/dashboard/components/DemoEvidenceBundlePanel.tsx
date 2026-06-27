@@ -77,6 +77,14 @@ export function DemoEvidenceBundlePanel({ bundle, error, onCopyRunbook }: DemoEv
 
           <div className="demo-evidence-records">
             <div>
+              <span>Webhook setup readiness</span>
+              <strong>{bundle.webhookSetupReadiness?.status ?? 'No setup evidence'}</strong>
+              <small>{bundle.webhookSetupReadiness?.summary ?? 'No setup summary'}</small>
+              {bundle.webhookSetupReadiness?.payloadUrl ? (
+                <code>{bundle.webhookSetupReadiness.payloadUrl}</code>
+              ) : null}
+            </div>
+            <div>
               <span>Latest webhook delivery</span>
               <strong>{bundle.latestWebhookDelivery?.deliveryId ?? 'No delivery evidence'}</strong>
               <small>{bundle.latestWebhookDelivery?.status ?? 'No webhook status'}</small>

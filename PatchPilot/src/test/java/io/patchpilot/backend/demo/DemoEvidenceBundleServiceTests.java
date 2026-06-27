@@ -8,6 +8,7 @@ import io.patchpilot.backend.demo.domain.DemoReadinessVo;
 import io.patchpilot.backend.demo.domain.DemoSmokeChecklistStatus;
 import io.patchpilot.backend.demo.domain.DemoSmokeChecklistStepVo;
 import io.patchpilot.backend.demo.domain.DemoSmokeChecklistVo;
+import io.patchpilot.backend.github.credential.domain.GitHubWebhookSetupReadinessVo;
 import io.patchpilot.backend.github.webhook.domain.WebhookDeliveryDiagnosticStatus;
 import io.patchpilot.backend.github.webhook.domain.WebhookDeliveryDiagnosticVo;
 import io.patchpilot.backend.language.domain.LanguageAdapterFixtureVerificationVo;
@@ -40,6 +41,7 @@ class DemoEvidenceBundleServiceTests {
                         task("task-1", FixTaskStatus.FAILED, null)
                 ),
                 () -> List.of(webhookDelivery("delivery-1", WebhookDeliveryDiagnosticStatus.TASK_CREATED, "task-2")),
+                DemoEvidenceBundleServiceTests::webhookSetupReadiness,
                 () -> rejectedTriggerSummary(4),
                 () -> List.of(quarantine("quarantine-1"))
         );
@@ -56,6 +58,9 @@ class DemoEvidenceBundleServiceTests {
         assertThat(bundle.queueSummary().totalCount()).isEqualTo(3);
         assertThat(bundle.recentTask().id()).isEqualTo("task-2");
         assertThat(bundle.recentPullRequestUrl()).isEqualTo("https://github.com/bingqin2/PatchPilot/pull/42");
+        assertThat(bundle.webhookSetupReadiness().status()).isEqualTo("READY");
+        assertThat(bundle.webhookSetupReadiness().payloadUrl()).isEqualTo("https://demo.trycloudflare.com/api/github/webhook");
+        assertThat(bundle.webhookSetupReadiness().latestDeliveryId()).isEqualTo("delivery-1");
         assertThat(bundle.latestWebhookDelivery().deliveryId()).isEqualTo("delivery-1");
         assertThat(bundle.rejectedTriggerSummary().totalCount()).isEqualTo(4);
         assertThat(bundle.activeQuarantineCount()).isEqualTo(1);
@@ -75,6 +80,7 @@ class DemoEvidenceBundleServiceTests {
                 FixTaskQueueSummaryVo::empty,
                 () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/42")),
                 () -> List.of(webhookDelivery("delivery-1", WebhookDeliveryDiagnosticStatus.TASK_CREATED, "task-1")),
+                DemoEvidenceBundleServiceTests::webhookSetupReadiness,
                 () -> rejectedTriggerSummary(0),
                 List::of
         );
@@ -101,6 +107,24 @@ class DemoEvidenceBundleServiceTests {
                 status == DemoSmokeChecklistStatus.READY ? "Live demo smoke checklist is ready." : "Live demo smoke checklist needs attention.",
                 List.of(new DemoSmokeChecklistStepVo(1, "Readiness gate", status, "Ready.", "Evidence", "No action needed.")),
                 nextActions
+        );
+    }
+
+    private static GitHubWebhookSetupReadinessVo webhookSetupReadiness() {
+        return new GitHubWebhookSetupReadinessVo(
+                "READY",
+                true,
+                true,
+                "https://demo.trycloudflare.com",
+                "https://demo.trycloudflare.com/api/github/webhook",
+                "https://demo.trycloudflare.com/health",
+                "TASK_CREATED",
+                "delivery-1",
+                false,
+                "Webhook setup is ready for GitHub deliveries.",
+                List.of("Use the payload URL in GitHub Webhooks and continue the live demo."),
+                Instant.parse("2026-06-27T01:00:00Z"),
+                "# PatchPilot Webhook Setup Readiness"
         );
     }
 

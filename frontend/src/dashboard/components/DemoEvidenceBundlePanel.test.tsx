@@ -72,6 +72,21 @@ const bundle: DemoEvidenceBundle = {
     retriedAt: null
   },
   recentPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+  webhookSetupReadiness: {
+    status: 'READY',
+    secretConfigured: true,
+    publicUrlReady: true,
+    publicBaseUrl: 'https://demo.trycloudflare.com',
+    payloadUrl: 'https://demo.trycloudflare.com/api/github/webhook',
+    healthUrl: 'https://demo.trycloudflare.com/health',
+    latestDeliveryStatus: 'TASK_CREATED',
+    latestDeliveryId: 'delivery-1',
+    redeliveryRecommended: false,
+    summary: 'Webhook setup is ready for GitHub deliveries.',
+    nextActions: ['Use the payload URL in GitHub Webhooks and continue the live demo.'],
+    checkedAt: '2026-06-27T01:00:00Z',
+    markdownReport: '# PatchPilot Webhook Setup Readiness'
+  },
   latestWebhookDelivery: {
     id: 'delivery-1',
     deliveryId: 'delivery-1',
@@ -118,6 +133,9 @@ test('summarizes demo evidence bundle for operators', () => {
     'https://github.com/bingqin2/PatchPilot/pull/42'
   );
   expect(within(panel).getByText('Latest webhook delivery')).toBeInTheDocument();
+  expect(within(panel).getByText('Webhook setup readiness')).toBeInTheDocument();
+  expect(within(panel).getByText('Webhook setup is ready for GitHub deliveries.')).toBeInTheDocument();
+  expect(within(panel).getByText('https://demo.trycloudflare.com/api/github/webhook')).toBeInTheDocument();
   expect(within(panel).getByText('delivery-1')).toBeInTheDocument();
   expect(within(panel).getByText('Fix failing adapter fixtures before a live demo.')).toBeInTheDocument();
   expect(within(panel).getByText('Inspect active trigger quarantines before a live demo.')).toBeInTheDocument();

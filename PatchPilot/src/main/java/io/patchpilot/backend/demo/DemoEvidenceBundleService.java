@@ -9,6 +9,8 @@ import io.patchpilot.backend.demo.domain.DemoReadinessStatus;
 import io.patchpilot.backend.demo.domain.DemoReadinessVo;
 import io.patchpilot.backend.demo.domain.DemoSmokeChecklistStatus;
 import io.patchpilot.backend.demo.domain.DemoSmokeChecklistVo;
+import io.patchpilot.backend.github.credential.GitHubWebhookSetupReadinessService;
+import io.patchpilot.backend.github.credential.domain.GitHubWebhookSetupReadinessVo;
 import io.patchpilot.backend.github.webhook.domain.WebhookDeliveryDiagnosticVo;
 import io.patchpilot.backend.github.webhook.service.WebhookDeliveryDiagnosticService;
 import io.patchpilot.backend.language.LanguageAdapterFixtureVerificationService;
@@ -41,6 +43,7 @@ public class DemoEvidenceBundleService {
     private final Supplier<FixTaskQueueSummaryVo> queueSummarySupplier;
     private final Supplier<List<FixTaskVo>> recentTasksSupplier;
     private final Supplier<List<WebhookDeliveryDiagnosticVo>> webhookDeliveriesSupplier;
+    private final Supplier<GitHubWebhookSetupReadinessVo> webhookSetupReadinessSupplier;
     private final Supplier<RejectedTriggerAuditSummaryVo> rejectedTriggerSummarySupplier;
     private final Supplier<List<TriggerQuarantineVo>> activeQuarantinesSupplier;
 
@@ -53,6 +56,7 @@ public class DemoEvidenceBundleService {
             FixTaskQueueQueryService fixTaskQueueQueryService,
             FixTaskService fixTaskService,
             WebhookDeliveryDiagnosticService webhookDeliveryDiagnosticService,
+            GitHubWebhookSetupReadinessService gitHubWebhookSetupReadinessService,
             RejectedTriggerAuditService rejectedTriggerAuditService,
             TriggerQuarantineRecordService triggerQuarantineRecordService
     ) {
@@ -73,6 +77,7 @@ public class DemoEvidenceBundleService {
                         0
                 )),
                 () -> webhookDeliveryDiagnosticService.listRecent(10),
+                gitHubWebhookSetupReadinessService::getReadiness,
                 () -> rejectedTriggerAuditService.summarizeRejectedTriggers(100),
                 () -> triggerQuarantineRecordService.listQuarantines(true, 20)
         );
@@ -86,6 +91,7 @@ public class DemoEvidenceBundleService {
             Supplier<FixTaskQueueSummaryVo> queueSummarySupplier,
             Supplier<List<FixTaskVo>> recentTasksSupplier,
             Supplier<List<WebhookDeliveryDiagnosticVo>> webhookDeliveriesSupplier,
+            Supplier<GitHubWebhookSetupReadinessVo> webhookSetupReadinessSupplier,
             Supplier<RejectedTriggerAuditSummaryVo> rejectedTriggerSummarySupplier,
             Supplier<List<TriggerQuarantineVo>> activeQuarantinesSupplier
     ) {
@@ -96,6 +102,7 @@ public class DemoEvidenceBundleService {
         this.queueSummarySupplier = queueSummarySupplier;
         this.recentTasksSupplier = recentTasksSupplier;
         this.webhookDeliveriesSupplier = webhookDeliveriesSupplier;
+        this.webhookSetupReadinessSupplier = webhookSetupReadinessSupplier;
         this.rejectedTriggerSummarySupplier = rejectedTriggerSummarySupplier;
         this.activeQuarantinesSupplier = activeQuarantinesSupplier;
     }
@@ -108,6 +115,7 @@ public class DemoEvidenceBundleService {
         FixTaskQueueSummaryVo queueSummary = queueSummarySupplier.get();
         List<FixTaskVo> recentTasks = recentTasksSupplier.get();
         List<WebhookDeliveryDiagnosticVo> webhookDeliveries = webhookDeliveriesSupplier.get();
+        GitHubWebhookSetupReadinessVo webhookSetupReadiness = webhookSetupReadinessSupplier.get();
         RejectedTriggerAuditSummaryVo rejectedTriggerSummary = rejectedTriggerSummarySupplier.get();
         List<TriggerQuarantineVo> activeQuarantines = activeQuarantinesSupplier.get();
 
@@ -140,6 +148,7 @@ public class DemoEvidenceBundleService {
                 queueSummary,
                 recentTask,
                 recentPullRequestUrl,
+                webhookSetupReadiness,
                 latestWebhookDelivery,
                 rejectedTriggerSummary,
                 activeQuarantines.size(),

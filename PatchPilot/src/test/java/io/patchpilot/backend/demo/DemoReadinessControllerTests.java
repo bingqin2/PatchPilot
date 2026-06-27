@@ -354,6 +354,7 @@ class DemoReadinessControllerTests {
                 "https://github.com/bingqin2/PatchPilot/pull/42",
                 null,
                 null,
+                null,
                 1,
                 Instant.parse("2026-06-24T00:00:00Z"),
                 List.of("Run one controlled issue-to-PR smoke task before a live demo.")
@@ -447,6 +448,7 @@ class DemoReadinessControllerTests {
                 new FixTaskQueueSummaryVo(2, 0, 0, 0, 0, 2, 0, 0),
                 null,
                 "https://github.com/bingqin2/PatchPilot/pull/42",
+                null,
                 null,
                 null,
                 0,

@@ -1665,11 +1665,22 @@ h3 {
   overflow-wrap: anywhere;
 }
 
+.demo-evidence-records code {
+  background: #eef3f7;
+  border: 1px solid #d6e0e8;
+  border-radius: 4px;
+  color: #243140;
+  font-size: 12px;
+  font-weight: 750;
+  overflow-wrap: anywhere;
+  padding: 4px 6px;
+}
+
 .demo-evidence-records {
   border-top: 1px solid #e6ebef;
   display: grid;
   gap: 10px;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   padding: 14px 16px;
 }
 
@@ -4654,6 +4665,8 @@ pre {
   .configuration-grid,
   .connectivity-grid,
   .operator-setup-grid,
+  .demo-evidence-grid,
+  .demo-evidence-records,
   .demo-smoke-steps,
   .manual-task-form,
   .demo-launch-command-form,

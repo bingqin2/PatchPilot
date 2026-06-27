@@ -83,6 +83,7 @@ const snapshot: DemoSessionSnapshot = {
       retriedAt: null
     },
     recentPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+    webhookSetupReadiness: null,
     latestWebhookDelivery: null,
     rejectedTriggerSummary: null,
     activeQuarantineCount: 0,

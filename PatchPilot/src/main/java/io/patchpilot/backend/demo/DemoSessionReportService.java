@@ -5,6 +5,7 @@ import io.patchpilot.backend.demo.domain.DemoReadinessSnapshotTrendVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessStatus;
 import io.patchpilot.backend.demo.domain.DemoScriptStepVo;
 import io.patchpilot.backend.demo.domain.DemoSessionSnapshotVo;
+import io.patchpilot.backend.github.credential.domain.GitHubWebhookSetupReadinessVo;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,6 +57,7 @@ public class DemoSessionReportService {
                 .append("- Recent Pull Request: ").append(valueOrNone(snapshot.evidenceBundle().recentPullRequestUrl())).append("\n");
 
         appendRecentTask(report, snapshot.evidenceBundle().recentTask());
+        appendWebhookSetupReadiness(report, snapshot.evidenceBundle().webhookSetupReadiness());
         appendReadinessSnapshotTrend(report, snapshot.readinessSnapshotTrend());
         appendHandoffReadiness(report, snapshot, request);
         appendList(report, "Operator Checklist", snapshot.operatorChecklist(), "No operator checklist items recorded.");
@@ -257,6 +259,25 @@ public class DemoSessionReportService {
                 .append("- Next action: ").append(trend.nextAction()).append("\n");
     }
 
+    private static void appendWebhookSetupReadiness(StringBuilder report, GitHubWebhookSetupReadinessVo readiness) {
+        report.append("\n## Webhook Setup Readiness\n\n");
+        if (readiness == null) {
+            report.append("- Status: none\n");
+            return;
+        }
+        report.append("- Status: `").append(readiness.status()).append("`\n")
+                .append("- Secret configured: `").append(readiness.secretConfigured()).append("`\n")
+                .append("- Public URL ready: `").append(readiness.publicUrlReady()).append("`\n")
+                .append("- Payload URL: ").append(valueOrNone(readiness.payloadUrl())).append("\n")
+                .append("- Latest delivery: `").append(valueOrNone(readiness.latestDeliveryStatus())).append("`");
+        if (!isBlank(readiness.latestDeliveryId())) {
+            report.append(" (`").append(readiness.latestDeliveryId()).append("`)");
+        }
+        report.append("\n")
+                .append("- Redelivery recommended: `").append(readiness.redeliveryRecommended()).append("`\n")
+                .append("- Next action: ").append(firstAction(readiness.nextActions())).append("\n");
+    }
+
     private static void appendRecentTask(StringBuilder report, FixTaskVo task) {
         report.append("- Recent task: ");
         if (task == null) {
@@ -405,6 +426,13 @@ public class DemoSessionReportService {
 
     private static String valueOrNone(Object value) {
         return value == null ? "none" : value.toString();
+    }
+
+    private static String firstAction(List<String> actions) {
+        if (actions == null || actions.isEmpty()) {
+            return "No action needed.";
+        }
+        return actions.get(0);
     }
 
     private static String signed(int value) {
