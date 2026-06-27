@@ -16,6 +16,7 @@ import io.patchpilot.backend.demo.domain.DemoReadinessSnapshotArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessSnapshotTrendVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessVo;
 import io.patchpilot.backend.demo.domain.DemoScriptVo;
+import io.patchpilot.backend.demo.domain.DemoSelfHostedLaunchReadinessVo;
 import io.patchpilot.backend.demo.domain.DemoSessionArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoSessionSnapshotVo;
 import io.patchpilot.backend.demo.domain.DemoSmokeChecklistVo;
@@ -56,6 +57,7 @@ public class DemoReadinessController {
     private final DemoHandoffShareCenterService demoHandoffShareCenterService;
     private final DemoHandoffShareDeliveryReceiptService demoHandoffShareDeliveryReceiptService;
     private final DemoHandoffFinalizationService demoHandoffFinalizationService;
+    private final SelfHostedLaunchReadinessService selfHostedLaunchReadinessService;
     private final DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
     private final DemoReadinessSnapshotTrendService demoReadinessSnapshotTrendService;
     private final DemoLaunchPreflightService demoLaunchPreflightService;
@@ -246,6 +248,11 @@ public class DemoReadinessController {
         return ApiResponse.ok(demoHandoffFinalizationService.getFinalizationGate());
     }
 
+    @GetMapping("/self-hosted-launch-readiness")
+    public ApiResponse<DemoSelfHostedLaunchReadinessVo> getSelfHostedLaunchReadiness() {
+        return ApiResponse.ok(selfHostedLaunchReadinessService.getReadinessPackage());
+    }
+
     @GetMapping(value = "/handoff-share-center/report/download", produces = "text/markdown;charset=UTF-8")
     public ResponseEntity<String> downloadHandoffShareCenterReport() {
         return markdownAttachment(
@@ -267,6 +274,14 @@ public class DemoReadinessController {
         return markdownAttachment(
                 "patchpilot-demo-handoff-finalization.md",
                 demoHandoffFinalizationService.getFinalizationGate().markdownReport()
+        );
+    }
+
+    @GetMapping(value = "/self-hosted-launch-readiness/report/download", produces = "text/markdown;charset=UTF-8")
+    public ResponseEntity<String> downloadSelfHostedLaunchReadinessReport() {
+        return markdownAttachment(
+                "patchpilot-self-hosted-launch-readiness.md",
+                selfHostedLaunchReadinessService.getReadinessPackage().markdownReport()
         );
     }
 

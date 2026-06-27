@@ -2,6 +2,28 @@
 
 This file records dated implementation progress, validation commands, and important outcomes.
 
+## 2026-06-28
+
+Implemented self-hosted launch readiness package from `docs/plans/245-self-hosted-launch-readiness-package.md`.
+
+Changes:
+
+- Added a read-only launch readiness service and API that combine demo readiness, evidence bundle status, handoff finalization, credential, webhook setup, and queue/worker signals into one `READY`, `NEEDS_ATTENTION`, or `BLOCKED` result.
+- Added `GET /api/demo/self-hosted-launch-readiness/report/download` so operators can download `patchpilot-self-hosted-launch-readiness.md` as final pre-launch evidence.
+- Added a dashboard launch readiness panel with status, check rows, next actions, and report download.
+- Refreshed launch readiness after handoff package archiving or delivery receipt recording changes the underlying evidence.
+- Updated README, product spec, architecture notes, frontend design docs, and this execution log.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=SelfHostedLaunchReadinessServiceTests,DemoReadinessControllerTests test`: first failed because the service/VO/controller endpoints did not exist; passed after backend implementation, 51 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts src/dashboard/components/SelfHostedLaunchReadinessPanel.test.tsx`: first failed because the component and frontend API bindings did not exist; passed after frontend implementation, 98 tests run, 0 failures.
+- `npm test -- --run src/App.test.tsx src/api.test.ts src/dashboard/components/SelfHostedLaunchReadinessPanel.test.tsx`: passed after App integration, 177 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed after full backend regression verification, 843 tests run, 0 failures.
+- `npm test -- --reporter=dot`: passed after full frontend regression verification, 27 test files and 319 tests run.
+- `npm run build`: passed after TypeScript and production Vite build verification.
+- `git diff --check`: passed.
+
 ## 2026-06-27
 
 Implemented demo handoff finalization gate from `docs/plans/244-demo-handoff-finalization-gate.md`.

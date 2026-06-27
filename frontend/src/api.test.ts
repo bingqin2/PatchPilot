@@ -27,6 +27,7 @@ import {
   getDemoSessionReport,
   getDemoHandoffPackage,
   getDemoHandoffFinalization,
+  getDemoSelfHostedLaunchReadiness,
   getDemoHandoffReadiness,
   getDemoHandoffPackageArchiveSummary,
   createDemoHandoffShareDeliveryReceipt,
@@ -39,6 +40,7 @@ import {
   downloadDemoHandoffPackage,
   downloadDemoHandoffShareCenterReport,
   downloadDemoHandoffFinalizationReport,
+  downloadDemoSelfHostedLaunchReadinessReport,
   downloadDemoHandoffShareInstructionsReport,
   downloadDemoHandoffShareChecklistReport,
   downloadDemoHandoffPackageArchiveSummaryReport,
@@ -1534,6 +1536,59 @@ test('downloads demo handoff finalization markdown from backend API', async () =
   const downloadedReport = await downloadDemoHandoffFinalizationReport();
 
   expect(fetchMock).toHaveBeenCalledWith('/api/demo/handoff-finalization/report/download');
+  expect(downloadedReport).toBe(reportBlob);
+});
+
+test('loads self-hosted launch readiness package from backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        status: 'READY',
+        readyToLaunch: true,
+        summary: 'Self-hosted PatchPilot is ready for a controlled issue-to-PR launch.',
+        checks: [
+          {
+            name: 'Demo readiness',
+            status: 'READY',
+            message: 'PatchPilot is ready for a controlled demo.',
+            action: 'No action needed.'
+          }
+        ],
+        nextActions: ['Post the tested /agent fix comment.'],
+        generatedAt: '2026-06-27T01:00:00Z',
+        markdownReport: '# PatchPilot Self-Hosted Launch Readiness'
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const readiness = await getDemoSelfHostedLaunchReadiness();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/self-hosted-launch-readiness');
+  expect(readiness.status).toBe('READY');
+  expect(readiness.readyToLaunch).toBe(true);
+  expect(readiness.checks[0].name).toBe('Demo readiness');
+  expect(readiness.markdownReport).toContain('# PatchPilot Self-Hosted Launch Readiness');
+});
+
+test('downloads self-hosted launch readiness markdown from backend API', async () => {
+  const reportBlob = new Blob(['# PatchPilot Self-Hosted Launch Readiness\n\n- Status: `READY`'], {
+    type: 'text/markdown;charset=UTF-8'
+  });
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    blob: async () => reportBlob
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const downloadedReport = await downloadDemoSelfHostedLaunchReadinessReport();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/self-hosted-launch-readiness/report/download');
   expect(downloadedReport).toBe(reportBlob);
 });
 

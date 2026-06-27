@@ -351,6 +351,23 @@ export interface DemoReadiness {
   nextActions: string[];
 }
 
+export interface DemoSelfHostedLaunchCheck {
+  name: string;
+  status: DemoReadinessStatus;
+  message: string;
+  action: string;
+}
+
+export interface DemoSelfHostedLaunchReadiness {
+  status: DemoReadinessStatus;
+  readyToLaunch: boolean;
+  summary: string;
+  checks: DemoSelfHostedLaunchCheck[];
+  nextActions: string[];
+  generatedAt: string;
+  markdownReport: string;
+}
+
 export interface DemoReadinessSnapshotArchive {
   id: string;
   status: DemoReadinessStatus;

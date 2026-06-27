@@ -24,6 +24,7 @@ import type {
   DemoReadiness,
   DemoReadinessSnapshotArchive,
   DemoReadinessSnapshotTrend,
+  DemoSelfHostedLaunchReadiness,
   DemoScript,
   DemoSessionArchive,
   DemoSessionReportInput,
@@ -231,6 +232,14 @@ export async function getGitHubRepositoryAccessReadiness(
 
 export async function getDemoReadiness(): Promise<DemoReadiness> {
   return getApi<DemoReadiness>('/api/demo/readiness');
+}
+
+export async function getDemoSelfHostedLaunchReadiness(): Promise<DemoSelfHostedLaunchReadiness> {
+  return getApi<DemoSelfHostedLaunchReadiness>('/api/demo/self-hosted-launch-readiness');
+}
+
+export async function downloadDemoSelfHostedLaunchReadinessReport(): Promise<Blob> {
+  return getBlobApi('/api/demo/self-hosted-launch-readiness/report/download');
 }
 
 export async function archiveDemoReadinessSnapshot(): Promise<DemoReadinessSnapshotArchive> {

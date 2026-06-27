@@ -1708,6 +1708,37 @@ const demoHandoffFinalization = {
   generatedAt: '2026-06-24T06:00:00Z'
 };
 
+const demoSelfHostedLaunchReadiness = {
+  status: 'READY',
+  readyToLaunch: true,
+  summary: 'Self-hosted PatchPilot is ready for a controlled issue-to-PR launch.',
+  checks: [
+    {
+      name: 'Demo readiness',
+      status: 'READY',
+      message: 'PatchPilot is ready for a controlled demo.',
+      action: 'No action needed.'
+    },
+    {
+      name: 'Evidence bundle',
+      status: 'READY',
+      message: 'Demo evidence bundle is ready.',
+      action: 'No action needed.'
+    },
+    {
+      name: 'Handoff finalization',
+      status: 'READY',
+      message: 'Demo handoff is finalized with a fresh delivery receipt for the current archive.',
+      action: 'Use the finalization report as the post-demo delivery acceptance record.'
+    }
+  ],
+  nextActions: [
+    'Post the tested /agent fix comment, watch the task reach COMPLETED, then use the generated Pull Request for review.'
+  ],
+  generatedAt: '2026-06-24T06:15:00Z',
+  markdownReport: '# PatchPilot Self-Hosted Launch Readiness\n\n- Status: `READY`'
+};
+
 const demoHandoffShareInstructions = {
   status: 'READY',
   sendReady: true,
@@ -1966,6 +1997,9 @@ beforeEach(() => {
     if (url === '/api/demo/handoff-finalization') {
       return jsonResponse(demoHandoffFinalization);
     }
+    if (url === '/api/demo/self-hosted-launch-readiness') {
+      return jsonResponse(demoSelfHostedLaunchReadiness);
+    }
     if (url === '/api/demo/handoff-share-instructions') {
       return jsonResponse(demoHandoffShareInstructions);
     }
@@ -2007,6 +2041,15 @@ beforeEach(() => {
         ok: true,
         status: 200,
         blob: async () => new Blob(['# PatchPilot Demo Handoff Finalization Gate'], {
+          type: 'text/markdown;charset=UTF-8'
+        })
+      } as Response);
+    }
+    if (url === '/api/demo/self-hosted-launch-readiness/report/download') {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        blob: async () => new Blob(['# PatchPilot Self-Hosted Launch Readiness'], {
           type: 'text/markdown;charset=UTF-8'
         })
       } as Response);
@@ -2444,6 +2487,12 @@ test('renders operational task dashboard from backend APIs', async () => {
     'href',
     'https://github.com/bingqin2/PatchPilot/pull/8'
   );
+  const selfHostedLaunchPanel = screen.getByRole('region', { name: 'Self-hosted launch readiness' });
+  expect(within(selfHostedLaunchPanel).getByRole('heading', { name: 'Self-hosted launch readiness' })).toBeInTheDocument();
+  expect(within(selfHostedLaunchPanel).getByText('Self-hosted PatchPilot is ready for a controlled issue-to-PR launch.')).toBeInTheDocument();
+  expect(within(selfHostedLaunchPanel).getByText('Ready to launch')).toBeInTheDocument();
+  expect(within(selfHostedLaunchPanel).getByText('Handoff finalization')).toBeInTheDocument();
+  expect(within(selfHostedLaunchPanel).getByText('Post the tested /agent fix comment, watch the task reach COMPLETED, then use the generated Pull Request for review.')).toBeInTheDocument();
   const demoScriptPanel = screen.getByRole('region', { name: 'Demo script' });
   expect(within(demoScriptPanel).getByRole('heading', { name: 'Demo script' })).toBeInTheDocument();
   expect(within(demoScriptPanel).getByText('Demo script is ready.')).toBeInTheDocument();
@@ -2607,6 +2656,7 @@ test('renders operational task dashboard from backend APIs', async () => {
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/handoff-share-checklist'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/handoff-share-center'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/handoff-finalization'));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/self-hosted-launch-readiness'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/handoff-share-instructions'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/handoff-share-delivery-receipts'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/script'));
