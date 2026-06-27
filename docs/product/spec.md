@@ -85,6 +85,7 @@ The current implementation target is local self-hosted development first. Hosted
 - Non-triggering webhook events should return success and be ignored without creating work.
 - Webhook delivery ids should be tracked to support idempotency.
 - Webhook delivery diagnostics should correlate each delivery with its final outcome, including task detail targets, rejected-trigger audit targets, ignored outcomes, duplicate outcomes, and error outcomes.
+- Operators should be able to configure a public webhook base URL, see the derived GitHub Payload URL, and run a read-only health probe against that public URL before posting a live `/agent fix` trigger.
 - Operators should be able to paste a GitHub delivery payload into an admin-protected read-only diagnostic endpoint and see signature status, JSON validity, event/action support, `/agent fix` recognition, parsed repository/issue fields, and the next operator action without creating tasks or delivery records.
 
 ### Fix Task Creation
@@ -129,6 +130,7 @@ The current implementation target is local self-hosted development first. Hosted
 - Demo launch preflight should block posting guidance when either demo readiness is not ready or the exact tested issue comment would be rejected by task-creation gates.
 - Demo readiness and the operator setup checklist should warn when repository-preflight allowed roots do not cover checked-in demo fixture paths.
 - Demo readiness and the operator setup checklist should warn when the configured OpenAI-compatible model provider cannot answer a minimal health probe, even if model credentials are present.
+- Demo readiness and the operator setup checklist should warn when `PATCHPILOT_GITHUB_WEBHOOK_PUBLIC_BASE_URL` is missing or its public `/health` endpoint is unreachable, because GitHub webhook deliveries will not reach the backend even if localhost is healthy.
 - Demo readiness, the smoke checklist, the demo script, the session snapshot checklist, and the operator setup checklist should warn when a supported adapter's selected verification executable is not available on the backend process `PATH`.
 - Demo readiness and the operator setup checklist should warn when the queue worker has not started, has most recently errored, or has stopped polling within the configured stale threshold.
 - Demo readiness should include a read-only evaluation baseline gate that needs attention when archived fixture baseline evidence is insufficient and blocks the live demo when the latest archived baseline regressed or still contains failed fixture cases.

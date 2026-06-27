@@ -9,6 +9,7 @@ import {
   getBackendHealth,
   getConfigurationSummary,
   getGitHubCredentialReadiness,
+  getGitHubWebhookUrlReadiness,
   getGitHubRepositoryAccessReadiness,
   getFailureCauseSummary,
   getLatencySummary,
@@ -214,6 +215,36 @@ test('gets GitHub repository access readiness through backend API', async () => 
   expect(readiness.status).toBe('READY');
   expect(readiness.repository).toBe('bingqin2/PatchPilot');
   expect(readiness.defaultBranch).toBe('main');
+});
+
+test('gets GitHub webhook URL readiness through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        publicBaseUrlConfigured: true,
+        status: 'READY',
+        publicBaseUrl: 'https://demo.trycloudflare.com',
+        payloadUrl: 'https://demo.trycloudflare.com/api/github/webhook',
+        healthUrl: 'https://demo.trycloudflare.com/health',
+        message: 'Configured public webhook URL reaches PatchPilot health.',
+        latencyMs: 44,
+        checkedAt: '2026-06-27T01:00:00Z',
+        operatorAction: 'Use the payload URL in the GitHub webhook settings.'
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const readiness = await getGitHubWebhookUrlReadiness();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/github/webhook-url-readiness');
+  expect(readiness.status).toBe('READY');
+  expect(readiness.payloadUrl).toBe('https://demo.trycloudflare.com/api/github/webhook');
+  expect(readiness.healthUrl).toBe('https://demo.trycloudflare.com/health');
 });
 
 test('evaluates trigger without creating manual task through backend API', async () => {

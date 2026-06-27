@@ -4,6 +4,7 @@ import type {
   DemoReadiness,
   GitHubCredentialReadiness,
   GitHubRepositoryAccessReadiness,
+  GitHubWebhookUrlReadiness,
   ModelProviderHealth,
   LanguageAdapterFixtureVerification,
   LanguageAdapterRuntimeReadiness,
@@ -17,6 +18,7 @@ interface OperatorSetupChecklistPanelProps {
   configuration: ConfigurationSummary | null;
   githubCredentialReadiness: GitHubCredentialReadiness | null;
   githubRepositoryAccessReadiness: GitHubRepositoryAccessReadiness | null;
+  githubWebhookUrlReadiness: GitHubWebhookUrlReadiness | null;
   modelProviderHealth: ModelProviderHealth | null;
   demoReadiness: DemoReadiness | null;
   adapterFixtureVerifications: LanguageAdapterFixtureVerification[];
@@ -32,6 +34,7 @@ interface SetupCheck {
   ready: boolean;
   message: string;
   action: string;
+  detail?: string;
 }
 
 export function OperatorSetupChecklistPanel({
@@ -39,6 +42,7 @@ export function OperatorSetupChecklistPanel({
   configuration,
   githubCredentialReadiness,
   githubRepositoryAccessReadiness,
+  githubWebhookUrlReadiness,
   modelProviderHealth,
   demoReadiness,
   adapterFixtureVerifications,
@@ -53,6 +57,7 @@ export function OperatorSetupChecklistPanel({
     configuration,
     githubCredentialReadiness,
     githubRepositoryAccessReadiness,
+    githubWebhookUrlReadiness,
     modelProviderHealth,
     demoReadiness,
     adapterFixtureVerifications,
@@ -79,6 +84,7 @@ export function OperatorSetupChecklistPanel({
           <div className={`operator-setup-check operator-setup-check-${check.ready ? 'ready' : 'attention'}`} key={check.name}>
             <span>{check.name}</span>
             <strong>{check.ready ? 'Ready' : 'Attention'} - {check.message}</strong>
+            {check.detail ? <code>{check.detail}</code> : null}
           </div>
         ))}
       </div>
@@ -104,6 +110,7 @@ function setupChecks({
   configuration,
   githubCredentialReadiness,
   githubRepositoryAccessReadiness,
+  githubWebhookUrlReadiness,
   modelProviderHealth,
   demoReadiness,
   adapterFixtureVerifications,
@@ -117,6 +124,7 @@ function setupChecks({
     backendCheck(backendHealth),
     credentialCheck(configuration, hasStoredAdminToken),
     githubCredentialCheck(githubCredentialReadiness, demoReadiness),
+    githubWebhookUrlCheck(githubWebhookUrlReadiness, demoReadiness),
     githubRepositoryAccessCheck(githubRepositoryAccessReadiness, demoReadiness),
     safetyPolicyCheck(configuration),
     demoTargetPolicyCheck(demoReadiness),
@@ -201,6 +209,32 @@ function githubRepositoryAccessCheck(
     message: githubRepositoryAccessReadiness?.message ?? 'GitHub repository access readiness has not loaded',
     action: githubRepositoryAccessReadiness?.operatorAction
       ?? 'Select a repository filter or load recent tasks, then confirm /api/github/repository-access-readiness before a live demo.'
+  };
+}
+
+function githubWebhookUrlCheck(
+  githubWebhookUrlReadiness: GitHubWebhookUrlReadiness | null,
+  demoReadiness: DemoReadiness | null
+): SetupCheck {
+  const demoReadinessCheck = demoReadiness?.checks.find((check) => check.name === 'GitHub webhook URL');
+  if (demoReadinessCheck) {
+    return {
+      name: 'Webhook public URL',
+      ready: demoReadinessCheck.status === 'READY',
+      message: demoReadinessCheck.message,
+      action: demoReadinessCheck.action,
+      detail: githubWebhookUrlReadiness?.payloadUrl
+    };
+  }
+
+  const ready = githubWebhookUrlReadiness?.status === 'READY';
+  return {
+    name: 'Webhook public URL',
+    ready,
+    message: githubWebhookUrlReadiness?.message ?? 'GitHub webhook URL readiness has not loaded',
+    action: githubWebhookUrlReadiness?.operatorAction
+      ?? 'Set PATCHPILOT_GITHUB_WEBHOOK_PUBLIC_BASE_URL and confirm /api/github/webhook-url-readiness before a live demo.',
+    detail: githubWebhookUrlReadiness?.payloadUrl
   };
 }
 

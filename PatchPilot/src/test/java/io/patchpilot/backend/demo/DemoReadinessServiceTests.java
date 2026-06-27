@@ -8,6 +8,7 @@ import io.patchpilot.backend.evaluation.domain.EvaluationFixtureBaselineRunDiges
 import io.patchpilot.backend.evaluation.domain.EvaluationFixtureBaselineRunRegressionSummaryVo;
 import io.patchpilot.backend.github.credential.domain.GitHubCredentialReadinessVo;
 import io.patchpilot.backend.github.credential.domain.GitHubRepositoryAccessReadinessVo;
+import io.patchpilot.backend.github.credential.domain.GitHubWebhookUrlReadinessVo;
 import io.patchpilot.backend.language.domain.LanguageAdapterFixtureVerificationVo;
 import io.patchpilot.backend.language.domain.LanguageAdapterRuntimeReadinessVo;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
@@ -19,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
+import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -26,15 +28,17 @@ class DemoReadinessServiceTests {
 
     @Test
     void should_report_ready_when_configuration_fixtures_queue_and_recent_pr_are_healthy() {
-        DemoReadinessService service = new DemoReadinessService(
+        DemoReadinessService service = service(
                 () -> configuration(true, true, true, true),
                 () -> List.of(fixture("java-maven", "PASS"), fixture("python-hatch", "PASS")),
                 () -> List.of(runtime("java", "maven", "mvn", "READY"), runtime("python", "hatch", "python", "READY")),
                 DemoReadinessServiceTests::readyGitHubCredential,
                 DemoReadinessServiceTests::readyRepositoryAccess,
+                DemoReadinessServiceTests::readyWebhookUrl,
                 DemoReadinessServiceTests::readyModelProvider,
                 () -> new FixTaskQueueSummaryVo(3, 0, 0, 0, 0, 3, 0, 0),
                 DemoReadinessServiceTests::readyWorker,
+                DemoReadinessServiceTests::stableBaselineRegression,
                 () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/12"))
         );
 
@@ -48,6 +52,7 @@ class DemoReadinessServiceTests {
                         "Backend",
                         "Credentials",
                         "GitHub credentials",
+                        "GitHub webhook URL",
                         "GitHub repository access",
                         "Safety policy",
                         "Demo target policy",
@@ -67,7 +72,7 @@ class DemoReadinessServiceTests {
 
     @Test
     void should_report_safety_policy_attention_when_allowlists_are_incomplete() {
-        DemoReadinessService service = new DemoReadinessService(
+        DemoReadinessService service = service(
                 () -> configuration(
                         true,
                         true,
@@ -81,9 +86,11 @@ class DemoReadinessServiceTests {
                 () -> List.of(runtime("java", "maven", "mvn", "READY")),
                 DemoReadinessServiceTests::readyGitHubCredential,
                 DemoReadinessServiceTests::readyRepositoryAccess,
+                DemoReadinessServiceTests::readyWebhookUrl,
                 DemoReadinessServiceTests::readyModelProvider,
                 () -> FixTaskQueueSummaryVo.empty(),
                 DemoReadinessServiceTests::readyWorker,
+                DemoReadinessServiceTests::stableBaselineRegression,
                 () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/12"))
         );
 
@@ -106,7 +113,7 @@ class DemoReadinessServiceTests {
 
     @Test
     void should_report_demo_target_policy_attention_when_repository_allowlist_excludes_demo_repository() {
-        DemoReadinessService service = new DemoReadinessService(
+        DemoReadinessService service = service(
                 () -> configuration(
                         true,
                         true,
@@ -120,9 +127,11 @@ class DemoReadinessServiceTests {
                 () -> List.of(runtime("java", "maven", "mvn", "READY")),
                 DemoReadinessServiceTests::readyGitHubCredential,
                 DemoReadinessServiceTests::readyRepositoryAccess,
+                DemoReadinessServiceTests::readyWebhookUrl,
                 DemoReadinessServiceTests::readyModelProvider,
                 () -> FixTaskQueueSummaryVo.empty(),
                 DemoReadinessServiceTests::readyWorker,
+                DemoReadinessServiceTests::stableBaselineRegression,
                 () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/12"))
         );
 
@@ -142,7 +151,7 @@ class DemoReadinessServiceTests {
 
     @Test
     void should_report_demo_target_policy_attention_when_recent_demo_trigger_user_is_not_allowed() {
-        DemoReadinessService service = new DemoReadinessService(
+        DemoReadinessService service = service(
                 () -> configuration(
                         true,
                         true,
@@ -156,9 +165,11 @@ class DemoReadinessServiceTests {
                 () -> List.of(runtime("java", "maven", "mvn", "READY")),
                 DemoReadinessServiceTests::readyGitHubCredential,
                 DemoReadinessServiceTests::readyRepositoryAccess,
+                DemoReadinessServiceTests::readyWebhookUrl,
                 DemoReadinessServiceTests::readyModelProvider,
                 () -> FixTaskQueueSummaryVo.empty(),
                 DemoReadinessServiceTests::readyWorker,
+                DemoReadinessServiceTests::stableBaselineRegression,
                 () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/12"))
         );
 
@@ -178,15 +189,17 @@ class DemoReadinessServiceTests {
 
     @Test
     void should_report_blocked_when_required_credentials_or_fixtures_are_missing() {
-        DemoReadinessService service = new DemoReadinessService(
+        DemoReadinessService service = service(
                 () -> configuration(false, false, false, false),
                 () -> List.of(fixture("java-maven", "PASS"), fixture("python-hatch", "FAIL")),
                 () -> List.of(runtime("java", "maven", "mvn", "READY"), runtime("python", "hatch", "python", "READY")),
                 DemoReadinessServiceTests::readyGitHubCredential,
                 DemoReadinessServiceTests::readyRepositoryAccess,
+                DemoReadinessServiceTests::readyWebhookUrl,
                 DemoReadinessServiceTests::readyModelProvider,
                 () -> FixTaskQueueSummaryVo.empty(),
                 DemoReadinessServiceTests::readyWorker,
+                DemoReadinessServiceTests::stableBaselineRegression,
                 List::of
         );
 
@@ -216,15 +229,17 @@ class DemoReadinessServiceTests {
 
     @Test
     void should_report_warning_when_no_recent_successful_pull_request_exists_or_queue_has_failures() {
-        DemoReadinessService service = new DemoReadinessService(
+        DemoReadinessService service = service(
                 () -> configuration(true, true, true, false),
                 () -> List.of(fixture("java-maven", "PASS")),
                 () -> List.of(runtime("java", "maven", "mvn", "READY")),
                 DemoReadinessServiceTests::readyGitHubCredential,
                 DemoReadinessServiceTests::readyRepositoryAccess,
+                DemoReadinessServiceTests::readyWebhookUrl,
                 DemoReadinessServiceTests::readyModelProvider,
                 () -> new FixTaskQueueSummaryVo(5, 1, 1, 0, 1, 1, 2, 0),
                 DemoReadinessServiceTests::readyWorker,
+                DemoReadinessServiceTests::stableBaselineRegression,
                 () -> List.of(task("task-2", FixTaskStatus.FAILED, null))
         );
 
@@ -252,15 +267,17 @@ class DemoReadinessServiceTests {
 
     @Test
     void should_report_safety_policy_attention_when_admin_token_is_missing() {
-        DemoReadinessService service = new DemoReadinessService(
+        DemoReadinessService service = service(
                 () -> configuration(true, true, true, true, false),
                 () -> List.of(fixture("java-maven", "PASS")),
                 () -> List.of(runtime("java", "maven", "mvn", "READY")),
                 DemoReadinessServiceTests::readyGitHubCredential,
                 DemoReadinessServiceTests::readyRepositoryAccess,
+                DemoReadinessServiceTests::readyWebhookUrl,
                 DemoReadinessServiceTests::readyModelProvider,
                 () -> FixTaskQueueSummaryVo.empty(),
                 DemoReadinessServiceTests::readyWorker,
+                DemoReadinessServiceTests::stableBaselineRegression,
                 () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/12"))
         );
 
@@ -280,7 +297,7 @@ class DemoReadinessServiceTests {
 
     @Test
     void should_report_preflight_scope_attention_when_demo_fixtures_are_not_allowed() {
-        DemoReadinessService service = new DemoReadinessService(
+        DemoReadinessService service = service(
                 () -> configuration(
                         true,
                         true,
@@ -295,9 +312,11 @@ class DemoReadinessServiceTests {
                 () -> List.of(runtime("java", "maven", "mvn", "READY")),
                 DemoReadinessServiceTests::readyGitHubCredential,
                 DemoReadinessServiceTests::readyRepositoryAccess,
+                DemoReadinessServiceTests::readyWebhookUrl,
                 DemoReadinessServiceTests::readyModelProvider,
                 () -> FixTaskQueueSummaryVo.empty(),
                 DemoReadinessServiceTests::readyWorker,
+                DemoReadinessServiceTests::stableBaselineRegression,
                 () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/12"))
         );
 
@@ -316,7 +335,7 @@ class DemoReadinessServiceTests {
 
     @Test
     void should_not_treat_sibling_preflight_root_prefix_as_allowed() {
-        DemoReadinessService service = new DemoReadinessService(
+        DemoReadinessService service = service(
                 () -> configuration(
                         true,
                         true,
@@ -331,9 +350,11 @@ class DemoReadinessServiceTests {
                 () -> List.of(runtime("java", "maven", "mvn", "READY")),
                 DemoReadinessServiceTests::readyGitHubCredential,
                 DemoReadinessServiceTests::readyRepositoryAccess,
+                DemoReadinessServiceTests::readyWebhookUrl,
                 DemoReadinessServiceTests::readyModelProvider,
                 () -> FixTaskQueueSummaryVo.empty(),
                 DemoReadinessServiceTests::readyWorker,
+                DemoReadinessServiceTests::stableBaselineRegression,
                 () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/12"))
         );
 
@@ -348,12 +369,13 @@ class DemoReadinessServiceTests {
 
     @Test
     void should_report_worker_attention_when_worker_heartbeat_is_not_ready() {
-        DemoReadinessService service = new DemoReadinessService(
+        DemoReadinessService service = service(
                 () -> configuration(true, true, true, true),
                 () -> List.of(fixture("java-maven", "PASS")),
                 () -> List.of(runtime("java", "maven", "mvn", "READY")),
                 DemoReadinessServiceTests::readyGitHubCredential,
                 DemoReadinessServiceTests::readyRepositoryAccess,
+                DemoReadinessServiceTests::readyWebhookUrl,
                 DemoReadinessServiceTests::readyModelProvider,
                 () -> FixTaskQueueSummaryVo.empty(),
                 () -> new FixTaskWorkerHealthVo(
@@ -373,6 +395,7 @@ class DemoReadinessServiceTests {
                         "NEEDS_ATTENTION",
                         "Wait for the queue worker poller to start or check the active Spring profile."
                 ),
+                DemoReadinessServiceTests::stableBaselineRegression,
                 () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/12"))
         );
 
@@ -392,15 +415,17 @@ class DemoReadinessServiceTests {
 
     @Test
     void should_report_runtime_attention_when_adapter_executable_is_missing() {
-        DemoReadinessService service = new DemoReadinessService(
+        DemoReadinessService service = service(
                 () -> configuration(true, true, true, true),
                 () -> List.of(fixture("java-maven", "PASS"), fixture("python-hatch", "PASS")),
                 () -> List.of(runtime("java", "maven", "mvn", "READY"), runtime("python", "hatch", "python", "MISSING")),
                 DemoReadinessServiceTests::readyGitHubCredential,
                 DemoReadinessServiceTests::readyRepositoryAccess,
+                DemoReadinessServiceTests::readyWebhookUrl,
                 DemoReadinessServiceTests::readyModelProvider,
                 () -> FixTaskQueueSummaryVo.empty(),
                 DemoReadinessServiceTests::readyWorker,
+                DemoReadinessServiceTests::stableBaselineRegression,
                 () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/12"))
         );
 
@@ -420,12 +445,13 @@ class DemoReadinessServiceTests {
 
     @Test
     void should_report_model_provider_attention_when_health_probe_is_not_ready() {
-        DemoReadinessService service = new DemoReadinessService(
+        DemoReadinessService service = service(
                 () -> configuration(true, true, true, true),
                 () -> List.of(fixture("java-maven", "PASS")),
                 () -> List.of(runtime("java", "maven", "mvn", "READY")),
                 DemoReadinessServiceTests::readyGitHubCredential,
                 DemoReadinessServiceTests::readyRepositoryAccess,
+                DemoReadinessServiceTests::readyWebhookUrl,
                 () -> new ModelProviderHealthVo(
                         "openai-compatible",
                         "gpt-5.5",
@@ -439,6 +465,7 @@ class DemoReadinessServiceTests {
                 ),
                 () -> FixTaskQueueSummaryVo.empty(),
                 DemoReadinessServiceTests::readyWorker,
+                DemoReadinessServiceTests::stableBaselineRegression,
                 () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/12"))
         );
 
@@ -458,7 +485,7 @@ class DemoReadinessServiceTests {
 
     @Test
     void should_report_blocked_when_github_credential_probe_is_not_ready() {
-        DemoReadinessService service = new DemoReadinessService(
+        DemoReadinessService service = service(
                 () -> configuration(true, true, true, true),
                 () -> List.of(fixture("java-maven", "PASS")),
                 () -> List.of(runtime("java", "maven", "mvn", "READY")),
@@ -471,9 +498,11 @@ class DemoReadinessServiceTests {
                         "Check PATCHPILOT_GITHUB_TOKEN permissions before running a live task."
                 ),
                 DemoReadinessServiceTests::readyRepositoryAccess,
+                DemoReadinessServiceTests::readyWebhookUrl,
                 DemoReadinessServiceTests::readyModelProvider,
                 () -> FixTaskQueueSummaryVo.empty(),
                 DemoReadinessServiceTests::readyWorker,
+                DemoReadinessServiceTests::stableBaselineRegression,
                 () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/12"))
         );
 
@@ -493,7 +522,7 @@ class DemoReadinessServiceTests {
 
     @Test
     void should_report_attention_when_demo_repository_access_target_is_not_configured() {
-        DemoReadinessService service = new DemoReadinessService(
+        DemoReadinessService service = service(
                 () -> configuration(true, true, true, true),
                 () -> List.of(fixture("java-maven", "PASS")),
                 () -> List.of(runtime("java", "maven", "mvn", "READY")),
@@ -509,9 +538,11 @@ class DemoReadinessServiceTests {
                         Instant.parse("2026-06-25T04:00:00Z"),
                         "Select a repository or provide owner and repository query parameters."
                 ),
+                DemoReadinessServiceTests::readyWebhookUrl,
                 DemoReadinessServiceTests::readyModelProvider,
                 () -> FixTaskQueueSummaryVo.empty(),
                 DemoReadinessServiceTests::readyWorker,
+                DemoReadinessServiceTests::stableBaselineRegression,
                 () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/12"))
         );
 
@@ -531,7 +562,7 @@ class DemoReadinessServiceTests {
 
     @Test
     void should_report_blocked_when_demo_repository_access_probe_is_not_ready() {
-        DemoReadinessService service = new DemoReadinessService(
+        DemoReadinessService service = service(
                 () -> configuration(true, true, true, true),
                 () -> List.of(fixture("java-maven", "PASS")),
                 () -> List.of(runtime("java", "maven", "mvn", "READY")),
@@ -547,9 +578,11 @@ class DemoReadinessServiceTests {
                         Instant.parse("2026-06-25T04:00:00Z"),
                         "Check PATCHPILOT_GITHUB_TOKEN permissions, GitHub App installation access, and repository allowlist for bingqin2/PatchPilot; then retry the readiness check."
                 ),
+                DemoReadinessServiceTests::readyWebhookUrl,
                 DemoReadinessServiceTests::readyModelProvider,
                 () -> FixTaskQueueSummaryVo.empty(),
                 DemoReadinessServiceTests::readyWorker,
+                DemoReadinessServiceTests::stableBaselineRegression,
                 () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/12"))
         );
 
@@ -571,12 +604,13 @@ class DemoReadinessServiceTests {
 
     @Test
     void should_block_demo_when_evaluation_baseline_regressed() {
-        DemoReadinessService service = new DemoReadinessService(
+        DemoReadinessService service = service(
                 () -> configuration(true, true, true, true),
                 () -> List.of(fixture("java-maven", "PASS")),
                 () -> List.of(runtime("java", "maven", "mvn", "READY")),
                 DemoReadinessServiceTests::readyGitHubCredential,
                 DemoReadinessServiceTests::readyRepositoryAccess,
+                DemoReadinessServiceTests::readyWebhookUrl,
                 DemoReadinessServiceTests::readyModelProvider,
                 () -> FixTaskQueueSummaryVo.empty(),
                 DemoReadinessServiceTests::readyWorker,
@@ -609,12 +643,13 @@ class DemoReadinessServiceTests {
 
     @Test
     void should_need_attention_when_evaluation_baseline_history_is_missing() {
-        DemoReadinessService service = new DemoReadinessService(
+        DemoReadinessService service = service(
                 () -> configuration(true, true, true, true),
                 () -> List.of(fixture("java-maven", "PASS")),
                 () -> List.of(runtime("java", "maven", "mvn", "READY")),
                 DemoReadinessServiceTests::readyGitHubCredential,
                 DemoReadinessServiceTests::readyRepositoryAccess,
+                DemoReadinessServiceTests::readyWebhookUrl,
                 DemoReadinessServiceTests::readyModelProvider,
                 () -> FixTaskQueueSummaryVo.empty(),
                 DemoReadinessServiceTests::readyWorker,
@@ -641,6 +676,34 @@ class DemoReadinessServiceTests {
                     assertThat(check.message()).contains("No archived fixture baseline runs");
                     assertThat(check.action()).isEqualTo("Run and archive at least two fixture baselines before using regression comparison.");
                 });
+    }
+
+    private static DemoReadinessService service(
+            Supplier<ConfigurationSummaryVo> configurationSupplier,
+            Supplier<List<LanguageAdapterFixtureVerificationVo>> fixtureSupplier,
+            Supplier<List<LanguageAdapterRuntimeReadinessVo>> runtimeReadinessSupplier,
+            Supplier<GitHubCredentialReadinessVo> gitHubCredentialReadinessSupplier,
+            Supplier<GitHubRepositoryAccessReadinessVo> gitHubRepositoryAccessReadinessSupplier,
+            Supplier<GitHubWebhookUrlReadinessVo> gitHubWebhookUrlReadinessSupplier,
+            Supplier<ModelProviderHealthVo> modelProviderHealthSupplier,
+            Supplier<FixTaskQueueSummaryVo> queueSummarySupplier,
+            Supplier<FixTaskWorkerHealthVo> workerHealthSupplier,
+            Supplier<EvaluationFixtureBaselineRunRegressionSummaryVo> evaluationBaselineRegressionSupplier,
+            Supplier<List<FixTaskVo>> recentTasksSupplier
+    ) {
+        return new DemoReadinessService(
+                configurationSupplier,
+                fixtureSupplier,
+                runtimeReadinessSupplier,
+                gitHubCredentialReadinessSupplier,
+                gitHubRepositoryAccessReadinessSupplier,
+                gitHubWebhookUrlReadinessSupplier,
+                modelProviderHealthSupplier,
+                queueSummarySupplier,
+                workerHealthSupplier,
+                evaluationBaselineRegressionSupplier,
+                recentTasksSupplier
+        );
     }
 
     private static ConfigurationSummaryVo configuration(
@@ -672,6 +735,9 @@ class DemoReadinessServiceTests {
                 agentApiKeyConfigured,
                 githubTokenConfigured,
                 githubWebhookSecretConfigured,
+                true,
+                "https://demo.trycloudflare.com",
+                "https://demo.trycloudflare.com/api/github/webhook",
                 adminTokenConfigured,
                 true,
                 "/tmp/patchpilot/workspaces",
@@ -746,6 +812,9 @@ class DemoReadinessServiceTests {
                 agentApiKeyConfigured,
                 githubTokenConfigured,
                 githubWebhookSecretConfigured,
+                true,
+                "https://demo.trycloudflare.com",
+                "https://demo.trycloudflare.com/api/github/webhook",
                 true,
                 true,
                 "/tmp/patchpilot/workspaces",
@@ -838,6 +907,20 @@ class DemoReadinessServiceTests {
                 42,
                 Instant.parse("2026-06-25T04:00:00Z"),
                 "No action needed."
+        );
+    }
+
+    private static GitHubWebhookUrlReadinessVo readyWebhookUrl() {
+        return new GitHubWebhookUrlReadinessVo(
+                true,
+                "READY",
+                "https://demo.trycloudflare.com",
+                "https://demo.trycloudflare.com/api/github/webhook",
+                "https://demo.trycloudflare.com/health",
+                "Configured public webhook URL reaches PatchPilot health.",
+                44,
+                Instant.parse("2026-06-27T01:00:00Z"),
+                "Use the payload URL in the GitHub webhook settings."
         );
     }
 

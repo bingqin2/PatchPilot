@@ -3,6 +3,7 @@ package io.patchpilot.backend.github.credential;
 import io.patchpilot.backend.common.response.ApiResponse;
 import io.patchpilot.backend.github.credential.domain.GitHubCredentialReadinessVo;
 import io.patchpilot.backend.github.credential.domain.GitHubRepositoryAccessReadinessVo;
+import io.patchpilot.backend.github.credential.domain.GitHubWebhookUrlReadinessVo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -16,6 +17,7 @@ public class GitHubCredentialReadinessController {
 
     private final GitHubCredentialReadinessService gitHubCredentialReadinessService;
     private final GitHubRepositoryAccessReadinessService gitHubRepositoryAccessReadinessService;
+    private final GitHubWebhookUrlReadinessService gitHubWebhookUrlReadinessService;
 
     @GetMapping("/credential-readiness")
     public ApiResponse<GitHubCredentialReadinessVo> getReadiness() {
@@ -28,5 +30,10 @@ public class GitHubCredentialReadinessController {
             @RequestParam(required = false) String repository
     ) {
         return ApiResponse.ok(gitHubRepositoryAccessReadinessService.getReadiness(owner, repository));
+    }
+
+    @GetMapping("/webhook-url-readiness")
+    public ApiResponse<GitHubWebhookUrlReadinessVo> getWebhookUrlReadiness() {
+        return ApiResponse.ok(gitHubWebhookUrlReadinessService.getReadiness());
     }
 }

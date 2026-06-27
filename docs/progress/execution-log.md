@@ -4,6 +4,25 @@ This file records dated implementation progress, validation commands, and import
 
 ## 2026-06-27
 
+Implemented GitHub webhook URL readiness from `docs/plans/225-webhook-url-readiness.md`.
+
+Changes:
+
+- Added `PATCHPILOT_GITHUB_WEBHOOK_PUBLIC_BASE_URL` and non-sensitive configuration summary fields.
+- Added `GET /api/github/webhook-url-readiness` to normalize the public base URL, derive the GitHub Payload URL, and probe the public `/health` endpoint.
+- Added public webhook URL readiness to demo readiness and the dashboard operator setup checklist.
+- Updated frontend API helpers, App loading, checklist rendering, and tests so operators can see the exact payload URL before a live `/agent fix` demo.
+- Updated README, product spec, architecture notes, frontend design docs, the plan document, and this execution log.
+
+Validation so far:
+
+- `JAVA_HOME=/Library/Java/JavaVirtualMachines/openjdk-17.jdk/Contents/Home PATH=/Library/Java/JavaVirtualMachines/openjdk-17.jdk/Contents/Home/bin:$PATH mvn -pl PatchPilot -Dtest=GitHubWebhookUrlReadinessServiceTests,GitHubCredentialReadinessControllerTests,GitHubRepositoryAccessReadinessControllerTests,DemoReadinessServiceTests,DemoEvidenceBundleServiceTests test`: passed, 27 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts src/dashboard/components/OperatorSetupChecklistPanel.test.tsx src/App.test.tsx --reporter=basic`: passed, 3 test files and 162 tests run.
+- `JAVA_HOME=/Library/Java/JavaVirtualMachines/openjdk-17.jdk/Contents/Home PATH=/Library/Java/JavaVirtualMachines/openjdk-17.jdk/Contents/Home/bin:$PATH mvn -pl PatchPilot test`: passed after full backend regression verification, 790 tests run, 0 failures.
+- `npm test -- --reporter=basic`: passed after full frontend regression verification, 26 test files and 282 tests run.
+- `npm run build`: initially failed because two frontend test fixtures were missing the new webhook URL configuration fields; passed after fixture updates.
+- `git diff --check`: passed.
+
 Implemented demo handoff package archive from `docs/plans/224-demo-handoff-package-archive.md`.
 
 Changes:
