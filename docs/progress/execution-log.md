@@ -4,6 +4,27 @@ This file records dated implementation progress, validation commands, and import
 
 ## 2026-06-27
 
+Implemented handoff archive summary evidence actions from `docs/plans/235-handoff-archive-summary-evidence-actions.md`.
+
+Changes:
+
+- Added a read-only `GET /api/demo/handoff-package-archives/summary-report/download` endpoint that returns the current handoff package archive summary as a Markdown attachment.
+- Added a frontend API helper and App wiring for downloading the latest handoff archive summary evidence.
+- Added `Copy summary` and `Download summary` actions to the handoff package archive summary panel.
+- Updated README, architecture notes, frontend design docs, and this execution log.
+
+Validation so far:
+
+- `mvn -q -pl PatchPilot -Dtest=DemoReadinessControllerTests test`: first failed with 404 for `/api/demo/handoff-package-archives/summary-report/download`; then passed after controller implementation.
+- `npm test -- --run src/api.test.ts src/dashboard/components/DemoSessionSnapshotPanel.test.tsx src/App.test.tsx --reporter=basic`: first failed because the API helper and summary panel buttons did not exist; then passed after frontend implementation, 169 tests run, 0 failures.
+
+Final validation:
+
+- `mvn -pl PatchPilot test`: passed, 805 tests run, 0 failures.
+- `npm test -- --reporter=basic`: passed, 26 test files and 291 tests run.
+- `npm run build`: passed after TypeScript and production Vite build verification.
+- `git diff --check`: passed.
+
 Implemented handoff package archive summary from `docs/plans/234-handoff-package-archive-summary.md`.
 
 Changes:

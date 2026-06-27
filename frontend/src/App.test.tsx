@@ -1801,6 +1801,15 @@ beforeEach(() => {
     if (url === '/api/demo/handoff-package-archives/summary') {
       return jsonResponse(demoHandoffPackageArchiveSummary);
     }
+    if (url === '/api/demo/handoff-package-archives/summary-report/download') {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        blob: async () => new Blob(['# PatchPilot Handoff Package Archive Summary'], {
+          type: 'text/markdown;charset=UTF-8'
+        })
+      } as Response);
+    }
     if (url === '/api/demo/handoff-package-archives') {
       return jsonResponse([demoHandoffPackageArchive]);
     }
@@ -3004,6 +3013,30 @@ test('archives demo handoff package from the session snapshot panel', async () =
   }));
   expect(within(sessionPanel).getByText('Demo handoff package archived')).toBeInTheDocument();
   expect(within(sessionPanel).getByText('handoff-archive-1')).toBeInTheDocument();
+});
+
+test('downloads handoff archive summary evidence from the session snapshot panel', async () => {
+  const user = userEvent.setup();
+  const fetchMock = vi.mocked(fetch);
+  const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+  const createObjectURL = vi.fn(() => 'blob:demo-handoff-archive-summary');
+  const revokeObjectURL = vi.fn();
+  vi.stubGlobal('URL', {
+    ...globalThis.URL,
+    createObjectURL,
+    revokeObjectURL
+  });
+
+  render(<App />);
+
+  const sessionPanel = await screen.findByRole('region', { name: 'Demo session snapshot' });
+  await user.click(within(sessionPanel).getByRole('button', { name: 'Download handoff archive summary' }));
+
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/handoff-package-archives/summary-report/download'));
+  expect(createObjectURL).toHaveBeenCalledWith(expect.any(Blob));
+  expect(click).toHaveBeenCalledTimes(1);
+  expect(revokeObjectURL).toHaveBeenCalledWith('blob:demo-handoff-archive-summary');
+  expect(within(sessionPanel).getByText('Handoff archive summary downloaded')).toBeInTheDocument();
 });
 
 test('creates a manual task from the dashboard and refreshes task data', async () => {

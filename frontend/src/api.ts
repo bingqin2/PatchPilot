@@ -299,6 +299,10 @@ export async function getDemoHandoffPackageArchiveSummary(): Promise<DemoHandoff
   return getApi<DemoHandoffPackageArchiveSummary>('/api/demo/handoff-package-archives/summary');
 }
 
+export async function downloadDemoHandoffPackageArchiveSummaryReport(): Promise<Blob> {
+  return getBlobApi('/api/demo/handoff-package-archives/summary-report/download');
+}
+
 export async function downloadDemoHandoffPackageArchiveReport(archiveId: string): Promise<Blob> {
   return getBlobApi(`/api/demo/handoff-package-archives/${encodeURIComponent(archiveId)}/report/download`);
 }

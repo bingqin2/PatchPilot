@@ -37,6 +37,7 @@ interface DemoSessionSnapshotPanelProps {
   onArchiveHandoffPackage: (input: DemoSessionReportInput) => Promise<DemoHandoffPackageArchive>;
   onDownloadArchiveReport: (archiveId: string) => Promise<Blob>;
   onDownloadHandoffPackageArchiveReport: (archiveId: string) => Promise<Blob>;
+  onDownloadHandoffPackageArchiveSummaryReport: () => Promise<Blob>;
 }
 
 export function DemoSessionSnapshotPanel({
@@ -59,7 +60,8 @@ export function DemoSessionSnapshotPanel({
   onDownloadHandoffPackage,
   onArchiveHandoffPackage,
   onDownloadArchiveReport,
-  onDownloadHandoffPackageArchiveReport
+  onDownloadHandoffPackageArchiveReport,
+  onDownloadHandoffPackageArchiveSummaryReport
 }: DemoSessionSnapshotPanelProps) {
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
   const [downloadStatus, setDownloadStatus] = useState<string | null>(null);
@@ -164,6 +166,28 @@ export function DemoSessionSnapshotPanel({
       const report = await onDownloadHandoffPackageArchiveReport(archive.id);
       downloadMarkdown(report, `patchpilot-demo-handoff-package-${archive.id}.md`);
       setDownloadStatus('Archived handoff package downloaded');
+    } catch {
+      setDownloadStatus('Download failed');
+    }
+  }
+
+  async function copyHandoffPackageArchiveSummary() {
+    if (!handoffPackageArchiveSummary) {
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(handoffPackageArchiveSummary.markdownReport);
+      setCopyStatus('Handoff archive summary copied');
+    } catch {
+      setCopyStatus('Copy failed');
+    }
+  }
+
+  async function downloadHandoffPackageArchiveSummary() {
+    try {
+      const report = await onDownloadHandoffPackageArchiveSummaryReport();
+      downloadMarkdown(report, 'patchpilot-demo-handoff-package-archive-summary.md');
+      setDownloadStatus('Handoff archive summary downloaded');
     } catch {
       setDownloadStatus('Download failed');
     }
@@ -359,7 +383,11 @@ export function DemoSessionSnapshotPanel({
             )}
           </div>
 
-          <HandoffPackageArchiveSummaryPanel summary={handoffPackageArchiveSummary} />
+          <HandoffPackageArchiveSummaryPanel
+            summary={handoffPackageArchiveSummary}
+            onCopySummary={copyHandoffPackageArchiveSummary}
+            onDownloadSummary={downloadHandoffPackageArchiveSummary}
+          />
 
           <div className="demo-session-archives">
             <h3>Recent handoff package archives</h3>
@@ -440,14 +468,44 @@ function HandoffReadinessCheckList({ checks }: { checks: DemoHandoffReadinessChe
   );
 }
 
-function HandoffPackageArchiveSummaryPanel({ summary }: { summary: DemoHandoffPackageArchiveSummary | null }) {
+function HandoffPackageArchiveSummaryPanel({
+  summary,
+  onCopySummary,
+  onDownloadSummary
+}: {
+  summary: DemoHandoffPackageArchiveSummary | null;
+  onCopySummary: () => void;
+  onDownloadSummary: () => void;
+}) {
   if (!summary) {
     return null;
   }
 
   return (
     <div className="demo-session-archives">
-      <h3>Handoff package archive summary</h3>
+      <div className="demo-session-archive-title-row">
+        <h3>Handoff package archive summary</h3>
+        <div className="demo-session-archive-actions">
+          <button
+            className="secondary-button"
+            type="button"
+            onClick={() => onCopySummary()}
+            aria-label="Copy handoff archive summary"
+          >
+            <Copy size={14} />
+            Copy summary
+          </button>
+          <button
+            className="secondary-button"
+            type="button"
+            onClick={() => onDownloadSummary()}
+            aria-label="Download handoff archive summary"
+          >
+            <Download size={14} />
+            Download summary
+          </button>
+        </div>
+      </div>
       <div className="demo-session-summary">
         <div>
           <span>Archive status</span>

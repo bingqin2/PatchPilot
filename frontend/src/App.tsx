@@ -13,6 +13,7 @@ import {
   createTriggerQuarantine,
   downloadDemoSessionArchiveReport,
   downloadDemoHandoffPackageArchiveReport,
+  downloadDemoHandoffPackageArchiveSummaryReport,
   downloadDemoReadinessSnapshotReport,
   downloadEvaluationFixtureBaselineRunReport,
   downloadEvaluationRunSnapshotReport,
@@ -1048,6 +1049,9 @@ export default function App() {
   const handleDownloadDemoHandoffPackageArchiveReport = useCallback((archiveId: string) => (
     downloadDemoHandoffPackageArchiveReport(archiveId)
   ), []);
+  const handleDownloadDemoHandoffPackageArchiveSummaryReport = useCallback(() => (
+    downloadDemoHandoffPackageArchiveSummaryReport()
+  ), []);
   const handleArchiveDemoSession = useCallback(async (input: DemoSessionReportInput) => {
     const archive = await archiveDemoSession(input);
     setDemoSessionArchives((current) => [archive, ...current.filter((item) => item.id !== archive.id)].slice(0, 20));
@@ -1445,6 +1449,7 @@ export default function App() {
         onArchiveHandoffPackage={handleArchiveDemoHandoffPackage}
         onDownloadArchiveReport={handleDownloadDemoSessionArchiveReport}
         onDownloadHandoffPackageArchiveReport={handleDownloadDemoHandoffPackageArchiveReport}
+        onDownloadHandoffPackageArchiveSummaryReport={handleDownloadDemoHandoffPackageArchiveSummaryReport}
       />
 
       <DemoScriptPanel script={demoScript} error={demoScriptError} />
