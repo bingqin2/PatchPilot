@@ -1533,6 +1533,23 @@ const demoSessionSnapshot = {
   nextActions: ['Follow the script from step 1 through Pull Request review.']
 };
 
+const demoHandoffReadiness = {
+  status: 'READY',
+  summary: 'Handoff package has current webhook delivery, PR, command, outcome, and readiness trend evidence.',
+  checks: [
+    {
+      name: 'Webhook delivery evidence',
+      status: 'READY',
+      summary: 'delivery-1 created task task-1.'
+    },
+    {
+      name: 'Prepared command context',
+      status: 'READY',
+      summary: '1 prepared command recorded.'
+    }
+  ]
+};
+
 const demoSessionArchive = {
   id: 'archive-1',
   sessionId: 'demo-session-20260624T003000Z',
@@ -1749,6 +1766,9 @@ beforeEach(() => {
     }
     if (url === '/api/demo/handoff-package') {
       return jsonResponse('# PatchPilot Demo Handoff Package\n\n- Status: `READY`');
+    }
+    if (url === '/api/demo/handoff-readiness') {
+      return jsonResponse(demoHandoffReadiness);
     }
     if (url === '/api/demo/session-archives' && init?.method === 'POST') {
       return jsonResponse(demoSessionArchive);

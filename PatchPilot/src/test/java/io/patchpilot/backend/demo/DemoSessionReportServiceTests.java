@@ -3,6 +3,8 @@ package io.patchpilot.backend.demo;
 import io.patchpilot.backend.demo.domain.DemoAdapterFixtureEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
+import io.patchpilot.backend.demo.domain.DemoHandoffReadinessCheckVo;
+import io.patchpilot.backend.demo.domain.DemoHandoffReadinessVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessCheckVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessSnapshotTrendStatus;
 import io.patchpilot.backend.demo.domain.DemoReadinessSnapshotTrendVo;
@@ -23,6 +25,7 @@ import java.time.Instant;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.groups.Tuple.tuple;
 
 class DemoSessionReportServiceTests {
 
@@ -166,32 +169,7 @@ class DemoSessionReportServiceTests {
     @Test
     void should_format_demo_handoff_package_with_session_context_and_outcome_evidence() {
         DemoSessionReportService service = new DemoSessionReportService(() -> snapshot());
-        DemoSessionReportRequestDto request = new DemoSessionReportRequestDto(List.of(
-                new DemoPreparedLaunchCommandRequestDto(
-                        "/agent fix replace docs/demo.md PatchPilot smoke test",
-                        "bingqin2",
-                        "PatchPilot",
-                        1L,
-                        "bingqin2",
-                        "replace",
-                        "docs/demo.md",
-                        "PatchPilot smoke test",
-                        "2026-06-26T01:00:00Z"
-                )
-        ), List.of(
-                new DemoArchivedLaunchOutcomeRequestDto(
-                        "/agent fix replace docs/demo.md PatchPilot smoke test",
-                        "bingqin2",
-                        "PatchPilot",
-                        1L,
-                        "bingqin2",
-                        "task-1",
-                        "COMPLETED",
-                        "https://github.com/bingqin2/PatchPilot/pull/42",
-                        "2026-06-26T01:10:00Z",
-                        "# PatchPilot Demo Launch Outcome Report\n\n- Task: `task-1`"
-                )
-        ));
+        DemoSessionReportRequestDto request = readyHandoffRequest();
 
         String packageReport = service.getHandoffPackage(request);
 
@@ -228,6 +206,57 @@ class DemoSessionReportServiceTests {
     }
 
     @Test
+    void should_return_structured_handoff_readiness_with_browser_context() {
+        DemoSessionReportService service = new DemoSessionReportService(() -> snapshot());
+
+        DemoHandoffReadinessVo readiness = service.getHandoffReadiness(readyHandoffRequest());
+
+        assertThat(readiness.status()).isEqualTo(DemoReadinessStatus.READY);
+        assertThat(readiness.summary())
+                .isEqualTo("Handoff package has current webhook delivery, PR, command, outcome, and readiness trend evidence.");
+        assertThat(readiness.checks())
+                .extracting(
+                        DemoHandoffReadinessCheckVo::name,
+                        DemoHandoffReadinessCheckVo::status,
+                        DemoHandoffReadinessCheckVo::summary
+                )
+                .contains(
+                        tuple("Demo snapshot status", DemoReadinessStatus.READY, "Demo session snapshot is ready."),
+                        tuple("Recent task evidence", DemoReadinessStatus.READY, "task-1 is completed."),
+                        tuple("Webhook delivery evidence", DemoReadinessStatus.READY, "delivery-1 created task task-1."),
+                        tuple("Recent Pull Request evidence", DemoReadinessStatus.READY, "https://github.com/bingqin2/PatchPilot/pull/42"),
+                        tuple("Prepared command context", DemoReadinessStatus.READY, "1 prepared command recorded."),
+                        tuple("Archived launch outcome context", DemoReadinessStatus.READY, "1 archived outcome has completed task or Pull Request evidence."),
+                        tuple("Readiness trend baseline", DemoReadinessStatus.READY, "IMPROVING; latest readiness READY.")
+                );
+    }
+
+    @Test
+    void should_return_structured_handoff_readiness_blocked_by_redelivery_required_webhook() {
+        DemoSessionReportService service = new DemoSessionReportService(() -> snapshotWithWebhookDeliveries(List.of(
+                webhookDeliveryRequiringRedelivery(),
+                webhookDelivery("older-delivery-1", "TASK_CREATED", "task-1")
+        )));
+
+        DemoHandoffReadinessVo readiness = service.getHandoffReadiness(readyHandoffRequest());
+
+        assertThat(readiness.status()).isEqualTo(DemoReadinessStatus.BLOCKED);
+        assertThat(readiness.summary())
+                .isEqualTo("Handoff package has a blocking readiness signal that should be resolved before a live-demo handoff.");
+        assertThat(readiness.checks())
+                .extracting(
+                        DemoHandoffReadinessCheckVo::name,
+                        DemoHandoffReadinessCheckVo::status,
+                        DemoHandoffReadinessCheckVo::summary
+                )
+                .contains(tuple(
+                        "Webhook delivery evidence",
+                        DemoReadinessStatus.BLOCKED,
+                        "delivery-invalid is INVALID_SIGNATURE; Fix the webhook secret or payload URL first, then use GitHub's Redeliver action for this delivery."
+                ));
+    }
+
+    @Test
     void should_mark_handoff_readiness_needs_attention_when_required_context_is_missing() {
         DemoSessionReportService service = new DemoSessionReportService(() -> snapshotWithoutTaskOrPullRequest());
 
@@ -250,7 +279,32 @@ class DemoSessionReportServiceTests {
                 webhookDeliveryRequiringRedelivery(),
                 webhookDelivery("older-delivery-1", "TASK_CREATED", "task-1")
         )));
-        DemoSessionReportRequestDto request = new DemoSessionReportRequestDto(List.of(
+        DemoSessionReportRequestDto request = readyHandoffRequest();
+
+        String packageReport = service.getHandoffPackage(request);
+
+        assertThat(packageReport)
+                .contains("- Overall: `BLOCKED` - Handoff package has a blocking readiness signal that should be resolved before a live-demo handoff.")
+                .contains("- Webhook delivery evidence: `BLOCKED` - delivery-invalid is INVALID_SIGNATURE; Fix the webhook secret or payload URL first, then use GitHub's Redeliver action for this delivery.");
+    }
+
+    @Test
+    void should_render_empty_lists_and_missing_evidence_as_none() {
+        DemoSessionReportService service = new DemoSessionReportService(() -> snapshotWithoutTaskOrPullRequest());
+
+        String report = service.getSessionReport();
+
+        assertThat(report)
+                .contains("- Recent Pull Request: none")
+                .contains("- Recent task: none")
+                .contains("- No operator checklist items recorded.")
+                .contains("- No script steps recorded.")
+                .contains("- GET /api/demo/session-report is read-only: it does not create tasks, call the model, run tests, mutate Git, or write to GitHub.")
+                .contains("- No next actions recorded.");
+    }
+
+    private static DemoSessionReportRequestDto readyHandoffRequest() {
+        return new DemoSessionReportRequestDto(List.of(
                 new DemoPreparedLaunchCommandRequestDto(
                         "/agent fix replace docs/demo.md PatchPilot smoke test",
                         "bingqin2",
@@ -276,27 +330,6 @@ class DemoSessionReportServiceTests {
                         "# PatchPilot Demo Launch Outcome Report\n\n- Task: `task-1`"
                 )
         ));
-
-        String packageReport = service.getHandoffPackage(request);
-
-        assertThat(packageReport)
-                .contains("- Overall: `BLOCKED` - Handoff package has a blocking readiness signal that should be resolved before a live-demo handoff.")
-                .contains("- Webhook delivery evidence: `BLOCKED` - delivery-invalid is INVALID_SIGNATURE; Fix the webhook secret or payload URL first, then use GitHub's Redeliver action for this delivery.");
-    }
-
-    @Test
-    void should_render_empty_lists_and_missing_evidence_as_none() {
-        DemoSessionReportService service = new DemoSessionReportService(() -> snapshotWithoutTaskOrPullRequest());
-
-        String report = service.getSessionReport();
-
-        assertThat(report)
-                .contains("- Recent Pull Request: none")
-                .contains("- Recent task: none")
-                .contains("- No operator checklist items recorded.")
-                .contains("- No script steps recorded.")
-                .contains("- GET /api/demo/session-report is read-only: it does not create tasks, call the model, run tests, mutate Git, or write to GitHub.")
-                .contains("- No next actions recorded.");
     }
 
     private static DemoSessionSnapshotVo snapshotWithoutTaskOrPullRequest() {

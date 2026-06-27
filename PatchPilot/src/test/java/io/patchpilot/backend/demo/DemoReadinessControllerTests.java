@@ -11,6 +11,8 @@ import io.patchpilot.backend.demo.domain.DemoSmokeChecklistStepVo;
 import io.patchpilot.backend.demo.domain.DemoSmokeChecklistVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchCommandVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchPreflightVo;
+import io.patchpilot.backend.demo.domain.DemoHandoffReadinessCheckVo;
+import io.patchpilot.backend.demo.domain.DemoHandoffReadinessVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffPackageArchiveVo;
 import io.patchpilot.backend.task.domain.vo.TriggerEvaluationDecisionVo;
 import io.patchpilot.backend.task.domain.vo.TriggerEvaluationResultVo;
@@ -710,6 +712,72 @@ class DemoReadinessControllerTests {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("# PatchPilot Demo Handoff Package")));
+    }
+
+    @Test
+    void should_return_structured_handoff_readiness_with_browser_context() throws Exception {
+        when(demoSessionReportService.getHandoffReadiness(argThat(request ->
+                request.preparedLaunchCommands().size() == 1
+                        && request.archivedLaunchOutcomes().size() == 1
+                        && request.archivedLaunchOutcomes().get(0).taskId().equals("task-1")
+        ))).thenReturn(new DemoHandoffReadinessVo(
+                DemoReadinessStatus.READY,
+                "Handoff package has current webhook delivery, PR, command, outcome, and readiness trend evidence.",
+                List.of(
+                        new DemoHandoffReadinessCheckVo(
+                                "Webhook delivery evidence",
+                                DemoReadinessStatus.READY,
+                                "delivery-1 created task task-1."
+                        ),
+                        new DemoHandoffReadinessCheckVo(
+                                "Prepared command context",
+                                DemoReadinessStatus.READY,
+                                "1 prepared command recorded."
+                        )
+                )
+        ));
+
+        mockMvc.perform(post("/api/demo/handoff-readiness")
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "preparedLaunchCommands": [
+                                    {
+                                      "triggerComment": "/agent fix replace docs/demo.md PatchPilot smoke test",
+                                      "repositoryOwner": "bingqin2",
+                                      "repositoryName": "PatchPilot",
+                                      "issueNumber": 1,
+                                      "triggerUser": "bingqin2",
+                                      "operation": "replace",
+                                      "targetPath": "docs/demo.md",
+                                      "replacementText": "PatchPilot smoke test",
+                                      "savedAt": "2026-06-26T01:00:00Z"
+                                    }
+                                  ],
+                                  "archivedLaunchOutcomes": [
+                                    {
+                                      "triggerComment": "/agent fix replace docs/demo.md PatchPilot smoke test",
+                                      "repositoryOwner": "bingqin2",
+                                      "repositoryName": "PatchPilot",
+                                      "issueNumber": 1,
+                                      "triggerUser": "bingqin2",
+                                      "taskId": "task-1",
+                                      "taskStatus": "COMPLETED",
+                                      "pullRequestUrl": "https://github.com/bingqin2/PatchPilot/pull/42",
+                                      "archivedAt": "2026-06-26T01:10:00Z",
+                                      "report": "# PatchPilot Demo Launch Outcome Report"
+                                    }
+                                  ]
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.summary").value("Handoff package has current webhook delivery, PR, command, outcome, and readiness trend evidence."))
+                .andExpect(jsonPath("$.data.checks[0].name").value("Webhook delivery evidence"))
+                .andExpect(jsonPath("$.data.checks[0].status").value("READY"))
+                .andExpect(jsonPath("$.data.checks[0].summary").value("delivery-1 created task task-1."))
+                .andExpect(jsonPath("$.data.checks[1].name").value("Prepared command context"));
     }
 
     @Test

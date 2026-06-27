@@ -26,6 +26,7 @@ import {
   getDemoSessionSnapshot,
   getDemoSessionReport,
   getDemoHandoffPackage,
+  getDemoHandoffReadiness,
   downloadDemoSessionReport,
   downloadDemoHandoffPackage,
   downloadDemoHandoffPackageArchiveReport,
@@ -1119,6 +1120,69 @@ test('loads demo handoff package markdown with browser context', async () => {
     body: JSON.stringify(input)
   });
   expect(report).toContain('Demo Handoff Package');
+});
+
+test('loads structured demo handoff readiness with browser context', async () => {
+  const input: DemoSessionReportInput = {
+    preparedLaunchCommands: [
+      {
+        triggerComment: '/agent fix replace docs/demo.md PatchPilot smoke test',
+        repositoryOwner: 'bingqin2',
+        repositoryName: 'PatchPilot',
+        issueNumber: 1,
+        triggerUser: 'bingqin2',
+        operation: 'replace',
+        targetPath: 'docs/demo.md',
+        replacementText: 'PatchPilot smoke test',
+        savedAt: '2026-06-26T01:00:00Z'
+      }
+    ],
+    archivedLaunchOutcomes: [
+      {
+        triggerComment: '/agent fix replace docs/demo.md PatchPilot smoke test',
+        repositoryOwner: 'bingqin2',
+        repositoryName: 'PatchPilot',
+        issueNumber: 1,
+        triggerUser: 'bingqin2',
+        taskId: 'task-1',
+        taskStatus: 'COMPLETED',
+        pullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+        archivedAt: '2026-06-26T01:10:00Z',
+        report: '# PatchPilot Demo Launch Outcome Report'
+      }
+    ]
+  };
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        status: 'READY',
+        summary: 'Handoff package has current webhook delivery, PR, command, outcome, and readiness trend evidence.',
+        checks: [
+          {
+            name: 'Webhook delivery evidence',
+            status: 'READY',
+            summary: 'delivery-1 created task task-1.'
+          }
+        ]
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const readiness = await getDemoHandoffReadiness(input);
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/handoff-readiness', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input)
+  });
+  expect(readiness.status).toBe('READY');
+  expect(readiness.summary).toContain('webhook delivery');
+  expect(readiness.checks[0].name).toBe('Webhook delivery evidence');
 });
 
 test('downloads demo handoff package markdown with browser context', async () => {
