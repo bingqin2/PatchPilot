@@ -2,6 +2,7 @@ package io.patchpilot.backend.demo;
 
 import io.patchpilot.backend.demo.domain.DemoLaunchEvidenceShareCenterVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessStatus;
+import io.patchpilot.backend.demo.service.DemoLaunchEvidencePackageArchiveRepository;
 import org.junit.jupiter.api.Test;
 
 import java.time.Clock;
@@ -17,14 +18,14 @@ class DemoLaunchEvidenceShareCenterServiceTests {
 
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-06-28T02:45:00Z"), ZoneOffset.UTC);
 
-    private final DemoLaunchEvidencePackageArchiveService archiveService =
-            mock(DemoLaunchEvidencePackageArchiveService.class);
+    private final DemoLaunchEvidencePackageArchiveRepository archiveRepository =
+            mock(DemoLaunchEvidencePackageArchiveRepository.class);
     private final DemoLaunchEvidenceShareCenterService service =
-            new DemoLaunchEvidenceShareCenterService(archiveService, CLOCK);
+            new DemoLaunchEvidenceShareCenterService(archiveRepository, CLOCK);
 
     @Test
     void should_build_share_ready_center_from_latest_launch_evidence_archive() {
-        when(archiveService.listRecentArchives()).thenReturn(List.of(
+        when(archiveRepository.listRecentArchives(20)).thenReturn(List.of(
                 DemoLaunchEvidenceFixtures.launchEvidencePackageArchive(DemoReadinessStatus.READY)
         ));
 
@@ -68,7 +69,7 @@ class DemoLaunchEvidenceShareCenterServiceTests {
 
     @Test
     void should_request_archive_when_no_launch_evidence_archive_exists() {
-        when(archiveService.listRecentArchives()).thenReturn(List.of());
+        when(archiveRepository.listRecentArchives(20)).thenReturn(List.of());
 
         DemoLaunchEvidenceShareCenterVo center = service.getShareCenter();
 
@@ -94,7 +95,7 @@ class DemoLaunchEvidenceShareCenterServiceTests {
 
     @Test
     void should_mark_share_center_not_ready_when_latest_archive_needs_attention() {
-        when(archiveService.listRecentArchives()).thenReturn(List.of(
+        when(archiveRepository.listRecentArchives(20)).thenReturn(List.of(
                 DemoLaunchEvidenceFixtures.launchEvidencePackageArchive(DemoReadinessStatus.NEEDS_ATTENTION)
         ));
 

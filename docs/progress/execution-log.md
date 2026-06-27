@@ -4,6 +4,24 @@ This file records dated implementation progress, validation commands, and import
 
 ## 2026-06-28
 
+Implemented launch share center evidence bundle from `docs/plans/253-launch-share-center-evidence-bundle.md`.
+
+Changes:
+
+- Added final launch evidence share-center fields to the backend demo evidence bundle read model, including share status, share-ready flag, summary, next action, archive count, latest archive/session/Pull Request identifiers, and download actions.
+- Reused `DemoLaunchEvidenceShareCenterService` inside `DemoEvidenceBundleService` so `GET /api/demo/evidence-bundle` and the standalone launch share-center endpoint share the same read-only source of truth.
+- Added a `Launch evidence share center` record to the dashboard demo evidence bundle panel so the first readout shows whether archived launch evidence is shareable.
+- Updated frontend types and dashboard fixtures, plus README, product spec, architecture notes, frontend design notes, and this execution log.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=DemoEvidenceBundleServiceTests test`: first failed because the service constructor and bundle VO did not expose launch share-center fields; passed after backend aggregation implementation, 3 tests run, 0 failures.
+- `npm test -- --run src/dashboard/components/DemoEvidenceBundlePanel.test.tsx --reporter=basic`: first failed because the evidence bundle panel did not render the launch share-center record; passed after frontend implementation, 3 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: first failed because wiring the launch share-center service through the launch package archive service created a Spring bean cycle; passed after making the share-center service read launch archives directly from the read-only repository, 884 tests run, 0 failures.
+- `npm test -- --reporter=basic`: passed after full frontend regression verification, 28 test files and 340 tests run, 0 failures.
+- `npm run build`: passed after production frontend build verification.
+- `git diff --check`: passed.
+
 Implemented demo launch evidence share center from `docs/plans/252-demo-launch-evidence-share-center.md`.
 
 Changes:

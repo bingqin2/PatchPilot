@@ -1553,6 +1553,19 @@ const demoEvidenceBundle = {
     'Download handoff package archive summary.',
     'Download handoff share checklist.'
   ],
+  launchEvidenceShareCenterStatus: 'READY',
+  launchEvidenceShareCenterReady: true,
+  launchEvidenceShareCenterSummary: 'Latest archived launch evidence package is READY and can be shared.',
+  launchEvidenceShareCenterNextAction: 'Download the archived launch evidence package and share it with reviewers.',
+  launchEvidenceShareCenterArchiveCount: 1,
+  launchEvidenceShareCenterLatestArchiveId: 'launch-evidence-archive-1',
+  launchEvidenceShareCenterLatestSessionId: 'demo-session-20260624T003000Z',
+  launchEvidenceShareCenterLatestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+  launchEvidenceShareCenterDownloadActions: [
+    'Download launch evidence package archive launch-evidence-archive-1.',
+    'Download launch evidence share center report.',
+    'Open Pull Request https://github.com/bingqin2/PatchPilot/pull/42 for review.'
+  ],
   handoffShareDeliveryReceiptRecorded: true,
   handoffShareLatestDeliveryReceiptId: 'delivery-receipt-1',
   handoffShareLatestDeliveryTarget: 'maintainer@example.com',

@@ -3,6 +3,7 @@ package io.patchpilot.backend.demo;
 import io.patchpilot.backend.demo.domain.DemoLaunchEvidencePackageArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchEvidenceShareCenterVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessStatus;
+import io.patchpilot.backend.demo.service.DemoLaunchEvidencePackageArchiveRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -14,24 +15,26 @@ import java.util.List;
 @Service
 public class DemoLaunchEvidenceShareCenterService {
 
-    private final DemoLaunchEvidencePackageArchiveService archiveService;
+    private static final int MAX_ARCHIVES = 20;
+
+    private final DemoLaunchEvidencePackageArchiveRepository archiveRepository;
     private final Clock clock;
 
     @Autowired
-    public DemoLaunchEvidenceShareCenterService(DemoLaunchEvidencePackageArchiveService archiveService) {
-        this(archiveService, Clock.systemUTC());
+    public DemoLaunchEvidenceShareCenterService(DemoLaunchEvidencePackageArchiveRepository archiveRepository) {
+        this(archiveRepository, Clock.systemUTC());
     }
 
     DemoLaunchEvidenceShareCenterService(
-            DemoLaunchEvidencePackageArchiveService archiveService,
+            DemoLaunchEvidencePackageArchiveRepository archiveRepository,
             Clock clock
     ) {
-        this.archiveService = archiveService;
+        this.archiveRepository = archiveRepository;
         this.clock = clock;
     }
 
     public DemoLaunchEvidenceShareCenterVo getShareCenter() {
-        List<DemoLaunchEvidencePackageArchiveVo> archives = archiveService.listRecentArchives();
+        List<DemoLaunchEvidencePackageArchiveVo> archives = archiveRepository.listRecentArchives(MAX_ARCHIVES);
         Instant generatedAt = Instant.now(clock);
         if (archives.isEmpty()) {
             String summary = "No archived launch evidence package is available for sharing.";
