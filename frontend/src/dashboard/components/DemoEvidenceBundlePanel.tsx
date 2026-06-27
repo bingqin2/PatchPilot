@@ -119,6 +119,14 @@ export function DemoEvidenceBundlePanel({ bundle, error, onCopyRunbook }: DemoEv
               ) : null}
             </div>
             <div>
+              <span>Handoff finalization</span>
+              <strong>{bundle.handoffFinalized ? 'Finalized' : statusLabel(bundle.handoffFinalizationStatus)}</strong>
+              <small>{bundle.handoffFinalizationSummary}</small>
+              <small>{bundle.handoffFinalizationNextAction}</small>
+              <small>{deliveryFreshnessLabel(bundle.handoffFinalizationDeliveryReceiptFreshness)}</small>
+              <small>{bundle.handoffFinalizationLatestDeliveryReceiptId ?? 'No accepted receipt'}</small>
+            </div>
+            <div>
               <span>Recent task</span>
               <strong>{bundle.recentTask?.id ?? 'No recent task'}</strong>
               <small>{bundle.recentTask?.status ?? 'No task status'}</small>

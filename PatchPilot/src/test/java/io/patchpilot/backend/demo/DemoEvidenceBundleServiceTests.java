@@ -2,6 +2,8 @@ package io.patchpilot.backend.demo;
 
 import io.patchpilot.backend.configuration.ConfigurationSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
+import io.patchpilot.backend.demo.domain.DemoHandoffFinalizationCheckVo;
+import io.patchpilot.backend.demo.domain.DemoHandoffFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffPackageArchiveSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffShareCenterVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessCheckVo;
@@ -51,7 +53,8 @@ class DemoEvidenceBundleServiceTests {
                 () -> rejectedTriggerSummary(4),
                 () -> List.of(quarantine("quarantine-1")),
                 DemoEvidenceBundleServiceTests::handoffPackageArchiveSummary,
-                DemoEvidenceBundleServiceTests::handoffShareCenter
+                DemoEvidenceBundleServiceTests::handoffShareCenter,
+                DemoEvidenceBundleServiceTests::handoffFinalizationMissingReceipt
         );
 
         DemoEvidenceBundleVo bundle = service.getEvidenceBundle();
@@ -104,9 +107,19 @@ class DemoEvidenceBundleServiceTests {
         assertThat(bundle.handoffShareDeliveryReceiptFresh()).isFalse();
         assertThat(bundle.handoffShareDeliveryReceiptFreshnessSummary())
                 .isEqualTo("No delivery receipt has been recorded for the current handoff package.");
+        assertThat(bundle.handoffFinalizationStatus()).isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
+        assertThat(bundle.handoffFinalized()).isFalse();
+        assertThat(bundle.handoffFinalizationSummary())
+                .isEqualTo("Demo handoff package is send-ready but final delivery evidence is not current.");
+        assertThat(bundle.handoffFinalizationNextAction())
+                .isEqualTo("Send the current handoff package, record a delivery receipt, then download the finalization report.");
+        assertThat(bundle.handoffFinalizationDeliveryReceiptFreshness()).isEqualTo("MISSING");
+        assertThat(bundle.handoffFinalizationDeliveryReceiptFresh()).isFalse();
+        assertThat(bundle.handoffFinalizationLatestDeliveryReceiptId()).isNull();
         assertThat(bundle.nextActions()).containsExactly(
                 "Fix failing adapter fixtures before a live demo.",
-                "Inspect active trigger quarantines before a live demo."
+                "Inspect active trigger quarantines before a live demo.",
+                "Send the current handoff package, record a delivery receipt, then download the finalization report."
         );
     }
 
@@ -124,7 +137,8 @@ class DemoEvidenceBundleServiceTests {
                 () -> rejectedTriggerSummary(0),
                 List::of,
                 DemoEvidenceBundleServiceTests::handoffPackageArchiveSummary,
-                DemoEvidenceBundleServiceTests::deliveredHandoffShareCenter
+                DemoEvidenceBundleServiceTests::deliveredHandoffShareCenter,
+                DemoEvidenceBundleServiceTests::handoffFinalizationReady
         );
 
         DemoEvidenceBundleVo bundle = service.getEvidenceBundle();
@@ -148,7 +162,45 @@ class DemoEvidenceBundleServiceTests {
         assertThat(bundle.handoffShareDeliveryReceiptFresh()).isTrue();
         assertThat(bundle.handoffShareDeliveryReceiptFreshnessSummary())
                 .isEqualTo("Latest delivery receipt matches the current handoff archive and session.");
+        assertThat(bundle.handoffFinalizationStatus()).isEqualTo(DemoReadinessStatus.READY);
+        assertThat(bundle.handoffFinalized()).isTrue();
+        assertThat(bundle.handoffFinalizationSummary())
+                .isEqualTo("Demo handoff is finalized with a fresh delivery receipt for the current archive.");
+        assertThat(bundle.handoffFinalizationNextAction())
+                .isEqualTo("Use the finalization report as the post-demo delivery acceptance record.");
+        assertThat(bundle.handoffFinalizationDeliveryReceiptFreshness()).isEqualTo("FRESH");
+        assertThat(bundle.handoffFinalizationDeliveryReceiptFresh()).isTrue();
+        assertThat(bundle.handoffFinalizationLatestDeliveryReceiptId()).isEqualTo("receipt-1");
         assertThat(bundle.nextActions()).containsExactly("Use this evidence bundle as the live demo baseline.");
+    }
+
+    @Test
+    void should_require_fresh_handoff_finalization_before_reporting_bundle_ready() {
+        DemoEvidenceBundleService service = new DemoEvidenceBundleService(
+                () -> readiness(DemoReadinessStatus.READY, List.of()),
+                () -> smokeChecklist(DemoSmokeChecklistStatus.READY, List.of()),
+                DemoEvidenceBundleServiceTests::configuration,
+                () -> List.of(fixture("java-maven", "PASS")),
+                FixTaskQueueSummaryVo::empty,
+                () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/42")),
+                () -> List.of(webhookDelivery("delivery-1", WebhookDeliveryDiagnosticStatus.TASK_CREATED, "task-1")),
+                DemoEvidenceBundleServiceTests::webhookSetupReadiness,
+                () -> rejectedTriggerSummary(0),
+                List::of,
+                DemoEvidenceBundleServiceTests::handoffPackageArchiveSummary,
+                DemoEvidenceBundleServiceTests::handoffShareCenter,
+                DemoEvidenceBundleServiceTests::handoffFinalizationMissingReceipt
+        );
+
+        DemoEvidenceBundleVo bundle = service.getEvidenceBundle();
+
+        assertThat(bundle.status()).isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
+        assertThat(bundle.summary()).isEqualTo("Demo evidence bundle needs attention.");
+        assertThat(bundle.handoffFinalizationStatus()).isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
+        assertThat(bundle.handoffFinalized()).isFalse();
+        assertThat(bundle.nextActions()).containsExactly(
+                "Send the current handoff package, record a delivery receipt, then download the finalization report."
+        );
     }
 
     private static DemoReadinessVo readiness(DemoReadinessStatus status, List<String> nextActions) {
@@ -400,6 +452,60 @@ class DemoEvidenceBundleServiceTests {
                 List.of("Latest delivery receipt receipt-1 was recorded for Demo reviewer via email."),
                 "# PatchPilot Demo Handoff Share Center",
                 Instant.parse("2026-06-24T05:30:00Z")
+        );
+    }
+
+    private static DemoHandoffFinalizationVo handoffFinalizationMissingReceipt() {
+        return new DemoHandoffFinalizationVo(
+                DemoReadinessStatus.NEEDS_ATTENTION,
+                false,
+                "Demo handoff package is send-ready but final delivery evidence is not current.",
+                "Send the current handoff package, record a delivery receipt, then download the finalization report.",
+                "handoff-archive-1",
+                "demo-session-20260624T003000Z",
+                null,
+                null,
+                null,
+                null,
+                "MISSING",
+                false,
+                "No delivery receipt has been recorded for the current handoff package.",
+                List.of(new DemoHandoffFinalizationCheckVo(
+                        "Delivery receipt freshness",
+                        DemoReadinessStatus.NEEDS_ATTENTION,
+                        "No fresh delivery receipt is available.",
+                        "Record a delivery receipt."
+                )),
+                List.of("No fresh delivery receipt is available for handoff-archive-1/demo-session-20260624T003000Z."),
+                "# PatchPilot Demo Handoff Finalization Gate",
+                Instant.parse("2026-06-24T06:00:00Z")
+        );
+    }
+
+    private static DemoHandoffFinalizationVo handoffFinalizationReady() {
+        return new DemoHandoffFinalizationVo(
+                DemoReadinessStatus.READY,
+                true,
+                "Demo handoff is finalized with a fresh delivery receipt for the current archive.",
+                "Use the finalization report as the post-demo delivery acceptance record.",
+                "handoff-archive-1",
+                "demo-session-20260624T003000Z",
+                "receipt-1",
+                "Demo reviewer",
+                "email",
+                "2026-06-24T05:20:00Z",
+                "FRESH",
+                true,
+                "Latest delivery receipt matches the current handoff archive and session.",
+                List.of(new DemoHandoffFinalizationCheckVo(
+                        "Final acceptance evidence",
+                        DemoReadinessStatus.READY,
+                        "Finalization evidence is complete.",
+                        "No action needed."
+                )),
+                List.of("Finalization report can be downloaded as the acceptance record."),
+                "# PatchPilot Demo Handoff Finalization Gate",
+                Instant.parse("2026-06-24T06:00:00Z")
         );
     }
 }

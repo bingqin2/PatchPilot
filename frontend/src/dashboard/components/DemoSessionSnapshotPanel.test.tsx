@@ -2,6 +2,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type {
   DemoArchivedLaunchOutcome,
+  DemoHandoffFinalization,
   DemoHandoffReadiness,
   DemoHandoffPackageArchive,
   DemoHandoffPackageArchiveSummary,
@@ -64,6 +65,13 @@ const snapshot: DemoSessionSnapshot = {
     handoffShareDeliveryReceiptFreshness: 'FRESH',
     handoffShareDeliveryReceiptFresh: true,
     handoffShareDeliveryReceiptFreshnessSummary: 'Latest delivery receipt matches the current handoff archive and session.',
+    handoffFinalizationStatus: 'READY',
+    handoffFinalized: true,
+    handoffFinalizationSummary: 'Demo handoff is finalized with a fresh delivery receipt for the current archive.',
+    handoffFinalizationNextAction: 'Use the finalization report as the post-demo delivery acceptance record.',
+    handoffFinalizationDeliveryReceiptFreshness: 'FRESH',
+    handoffFinalizationDeliveryReceiptFresh: true,
+    handoffFinalizationLatestDeliveryReceiptId: 'delivery-receipt-1',
     configuration: null,
     adapterFixtures: {
       totalCount: 12,
@@ -261,6 +269,36 @@ const handoffShareCenter: DemoHandoffShareCenter = {
   generatedAt: '2026-06-24T05:30:00Z'
 };
 
+const handoffFinalization: DemoHandoffFinalization = {
+  status: 'READY',
+  finalized: true,
+  summary: 'Demo handoff is finalized with a fresh delivery receipt for the current archive.',
+  nextAction: 'Use the finalization report as the post-demo delivery acceptance record.',
+  latestArchiveId: 'handoff-archive-1',
+  latestSessionId: 'demo-session-20260624T003000Z',
+  latestDeliveryReceiptId: 'delivery-receipt-1',
+  latestDeliveryTarget: 'maintainer@example.com',
+  latestDeliveryChannel: 'email',
+  latestDeliveredAt: '2026-06-24T06:05:00Z',
+  deliveryReceiptFreshness: 'FRESH',
+  deliveryReceiptFresh: true,
+  deliveryReceiptFreshnessSummary: 'Latest delivery receipt matches the current handoff archive and session.',
+  checks: [
+    {
+      name: 'Final acceptance evidence',
+      status: 'READY',
+      summary: 'Finalization report is ready as the acceptance record.',
+      nextAction: 'Download the finalization report.'
+    }
+  ],
+  evidenceNotes: [
+    'Latest delivery receipt delivery-receipt-1 is fresh for handoff-archive-1/demo-session-20260624T003000Z.',
+    'Finalization report can be downloaded as the acceptance record.'
+  ],
+  markdownReport: '# PatchPilot Demo Handoff Finalization Gate\n\n- Status: `READY`',
+  generatedAt: '2026-06-24T06:15:00Z'
+};
+
 const handoffShareInstructions: DemoHandoffShareInstructions = {
   status: 'READY',
   sendReady: true,
@@ -422,6 +460,7 @@ test('renders demo session snapshot summary, evidence, checklist, contract, and 
       handoffPackageArchiveSummary={handoffPackageArchiveSummary}
       handoffShareChecklist={handoffShareChecklist}
       handoffShareCenter={handoffShareCenter}
+      handoffFinalization={handoffFinalization}
       handoffShareInstructions={handoffShareInstructions}
       handoffShareDeliveryReceipts={handoffShareDeliveryReceipts}
       error={null}
@@ -484,13 +523,17 @@ test('renders demo session snapshot summary, evidence, checklist, contract, and 
   expect(within(panel).getAllByText('Download handoff share delivery receipt delivery-receipt-1.').length).toBeGreaterThanOrEqual(1);
   expect(within(panel).getByText('Latest package archive is READY.')).toBeInTheDocument();
   expect(within(panel).getByText('Latest delivery')).toBeInTheDocument();
-  expect(within(panel).getByText('Fresh')).toBeInTheDocument();
+  expect(within(panel).getAllByText('Fresh').length).toBeGreaterThanOrEqual(2);
   expect(
-    within(panel).getByText('Latest delivery receipt matches the current handoff archive and session.')
-  ).toBeInTheDocument();
+    within(panel).getAllByText('Latest delivery receipt matches the current handoff archive and session.').length
+  ).toBeGreaterThanOrEqual(2);
   expect(within(panel).getAllByText('delivery-receipt-1').length).toBeGreaterThanOrEqual(2);
   expect(within(panel).getAllByText('email - maintainer@example.com').length).toBeGreaterThanOrEqual(1);
   expect(within(panel).getByRole('button', { name: 'Download handoff share center' })).toBeInTheDocument();
+  expect(within(panel).getByRole('heading', { name: 'Handoff finalization gate' })).toBeInTheDocument();
+  expect(within(panel).getByText('Finalized')).toBeInTheDocument();
+  expect(within(panel).getByText('Finalization report can be downloaded as the acceptance record.')).toBeInTheDocument();
+  expect(within(panel).getByRole('button', { name: 'Download handoff finalization' })).toBeInTheDocument();
   expect(within(panel).getByRole('heading', { name: 'Handoff share instructions' })).toBeInTheDocument();
   expect(within(panel).getByText('Share the current handoff package with repository maintainers and demo reviewers.')).toBeInTheDocument();
   expect(within(panel).getByText('Repository owner or maintainer')).toBeInTheDocument();

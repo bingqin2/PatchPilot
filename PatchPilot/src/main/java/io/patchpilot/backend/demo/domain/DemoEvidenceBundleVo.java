@@ -41,6 +41,13 @@ public record DemoEvidenceBundleVo(
         String handoffShareDeliveryReceiptFreshness,
         boolean handoffShareDeliveryReceiptFresh,
         String handoffShareDeliveryReceiptFreshnessSummary,
+        DemoReadinessStatus handoffFinalizationStatus,
+        boolean handoffFinalized,
+        String handoffFinalizationSummary,
+        String handoffFinalizationNextAction,
+        String handoffFinalizationDeliveryReceiptFreshness,
+        boolean handoffFinalizationDeliveryReceiptFresh,
+        String handoffFinalizationLatestDeliveryReceiptId,
         Instant generatedAt,
         List<String> nextActions
 ) {
@@ -101,6 +108,13 @@ public record DemoEvidenceBundleVo(
                 "MISSING",
                 false,
                 "No delivery receipt has been recorded for the current handoff package.",
+                DemoReadinessStatus.NEEDS_ATTENTION,
+                false,
+                "Demo handoff package is send-ready but final delivery evidence is not current.",
+                "Send the current handoff package, record a delivery receipt, then download the finalization report.",
+                "MISSING",
+                false,
+                null,
                 generatedAt,
                 nextActions
         );
@@ -170,6 +184,17 @@ public record DemoEvidenceBundleVo(
                 handoffShareDeliveryReceiptRecorded
                         ? "Latest delivery receipt matches the current handoff archive and session."
                         : "No delivery receipt has been recorded for the current handoff package.",
+                handoffShareDeliveryReceiptRecorded ? DemoReadinessStatus.READY : DemoReadinessStatus.NEEDS_ATTENTION,
+                handoffShareDeliveryReceiptRecorded,
+                handoffShareDeliveryReceiptRecorded
+                        ? "Demo handoff is finalized with a fresh delivery receipt for the current archive."
+                        : "Demo handoff package is send-ready but final delivery evidence is not current.",
+                handoffShareDeliveryReceiptRecorded
+                        ? "Use the finalization report as the post-demo delivery acceptance record."
+                        : "Send the current handoff package, record a delivery receipt, then download the finalization report.",
+                handoffShareDeliveryReceiptRecorded ? "FRESH" : "MISSING",
+                handoffShareDeliveryReceiptRecorded,
+                handoffShareLatestDeliveryReceiptId,
                 generatedAt,
                 nextActions
         );

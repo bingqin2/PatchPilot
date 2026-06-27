@@ -477,6 +477,13 @@ export interface DemoEvidenceBundle {
   handoffShareDeliveryReceiptFreshness: string;
   handoffShareDeliveryReceiptFresh: boolean;
   handoffShareDeliveryReceiptFreshnessSummary: string;
+  handoffFinalizationStatus: DemoReadinessStatus;
+  handoffFinalized: boolean;
+  handoffFinalizationSummary: string;
+  handoffFinalizationNextAction: string;
+  handoffFinalizationDeliveryReceiptFreshness: string;
+  handoffFinalizationDeliveryReceiptFresh: boolean;
+  handoffFinalizationLatestDeliveryReceiptId: string | null;
   generatedAt: string;
   nextActions: string[];
 }
@@ -628,6 +635,33 @@ export interface DemoHandoffShareCenter {
   deliveryReceiptFresh: boolean;
   deliveryReceiptFreshnessSummary: string;
   downloadActions: string[];
+  evidenceNotes: string[];
+  markdownReport: string;
+  generatedAt: string;
+}
+
+export interface DemoHandoffFinalizationCheck {
+  name: string;
+  status: DemoReadinessStatus;
+  summary: string;
+  nextAction: string;
+}
+
+export interface DemoHandoffFinalization {
+  status: DemoReadinessStatus;
+  finalized: boolean;
+  summary: string;
+  nextAction: string;
+  latestArchiveId: string | null;
+  latestSessionId: string | null;
+  latestDeliveryReceiptId: string | null;
+  latestDeliveryTarget: string | null;
+  latestDeliveryChannel: string | null;
+  latestDeliveredAt: string | null;
+  deliveryReceiptFreshness: string;
+  deliveryReceiptFresh: boolean;
+  deliveryReceiptFreshnessSummary: string;
+  checks: DemoHandoffFinalizationCheck[];
   evidenceNotes: string[];
   markdownReport: string;
   generatedAt: string;

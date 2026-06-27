@@ -174,6 +174,13 @@ const bundle: DemoEvidenceBundle = {
   handoffShareDeliveryReceiptFreshness: 'FRESH',
   handoffShareDeliveryReceiptFresh: true,
   handoffShareDeliveryReceiptFreshnessSummary: 'Latest delivery receipt matches the current handoff archive and session.',
+  handoffFinalizationStatus: 'READY',
+  handoffFinalized: true,
+  handoffFinalizationSummary: 'Demo handoff is finalized with a fresh delivery receipt for the current archive.',
+  handoffFinalizationNextAction: 'Use the finalization report as the post-demo delivery acceptance record.',
+  handoffFinalizationDeliveryReceiptFreshness: 'FRESH',
+  handoffFinalizationDeliveryReceiptFresh: true,
+  handoffFinalizationLatestDeliveryReceiptId: 'delivery-receipt-1',
   generatedAt: '2026-06-24T00:10:00Z',
   nextActions: ['Fix failing adapter fixtures before a live demo.', 'Inspect active trigger quarantines before a live demo.']
 };
@@ -208,11 +215,16 @@ test('summarizes demo evidence bundle for operators', () => {
   expect(within(panel).getByText('Download handoff package archive handoff-archive-1.')).toBeInTheDocument();
   expect(within(panel).getByText('Download handoff package archive summary.')).toBeInTheDocument();
   expect(within(panel).getByText('Handoff share delivery')).toBeInTheDocument();
-  expect(within(panel).getByText('Fresh')).toBeInTheDocument();
+  expect(within(panel).getAllByText('Fresh').length).toBeGreaterThanOrEqual(2);
+  expect(within(panel).getByText('Handoff finalization')).toBeInTheDocument();
+  expect(within(panel).getByText('Finalized')).toBeInTheDocument();
+  expect(
+    within(panel).getByText('Use the finalization report as the post-demo delivery acceptance record.')
+  ).toBeInTheDocument();
   expect(
     within(panel).getByText('Latest delivery receipt matches the current handoff archive and session.')
   ).toBeInTheDocument();
-  expect(within(panel).getByText('delivery-receipt-1')).toBeInTheDocument();
+  expect(within(panel).getAllByText('delivery-receipt-1').length).toBeGreaterThanOrEqual(2);
   expect(within(panel).getByText('email - maintainer@example.com')).toBeInTheDocument();
   expect(within(panel).getByText('https://demo.trycloudflare.com/api/github/webhook')).toBeInTheDocument();
   expect(within(panel).getAllByText('delivery-1')).toHaveLength(2);

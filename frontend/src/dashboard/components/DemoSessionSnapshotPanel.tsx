@@ -4,6 +4,7 @@ import type {
   DemoArchivedLaunchOutcome,
   DemoHandoffReadiness,
   DemoHandoffReadinessCheck,
+  DemoHandoffFinalization,
   DemoHandoffPackageArchive,
   DemoHandoffPackageArchiveSummary,
   DemoHandoffPackageArchiveSummaryStatus,
@@ -31,6 +32,7 @@ interface DemoSessionSnapshotPanelProps {
   handoffPackageArchiveSummary?: DemoHandoffPackageArchiveSummary | null;
   handoffShareChecklist?: DemoHandoffShareChecklist | null;
   handoffShareCenter?: DemoHandoffShareCenter | null;
+  handoffFinalization?: DemoHandoffFinalization | null;
   handoffShareInstructions?: DemoHandoffShareInstructions | null;
   handoffShareDeliveryReceipts?: DemoHandoffShareDeliveryReceipt[];
   error: string | null;
@@ -40,6 +42,7 @@ interface DemoSessionSnapshotPanelProps {
   handoffPackageArchiveSummaryError?: string | null;
   handoffShareChecklistError?: string | null;
   handoffShareCenterError?: string | null;
+  handoffFinalizationError?: string | null;
   handoffShareInstructionsError?: string | null;
   handoffShareDeliveryReceiptError?: string | null;
   onCopyReport: (input: DemoSessionReportInput) => Promise<string>;
@@ -52,6 +55,7 @@ interface DemoSessionSnapshotPanelProps {
   onDownloadHandoffPackageArchiveReport: (archiveId: string) => Promise<Blob>;
   onDownloadHandoffPackageArchiveSummaryReport: () => Promise<Blob>;
   onDownloadHandoffShareCenterReport: () => Promise<Blob>;
+  onDownloadHandoffFinalizationReport?: () => Promise<Blob>;
   onDownloadHandoffShareInstructionsReport: () => Promise<Blob>;
   onCreateHandoffShareDeliveryReceipt?: (
     input: DemoHandoffShareDeliveryReceiptInput
@@ -70,6 +74,7 @@ export function DemoSessionSnapshotPanel({
   handoffPackageArchiveSummary = null,
   handoffShareChecklist = null,
   handoffShareCenter = null,
+  handoffFinalization = null,
   handoffShareInstructions = null,
   handoffShareDeliveryReceipts = [],
   error,
@@ -79,6 +84,7 @@ export function DemoSessionSnapshotPanel({
   handoffPackageArchiveSummaryError = null,
   handoffShareChecklistError = null,
   handoffShareCenterError = null,
+  handoffFinalizationError = null,
   handoffShareInstructionsError = null,
   handoffShareDeliveryReceiptError = null,
   onCopyReport,
@@ -91,6 +97,9 @@ export function DemoSessionSnapshotPanel({
   onDownloadHandoffPackageArchiveReport,
   onDownloadHandoffPackageArchiveSummaryReport,
   onDownloadHandoffShareCenterReport,
+  onDownloadHandoffFinalizationReport = async () => {
+    throw new Error('Handoff finalization download is unavailable.');
+  },
   onDownloadHandoffShareInstructionsReport,
   onCreateHandoffShareDeliveryReceipt = async () => {
     throw new Error('Handoff share delivery receipt creation is unavailable.');
@@ -253,6 +262,16 @@ export function DemoSessionSnapshotPanel({
     }
   }
 
+  async function downloadHandoffFinalization() {
+    try {
+      const report = await onDownloadHandoffFinalizationReport();
+      downloadMarkdown(report, 'patchpilot-demo-handoff-finalization.md');
+      setDownloadStatus('Handoff finalization downloaded');
+    } catch {
+      setDownloadStatus('Download failed');
+    }
+  }
+
   async function copyHandoffShareInstructions() {
     if (!handoffShareInstructions) {
       return;
@@ -397,6 +416,13 @@ export function DemoSessionSnapshotPanel({
         </div>
       ) : null}
 
+      {handoffFinalizationError ? (
+        <div className="adapter-api-error">
+          <strong>Demo handoff finalization unavailable</strong>
+          <span>{handoffFinalizationError}</span>
+        </div>
+      ) : null}
+
       {handoffShareInstructionsError ? (
         <div className="adapter-api-error">
           <strong>Demo handoff share instructions unavailable</strong>
@@ -531,6 +557,11 @@ export function DemoSessionSnapshotPanel({
           <HandoffShareCenterPanel
             center={handoffShareCenter}
             onDownloadCenter={downloadHandoffShareCenter}
+          />
+
+          <HandoffFinalizationPanel
+            finalization={handoffFinalization}
+            onDownloadFinalization={downloadHandoffFinalization}
           />
 
           <HandoffShareInstructionsPanel
@@ -698,6 +729,86 @@ function HandoffShareCenterPanel({
           title="Share evidence"
           items={center.evidenceNotes}
           emptyText="No share evidence available."
+        />
+      </div>
+    </div>
+  );
+}
+
+function HandoffFinalizationPanel({
+  finalization,
+  onDownloadFinalization
+}: {
+  finalization: DemoHandoffFinalization | null;
+  onDownloadFinalization: () => void;
+}) {
+  if (!finalization) {
+    return null;
+  }
+
+  return (
+    <div className="demo-session-archives">
+      <div className="demo-session-archive-title-row">
+        <h3>Handoff finalization gate</h3>
+        <div className="demo-session-archive-actions">
+          <button
+            className="secondary-button"
+            type="button"
+            onClick={() => onDownloadFinalization()}
+            aria-label="Download handoff finalization"
+          >
+            <Download size={14} />
+            Download finalization
+          </button>
+        </div>
+      </div>
+      <div className="demo-session-summary">
+        <div>
+          <span>Finalization status</span>
+          <strong>{finalization.finalized ? 'Finalized' : statusLabel(finalization.status)}</strong>
+          <small>{finalization.summary}</small>
+        </div>
+        <div>
+          <span>Accepted package</span>
+          <strong>{finalization.latestArchiveId ?? 'No archive'}</strong>
+          <small>{finalization.latestSessionId ?? 'Archive and share a handoff package first'}</small>
+        </div>
+        <div>
+          <span>Delivery receipt</span>
+          <strong>{deliveryFreshnessLabel(finalization.deliveryReceiptFreshness)}</strong>
+          <small>{finalization.deliveryReceiptFreshnessSummary}</small>
+          <small>{finalization.latestDeliveryReceiptId ?? 'No receipt'}</small>
+          {finalization.latestDeliveredAt ? (
+            <small>Delivered {compactDateTime(finalization.latestDeliveredAt)}</small>
+          ) : null}
+        </div>
+        <div>
+          <span>Next action</span>
+          <strong>{finalization.nextAction}</strong>
+          <small>Generated {compactDateTime(finalization.generatedAt)}</small>
+        </div>
+      </div>
+      <div className="demo-session-handoff-checks">
+        <ul>
+          {finalization.checks.map((check) => (
+            <li key={check.name}>
+              <div>
+                <strong>{check.name}</strong>
+                <small>{check.summary}</small>
+                <small>Next action: {check.nextAction}</small>
+              </div>
+              <span className={`demo-readiness-status demo-readiness-status-${statusClass(check.status)}`}>
+                {statusLabel(check.status)}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
+      <div className="demo-session-lists compact-demo-session-lists">
+        <SnapshotList
+          title="Finalization evidence"
+          items={finalization.evidenceNotes}
+          emptyText="No finalization evidence available."
         />
       </div>
     </div>
