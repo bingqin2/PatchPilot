@@ -88,6 +88,36 @@ public class DemoRunbookService {
                 .append("- Active quarantines: ")
                 .append(bundle.activeQuarantineCount())
                 .append("\n");
+
+        appendLaunchEvidenceFinalization(runbook, bundle);
+    }
+
+    private static void appendLaunchEvidenceFinalization(StringBuilder runbook, DemoEvidenceBundleVo bundle) {
+        runbook.append("- Launch evidence share center: `")
+                .append(bundle.launchEvidenceShareCenterStatus())
+                .append("` - ")
+                .append(bundle.launchEvidenceShareCenterSummary())
+                .append("\n")
+                .append("- Launch evidence latest archive: ")
+                .append(valueOrNoneBackticked(bundle.launchEvidenceShareCenterLatestArchiveId()))
+                .append("\n")
+                .append("- Launch evidence latest session: ")
+                .append(valueOrNoneBackticked(bundle.launchEvidenceShareCenterLatestSessionId()))
+                .append("\n")
+                .append("- Launch evidence finalization: `")
+                .append(bundle.launchEvidenceFinalizationStatus())
+                .append("` - ")
+                .append(bundle.launchEvidenceFinalizationSummary())
+                .append("\n")
+                .append("- Launch evidence accepted receipt: ")
+                .append(valueOrNoneBackticked(bundle.launchEvidenceFinalizationLatestDeliveryReceiptId()))
+                .append("\n")
+                .append("- Launch evidence receipt freshness: `")
+                .append(bundle.launchEvidenceFinalizationDeliveryReceiptFreshness())
+                .append("`\n")
+                .append("- Launch evidence finalization next action: ")
+                .append(bundle.launchEvidenceFinalizationNextAction())
+                .append("\n");
     }
 
     private static void appendEvaluationRunReadiness(

@@ -6,6 +6,8 @@ import io.patchpilot.backend.demo.domain.DemoHandoffFinalizationCheckVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffPackageArchiveSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffShareCenterVo;
+import io.patchpilot.backend.demo.domain.DemoLaunchEvidenceFinalizationCheckVo;
+import io.patchpilot.backend.demo.domain.DemoLaunchEvidenceFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchEvidenceShareCenterVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessCheckVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessStatus;
@@ -59,7 +61,8 @@ class DemoEvidenceBundleServiceTests {
                 DemoEvidenceBundleServiceTests::handoffPackageArchiveSummary,
                 DemoEvidenceBundleServiceTests::handoffShareCenter,
                 DemoEvidenceBundleServiceTests::handoffFinalizationMissingReceipt,
-                DemoEvidenceBundleServiceTests::launchEvidenceShareCenter
+                DemoEvidenceBundleServiceTests::launchEvidenceShareCenter,
+                DemoEvidenceBundleServiceTests::launchEvidenceFinalizationReady
         );
 
         DemoEvidenceBundleVo bundle = service.getEvidenceBundle();
@@ -133,6 +136,15 @@ class DemoEvidenceBundleServiceTests {
                 "Open Pull Request https://github.com/bingqin2/PatchPilot/pull/42 for review.",
                 "Download launch evidence delivery receipt launch-delivery-receipt-1."
         );
+        assertThat(bundle.launchEvidenceFinalizationStatus()).isEqualTo(DemoReadinessStatus.READY);
+        assertThat(bundle.launchEvidenceFinalized()).isTrue();
+        assertThat(bundle.launchEvidenceFinalizationSummary())
+                .isEqualTo("Demo launch evidence is finalized with a fresh delivery receipt for the current archive.");
+        assertThat(bundle.launchEvidenceFinalizationNextAction())
+                .isEqualTo("Use the finalization report as the launch evidence delivery acceptance record.");
+        assertThat(bundle.launchEvidenceFinalizationDeliveryReceiptFreshness()).isEqualTo("FRESH");
+        assertThat(bundle.launchEvidenceFinalizationDeliveryReceiptFresh()).isTrue();
+        assertThat(bundle.launchEvidenceFinalizationLatestDeliveryReceiptId()).isEqualTo("launch-delivery-receipt-1");
         assertThat(bundle.handoffShareDeliveryReceiptRecorded()).isFalse();
         assertThat(bundle.handoffShareLatestDeliveryReceiptId()).isNull();
         assertThat(bundle.handoffShareLatestDeliveryTarget()).isNull();
@@ -175,7 +187,8 @@ class DemoEvidenceBundleServiceTests {
                 DemoEvidenceBundleServiceTests::handoffPackageArchiveSummary,
                 DemoEvidenceBundleServiceTests::deliveredHandoffShareCenter,
                 DemoEvidenceBundleServiceTests::handoffFinalizationReady,
-                DemoEvidenceBundleServiceTests::launchEvidenceShareCenter
+                DemoEvidenceBundleServiceTests::launchEvidenceShareCenter,
+                DemoEvidenceBundleServiceTests::launchEvidenceFinalizationReady
         );
 
         DemoEvidenceBundleVo bundle = service.getEvidenceBundle();
@@ -208,6 +221,9 @@ class DemoEvidenceBundleServiceTests {
         assertThat(bundle.handoffFinalizationDeliveryReceiptFreshness()).isEqualTo("FRESH");
         assertThat(bundle.handoffFinalizationDeliveryReceiptFresh()).isTrue();
         assertThat(bundle.handoffFinalizationLatestDeliveryReceiptId()).isEqualTo("receipt-1");
+        assertThat(bundle.launchEvidenceFinalizationStatus()).isEqualTo(DemoReadinessStatus.READY);
+        assertThat(bundle.launchEvidenceFinalized()).isTrue();
+        assertThat(bundle.launchEvidenceFinalizationLatestDeliveryReceiptId()).isEqualTo("launch-delivery-receipt-1");
         assertThat(bundle.nextActions()).containsExactly("Use this evidence bundle as the live demo baseline.");
     }
 
@@ -228,7 +244,8 @@ class DemoEvidenceBundleServiceTests {
                 DemoEvidenceBundleServiceTests::handoffPackageArchiveSummary,
                 DemoEvidenceBundleServiceTests::handoffShareCenter,
                 DemoEvidenceBundleServiceTests::handoffFinalizationMissingReceipt,
-                DemoEvidenceBundleServiceTests::launchEvidenceShareCenter
+                DemoEvidenceBundleServiceTests::launchEvidenceShareCenter,
+                DemoEvidenceBundleServiceTests::launchEvidenceFinalizationMissingReceipt
         );
 
         DemoEvidenceBundleVo bundle = service.getEvidenceBundle();
@@ -240,9 +257,14 @@ class DemoEvidenceBundleServiceTests {
                 .isEqualTo("Run and archive a full evaluation before using it as demo readiness evidence.");
         assertThat(bundle.handoffFinalizationStatus()).isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
         assertThat(bundle.handoffFinalized()).isFalse();
+        assertThat(bundle.launchEvidenceFinalizationStatus()).isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
+        assertThat(bundle.launchEvidenceFinalized()).isFalse();
+        assertThat(bundle.launchEvidenceFinalizationNextAction())
+                .isEqualTo("Share the current launch evidence package, record a delivery receipt, then download the finalization report.");
         assertThat(bundle.nextActions()).containsExactly(
                 "Run and archive a full evaluation before using it as demo readiness evidence.",
-                "Send the current handoff package, record a delivery receipt, then download the finalization report."
+                "Send the current handoff package, record a delivery receipt, then download the finalization report.",
+                "Share the current launch evidence package, record a delivery receipt, then download the finalization report."
         );
     }
 
@@ -639,6 +661,60 @@ class DemoEvidenceBundleServiceTests {
                 List.of("Finalization report can be downloaded as the acceptance record."),
                 "# PatchPilot Demo Handoff Finalization Gate",
                 Instant.parse("2026-06-24T06:00:00Z")
+        );
+    }
+
+    private static DemoLaunchEvidenceFinalizationVo launchEvidenceFinalizationMissingReceipt() {
+        return new DemoLaunchEvidenceFinalizationVo(
+                DemoReadinessStatus.NEEDS_ATTENTION,
+                false,
+                "Demo launch evidence package is share-ready but final delivery evidence is not current.",
+                "Share the current launch evidence package, record a delivery receipt, then download the finalization report.",
+                "launch-evidence-archive-1",
+                "demo-session-20260624T003000Z",
+                null,
+                null,
+                null,
+                null,
+                "MISSING",
+                false,
+                "No delivery receipt has been recorded for the current launch evidence package.",
+                List.of(new DemoLaunchEvidenceFinalizationCheckVo(
+                        "Delivery receipt freshness",
+                        DemoReadinessStatus.NEEDS_ATTENTION,
+                        "No fresh launch delivery receipt is available.",
+                        "Record a launch evidence delivery receipt."
+                )),
+                List.of("No fresh delivery receipt is available for launch-evidence-archive-1/demo-session-20260624T003000Z."),
+                "# PatchPilot Demo Launch Evidence Finalization Gate",
+                Instant.parse("2026-06-24T07:20:00Z")
+        );
+    }
+
+    private static DemoLaunchEvidenceFinalizationVo launchEvidenceFinalizationReady() {
+        return new DemoLaunchEvidenceFinalizationVo(
+                DemoReadinessStatus.READY,
+                true,
+                "Demo launch evidence is finalized with a fresh delivery receipt for the current archive.",
+                "Use the finalization report as the launch evidence delivery acceptance record.",
+                "launch-evidence-archive-1",
+                "demo-session-20260624T003000Z",
+                "launch-delivery-receipt-1",
+                "Demo reviewer",
+                "email",
+                "2026-06-24T07:10:00Z",
+                "FRESH",
+                true,
+                "Latest delivery receipt matches the current launch evidence archive and session.",
+                List.of(new DemoLaunchEvidenceFinalizationCheckVo(
+                        "Launch acceptance evidence",
+                        DemoReadinessStatus.READY,
+                        "Finalization report is ready as the launch acceptance record.",
+                        "Download the finalization report."
+                )),
+                List.of("Finalization report can be downloaded as the launch delivery acceptance record."),
+                "# PatchPilot Demo Launch Evidence Finalization Gate",
+                Instant.parse("2026-06-24T07:20:00Z")
         );
     }
 }

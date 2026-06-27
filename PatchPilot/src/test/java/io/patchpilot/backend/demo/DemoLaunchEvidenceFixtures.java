@@ -118,6 +118,32 @@ final class DemoLaunchEvidenceFixtures {
                 "Post-demo handoff package is ready to share.",
                 "Download the package, archive summary, and share checklist before sending handoff evidence.",
                 List.of("Download handoff package archive handoff-archive-1."),
+                ready ? "READY" : "NO_ARCHIVE",
+                ready,
+                ready
+                        ? "Launch evidence package archive is ready to share."
+                        : "No archived launch evidence package is available for sharing.",
+                ready
+                        ? "Download launch evidence package, archive summary, and finalization report for review."
+                        : "Archive a final demo launch evidence package after a completed live run before sharing launch evidence.",
+                ready ? 1 : 0,
+                ready ? "launch-evidence-archive-1" : null,
+                ready ? "demo-session-20260624T003000Z" : null,
+                ready ? "https://github.com/bingqin2/PatchPilot/pull/42" : null,
+                ready
+                        ? List.of("Download launch evidence package archive launch-evidence-archive-1.")
+                        : List.of(),
+                ready ? DemoReadinessStatus.READY : DemoReadinessStatus.NEEDS_ATTENTION,
+                ready,
+                ready
+                        ? "Demo launch evidence is finalized with a fresh delivery receipt for the current archive."
+                        : "Demo launch evidence package is not finalized for accepted delivery evidence.",
+                ready
+                        ? "Use the launch finalization report as the accepted launch evidence record."
+                        : "Archive launch evidence, share it, record a delivery receipt, then download the finalization report.",
+                ready ? "FRESH" : "MISSING",
+                ready,
+                ready ? "launch-delivery-receipt-1" : null,
                 true,
                 "delivery-receipt-1",
                 "Demo reviewer",

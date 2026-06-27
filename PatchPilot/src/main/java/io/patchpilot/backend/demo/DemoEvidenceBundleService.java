@@ -9,6 +9,7 @@ import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffShareCenterVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffPackageArchiveSummaryVo;
+import io.patchpilot.backend.demo.domain.DemoLaunchEvidenceFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchEvidenceShareCenterVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessStatus;
 import io.patchpilot.backend.demo.domain.DemoReadinessVo;
@@ -58,6 +59,7 @@ public class DemoEvidenceBundleService {
     private final Supplier<DemoHandoffShareCenterVo> handoffShareCenterSupplier;
     private final Supplier<DemoHandoffFinalizationVo> handoffFinalizationSupplier;
     private final Supplier<DemoLaunchEvidenceShareCenterVo> launchEvidenceShareCenterSupplier;
+    private final Supplier<DemoLaunchEvidenceFinalizationVo> launchEvidenceFinalizationSupplier;
 
     @Autowired
     public DemoEvidenceBundleService(
@@ -75,7 +77,8 @@ public class DemoEvidenceBundleService {
             DemoHandoffPackageArchiveSummaryService demoHandoffPackageArchiveSummaryService,
             DemoHandoffShareCenterService demoHandoffShareCenterService,
             DemoHandoffFinalizationService demoHandoffFinalizationService,
-            DemoLaunchEvidenceShareCenterService demoLaunchEvidenceShareCenterService
+            DemoLaunchEvidenceShareCenterService demoLaunchEvidenceShareCenterService,
+            DemoLaunchEvidenceFinalizationService demoLaunchEvidenceFinalizationService
     ) {
         this(
                 demoReadinessService::getReadiness,
@@ -101,7 +104,8 @@ public class DemoEvidenceBundleService {
                 demoHandoffPackageArchiveSummaryService::getArchiveSummary,
                 demoHandoffShareCenterService::getShareCenter,
                 demoHandoffFinalizationService::getFinalizationGate,
-                demoLaunchEvidenceShareCenterService::getShareCenter
+                demoLaunchEvidenceShareCenterService::getShareCenter,
+                demoLaunchEvidenceFinalizationService::getFinalizationGate
         );
     }
 
@@ -120,7 +124,8 @@ public class DemoEvidenceBundleService {
             Supplier<DemoHandoffPackageArchiveSummaryVo> handoffPackageArchiveSummarySupplier,
             Supplier<DemoHandoffShareCenterVo> handoffShareCenterSupplier,
             Supplier<DemoHandoffFinalizationVo> handoffFinalizationSupplier,
-            Supplier<DemoLaunchEvidenceShareCenterVo> launchEvidenceShareCenterSupplier
+            Supplier<DemoLaunchEvidenceShareCenterVo> launchEvidenceShareCenterSupplier,
+            Supplier<DemoLaunchEvidenceFinalizationVo> launchEvidenceFinalizationSupplier
     ) {
         this.readinessSupplier = readinessSupplier;
         this.smokeChecklistSupplier = smokeChecklistSupplier;
@@ -137,6 +142,7 @@ public class DemoEvidenceBundleService {
         this.handoffShareCenterSupplier = handoffShareCenterSupplier;
         this.handoffFinalizationSupplier = handoffFinalizationSupplier;
         this.launchEvidenceShareCenterSupplier = launchEvidenceShareCenterSupplier;
+        this.launchEvidenceFinalizationSupplier = launchEvidenceFinalizationSupplier;
     }
 
     public DemoEvidenceBundleVo getEvidenceBundle() {
@@ -155,6 +161,7 @@ public class DemoEvidenceBundleService {
         DemoHandoffShareCenterVo handoffShareCenter = handoffShareCenterSupplier.get();
         DemoHandoffFinalizationVo handoffFinalization = handoffFinalizationSupplier.get();
         DemoLaunchEvidenceShareCenterVo launchEvidenceShareCenter = launchEvidenceShareCenterSupplier.get();
+        DemoLaunchEvidenceFinalizationVo launchEvidenceFinalization = launchEvidenceFinalizationSupplier.get();
 
         DemoAdapterFixtureEvidenceVo adapterFixtureEvidence = adapterFixtureEvidence(fixtures);
         DemoEvaluationRunReadinessEvidenceVo evaluationRunReadinessEvidence = evaluationRunReadinessEvidence(evaluationRunReadiness);
@@ -173,7 +180,8 @@ public class DemoEvidenceBundleService {
                 evaluationRunReadinessEvidence,
                 activeQuarantines.size(),
                 recentPullRequestUrl,
-                handoffFinalization
+                handoffFinalization,
+                launchEvidenceFinalization
         );
         DemoReadinessStatus status = aggregateStatus(
                 readiness,
@@ -181,7 +189,8 @@ public class DemoEvidenceBundleService {
                 adapterFixtureEvidence,
                 evaluationRunReadinessEvidence,
                 activeQuarantines.size(),
-                handoffFinalization
+                handoffFinalization,
+                launchEvidenceFinalization
         );
 
         return new DemoEvidenceBundleVo(
@@ -223,6 +232,13 @@ public class DemoEvidenceBundleService {
                 launchEvidenceShareCenter.latestSessionId(),
                 launchEvidenceShareCenter.latestPullRequestUrl(),
                 launchEvidenceShareCenter.downloadActions(),
+                launchEvidenceFinalization.status(),
+                launchEvidenceFinalization.finalized(),
+                launchEvidenceFinalization.summary(),
+                launchEvidenceFinalization.nextAction(),
+                launchEvidenceFinalization.deliveryReceiptFreshness(),
+                launchEvidenceFinalization.deliveryReceiptFresh(),
+                launchEvidenceFinalization.latestDeliveryReceiptId(),
                 handoffShareCenter.deliveryReceiptRecorded(),
                 handoffShareCenter.latestDeliveryReceiptId(),
                 handoffShareCenter.latestDeliveryTarget(),
@@ -274,12 +290,14 @@ public class DemoEvidenceBundleService {
             DemoAdapterFixtureEvidenceVo adapterFixtures,
             DemoEvaluationRunReadinessEvidenceVo evaluationRunReadiness,
             long activeQuarantineCount,
-            DemoHandoffFinalizationVo handoffFinalization
+            DemoHandoffFinalizationVo handoffFinalization,
+            DemoLaunchEvidenceFinalizationVo launchEvidenceFinalization
     ) {
         if (readiness.status() == DemoReadinessStatus.BLOCKED
                 || smokeChecklist.status() == DemoSmokeChecklistStatus.BLOCKED
                 || evaluationRunReadiness.status() == DemoReadinessStatus.BLOCKED
-                || handoffFinalization.status() == DemoReadinessStatus.BLOCKED) {
+                || handoffFinalization.status() == DemoReadinessStatus.BLOCKED
+                || launchEvidenceFinalization.status() == DemoReadinessStatus.BLOCKED) {
             return DemoReadinessStatus.BLOCKED;
         }
         if (readiness.status() == DemoReadinessStatus.NEEDS_ATTENTION
@@ -287,7 +305,8 @@ public class DemoEvidenceBundleService {
                 || adapterFixtures.failedCount() > 0
                 || evaluationRunReadiness.status() == DemoReadinessStatus.NEEDS_ATTENTION
                 || activeQuarantineCount > 0
-                || handoffFinalization.status() == DemoReadinessStatus.NEEDS_ATTENTION) {
+                || handoffFinalization.status() == DemoReadinessStatus.NEEDS_ATTENTION
+                || launchEvidenceFinalization.status() == DemoReadinessStatus.NEEDS_ATTENTION) {
             return DemoReadinessStatus.NEEDS_ATTENTION;
         }
         return DemoReadinessStatus.READY;
@@ -336,7 +355,8 @@ public class DemoEvidenceBundleService {
             DemoEvaluationRunReadinessEvidenceVo evaluationRunReadiness,
             long activeQuarantineCount,
             String recentPullRequestUrl,
-            DemoHandoffFinalizationVo handoffFinalization
+            DemoHandoffFinalizationVo handoffFinalization,
+            DemoLaunchEvidenceFinalizationVo launchEvidenceFinalization
     ) {
         List<String> actions = new ArrayList<>();
         actions.addAll(readiness.nextActions());
@@ -355,6 +375,9 @@ public class DemoEvidenceBundleService {
         }
         if (handoffFinalization.status() != DemoReadinessStatus.READY) {
             actions.add(handoffFinalization.nextAction());
+        }
+        if (launchEvidenceFinalization.status() != DemoReadinessStatus.READY) {
+            actions.add(launchEvidenceFinalization.nextAction());
         }
         List<String> distinctActions = actions.stream()
                 .filter(DemoEvidenceBundleService::hasText)
