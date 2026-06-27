@@ -1647,6 +1647,8 @@ const demoHandoffShareInstructions = {
   sendReady: true,
   summary: 'Share the current handoff package with repository maintainers and demo reviewers.',
   nextAction: 'Send the prepared handoff message with all required attachments.',
+  latestArchiveId: 'handoff-archive-1',
+  latestSessionId: 'demo-session-20260624T003000Z',
   recommendedRecipients: ['Repository owner or maintainer', 'Demo reviewer'],
   requiredAttachments: [
     'Handoff package archive handoff-archive-1',
@@ -1662,6 +1664,21 @@ const demoHandoffShareInstructions = {
   messageBody: 'The PatchPilot demo handoff package is ready to share.',
   markdownReport: '# PatchPilot Demo Handoff Share Instructions\n\n- Status: `READY`',
   generatedAt: '2026-06-24T05:45:00Z'
+};
+
+const demoHandoffShareDeliveryReceipt = {
+  id: 'delivery-receipt-1',
+  status: 'READY',
+  handoffArchiveId: 'handoff-archive-1',
+  sessionId: 'demo-session-20260624T003000Z',
+  deliveryChannel: 'email',
+  deliveryTarget: 'maintainer@example.com',
+  operator: 'local-operator',
+  notes: 'Sent after the demo review.',
+  messageSubject: 'PatchPilot demo handoff: demo-session-20260624T003000Z',
+  deliveredAt: '2026-06-24T06:05:00Z',
+  createdAt: '2026-06-24T06:10:00Z',
+  markdownReport: '# PatchPilot Demo Handoff Share Delivery Receipt\n\n- Status: `READY`'
 };
 
 beforeEach(() => {
@@ -1883,6 +1900,12 @@ beforeEach(() => {
     if (url === '/api/demo/handoff-share-instructions') {
       return jsonResponse(demoHandoffShareInstructions);
     }
+    if (url === '/api/demo/handoff-share-delivery-receipts' && init?.method === 'POST') {
+      return jsonResponse(demoHandoffShareDeliveryReceipt);
+    }
+    if (url === '/api/demo/handoff-share-delivery-receipts') {
+      return jsonResponse([demoHandoffShareDeliveryReceipt]);
+    }
     if (url === '/api/demo/handoff-package-archives/summary-report/download') {
       return Promise.resolve({
         ok: true,
@@ -1915,6 +1938,15 @@ beforeEach(() => {
         ok: true,
         status: 200,
         blob: async () => new Blob(['# PatchPilot Demo Handoff Share Instructions'], {
+          type: 'text/markdown;charset=UTF-8'
+        })
+      } as Response);
+    }
+    if (url === '/api/demo/handoff-share-delivery-receipts/delivery-receipt-1/report/download') {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        blob: async () => new Blob(['# PatchPilot Demo Handoff Share Delivery Receipt'], {
           type: 'text/markdown;charset=UTF-8'
         })
       } as Response);
@@ -2497,6 +2529,7 @@ test('renders operational task dashboard from backend APIs', async () => {
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/handoff-share-checklist'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/handoff-share-center'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/handoff-share-instructions'));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/handoff-share-delivery-receipts'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/script'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/readiness'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/github/credential-readiness'));
@@ -2521,7 +2554,10 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(within(sessionPanel).getByText('Download handoff package archive handoff-archive-1.')).toBeInTheDocument();
   expect(within(sessionPanel).getByRole('heading', { name: 'Handoff share instructions' })).toBeInTheDocument();
   expect(within(sessionPanel).getByText('Share the current handoff package with repository maintainers and demo reviewers.')).toBeInTheDocument();
-  expect(within(sessionPanel).getByText('PatchPilot demo handoff: demo-session-20260624T003000Z')).toBeInTheDocument();
+  expect(within(sessionPanel).getAllByText('PatchPilot demo handoff: demo-session-20260624T003000Z').length).toBeGreaterThanOrEqual(2);
+  expect(within(sessionPanel).getByRole('heading', { name: 'Handoff share delivery receipts' })).toBeInTheDocument();
+  expect(within(sessionPanel).getByText('delivery-receipt-1')).toBeInTheDocument();
+  expect(within(sessionPanel).getByText(/email - maintainer@example\.com/)).toBeInTheDocument();
   expect(within(sessionPanel).getByText('Readiness trend')).toBeInTheDocument();
   expect(within(sessionPanel).getByText('Improving')).toBeInTheDocument();
   expect(within(sessionPanel).getByText('+2 ready / -1 warning / -1 blocked')).toBeInTheDocument();
@@ -3230,6 +3266,58 @@ test('downloads handoff share instructions from the session snapshot panel', asy
   expect(click).toHaveBeenCalledTimes(1);
   expect(revokeObjectURL).toHaveBeenCalledWith('blob:demo-handoff-share-instructions');
   expect(within(sessionPanel).getByText('Handoff share instructions downloaded')).toBeInTheDocument();
+});
+
+test('records handoff share delivery receipt from the session snapshot panel', async () => {
+  const user = userEvent.setup();
+  const fetchMock = vi.mocked(fetch);
+
+  render(<App />);
+
+  const sessionPanel = await screen.findByRole('region', { name: 'Demo session snapshot' });
+  await user.clear(within(sessionPanel).getByLabelText('Delivery target'));
+  await user.type(within(sessionPanel).getByLabelText('Delivery target'), 'maintainer@example.com');
+  await user.clear(within(sessionPanel).getByLabelText('Operator'));
+  await user.type(within(sessionPanel).getByLabelText('Operator'), 'local-operator');
+  await user.clear(within(sessionPanel).getByLabelText('Notes'));
+  await user.type(within(sessionPanel).getByLabelText('Notes'), 'Sent after the demo review.');
+  await user.click(within(sessionPanel).getByRole('button', { name: 'Record handoff share delivery receipt' }));
+
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/handoff-share-delivery-receipts', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: expect.stringContaining('"deliveryTarget":"maintainer@example.com"')
+  }));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/handoff-share-delivery-receipts'));
+  expect(within(sessionPanel).getByText('Handoff share delivery receipt recorded')).toBeInTheDocument();
+});
+
+test('downloads handoff share delivery receipt from the session snapshot panel', async () => {
+  const user = userEvent.setup();
+  const fetchMock = vi.mocked(fetch);
+  const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+  const createObjectURL = vi.fn(() => 'blob:demo-handoff-share-delivery-receipt');
+  const revokeObjectURL = vi.fn();
+  vi.stubGlobal('URL', {
+    ...globalThis.URL,
+    createObjectURL,
+    revokeObjectURL
+  });
+
+  render(<App />);
+
+  const sessionPanel = await screen.findByRole('region', { name: 'Demo session snapshot' });
+  await user.click(within(sessionPanel).getByRole('button', {
+    name: 'Download handoff share delivery receipt delivery-receipt-1'
+  }));
+
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
+    '/api/demo/handoff-share-delivery-receipts/delivery-receipt-1/report/download'
+  ));
+  expect(createObjectURL).toHaveBeenCalledWith(expect.any(Blob));
+  expect(click).toHaveBeenCalledTimes(1);
+  expect(revokeObjectURL).toHaveBeenCalledWith('blob:demo-handoff-share-delivery-receipt');
+  expect(within(sessionPanel).getByText('Handoff share delivery receipt downloaded')).toBeInTheDocument();
 });
 
 test('creates a manual task from the dashboard and refreshes task data', async () => {

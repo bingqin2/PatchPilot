@@ -9,6 +9,7 @@ import {
   archiveEvaluationRunSnapshot,
   cancelTask,
   composeDemoLaunchCommand,
+  createDemoHandoffShareDeliveryReceipt,
   createTask,
   createTriggerQuarantine,
   downloadDemoSessionArchiveReport,
@@ -20,6 +21,7 @@ import {
   downloadDemoHandoffPackage,
   downloadDemoSessionReport,
   downloadDemoHandoffShareCenterReport,
+  downloadDemoHandoffShareDeliveryReceiptReport,
   downloadDemoHandoffShareInstructionsReport,
   downloadDemoHandoffShareChecklistReport,
   evaluateTrigger,
@@ -74,6 +76,7 @@ import {
   listLanguageAdapterRuntimeReadiness,
   listLanguageAdapters,
   listDemoHandoffPackageArchives,
+  listDemoHandoffShareDeliveryReceipts,
   listDemoSessionArchives,
   listDemoReadinessSnapshots,
   listQueueItems,
@@ -134,6 +137,8 @@ import type {
   DemoHandoffPackageArchive,
   DemoHandoffPackageArchiveSummary,
   DemoHandoffShareCenter,
+  DemoHandoffShareDeliveryReceipt,
+  DemoHandoffShareDeliveryReceiptInput,
   DemoHandoffShareInstructions,
   DemoHandoffShareChecklist,
   DemoLaunchCommand,
@@ -262,6 +267,10 @@ export default function App() {
   const [demoHandoffShareInstructions, setDemoHandoffShareInstructions] =
     useState<DemoHandoffShareInstructions | null>(null);
   const [demoHandoffShareInstructionsError, setDemoHandoffShareInstructionsError] = useState<string | null>(null);
+  const [demoHandoffShareDeliveryReceipts, setDemoHandoffShareDeliveryReceipts] =
+    useState<DemoHandoffShareDeliveryReceipt[]>([]);
+  const [demoHandoffShareDeliveryReceiptError, setDemoHandoffShareDeliveryReceiptError] =
+    useState<string | null>(null);
   const [demoScript, setDemoScript] = useState<DemoScript | null>(null);
   const [demoScriptError, setDemoScriptError] = useState<string | null>(null);
   const [demoSmokeChecklist, setDemoSmokeChecklist] = useState<DemoSmokeChecklist | null>(null);
@@ -590,6 +599,7 @@ export default function App() {
         demoHandoffShareChecklistResult,
         demoHandoffShareCenterResult,
         demoHandoffShareInstructionsResult,
+        demoHandoffShareDeliveryReceiptResult,
         demoScriptResult,
         demoReadinessResult,
         demoReadinessSnapshotResult,
@@ -678,6 +688,10 @@ export default function App() {
         getDemoHandoffShareInstructions().then(
           (instructions) => ({ instructions, error: null as string | null }),
           (caught) => ({ instructions: null, error: errorMessage(caught) })
+        ),
+        listDemoHandoffShareDeliveryReceipts().then(
+          (receipts) => ({ receipts, error: null as string | null }),
+          (caught) => ({ receipts: null, error: errorMessage(caught) })
         ),
         getDemoScript().then(
           (script) => ({ script, error: null as string | null }),
@@ -835,6 +849,10 @@ export default function App() {
         setDemoHandoffShareInstructions(demoHandoffShareInstructionsResult.instructions);
       }
       setDemoHandoffShareInstructionsError(demoHandoffShareInstructionsResult.error);
+      if (demoHandoffShareDeliveryReceiptResult.receipts) {
+        setDemoHandoffShareDeliveryReceipts(demoHandoffShareDeliveryReceiptResult.receipts);
+      }
+      setDemoHandoffShareDeliveryReceiptError(demoHandoffShareDeliveryReceiptResult.error);
       if (demoScriptResult.script) {
         setDemoScript(demoScriptResult.script);
       }
@@ -1103,6 +1121,24 @@ export default function App() {
   ), []);
   const handleDownloadDemoHandoffShareInstructionsReport = useCallback(() => (
     downloadDemoHandoffShareInstructionsReport()
+  ), []);
+  const handleCreateDemoHandoffShareDeliveryReceipt = useCallback(async (
+    input: DemoHandoffShareDeliveryReceiptInput
+  ) => {
+    const receipt = await createDemoHandoffShareDeliveryReceipt(input);
+    setDemoHandoffShareDeliveryReceipts((current) => [receipt, ...current.filter((item) => item.id !== receipt.id)].slice(0, 20));
+    setDemoHandoffShareDeliveryReceiptError(null);
+    try {
+      const receipts = await listDemoHandoffShareDeliveryReceipts();
+      setDemoHandoffShareDeliveryReceipts(receipts);
+      setDemoHandoffShareDeliveryReceiptError(null);
+    } catch (caught) {
+      setDemoHandoffShareDeliveryReceiptError(errorMessage(caught));
+    }
+    return receipt;
+  }, []);
+  const handleDownloadDemoHandoffShareDeliveryReceiptReport = useCallback((receiptId: string) => (
+    downloadDemoHandoffShareDeliveryReceiptReport(receiptId)
   ), []);
   const handleArchiveDemoSession = useCallback(async (input: DemoSessionReportInput) => {
     const archive = await archiveDemoSession(input);
@@ -1512,6 +1548,7 @@ export default function App() {
         handoffShareChecklist={demoHandoffShareChecklist}
         handoffShareCenter={demoHandoffShareCenter}
         handoffShareInstructions={demoHandoffShareInstructions}
+        handoffShareDeliveryReceipts={demoHandoffShareDeliveryReceipts}
         error={demoSessionSnapshotError}
         handoffReadinessError={demoHandoffReadinessError}
         archiveError={demoSessionArchiveError}
@@ -1520,6 +1557,7 @@ export default function App() {
         handoffShareChecklistError={demoHandoffShareChecklistError}
         handoffShareCenterError={demoHandoffShareCenterError}
         handoffShareInstructionsError={demoHandoffShareInstructionsError}
+        handoffShareDeliveryReceiptError={demoHandoffShareDeliveryReceiptError}
         onCopyReport={handleCopyDemoSessionReport}
         onDownloadReport={handleDownloadDemoSessionReport}
         onArchiveSession={handleArchiveDemoSession}
@@ -1531,6 +1569,8 @@ export default function App() {
         onDownloadHandoffPackageArchiveSummaryReport={handleDownloadDemoHandoffPackageArchiveSummaryReport}
         onDownloadHandoffShareCenterReport={handleDownloadDemoHandoffShareCenterReport}
         onDownloadHandoffShareInstructionsReport={handleDownloadDemoHandoffShareInstructionsReport}
+        onCreateHandoffShareDeliveryReceipt={handleCreateDemoHandoffShareDeliveryReceipt}
+        onDownloadHandoffShareDeliveryReceiptReport={handleDownloadDemoHandoffShareDeliveryReceiptReport}
         onDownloadHandoffShareChecklistReport={handleDownloadDemoHandoffShareChecklistReport}
       />
 

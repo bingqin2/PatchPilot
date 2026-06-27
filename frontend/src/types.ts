@@ -622,6 +622,8 @@ export interface DemoHandoffShareInstructions {
   sendReady: boolean;
   summary: string;
   nextAction: string;
+  latestArchiveId: string | null;
+  latestSessionId: string | null;
   recommendedRecipients: string[];
   requiredAttachments: string[];
   preSendChecks: string[];
@@ -629,6 +631,29 @@ export interface DemoHandoffShareInstructions {
   messageBody: string;
   markdownReport: string;
   generatedAt: string;
+}
+
+export interface DemoHandoffShareDeliveryReceipt {
+  id: string;
+  status: DemoReadinessStatus;
+  handoffArchiveId: string;
+  sessionId: string;
+  deliveryChannel: string;
+  deliveryTarget: string;
+  operator: string;
+  notes: string;
+  messageSubject: string;
+  deliveredAt: string;
+  createdAt: string;
+  markdownReport: string;
+}
+
+export interface DemoHandoffShareDeliveryReceiptInput {
+  deliveryChannel: string;
+  deliveryTarget: string;
+  operator: string;
+  notes: string;
+  deliveredAt: string;
 }
 
 export interface BackendHealth {

@@ -8,6 +8,8 @@ public record DemoHandoffShareInstructionsVo(
         boolean sendReady,
         String summary,
         String nextAction,
+        String latestArchiveId,
+        String latestSessionId,
         List<String> recommendedRecipients,
         List<String> requiredAttachments,
         List<String> preSendChecks,

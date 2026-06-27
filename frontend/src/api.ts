@@ -12,6 +12,8 @@ import type {
   DemoHandoffPackageArchive,
   DemoHandoffPackageArchiveSummary,
   DemoHandoffShareCenter,
+  DemoHandoffShareDeliveryReceipt,
+  DemoHandoffShareDeliveryReceiptInput,
   DemoHandoffShareInstructions,
   DemoHandoffShareChecklist,
   DemoLaunchCommand,
@@ -318,12 +320,26 @@ export async function getDemoHandoffShareInstructions(): Promise<DemoHandoffShar
   return getApi<DemoHandoffShareInstructions>('/api/demo/handoff-share-instructions');
 }
 
+export async function createDemoHandoffShareDeliveryReceipt(
+  input: DemoHandoffShareDeliveryReceiptInput
+): Promise<DemoHandoffShareDeliveryReceipt> {
+  return postApi<DemoHandoffShareDeliveryReceipt>('/api/demo/handoff-share-delivery-receipts', input);
+}
+
+export async function listDemoHandoffShareDeliveryReceipts(): Promise<DemoHandoffShareDeliveryReceipt[]> {
+  return getApi<DemoHandoffShareDeliveryReceipt[]>('/api/demo/handoff-share-delivery-receipts');
+}
+
 export async function downloadDemoHandoffShareCenterReport(): Promise<Blob> {
   return getBlobApi('/api/demo/handoff-share-center/report/download');
 }
 
 export async function downloadDemoHandoffShareInstructionsReport(): Promise<Blob> {
   return getBlobApi('/api/demo/handoff-share-instructions/report/download');
+}
+
+export async function downloadDemoHandoffShareDeliveryReceiptReport(receiptId: string): Promise<Blob> {
+  return getBlobApi(`/api/demo/handoff-share-delivery-receipts/${encodeURIComponent(receiptId)}/report/download`);
 }
 
 export async function downloadDemoHandoffPackageArchiveSummaryReport(): Promise<Blob> {

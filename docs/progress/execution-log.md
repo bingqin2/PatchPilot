@@ -4,6 +4,29 @@ This file records dated implementation progress, validation commands, and import
 
 ## 2026-06-27
 
+Implemented demo handoff share delivery receipts from `docs/plans/241-demo-handoff-share-delivery-receipts.md`.
+
+Changes:
+
+- Added persistent handoff share delivery receipt records with in-memory and MyBatis-backed repositories plus Flyway migration `V34__create_demo_handoff_share_delivery_receipt.sql`.
+- Added `POST /api/demo/handoff-share-delivery-receipts`, `GET /api/demo/handoff-share-delivery-receipts`, and per-receipt Markdown report downloads.
+- Rejected receipt creation until the current handoff share instructions are send-ready, and recorded protected admin audit evidence when a receipt is created.
+- Added frontend API helpers, App refresh wiring, a receipt form/list in the demo session snapshot, and per-receipt Markdown download actions.
+- Extended handoff share instructions with structured latest archive/session ids so receipts do not depend on parsing Markdown report text.
+- Updated README, product spec, architecture notes, frontend design docs, and this execution log.
+
+Validation so far:
+
+- `mvn -q -pl PatchPilot -Dtest=DemoHandoffShareDeliveryReceiptServiceTests,DemoReadinessControllerTests,InMemoryDemoHandoffShareDeliveryReceiptRepositoryTests,MyBatisDemoHandoffShareDeliveryReceiptRepositoryTests,DemoHandoffShareDeliveryReceiptMigrationTests test`: first failed because receipt VO, service, repositories, mapper, migration, and endpoints did not exist; passed after backend implementation and after the structured latest archive/session id cleanup.
+- `npm test -- --run src/api.test.ts src/dashboard/components/DemoSessionSnapshotPanel.test.tsx src/App.test.tsx --reporter=basic`: first failed because receipt API helpers and session snapshot UI did not exist; then failed on duplicate subject text and combined `email - target` rendering assertions; passed after frontend implementation and assertion alignment, 190 tests run, 0 failures.
+
+Final validation:
+
+- `mvn -q -pl PatchPilot test`: passed.
+- `npm test -- --reporter=dot`: passed, 26 test files and 312 tests run.
+- `npm run build`: passed after TypeScript and production Vite build verification.
+- `git diff --check`: passed.
+
 Implemented demo handoff share instructions from `docs/plans/240-demo-handoff-share-instructions.md`.
 
 Changes:

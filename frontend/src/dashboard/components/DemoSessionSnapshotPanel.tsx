@@ -1,5 +1,5 @@
 import { Archive, Copy, Download } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import type {
   DemoArchivedLaunchOutcome,
   DemoHandoffReadiness,
@@ -8,6 +8,8 @@ import type {
   DemoHandoffPackageArchiveSummary,
   DemoHandoffPackageArchiveSummaryStatus,
   DemoHandoffShareCenter,
+  DemoHandoffShareDeliveryReceipt,
+  DemoHandoffShareDeliveryReceiptInput,
   DemoHandoffShareInstructions,
   DemoHandoffShareChecklist,
   DemoPreparedLaunchCommand,
@@ -30,6 +32,7 @@ interface DemoSessionSnapshotPanelProps {
   handoffShareChecklist?: DemoHandoffShareChecklist | null;
   handoffShareCenter?: DemoHandoffShareCenter | null;
   handoffShareInstructions?: DemoHandoffShareInstructions | null;
+  handoffShareDeliveryReceipts?: DemoHandoffShareDeliveryReceipt[];
   error: string | null;
   handoffReadinessError?: string | null;
   archiveError: string | null;
@@ -38,6 +41,7 @@ interface DemoSessionSnapshotPanelProps {
   handoffShareChecklistError?: string | null;
   handoffShareCenterError?: string | null;
   handoffShareInstructionsError?: string | null;
+  handoffShareDeliveryReceiptError?: string | null;
   onCopyReport: (input: DemoSessionReportInput) => Promise<string>;
   onDownloadReport: (input: DemoSessionReportInput) => Promise<Blob>;
   onArchiveSession: (input: DemoSessionReportInput) => Promise<DemoSessionArchive>;
@@ -49,6 +53,10 @@ interface DemoSessionSnapshotPanelProps {
   onDownloadHandoffPackageArchiveSummaryReport: () => Promise<Blob>;
   onDownloadHandoffShareCenterReport: () => Promise<Blob>;
   onDownloadHandoffShareInstructionsReport: () => Promise<Blob>;
+  onCreateHandoffShareDeliveryReceipt?: (
+    input: DemoHandoffShareDeliveryReceiptInput
+  ) => Promise<DemoHandoffShareDeliveryReceipt>;
+  onDownloadHandoffShareDeliveryReceiptReport?: (receiptId: string) => Promise<Blob>;
   onDownloadHandoffShareChecklistReport: () => Promise<Blob>;
 }
 
@@ -63,6 +71,7 @@ export function DemoSessionSnapshotPanel({
   handoffShareChecklist = null,
   handoffShareCenter = null,
   handoffShareInstructions = null,
+  handoffShareDeliveryReceipts = [],
   error,
   handoffReadinessError = null,
   archiveError,
@@ -71,6 +80,7 @@ export function DemoSessionSnapshotPanel({
   handoffShareChecklistError = null,
   handoffShareCenterError = null,
   handoffShareInstructionsError = null,
+  handoffShareDeliveryReceiptError = null,
   onCopyReport,
   onDownloadReport,
   onArchiveSession,
@@ -82,11 +92,18 @@ export function DemoSessionSnapshotPanel({
   onDownloadHandoffPackageArchiveSummaryReport,
   onDownloadHandoffShareCenterReport,
   onDownloadHandoffShareInstructionsReport,
+  onCreateHandoffShareDeliveryReceipt = async () => {
+    throw new Error('Handoff share delivery receipt creation is unavailable.');
+  },
+  onDownloadHandoffShareDeliveryReceiptReport = async () => {
+    throw new Error('Handoff share delivery receipt download is unavailable.');
+  },
   onDownloadHandoffShareChecklistReport
 }: DemoSessionSnapshotPanelProps) {
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
   const [downloadStatus, setDownloadStatus] = useState<string | null>(null);
   const [archiveStatus, setArchiveStatus] = useState<string | null>(null);
+  const [receiptStatus, setReceiptStatus] = useState<string | null>(null);
   const scriptStepCount = snapshot?.script.steps.length ?? 0;
   const reportInput = { preparedLaunchCommands, archivedLaunchOutcomes };
 
@@ -258,6 +275,25 @@ export function DemoSessionSnapshotPanel({
     }
   }
 
+  async function createHandoffShareDeliveryReceipt(input: DemoHandoffShareDeliveryReceiptInput) {
+    try {
+      await onCreateHandoffShareDeliveryReceipt(input);
+      setReceiptStatus('Handoff share delivery receipt recorded');
+    } catch {
+      setReceiptStatus('Receipt recording failed');
+    }
+  }
+
+  async function downloadHandoffShareDeliveryReceipt(receiptId: string) {
+    try {
+      const report = await onDownloadHandoffShareDeliveryReceiptReport(receiptId);
+      downloadMarkdown(report, `patchpilot-demo-handoff-share-delivery-receipt-${receiptId}.md`);
+      setDownloadStatus('Handoff share delivery receipt downloaded');
+    } catch {
+      setDownloadStatus('Download failed');
+    }
+  }
+
   async function downloadHandoffPackageArchiveSummary() {
     try {
       const report = await onDownloadHandoffPackageArchiveSummaryReport();
@@ -365,6 +401,13 @@ export function DemoSessionSnapshotPanel({
         <div className="adapter-api-error">
           <strong>Demo handoff share instructions unavailable</strong>
           <span>{handoffShareInstructionsError}</span>
+        </div>
+      ) : null}
+
+      {handoffShareDeliveryReceiptError ? (
+        <div className="adapter-api-error">
+          <strong>Demo handoff share delivery receipts unavailable</strong>
+          <span>{handoffShareDeliveryReceiptError}</span>
         </div>
       ) : null}
 
@@ -494,6 +537,14 @@ export function DemoSessionSnapshotPanel({
             instructions={handoffShareInstructions}
             onCopyInstructions={copyHandoffShareInstructions}
             onDownloadInstructions={downloadHandoffShareInstructions}
+          />
+
+          <HandoffShareDeliveryReceiptPanel
+            receipts={handoffShareDeliveryReceipts}
+            instructions={handoffShareInstructions}
+            receiptStatus={receiptStatus}
+            onCreateReceipt={createHandoffShareDeliveryReceipt}
+            onDownloadReceipt={downloadHandoffShareDeliveryReceipt}
           />
 
           <HandoffShareChecklistPanel
@@ -717,6 +768,129 @@ function HandoffShareInstructionsPanel({
         <h3>Message template</h3>
         <p>{instructions.messageBody}</p>
       </div>
+    </div>
+  );
+}
+
+function HandoffShareDeliveryReceiptPanel({
+  receipts,
+  instructions,
+  receiptStatus,
+  onCreateReceipt,
+  onDownloadReceipt
+}: {
+  receipts: DemoHandoffShareDeliveryReceipt[];
+  instructions: DemoHandoffShareInstructions | null;
+  receiptStatus: string | null;
+  onCreateReceipt: (input: DemoHandoffShareDeliveryReceiptInput) => void | Promise<void>;
+  onDownloadReceipt: (receiptId: string) => void | Promise<void>;
+}) {
+  const [deliveryChannel, setDeliveryChannel] = useState('email');
+  const [deliveryTarget, setDeliveryTarget] = useState(instructions?.recommendedRecipients[0] ?? '');
+  const [deliveryTargetTouched, setDeliveryTargetTouched] = useState(false);
+  const [operator, setOperator] = useState('local-operator');
+  const [notes, setNotes] = useState('Sent after the demo review.');
+
+  useEffect(() => {
+    if (!deliveryTargetTouched && !deliveryTarget && instructions?.recommendedRecipients[0]) {
+      setDeliveryTarget(instructions.recommendedRecipients[0]);
+    }
+  }, [deliveryTarget, deliveryTargetTouched, instructions]);
+
+  async function submitReceipt(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await onCreateReceipt({
+      deliveryChannel: deliveryChannel.trim(),
+      deliveryTarget: deliveryTarget.trim(),
+      operator: operator.trim(),
+      notes: notes.trim(),
+      deliveredAt: new Date().toISOString()
+    });
+  }
+
+  return (
+    <div className="demo-session-archives">
+      <div className="demo-session-archive-title-row">
+        <h3>Handoff share delivery receipts</h3>
+        {receiptStatus ? <span className="manual-task-status">{receiptStatus}</span> : null}
+      </div>
+      <form className="manual-task-form demo-receipt-form" onSubmit={(event) => void submitReceipt(event)}>
+        <label htmlFor="handoff-share-delivery-channel">
+          Delivery channel
+          <input
+            id="handoff-share-delivery-channel"
+            value={deliveryChannel}
+            onChange={(event) => setDeliveryChannel(event.target.value)}
+            required
+          />
+        </label>
+        <label htmlFor="handoff-share-delivery-target">
+          Delivery target
+          <input
+            id="handoff-share-delivery-target"
+            value={deliveryTarget}
+            onChange={(event) => {
+              setDeliveryTargetTouched(true);
+              setDeliveryTarget(event.target.value);
+            }}
+            required
+          />
+        </label>
+        <label htmlFor="handoff-share-delivery-operator">
+          Operator
+          <input
+            id="handoff-share-delivery-operator"
+            value={operator}
+            onChange={(event) => setOperator(event.target.value)}
+            required
+          />
+        </label>
+        <label htmlFor="handoff-share-delivery-notes">
+          Notes
+          <input
+            id="handoff-share-delivery-notes"
+            value={notes}
+            onChange={(event) => setNotes(event.target.value)}
+            required
+          />
+        </label>
+        <button
+          className="secondary-button"
+          type="submit"
+          disabled={!instructions?.sendReady}
+          aria-label="Record handoff share delivery receipt"
+        >
+          <Archive size={14} />
+          Record receipt
+        </button>
+      </form>
+      {receipts.length ? (
+        <ul className="demo-session-archive-list">
+          {receipts.map((receipt) => (
+            <li key={receipt.id}>
+              <div>
+                <strong>{receipt.id}</strong>
+                <span>
+                  {receipt.deliveryChannel} - {receipt.deliveryTarget}
+                </span>
+                <small>{receipt.messageSubject}</small>
+                <time dateTime={receipt.deliveredAt}>{compactDateTime(receipt.deliveredAt)}</time>
+              </div>
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={() => void onDownloadReceipt(receipt.id)}
+                aria-label={`Download handoff share delivery receipt ${receipt.id}`}
+              >
+                <Download size={14} />
+                Download receipt
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="empty-state compact-empty-state">No handoff share delivery receipts recorded.</p>
+      )}
     </div>
   );
 }

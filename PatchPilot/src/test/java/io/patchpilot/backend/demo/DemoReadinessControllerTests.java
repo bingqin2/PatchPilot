@@ -18,6 +18,7 @@ import io.patchpilot.backend.demo.domain.DemoHandoffPackageArchiveSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffShareChecklistItemVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffShareChecklistVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffShareCenterVo;
+import io.patchpilot.backend.demo.domain.DemoHandoffShareDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffShareInstructionsVo;
 import io.patchpilot.backend.task.domain.vo.TriggerEvaluationDecisionVo;
 import io.patchpilot.backend.task.domain.vo.TriggerEvaluationResultVo;
@@ -93,6 +94,9 @@ class DemoReadinessControllerTests {
 
     @MockitoBean
     private DemoHandoffShareCenterService demoHandoffShareCenterService;
+
+    @MockitoBean
+    private DemoHandoffShareDeliveryReceiptService demoHandoffShareDeliveryReceiptService;
 
     @MockitoBean
     private DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
@@ -1213,6 +1217,8 @@ class DemoReadinessControllerTests {
                 true,
                 "Share the current handoff package with repository maintainers and demo reviewers.",
                 "Send the prepared handoff message with all required attachments.",
+                "handoff-archive-1",
+                "demo-session-20260624T003000Z",
                 List.of("Repository owner or maintainer", "Demo reviewer"),
                 List.of(
                         "Handoff package archive handoff-archive-1",
@@ -1249,6 +1255,8 @@ class DemoReadinessControllerTests {
                 true,
                 "Share the current handoff package with repository maintainers and demo reviewers.",
                 "Send the prepared handoff message with all required attachments.",
+                "handoff-archive-1",
+                "demo-session-20260624T003000Z",
                 List.of("Repository owner or maintainer"),
                 List.of("Handoff share center report"),
                 List.of("Confirm no handoff share checklist warnings remain."),
@@ -1265,6 +1273,148 @@ class DemoReadinessControllerTests {
                 .andExpect(content().contentTypeCompatibleWith("text/markdown"))
                 .andExpect(content().string(containsString("# PatchPilot Demo Handoff Share Instructions")))
                 .andExpect(content().string(containsString("`READY`")));
+    }
+
+    @Test
+    void should_record_demo_handoff_share_delivery_receipt() throws Exception {
+        when(demoHandoffShareDeliveryReceiptService.recordDeliveryReceipt(argThat(request ->
+                request.deliveryChannel().equals("email")
+                        && request.deliveryTarget().equals("maintainer@example.com")
+                        && request.operator().equals("local-operator")
+                        && request.notes().equals("Sent after the demo review.")
+                        && request.deliveredAt().equals(Instant.parse("2026-06-24T06:05:00Z"))
+        ))).thenReturn(new DemoHandoffShareDeliveryReceiptVo(
+                "delivery-receipt-1",
+                DemoReadinessStatus.READY,
+                "handoff-archive-1",
+                "demo-session-20260624T003000Z",
+                "email",
+                "maintainer@example.com",
+                "local-operator",
+                "Sent after the demo review.",
+                "PatchPilot demo handoff: demo-session-20260624T003000Z",
+                Instant.parse("2026-06-24T06:05:00Z"),
+                Instant.parse("2026-06-24T06:10:00Z"),
+                "# PatchPilot Demo Handoff Share Delivery Receipt\n\n- Status: `READY`"
+        ));
+
+        mockMvc.perform(post("/api/demo/handoff-share-delivery-receipts")
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "deliveryChannel": "email",
+                                  "deliveryTarget": "maintainer@example.com",
+                                  "operator": "local-operator",
+                                  "notes": "Sent after the demo review.",
+                                  "deliveredAt": "2026-06-24T06:05:00Z"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value("delivery-receipt-1"))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.handoffArchiveId").value("handoff-archive-1"))
+                .andExpect(jsonPath("$.data.sessionId").value("demo-session-20260624T003000Z"))
+                .andExpect(jsonPath("$.data.deliveryChannel").value("email"))
+                .andExpect(jsonPath("$.data.deliveryTarget").value("maintainer@example.com"))
+                .andExpect(jsonPath("$.data.operator").value("local-operator"))
+                .andExpect(jsonPath("$.data.messageSubject").value("PatchPilot demo handoff: demo-session-20260624T003000Z"))
+                .andExpect(jsonPath("$.data.markdownReport")
+                        .value(containsString("# PatchPilot Demo Handoff Share Delivery Receipt")));
+
+        verify(operatorSafetyAuditService).recordSafetyAudit(argThat(this::isDemoHandoffShareDeliveryReceiptAudit));
+    }
+
+    private boolean isDemoHandoffShareDeliveryReceiptAudit(RecordOperatorSafetyAuditCommand command) {
+        return command != null
+                && "DEMO_HANDOFF_SHARE_DELIVERY_RECEIPT_RECORDED".equals(command.action())
+                && "DEMO_HANDOFF_SHARE_DELIVERY_RECEIPT".equals(command.resourceType())
+                && "delivery-receipt-1".equals(command.resourceId())
+                && command.scope() == TriggerQuarantineScope.REPOSITORY
+                && "patchpilot/local-demo".equals(command.scopeKey())
+                && "local-operator".equals(command.operator())
+                && "Recorded demo handoff share delivery receipt for handoff-archive-1".equals(command.reason());
+    }
+
+    @Test
+    void should_reject_demo_handoff_share_delivery_receipt_when_not_send_ready() throws Exception {
+        when(demoHandoffShareDeliveryReceiptService.recordDeliveryReceipt(any(DemoHandoffShareDeliveryReceiptRequestDto.class)))
+                .thenThrow(new IllegalStateException("handoff share instructions are not send-ready"));
+
+        mockMvc.perform(post("/api/demo/handoff-share-delivery-receipts")
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "deliveryChannel": "email",
+                                  "deliveryTarget": "maintainer@example.com",
+                                  "operator": "local-operator",
+                                  "notes": "Sent after the demo review.",
+                                  "deliveredAt": "2026-06-24T06:05:00Z"
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("handoff share instructions are not send-ready"));
+    }
+
+    @Test
+    void should_return_recent_demo_handoff_share_delivery_receipts() throws Exception {
+        when(demoHandoffShareDeliveryReceiptService.listRecentReceipts()).thenReturn(List.of(new DemoHandoffShareDeliveryReceiptVo(
+                "delivery-receipt-1",
+                DemoReadinessStatus.READY,
+                "handoff-archive-1",
+                "demo-session-20260624T003000Z",
+                "email",
+                "maintainer@example.com",
+                "local-operator",
+                "Sent after the demo review.",
+                "PatchPilot demo handoff: demo-session-20260624T003000Z",
+                Instant.parse("2026-06-24T06:05:00Z"),
+                Instant.parse("2026-06-24T06:10:00Z"),
+                "# PatchPilot Demo Handoff Share Delivery Receipt\n\n- Status: `READY`"
+        )));
+
+        mockMvc.perform(get("/api/demo/handoff-share-delivery-receipts"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].id").value("delivery-receipt-1"))
+                .andExpect(jsonPath("$.data[0].handoffArchiveId").value("handoff-archive-1"))
+                .andExpect(jsonPath("$.data[0].deliveryChannel").value("email"))
+                .andExpect(jsonPath("$.data[0].deliveryTarget").value("maintainer@example.com"));
+    }
+
+    @Test
+    void should_download_demo_handoff_share_delivery_receipt_as_markdown_attachment() throws Exception {
+        when(demoHandoffShareDeliveryReceiptService.findReceipt("delivery-receipt-1")).thenReturn(Optional.of(new DemoHandoffShareDeliveryReceiptVo(
+                "delivery-receipt-1",
+                DemoReadinessStatus.READY,
+                "handoff-archive-1",
+                "demo-session-20260624T003000Z",
+                "email",
+                "maintainer@example.com",
+                "local-operator",
+                "Sent after the demo review.",
+                "PatchPilot demo handoff: demo-session-20260624T003000Z",
+                Instant.parse("2026-06-24T06:05:00Z"),
+                Instant.parse("2026-06-24T06:10:00Z"),
+                "# PatchPilot Demo Handoff Share Delivery Receipt\n\n- Status: `READY`"
+        )));
+
+        mockMvc.perform(get("/api/demo/handoff-share-delivery-receipts/delivery-receipt-1/report/download"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("attachment;")))
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("patchpilot-demo-handoff-share-delivery-receipt-delivery-receipt-1.md")))
+                .andExpect(content().contentTypeCompatibleWith("text/markdown"))
+                .andExpect(content().string(containsString("# PatchPilot Demo Handoff Share Delivery Receipt")))
+                .andExpect(content().string(containsString("`READY`")));
+    }
+
+    @Test
+    void should_return_not_found_when_demo_handoff_share_delivery_receipt_is_missing() throws Exception {
+        when(demoHandoffShareDeliveryReceiptService.findReceipt("missing-receipt")).thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/api/demo/handoff-share-delivery-receipts/missing-receipt/report/download"))
+                .andExpect(status().isNotFound());
     }
 
     @Test
