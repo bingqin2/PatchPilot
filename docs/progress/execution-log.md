@@ -4,6 +4,28 @@ This file records dated implementation progress, validation commands, and import
 
 ## 2026-06-27
 
+Implemented handoff share checklist from `docs/plans/236-handoff-share-checklist.md`.
+
+Changes:
+
+- Added a read-only `GET /api/demo/handoff-share-checklist` endpoint that converts the latest handoff package archive summary into explicit share-readiness checks.
+- Added backend share-checklist records and a service that returns `READY`, `NEEDS_ATTENTION`, or `BLOCKED` with check rows, next action, generated time, and Markdown evidence.
+- Added a frontend API helper, App refresh wiring, and post-archive refresh for the handoff share checklist.
+- Rendered the checklist in the demo session snapshot panel with a `Copy checklist` action.
+- Updated README, architecture notes, frontend design docs, and this execution log.
+
+Validation so far:
+
+- `mvn -q -pl PatchPilot -Dtest=DemoHandoffShareChecklistServiceTests,DemoReadinessControllerTests test`: first failed because `DemoHandoffShareChecklist*` records and service did not exist; then passed after backend implementation.
+- `npm test -- --run src/api.test.ts src/dashboard/components/DemoSessionSnapshotPanel.test.tsx src/App.test.tsx --reporter=basic`: first failed because the API helper, panel section, and copy action did not exist; then passed after frontend integration, 171 tests run, 0 failures.
+
+Final validation:
+
+- `mvn -pl PatchPilot test`: passed, 808 tests run, 0 failures.
+- `npm test -- --reporter=basic`: passed, 26 test files and 293 tests run.
+- `npm run build`: passed after TypeScript and production Vite build verification.
+- `git diff --check`: passed.
+
 Implemented handoff archive summary evidence actions from `docs/plans/235-handoff-archive-summary-evidence-actions.md`.
 
 Changes:

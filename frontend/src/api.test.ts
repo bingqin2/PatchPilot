@@ -28,6 +28,7 @@ import {
   getDemoHandoffPackage,
   getDemoHandoffReadiness,
   getDemoHandoffPackageArchiveSummary,
+  getDemoHandoffShareChecklist,
   downloadDemoSessionReport,
   downloadDemoHandoffPackage,
   downloadDemoHandoffPackageArchiveSummaryReport,
@@ -1320,6 +1321,40 @@ test('gets demo handoff package archive summary through backend API', async () =
   expect(summary.shareReady).toBe(true);
   expect(summary.latestArchiveId).toBe('handoff-archive-1');
   expect(summary.nextAction).toBe('No missing handoff evidence.');
+});
+
+test('gets demo handoff share checklist through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        status: 'READY',
+        summary: 'Latest handoff archive is ready to share.',
+        nextAction: 'Share the latest handoff package summary and archived package with the reviewer.',
+        checks: [
+          {
+            name: 'Handoff package archive',
+            status: 'READY',
+            summary: '1 archived handoff package is available.',
+            nextAction: 'Use archive handoff-archive-1 as the latest package.'
+          }
+        ],
+        markdownReport: '# PatchPilot Demo Handoff Share Checklist\n\n- Status: `READY`',
+        generatedAt: '2026-06-24T05:00:00Z'
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const checklist = await getDemoHandoffShareChecklist();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/handoff-share-checklist');
+  expect(checklist.status).toBe('READY');
+  expect(checklist.checks[0].name).toBe('Handoff package archive');
+  expect(checklist.markdownReport).toContain('# PatchPilot Demo Handoff Share Checklist');
 });
 
 test('downloads archived demo handoff package markdown from backend API', async () => {

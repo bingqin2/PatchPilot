@@ -580,6 +580,22 @@ export interface DemoHandoffPackageArchiveSummary {
   markdownReport: string;
 }
 
+export interface DemoHandoffShareChecklistItem {
+  name: string;
+  status: DemoReadinessStatus;
+  summary: string;
+  nextAction: string;
+}
+
+export interface DemoHandoffShareChecklist {
+  status: DemoReadinessStatus;
+  summary: string;
+  nextAction: string;
+  checks: DemoHandoffShareChecklistItem[];
+  markdownReport: string;
+  generatedAt: string;
+}
+
 export interface BackendHealth {
   status: string;
   service: string;

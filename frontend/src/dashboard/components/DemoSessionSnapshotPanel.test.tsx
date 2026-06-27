@@ -5,6 +5,7 @@ import type {
   DemoHandoffReadiness,
   DemoHandoffPackageArchive,
   DemoHandoffPackageArchiveSummary,
+  DemoHandoffShareChecklist,
   DemoPreparedLaunchCommand,
   DemoSessionArchive,
   DemoSessionSnapshot
@@ -182,6 +183,28 @@ const handoffPackageArchiveSummary: DemoHandoffPackageArchiveSummary = {
   markdownReport: '# PatchPilot Handoff Package Archive Summary\n\n- Status: `READY`'
 };
 
+const handoffShareChecklist: DemoHandoffShareChecklist = {
+  status: 'READY',
+  summary: 'Latest handoff archive is ready to share.',
+  nextAction: 'Share the latest handoff package summary and archived package with the reviewer.',
+  checks: [
+    {
+      name: 'Handoff package archive',
+      status: 'READY',
+      summary: '1 archived handoff package is available.',
+      nextAction: 'Use archive handoff-archive-1 as the latest package.'
+    },
+    {
+      name: 'Portable evidence',
+      status: 'READY',
+      summary: 'Markdown evidence is available for the latest handoff package.',
+      nextAction: 'Copy or download the handoff share checklist before handoff.'
+    }
+  ],
+  markdownReport: '# PatchPilot Demo Handoff Share Checklist\n\n- Status: `READY`',
+  generatedAt: '2026-06-24T05:00:00Z'
+};
+
 const preparedLaunchCommands: DemoPreparedLaunchCommand[] = [
   {
     triggerComment: '/agent fix replace docs/demo.md PatchPilot smoke test',
@@ -300,6 +323,7 @@ test('renders demo session snapshot summary, evidence, checklist, contract, and 
       archives={archives}
       handoffPackageArchives={handoffPackageArchives}
       handoffPackageArchiveSummary={handoffPackageArchiveSummary}
+      handoffShareChecklist={handoffShareChecklist}
       error={null}
       archiveError={null}
       handoffPackageArchiveError={null}
@@ -349,6 +373,9 @@ test('renders demo session snapshot summary, evidence, checklist, contract, and 
   expect(within(panel).getByText('archive-1')).toBeInTheDocument();
   expect(within(panel).getByRole('heading', { name: 'Recent handoff package archives' })).toBeInTheDocument();
   expect(within(panel).getByRole('heading', { name: 'Handoff package archive summary' })).toBeInTheDocument();
+  expect(within(panel).getByRole('heading', { name: 'Handoff share checklist' })).toBeInTheDocument();
+  expect(within(panel).getByText('Latest handoff archive is ready to share.')).toBeInTheDocument();
+  expect(within(panel).getByText('Portable evidence')).toBeInTheDocument();
   expect(within(panel).getByText('Share-ready')).toBeInTheDocument();
   expect(within(panel).getByText('Latest archived handoff package is READY and can be shared.')).toBeInTheDocument();
   expect(within(panel).getByText('1 archived package')).toBeInTheDocument();
@@ -666,6 +693,44 @@ test('copies demo handoff package archive summary markdown', async () => {
 
   expect(writeText).toHaveBeenCalledWith('# PatchPilot Handoff Package Archive Summary\n\n- Status: `READY`');
   expect(screen.getByText('Handoff archive summary copied')).toBeInTheDocument();
+});
+
+test('copies demo handoff share checklist markdown', async () => {
+  const writeText = vi.fn().mockResolvedValue(undefined);
+  Object.defineProperty(navigator, 'clipboard', {
+    configurable: true,
+    value: { writeText }
+  });
+
+  render(
+    <DemoSessionSnapshotPanel
+      snapshot={snapshot}
+      preparedLaunchCommands={preparedLaunchCommands}
+      archivedLaunchOutcomes={archivedLaunchOutcomes}
+      handoffReadiness={handoffReadiness}
+      archives={[]}
+      handoffPackageArchives={handoffPackageArchives}
+      handoffPackageArchiveSummary={handoffPackageArchiveSummary}
+      handoffShareChecklist={handoffShareChecklist}
+      error={null}
+      archiveError={null}
+      handoffPackageArchiveError={null}
+      onCopyReport={vi.fn()}
+      onDownloadReport={vi.fn()}
+      onArchiveSession={vi.fn()}
+      onCopyHandoffPackage={vi.fn()}
+      onDownloadHandoffPackage={vi.fn()}
+      onArchiveHandoffPackage={vi.fn()}
+      onDownloadArchiveReport={vi.fn()}
+      onDownloadHandoffPackageArchiveReport={vi.fn()}
+      onDownloadHandoffPackageArchiveSummaryReport={vi.fn()}
+    />
+  );
+
+  await userEvent.click(screen.getByRole('button', { name: 'Copy handoff share checklist' }));
+
+  expect(writeText).toHaveBeenCalledWith('# PatchPilot Demo Handoff Share Checklist\n\n- Status: `READY`');
+  expect(screen.getByText('Handoff share checklist copied')).toBeInTheDocument();
 });
 
 test('downloads demo handoff package archive summary markdown', async () => {

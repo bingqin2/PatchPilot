@@ -15,6 +15,8 @@ import io.patchpilot.backend.demo.domain.DemoHandoffReadinessCheckVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffReadinessVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffPackageArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffPackageArchiveSummaryVo;
+import io.patchpilot.backend.demo.domain.DemoHandoffShareChecklistItemVo;
+import io.patchpilot.backend.demo.domain.DemoHandoffShareChecklistVo;
 import io.patchpilot.backend.task.domain.vo.TriggerEvaluationDecisionVo;
 import io.patchpilot.backend.task.domain.vo.TriggerEvaluationResultVo;
 import io.patchpilot.backend.demo.domain.DemoScriptStepVo;
@@ -83,6 +85,9 @@ class DemoReadinessControllerTests {
 
     @MockitoBean
     private DemoHandoffPackageArchiveService demoHandoffPackageArchiveService;
+
+    @MockitoBean
+    private DemoHandoffShareChecklistService demoHandoffShareChecklistService;
 
     @MockitoBean
     private DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
@@ -1035,6 +1040,44 @@ class DemoReadinessControllerTests {
                 .andExpect(content().string(containsString("# PatchPilot Handoff Package Archive Summary")))
                 .andExpect(content().string(containsString("`READY`")))
                 .andExpect(content().string(containsString("`handoff-archive-1`")));
+    }
+
+    @Test
+    void should_return_demo_handoff_share_checklist() throws Exception {
+        when(demoHandoffShareChecklistService.getShareChecklist()).thenReturn(new DemoHandoffShareChecklistVo(
+                DemoReadinessStatus.READY,
+                "Latest handoff archive is ready to share.",
+                "Share the latest handoff package summary and archived package with the reviewer.",
+                List.of(
+                        new DemoHandoffShareChecklistItemVo(
+                                "Handoff package archive",
+                                DemoReadinessStatus.READY,
+                                "1 archived handoff package is available.",
+                                "Use archive handoff-archive-1 as the latest package."
+                        ),
+                        new DemoHandoffShareChecklistItemVo(
+                                "Portable evidence",
+                                DemoReadinessStatus.READY,
+                                "Markdown evidence is available for the latest handoff package.",
+                                "Copy or download the handoff share checklist before handoff."
+                        )
+                ),
+                "# PatchPilot Demo Handoff Share Checklist\n\n- Status: `READY`",
+                Instant.parse("2026-06-24T05:00:00Z")
+        ));
+
+        mockMvc.perform(get("/api/demo/handoff-share-checklist"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.summary").value("Latest handoff archive is ready to share."))
+                .andExpect(jsonPath("$.data.nextAction")
+                        .value("Share the latest handoff package summary and archived package with the reviewer."))
+                .andExpect(jsonPath("$.data.checks[0].name").value("Handoff package archive"))
+                .andExpect(jsonPath("$.data.checks[0].status").value("READY"))
+                .andExpect(jsonPath("$.data.checks[1].name").value("Portable evidence"))
+                .andExpect(jsonPath("$.data.markdownReport")
+                        .value(containsString("# PatchPilot Demo Handoff Share Checklist")));
     }
 
     @Test

@@ -5,6 +5,7 @@ import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffReadinessVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffPackageArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffPackageArchiveSummaryVo;
+import io.patchpilot.backend.demo.domain.DemoHandoffShareChecklistVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchCommandVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchPreflightVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessSnapshotArchiveVo;
@@ -47,6 +48,7 @@ public class DemoReadinessController {
     private final DemoSessionReportService demoSessionReportService;
     private final DemoSessionArchiveService demoSessionArchiveService;
     private final DemoHandoffPackageArchiveService demoHandoffPackageArchiveService;
+    private final DemoHandoffShareChecklistService demoHandoffShareChecklistService;
     private final DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
     private final DemoReadinessSnapshotTrendService demoReadinessSnapshotTrendService;
     private final DemoLaunchPreflightService demoLaunchPreflightService;
@@ -215,6 +217,11 @@ public class DemoReadinessController {
     @GetMapping("/handoff-package-archives/summary")
     public ApiResponse<DemoHandoffPackageArchiveSummaryVo> getHandoffPackageArchiveSummary() {
         return ApiResponse.ok(demoHandoffPackageArchiveService.getArchiveSummary());
+    }
+
+    @GetMapping("/handoff-share-checklist")
+    public ApiResponse<DemoHandoffShareChecklistVo> getHandoffShareChecklist() {
+        return ApiResponse.ok(demoHandoffShareChecklistService.getShareChecklist());
     }
 
     @GetMapping(value = "/handoff-package-archives/summary-report/download", produces = "text/markdown;charset=UTF-8")

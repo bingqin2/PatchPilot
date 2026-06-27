@@ -1591,6 +1591,28 @@ const demoHandoffPackageArchiveSummary = {
   markdownReport: '# PatchPilot Handoff Package Archive Summary\n\n- Status: `READY`'
 };
 
+const demoHandoffShareChecklist = {
+  status: 'READY',
+  summary: 'Latest handoff archive is ready to share.',
+  nextAction: 'Share the latest handoff package summary and archived package with the reviewer.',
+  checks: [
+    {
+      name: 'Handoff package archive',
+      status: 'READY',
+      summary: '1 archived handoff package is available.',
+      nextAction: 'Use archive handoff-archive-1 as the latest package.'
+    },
+    {
+      name: 'Portable evidence',
+      status: 'READY',
+      summary: 'Markdown evidence is available for the latest handoff package.',
+      nextAction: 'Copy or download the handoff share checklist before handoff.'
+    }
+  ],
+  markdownReport: '# PatchPilot Demo Handoff Share Checklist\n\n- Status: `READY`',
+  generatedAt: '2026-06-24T05:00:00Z'
+};
+
 beforeEach(() => {
   let manualTaskCreated = false;
   vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -1800,6 +1822,9 @@ beforeEach(() => {
     }
     if (url === '/api/demo/handoff-package-archives/summary') {
       return jsonResponse(demoHandoffPackageArchiveSummary);
+    }
+    if (url === '/api/demo/handoff-share-checklist') {
+      return jsonResponse(demoHandoffShareChecklist);
     }
     if (url === '/api/demo/handoff-package-archives/summary-report/download') {
       return Promise.resolve({
@@ -2385,6 +2410,7 @@ test('renders operational task dashboard from backend APIs', async () => {
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/evidence-bundle'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/session-snapshot'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/handoff-package-archives/summary'));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/handoff-share-checklist'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/script'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/readiness'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/github/credential-readiness'));
@@ -2409,6 +2435,8 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(within(sessionPanel).getByText('+2 ready / -1 warning / -1 blocked')).toBeInTheDocument();
   expect(within(sessionPanel).getByRole('heading', { name: 'Handoff package archive summary' })).toBeInTheDocument();
   expect(within(sessionPanel).getByText('Latest archived handoff package is READY and can be shared.')).toBeInTheDocument();
+  expect(within(sessionPanel).getByRole('heading', { name: 'Handoff share checklist' })).toBeInTheDocument();
+  expect(within(sessionPanel).getByText('Latest handoff archive is ready to share.')).toBeInTheDocument();
   expect(screen.getByText('Tests run: 247, Failures: 0, Errors: 0')).toBeInTheDocument();
   expect(screen.getByText('replace')).toBeInTheDocument();
   expect(screen.getAllByText('gpt-5.5')).toHaveLength(2);
@@ -3011,6 +3039,7 @@ test('archives demo handoff package from the session snapshot panel', async () =
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ preparedLaunchCommands: [], archivedLaunchOutcomes: [] })
   }));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/handoff-share-checklist'));
   expect(within(sessionPanel).getByText('Demo handoff package archived')).toBeInTheDocument();
   expect(within(sessionPanel).getByText('handoff-archive-1')).toBeInTheDocument();
 });
