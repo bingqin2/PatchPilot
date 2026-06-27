@@ -100,6 +100,10 @@ class DemoEvidenceBundleServiceTests {
         assertThat(bundle.handoffShareLatestDeliveryTarget()).isNull();
         assertThat(bundle.handoffShareLatestDeliveryChannel()).isNull();
         assertThat(bundle.handoffShareLatestDeliveredAt()).isNull();
+        assertThat(bundle.handoffShareDeliveryReceiptFreshness()).isEqualTo("MISSING");
+        assertThat(bundle.handoffShareDeliveryReceiptFresh()).isFalse();
+        assertThat(bundle.handoffShareDeliveryReceiptFreshnessSummary())
+                .isEqualTo("No delivery receipt has been recorded for the current handoff package.");
         assertThat(bundle.nextActions()).containsExactly(
                 "Fix failing adapter fixtures before a live demo.",
                 "Inspect active trigger quarantines before a live demo."
@@ -140,6 +144,10 @@ class DemoEvidenceBundleServiceTests {
         assertThat(bundle.handoffShareLatestDeliveryTarget()).isEqualTo("Demo reviewer");
         assertThat(bundle.handoffShareLatestDeliveryChannel()).isEqualTo("email");
         assertThat(bundle.handoffShareLatestDeliveredAt()).isEqualTo("2026-06-24T05:20:00Z");
+        assertThat(bundle.handoffShareDeliveryReceiptFreshness()).isEqualTo("FRESH");
+        assertThat(bundle.handoffShareDeliveryReceiptFresh()).isTrue();
+        assertThat(bundle.handoffShareDeliveryReceiptFreshnessSummary())
+                .isEqualTo("Latest delivery receipt matches the current handoff archive and session.");
         assertThat(bundle.nextActions()).containsExactly("Use this evidence bundle as the live demo baseline.");
     }
 
@@ -351,6 +359,9 @@ class DemoEvidenceBundleServiceTests {
                 null,
                 null,
                 false,
+                "MISSING",
+                false,
+                "No delivery receipt has been recorded for the current handoff package.",
                 List.of(
                         "Download handoff package archive handoff-archive-1.",
                         "Download handoff package archive summary.",
@@ -377,6 +388,9 @@ class DemoEvidenceBundleServiceTests {
                 "email",
                 "2026-06-24T05:20:00Z",
                 true,
+                "FRESH",
+                true,
+                "Latest delivery receipt matches the current handoff archive and session.",
                 List.of(
                         "Download handoff package archive handoff-archive-1.",
                         "Download handoff package archive summary.",

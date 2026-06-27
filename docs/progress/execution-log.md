@@ -4,6 +4,26 @@ This file records dated implementation progress, validation commands, and import
 
 ## 2026-06-27
 
+Implemented demo handoff delivery freshness gate from `docs/plans/243-demo-handoff-delivery-freshness-gate.md`.
+
+Changes:
+
+- Added `MISSING`, `FRESH`, and `STALE` delivery receipt freshness fields to the handoff share center and top-level demo evidence bundle.
+- Treated a receipt as fresh only when its archive id and session id match the current latest handoff package archive summary.
+- Updated stale receipt next actions, download actions, evidence notes, and Markdown report fields so historical receipts are not mistaken for current delivery evidence.
+- Rendered receipt freshness in the demo evidence bundle panel and handoff share center panel.
+- Updated README, product spec, architecture notes, frontend design docs, and this execution log.
+
+Validation:
+
+- `mvn -q -pl PatchPilot -Dtest=DemoHandoffShareCenterServiceTests,DemoEvidenceBundleServiceTests test`: first failed because freshness accessors, constructor fields, and stale receipt behavior did not exist.
+- `npm test -- --run src/dashboard/components/DemoEvidenceBundlePanel.test.tsx src/dashboard/components/DemoSessionSnapshotPanel.test.tsx --reporter=basic`: first failed because `Fresh` was not rendered in either panel; passed after frontend implementation, 23 tests run, 0 failures.
+- `mvn -q -pl PatchPilot -Dtest=DemoHandoffShareCenterServiceTests,DemoEvidenceBundleServiceTests,DemoReadinessControllerTests test`: passed after backend implementation and API contract updates.
+- `mvn -q -pl PatchPilot test`: passed.
+- `npm test -- --reporter=dot`: passed, 26 test files and 312 tests run.
+- `npm run build`: passed after TypeScript and production Vite build verification.
+- `git diff --check`: passed.
+
 Implemented demo handoff delivery evidence summary from `docs/plans/242-demo-handoff-delivery-evidence-summary.md`.
 
 Changes:

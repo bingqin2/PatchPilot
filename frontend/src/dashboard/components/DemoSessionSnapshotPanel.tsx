@@ -672,7 +672,9 @@ function HandoffShareCenterPanel({
         </div>
         <div>
           <span>Latest delivery</span>
-          <strong>{center.deliveryReceiptRecorded ? center.latestDeliveryReceiptId : 'No receipt'}</strong>
+          <strong>{deliveryFreshnessLabel(center.deliveryReceiptFreshness)}</strong>
+          <small>{center.deliveryReceiptFreshnessSummary}</small>
+          <small>{center.deliveryReceiptRecorded ? center.latestDeliveryReceiptId : 'No receipt'}</small>
           <small>
             {center.deliveryReceiptRecorded
               ? `${center.latestDeliveryChannel} - ${center.latestDeliveryTarget}`
@@ -1143,6 +1145,19 @@ function statusLabel(status: DemoReadinessStatus) {
       return 'Needs attention';
     case 'BLOCKED':
       return 'Blocked';
+  }
+}
+
+function deliveryFreshnessLabel(freshness: string) {
+  switch (freshness) {
+    case 'FRESH':
+      return 'Fresh';
+    case 'STALE':
+      return 'Stale';
+    case 'MISSING':
+      return 'Missing';
+    default:
+      return freshness;
   }
 }
 
