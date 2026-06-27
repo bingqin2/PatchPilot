@@ -565,6 +565,21 @@ export interface DemoHandoffPackageArchive extends DemoSessionArchive {
   handoffBlockedCheckCount: number;
 }
 
+export type DemoHandoffPackageArchiveSummaryStatus = 'NO_ARCHIVE' | DemoReadinessStatus;
+
+export interface DemoHandoffPackageArchiveSummary {
+  status: DemoHandoffPackageArchiveSummaryStatus;
+  shareReady: boolean;
+  archiveCount: number;
+  latestArchiveId: string | null;
+  latestSessionId: string | null;
+  latestHandoffReadinessStatus: DemoReadinessStatus | null;
+  latestCreatedAt: string | null;
+  summary: string;
+  nextAction: string;
+  markdownReport: string;
+}
+
 export interface BackendHealth {
   status: string;
   service: string;

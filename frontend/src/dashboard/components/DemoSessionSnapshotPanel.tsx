@@ -5,6 +5,8 @@ import type {
   DemoHandoffReadiness,
   DemoHandoffReadinessCheck,
   DemoHandoffPackageArchive,
+  DemoHandoffPackageArchiveSummary,
+  DemoHandoffPackageArchiveSummaryStatus,
   DemoPreparedLaunchCommand,
   DemoReadinessSnapshotTrendStatus,
   DemoReadinessStatus,
@@ -21,10 +23,12 @@ interface DemoSessionSnapshotPanelProps {
   handoffReadiness: DemoHandoffReadiness | null;
   archives: DemoSessionArchive[];
   handoffPackageArchives: DemoHandoffPackageArchive[];
+  handoffPackageArchiveSummary?: DemoHandoffPackageArchiveSummary | null;
   error: string | null;
   handoffReadinessError?: string | null;
   archiveError: string | null;
   handoffPackageArchiveError: string | null;
+  handoffPackageArchiveSummaryError?: string | null;
   onCopyReport: (input: DemoSessionReportInput) => Promise<string>;
   onDownloadReport: (input: DemoSessionReportInput) => Promise<Blob>;
   onArchiveSession: (input: DemoSessionReportInput) => Promise<DemoSessionArchive>;
@@ -42,10 +46,12 @@ export function DemoSessionSnapshotPanel({
   handoffReadiness,
   archives,
   handoffPackageArchives,
+  handoffPackageArchiveSummary = null,
   error,
   handoffReadinessError = null,
   archiveError,
   handoffPackageArchiveError,
+  handoffPackageArchiveSummaryError = null,
   onCopyReport,
   onDownloadReport,
   onArchiveSession,
@@ -235,6 +241,13 @@ export function DemoSessionSnapshotPanel({
         </div>
       ) : null}
 
+      {handoffPackageArchiveSummaryError ? (
+        <div className="adapter-api-error">
+          <strong>Demo handoff package archive summary unavailable</strong>
+          <span>{handoffPackageArchiveSummaryError}</span>
+        </div>
+      ) : null}
+
       {snapshot ? (
         <>
           <div className="demo-session-summary">
@@ -346,6 +359,8 @@ export function DemoSessionSnapshotPanel({
             )}
           </div>
 
+          <HandoffPackageArchiveSummaryPanel summary={handoffPackageArchiveSummary} />
+
           <div className="demo-session-archives">
             <h3>Recent handoff package archives</h3>
             {handoffPackageArchives.length ? (
@@ -421,6 +436,41 @@ function HandoffReadinessCheckList({ checks }: { checks: DemoHandoffReadinessChe
       ) : (
         <p className="empty-state compact-empty-state">No handoff readiness checks recorded.</p>
       )}
+    </div>
+  );
+}
+
+function HandoffPackageArchiveSummaryPanel({ summary }: { summary: DemoHandoffPackageArchiveSummary | null }) {
+  if (!summary) {
+    return null;
+  }
+
+  return (
+    <div className="demo-session-archives">
+      <h3>Handoff package archive summary</h3>
+      <div className="demo-session-summary">
+        <div>
+          <span>Archive status</span>
+          <strong>{summary.shareReady ? 'Share-ready' : archiveSummaryStatusLabel(summary.status)}</strong>
+          <small>{summary.summary}</small>
+        </div>
+        <div>
+          <span>Archive evidence</span>
+          <strong>
+            {summary.archiveCount} {plural(summary.archiveCount, 'archived package')}
+          </strong>
+          <small>
+            {summary.latestArchiveId ? `Latest archive: ${summary.latestArchiveId}` : 'Latest archive: none'}
+          </small>
+        </div>
+        <div>
+          <span>Next action</span>
+          <strong>{summary.nextAction}</strong>
+          <small>
+            {summary.latestCreatedAt ? `Captured ${compactDateTime(summary.latestCreatedAt)}` : 'Capture a handoff package first'}
+          </small>
+        </div>
+      </div>
     </div>
   );
 }
@@ -526,6 +576,13 @@ function statusLabel(status: DemoReadinessStatus) {
 
 function statusClass(status: DemoReadinessStatus) {
   return status.toLowerCase().replace('_', '-');
+}
+
+function archiveSummaryStatusLabel(status: DemoHandoffPackageArchiveSummaryStatus) {
+  if (status === 'NO_ARCHIVE') {
+    return 'No archive';
+  }
+  return statusLabel(status);
 }
 
 function trendStatusLabel(status: DemoReadinessSnapshotTrendStatus) {
