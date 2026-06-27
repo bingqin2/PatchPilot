@@ -4,6 +4,30 @@ This file records dated implementation progress, validation commands, and import
 
 ## 2026-06-28
 
+Implemented evaluation readiness evidence bundle from `docs/plans/249-evaluation-readiness-evidence-bundle.md`.
+
+Changes:
+
+- Added compact full evaluation run readiness evidence to `GET /api/demo/evidence-bundle`.
+- Derived the evidence from archived full evaluation run readiness, including latest and previous run ids, pass/fail/skip deltas, coverage, safety rejection categories, side-effect contract, and next action.
+- Made demo evidence bundle status and next actions reflect missing or blocked full evaluation archive evidence.
+- Added full evaluation run readiness to demo runbook Markdown.
+- Added dashboard evidence-bundle rendering for latest evaluation run evidence, coverage, safety categories, and next action.
+- Updated README, product spec, frontend design notes, architecture notes, and this execution log.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=DemoEvidenceBundleServiceTests test`: first failed because the service constructor and bundle VO did not expose evaluation readiness; passed after backend aggregation implementation.
+- `mvn -pl PatchPilot -Dtest=DemoRunbookServiceTests test`: first failed because the runbook did not render full evaluation run readiness; passed after adding Markdown output.
+- `npm test -- --run src/dashboard/components/DemoEvidenceBundlePanel.test.tsx --reporter=basic`: first failed because the evidence bundle panel did not render full evaluation run readiness; passed after adding the card.
+- `mvn -pl PatchPilot -Dtest=DemoEvidenceBundleServiceTests,DemoRunbookServiceTests,DemoReadinessControllerTests test`: passed after targeted backend verification.
+- `npm test -- --run src/api.test.ts src/dashboard/components/DemoEvidenceBundlePanel.test.tsx src/App.test.tsx --reporter=basic`: passed after targeted frontend verification, 185 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed after full backend regression verification, 864 tests run, 0 failures.
+- `npm run build`: first failed because the demo session snapshot test fixture did not include the new evidence bundle field; passed after aligning the fixture with the typed API contract.
+- `npm test -- --run src/dashboard/components/DemoSessionSnapshotPanel.test.tsx src/api.test.ts src/dashboard/components/DemoEvidenceBundlePanel.test.tsx src/App.test.tsx --reporter=basic`: passed after fixture alignment, 205 tests run, 0 failures.
+- `npm test -- --reporter=dot`: passed after full frontend regression verification, 27 test files and 329 tests run.
+- `git diff --check`: passed.
+
 Implemented evaluation run readiness gate from `docs/plans/248-evaluation-run-readiness-gate.md`.
 
 Changes:

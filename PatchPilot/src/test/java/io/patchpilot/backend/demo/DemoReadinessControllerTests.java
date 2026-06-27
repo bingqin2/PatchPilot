@@ -5,6 +5,7 @@ import io.patchpilot.backend.demo.domain.DemoReadinessStatus;
 import io.patchpilot.backend.demo.domain.DemoReadinessVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
+import io.patchpilot.backend.demo.domain.DemoEvaluationRunReadinessEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoAdapterFixtureEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoSmokeChecklistStatus;
 import io.patchpilot.backend.demo.domain.DemoSmokeChecklistStepVo;
@@ -473,6 +474,19 @@ class DemoReadinessControllerTests {
                 ),
                 null,
                 new DemoAdapterFixtureEvidenceVo(2, 1),
+                new DemoEvaluationRunReadinessEvidenceVo(
+                        DemoReadinessStatus.READY,
+                        "evaluation-run-2",
+                        "evaluation-run-1",
+                        1,
+                        0,
+                        0,
+                        List.of("java", "python"),
+                        List.of("maven", "pytest"),
+                        List.of("DANGEROUS_REQUEST", "SECRET_EXFILTRATION"),
+                        "Evaluation run readiness summary reads archived full evaluation runs only; it does not create tasks, call the model, mutate Git, or write to GitHub.",
+                        "Full evaluation run archive is ready; use it as current demo evidence."
+                ),
                 new FixTaskQueueSummaryVo(1, 0, 0, 0, 0, 1, 0, 0),
                 null,
                 "https://github.com/bingqin2/PatchPilot/pull/42",
@@ -521,6 +535,16 @@ class DemoReadinessControllerTests {
                 .andExpect(jsonPath("$.data.summaryCounts.activeQuarantineCount").value(1))
                 .andExpect(jsonPath("$.data.recentPullRequestUrl").value("https://github.com/bingqin2/PatchPilot/pull/42"))
                 .andExpect(jsonPath("$.data.recentWebhookDeliveries").isArray())
+                .andExpect(jsonPath("$.data.evaluationRunReadiness.status").value("READY"))
+                .andExpect(jsonPath("$.data.evaluationRunReadiness.latestRunId").value("evaluation-run-2"))
+                .andExpect(jsonPath("$.data.evaluationRunReadiness.previousRunId").value("evaluation-run-1"))
+                .andExpect(jsonPath("$.data.evaluationRunReadiness.passedDelta").value(1))
+                .andExpect(jsonPath("$.data.evaluationRunReadiness.failedDelta").value(0))
+                .andExpect(jsonPath("$.data.evaluationRunReadiness.coveredLanguages[0]").value("java"))
+                .andExpect(jsonPath("$.data.evaluationRunReadiness.coveredBuildSystems[1]").value("pytest"))
+                .andExpect(jsonPath("$.data.evaluationRunReadiness.safetyRejectionCategories[0]").value("DANGEROUS_REQUEST"))
+                .andExpect(jsonPath("$.data.evaluationRunReadiness.nextAction")
+                        .value("Full evaluation run archive is ready; use it as current demo evidence."))
                 .andExpect(jsonPath("$.data.handoffShareChecklistStatus").value("READY"))
                 .andExpect(jsonPath("$.data.handoffShareChecklistSummary").value("Latest handoff archive is ready to share."))
                 .andExpect(jsonPath("$.data.handoffShareChecklistNextAction")

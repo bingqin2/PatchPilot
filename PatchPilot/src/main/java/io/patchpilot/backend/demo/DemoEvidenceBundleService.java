@@ -4,6 +4,7 @@ import io.patchpilot.backend.configuration.ConfigurationSummaryService;
 import io.patchpilot.backend.configuration.ConfigurationSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoAdapterFixtureEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleSummaryVo;
+import io.patchpilot.backend.demo.domain.DemoEvaluationRunReadinessEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffShareCenterVo;
@@ -12,6 +13,8 @@ import io.patchpilot.backend.demo.domain.DemoReadinessStatus;
 import io.patchpilot.backend.demo.domain.DemoReadinessVo;
 import io.patchpilot.backend.demo.domain.DemoSmokeChecklistStatus;
 import io.patchpilot.backend.demo.domain.DemoSmokeChecklistVo;
+import io.patchpilot.backend.evaluation.EvaluationRunArchiveReadinessSummaryService;
+import io.patchpilot.backend.evaluation.domain.EvaluationRunArchiveReadinessSummaryVo;
 import io.patchpilot.backend.github.credential.GitHubWebhookSetupReadinessService;
 import io.patchpilot.backend.github.credential.domain.GitHubWebhookSetupReadinessVo;
 import io.patchpilot.backend.github.webhook.domain.WebhookDeliveryDiagnosticVo;
@@ -49,6 +52,7 @@ public class DemoEvidenceBundleService {
     private final Supplier<GitHubWebhookSetupReadinessVo> webhookSetupReadinessSupplier;
     private final Supplier<RejectedTriggerAuditSummaryVo> rejectedTriggerSummarySupplier;
     private final Supplier<List<TriggerQuarantineVo>> activeQuarantinesSupplier;
+    private final Supplier<EvaluationRunArchiveReadinessSummaryVo> evaluationRunReadinessSupplier;
     private final Supplier<DemoHandoffPackageArchiveSummaryVo> handoffPackageArchiveSummarySupplier;
     private final Supplier<DemoHandoffShareCenterVo> handoffShareCenterSupplier;
     private final Supplier<DemoHandoffFinalizationVo> handoffFinalizationSupplier;
@@ -65,6 +69,7 @@ public class DemoEvidenceBundleService {
             GitHubWebhookSetupReadinessService gitHubWebhookSetupReadinessService,
             RejectedTriggerAuditService rejectedTriggerAuditService,
             TriggerQuarantineRecordService triggerQuarantineRecordService,
+            EvaluationRunArchiveReadinessSummaryService evaluationRunArchiveReadinessSummaryService,
             DemoHandoffPackageArchiveSummaryService demoHandoffPackageArchiveSummaryService,
             DemoHandoffShareCenterService demoHandoffShareCenterService,
             DemoHandoffFinalizationService demoHandoffFinalizationService
@@ -89,6 +94,7 @@ public class DemoEvidenceBundleService {
                 gitHubWebhookSetupReadinessService::getReadiness,
                 () -> rejectedTriggerAuditService.summarizeRejectedTriggers(100),
                 () -> triggerQuarantineRecordService.listQuarantines(true, 20),
+                evaluationRunArchiveReadinessSummaryService::getSummary,
                 demoHandoffPackageArchiveSummaryService::getArchiveSummary,
                 demoHandoffShareCenterService::getShareCenter,
                 demoHandoffFinalizationService::getFinalizationGate
@@ -106,6 +112,7 @@ public class DemoEvidenceBundleService {
             Supplier<GitHubWebhookSetupReadinessVo> webhookSetupReadinessSupplier,
             Supplier<RejectedTriggerAuditSummaryVo> rejectedTriggerSummarySupplier,
             Supplier<List<TriggerQuarantineVo>> activeQuarantinesSupplier,
+            Supplier<EvaluationRunArchiveReadinessSummaryVo> evaluationRunReadinessSupplier,
             Supplier<DemoHandoffPackageArchiveSummaryVo> handoffPackageArchiveSummarySupplier,
             Supplier<DemoHandoffShareCenterVo> handoffShareCenterSupplier,
             Supplier<DemoHandoffFinalizationVo> handoffFinalizationSupplier
@@ -120,6 +127,7 @@ public class DemoEvidenceBundleService {
         this.webhookSetupReadinessSupplier = webhookSetupReadinessSupplier;
         this.rejectedTriggerSummarySupplier = rejectedTriggerSummarySupplier;
         this.activeQuarantinesSupplier = activeQuarantinesSupplier;
+        this.evaluationRunReadinessSupplier = evaluationRunReadinessSupplier;
         this.handoffPackageArchiveSummarySupplier = handoffPackageArchiveSummarySupplier;
         this.handoffShareCenterSupplier = handoffShareCenterSupplier;
         this.handoffFinalizationSupplier = handoffFinalizationSupplier;
@@ -136,11 +144,13 @@ public class DemoEvidenceBundleService {
         GitHubWebhookSetupReadinessVo webhookSetupReadiness = webhookSetupReadinessSupplier.get();
         RejectedTriggerAuditSummaryVo rejectedTriggerSummary = rejectedTriggerSummarySupplier.get();
         List<TriggerQuarantineVo> activeQuarantines = activeQuarantinesSupplier.get();
+        EvaluationRunArchiveReadinessSummaryVo evaluationRunReadiness = evaluationRunReadinessSupplier.get();
         DemoHandoffPackageArchiveSummaryVo handoffPackageArchiveSummary = handoffPackageArchiveSummarySupplier.get();
         DemoHandoffShareCenterVo handoffShareCenter = handoffShareCenterSupplier.get();
         DemoHandoffFinalizationVo handoffFinalization = handoffFinalizationSupplier.get();
 
         DemoAdapterFixtureEvidenceVo adapterFixtureEvidence = adapterFixtureEvidence(fixtures);
+        DemoEvaluationRunReadinessEvidenceVo evaluationRunReadinessEvidence = evaluationRunReadinessEvidence(evaluationRunReadiness);
         FixTaskVo recentTask = recentTasks.isEmpty() ? null : recentTasks.get(0);
         String recentPullRequestUrl = recentTasks.stream()
                 .filter(task -> task.status() == FixTaskStatus.COMPLETED && hasText(task.pullRequestUrl()))
@@ -153,6 +163,7 @@ public class DemoEvidenceBundleService {
                 readiness,
                 smokeChecklist,
                 adapterFixtureEvidence,
+                evaluationRunReadinessEvidence,
                 activeQuarantines.size(),
                 recentPullRequestUrl,
                 handoffFinalization
@@ -161,6 +172,7 @@ public class DemoEvidenceBundleService {
                 readiness,
                 smokeChecklist,
                 adapterFixtureEvidence,
+                evaluationRunReadinessEvidence,
                 activeQuarantines.size(),
                 handoffFinalization
         );
@@ -179,6 +191,7 @@ public class DemoEvidenceBundleService {
                 smokeChecklist,
                 configuration,
                 adapterFixtureEvidence,
+                evaluationRunReadinessEvidence,
                 queueSummary,
                 recentTask,
                 recentPullRequestUrl,
@@ -214,6 +227,24 @@ public class DemoEvidenceBundleService {
         );
     }
 
+    private static DemoEvaluationRunReadinessEvidenceVo evaluationRunReadinessEvidence(
+            EvaluationRunArchiveReadinessSummaryVo summary
+    ) {
+        return new DemoEvaluationRunReadinessEvidenceVo(
+                evaluationReadinessStatus(summary.status()),
+                summary.latestRun() == null ? null : summary.latestRun().id(),
+                summary.previousRun() == null ? null : summary.previousRun().id(),
+                summary.passedDelta(),
+                summary.failedDelta(),
+                summary.skippedDelta(),
+                summary.coveredLanguages(),
+                summary.coveredBuildSystems(),
+                summary.safetyRejectionCategories(),
+                summary.sideEffectContract(),
+                summary.nextAction()
+        );
+    }
+
     private static DemoAdapterFixtureEvidenceVo adapterFixtureEvidence(List<LanguageAdapterFixtureVerificationVo> fixtures) {
         long failedCount = fixtures.stream()
                 .filter(fixture -> !"PASS".equals(fixture.status()))
@@ -225,17 +256,20 @@ public class DemoEvidenceBundleService {
             DemoReadinessVo readiness,
             DemoSmokeChecklistVo smokeChecklist,
             DemoAdapterFixtureEvidenceVo adapterFixtures,
+            DemoEvaluationRunReadinessEvidenceVo evaluationRunReadiness,
             long activeQuarantineCount,
             DemoHandoffFinalizationVo handoffFinalization
     ) {
         if (readiness.status() == DemoReadinessStatus.BLOCKED
                 || smokeChecklist.status() == DemoSmokeChecklistStatus.BLOCKED
+                || evaluationRunReadiness.status() == DemoReadinessStatus.BLOCKED
                 || handoffFinalization.status() == DemoReadinessStatus.BLOCKED) {
             return DemoReadinessStatus.BLOCKED;
         }
         if (readiness.status() == DemoReadinessStatus.NEEDS_ATTENTION
                 || smokeChecklist.status() == DemoSmokeChecklistStatus.NEEDS_ATTENTION
                 || adapterFixtures.failedCount() > 0
+                || evaluationRunReadiness.status() == DemoReadinessStatus.NEEDS_ATTENTION
                 || activeQuarantineCount > 0
                 || handoffFinalization.status() == DemoReadinessStatus.NEEDS_ATTENTION) {
             return DemoReadinessStatus.NEEDS_ATTENTION;
@@ -283,6 +317,7 @@ public class DemoEvidenceBundleService {
             DemoReadinessVo readiness,
             DemoSmokeChecklistVo smokeChecklist,
             DemoAdapterFixtureEvidenceVo adapterFixtures,
+            DemoEvaluationRunReadinessEvidenceVo evaluationRunReadiness,
             long activeQuarantineCount,
             String recentPullRequestUrl,
             DemoHandoffFinalizationVo handoffFinalization
@@ -292,6 +327,9 @@ public class DemoEvidenceBundleService {
         actions.addAll(smokeChecklist.nextActions());
         if (adapterFixtures.failedCount() > 0) {
             actions.add("Fix failing adapter fixtures before a live demo.");
+        }
+        if (evaluationRunReadiness.status() != DemoReadinessStatus.READY) {
+            actions.add(evaluationRunReadiness.nextAction());
         }
         if (activeQuarantineCount > 0) {
             actions.add("Inspect active trigger quarantines before a live demo.");
@@ -310,6 +348,14 @@ public class DemoEvidenceBundleService {
             return distinctActions;
         }
         return List.of("Use this evidence bundle as the live demo baseline.");
+    }
+
+    private static DemoReadinessStatus evaluationReadinessStatus(String status) {
+        return switch (status) {
+            case "READY" -> DemoReadinessStatus.READY;
+            case "BLOCKED" -> DemoReadinessStatus.BLOCKED;
+            default -> DemoReadinessStatus.NEEDS_ATTENTION;
+        };
     }
 
     private static boolean hasText(String value) {

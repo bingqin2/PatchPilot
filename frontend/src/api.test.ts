@@ -740,6 +740,19 @@ test('gets demo evidence bundle through backend API', async () => {
           totalCount: 12,
           failedCount: 0
         },
+        evaluationRunReadiness: {
+          status: 'READY',
+          latestRunId: 'evaluation-run-2',
+          previousRunId: 'evaluation-run-1',
+          passedDelta: 1,
+          failedDelta: 0,
+          skippedDelta: 0,
+          coveredLanguages: ['java', 'python'],
+          coveredBuildSystems: ['maven', 'pytest'],
+          safetyRejectionCategories: ['DANGEROUS_REQUEST', 'SECRET_EXFILTRATION'],
+          sideEffectContract: 'Evaluation run readiness summary reads archived full evaluation runs only; it does not create tasks, call the model, mutate Git, or write to GitHub.',
+          nextAction: 'Full evaluation run archive is ready; use it as current demo evidence.'
+        },
         queueSummary: {
           totalCount: 0,
           pendingCount: 0,
@@ -776,6 +789,8 @@ test('gets demo evidence bundle through backend API', async () => {
   expect(fetchMock).toHaveBeenCalledWith('/api/demo/evidence-bundle');
   expect(bundle.status).toBe('READY');
   expect(bundle.summaryCounts.adapterFixtureCount).toBe(12);
+  expect(bundle.evaluationRunReadiness.latestRunId).toBe('evaluation-run-2');
+  expect(bundle.evaluationRunReadiness.coveredLanguages).toEqual(['java', 'python']);
   expect(bundle.recentPullRequestUrl).toBe('https://github.com/bingqin2/PatchPilot/pull/42');
 });
 

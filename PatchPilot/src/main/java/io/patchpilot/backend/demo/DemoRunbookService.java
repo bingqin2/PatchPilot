@@ -1,6 +1,7 @@
 package io.patchpilot.backend.demo;
 
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
+import io.patchpilot.backend.demo.domain.DemoEvaluationRunReadinessEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessCheckVo;
 import io.patchpilot.backend.demo.domain.DemoSmokeChecklistStepVo;
 import io.patchpilot.backend.github.webhook.domain.WebhookDeliveryDiagnosticVo;
@@ -68,8 +69,11 @@ public class DemoRunbookService {
                 .append(bundle.adapterFixtures().totalCount())
                 .append(" total, ")
                 .append(bundle.adapterFixtures().failedCount())
-                .append(" failed\n")
-                .append("- Queue: ")
+                .append(" failed\n");
+
+        appendEvaluationRunReadiness(runbook, bundle.evaluationRunReadiness());
+
+        runbook.append("- Queue: ")
                 .append(queue.totalCount())
                 .append(" total, ")
                 .append(queue.pendingCount())
@@ -83,6 +87,39 @@ public class DemoRunbookService {
                 .append(" recent\n")
                 .append("- Active quarantines: ")
                 .append(bundle.activeQuarantineCount())
+                .append("\n");
+    }
+
+    private static void appendEvaluationRunReadiness(
+            StringBuilder runbook,
+            DemoEvaluationRunReadinessEvidenceVo evaluationRunReadiness
+    ) {
+        runbook.append("- Full evaluation run readiness: `")
+                .append(evaluationRunReadiness.status())
+                .append("`\n")
+                .append("- Latest evaluation run: ")
+                .append(valueOrNoneBackticked(evaluationRunReadiness.latestRunId()))
+                .append("\n")
+                .append("- Previous evaluation run: ")
+                .append(valueOrNoneBackticked(evaluationRunReadiness.previousRunId()))
+                .append("\n")
+                .append("- Evaluation deltas: passed ")
+                .append(signed(evaluationRunReadiness.passedDelta()))
+                .append(", failed ")
+                .append(signed(evaluationRunReadiness.failedDelta()))
+                .append(", skipped ")
+                .append(signed(evaluationRunReadiness.skippedDelta()))
+                .append("\n")
+                .append("- Evaluation coverage: ")
+                .append(csv(evaluationRunReadiness.coveredLanguages()))
+                .append(" / ")
+                .append(csv(evaluationRunReadiness.coveredBuildSystems()))
+                .append("\n")
+                .append("- Safety rejection categories: ")
+                .append(csv(evaluationRunReadiness.safetyRejectionCategories()))
+                .append("\n")
+                .append("- Evaluation next action: ")
+                .append(evaluationRunReadiness.nextAction())
                 .append("\n");
     }
 
@@ -122,5 +159,17 @@ public class DemoRunbookService {
 
     private static String valueOrNone(String value) {
         return value == null || value.isBlank() ? "none" : value;
+    }
+
+    private static String valueOrNoneBackticked(String value) {
+        return value == null || value.isBlank() ? "none" : "`" + value + "`";
+    }
+
+    private static String signed(int value) {
+        return value > 0 ? "+" + value : String.valueOf(value);
+    }
+
+    private static String csv(List<String> values) {
+        return values.isEmpty() ? "none" : String.join(", ", values);
     }
 }

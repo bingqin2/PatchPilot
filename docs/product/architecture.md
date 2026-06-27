@@ -376,7 +376,7 @@ Responsibilities:
 - Surface required credential gaps without exposing secret values.
 - Surface safety policy gaps for trigger-user allowlists, repository allowlists, and review-approval approvers.
 - Surface generated-diff policy state without exposing secrets or editable policy internals.
-- Expose a demo evidence bundle that joins readiness, smoke-check, configuration, adapter fixture, queue, webhook setup, recent webhook delivery trail, rejected-trigger, quarantine, and recent Pull Request evidence.
+- Expose a demo evidence bundle that joins readiness, smoke-check, configuration, adapter fixture, full evaluation run readiness, queue, webhook setup, recent webhook delivery trail, rejected-trigger, quarantine, and recent Pull Request evidence.
 - Expose a demo session snapshot that combines one current evidence bundle, script, runbook, operator checklist, health contract, share summary, and next actions.
 - Expose a demo script that turns the current evidence bundle into ordered operator actions, verification commands, success criteria, troubleshooting panels, and a health contract.
 - Format the evidence bundle as copyable Markdown for operator handoff without adding side effects.

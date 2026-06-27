@@ -30,6 +30,19 @@ const bundle: DemoEvidenceBundle = {
     totalCount: 12,
     failedCount: 1
   },
+  evaluationRunReadiness: {
+    status: 'READY',
+    latestRunId: 'evaluation-run-2',
+    previousRunId: 'evaluation-run-1',
+    passedDelta: 1,
+    failedDelta: 0,
+    skippedDelta: 0,
+    coveredLanguages: ['java', 'python'],
+    coveredBuildSystems: ['maven', 'pytest'],
+    safetyRejectionCategories: ['DANGEROUS_REQUEST', 'SECRET_EXFILTRATION'],
+    sideEffectContract: 'Evaluation run readiness summary reads archived full evaluation runs only; it does not create tasks, call the model, mutate Git, or write to GitHub.',
+    nextAction: 'Full evaluation run archive is ready; use it as current demo evidence.'
+  },
   queueSummary: {
     totalCount: 3,
     pendingCount: 1,
@@ -202,6 +215,15 @@ test('summarizes demo evidence bundle for operators', () => {
   expect(within(panel).getByText('Latest webhook delivery')).toBeInTheDocument();
   expect(within(panel).getByText('Webhook setup readiness')).toBeInTheDocument();
   expect(within(panel).getByText('Webhook setup is ready for GitHub deliveries.')).toBeInTheDocument();
+  expect(within(panel).getByText('Full evaluation run readiness')).toBeInTheDocument();
+  expect(within(panel).getByText('Latest evaluation run evaluation-run-2')).toBeInTheDocument();
+  expect(within(panel).getByText('Previous evaluation run evaluation-run-1')).toBeInTheDocument();
+  expect(within(panel).getByText('Deltas passed +1, failed 0, skipped 0')).toBeInTheDocument();
+  expect(within(panel).getByText('Coverage java, python / maven, pytest')).toBeInTheDocument();
+  expect(within(panel).getByText('Safety DANGEROUS_REQUEST, SECRET_EXFILTRATION')).toBeInTheDocument();
+  expect(
+    within(panel).getByText('Full evaluation run archive is ready; use it as current demo evidence.')
+  ).toBeInTheDocument();
   expect(within(panel).getByText('Handoff share checklist')).toBeInTheDocument();
   expect(within(panel).getByText('Latest handoff archive is ready to share.')).toBeInTheDocument();
   expect(
