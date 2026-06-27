@@ -25,6 +25,7 @@ import {
   getDashboardBootstrap,
   getDemoEvidenceBundle,
   getDemoHandoffPackage,
+  getDemoHandoffReadiness,
   getDemoSessionSnapshot,
   getDemoSessionReport,
   getDemoScript,
@@ -121,6 +122,7 @@ import type {
   DemoReadinessSnapshotArchive,
   DemoReadinessSnapshotTrend,
   DemoEvidenceBundle,
+  DemoHandoffReadiness,
   DemoHandoffPackageArchive,
   DemoLaunchCommand,
   DemoLaunchCommandInput,
@@ -231,6 +233,8 @@ export default function App() {
   const [demoEvidenceBundleError, setDemoEvidenceBundleError] = useState<string | null>(null);
   const [demoSessionSnapshot, setDemoSessionSnapshot] = useState<DemoSessionSnapshot | null>(null);
   const [demoSessionSnapshotError, setDemoSessionSnapshotError] = useState<string | null>(null);
+  const [demoHandoffReadiness, setDemoHandoffReadiness] = useState<DemoHandoffReadiness | null>(null);
+  const [demoHandoffReadinessError, setDemoHandoffReadinessError] = useState<string | null>(null);
   const [demoSessionArchives, setDemoSessionArchives] = useState<DemoSessionArchive[]>([]);
   const [demoSessionArchiveError, setDemoSessionArchiveError] = useState<string | null>(null);
   const [demoHandoffPackageArchives, setDemoHandoffPackageArchives] = useState<DemoHandoffPackageArchive[]>([]);
@@ -538,6 +542,10 @@ export default function App() {
         createdAfter: createdAfterFilter,
         createdBefore: createdBeforeFilter
       };
+      const demoSessionReportInput = {
+        preparedLaunchCommands: preparedDemoLaunchCommands,
+        archivedLaunchOutcomes: archivedDemoLaunchOutcomes
+      };
       const [
         taskList,
         taskStatusCounts,
@@ -552,6 +560,7 @@ export default function App() {
         modelProviderHealthResult,
         demoEvidenceBundleResult,
         demoSessionSnapshotResult,
+        demoHandoffReadinessResult,
         demoSessionArchiveResult,
         demoHandoffPackageArchiveResult,
         demoScriptResult,
@@ -614,6 +623,10 @@ export default function App() {
         getDemoSessionSnapshot().then(
           (snapshot) => ({ snapshot, error: null as string | null }),
           (caught) => ({ snapshot: null, error: errorMessage(caught) })
+        ),
+        getDemoHandoffReadiness(demoSessionReportInput).then(
+          (readiness) => ({ readiness, error: null as string | null }),
+          (caught) => ({ readiness: null, error: errorMessage(caught) })
         ),
         listDemoSessionArchives().then(
           (archives) => ({ archives, error: null as string | null }),
@@ -751,6 +764,10 @@ export default function App() {
         setDemoSessionSnapshot(demoSessionSnapshotResult.snapshot);
       }
       setDemoSessionSnapshotError(demoSessionSnapshotResult.error);
+      if (demoHandoffReadinessResult.readiness) {
+        setDemoHandoffReadiness(demoHandoffReadinessResult.readiness);
+      }
+      setDemoHandoffReadinessError(demoHandoffReadinessResult.error);
       if (demoSessionArchiveResult.archives) {
         setDemoSessionArchives(demoSessionArchiveResult.archives);
       }
@@ -860,7 +877,21 @@ export default function App() {
     } finally {
       setLoading(false);
     }
-  }, [adminAuditFilters, buildSystemFilter, createdAfterFilter, createdBeforeFilter, languageFilter, rejectedTriggerCategoryFilter, repositoryNameFilter, repositoryOwnerFilter, searchQuery, statusFilter, taskSort]);
+  }, [
+    adminAuditFilters,
+    archivedDemoLaunchOutcomes,
+    buildSystemFilter,
+    createdAfterFilter,
+    createdBeforeFilter,
+    languageFilter,
+    preparedDemoLaunchCommands,
+    rejectedTriggerCategoryFilter,
+    repositoryNameFilter,
+    repositoryOwnerFilter,
+    searchQuery,
+    statusFilter,
+    taskSort
+  ]);
 
   const handleLoadMoreTasks = useCallback(async () => {
     setLoadingMoreTasks(true);
@@ -1375,9 +1406,11 @@ export default function App() {
         snapshot={demoSessionSnapshot}
         preparedLaunchCommands={preparedDemoLaunchCommands}
         archivedLaunchOutcomes={archivedDemoLaunchOutcomes}
+        handoffReadiness={demoHandoffReadiness}
         archives={demoSessionArchives}
         handoffPackageArchives={demoHandoffPackageArchives}
         error={demoSessionSnapshotError}
+        handoffReadinessError={demoHandoffReadinessError}
         archiveError={demoSessionArchiveError}
         handoffPackageArchiveError={demoHandoffPackageArchiveError}
         onCopyReport={handleCopyDemoSessionReport}

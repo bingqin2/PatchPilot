@@ -3,6 +3,8 @@ package io.patchpilot.backend.demo;
 import io.patchpilot.backend.demo.domain.DemoReadinessSnapshotTrendStatus;
 import io.patchpilot.backend.demo.domain.DemoReadinessSnapshotTrendVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessStatus;
+import io.patchpilot.backend.demo.domain.DemoHandoffReadinessCheckVo;
+import io.patchpilot.backend.demo.domain.DemoHandoffReadinessVo;
 import io.patchpilot.backend.demo.domain.DemoScriptStepVo;
 import io.patchpilot.backend.demo.domain.DemoSessionSnapshotVo;
 import io.patchpilot.backend.github.credential.domain.GitHubWebhookSetupReadinessVo;
@@ -42,6 +44,11 @@ public class DemoSessionReportService {
     public String getHandoffPackage(DemoSessionReportRequestDto request) {
         DemoSessionSnapshotVo snapshot = snapshotSupplier.get();
         return formatHandoffPackage(snapshot, request);
+    }
+
+    public DemoHandoffReadinessVo getHandoffReadiness(DemoSessionReportRequestDto request) {
+        DemoSessionSnapshotVo snapshot = snapshotSupplier.get();
+        return handoffReadiness(snapshot, request);
     }
 
     String formatSessionReport(DemoSessionSnapshotVo snapshot) {
@@ -103,7 +110,7 @@ public class DemoSessionReportService {
             DemoSessionSnapshotVo snapshot,
             DemoSessionReportRequestDto request
     ) {
-        HandoffReadiness readiness = handoffReadiness(snapshot, request);
+        DemoHandoffReadinessVo readiness = handoffReadiness(snapshot, request);
         report.append("\n## Handoff Readiness\n\n")
                 .append("- Overall: `")
                 .append(readiness.status())
@@ -120,8 +127,8 @@ public class DemoSessionReportService {
                 .append("\n"));
     }
 
-    private static HandoffReadiness handoffReadiness(DemoSessionSnapshotVo snapshot, DemoSessionReportRequestDto request) {
-        List<HandoffReadinessCheck> checks = List.of(
+    private static DemoHandoffReadinessVo handoffReadiness(DemoSessionSnapshotVo snapshot, DemoSessionReportRequestDto request) {
+        List<DemoHandoffReadinessCheckVo> checks = List.of(
                 snapshotStatusCheck(snapshot),
                 recentTaskCheck(snapshot.evidenceBundle().recentTask()),
                 webhookDeliveryCheck(snapshot.evidenceBundle().recentWebhookDeliveries()),
@@ -131,38 +138,38 @@ public class DemoSessionReportService {
                 readinessTrendCheck(snapshot.readinessSnapshotTrend())
         );
         DemoReadinessStatus overallStatus = overallHandoffStatus(checks);
-        return new HandoffReadiness(overallStatus, handoffSummary(overallStatus), checks);
+        return new DemoHandoffReadinessVo(overallStatus, handoffSummary(overallStatus), checks);
     }
 
-    private static HandoffReadinessCheck snapshotStatusCheck(DemoSessionSnapshotVo snapshot) {
-        return new HandoffReadinessCheck("Demo snapshot status", snapshot.status(), snapshot.summary());
+    private static DemoHandoffReadinessCheckVo snapshotStatusCheck(DemoSessionSnapshotVo snapshot) {
+        return new DemoHandoffReadinessCheckVo("Demo snapshot status", snapshot.status(), snapshot.summary());
     }
 
-    private static HandoffReadinessCheck recentTaskCheck(FixTaskVo task) {
+    private static DemoHandoffReadinessCheckVo recentTaskCheck(FixTaskVo task) {
         if (task == null) {
-            return new HandoffReadinessCheck(
+            return new DemoHandoffReadinessCheckVo(
                     "Recent task evidence",
                     DemoReadinessStatus.NEEDS_ATTENTION,
                     "No recent completed task is available in the session snapshot."
             );
         }
         if (task.status() == FixTaskStatus.COMPLETED) {
-            return new HandoffReadinessCheck(
+            return new DemoHandoffReadinessCheckVo(
                     "Recent task evidence",
                     DemoReadinessStatus.READY,
                     task.id() + " is completed."
             );
         }
-        return new HandoffReadinessCheck(
+        return new DemoHandoffReadinessCheckVo(
                 "Recent task evidence",
                 DemoReadinessStatus.NEEDS_ATTENTION,
                 task.id() + " is " + task.status() + ", not completed."
         );
     }
 
-    private static HandoffReadinessCheck webhookDeliveryCheck(List<WebhookDeliveryDiagnosticVo> deliveries) {
+    private static DemoHandoffReadinessCheckVo webhookDeliveryCheck(List<WebhookDeliveryDiagnosticVo> deliveries) {
         if (deliveries == null || deliveries.isEmpty()) {
-            return new HandoffReadinessCheck(
+            return new DemoHandoffReadinessCheckVo(
                     "Webhook delivery evidence",
                     DemoReadinessStatus.NEEDS_ATTENTION,
                     "No recent webhook delivery evidence is available in the session snapshot."
@@ -181,8 +188,8 @@ public class DemoSessionReportService {
         return nonTaskWebhookDeliveryCheck(deliveries.get(0));
     }
 
-    private static HandoffReadinessCheck taskCreatedWebhookDeliveryCheck(WebhookDeliveryDiagnosticVo delivery) {
-        return new HandoffReadinessCheck(
+    private static DemoHandoffReadinessCheckVo taskCreatedWebhookDeliveryCheck(WebhookDeliveryDiagnosticVo delivery) {
+        return new DemoHandoffReadinessCheckVo(
                 "Webhook delivery evidence",
                 DemoReadinessStatus.READY,
                 valueOrNone(delivery.deliveryId()) + " created task "
@@ -190,8 +197,8 @@ public class DemoSessionReportService {
         );
     }
 
-    private static HandoffReadinessCheck redeliveryRequiredWebhookDeliveryCheck(WebhookDeliveryDiagnosticVo delivery) {
-        return new HandoffReadinessCheck(
+    private static DemoHandoffReadinessCheckVo redeliveryRequiredWebhookDeliveryCheck(WebhookDeliveryDiagnosticVo delivery) {
+        return new DemoHandoffReadinessCheckVo(
                 "Webhook delivery evidence",
                 DemoReadinessStatus.BLOCKED,
                 valueOrNone(delivery.deliveryId()) + " is " + valueOrNone(delivery.status())
@@ -199,8 +206,8 @@ public class DemoSessionReportService {
         );
     }
 
-    private static HandoffReadinessCheck nonTaskWebhookDeliveryCheck(WebhookDeliveryDiagnosticVo latestDelivery) {
-        return new HandoffReadinessCheck(
+    private static DemoHandoffReadinessCheckVo nonTaskWebhookDeliveryCheck(WebhookDeliveryDiagnosticVo latestDelivery) {
+        return new DemoHandoffReadinessCheckVo(
                 "Webhook delivery evidence",
                 DemoReadinessStatus.NEEDS_ATTENTION,
                 valueOrNone(latestDelivery.deliveryId()) + " is " + valueOrNone(latestDelivery.status())
@@ -208,47 +215,47 @@ public class DemoSessionReportService {
         );
     }
 
-    private static HandoffReadinessCheck recentPullRequestCheck(String pullRequestUrl) {
+    private static DemoHandoffReadinessCheckVo recentPullRequestCheck(String pullRequestUrl) {
         if (isBlank(pullRequestUrl)) {
-            return new HandoffReadinessCheck(
+            return new DemoHandoffReadinessCheckVo(
                     "Recent Pull Request evidence",
                     DemoReadinessStatus.NEEDS_ATTENTION,
                     "No recent Pull Request URL is available."
             );
         }
-        return new HandoffReadinessCheck(
+        return new DemoHandoffReadinessCheckVo(
                 "Recent Pull Request evidence",
                 DemoReadinessStatus.READY,
                 pullRequestUrl
         );
     }
 
-    private static HandoffReadinessCheck preparedCommandCheck(List<DemoPreparedLaunchCommandRequestDto> commands) {
+    private static DemoHandoffReadinessCheckVo preparedCommandCheck(List<DemoPreparedLaunchCommandRequestDto> commands) {
         long commandCount = countNonBlankCommands(commands);
         if (commandCount == 0) {
-            return new HandoffReadinessCheck(
+            return new DemoHandoffReadinessCheckVo(
                     "Prepared command context",
                     DemoReadinessStatus.NEEDS_ATTENTION,
                     "No prepared launch command was captured in this browser session."
             );
         }
-        return new HandoffReadinessCheck(
+        return new DemoHandoffReadinessCheckVo(
                 "Prepared command context",
                 DemoReadinessStatus.READY,
                 commandCount + " prepared " + plural(commandCount, "command") + " recorded."
         );
     }
 
-    private static HandoffReadinessCheck archivedOutcomeCheck(List<DemoArchivedLaunchOutcomeRequestDto> outcomes) {
+    private static DemoHandoffReadinessCheckVo archivedOutcomeCheck(List<DemoArchivedLaunchOutcomeRequestDto> outcomes) {
         long evidenceCount = countOutcomeEvidence(outcomes);
         if (evidenceCount == 0) {
-            return new HandoffReadinessCheck(
+            return new DemoHandoffReadinessCheckVo(
                     "Archived launch outcome context",
                     DemoReadinessStatus.NEEDS_ATTENTION,
                     "No archived launch outcome with completed task or Pull Request evidence was captured."
             );
         }
-        return new HandoffReadinessCheck(
+        return new DemoHandoffReadinessCheckVo(
                 "Archived launch outcome context",
                 DemoReadinessStatus.READY,
                 evidenceCount + " archived " + plural(evidenceCount, "outcome")
@@ -256,29 +263,29 @@ public class DemoSessionReportService {
         );
     }
 
-    private static HandoffReadinessCheck readinessTrendCheck(DemoReadinessSnapshotTrendVo trend) {
+    private static DemoHandoffReadinessCheckVo readinessTrendCheck(DemoReadinessSnapshotTrendVo trend) {
         if (trend.status() == DemoReadinessSnapshotTrendStatus.REGRESSING) {
-            return new HandoffReadinessCheck(
+            return new DemoHandoffReadinessCheckVo(
                     "Readiness trend baseline",
                     DemoReadinessStatus.BLOCKED,
                     "Readiness trend is REGRESSING; address the regression or archive a fresh passing snapshot before handoff."
             );
         }
         if (trend.status() == DemoReadinessSnapshotTrendStatus.NO_BASELINE) {
-            return new HandoffReadinessCheck(
+            return new DemoHandoffReadinessCheckVo(
                     "Readiness trend baseline",
                     DemoReadinessStatus.NEEDS_ATTENTION,
                     "No previous readiness snapshot is available for comparison."
             );
         }
-        return new HandoffReadinessCheck(
+        return new DemoHandoffReadinessCheckVo(
                 "Readiness trend baseline",
                 DemoReadinessStatus.READY,
                 trend.status() + "; latest readiness " + valueOrNone(trend.latestReadinessStatus()) + "."
         );
     }
 
-    private static DemoReadinessStatus overallHandoffStatus(List<HandoffReadinessCheck> checks) {
+    private static DemoReadinessStatus overallHandoffStatus(List<DemoHandoffReadinessCheckVo> checks) {
         if (checks.stream().anyMatch(check -> check.status() == DemoReadinessStatus.BLOCKED)) {
             return DemoReadinessStatus.BLOCKED;
         }
@@ -565,17 +572,4 @@ public class DemoSessionReportService {
         return summary.substring(0, 277) + "...";
     }
 
-    private record HandoffReadiness(
-            DemoReadinessStatus status,
-            String summary,
-            List<HandoffReadinessCheck> checks
-    ) {
-    }
-
-    private record HandoffReadinessCheck(
-            String name,
-            DemoReadinessStatus status,
-            String summary
-    ) {
-    }
 }

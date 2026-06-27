@@ -4,6 +4,20 @@ This file records dated implementation progress, validation commands, and import
 
 ## 2026-06-27
 
+Implemented structured demo handoff readiness from `docs/plans/231-structured-demo-handoff-readiness.md`.
+
+Changes:
+
+- Added structured `DemoHandoffReadinessVo` and `DemoHandoffReadinessCheckVo` response objects.
+- Added `GET /api/demo/handoff-readiness` and `POST /api/demo/handoff-readiness`; the POST path accepts the same browser-local report context as session reports and handoff packages.
+- Reused the existing backend handoff readiness rules for Markdown generation and JSON responses so dashboard previews cannot drift from handoff package output.
+- Updated the dashboard demo session snapshot panel to fetch and render backend readiness status, summary, and check-level evidence instead of computing readiness locally.
+
+Validation so far:
+
+- `mvn -pl PatchPilot -Dtest=DemoSessionReportServiceTests,DemoReadinessControllerTests test`: first failed because the structured readiness VO/API did not exist, then passed after implementation, 40 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts src/dashboard/components/DemoSessionSnapshotPanel.test.tsx src/App.test.tsx --reporter=basic`: first failed because the frontend API helper and structured panel rendering did not exist, then passed after implementation, 164 tests run, 0 failures.
+
 Implemented demo handoff webhook delivery check from `docs/plans/230-demo-handoff-webhook-delivery-check.md`.
 
 Changes:

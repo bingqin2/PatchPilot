@@ -2,6 +2,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type {
   DemoArchivedLaunchOutcome,
+  DemoHandoffReadiness,
   DemoHandoffPackageArchive,
   DemoPreparedLaunchCommand,
   DemoSessionArchive,
@@ -201,6 +202,55 @@ const archivedLaunchOutcomes: DemoArchivedLaunchOutcome[] = [
   }
 ];
 
+const handoffReadiness: DemoHandoffReadiness = {
+  status: 'READY',
+  summary: 'Handoff package has current webhook delivery, PR, command, outcome, and readiness trend evidence.',
+  checks: [
+    {
+      name: 'Demo snapshot status',
+      status: 'READY',
+      summary: 'Demo session snapshot is ready.'
+    },
+    {
+      name: 'Recent task evidence',
+      status: 'READY',
+      summary: 'task-1 is completed.'
+    },
+    {
+      name: 'Webhook delivery evidence',
+      status: 'READY',
+      summary: 'delivery-1 created task task-1.'
+    },
+    {
+      name: 'Prepared command context',
+      status: 'READY',
+      summary: '1 prepared command recorded.'
+    }
+  ]
+};
+
+const missingHandoffReadiness: DemoHandoffReadiness = {
+  status: 'NEEDS_ATTENTION',
+  summary: 'Handoff package is missing evidence required for a credible live-demo handoff.',
+  checks: [
+    {
+      name: 'Recent task evidence',
+      status: 'NEEDS_ATTENTION',
+      summary: 'No recent completed task is available in the session snapshot.'
+    },
+    {
+      name: 'Webhook delivery evidence',
+      status: 'NEEDS_ATTENTION',
+      summary: 'No recent webhook delivery evidence is available in the session snapshot.'
+    },
+    {
+      name: 'Prepared command context',
+      status: 'NEEDS_ATTENTION',
+      summary: 'No prepared launch command was captured in this browser session.'
+    }
+  ]
+};
+
 const sessionReportInput = {
   preparedLaunchCommands,
   archivedLaunchOutcomes
@@ -217,6 +267,7 @@ test('renders demo session snapshot summary, evidence, checklist, contract, and 
       snapshot={snapshot}
       preparedLaunchCommands={preparedLaunchCommands}
       archivedLaunchOutcomes={archivedLaunchOutcomes}
+      handoffReadiness={handoffReadiness}
       archives={archives}
       handoffPackageArchives={handoffPackageArchives}
       error={null}
@@ -236,8 +287,8 @@ test('renders demo session snapshot summary, evidence, checklist, contract, and 
   const panel = screen.getByRole('region', { name: 'Demo session snapshot' });
   expect(within(panel).getByRole('heading', { name: 'Demo session snapshot' })).toBeInTheDocument();
   expect(within(panel).getAllByText('demo-session-20260624T003000Z')).toHaveLength(3);
-  expect(within(panel).getByText('Demo session snapshot is ready.')).toBeInTheDocument();
-  expect(within(panel).getAllByText('Ready')).toHaveLength(3);
+  expect(within(panel).getAllByText('Demo session snapshot is ready.')).toHaveLength(2);
+  expect(within(panel).getAllByText('Ready').length).toBeGreaterThanOrEqual(3);
   expect(
     within(panel).getAllByText('Status READY; recent task task-1; recent PR https://github.com/bingqin2/PatchPilot/pull/42.')
   ).toHaveLength(3);
@@ -249,9 +300,16 @@ test('renders demo session snapshot summary, evidence, checklist, contract, and 
   expect(within(panel).getByText('+4 ready / -2 warning / -2 blocked')).toBeInTheDocument();
   expect(within(panel).getByText(/Use the latest readiness snapshot as demo evidence/)).toBeInTheDocument();
   expect(within(panel).getByText('Handoff readiness')).toBeInTheDocument();
-  expect(within(panel).getByText('Handoff package has current PR, command, outcome, and readiness trend evidence.')).toBeInTheDocument();
+  expect(
+    within(panel).getByText('Handoff package has current webhook delivery, PR, command, outcome, and readiness trend evidence.')
+  ).toBeInTheDocument();
   expect(within(panel).getByText('Handoff evidence')).toBeInTheDocument();
   expect(within(panel).getByText('2 commands / 1 outcome')).toBeInTheDocument();
+  expect(within(panel).getByRole('heading', { name: 'Handoff readiness checks' })).toBeInTheDocument();
+  expect(within(panel).getByText('Webhook delivery evidence')).toBeInTheDocument();
+  expect(within(panel).getByText('delivery-1 created task task-1.')).toBeInTheDocument();
+  expect(within(panel).getByText('Prepared command context')).toBeInTheDocument();
+  expect(within(panel).getByText('1 prepared command recorded.')).toBeInTheDocument();
   expect(within(panel).getByText('Open the dashboard and confirm the demo session snapshot status.')).toBeInTheDocument();
   expect(within(panel).getByText(/does not create tasks, call the model, run tests, mutate Git, or write to GitHub/)).toBeInTheDocument();
   expect(within(panel).getByRole('heading', { name: 'Recent session archives' })).toBeInTheDocument();
@@ -271,6 +329,7 @@ test('shows loading and API errors without hiding snapshot data', () => {
       snapshot={null}
       preparedLaunchCommands={[]}
       archivedLaunchOutcomes={[]}
+      handoffReadiness={null}
       archives={[]}
       handoffPackageArchives={[]}
       error={null}
@@ -294,6 +353,7 @@ test('shows loading and API errors without hiding snapshot data', () => {
       snapshot={snapshot}
       preparedLaunchCommands={preparedLaunchCommands}
       archivedLaunchOutcomes={archivedLaunchOutcomes}
+      handoffReadiness={handoffReadiness}
       archives={archives}
       handoffPackageArchives={handoffPackageArchives}
       error="Backend request failed"
@@ -331,6 +391,7 @@ test('shows handoff readiness gaps when launch context is missing', () => {
       }}
       preparedLaunchCommands={[]}
       archivedLaunchOutcomes={[]}
+      handoffReadiness={missingHandoffReadiness}
       archives={[]}
       handoffPackageArchives={[]}
       error={null}
@@ -349,10 +410,11 @@ test('shows handoff readiness gaps when launch context is missing', () => {
 
   const panel = screen.getByRole('region', { name: 'Demo session snapshot' });
   expect(within(panel).getByText('Handoff readiness')).toBeInTheDocument();
-  expect(within(panel).getAllByText('Needs attention')).toHaveLength(1);
+  expect(within(panel).getAllByText('Needs attention').length).toBeGreaterThanOrEqual(1);
   expect(
-    within(panel).getByText('Missing completed task, Pull Request, prepared command, archived outcome evidence.')
+    within(panel).getByText('No recent completed task is available in the session snapshot.')
   ).toBeInTheDocument();
+  expect(within(panel).getByText('No prepared launch command was captured in this browser session.')).toBeInTheDocument();
   expect(within(panel).getByText('0 commands / 0 outcomes')).toBeInTheDocument();
 });
 
@@ -369,6 +431,7 @@ test('copies demo session report markdown', async () => {
       snapshot={snapshot}
       preparedLaunchCommands={preparedLaunchCommands}
       archivedLaunchOutcomes={archivedLaunchOutcomes}
+      handoffReadiness={handoffReadiness}
       archives={[]}
       error={null}
       handoffPackageArchives={[]}
@@ -405,6 +468,7 @@ test('copies demo handoff package markdown', async () => {
       snapshot={snapshot}
       preparedLaunchCommands={preparedLaunchCommands}
       archivedLaunchOutcomes={archivedLaunchOutcomes}
+      handoffReadiness={handoffReadiness}
       archives={[]}
       error={null}
       handoffPackageArchives={[]}
@@ -445,6 +509,7 @@ test('downloads demo session report markdown', async () => {
       snapshot={snapshot}
       preparedLaunchCommands={preparedLaunchCommands}
       archivedLaunchOutcomes={archivedLaunchOutcomes}
+      handoffReadiness={handoffReadiness}
       archives={[]}
       error={null}
       handoffPackageArchives={[]}
@@ -487,6 +552,7 @@ test('downloads demo handoff package markdown', async () => {
       snapshot={snapshot}
       preparedLaunchCommands={preparedLaunchCommands}
       archivedLaunchOutcomes={archivedLaunchOutcomes}
+      handoffReadiness={handoffReadiness}
       archives={[]}
       error={null}
       handoffPackageArchives={[]}
@@ -525,6 +591,7 @@ test('archives current demo session and copies archived report markdown', async 
       snapshot={snapshot}
       preparedLaunchCommands={preparedLaunchCommands}
       archivedLaunchOutcomes={archivedLaunchOutcomes}
+      handoffReadiness={handoffReadiness}
       archives={archives}
       error={null}
       handoffPackageArchives={handoffPackageArchives}
@@ -563,6 +630,7 @@ test('archives current demo handoff package and copies archived package markdown
       snapshot={snapshot}
       preparedLaunchCommands={preparedLaunchCommands}
       archivedLaunchOutcomes={archivedLaunchOutcomes}
+      handoffReadiness={handoffReadiness}
       archives={[]}
       handoffPackageArchives={handoffPackageArchives}
       error={null}
@@ -605,6 +673,7 @@ test('downloads archived demo session report markdown', async () => {
       snapshot={snapshot}
       preparedLaunchCommands={[]}
       archivedLaunchOutcomes={archivedLaunchOutcomes}
+      handoffReadiness={handoffReadiness}
       archives={archives}
       error={null}
       handoffPackageArchives={handoffPackageArchives}
@@ -647,6 +716,7 @@ test('downloads archived demo handoff package markdown', async () => {
       snapshot={snapshot}
       preparedLaunchCommands={preparedLaunchCommands}
       archivedLaunchOutcomes={archivedLaunchOutcomes}
+      handoffReadiness={handoffReadiness}
       archives={[]}
       handoffPackageArchives={handoffPackageArchives}
       error={null}

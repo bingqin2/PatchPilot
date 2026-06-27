@@ -2,6 +2,7 @@ package io.patchpilot.backend.demo;
 
 import io.patchpilot.backend.common.response.ApiResponse;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
+import io.patchpilot.backend.demo.domain.DemoHandoffReadinessVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffPackageArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchCommandVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchPreflightVo;
@@ -132,6 +133,18 @@ public class DemoReadinessController {
     @PostMapping("/handoff-package")
     public ApiResponse<String> getHandoffPackage(@RequestBody(required = false) DemoSessionReportRequestDto request) {
         return ApiResponse.ok(demoSessionReportService.getHandoffPackage(normalizeReportRequest(request)));
+    }
+
+    @GetMapping("/handoff-readiness")
+    public ApiResponse<DemoHandoffReadinessVo> getHandoffReadiness() {
+        return ApiResponse.ok(demoSessionReportService.getHandoffReadiness(new DemoSessionReportRequestDto(List.of())));
+    }
+
+    @PostMapping("/handoff-readiness")
+    public ApiResponse<DemoHandoffReadinessVo> getHandoffReadiness(
+            @RequestBody(required = false) DemoSessionReportRequestDto request
+    ) {
+        return ApiResponse.ok(demoSessionReportService.getHandoffReadiness(normalizeReportRequest(request)));
     }
 
     @PostMapping(value = "/handoff-package/download", produces = "text/markdown;charset=UTF-8")

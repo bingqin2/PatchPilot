@@ -501,6 +501,18 @@ export interface DemoSessionSnapshot {
   nextActions: string[];
 }
 
+export interface DemoHandoffReadinessCheck {
+  name: string;
+  status: DemoReadinessStatus;
+  summary: string;
+}
+
+export interface DemoHandoffReadiness {
+  status: DemoReadinessStatus;
+  summary: string;
+  checks: DemoHandoffReadinessCheck[];
+}
+
 export interface DemoPreparedLaunchCommand {
   triggerComment: string;
   repositoryOwner: string;

@@ -1890,6 +1890,58 @@ h3 {
   padding: 9px 10px;
 }
 
+.demo-session-handoff-checks {
+  border-top: 1px solid #e6ebef;
+  padding: 14px 16px 16px;
+}
+
+.demo-session-handoff-checks h3 {
+  color: #17202a;
+  font-size: 16px;
+  margin-bottom: 10px;
+}
+
+.demo-session-handoff-checks ul {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.demo-session-handoff-checks li {
+  align-items: flex-start;
+  background: #f7f9fb;
+  border: 1px solid #dbe3ea;
+  border-radius: 6px;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  min-width: 0;
+  padding: 10px;
+}
+
+.demo-session-handoff-checks li > div {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.demo-session-handoff-checks strong {
+  color: #17202a;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.demo-session-handoff-checks small {
+  color: #52606e;
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
 .demo-session-prepared-commands {
   border-top: 1px solid #e6ebef;
   padding: 14px 16px 16px;

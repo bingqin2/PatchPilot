@@ -8,6 +8,7 @@ import type {
   CreateTaskInput,
   DashboardBootstrap,
   DemoEvidenceBundle,
+  DemoHandoffReadiness,
   DemoHandoffPackageArchive,
   DemoLaunchCommand,
   DemoLaunchCommandInput,
@@ -271,6 +272,10 @@ export async function getDemoSessionReport(input?: DemoSessionReportInput): Prom
 
 export async function getDemoHandoffPackage(input: DemoSessionReportInput): Promise<string> {
   return postApi<string>('/api/demo/handoff-package', input);
+}
+
+export async function getDemoHandoffReadiness(input: DemoSessionReportInput): Promise<DemoHandoffReadiness> {
+  return postApi<DemoHandoffReadiness>('/api/demo/handoff-readiness', input);
 }
 
 export async function downloadDemoSessionReport(input?: DemoSessionReportInput): Promise<Blob> {

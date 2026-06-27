@@ -2,6 +2,8 @@ import { Archive, Copy, Download } from 'lucide-react';
 import { useState } from 'react';
 import type {
   DemoArchivedLaunchOutcome,
+  DemoHandoffReadiness,
+  DemoHandoffReadinessCheck,
   DemoHandoffPackageArchive,
   DemoPreparedLaunchCommand,
   DemoReadinessSnapshotTrendStatus,
@@ -16,9 +18,11 @@ interface DemoSessionSnapshotPanelProps {
   snapshot: DemoSessionSnapshot | null;
   preparedLaunchCommands: DemoPreparedLaunchCommand[];
   archivedLaunchOutcomes: DemoArchivedLaunchOutcome[];
+  handoffReadiness: DemoHandoffReadiness | null;
   archives: DemoSessionArchive[];
   handoffPackageArchives: DemoHandoffPackageArchive[];
   error: string | null;
+  handoffReadinessError?: string | null;
   archiveError: string | null;
   handoffPackageArchiveError: string | null;
   onCopyReport: (input: DemoSessionReportInput) => Promise<string>;
@@ -35,9 +39,11 @@ export function DemoSessionSnapshotPanel({
   snapshot,
   preparedLaunchCommands,
   archivedLaunchOutcomes,
+  handoffReadiness,
   archives,
   handoffPackageArchives,
   error,
+  handoffReadinessError = null,
   archiveError,
   handoffPackageArchiveError,
   onCopyReport,
@@ -54,9 +60,6 @@ export function DemoSessionSnapshotPanel({
   const [archiveStatus, setArchiveStatus] = useState<string | null>(null);
   const scriptStepCount = snapshot?.script.steps.length ?? 0;
   const reportInput = { preparedLaunchCommands, archivedLaunchOutcomes };
-  const handoffReadiness = snapshot
-    ? getHandoffReadiness(snapshot, preparedLaunchCommands, archivedLaunchOutcomes)
-    : null;
 
   async function copySessionReport() {
     try {
@@ -218,6 +221,13 @@ export function DemoSessionSnapshotPanel({
         </div>
       ) : null}
 
+      {handoffReadinessError ? (
+        <div className="adapter-api-error">
+          <strong>Demo handoff readiness unavailable</strong>
+          <span>{handoffReadinessError}</span>
+        </div>
+      ) : null}
+
       {handoffPackageArchiveError ? (
         <div className="adapter-api-error">
           <strong>Demo handoff package archive unavailable</strong>
@@ -279,11 +289,13 @@ export function DemoSessionSnapshotPanel({
                 <SnapshotFact
                   label="Handoff evidence"
                   value={handoffEvidenceLabel(preparedLaunchCommands.length, archivedLaunchOutcomes.length)}
-                  detail={handoffReadiness.nextAction}
+                  detail={`${handoffReadiness.checks.length} readiness ${plural(handoffReadiness.checks.length, 'check')}`}
                 />
               </>
             ) : null}
           </div>
+
+          {handoffReadiness ? <HandoffReadinessCheckList checks={handoffReadiness.checks} /> : null}
 
           <div className="demo-session-lists">
             <SnapshotList title="Operator checklist" items={snapshot.operatorChecklist} />
@@ -378,6 +390,31 @@ export function DemoSessionSnapshotPanel({
         <div className="empty-state">Demo session snapshot has not loaded yet.</div>
       )}
     </section>
+  );
+}
+
+function HandoffReadinessCheckList({ checks }: { checks: DemoHandoffReadinessCheck[] }) {
+  return (
+    <div className="demo-session-handoff-checks">
+      <h3>Handoff readiness checks</h3>
+      {checks.length ? (
+        <ul>
+          {checks.map((check) => (
+            <li key={check.name}>
+              <div>
+                <strong>{check.name}</strong>
+                <small>{check.summary}</small>
+              </div>
+              <span className={`demo-readiness-status demo-readiness-status-${statusClass(check.status)}`}>
+                {statusLabel(check.status)}
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="empty-state compact-empty-state">No handoff readiness checks recorded.</p>
+      )}
+    </div>
   );
 }
 
@@ -501,68 +538,6 @@ function trendDelta(snapshotTrend: DemoSessionSnapshot['readinessSnapshotTrend']
   return `${signed(snapshotTrend.readyCheckDelta)} ready / ${signed(snapshotTrend.needsAttentionCheckDelta)} warning / ${signed(
     snapshotTrend.blockedCheckDelta
   )} blocked`;
-}
-
-interface HandoffReadinessSummary {
-  status: DemoReadinessStatus;
-  summary: string;
-  nextAction: string;
-}
-
-function getHandoffReadiness(
-  snapshot: DemoSessionSnapshot,
-  preparedLaunchCommands: DemoPreparedLaunchCommand[],
-  archivedLaunchOutcomes: DemoArchivedLaunchOutcome[]
-): HandoffReadinessSummary {
-  const missing: string[] = [];
-  const hasCompletedTask = snapshot.evidenceBundle.recentTask?.status === 'COMPLETED';
-  const hasPullRequest = Boolean(snapshot.evidenceBundle.recentPullRequestUrl);
-  const hasPreparedCommand = preparedLaunchCommands.some((command) => command.triggerComment.trim().length > 0);
-  const hasArchivedOutcomeEvidence = archivedLaunchOutcomes.some(
-    (outcome) => outcome.triggerComment.trim().length > 0 && (outcome.taskStatus === 'COMPLETED' || Boolean(outcome.pullRequestUrl))
-  );
-  const hasTrendBaseline = snapshot.readinessSnapshotTrend.status !== 'NO_BASELINE';
-
-  if (!hasCompletedTask) {
-    missing.push('completed task');
-  }
-  if (!hasPullRequest) {
-    missing.push('Pull Request');
-  }
-  if (!hasPreparedCommand) {
-    missing.push('prepared command');
-  }
-  if (!hasArchivedOutcomeEvidence) {
-    missing.push('archived outcome evidence');
-  }
-  if (!hasTrendBaseline) {
-    missing.push('readiness trend baseline');
-  }
-
-  if (snapshot.status === 'BLOCKED' || snapshot.readinessSnapshotTrend.status === 'REGRESSING') {
-    return {
-      status: 'BLOCKED',
-      summary: 'Handoff package has a blocking readiness signal that should be resolved before a live-demo handoff.',
-      nextAction:
-        snapshot.readinessSnapshotTrend.status === 'REGRESSING'
-          ? 'Resolve the readiness regression or archive a fresh passing snapshot before handoff.'
-          : 'Resolve the blocked demo session status before handoff.'
-    };
-  }
-
-  if (missing.length > 0) {
-    return {
-      status: 'NEEDS_ATTENTION',
-      summary: 'Handoff package is missing evidence required for a credible live-demo handoff.',
-      nextAction: `Missing ${missing.join(', ')}.`
-    };
-  }
-
-  return {
-    status: 'READY',
-    summary: 'Handoff package has current PR, command, outcome, and readiness trend evidence.',
-    nextAction: 'No missing handoff evidence.'
-  };
 }
 
 function handoffEvidenceLabel(commandCount: number, outcomeCount: number) {
