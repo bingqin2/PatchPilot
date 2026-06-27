@@ -37,6 +37,12 @@ class MyBatisDemoHandoffPackageArchiveRepositoryTests {
         assertThat(insertedEntity.getSessionId()).isEqualTo("demo-session-1");
         assertThat(insertedEntity.getStatus()).isEqualTo("READY");
         assertThat(insertedEntity.getSummary()).isEqualTo("Demo session demo-session-1 is ready.");
+        assertThat(insertedEntity.getHandoffReadinessStatus()).isEqualTo("READY");
+        assertThat(insertedEntity.getHandoffReadinessSummary()).isEqualTo("Handoff package is ready.");
+        assertThat(insertedEntity.getHandoffReadinessNextAction()).isEqualTo("No missing handoff evidence.");
+        assertThat(insertedEntity.getHandoffReadyCheckCount()).isEqualTo(7);
+        assertThat(insertedEntity.getHandoffNeedsAttentionCheckCount()).isZero();
+        assertThat(insertedEntity.getHandoffBlockedCheckCount()).isZero();
         assertThat(insertedEntity.getShareSummary()).isEqualTo("Status READY; session demo-session-1.");
         assertThat(insertedEntity.getRecentPullRequestUrl()).isEqualTo("https://github.com/bingqin2/PatchPilot/pull/42");
         assertThat(insertedEntity.getCreatedAt()).isEqualTo(Instant.parse("2026-06-24T04:00:00Z"));
@@ -76,6 +82,12 @@ class MyBatisDemoHandoffPackageArchiveRepositoryTests {
                 sessionId,
                 DemoReadinessStatus.READY,
                 "Demo session " + sessionId + " is ready.",
+                DemoReadinessStatus.READY,
+                "Handoff package is ready.",
+                "No missing handoff evidence.",
+                7,
+                0,
+                0,
                 "Status READY; session " + sessionId + ".",
                 "https://github.com/bingqin2/PatchPilot/pull/42",
                 createdAt,
@@ -89,6 +101,12 @@ class MyBatisDemoHandoffPackageArchiveRepositoryTests {
         entity.setSessionId(sessionId);
         entity.setStatus(DemoReadinessStatus.READY.name());
         entity.setSummary("Demo session " + sessionId + " is ready.");
+        entity.setHandoffReadinessStatus(DemoReadinessStatus.READY.name());
+        entity.setHandoffReadinessSummary("Handoff package is ready.");
+        entity.setHandoffReadinessNextAction("No missing handoff evidence.");
+        entity.setHandoffReadyCheckCount(7);
+        entity.setHandoffNeedsAttentionCheckCount(0);
+        entity.setHandoffBlockedCheckCount(0);
         entity.setShareSummary("Status READY; session " + sessionId + ".");
         entity.setRecentPullRequestUrl("https://github.com/bingqin2/PatchPilot/pull/42");
         entity.setCreatedAt(createdAt);

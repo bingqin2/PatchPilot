@@ -356,6 +356,12 @@ export function DemoSessionSnapshotPanel({
                       <strong>{archive.id}</strong>
                       <span>{archive.sessionId}</span>
                       <small>{archive.shareSummary}</small>
+                      <small>Handoff readiness: {statusLabel(archive.handoffReadinessStatus)}</small>
+                      <small>
+                        {archive.handoffReadyCheckCount} ready / {archive.handoffNeedsAttentionCheckCount} warning /{' '}
+                        {archive.handoffBlockedCheckCount} blocked
+                      </small>
+                      <small>{archive.handoffReadinessNextAction}</small>
                     </div>
                     <div className="demo-session-archive-actions">
                       <time dateTime={archive.createdAt}>{compactDateTime(archive.createdAt)}</time>

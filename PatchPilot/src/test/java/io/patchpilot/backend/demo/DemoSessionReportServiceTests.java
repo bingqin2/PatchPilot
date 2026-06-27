@@ -313,7 +313,7 @@ class DemoSessionReportServiceTests {
                 .contains("- No next actions recorded.");
     }
 
-    private static DemoSessionReportRequestDto readyHandoffRequest() {
+    static DemoSessionReportRequestDto readyHandoffRequest() {
         return new DemoSessionReportRequestDto(List.of(
                 new DemoPreparedLaunchCommandRequestDto(
                         "/agent fix replace docs/demo.md PatchPilot smoke test",
@@ -377,7 +377,7 @@ class DemoSessionReportServiceTests {
         );
     }
 
-    private static DemoSessionSnapshotVo snapshot() {
+    static DemoSessionSnapshotVo snapshot() {
         return new DemoSessionSnapshotVo(
                 "demo-session-20260624T003000Z",
                 DemoReadinessStatus.READY,

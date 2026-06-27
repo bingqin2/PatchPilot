@@ -556,7 +556,14 @@ export interface DemoSessionArchive {
   report: string;
 }
 
-export type DemoHandoffPackageArchive = DemoSessionArchive;
+export interface DemoHandoffPackageArchive extends DemoSessionArchive {
+  handoffReadinessStatus: DemoReadinessStatus;
+  handoffReadinessSummary: string;
+  handoffReadinessNextAction: string;
+  handoffReadyCheckCount: number;
+  handoffNeedsAttentionCheckCount: number;
+  handoffBlockedCheckCount: number;
+}
 
 export interface BackendHealth {
   status: string;
