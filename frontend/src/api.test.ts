@@ -1160,11 +1160,13 @@ test('loads structured demo handoff readiness with browser context', async () =>
       data: {
         status: 'READY',
         summary: 'Handoff package has current webhook delivery, PR, command, outcome, and readiness trend evidence.',
+        nextAction: 'No missing handoff evidence.',
         checks: [
           {
             name: 'Webhook delivery evidence',
             status: 'READY',
-            summary: 'delivery-1 created task task-1.'
+            summary: 'delivery-1 created task task-1.',
+            nextAction: 'No action needed.'
           }
         ]
       },
@@ -1182,7 +1184,9 @@ test('loads structured demo handoff readiness with browser context', async () =>
   });
   expect(readiness.status).toBe('READY');
   expect(readiness.summary).toContain('webhook delivery');
+  expect(readiness.nextAction).toBe('No missing handoff evidence.');
   expect(readiness.checks[0].name).toBe('Webhook delivery evidence');
+  expect(readiness.checks[0].nextAction).toBe('No action needed.');
 });
 
 test('downloads demo handoff package markdown with browser context', async () => {

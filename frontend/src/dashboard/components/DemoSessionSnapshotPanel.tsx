@@ -289,7 +289,7 @@ export function DemoSessionSnapshotPanel({
                 <SnapshotFact
                   label="Handoff evidence"
                   value={handoffEvidenceLabel(preparedLaunchCommands.length, archivedLaunchOutcomes.length)}
-                  detail={`${handoffReadiness.checks.length} readiness ${plural(handoffReadiness.checks.length, 'check')}`}
+                  detail={handoffReadiness.nextAction}
                 />
               </>
             ) : null}
@@ -404,6 +404,7 @@ function HandoffReadinessCheckList({ checks }: { checks: DemoHandoffReadinessChe
               <div>
                 <strong>{check.name}</strong>
                 <small>{check.summary}</small>
+                <small>Next action: {check.nextAction}</small>
               </div>
               <span className={`demo-readiness-status demo-readiness-status-${statusClass(check.status)}`}>
                 {statusLabel(check.status)}

@@ -4,6 +4,27 @@ This file records dated implementation progress, validation commands, and import
 
 ## 2026-06-27
 
+Implemented handoff readiness operator actions from `docs/plans/232-handoff-readiness-operator-actions.md`.
+
+Changes:
+
+- Added an overall `nextAction` to structured demo handoff readiness responses.
+- Added check-level `nextAction` values for demo snapshot, recent task, webhook delivery, Pull Request, prepared command, archived outcome, and readiness trend checks.
+- Rendered the same action guidance in Markdown handoff readiness sections so copied handoff packages match the structured API.
+- Updated the dashboard demo session snapshot panel to keep the readiness summary visible while showing the overall next action and each check's next action.
+
+Validation so far:
+
+- `mvn -pl PatchPilot -Dtest=DemoSessionReportServiceTests,DemoReadinessControllerTests test`: first failed because the readiness records did not expose `nextAction`; then passed after backend implementation, 40 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts src/dashboard/components/DemoSessionSnapshotPanel.test.tsx --reporter=basic`: first failed because the dashboard did not render handoff actions; then passed after frontend implementation, 92 tests run, 0 failures.
+
+Final validation:
+
+- `mvn -pl PatchPilot test`: passed, 800 tests run, 0 failures.
+- `npm test -- --reporter=basic`: passed, 26 test files and 286 tests run.
+- `npm run build`: passed after TypeScript and production Vite build verification.
+- `git diff --check`: passed.
+
 Implemented structured demo handoff readiness from `docs/plans/231-structured-demo-handoff-readiness.md`.
 
 Changes:
