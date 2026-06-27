@@ -402,6 +402,23 @@ export interface DemoLaunchEvidencePackage {
   generatedAt: string;
 }
 
+export interface DemoLaunchEvidencePackageArchive {
+  id: string;
+  status: DemoReadinessStatus;
+  readyToShare: boolean;
+  summary: string;
+  sessionId: string;
+  launchReadinessStatus: DemoReadinessStatus;
+  evidenceBundleStatus: DemoReadinessStatus;
+  handoffFinalizationStatus: DemoReadinessStatus;
+  latestTaskId: string | null;
+  latestPullRequestUrl: string | null;
+  latestWebhookDeliveryId: string | null;
+  evaluationRunId: string | null;
+  createdAt: string;
+  report: string;
+}
+
 export interface DemoReadinessSnapshotArchive {
   id: string;
   status: DemoReadinessStatus;

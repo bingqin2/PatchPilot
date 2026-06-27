@@ -1,21 +1,30 @@
-import { Copy, Download } from 'lucide-react';
+import { Archive, Copy, Download } from 'lucide-react';
 import { useState } from 'react';
-import type { DemoLaunchEvidencePackage, DemoReadinessStatus } from '../../types';
+import type { DemoLaunchEvidencePackage, DemoLaunchEvidencePackageArchive, DemoReadinessStatus } from '../../types';
 import { compactDateTime } from '../format';
 
 interface DemoLaunchEvidencePackagePanelProps {
   evidencePackage: DemoLaunchEvidencePackage | null;
   error: string | null;
+  archives: DemoLaunchEvidencePackageArchive[];
+  archiveError: string | null;
+  onArchivePackage: () => Promise<DemoLaunchEvidencePackageArchive>;
   onDownloadReport: () => Promise<Blob>;
+  onDownloadArchiveReport: (archiveId: string) => Promise<Blob>;
 }
 
 export function DemoLaunchEvidencePackagePanel({
   evidencePackage,
   error,
-  onDownloadReport
+  archives,
+  archiveError,
+  onArchivePackage,
+  onDownloadReport,
+  onDownloadArchiveReport
 }: DemoLaunchEvidencePackagePanelProps) {
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
   const [downloadStatus, setDownloadStatus] = useState<string | null>(null);
+  const [archiveStatus, setArchiveStatus] = useState<string | null>(null);
 
   async function copyReport() {
     if (!evidencePackage) {
@@ -36,6 +45,25 @@ export function DemoLaunchEvidencePackagePanel({
       setDownloadStatus('Launch evidence report downloaded');
     } catch {
       setDownloadStatus('Download failed');
+    }
+  }
+
+  async function archivePackage() {
+    try {
+      const archive = await onArchivePackage();
+      setArchiveStatus(`Archived launch package ${archive.id}`);
+    } catch {
+      setArchiveStatus('Archive failed');
+    }
+  }
+
+  async function downloadArchiveReport(archive: DemoLaunchEvidencePackageArchive) {
+    try {
+      const report = await onDownloadArchiveReport(archive.id);
+      downloadMarkdown(report, `patchpilot-demo-launch-evidence-package-${archive.id}.md`);
+      setArchiveStatus(`Archived report ${archive.id} downloaded`);
+    } catch {
+      setArchiveStatus('Archived report download failed');
     }
   }
 
@@ -60,6 +88,16 @@ export function DemoLaunchEvidencePackagePanel({
           <button
             className="secondary-button"
             type="button"
+            onClick={() => void archivePackage()}
+            aria-label="Archive launch evidence package"
+            disabled={!evidencePackage}
+          >
+            <Archive size={14} />
+            Archive package
+          </button>
+          <button
+            className="secondary-button"
+            type="button"
             onClick={() => void copyReport()}
             aria-label="Copy launch evidence report"
             disabled={!evidencePackage}
@@ -78,6 +116,7 @@ export function DemoLaunchEvidencePackagePanel({
           </button>
           {copyStatus ? <span className="copy-status">{copyStatus}</span> : null}
           {downloadStatus ? <span className="copy-status">{downloadStatus}</span> : null}
+          {archiveStatus ? <span className="copy-status">{archiveStatus}</span> : null}
         </div>
       </div>
 
@@ -85,6 +124,13 @@ export function DemoLaunchEvidencePackagePanel({
         <div className="adapter-api-error">
           <strong>Demo launch evidence package unavailable</strong>
           <span>{error}</span>
+        </div>
+      ) : null}
+
+      {archiveError ? (
+        <div className="adapter-api-error">
+          <strong>Archived launch evidence unavailable</strong>
+          <span>{archiveError}</span>
         </div>
       ) : null}
 
@@ -136,11 +182,56 @@ export function DemoLaunchEvidencePackagePanel({
           <EvidenceList title="Post-demo proof" items={evidencePackage.postDemoProof} />
           <EvidenceList title="Launch next actions" items={evidencePackage.nextActions} />
           <EvidenceList title="Side effect contract" items={evidencePackage.healthContract} />
+          <LaunchEvidenceArchiveList
+            archives={archives}
+            onDownloadArchiveReport={(archive) => void downloadArchiveReport(archive)}
+          />
         </>
       ) : (
         <div className="empty-state">Demo launch evidence package has not loaded yet.</div>
       )}
     </section>
+  );
+}
+
+function LaunchEvidenceArchiveList({
+  archives,
+  onDownloadArchiveReport
+}: {
+  archives: DemoLaunchEvidencePackageArchive[];
+  onDownloadArchiveReport: (archive: DemoLaunchEvidencePackageArchive) => void;
+}) {
+  return (
+    <div className="demo-evidence-actions">
+      <h3>Recent archived launch packages</h3>
+      {archives.length === 0 ? (
+        <p>No archived launch evidence packages yet.</p>
+      ) : (
+        <ul>
+          {archives.map((archive) => (
+            <li key={archive.id}>
+              <span>
+                {archive.id} · {statusLabel(archive.status)} · {archive.sessionId} · {compactDateTime(archive.createdAt)}
+              </span>
+              {archive.latestPullRequestUrl ? (
+                <a href={archive.latestPullRequestUrl} target="_blank" rel="noreferrer">
+                  PR
+                </a>
+              ) : null}
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={() => onDownloadArchiveReport(archive)}
+                aria-label={`Download archived launch evidence report ${archive.id}`}
+              >
+                <Download size={14} />
+                Download archived report
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
 

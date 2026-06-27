@@ -4,6 +4,7 @@ import io.patchpilot.backend.demo.domain.DemoAdapterFixtureEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
 import io.patchpilot.backend.demo.domain.DemoEvaluationRunReadinessEvidenceVo;
+import io.patchpilot.backend.demo.domain.DemoLaunchEvidencePackageVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessCheckVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessSnapshotTrendStatus;
 import io.patchpilot.backend.demo.domain.DemoReadinessSnapshotTrendVo;
@@ -139,6 +140,49 @@ final class DemoLaunchEvidenceFixtures {
                 ready
                         ? List.of("Use this evidence bundle as the live demo baseline.")
                         : List.of("Fix demo evidence bundle before launch.")
+        );
+    }
+
+    static DemoLaunchEvidencePackageVo launchEvidencePackage(DemoReadinessStatus status) {
+        boolean ready = status == DemoReadinessStatus.READY;
+        return new DemoLaunchEvidencePackageVo(
+                status,
+                ready,
+                ready
+                        ? "PatchPilot launch evidence package is ready to share."
+                        : "PatchPilot launch evidence package needs attention before sharing.",
+                "demo-session-20260624T003000Z",
+                status,
+                status,
+                status,
+                "task-1",
+                "https://github.com/bingqin2/PatchPilot/pull/42",
+                "delivery-1",
+                "evaluation-run-2",
+                List.of("java", "python", "maven", "pytest"),
+                launchReadiness(status).checks(),
+                List.of(
+                        "Recent task task-1 reached COMPLETED.",
+                        "Recent Pull Request https://github.com/bingqin2/PatchPilot/pull/42 is available.",
+                        "Latest webhook delivery delivery-1 created task task-1."
+                ),
+                List.of(
+                        "Handoff finalization is " + status + ".",
+                        ready ? "Latest delivery receipt delivery-receipt-1 is fresh." : "Delivery receipt evidence is not current."
+                ),
+                ready
+                        ? List.of("Post the tested /agent fix comment, watch the task reach COMPLETED, then use the generated Pull Request for review.")
+                        : List.of("Resolve launch evidence warnings, then regenerate this package."),
+                List.of(
+                        "GET /api/demo/launch-evidence-package is read-only: it does not create tasks, call the model, run tests, archive records, mutate Git, send messages, or write to GitHub.",
+                        "GET /api/demo/launch-evidence-package/report/download only formats the same current package as Markdown."
+                ),
+                "# PatchPilot Demo Launch Evidence Package\n\n"
+                        + "- Status: `" + status + "`\n"
+                        + "- Ready to share: `" + ready + "`\n\n"
+                        + "## Side Effect Contract\n\n"
+                        + "- Read-only package evidence.\n",
+                Instant.parse("2026-06-28T02:00:00Z")
         );
     }
 

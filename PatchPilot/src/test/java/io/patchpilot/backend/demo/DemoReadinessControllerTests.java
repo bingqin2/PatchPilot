@@ -23,6 +23,7 @@ import io.patchpilot.backend.demo.domain.DemoHandoffShareDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffShareInstructionsVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffFinalizationCheckVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffFinalizationVo;
+import io.patchpilot.backend.demo.domain.DemoLaunchEvidencePackageArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchEvidencePackageVo;
 import io.patchpilot.backend.task.domain.vo.TriggerEvaluationDecisionVo;
 import io.patchpilot.backend.task.domain.vo.TriggerEvaluationResultVo;
@@ -118,6 +119,9 @@ class DemoReadinessControllerTests {
     private DemoLaunchEvidencePackageService demoLaunchEvidencePackageService;
 
     @MockitoBean
+    private DemoLaunchEvidencePackageArchiveService demoLaunchEvidencePackageArchiveService;
+
+    @MockitoBean
     private DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
 
     @MockitoBean
@@ -199,6 +203,69 @@ class DemoReadinessControllerTests {
                 .andExpect(content().contentType("text/markdown;charset=UTF-8"))
                 .andExpect(content().string(containsString("# PatchPilot Demo Launch Evidence Package")))
                 .andExpect(content().string(containsString("Recent Pull Request https://github.com/bingqin2/PatchPilot/pull/42 is available.")));
+    }
+
+    @Test
+    void should_archive_demo_launch_evidence_package() throws Exception {
+        when(demoLaunchEvidencePackageArchiveService.archiveCurrentPackage()).thenReturn(launchEvidencePackageArchive());
+
+        mockMvc.perform(post("/api/demo/launch-evidence-package/archives"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value("launch-evidence-archive-1"))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.readyToShare").value(true))
+                .andExpect(jsonPath("$.data.sessionId").value("demo-session-20260624T003000Z"))
+                .andExpect(jsonPath("$.data.latestPullRequestUrl").value("https://github.com/bingqin2/PatchPilot/pull/42"))
+                .andExpect(jsonPath("$.data.report").value(containsString("# PatchPilot Demo Launch Evidence Package")));
+
+        verify(operatorSafetyAuditService).recordSafetyAudit(argThat(this::isLaunchEvidencePackageArchiveAudit));
+    }
+
+    private boolean isLaunchEvidencePackageArchiveAudit(RecordOperatorSafetyAuditCommand command) {
+        return command != null
+                && "DEMO_LAUNCH_EVIDENCE_PACKAGE_ARCHIVED".equals(command.action())
+                && "DEMO_LAUNCH_EVIDENCE_PACKAGE_ARCHIVE".equals(command.resourceType())
+                && "launch-evidence-archive-1".equals(command.resourceId())
+                && command.scope() == TriggerQuarantineScope.REPOSITORY
+                && "patchpilot/local-demo".equals(command.scopeKey())
+                && "admin-api".equals(command.operator())
+                && "Archived demo launch evidence package READY".equals(command.reason());
+    }
+
+    @Test
+    void should_return_recent_demo_launch_evidence_package_archives() throws Exception {
+        when(demoLaunchEvidencePackageArchiveService.listRecentArchives())
+                .thenReturn(List.of(launchEvidencePackageArchive()));
+
+        mockMvc.perform(get("/api/demo/launch-evidence-package/archives"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].id").value("launch-evidence-archive-1"))
+                .andExpect(jsonPath("$.data[0].status").value("READY"))
+                .andExpect(jsonPath("$.data[0].summary").value("PatchPilot launch evidence package is ready to share."));
+    }
+
+    @Test
+    void should_download_archived_demo_launch_evidence_package_report_as_markdown_attachment() throws Exception {
+        when(demoLaunchEvidencePackageArchiveService.findArchive("launch-evidence-archive-1"))
+                .thenReturn(Optional.of(launchEvidencePackageArchive()));
+
+        mockMvc.perform(get("/api/demo/launch-evidence-package/archives/launch-evidence-archive-1/report/download"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("attachment;")))
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("patchpilot-demo-launch-evidence-package-launch-evidence-archive-1.md")))
+                .andExpect(content().contentTypeCompatibleWith("text/markdown"))
+                .andExpect(content().string(containsString("# PatchPilot Demo Launch Evidence Package")))
+                .andExpect(content().string(containsString("`READY`")));
+    }
+
+    @Test
+    void should_return_not_found_when_archived_demo_launch_evidence_package_report_is_missing() throws Exception {
+        when(demoLaunchEvidencePackageArchiveService.findArchive("missing-archive")).thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/api/demo/launch-evidence-package/archives/missing-archive/report/download"))
+                .andExpect(status().isNotFound());
     }
 
     @Test
@@ -1957,6 +2024,25 @@ class DemoReadinessControllerTests {
                 ),
                 "# PatchPilot Demo Launch Evidence Package\n\nRecent Pull Request https://github.com/bingqin2/PatchPilot/pull/42 is available.",
                 Instant.parse("2026-06-28T02:00:00Z")
+        );
+    }
+
+    private static DemoLaunchEvidencePackageArchiveVo launchEvidencePackageArchive() {
+        return new DemoLaunchEvidencePackageArchiveVo(
+                "launch-evidence-archive-1",
+                DemoReadinessStatus.READY,
+                true,
+                "PatchPilot launch evidence package is ready to share.",
+                "demo-session-20260624T003000Z",
+                DemoReadinessStatus.READY,
+                DemoReadinessStatus.READY,
+                DemoReadinessStatus.READY,
+                "task-1",
+                "https://github.com/bingqin2/PatchPilot/pull/42",
+                "delivery-1",
+                "evaluation-run-2",
+                Instant.parse("2026-06-28T02:30:00Z"),
+                "# PatchPilot Demo Launch Evidence Package\n\n- Status: `READY`"
         );
     }
 }

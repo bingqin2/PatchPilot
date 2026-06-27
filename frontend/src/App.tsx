@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react
 import {
   ADMIN_TOKEN_STORAGE_KEY,
   approveTaskReview,
+  archiveDemoLaunchEvidencePackage,
   archiveDemoHandoffPackage,
   archiveDemoReadinessSnapshot,
   archiveDemoSelfHostedLaunchReadiness,
@@ -24,6 +25,7 @@ import {
   downloadDemoSessionReport,
   downloadDemoHandoffShareCenterReport,
   downloadDemoHandoffFinalizationReport,
+  downloadDemoLaunchEvidencePackageArchiveReport,
   downloadDemoLaunchEvidencePackageReport,
   downloadDemoSelfHostedLaunchReadinessArchiveReport,
   downloadDemoSelfHostedLaunchReadinessReport,
@@ -89,6 +91,7 @@ import {
   listLanguageAdapters,
   listDemoHandoffPackageArchives,
   listDemoHandoffShareDeliveryReceipts,
+  listDemoLaunchEvidencePackageArchives,
   listDemoSelfHostedLaunchReadinessArchives,
   listDemoSessionArchives,
   listDemoReadinessSnapshots,
@@ -159,6 +162,7 @@ import type {
   DemoHandoffShareChecklist,
   DemoLaunchCommand,
   DemoLaunchCommandInput,
+  DemoLaunchEvidencePackageArchive,
   DemoLaunchEvidencePackage,
   DemoLaunchPreflight,
   DemoLaunchPreflightInput,
@@ -296,6 +300,10 @@ export default function App() {
     useState<string | null>(null);
   const [demoLaunchEvidencePackage, setDemoLaunchEvidencePackage] = useState<DemoLaunchEvidencePackage | null>(null);
   const [demoLaunchEvidencePackageError, setDemoLaunchEvidencePackageError] = useState<string | null>(null);
+  const [demoLaunchEvidencePackageArchives, setDemoLaunchEvidencePackageArchives] =
+    useState<DemoLaunchEvidencePackageArchive[]>([]);
+  const [demoLaunchEvidencePackageArchiveError, setDemoLaunchEvidencePackageArchiveError] =
+    useState<string | null>(null);
   const [demoHandoffShareInstructions, setDemoHandoffShareInstructions] =
     useState<DemoHandoffShareInstructions | null>(null);
   const [demoHandoffShareInstructionsError, setDemoHandoffShareInstructionsError] = useState<string | null>(null);
@@ -639,6 +647,7 @@ export default function App() {
         demoSelfHostedLaunchReadinessResult,
         demoSelfHostedLaunchReadinessArchiveResult,
         demoLaunchEvidencePackageResult,
+        demoLaunchEvidencePackageArchiveResult,
         demoHandoffShareInstructionsResult,
         demoHandoffShareDeliveryReceiptResult,
         demoScriptResult,
@@ -743,6 +752,10 @@ export default function App() {
         getDemoLaunchEvidencePackage().then(
           (evidencePackage) => ({ evidencePackage, error: null as string | null }),
           (caught) => ({ evidencePackage: null, error: errorMessage(caught) })
+        ),
+        listDemoLaunchEvidencePackageArchives().then(
+          (archives) => ({ archives, error: null as string | null }),
+          (caught) => ({ archives: null, error: errorMessage(caught) })
         ),
         getDemoHandoffShareInstructions().then(
           (instructions) => ({ instructions, error: null as string | null }),
@@ -928,6 +941,10 @@ export default function App() {
         setDemoLaunchEvidencePackage(demoLaunchEvidencePackageResult.evidencePackage);
       }
       setDemoLaunchEvidencePackageError(demoLaunchEvidencePackageResult.error);
+      if (demoLaunchEvidencePackageArchiveResult.archives) {
+        setDemoLaunchEvidencePackageArchives(demoLaunchEvidencePackageArchiveResult.archives);
+      }
+      setDemoLaunchEvidencePackageArchiveError(demoLaunchEvidencePackageArchiveResult.error);
       if (demoHandoffShareInstructionsResult.instructions) {
         setDemoHandoffShareInstructions(demoHandoffShareInstructionsResult.instructions);
       }
@@ -1221,6 +1238,15 @@ export default function App() {
   ), []);
   const handleDownloadDemoLaunchEvidencePackageReport = useCallback(() => (
     downloadDemoLaunchEvidencePackageReport()
+  ), []);
+  const handleArchiveDemoLaunchEvidencePackage = useCallback(async () => {
+    const archive = await archiveDemoLaunchEvidencePackage();
+    setDemoLaunchEvidencePackageArchives((current) => [archive, ...current.filter((item) => item.id !== archive.id)].slice(0, 20));
+    setDemoLaunchEvidencePackageArchiveError(null);
+    return archive;
+  }, []);
+  const handleDownloadDemoLaunchEvidencePackageArchiveReport = useCallback((archiveId: string) => (
+    downloadDemoLaunchEvidencePackageArchiveReport(archiveId)
   ), []);
   const handleDownloadDemoHandoffShareInstructionsReport = useCallback(() => (
     downloadDemoHandoffShareInstructionsReport()
@@ -1722,7 +1748,11 @@ export default function App() {
       <DemoLaunchEvidencePackagePanel
         evidencePackage={demoLaunchEvidencePackage}
         error={demoLaunchEvidencePackageError}
+        archives={demoLaunchEvidencePackageArchives}
+        archiveError={demoLaunchEvidencePackageArchiveError}
+        onArchivePackage={handleArchiveDemoLaunchEvidencePackage}
         onDownloadReport={handleDownloadDemoLaunchEvidencePackageReport}
+        onDownloadArchiveReport={handleDownloadDemoLaunchEvidencePackageArchiveReport}
       />
 
       <DemoEvidenceBundlePanel
