@@ -224,6 +224,9 @@ export interface ConfigurationSummary {
   agentApiKeyConfigured: boolean;
   githubTokenConfigured: boolean;
   githubWebhookSecretConfigured: boolean;
+  githubWebhookPublicBaseUrlConfigured: boolean;
+  githubWebhookPublicBaseUrl: string;
+  githubWebhookPayloadUrl: string;
   adminTokenConfigured: boolean;
   dashboardBaseUrlConfigured: boolean;
   workspaceRootDir: string;
@@ -295,6 +298,20 @@ export interface GitHubRepositoryAccessReadiness {
   status: GitHubRepositoryAccessReadinessStatus;
   message: string;
   defaultBranch: string | null;
+  latencyMs: number;
+  checkedAt: string;
+  operatorAction: string;
+}
+
+export type GitHubWebhookUrlReadinessStatus = 'READY' | 'NEEDS_ATTENTION';
+
+export interface GitHubWebhookUrlReadiness {
+  publicBaseUrlConfigured: boolean;
+  status: GitHubWebhookUrlReadinessStatus;
+  publicBaseUrl: string;
+  payloadUrl: string;
+  healthUrl: string;
+  message: string;
   latencyMs: number;
   checkedAt: string;
   operatorAction: string;

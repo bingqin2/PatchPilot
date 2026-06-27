@@ -6,6 +6,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class GitHubProperties {
 
     private String token = "";
+    private String webhookPublicBaseUrl = "";
 
     public String getToken() {
         return token;
@@ -13,5 +14,13 @@ public class GitHubProperties {
 
     public void setToken(String token) {
         this.token = token;
+    }
+
+    public String getWebhookPublicBaseUrl() {
+        return webhookPublicBaseUrl;
+    }
+
+    public void setWebhookPublicBaseUrl(String webhookPublicBaseUrl) {
+        this.webhookPublicBaseUrl = webhookPublicBaseUrl;
     }
 }

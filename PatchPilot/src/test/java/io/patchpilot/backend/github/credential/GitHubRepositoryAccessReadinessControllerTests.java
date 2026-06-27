@@ -75,7 +75,8 @@ class GitHubRepositoryAccessReadinessControllerTests {
                 .disable(com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         return MockMvcBuilders.standaloneSetup(new GitHubCredentialReadinessController(
                         new GitHubCredentialReadinessService(() -> null),
-                        service
+                        service,
+                        new GitHubWebhookUrlReadinessService(() -> null)
                 ))
                 .setMessageConverters(new org.springframework.http.converter.json.MappingJackson2HttpMessageConverter(objectMapper))
                 .addFilters(new AdminApiSecurityFilter(properties, objectMapper))

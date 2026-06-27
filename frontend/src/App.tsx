@@ -41,6 +41,7 @@ import {
   preflightDemoLaunch,
   getGitHubCredentialReadiness,
   getGitHubRepositoryAccessReadiness,
+  getGitHubWebhookUrlReadiness,
   getRejectedTriggerSummary,
   getTriggerQuarantineEvidence,
   getFailureCauseSummary,
@@ -148,6 +149,7 @@ import type {
   FixTaskWorkerHealth,
   GitHubCredentialReadiness,
   GitHubRepositoryAccessReadiness,
+  GitHubWebhookUrlReadiness,
   ModelProviderHealth,
   AdminAuditFilterOptions,
   AcceptedTriggerDecision,
@@ -213,6 +215,7 @@ export default function App() {
   const [configuration, setConfiguration] = useState<ConfigurationSummary | null>(null);
   const [githubCredentialReadiness, setGitHubCredentialReadiness] = useState<GitHubCredentialReadiness | null>(null);
   const [githubRepositoryAccessReadiness, setGitHubRepositoryAccessReadiness] = useState<GitHubRepositoryAccessReadiness | null>(null);
+  const [githubWebhookUrlReadiness, setGitHubWebhookUrlReadiness] = useState<GitHubWebhookUrlReadiness | null>(null);
   const [modelProviderHealth, setModelProviderHealth] = useState<ModelProviderHealth | null>(null);
   const [backendHealth, setBackendHealth] = useState<BackendHealth | null>(null);
   const [demoReadiness, setDemoReadiness] = useState<DemoReadiness | null>(null);
@@ -541,6 +544,7 @@ export default function App() {
         latencySummary,
         configurationSummary,
         githubCredentialReadinessResult,
+        githubWebhookUrlReadinessResult,
         modelProviderHealthResult,
         demoEvidenceBundleResult,
         demoSessionSnapshotResult,
@@ -584,6 +588,10 @@ export default function App() {
         getLatencySummary(taskFilters),
         getConfigurationSummary(),
         getGitHubCredentialReadiness().then(
+          (readiness) => ({ readiness, error: null as string | null }),
+          (caught) => ({ readiness: null, error: errorMessage(caught) })
+        ),
+        getGitHubWebhookUrlReadiness().then(
           (readiness) => ({ readiness, error: null as string | null }),
           (caught) => ({ readiness: null, error: errorMessage(caught) })
         ),
@@ -717,6 +725,9 @@ export default function App() {
       setConfiguration(configurationSummary);
       if (githubCredentialReadinessResult.readiness) {
         setGitHubCredentialReadiness(githubCredentialReadinessResult.readiness);
+      }
+      if (githubWebhookUrlReadinessResult.readiness) {
+        setGitHubWebhookUrlReadiness(githubWebhookUrlReadinessResult.readiness);
       }
       if (modelProviderHealthResult.health) {
         setModelProviderHealth(modelProviderHealthResult.health);
@@ -1332,6 +1343,7 @@ export default function App() {
         configuration={configuration}
         githubCredentialReadiness={githubCredentialReadiness}
         githubRepositoryAccessReadiness={githubRepositoryAccessReadiness}
+        githubWebhookUrlReadiness={githubWebhookUrlReadiness}
         modelProviderHealth={modelProviderHealth}
         demoReadiness={demoReadiness}
         adapterFixtureVerifications={adapterFixtureVerifications}

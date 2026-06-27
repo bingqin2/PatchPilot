@@ -85,6 +85,16 @@ it must not call `GitHubWebhookService.handle`, create tasks, queue work, record
 delivery diagnostics, record rejected triggers, post GitHub comments, consume
 rate-limit quota, or call the model.
 
+Webhook URL readiness is another read-only operator check. The backend reads
+`patchpilot.github.webhook-public-base-url`, derives the GitHub Payload URL as
+`<base>/api/github/webhook`, and probes `<base>/health` through
+`GitHubWebhookUrlProbe`. `GET /api/github/webhook-url-readiness` reports the
+normalized base URL, payload URL, health URL, status, latency, and next operator
+action without validating signatures, posting comments, redelivering events,
+creating tasks, or mutating GitHub settings. `DemoReadinessService` and the
+dashboard setup checklist reuse this readiness state so stale `cloudflared`
+quick-tunnel URLs are visible before an operator posts a live `/agent fix`.
+
 Real webhook delivery diagnostics persist an outcome correlation target for each
 handled delivery. Task-created, active-task, and duplicate deliveries point to
 the task detail route; rejected deliveries point to the rejected-trigger audit
@@ -171,6 +181,7 @@ Responsibilities:
 
 - Receive GitHub webhook requests.
 - Verify `X-Hub-Signature-256`.
+- Expose the configured public webhook base URL and derived payload URL through a read-only readiness probe.
 - Route supported events.
 - Detect `/agent fix`.
 - Reject unsafe, unauthorized, or non-actionable `/agent fix` commands before task creation.

@@ -48,6 +48,9 @@ public class ConfigurationSummaryService {
                 hasText(agentProperties.getApiKey()),
                 hasText(gitHubProperties.getToken()),
                 hasText(webhookSecret),
+                hasText(webhookPublicBaseUrl()),
+                webhookPublicBaseUrl(),
+                webhookPayloadUrl(),
                 adminApiSecurityProperties.isAdminTokenConfigured(),
                 dashboardLinkService.isBaseUrlConfigured(),
                 workspaceProperties.getRootDir().toString(),
@@ -87,6 +90,18 @@ public class ConfigurationSummaryService {
     private boolean modelCostConfigured() {
         AgentProperties.Cost cost = agentProperties.getCost();
         return cost != null && (cost.getPromptTokenUsd() > 0 || cost.getCompletionTokenUsd() > 0);
+    }
+
+    private String webhookPublicBaseUrl() {
+        String publicBaseUrl = valueOrEmpty(gitHubProperties.getWebhookPublicBaseUrl()).trim();
+        while (publicBaseUrl.endsWith("/")) {
+            publicBaseUrl = publicBaseUrl.substring(0, publicBaseUrl.length() - 1);
+        }
+        return publicBaseUrl;
+    }
+
+    private String webhookPayloadUrl() {
+        return hasText(webhookPublicBaseUrl()) ? webhookPublicBaseUrl() + "/api/github/webhook" : "";
     }
 
     private static boolean hasText(String value) {

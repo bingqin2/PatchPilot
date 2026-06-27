@@ -44,6 +44,7 @@ import type {
   FixTaskWorkerHealth,
   GitHubCredentialReadiness,
   GitHubRepositoryAccessReadiness,
+  GitHubWebhookUrlReadiness,
   OperatorSafetyAudit,
   AcceptedTriggerDecision,
   RejectedTriggerAudit,
@@ -196,6 +197,10 @@ export async function getModelProviderHealth(): Promise<ModelProviderHealth> {
 
 export async function getGitHubCredentialReadiness(): Promise<GitHubCredentialReadiness> {
   return getApi<GitHubCredentialReadiness>('/api/github/credential-readiness');
+}
+
+export async function getGitHubWebhookUrlReadiness(): Promise<GitHubWebhookUrlReadiness> {
+  return getApi<GitHubWebhookUrlReadiness>('/api/github/webhook-url-readiness');
 }
 
 export async function getGitHubRepositoryAccessReadiness(
