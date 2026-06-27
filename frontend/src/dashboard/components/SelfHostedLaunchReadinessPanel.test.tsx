@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { SelfHostedLaunchReadinessPanel } from './SelfHostedLaunchReadinessPanel';
-import type { DemoSelfHostedLaunchReadiness } from '../../types';
+import type { DemoSelfHostedLaunchReadiness, DemoSelfHostedLaunchReadinessArchive } from '../../types';
 
 const launchReadiness: DemoSelfHostedLaunchReadiness = {
   status: 'NEEDS_ATTENTION',
@@ -29,12 +29,30 @@ const launchReadiness: DemoSelfHostedLaunchReadiness = {
   markdownReport: '# PatchPilot Self-Hosted Launch Readiness'
 };
 
+const archives: DemoSelfHostedLaunchReadinessArchive[] = [
+  {
+    id: 'launch-readiness-archive-1',
+    status: 'READY',
+    readyToLaunch: true,
+    summary: 'Self-hosted PatchPilot is ready for a controlled issue-to-PR launch.',
+    readyCheckCount: 6,
+    needsAttentionCheckCount: 0,
+    blockedCheckCount: 0,
+    createdAt: '2026-06-28T01:30:00Z',
+    report: '# PatchPilot Self-Hosted Launch Readiness'
+  }
+];
+
 test('renders self-hosted launch readiness checks and next actions', () => {
   render(
     <SelfHostedLaunchReadinessPanel
       readiness={launchReadiness}
       error={null}
+      archives={archives}
+      archiveError={null}
+      onArchiveReadiness={async () => archives[0]}
       onDownloadReport={async () => new Blob(['report'], { type: 'text/markdown' })}
+      onDownloadArchiveReport={async () => new Blob(['archive report'], { type: 'text/markdown' })}
     />
   );
 
@@ -45,6 +63,8 @@ test('renders self-hosted launch readiness checks and next actions', () => {
   expect(within(panel).getByText('Handoff finalization')).toBeInTheDocument();
   expect(within(panel).getByText('Demo handoff package is send-ready but final delivery evidence is not current.')).toBeInTheDocument();
   expect(within(panel).getByText('Resolve launch package warnings, then rerun this readiness package.')).toBeInTheDocument();
+  expect(within(panel).getByText('Recent launch readiness archives')).toBeInTheDocument();
+  expect(within(panel).getByText('launch-readiness-archive-1')).toBeInTheDocument();
 });
 
 test('downloads self-hosted launch readiness markdown report', async () => {
@@ -58,7 +78,11 @@ test('downloads self-hosted launch readiness markdown report', async () => {
     <SelfHostedLaunchReadinessPanel
       readiness={launchReadiness}
       error={null}
+      archives={archives}
+      archiveError={null}
+      onArchiveReadiness={async () => archives[0]}
       onDownloadReport={onDownloadReport}
+      onDownloadArchiveReport={async () => new Blob(['archive report'], { type: 'text/markdown' })}
     />
   );
 
@@ -69,6 +93,40 @@ test('downloads self-hosted launch readiness markdown report', async () => {
   expect(click).toHaveBeenCalled();
   expect(revokeObjectURL).toHaveBeenCalledWith('blob:self-hosted-launch-readiness');
   expect(screen.getByText('Launch readiness report downloaded')).toBeInTheDocument();
+
+  vi.unstubAllGlobals();
+  click.mockRestore();
+});
+
+test('archives self-hosted launch readiness and downloads archived reports', async () => {
+  const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+  const createObjectURL = vi.fn(() => 'blob:self-hosted-launch-readiness-archive');
+  const revokeObjectURL = vi.fn();
+  vi.stubGlobal('URL', { createObjectURL, revokeObjectURL });
+  const onArchiveReadiness = vi.fn(async () => archives[0]);
+  const onDownloadArchiveReport = vi.fn(async () => new Blob(['archive report'], { type: 'text/markdown' }));
+
+  render(
+    <SelfHostedLaunchReadinessPanel
+      readiness={launchReadiness}
+      error={null}
+      archives={archives}
+      archiveError={null}
+      onArchiveReadiness={onArchiveReadiness}
+      onDownloadReport={async () => new Blob(['report'], { type: 'text/markdown' })}
+      onDownloadArchiveReport={onDownloadArchiveReport}
+    />
+  );
+
+  await userEvent.click(screen.getByRole('button', { name: 'Archive launch readiness' }));
+  expect(onArchiveReadiness).toHaveBeenCalledTimes(1);
+  expect(screen.getByText('Launch readiness archived')).toBeInTheDocument();
+
+  await userEvent.click(screen.getByRole('button', { name: 'Download launch readiness archive launch-readiness-archive-1' }));
+  expect(onDownloadArchiveReport).toHaveBeenCalledWith('launch-readiness-archive-1');
+  expect(createObjectURL).toHaveBeenCalled();
+  expect(click).toHaveBeenCalled();
+  expect(revokeObjectURL).toHaveBeenCalledWith('blob:self-hosted-launch-readiness-archive');
 
   vi.unstubAllGlobals();
   click.mockRestore();

@@ -5,6 +5,7 @@ import {
   approveTaskReview,
   archiveDemoHandoffPackage,
   archiveDemoReadinessSnapshot,
+  archiveDemoSelfHostedLaunchReadiness,
   archiveDemoSession,
   archiveEvaluationRunSnapshot,
   cancelTask,
@@ -22,6 +23,7 @@ import {
   downloadDemoSessionReport,
   downloadDemoHandoffShareCenterReport,
   downloadDemoHandoffFinalizationReport,
+  downloadDemoSelfHostedLaunchReadinessArchiveReport,
   downloadDemoSelfHostedLaunchReadinessReport,
   downloadDemoHandoffShareDeliveryReceiptReport,
   downloadDemoHandoffShareInstructionsReport,
@@ -81,6 +83,7 @@ import {
   listLanguageAdapters,
   listDemoHandoffPackageArchives,
   listDemoHandoffShareDeliveryReceipts,
+  listDemoSelfHostedLaunchReadinessArchives,
   listDemoSessionArchives,
   listDemoReadinessSnapshots,
   listQueueItems,
@@ -152,6 +155,7 @@ import type {
   DemoLaunchPreflight,
   DemoLaunchPreflightInput,
   DemoScript,
+  DemoSelfHostedLaunchReadinessArchive,
   DemoSelfHostedLaunchReadiness,
   DemoSessionArchive,
   DemoSessionReportInput,
@@ -276,6 +280,10 @@ export default function App() {
   const [demoSelfHostedLaunchReadiness, setDemoSelfHostedLaunchReadiness] =
     useState<DemoSelfHostedLaunchReadiness | null>(null);
   const [demoSelfHostedLaunchReadinessError, setDemoSelfHostedLaunchReadinessError] = useState<string | null>(null);
+  const [demoSelfHostedLaunchReadinessArchives, setDemoSelfHostedLaunchReadinessArchives] =
+    useState<DemoSelfHostedLaunchReadinessArchive[]>([]);
+  const [demoSelfHostedLaunchReadinessArchiveError, setDemoSelfHostedLaunchReadinessArchiveError] =
+    useState<string | null>(null);
   const [demoHandoffShareInstructions, setDemoHandoffShareInstructions] =
     useState<DemoHandoffShareInstructions | null>(null);
   const [demoHandoffShareInstructionsError, setDemoHandoffShareInstructionsError] = useState<string | null>(null);
@@ -612,6 +620,7 @@ export default function App() {
         demoHandoffShareCenterResult,
         demoHandoffFinalizationResult,
         demoSelfHostedLaunchReadinessResult,
+        demoSelfHostedLaunchReadinessArchiveResult,
         demoHandoffShareInstructionsResult,
         demoHandoffShareDeliveryReceiptResult,
         demoScriptResult,
@@ -706,6 +715,10 @@ export default function App() {
         getDemoSelfHostedLaunchReadiness().then(
           (readiness) => ({ readiness, error: null as string | null }),
           (caught) => ({ readiness: null, error: errorMessage(caught) })
+        ),
+        listDemoSelfHostedLaunchReadinessArchives().then(
+          (archives) => ({ archives, error: null as string | null }),
+          (caught) => ({ archives: null, error: errorMessage(caught) })
         ),
         getDemoHandoffShareInstructions().then(
           (instructions) => ({ instructions, error: null as string | null }),
@@ -875,6 +888,10 @@ export default function App() {
         setDemoSelfHostedLaunchReadiness(demoSelfHostedLaunchReadinessResult.readiness);
       }
       setDemoSelfHostedLaunchReadinessError(demoSelfHostedLaunchReadinessResult.error);
+      if (demoSelfHostedLaunchReadinessArchiveResult.archives) {
+        setDemoSelfHostedLaunchReadinessArchives(demoSelfHostedLaunchReadinessArchiveResult.archives);
+      }
+      setDemoSelfHostedLaunchReadinessArchiveError(demoSelfHostedLaunchReadinessArchiveResult.error);
       if (demoHandoffShareInstructionsResult.instructions) {
         setDemoHandoffShareInstructions(demoHandoffShareInstructionsResult.instructions);
       }
@@ -1155,6 +1172,9 @@ export default function App() {
   const handleDownloadDemoSelfHostedLaunchReadinessReport = useCallback(() => (
     downloadDemoSelfHostedLaunchReadinessReport()
   ), []);
+  const handleDownloadDemoSelfHostedLaunchReadinessArchiveReport = useCallback((archiveId: string) => (
+    downloadDemoSelfHostedLaunchReadinessArchiveReport(archiveId)
+  ), []);
   const handleDownloadDemoHandoffShareInstructionsReport = useCallback(() => (
     downloadDemoHandoffShareInstructionsReport()
   ), []);
@@ -1248,6 +1268,20 @@ export default function App() {
       setDemoHandoffShareInstructionsError(null);
     } catch (caught) {
       setDemoHandoffShareInstructionsError(errorMessage(caught));
+    }
+    return archive;
+  }, []);
+
+  const handleArchiveDemoSelfHostedLaunchReadiness = useCallback(async () => {
+    const archive = await archiveDemoSelfHostedLaunchReadiness();
+    setDemoSelfHostedLaunchReadinessArchives((current) => [archive, ...current.filter((item) => item.id !== archive.id)].slice(0, 20));
+    setDemoSelfHostedLaunchReadinessArchiveError(null);
+    try {
+      const readiness = await getDemoSelfHostedLaunchReadiness();
+      setDemoSelfHostedLaunchReadiness(readiness);
+      setDemoSelfHostedLaunchReadinessError(null);
+    } catch (caught) {
+      setDemoSelfHostedLaunchReadinessError(errorMessage(caught));
     }
     return archive;
   }, []);
@@ -1605,7 +1639,11 @@ export default function App() {
       <SelfHostedLaunchReadinessPanel
         readiness={demoSelfHostedLaunchReadiness}
         error={demoSelfHostedLaunchReadinessError}
+        archives={demoSelfHostedLaunchReadinessArchives}
+        archiveError={demoSelfHostedLaunchReadinessArchiveError}
+        onArchiveReadiness={handleArchiveDemoSelfHostedLaunchReadiness}
         onDownloadReport={handleDownloadDemoSelfHostedLaunchReadinessReport}
+        onDownloadArchiveReport={handleDownloadDemoSelfHostedLaunchReadinessArchiveReport}
       />
 
       <DemoEvidenceBundlePanel

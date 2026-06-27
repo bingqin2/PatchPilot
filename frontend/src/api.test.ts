@@ -28,6 +28,8 @@ import {
   getDemoHandoffPackage,
   getDemoHandoffFinalization,
   getDemoSelfHostedLaunchReadiness,
+  archiveDemoSelfHostedLaunchReadiness,
+  listDemoSelfHostedLaunchReadinessArchives,
   getDemoHandoffReadiness,
   getDemoHandoffPackageArchiveSummary,
   createDemoHandoffShareDeliveryReceipt,
@@ -41,6 +43,7 @@ import {
   downloadDemoHandoffShareCenterReport,
   downloadDemoHandoffFinalizationReport,
   downloadDemoSelfHostedLaunchReadinessReport,
+  downloadDemoSelfHostedLaunchReadinessArchiveReport,
   downloadDemoHandoffShareInstructionsReport,
   downloadDemoHandoffShareChecklistReport,
   downloadDemoHandoffPackageArchiveSummaryReport,
@@ -1589,6 +1592,86 @@ test('downloads self-hosted launch readiness markdown from backend API', async (
   const downloadedReport = await downloadDemoSelfHostedLaunchReadinessReport();
 
   expect(fetchMock).toHaveBeenCalledWith('/api/demo/self-hosted-launch-readiness/report/download');
+  expect(downloadedReport).toBe(reportBlob);
+});
+
+test('archives self-hosted launch readiness package through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        id: 'launch-readiness-archive-1',
+        status: 'READY',
+        readyToLaunch: true,
+        summary: 'Self-hosted PatchPilot is ready for a controlled issue-to-PR launch.',
+        readyCheckCount: 6,
+        needsAttentionCheckCount: 0,
+        blockedCheckCount: 0,
+        createdAt: '2026-06-28T01:30:00Z',
+        report: '# PatchPilot Self-Hosted Launch Readiness'
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const archive = await archiveDemoSelfHostedLaunchReadiness();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/self-hosted-launch-readiness/archives', {
+    method: 'POST'
+  });
+  expect(archive.id).toBe('launch-readiness-archive-1');
+  expect(archive.readyToLaunch).toBe(true);
+  expect(archive.readyCheckCount).toBe(6);
+});
+
+test('lists self-hosted launch readiness archives from backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: [
+        {
+          id: 'launch-readiness-archive-1',
+          status: 'NEEDS_ATTENTION',
+          readyToLaunch: false,
+          summary: 'Self-hosted PatchPilot needs attention before launch.',
+          readyCheckCount: 4,
+          needsAttentionCheckCount: 2,
+          blockedCheckCount: 0,
+          createdAt: '2026-06-28T01:30:00Z',
+          report: '# PatchPilot Self-Hosted Launch Readiness'
+        }
+      ],
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const archives = await listDemoSelfHostedLaunchReadinessArchives();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/self-hosted-launch-readiness/archives');
+  expect(archives[0].id).toBe('launch-readiness-archive-1');
+  expect(archives[0].status).toBe('NEEDS_ATTENTION');
+});
+
+test('downloads archived self-hosted launch readiness markdown from backend API', async () => {
+  const reportBlob = new Blob(['# PatchPilot Self-Hosted Launch Readiness\n\n- Status: `READY`'], {
+    type: 'text/markdown;charset=UTF-8'
+  });
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    blob: async () => reportBlob
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const downloadedReport = await downloadDemoSelfHostedLaunchReadinessArchiveReport('launch-readiness-archive-1');
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/self-hosted-launch-readiness/archives/launch-readiness-archive-1/report/download');
   expect(downloadedReport).toBe(reportBlob);
 });
 

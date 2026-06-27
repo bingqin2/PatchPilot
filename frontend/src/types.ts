@@ -368,6 +368,18 @@ export interface DemoSelfHostedLaunchReadiness {
   markdownReport: string;
 }
 
+export interface DemoSelfHostedLaunchReadinessArchive {
+  id: string;
+  status: DemoReadinessStatus;
+  readyToLaunch: boolean;
+  summary: string;
+  readyCheckCount: number;
+  needsAttentionCheckCount: number;
+  blockedCheckCount: number;
+  createdAt: string;
+  report: string;
+}
+
 export interface DemoReadinessSnapshotArchive {
   id: string;
   status: DemoReadinessStatus;

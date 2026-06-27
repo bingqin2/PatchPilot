@@ -16,6 +16,7 @@ import io.patchpilot.backend.demo.domain.DemoReadinessSnapshotArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessSnapshotTrendVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessVo;
 import io.patchpilot.backend.demo.domain.DemoScriptVo;
+import io.patchpilot.backend.demo.domain.DemoSelfHostedLaunchReadinessArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoSelfHostedLaunchReadinessVo;
 import io.patchpilot.backend.demo.domain.DemoSessionArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoSessionSnapshotVo;
@@ -58,6 +59,7 @@ public class DemoReadinessController {
     private final DemoHandoffShareDeliveryReceiptService demoHandoffShareDeliveryReceiptService;
     private final DemoHandoffFinalizationService demoHandoffFinalizationService;
     private final SelfHostedLaunchReadinessService selfHostedLaunchReadinessService;
+    private final SelfHostedLaunchReadinessArchiveService selfHostedLaunchReadinessArchiveService;
     private final DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
     private final DemoReadinessSnapshotTrendService demoReadinessSnapshotTrendService;
     private final DemoLaunchPreflightService demoLaunchPreflightService;
@@ -283,6 +285,37 @@ public class DemoReadinessController {
                 "patchpilot-self-hosted-launch-readiness.md",
                 selfHostedLaunchReadinessService.getReadinessPackage().markdownReport()
         );
+    }
+
+    @PostMapping("/self-hosted-launch-readiness/archives")
+    public ApiResponse<DemoSelfHostedLaunchReadinessArchiveVo> archiveSelfHostedLaunchReadiness() {
+        DemoSelfHostedLaunchReadinessArchiveVo archive =
+                selfHostedLaunchReadinessArchiveService.archiveCurrentReadinessPackage();
+        operatorSafetyAuditService.recordSafetyAudit(new RecordOperatorSafetyAuditCommand(
+                "DEMO_SELF_HOSTED_LAUNCH_READINESS_ARCHIVED",
+                "DEMO_SELF_HOSTED_LAUNCH_READINESS_ARCHIVE",
+                archive.id(),
+                TriggerQuarantineScope.REPOSITORY,
+                "patchpilot/local-demo",
+                "admin-api",
+                "Archived self-hosted launch readiness " + archive.status()
+        ));
+        return ApiResponse.ok(archive);
+    }
+
+    @GetMapping("/self-hosted-launch-readiness/archives")
+    public ApiResponse<List<DemoSelfHostedLaunchReadinessArchiveVo>> listSelfHostedLaunchReadinessArchives() {
+        return ApiResponse.ok(selfHostedLaunchReadinessArchiveService.listRecentArchives());
+    }
+
+    @GetMapping(value = "/self-hosted-launch-readiness/archives/{archiveId}/report/download", produces = "text/markdown;charset=UTF-8")
+    public ResponseEntity<String> downloadArchivedSelfHostedLaunchReadinessReport(@PathVariable String archiveId) {
+        return selfHostedLaunchReadinessArchiveService.findArchive(archiveId)
+                .map(archive -> markdownAttachment(
+                        "patchpilot-self-hosted-launch-readiness-" + safeFilenamePart(archive.id()) + ".md",
+                        archive.report()
+                ))
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @PostMapping("/handoff-share-delivery-receipts")

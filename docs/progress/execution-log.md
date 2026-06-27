@@ -4,6 +4,30 @@ This file records dated implementation progress, validation commands, and import
 
 ## 2026-06-28
 
+Implemented self-hosted launch readiness archive from `docs/plans/246-self-hosted-launch-readiness-archive.md`.
+
+Changes:
+
+- Added a local self-hosted launch readiness archive service, in-memory repository, MyBatis repository, and Flyway migration so final pre-launch packages can be preserved as local evidence.
+- Added API endpoints to archive the current launch readiness package, list recent archives, and download one archived Markdown report.
+- Recorded protected admin audit evidence when a launch readiness package is archived.
+- Added dashboard API bindings, App refresh wiring, an archive action, recent archive rows, and archived report downloads in the self-hosted launch readiness panel.
+- Updated README, product spec, architecture notes, frontend design docs, and this execution log.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=SelfHostedLaunchReadinessArchiveServiceTests test`: first failed because the archive VO and repository contract did not exist; passed after backend service implementation, 2 tests run, 0 failures.
+- `mvn -pl PatchPilot -Dtest=MyBatisDemoSelfHostedLaunchReadinessArchiveRepositoryTests,DemoSelfHostedLaunchReadinessArchiveMigrationTests test`: first failed because persistence classes and migration were missing; passed after MyBatis and Flyway implementation, 4 tests run, 0 failures.
+- `mvn -pl PatchPilot -Dtest=DemoReadinessControllerTests test`: first failed because the archive endpoints returned 404; passed after controller implementation, 52 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts src/dashboard/components/SelfHostedLaunchReadinessPanel.test.tsx --reporter=basic`: first failed because frontend API helpers and archive UI were missing; passed after frontend implementation, 102 tests run, 0 failures.
+- `npm test -- --run src/App.test.tsx -t "renders operational task dashboard from backend APIs" --reporter=basic`: first failed because the test expected a unique launch readiness summary after archive history reused the same summary; passed after assertion alignment, 1 selected test run, 0 failures.
+- `mvn -pl PatchPilot -Dtest=SelfHostedLaunchReadinessArchiveServiceTests,MyBatisDemoSelfHostedLaunchReadinessArchiveRepositoryTests,DemoSelfHostedLaunchReadinessArchiveMigrationTests,DemoReadinessControllerTests test`: passed after targeted backend integration verification, 58 tests run, 0 failures.
+- `npm test -- --run src/App.test.tsx src/api.test.ts src/dashboard/components/SelfHostedLaunchReadinessPanel.test.tsx --reporter=basic`: passed after targeted frontend integration verification, 181 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed after full backend regression verification, 853 tests run, 0 failures.
+- `npm test -- --reporter=dot`: passed after full frontend regression verification, 27 test files and 323 tests run.
+- `npm run build`: passed after TypeScript and production Vite build verification.
+- `git diff --check`: passed.
+
 Implemented self-hosted launch readiness package from `docs/plans/245-self-hosted-launch-readiness-package.md`.
 
 Changes:

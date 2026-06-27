@@ -1,20 +1,33 @@
-import { Download } from 'lucide-react';
+import { Archive, Download } from 'lucide-react';
 import { useState } from 'react';
-import type { DemoReadinessStatus, DemoSelfHostedLaunchReadiness } from '../../types';
+import type {
+  DemoReadinessStatus,
+  DemoSelfHostedLaunchReadiness,
+  DemoSelfHostedLaunchReadinessArchive
+} from '../../types';
 import { compactDateTime } from '../format';
 
 interface SelfHostedLaunchReadinessPanelProps {
   readiness: DemoSelfHostedLaunchReadiness | null;
   error: string | null;
+  archives: DemoSelfHostedLaunchReadinessArchive[];
+  archiveError: string | null;
+  onArchiveReadiness: () => Promise<DemoSelfHostedLaunchReadinessArchive>;
   onDownloadReport: () => Promise<Blob>;
+  onDownloadArchiveReport: (archiveId: string) => Promise<Blob>;
 }
 
 export function SelfHostedLaunchReadinessPanel({
   readiness,
   error,
-  onDownloadReport
+  archives,
+  archiveError,
+  onArchiveReadiness,
+  onDownloadReport,
+  onDownloadArchiveReport
 }: SelfHostedLaunchReadinessPanelProps) {
   const [downloadStatus, setDownloadStatus] = useState<string | null>(null);
+  const [archiveStatus, setArchiveStatus] = useState<string | null>(null);
 
   async function downloadReport() {
     try {
@@ -23,6 +36,25 @@ export function SelfHostedLaunchReadinessPanel({
       setDownloadStatus('Launch readiness report downloaded');
     } catch {
       setDownloadStatus('Download failed');
+    }
+  }
+
+  async function archiveReadiness() {
+    try {
+      await onArchiveReadiness();
+      setArchiveStatus('Launch readiness archived');
+    } catch {
+      setArchiveStatus('Archive failed');
+    }
+  }
+
+  async function downloadArchiveReport(archiveId: string) {
+    try {
+      const report = await onDownloadArchiveReport(archiveId);
+      downloadMarkdown(report, `patchpilot-self-hosted-launch-readiness-${archiveId}.md`);
+      setDownloadStatus('Launch readiness archive downloaded');
+    } catch {
+      setDownloadStatus('Archive download failed');
     }
   }
 
@@ -47,12 +79,23 @@ export function SelfHostedLaunchReadinessPanel({
           <button
             className="secondary-button"
             type="button"
+            onClick={() => void archiveReadiness()}
+            aria-label="Archive launch readiness"
+            disabled={!readiness}
+          >
+            <Archive size={14} />
+            Archive
+          </button>
+          <button
+            className="secondary-button"
+            type="button"
             onClick={() => void downloadReport()}
             aria-label="Download launch readiness report"
           >
             <Download size={14} />
             Download report
           </button>
+          {archiveStatus ? <span className="copy-status">{archiveStatus}</span> : null}
           {downloadStatus ? <span className="copy-status">{downloadStatus}</span> : null}
         </div>
       </div>
@@ -89,6 +132,42 @@ export function SelfHostedLaunchReadinessPanel({
                 <li key={action}>{action}</li>
               ))}
             </ul>
+          </div>
+
+          <div className="demo-evidence-actions">
+            <h3>Recent launch readiness archives</h3>
+            {archiveError ? (
+              <div className="adapter-api-error">
+                <strong>Launch readiness archive unavailable</strong>
+                <span>{archiveError}</span>
+              </div>
+            ) : null}
+            {archives.length === 0 ? (
+              <p className="empty-state">No launch readiness archives recorded.</p>
+            ) : (
+              <div className="demo-evidence-records">
+                {archives.map((archive) => (
+                  <div key={archive.id}>
+                    <span>{archive.id}</span>
+                    <strong>{statusLabel(archive.status)}</strong>
+                    <small>{archive.summary}</small>
+                    <small>
+                      {archive.readyCheckCount} ready, {archive.needsAttentionCheckCount} attention, {archive.blockedCheckCount} blocked
+                    </small>
+                    <small>{compactDateTime(archive.createdAt)}</small>
+                    <button
+                      className="secondary-button"
+                      type="button"
+                      onClick={() => void downloadArchiveReport(archive.id)}
+                      aria-label={`Download launch readiness archive ${archive.id}`}
+                    >
+                      <Download size={14} />
+                      Download archive
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </>
       ) : (
