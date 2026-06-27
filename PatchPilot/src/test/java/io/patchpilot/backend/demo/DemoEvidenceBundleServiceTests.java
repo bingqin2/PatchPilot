@@ -11,6 +11,7 @@ import io.patchpilot.backend.demo.domain.DemoSmokeChecklistVo;
 import io.patchpilot.backend.github.credential.domain.GitHubWebhookSetupReadinessVo;
 import io.patchpilot.backend.github.webhook.domain.WebhookDeliveryDiagnosticStatus;
 import io.patchpilot.backend.github.webhook.domain.WebhookDeliveryDiagnosticVo;
+import io.patchpilot.backend.github.webhook.domain.WebhookDeliveryOutcomeType;
 import io.patchpilot.backend.language.domain.LanguageAdapterFixtureVerificationVo;
 import io.patchpilot.backend.safety.domain.RejectedTriggerAuditSummaryVo;
 import io.patchpilot.backend.safety.domain.RejectedTriggerCountVo;
@@ -40,7 +41,10 @@ class DemoEvidenceBundleServiceTests {
                         task("task-2", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/42"),
                         task("task-1", FixTaskStatus.FAILED, null)
                 ),
-                () -> List.of(webhookDelivery("delivery-1", WebhookDeliveryDiagnosticStatus.TASK_CREATED, "task-2")),
+                () -> List.of(
+                        webhookDelivery("delivery-1", WebhookDeliveryDiagnosticStatus.TASK_CREATED, "task-2"),
+                        webhookDelivery("delivery-2", WebhookDeliveryDiagnosticStatus.REJECTED, "rejected-1")
+                ),
                 DemoEvidenceBundleServiceTests::webhookSetupReadiness,
                 () -> rejectedTriggerSummary(4),
                 () -> List.of(quarantine("quarantine-1"))
@@ -62,6 +66,15 @@ class DemoEvidenceBundleServiceTests {
         assertThat(bundle.webhookSetupReadiness().payloadUrl()).isEqualTo("https://demo.trycloudflare.com/api/github/webhook");
         assertThat(bundle.webhookSetupReadiness().latestDeliveryId()).isEqualTo("delivery-1");
         assertThat(bundle.latestWebhookDelivery().deliveryId()).isEqualTo("delivery-1");
+        assertThat(bundle.recentWebhookDeliveries())
+                .extracting(WebhookDeliveryDiagnosticVo::deliveryId)
+                .containsExactly("delivery-1", "delivery-2");
+        assertThat(bundle.recentWebhookDeliveries())
+                .extracting(WebhookDeliveryDiagnosticVo::status)
+                .containsExactly(WebhookDeliveryDiagnosticStatus.TASK_CREATED, WebhookDeliveryDiagnosticStatus.REJECTED);
+        assertThat(bundle.recentWebhookDeliveries())
+                .extracting(WebhookDeliveryDiagnosticVo::outcomeType)
+                .containsExactly(WebhookDeliveryOutcomeType.TASK, WebhookDeliveryOutcomeType.REJECTED_TRIGGER);
         assertThat(bundle.rejectedTriggerSummary().totalCount()).isEqualTo(4);
         assertThat(bundle.activeQuarantineCount()).isEqualTo(1);
         assertThat(bundle.nextActions()).containsExactly(
@@ -213,20 +226,29 @@ class DemoEvidenceBundleServiceTests {
     private static WebhookDeliveryDiagnosticVo webhookDelivery(
             String deliveryId,
             WebhookDeliveryDiagnosticStatus status,
-            String taskId
+            String outcomeId
     ) {
+        boolean taskCreated = status == WebhookDeliveryDiagnosticStatus.TASK_CREATED;
+        String message = status == WebhookDeliveryDiagnosticStatus.TASK_CREATED
+                ? "Webhook created a task."
+                : "Webhook trigger was rejected before task creation.";
         return new WebhookDeliveryDiagnosticVo(
                 deliveryId,
                 deliveryId,
                 "issue_comment.created",
                 status,
-                taskId,
+                taskCreated ? outcomeId : null,
                 "bingqin2",
                 "PatchPilot",
                 1L,
                 "bingqin2",
                 "/agent fix replace docs/demo.md demo",
-                "Webhook created a task.",
+                message,
+                false,
+                taskCreated ? "Task was created." : "Rejected trigger was recorded.",
+                taskCreated ? WebhookDeliveryOutcomeType.TASK : WebhookDeliveryOutcomeType.REJECTED_TRIGGER,
+                outcomeId,
+                taskCreated ? "/tasks/" + outcomeId : "/rejected-triggers/" + outcomeId,
                 Instant.parse("2026-06-24T00:00:00Z")
         );
     }

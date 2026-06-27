@@ -459,6 +459,7 @@ export interface DemoEvidenceBundle {
   recentPullRequestUrl: string | null;
   webhookSetupReadiness: GitHubWebhookSetupReadiness | null;
   latestWebhookDelivery: WebhookDeliveryDiagnostic | null;
+  recentWebhookDeliveries: WebhookDeliveryDiagnostic[];
   rejectedTriggerSummary: RejectedTriggerAuditSummary | null;
   activeQuarantineCount: number;
   generatedAt: string;

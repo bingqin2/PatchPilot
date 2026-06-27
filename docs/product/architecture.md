@@ -347,7 +347,7 @@ Responsibilities:
 - Surface required credential gaps without exposing secret values.
 - Surface safety policy gaps for trigger-user allowlists, repository allowlists, and review-approval approvers.
 - Surface generated-diff policy state without exposing secrets or editable policy internals.
-- Expose a demo evidence bundle that joins readiness, smoke-check, configuration, adapter fixture, queue, webhook, rejected-trigger, quarantine, and recent Pull Request evidence.
+- Expose a demo evidence bundle that joins readiness, smoke-check, configuration, adapter fixture, queue, webhook setup, recent webhook delivery trail, rejected-trigger, quarantine, and recent Pull Request evidence.
 - Expose a demo session snapshot that combines one current evidence bundle, script, runbook, operator checklist, health contract, share summary, and next actions.
 - Expose a demo script that turns the current evidence bundle into ordered operator actions, verification commands, success criteria, troubleshooting panels, and a health contract.
 - Format the evidence bundle as copyable Markdown for operator handoff without adding side effects.
@@ -359,7 +359,7 @@ Responsibilities:
 - Treat queue failures, delayed work, running work, missing model cost configuration, or missing recent PR evidence as operator attention items.
 - Return concrete next actions for the dashboard and curl users.
 
-This layer must not create tasks, call the model, clone repositories, execute tests, mutate queue state, write comments, or weaken safety gates. Its evidence bundle, session snapshot, session report, session report download, archived report download, demo script, runbook, and webhook payload diagnostic endpoints are read models over configuration, fixture verification, queue state, rejected-trigger safety state, webhook diagnostics, recent task history, pasted payload metadata, and stored demo archives.
+This layer must not create tasks, call the model, clone repositories, execute tests, mutate queue state, write comments, or weaken safety gates. Its evidence bundle, session snapshot, session report, session report download, archived report download, demo script, runbook, and webhook payload diagnostic endpoints are read models over configuration, fixture verification, queue state, rejected-trigger safety state, webhook diagnostics, recent webhook delivery trail, recent task history, pasted payload metadata, and stored demo archives.
 Creating a session archive or handoff package archive is the only local write in this layer. It captures generated Markdown evidence in the configured archive store and still does not create tasks, call the model, run tests, mutate Git, write GitHub comments, or open Pull Requests.
 
 ## Data Model

@@ -354,6 +354,7 @@ class DemoReadinessControllerTests {
                 "https://github.com/bingqin2/PatchPilot/pull/42",
                 null,
                 null,
+                List.of(),
                 null,
                 1,
                 Instant.parse("2026-06-24T00:00:00Z"),
@@ -369,6 +370,7 @@ class DemoReadinessControllerTests {
                 .andExpect(jsonPath("$.data.summaryCounts.failedAdapterFixtureCount").value(1))
                 .andExpect(jsonPath("$.data.summaryCounts.activeQuarantineCount").value(1))
                 .andExpect(jsonPath("$.data.recentPullRequestUrl").value("https://github.com/bingqin2/PatchPilot/pull/42"))
+                .andExpect(jsonPath("$.data.recentWebhookDeliveries").isArray())
                 .andExpect(jsonPath("$.data.nextActions[0]").value("Run one controlled issue-to-PR smoke task before a live demo."));
     }
 
@@ -450,6 +452,7 @@ class DemoReadinessControllerTests {
                 "https://github.com/bingqin2/PatchPilot/pull/42",
                 null,
                 null,
+                List.of(),
                 null,
                 0,
                 Instant.parse("2026-06-24T00:00:00Z"),

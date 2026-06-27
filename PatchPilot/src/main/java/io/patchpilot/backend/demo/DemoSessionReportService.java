@@ -6,6 +6,7 @@ import io.patchpilot.backend.demo.domain.DemoReadinessStatus;
 import io.patchpilot.backend.demo.domain.DemoScriptStepVo;
 import io.patchpilot.backend.demo.domain.DemoSessionSnapshotVo;
 import io.patchpilot.backend.github.credential.domain.GitHubWebhookSetupReadinessVo;
+import io.patchpilot.backend.github.webhook.domain.WebhookDeliveryDiagnosticVo;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,6 +59,7 @@ public class DemoSessionReportService {
 
         appendRecentTask(report, snapshot.evidenceBundle().recentTask());
         appendWebhookSetupReadiness(report, snapshot.evidenceBundle().webhookSetupReadiness());
+        appendRecentWebhookDeliveries(report, snapshot.evidenceBundle().recentWebhookDeliveries());
         appendReadinessSnapshotTrend(report, snapshot.readinessSnapshotTrend());
         appendHandoffReadiness(report, snapshot, request);
         appendList(report, "Operator Checklist", snapshot.operatorChecklist(), "No operator checklist items recorded.");
@@ -278,6 +280,31 @@ public class DemoSessionReportService {
                 .append("- Next action: ").append(firstAction(readiness.nextActions())).append("\n");
     }
 
+    private static void appendRecentWebhookDeliveries(StringBuilder report, List<WebhookDeliveryDiagnosticVo> deliveries) {
+        report.append("\n## Recent Webhook Deliveries\n\n");
+        if (deliveries == null || deliveries.isEmpty()) {
+            report.append("- No recent webhook deliveries recorded.\n");
+            return;
+        }
+        deliveries.stream()
+                .limit(5)
+                .forEach(delivery -> report
+                        .append("- `").append(valueOrNone(delivery.deliveryId())).append("`: `")
+                        .append(valueOrNone(delivery.status())).append("` -> ")
+                        .append(valueOrNone(firstNonBlank(delivery.outcomeId(), delivery.taskId())))
+                        .append("\n")
+                        .append("  - Repository: `")
+                        .append(valueOrNone(delivery.repositoryOwner()))
+                        .append("/")
+                        .append(valueOrNone(delivery.repositoryName()))
+                        .append("#")
+                        .append(valueOrNone(delivery.issueNumber()))
+                        .append("`\n")
+                        .append("  - Trigger: `").append(valueOrNone(delivery.triggerComment())).append("`\n")
+                        .append("  - Outcome: `").append(valueOrNone(delivery.outcomeType())).append("`\n")
+                        .append("  - Message: ").append(valueOrNone(delivery.message())).append("\n"));
+    }
+
     private static void appendRecentTask(StringBuilder report, FixTaskVo task) {
         report.append("- Recent task: ");
         if (task == null) {
@@ -433,6 +460,10 @@ public class DemoSessionReportService {
             return "No action needed.";
         }
         return actions.get(0);
+    }
+
+    private static String firstNonBlank(String first, String second) {
+        return isBlank(first) ? second : first;
     }
 
     private static String signed(int value) {

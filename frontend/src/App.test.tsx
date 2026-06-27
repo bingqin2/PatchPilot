@@ -1470,6 +1470,7 @@ const demoEvidenceBundle = {
     markdownReport: '# PatchPilot Webhook Setup Readiness'
   },
   latestWebhookDelivery: webhookDeliveries[0],
+  recentWebhookDeliveries: webhookDeliveries,
   rejectedTriggerSummary,
   activeQuarantineCount: triggerQuarantines.length,
   generatedAt: '2026-06-21T08:15:00Z',
@@ -2166,7 +2167,9 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(within(evidenceBundlePanel).getByRole('heading', { name: 'Demo evidence bundle' })).toBeInTheDocument();
   expect(within(evidenceBundlePanel).getByText('Demo evidence bundle needs attention.')).toBeInTheDocument();
   expect(within(evidenceBundlePanel).getByText('Recent PR available')).toBeInTheDocument();
-  expect(within(evidenceBundlePanel).getByText('delivery-created-status-comment')).toBeInTheDocument();
+  expect(within(evidenceBundlePanel).getAllByText('delivery-created-status-comment')).toHaveLength(2);
+  expect(within(evidenceBundlePanel).getByText('Recent webhook delivery trail')).toBeInTheDocument();
+  expect(within(evidenceBundlePanel).getByText('delivery-invalid-signature')).toBeInTheDocument();
   expect(within(evidenceBundlePanel).getByRole('link', { name: 'Open recent Pull Request' })).toHaveAttribute(
     'href',
     'https://github.com/bingqin2/PatchPilot/pull/8'

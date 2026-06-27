@@ -1688,6 +1688,76 @@ h3 {
   margin: 0 16px 14px;
 }
 
+.demo-webhook-delivery-trail {
+  border-top: 1px solid #e6ebef;
+  display: grid;
+  gap: 10px;
+  padding: 12px 16px 16px;
+}
+
+.demo-webhook-delivery-trail .section-heading {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.demo-webhook-delivery-trail h3 {
+  margin: 0;
+}
+
+.demo-webhook-delivery-trail .section-heading > span,
+.demo-webhook-delivery-trail p,
+.demo-webhook-delivery-trail small {
+  color: #52606e;
+  font-size: 12px;
+  font-weight: 750;
+  margin: 0;
+}
+
+.demo-webhook-delivery-trail ul {
+  display: grid;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.demo-webhook-delivery-trail li {
+  background: #f7f9fb;
+  border: 1px solid #dbe3ea;
+  border-radius: 6px;
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+}
+
+.demo-webhook-delivery-main,
+.demo-webhook-delivery-meta {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.demo-webhook-delivery-main strong {
+  color: #17202a;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.demo-webhook-delivery-main span,
+.demo-webhook-delivery-meta span {
+  background: #eef3f7;
+  border: 1px solid #d6e0e8;
+  border-radius: 999px;
+  color: #243140;
+  font-size: 11px;
+  font-weight: 850;
+  padding: 3px 8px;
+}
+
 .demo-evidence-actions {
   border-top: 1px solid #e6ebef;
   padding: 12px 16px 16px;

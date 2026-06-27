@@ -101,6 +101,36 @@ export function DemoEvidenceBundlePanel({ bundle, error, onCopyRunbook }: DemoEv
             </div>
           </div>
 
+          <div className="demo-webhook-delivery-trail">
+            <div className="section-heading">
+              <h3>Recent webhook delivery trail</h3>
+              <span>{bundle.recentWebhookDeliveries.length} deliveries</span>
+            </div>
+            {bundle.recentWebhookDeliveries.length === 0 ? (
+              <p>No recent webhook deliveries recorded.</p>
+            ) : (
+              <ul>
+                {bundle.recentWebhookDeliveries.slice(0, 5).map((delivery) => (
+                  <li key={delivery.id}>
+                    <div className="demo-webhook-delivery-main">
+                      <strong>{delivery.deliveryId ?? 'No delivery id'}</strong>
+                      <span>{delivery.status}</span>
+                    </div>
+                    <div className="demo-webhook-delivery-meta">
+                      <span>{delivery.outcomeType ?? 'No outcome'}</span>
+                      <span>
+                        {delivery.repositoryOwner ?? 'unknown'}/{delivery.repositoryName ?? 'unknown'}#
+                        {delivery.issueNumber ?? 'none'}
+                      </span>
+                    </div>
+                    <p>{delivery.triggerComment ?? delivery.message}</p>
+                    <small>{delivery.operatorAction}</small>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
           {bundle.recentPullRequestUrl ? (
             <a className="external-link" href={bundle.recentPullRequestUrl} target="_blank" rel="noreferrer">
               Open recent Pull Request

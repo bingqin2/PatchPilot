@@ -111,6 +111,7 @@ class DemoSessionSnapshotServiceTests {
                 "https://github.com/bingqin2/PatchPilot/pull/42",
                 null,
                 webhookDelivery(),
+                List.of(webhookDelivery()),
                 new RejectedTriggerAuditSummaryVo(0, List.of(), List.of(), List.of(), List.of()),
                 0,
                 Instant.parse("2026-06-24T00:00:00Z"),

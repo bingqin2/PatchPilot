@@ -150,6 +150,7 @@ public class DemoEvidenceBundleService {
                 recentPullRequestUrl,
                 webhookSetupReadiness,
                 latestWebhookDelivery,
+                List.copyOf(webhookDeliveries),
                 rejectedTriggerSummary,
                 activeQuarantines.size(),
                 Instant.now(),
