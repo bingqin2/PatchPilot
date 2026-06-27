@@ -190,8 +190,16 @@ const bundle: DemoEvidenceBundle = {
   launchEvidenceShareCenterDownloadActions: [
     'Download launch evidence package archive launch-evidence-archive-1.',
     'Download launch evidence share center report.',
-    'Open Pull Request https://github.com/bingqin2/PatchPilot/pull/42 for review.'
+    'Open Pull Request https://github.com/bingqin2/PatchPilot/pull/42 for review.',
+    'Download launch evidence delivery receipt launch-delivery-receipt-1.'
   ],
+  launchEvidenceFinalizationStatus: 'READY',
+  launchEvidenceFinalized: true,
+  launchEvidenceFinalizationSummary: 'Demo launch evidence is finalized with a fresh delivery receipt for the current archive.',
+  launchEvidenceFinalizationNextAction: 'Use the finalization report as the launch evidence delivery acceptance record.',
+  launchEvidenceFinalizationDeliveryReceiptFreshness: 'FRESH',
+  launchEvidenceFinalizationDeliveryReceiptFresh: true,
+  launchEvidenceFinalizationLatestDeliveryReceiptId: 'launch-delivery-receipt-1',
   handoffShareDeliveryReceiptRecorded: true,
   handoffShareLatestDeliveryReceiptId: 'delivery-receipt-1',
   handoffShareLatestDeliveryTarget: 'maintainer@example.com',
@@ -258,10 +266,16 @@ test('summarizes demo evidence bundle for operators', () => {
   expect(within(panel).getByText('demo-session-20260624T003000Z')).toBeInTheDocument();
   expect(within(panel).getByText('Download launch evidence package archive launch-evidence-archive-1.')).toBeInTheDocument();
   expect(within(panel).getByText('Download launch evidence share center report.')).toBeInTheDocument();
+  expect(within(panel).getByText('Launch evidence finalization')).toBeInTheDocument();
+  expect(within(panel).getByText('Demo launch evidence is finalized with a fresh delivery receipt for the current archive.')).toBeInTheDocument();
+  expect(
+    within(panel).getByText('Use the finalization report as the launch evidence delivery acceptance record.')
+  ).toBeInTheDocument();
+  expect(within(panel).getByText('launch-delivery-receipt-1')).toBeInTheDocument();
   expect(within(panel).getByText('Handoff share delivery')).toBeInTheDocument();
   expect(within(panel).getAllByText('Fresh').length).toBeGreaterThanOrEqual(2);
   expect(within(panel).getByText('Handoff finalization')).toBeInTheDocument();
-  expect(within(panel).getByText('Finalized')).toBeInTheDocument();
+  expect(within(panel).getAllByText('Finalized')).toHaveLength(2);
   expect(
     within(panel).getByText('Use the finalization report as the post-demo delivery acceptance record.')
   ).toBeInTheDocument();

@@ -638,6 +638,13 @@ export interface DemoEvidenceBundle {
   launchEvidenceShareCenterLatestSessionId: string | null;
   launchEvidenceShareCenterLatestPullRequestUrl: string | null;
   launchEvidenceShareCenterDownloadActions: string[];
+  launchEvidenceFinalizationStatus: DemoReadinessStatus;
+  launchEvidenceFinalized: boolean;
+  launchEvidenceFinalizationSummary: string;
+  launchEvidenceFinalizationNextAction: string;
+  launchEvidenceFinalizationDeliveryReceiptFreshness: string;
+  launchEvidenceFinalizationDeliveryReceiptFresh: boolean;
+  launchEvidenceFinalizationLatestDeliveryReceiptId: string | null;
   handoffShareDeliveryReceiptRecorded: boolean;
   handoffShareLatestDeliveryReceiptId: string | null;
   handoffShareLatestDeliveryTarget: string | null;

@@ -4,6 +4,30 @@ This file records dated implementation progress, validation commands, and import
 
 ## 2026-06-28
 
+Implemented launch finalization evidence bundle from `docs/plans/255-launch-finalization-evidence-bundle.md`.
+
+Changes:
+
+- Added final launch evidence finalization fields to the backend demo evidence bundle read model, including status, finalized flag, accepted receipt id, receipt freshness, summary, and next action.
+- Reused `DemoLaunchEvidenceFinalizationService` inside `DemoEvidenceBundleService` so the top-level bundle, standalone finalization endpoint, and dashboard use the same launch acceptance source of truth.
+- Required launch evidence finalization to be `READY` before the overall demo evidence bundle can report `READY`.
+- Added launch evidence finalization status to the copied demo runbook evidence snapshot.
+- Added a `Launch evidence finalization` record to the dashboard demo evidence bundle panel and updated typed fixtures.
+- Aligned launch evidence demo fixtures so READY launch packages include accepted launch delivery evidence in the shared evidence bundle.
+- Updated README, product spec, architecture notes, frontend design notes, and this execution log.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=DemoEvidenceBundleServiceTests test`: first failed because the service constructor and bundle VO did not expose launch finalization fields; passed after backend aggregation implementation, 3 tests run, 0 failures.
+- `npm test -- --run src/dashboard/components/DemoEvidenceBundlePanel.test.tsx --reporter=basic`: first failed because the evidence bundle panel did not render launch finalization; passed after frontend implementation, 3 tests run, 0 failures.
+- `mvn -pl PatchPilot -Dtest=DemoEvidenceBundleServiceTests,DemoRunbookServiceTests,DemoReadinessControllerTests test`: first failed because the runbook fixture used the expanded launch finalization constructor without handoff finalization fields; passed after fixture alignment, 72 tests run, 0 failures.
+- `npm test -- --run src/dashboard/components/DemoEvidenceBundlePanel.test.tsx src/dashboard/components/DemoSessionSnapshotPanel.test.tsx src/App.test.tsx --reporter=basic`: passed after fixture alignment, 3 test files and 102 tests run, 0 failures.
+- `mvn -pl PatchPilot -Dtest=DemoSessionSnapshotServiceTests,DemoSessionReportServiceTests,DemoSessionArchiveServiceTests,DemoScriptServiceTests,SelfHostedLaunchReadinessServiceTests test`: passed after launch fixture alignment, 19 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed after full backend regression verification, 903 tests run, 0 failures.
+- `npm test -- --reporter=basic`: passed after full frontend regression verification, 28 test files and 346 tests run, 0 failures.
+- `npm run build`: passed after production frontend build verification.
+- `git diff --check`: passed.
+
 Implemented launch share delivery finalization from `docs/plans/254-launch-share-delivery-finalization.md`.
 
 Changes:

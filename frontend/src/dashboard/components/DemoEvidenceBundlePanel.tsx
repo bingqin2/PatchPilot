@@ -133,6 +133,14 @@ export function DemoEvidenceBundlePanel({ bundle, error, onCopyRunbook }: DemoEv
               ))}
             </div>
             <div>
+              <span>Launch evidence finalization</span>
+              <strong>{bundle.launchEvidenceFinalized ? 'Finalized' : statusLabel(bundle.launchEvidenceFinalizationStatus)}</strong>
+              <small>{bundle.launchEvidenceFinalizationSummary}</small>
+              <small>{bundle.launchEvidenceFinalizationNextAction}</small>
+              <small>{deliveryFreshnessLabel(bundle.launchEvidenceFinalizationDeliveryReceiptFreshness)}</small>
+              <small>{bundle.launchEvidenceFinalizationLatestDeliveryReceiptId ?? 'No accepted launch receipt'}</small>
+            </div>
+            <div>
               <span>Handoff share delivery</span>
               <strong>{deliveryFreshnessLabel(bundle.handoffShareDeliveryReceiptFreshness)}</strong>
               <small>{bundle.handoffShareDeliveryReceiptFreshnessSummary}</small>

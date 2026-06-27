@@ -70,6 +70,13 @@ const snapshot: DemoSessionSnapshot = {
       'Download launch evidence share center report.',
       'Open Pull Request https://github.com/bingqin2/PatchPilot/pull/42 for review.'
     ],
+    launchEvidenceFinalizationStatus: 'READY',
+    launchEvidenceFinalized: true,
+    launchEvidenceFinalizationSummary: 'Demo launch evidence is finalized with a fresh delivery receipt for the current archive.',
+    launchEvidenceFinalizationNextAction: 'Use the finalization report as the launch evidence delivery acceptance record.',
+    launchEvidenceFinalizationDeliveryReceiptFreshness: 'FRESH',
+    launchEvidenceFinalizationDeliveryReceiptFresh: true,
+    launchEvidenceFinalizationLatestDeliveryReceiptId: 'launch-delivery-receipt-1',
     handoffShareDeliveryReceiptRecorded: true,
     handoffShareLatestDeliveryReceiptId: 'delivery-receipt-1',
     handoffShareLatestDeliveryTarget: 'maintainer@example.com',

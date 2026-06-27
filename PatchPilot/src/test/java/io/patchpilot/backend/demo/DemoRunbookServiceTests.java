@@ -49,6 +49,13 @@ class DemoRunbookServiceTests {
                 .contains("- Queue: 3 total, 1 pending, 2 completed, 0 failed")
                 .contains("- Rejected triggers: 4 recent")
                 .contains("- Active quarantines: 1")
+                .contains("- Launch evidence share center: `READY` - Latest archived launch evidence package is READY and can be shared.")
+                .contains("- Launch evidence latest archive: `launch-evidence-archive-1`")
+                .contains("- Launch evidence latest session: `demo-session-20260624T003000Z`")
+                .contains("- Launch evidence finalization: `READY` - Demo launch evidence is finalized with a fresh delivery receipt for the current archive.")
+                .contains("- Launch evidence accepted receipt: `launch-delivery-receipt-1`")
+                .contains("- Launch evidence receipt freshness: `FRESH`")
+                .contains("- Launch evidence finalization next action: Use the finalization report as the launch evidence delivery acceptance record.")
                 .contains("## Readiness")
                 .contains("- `Credentials`: `READY` - Required credentials are configured.")
                 .contains("## Smoke Checklist")
@@ -148,11 +155,40 @@ class DemoRunbookServiceTests {
                         "Download handoff package archive summary.",
                         "Download handoff share checklist."
                 ),
-                false,
-                null,
-                null,
-                null,
-                null,
+                "READY",
+                true,
+                "Latest archived launch evidence package is READY and can be shared.",
+                "Download the archived launch evidence package and share it with reviewers.",
+                1,
+                "launch-evidence-archive-1",
+                "demo-session-20260624T003000Z",
+                "https://github.com/bingqin2/PatchPilot/pull/42",
+                List.of(
+                        "Download launch evidence package archive launch-evidence-archive-1.",
+                        "Download launch evidence share center report."
+                ),
+                DemoReadinessStatus.READY,
+                true,
+                "Demo launch evidence is finalized with a fresh delivery receipt for the current archive.",
+                "Use the finalization report as the launch evidence delivery acceptance record.",
+                "FRESH",
+                true,
+                "launch-delivery-receipt-1",
+                true,
+                "delivery-receipt-1",
+                "Demo reviewer",
+                "email",
+                "2026-06-24T05:20:00Z",
+                "FRESH",
+                true,
+                "Latest delivery receipt matches the current handoff archive and session.",
+                DemoReadinessStatus.READY,
+                true,
+                "Demo handoff is finalized with a fresh delivery receipt for the current archive.",
+                "Use the finalization report as the post-demo delivery acceptance record.",
+                "FRESH",
+                true,
+                "delivery-receipt-1",
                 Instant.parse("2026-06-24T00:00:00Z"),
                 List.of("Fix the webhook secret or URL, then use GitHub Redeliver before the live demo.")
         );
