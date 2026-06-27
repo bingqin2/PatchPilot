@@ -24,6 +24,24 @@ public class DemoHandoffPackageArchiveEntity {
     @TableField("summary")
     private String summary;
 
+    @TableField("handoff_readiness_status")
+    private String handoffReadinessStatus;
+
+    @TableField("handoff_readiness_summary")
+    private String handoffReadinessSummary;
+
+    @TableField("handoff_readiness_next_action")
+    private String handoffReadinessNextAction;
+
+    @TableField("handoff_ready_check_count")
+    private Integer handoffReadyCheckCount;
+
+    @TableField("handoff_needs_attention_check_count")
+    private Integer handoffNeedsAttentionCheckCount;
+
+    @TableField("handoff_blocked_check_count")
+    private Integer handoffBlockedCheckCount;
+
     @TableField("share_summary")
     private String shareSummary;
 

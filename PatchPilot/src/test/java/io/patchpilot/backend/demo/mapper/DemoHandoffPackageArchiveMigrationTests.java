@@ -30,4 +30,18 @@ class DemoHandoffPackageArchiveMigrationTests {
         assertThat(sql).contains("idx_demo_handoff_package_archive_session_created");
         assertThat(sql).contains("(session_id, created_at)");
     }
+
+    @Test
+    void should_add_handoff_readiness_metadata_to_handoff_package_archive_table() throws IOException {
+        String sql = Files.readString(Path.of("src/main/resources/db/migration/V33__add_handoff_package_archive_readiness_metadata.sql"))
+                .toLowerCase(Locale.ROOT);
+
+        assertThat(sql).contains("alter table demo_handoff_package_archive");
+        assertThat(sql).contains("add column handoff_readiness_status varchar(32) not null default 'needs_attention'");
+        assertThat(sql).contains("add column handoff_readiness_summary varchar(1024) not null default 'no handoff readiness metadata recorded.'");
+        assertThat(sql).contains("add column handoff_readiness_next_action varchar(1024) not null default 'regenerate and archive a fresh handoff package to capture readiness metadata.'");
+        assertThat(sql).contains("add column handoff_ready_check_count int not null default 0");
+        assertThat(sql).contains("add column handoff_needs_attention_check_count int not null default 0");
+        assertThat(sql).contains("add column handoff_blocked_check_count int not null default 0");
+    }
 }

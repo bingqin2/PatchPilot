@@ -1262,6 +1262,12 @@ test('lists demo handoff package archives through backend API', async () => {
           sessionId: 'demo-session-20260624T003000Z',
           status: 'READY',
           summary: 'Demo session snapshot is ready.',
+          handoffReadinessStatus: 'READY',
+          handoffReadinessSummary: 'Handoff package has current webhook delivery, PR, command, outcome, and readiness trend evidence.',
+          handoffReadinessNextAction: 'No missing handoff evidence.',
+          handoffReadyCheckCount: 7,
+          handoffNeedsAttentionCheckCount: 0,
+          handoffBlockedCheckCount: 0,
           shareSummary: 'Status READY; recent PR https://github.com/bingqin2/PatchPilot/pull/42.',
           recentPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
           createdAt: '2026-06-24T04:00:00Z',
@@ -1277,6 +1283,9 @@ test('lists demo handoff package archives through backend API', async () => {
 
   expect(fetchMock).toHaveBeenCalledWith('/api/demo/handoff-package-archives');
   expect(archives[0].id).toBe('handoff-archive-1');
+  expect(archives[0].handoffReadinessStatus).toBe('READY');
+  expect(archives[0].handoffReadinessNextAction).toBe('No missing handoff evidence.');
+  expect(archives[0].handoffReadyCheckCount).toBe(7);
 });
 
 test('downloads archived demo handoff package markdown from backend API', async () => {

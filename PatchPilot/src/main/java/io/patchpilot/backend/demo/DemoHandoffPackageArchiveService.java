@@ -1,6 +1,8 @@
 package io.patchpilot.backend.demo;
 
 import io.patchpilot.backend.demo.domain.DemoHandoffPackageArchiveVo;
+import io.patchpilot.backend.demo.domain.DemoHandoffReadinessVo;
+import io.patchpilot.backend.demo.domain.DemoReadinessStatus;
 import io.patchpilot.backend.demo.domain.DemoSessionSnapshotVo;
 import io.patchpilot.backend.demo.service.DemoHandoffPackageArchiveRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -59,17 +61,30 @@ public class DemoHandoffPackageArchiveService {
 
     public DemoHandoffPackageArchiveVo archiveCurrentHandoffPackage(DemoSessionReportRequestDto request) {
         DemoSessionSnapshotVo snapshot = snapshotSupplier.get();
+        DemoHandoffReadinessVo handoffReadiness = DemoSessionReportService.handoffReadiness(snapshot, request);
         DemoHandoffPackageArchiveVo archive = new DemoHandoffPackageArchiveVo(
                 idSupplier.get(),
                 snapshot.sessionId(),
                 snapshot.status(),
                 snapshot.summary(),
+                handoffReadiness.status(),
+                handoffReadiness.summary(),
+                handoffReadiness.nextAction(),
+                countChecks(handoffReadiness, DemoReadinessStatus.READY),
+                countChecks(handoffReadiness, DemoReadinessStatus.NEEDS_ATTENTION),
+                countChecks(handoffReadiness, DemoReadinessStatus.BLOCKED),
                 snapshot.shareSummary(),
                 snapshot.evidenceBundle().recentPullRequestUrl(),
                 Instant.now(clock),
                 demoSessionReportService.formatHandoffPackage(snapshot, request)
         );
         return archiveRepository.save(archive);
+    }
+
+    private static int countChecks(DemoHandoffReadinessVo handoffReadiness, DemoReadinessStatus status) {
+        return (int) handoffReadiness.checks().stream()
+                .filter(check -> check.status() == status)
+                .count();
     }
 
     public List<DemoHandoffPackageArchiveVo> listRecentArchives() {

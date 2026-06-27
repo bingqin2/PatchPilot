@@ -903,6 +903,12 @@ class DemoReadinessControllerTests {
                         "demo-session-20260624T003000Z",
                         DemoReadinessStatus.READY,
                         "Demo session snapshot is ready.",
+                        DemoReadinessStatus.READY,
+                        "Handoff package has current webhook delivery, PR, command, outcome, and readiness trend evidence.",
+                        "No missing handoff evidence.",
+                        7,
+                        0,
+                        0,
                         "Status READY; recent PR https://github.com/bingqin2/PatchPilot/pull/42.",
                         "https://github.com/bingqin2/PatchPilot/pull/42",
                         Instant.parse("2026-06-24T04:00:00Z"),
@@ -922,6 +928,11 @@ class DemoReadinessControllerTests {
                 .andExpect(jsonPath("$.data.id").value("handoff-archive-1"))
                 .andExpect(jsonPath("$.data.sessionId").value("demo-session-20260624T003000Z"))
                 .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.handoffReadinessStatus").value("READY"))
+                .andExpect(jsonPath("$.data.handoffReadinessNextAction").value("No missing handoff evidence."))
+                .andExpect(jsonPath("$.data.handoffReadyCheckCount").value(7))
+                .andExpect(jsonPath("$.data.handoffNeedsAttentionCheckCount").value(0))
+                .andExpect(jsonPath("$.data.handoffBlockedCheckCount").value(0))
                 .andExpect(jsonPath("$.data.recentPullRequestUrl").value("https://github.com/bingqin2/PatchPilot/pull/42"))
                 .andExpect(jsonPath("$.data.report").value(org.hamcrest.Matchers.containsString("# PatchPilot Demo Handoff Package")));
 
@@ -946,6 +957,12 @@ class DemoReadinessControllerTests {
                 "demo-session-20260624T003000Z",
                 DemoReadinessStatus.READY,
                 "Demo session snapshot is ready.",
+                DemoReadinessStatus.READY,
+                "Handoff package has current webhook delivery, PR, command, outcome, and readiness trend evidence.",
+                "No missing handoff evidence.",
+                7,
+                0,
+                0,
                 "Status READY; recent PR https://github.com/bingqin2/PatchPilot/pull/42.",
                 "https://github.com/bingqin2/PatchPilot/pull/42",
                 Instant.parse("2026-06-24T04:00:00Z"),
@@ -957,6 +974,8 @@ class DemoReadinessControllerTests {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data[0].id").value("handoff-archive-1"))
                 .andExpect(jsonPath("$.data[0].sessionId").value("demo-session-20260624T003000Z"))
+                .andExpect(jsonPath("$.data[0].handoffReadinessStatus").value("READY"))
+                .andExpect(jsonPath("$.data[0].handoffReadinessNextAction").value("No missing handoff evidence."))
                 .andExpect(jsonPath("$.data[0].shareSummary").value(org.hamcrest.Matchers.containsString("READY")));
     }
 
@@ -967,6 +986,12 @@ class DemoReadinessControllerTests {
                 "demo-session-20260624T003000Z",
                 DemoReadinessStatus.READY,
                 "Demo session snapshot is ready.",
+                DemoReadinessStatus.READY,
+                "Handoff package has current webhook delivery, PR, command, outcome, and readiness trend evidence.",
+                "No missing handoff evidence.",
+                7,
+                0,
+                0,
                 "Status READY; recent PR https://github.com/bingqin2/PatchPilot/pull/42.",
                 "https://github.com/bingqin2/PatchPilot/pull/42",
                 Instant.parse("2026-06-24T04:00:00Z"),

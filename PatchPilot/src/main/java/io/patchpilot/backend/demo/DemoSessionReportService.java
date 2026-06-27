@@ -133,7 +133,7 @@ public class DemoSessionReportService {
                 .append("\n"));
     }
 
-    private static DemoHandoffReadinessVo handoffReadiness(DemoSessionSnapshotVo snapshot, DemoSessionReportRequestDto request) {
+    static DemoHandoffReadinessVo handoffReadiness(DemoSessionSnapshotVo snapshot, DemoSessionReportRequestDto request) {
         List<DemoHandoffReadinessCheckVo> checks = List.of(
                 snapshotStatusCheck(snapshot),
                 recentTaskCheck(snapshot.evidenceBundle().recentTask()),

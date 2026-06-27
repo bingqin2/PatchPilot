@@ -15,6 +15,12 @@ public final class DemoHandoffPackageArchiveConvert {
         entity.setSessionId(archive.sessionId());
         entity.setStatus(archive.status().name());
         entity.setSummary(archive.summary());
+        entity.setHandoffReadinessStatus(archive.handoffReadinessStatus().name());
+        entity.setHandoffReadinessSummary(archive.handoffReadinessSummary());
+        entity.setHandoffReadinessNextAction(archive.handoffReadinessNextAction());
+        entity.setHandoffReadyCheckCount(archive.handoffReadyCheckCount());
+        entity.setHandoffNeedsAttentionCheckCount(archive.handoffNeedsAttentionCheckCount());
+        entity.setHandoffBlockedCheckCount(archive.handoffBlockedCheckCount());
         entity.setShareSummary(archive.shareSummary());
         entity.setRecentPullRequestUrl(archive.recentPullRequestUrl());
         entity.setCreatedAt(archive.createdAt());
@@ -28,10 +34,32 @@ public final class DemoHandoffPackageArchiveConvert {
                 entity.getSessionId(),
                 DemoReadinessStatus.valueOf(entity.getStatus()),
                 entity.getSummary(),
+                readinessStatus(entity),
+                valueOrDefault(entity.getHandoffReadinessSummary(), entity.getSummary()),
+                valueOrDefault(entity.getHandoffReadinessNextAction(), "No handoff readiness metadata recorded."),
+                countOrZero(entity.getHandoffReadyCheckCount()),
+                countOrZero(entity.getHandoffNeedsAttentionCheckCount()),
+                countOrZero(entity.getHandoffBlockedCheckCount()),
                 entity.getShareSummary(),
                 entity.getRecentPullRequestUrl(),
                 entity.getCreatedAt(),
                 entity.getReport()
         );
+    }
+
+    private static DemoReadinessStatus readinessStatus(DemoHandoffPackageArchiveEntity entity) {
+        String status = entity.getHandoffReadinessStatus();
+        if (status == null || status.isBlank()) {
+            status = entity.getStatus();
+        }
+        return DemoReadinessStatus.valueOf(status);
+    }
+
+    private static String valueOrDefault(String value, String defaultValue) {
+        return value == null || value.isBlank() ? defaultValue : value;
+    }
+
+    private static int countOrZero(Integer value) {
+        return value == null ? 0 : value;
     }
 }

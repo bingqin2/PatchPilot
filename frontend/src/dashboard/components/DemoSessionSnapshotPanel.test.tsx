@@ -156,6 +156,12 @@ const handoffPackageArchives: DemoHandoffPackageArchive[] = [
     status: 'READY',
     summary: 'Demo session snapshot is ready.',
     shareSummary: 'Status READY; recent task task-1; recent PR https://github.com/bingqin2/PatchPilot/pull/42.',
+    handoffReadinessStatus: 'READY',
+    handoffReadinessSummary: 'Handoff package has current webhook delivery, PR, command, outcome, and readiness trend evidence.',
+    handoffReadinessNextAction: 'No missing handoff evidence.',
+    handoffReadyCheckCount: 7,
+    handoffNeedsAttentionCheckCount: 0,
+    handoffBlockedCheckCount: 0,
     recentPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
     createdAt: '2026-06-24T04:05:00Z',
     report: '# PatchPilot Demo Handoff Package\n\n- Status: `READY`'
@@ -313,7 +319,7 @@ test('renders demo session snapshot summary, evidence, checklist, contract, and 
     within(panel).getByText('Handoff package has current webhook delivery, PR, command, outcome, and readiness trend evidence.')
   ).toBeInTheDocument();
   expect(within(panel).getByText('Handoff evidence')).toBeInTheDocument();
-  expect(within(panel).getByText('No missing handoff evidence.')).toBeInTheDocument();
+  expect(within(panel).getAllByText('No missing handoff evidence.')).toHaveLength(2);
   expect(within(panel).getByText('2 commands / 1 outcome')).toBeInTheDocument();
   expect(within(panel).getByRole('heading', { name: 'Handoff readiness checks' })).toBeInTheDocument();
   expect(within(panel).getByText('Webhook delivery evidence')).toBeInTheDocument();
@@ -327,6 +333,8 @@ test('renders demo session snapshot summary, evidence, checklist, contract, and 
   expect(within(panel).getByText('archive-1')).toBeInTheDocument();
   expect(within(panel).getByRole('heading', { name: 'Recent handoff package archives' })).toBeInTheDocument();
   expect(within(panel).getByText('handoff-archive-1')).toBeInTheDocument();
+  expect(within(panel).getByText('Handoff readiness: Ready')).toBeInTheDocument();
+  expect(within(panel).getByText('7 ready / 0 warning / 0 blocked')).toBeInTheDocument();
   expect(within(panel).getByRole('heading', { name: 'Prepared launch commands' })).toBeInTheDocument();
   expect(within(panel).getAllByText('/agent fix replace docs/demo.md PatchPilot smoke test')).toHaveLength(2);
   expect(within(panel).getByText('/agent fix touch docs/history.md')).toBeInTheDocument();

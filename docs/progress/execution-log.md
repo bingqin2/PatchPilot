@@ -4,6 +4,28 @@ This file records dated implementation progress, validation commands, and import
 
 ## 2026-06-27
 
+Implemented handoff package archive readiness metadata from `docs/plans/233-handoff-package-archive-readiness-metadata.md`.
+
+Changes:
+
+- Added handoff readiness status, summary, overall next action, and ready/warning/blocked check counts to handoff package archive records.
+- Added Flyway/MyBatis persistence for the archived readiness metadata while keeping in-memory archive behavior compatible.
+- Reused the backend handoff readiness calculation at archive time so archive rows match generated handoff packages.
+- Rendered archived handoff readiness metadata in the dashboard's recent handoff package archive list.
+- Updated README and architecture notes to describe archive-time readiness metadata.
+
+Validation so far:
+
+- `mvn -q -pl PatchPilot -Dtest=DemoHandoffPackageArchiveServiceTests,DemoHandoffPackageArchiveMigrationTests,MyBatisDemoHandoffPackageArchiveRepositoryTests,DemoReadinessControllerTests test`: first failed because archive records did not expose persisted readiness metadata; then failed because the service test used a lightweight snapshot without recent task or webhook delivery evidence; passed after reusing the full handoff-ready snapshot/request fixture, 37 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts src/dashboard/components/DemoSessionSnapshotPanel.test.tsx src/App.test.tsx --reporter=basic`: first failed because the dashboard did not render archived handoff readiness metadata; then failed once because the same next-action text appears in current readiness and archive rows; passed after rendering metadata in the handoff package archive list and making the assertion explicit, 164 tests run, 0 failures.
+
+Final validation:
+
+- `mvn -pl PatchPilot test`: passed, 801 tests run, 0 failures.
+- `npm test -- --reporter=basic`: passed, 26 test files and 286 tests run.
+- `npm run build`: passed after TypeScript and production Vite build verification.
+- `git diff --check`: passed.
+
 Implemented handoff readiness operator actions from `docs/plans/232-handoff-readiness-operator-actions.md`.
 
 Changes:
