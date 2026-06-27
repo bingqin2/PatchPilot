@@ -29,10 +29,12 @@ import {
   getDemoHandoffReadiness,
   getDemoHandoffPackageArchiveSummary,
   getDemoHandoffShareCenter,
+  getDemoHandoffShareInstructions,
   getDemoHandoffShareChecklist,
   downloadDemoSessionReport,
   downloadDemoHandoffPackage,
   downloadDemoHandoffShareCenterReport,
+  downloadDemoHandoffShareInstructionsReport,
   downloadDemoHandoffShareChecklistReport,
   downloadDemoHandoffPackageArchiveSummaryReport,
   downloadDemoHandoffPackageArchiveReport,
@@ -1462,6 +1464,63 @@ test('downloads demo handoff share center markdown from backend API', async () =
   const downloadedReport = await downloadDemoHandoffShareCenterReport();
 
   expect(fetchMock).toHaveBeenCalledWith('/api/demo/handoff-share-center/report/download');
+  expect(downloadedReport).toBe(reportBlob);
+});
+
+test('loads demo handoff share instructions from backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        status: 'READY',
+        sendReady: true,
+        summary: 'Share the current handoff package with repository maintainers and demo reviewers.',
+        nextAction: 'Send the prepared handoff message with all required attachments.',
+        recommendedRecipients: ['Repository owner or maintainer', 'Demo reviewer'],
+        requiredAttachments: [
+          'Handoff package archive handoff-archive-1',
+          'Handoff package archive summary',
+          'Handoff share checklist',
+          'Handoff share center report'
+        ],
+        preSendChecks: [
+          'Confirm the Pull Request link in the handoff package opens correctly.',
+          'Confirm no handoff share checklist warnings remain.'
+        ],
+        messageSubject: 'PatchPilot demo handoff: demo-session-20260624T003000Z',
+        messageBody: 'The PatchPilot demo handoff package is ready to share.',
+        markdownReport: '# PatchPilot Demo Handoff Share Instructions\n\n- Status: `READY`',
+        generatedAt: '2026-06-24T05:45:00Z'
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const instructions = await getDemoHandoffShareInstructions();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/handoff-share-instructions');
+  expect(instructions.sendReady).toBe(true);
+  expect(instructions.recommendedRecipients).toContain('Demo reviewer');
+  expect(instructions.requiredAttachments).toContain('Handoff share center report');
+});
+
+test('downloads demo handoff share instructions markdown from backend API', async () => {
+  const reportBlob = new Blob(['# PatchPilot Demo Handoff Share Instructions\n\n- Status: `READY`'], {
+    type: 'text/markdown;charset=UTF-8'
+  });
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    blob: async () => reportBlob
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const downloadedReport = await downloadDemoHandoffShareInstructionsReport();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/handoff-share-instructions/report/download');
   expect(downloadedReport).toBe(reportBlob);
 });
 

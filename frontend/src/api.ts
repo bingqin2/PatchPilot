@@ -12,6 +12,7 @@ import type {
   DemoHandoffPackageArchive,
   DemoHandoffPackageArchiveSummary,
   DemoHandoffShareCenter,
+  DemoHandoffShareInstructions,
   DemoHandoffShareChecklist,
   DemoLaunchCommand,
   DemoLaunchCommandInput,
@@ -313,8 +314,16 @@ export async function getDemoHandoffShareCenter(): Promise<DemoHandoffShareCente
   return getApi<DemoHandoffShareCenter>('/api/demo/handoff-share-center');
 }
 
+export async function getDemoHandoffShareInstructions(): Promise<DemoHandoffShareInstructions> {
+  return getApi<DemoHandoffShareInstructions>('/api/demo/handoff-share-instructions');
+}
+
 export async function downloadDemoHandoffShareCenterReport(): Promise<Blob> {
   return getBlobApi('/api/demo/handoff-share-center/report/download');
+}
+
+export async function downloadDemoHandoffShareInstructionsReport(): Promise<Blob> {
+  return getBlobApi('/api/demo/handoff-share-instructions/report/download');
 }
 
 export async function downloadDemoHandoffPackageArchiveSummaryReport(): Promise<Blob> {

@@ -617,6 +617,20 @@ export interface DemoHandoffShareCenter {
   generatedAt: string;
 }
 
+export interface DemoHandoffShareInstructions {
+  status: DemoReadinessStatus;
+  sendReady: boolean;
+  summary: string;
+  nextAction: string;
+  recommendedRecipients: string[];
+  requiredAttachments: string[];
+  preSendChecks: string[];
+  messageSubject: string;
+  messageBody: string;
+  markdownReport: string;
+  generatedAt: string;
+}
+
 export interface BackendHealth {
   status: string;
   service: string;

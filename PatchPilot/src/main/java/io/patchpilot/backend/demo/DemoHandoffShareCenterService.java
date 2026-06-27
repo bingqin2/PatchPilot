@@ -3,6 +3,7 @@ package io.patchpilot.backend.demo;
 import io.patchpilot.backend.demo.domain.DemoHandoffPackageArchiveSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffShareCenterVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffShareChecklistVo;
+import io.patchpilot.backend.demo.domain.DemoHandoffShareInstructionsVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -69,6 +70,42 @@ public class DemoHandoffShareCenterService {
                 latestCreatedAt,
                 downloadActions,
                 evidenceNotes,
+                markdownReport,
+                generatedAt
+        );
+    }
+
+    public DemoHandoffShareInstructionsVo getShareInstructions() {
+        DemoHandoffShareCenterVo center = getShareCenter();
+        Instant generatedAt = Instant.now(clock);
+        List<String> recipients = recommendedRecipients();
+        List<String> attachments = requiredAttachments(center);
+        List<String> preSendChecks = preSendChecks(center);
+        String summary = shareInstructionsSummary(center);
+        String nextAction = shareInstructionsNextAction(center);
+        String messageSubject = messageSubject(center);
+        String messageBody = messageBody(center);
+        String markdownReport = formatInstructionsMarkdown(
+                center,
+                summary,
+                nextAction,
+                recipients,
+                attachments,
+                preSendChecks,
+                messageSubject,
+                messageBody,
+                generatedAt
+        );
+        return new DemoHandoffShareInstructionsVo(
+                center.status(),
+                center.shareReady(),
+                summary,
+                nextAction,
+                recipients,
+                attachments,
+                preSendChecks,
+                messageSubject,
+                messageBody,
                 markdownReport,
                 generatedAt
         );
@@ -188,6 +225,108 @@ public class DemoHandoffShareCenterService {
         builder.append("\n## Side-Effect Contract\n\n");
         builder.append("GET /api/demo/handoff-share-center is read-only: it does not create tasks, call the model, run tests, mutate Git, archive records, or write to GitHub.\n");
         return builder.toString();
+    }
+
+    private static List<String> recommendedRecipients() {
+        return List.of("Repository owner or maintainer", "Demo reviewer");
+    }
+
+    private static List<String> requiredAttachments(DemoHandoffShareCenterVo center) {
+        if (!hasText(center.latestArchiveId())) {
+            return List.of("Create a handoff package archive before attaching final handoff evidence.");
+        }
+        return List.of(
+                "Handoff package archive " + center.latestArchiveId(),
+                "Handoff package archive summary",
+                "Handoff share checklist",
+                "Handoff share center report"
+        );
+    }
+
+    private static List<String> preSendChecks(DemoHandoffShareCenterVo center) {
+        List<String> checks = new ArrayList<>();
+        if (center.shareReady()) {
+            checks.add("Confirm the Pull Request link in the handoff package opens correctly.");
+            checks.add("Confirm the archived package, archive summary, checklist, and share-center report were downloaded.");
+            checks.add("Confirm no handoff share checklist warnings remain.");
+        } else {
+            checks.add("Resolve the share center next action before sending: " + center.nextAction());
+            checks.add("Do not send the handoff message until the share center reports READY.");
+        }
+        return List.copyOf(checks);
+    }
+
+    private static String shareInstructionsSummary(DemoHandoffShareCenterVo center) {
+        if (center.shareReady()) {
+            return "Share the current handoff package with repository maintainers and demo reviewers.";
+        }
+        return "The handoff package is not ready to send.";
+    }
+
+    private static String shareInstructionsNextAction(DemoHandoffShareCenterVo center) {
+        if (center.shareReady()) {
+            return "Send the prepared handoff message with all required attachments.";
+        }
+        return center.nextAction();
+    }
+
+    private static String messageSubject(DemoHandoffShareCenterVo center) {
+        if (center.shareReady() && hasText(center.latestSessionId())) {
+            return "PatchPilot demo handoff: " + center.latestSessionId();
+        }
+        return "PatchPilot demo handoff: not ready";
+    }
+
+    private static String messageBody(DemoHandoffShareCenterVo center) {
+        if (!center.shareReady()) {
+            return "The PatchPilot demo handoff package is not ready to send yet.\n\n"
+                    + "Current blocker: " + center.nextAction() + "\n\n"
+                    + "Please resolve this before sending post-demo evidence.";
+        }
+        return "The PatchPilot demo handoff package is ready to share.\n\n"
+                + "Session: " + valueOrNone(center.latestSessionId()) + "\n"
+                + "Archive: " + valueOrNone(center.latestArchiveId()) + "\n\n"
+                + "Attached evidence should include the handoff package archive, archive summary, share checklist, and share-center report.\n\n"
+                + "Next action: " + center.nextAction();
+    }
+
+    private static String formatInstructionsMarkdown(
+            DemoHandoffShareCenterVo center,
+            String summary,
+            String nextAction,
+            List<String> recipients,
+            List<String> attachments,
+            List<String> preSendChecks,
+            String messageSubject,
+            String messageBody,
+            Instant generatedAt
+    ) {
+        StringBuilder builder = new StringBuilder();
+        builder.append("# PatchPilot Demo Handoff Share Instructions\n\n");
+        builder.append("- Status: `").append(center.status().name()).append("`\n");
+        builder.append("- Send ready: `").append(center.shareReady()).append("`\n");
+        builder.append("- Latest archive: `").append(valueOrNone(center.latestArchiveId())).append("`\n");
+        builder.append("- Latest session: `").append(valueOrNone(center.latestSessionId())).append("`\n");
+        builder.append("- Generated at: `").append(generatedAt).append("`\n\n");
+        builder.append("## Summary\n\n").append(summary).append("\n\n");
+        builder.append("## Next Action\n\n").append(nextAction).append("\n\n");
+        appendList(builder, "## Recommended Recipients", recipients);
+        appendList(builder, "## Required Attachments", attachments);
+        appendList(builder, "## Pre-Send Checks", preSendChecks);
+        builder.append("## Message Template\n\n");
+        builder.append("Subject: ").append(messageSubject).append("\n\n");
+        builder.append(messageBody).append("\n\n");
+        builder.append("## Side-Effect Contract\n\n");
+        builder.append("GET /api/demo/handoff-share-instructions is read-only: it does not create tasks, call the model, run tests, mutate Git, archive records, send messages, or write to GitHub.\n");
+        return builder.toString();
+    }
+
+    private static void appendList(StringBuilder builder, String title, List<String> items) {
+        builder.append(title).append("\n\n");
+        for (String item : items) {
+            builder.append("- ").append(item).append('\n');
+        }
+        builder.append('\n');
     }
 
     private static boolean hasText(String value) {

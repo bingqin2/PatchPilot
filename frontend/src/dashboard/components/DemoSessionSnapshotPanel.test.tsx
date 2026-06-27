@@ -6,6 +6,7 @@ import type {
   DemoHandoffPackageArchive,
   DemoHandoffPackageArchiveSummary,
   DemoHandoffShareCenter,
+  DemoHandoffShareInstructions,
   DemoHandoffShareChecklist,
   DemoPreparedLaunchCommand,
   DemoSessionArchive,
@@ -236,6 +237,28 @@ const handoffShareCenter: DemoHandoffShareCenter = {
   generatedAt: '2026-06-24T05:30:00Z'
 };
 
+const handoffShareInstructions: DemoHandoffShareInstructions = {
+  status: 'READY',
+  sendReady: true,
+  summary: 'Share the current handoff package with repository maintainers and demo reviewers.',
+  nextAction: 'Send the prepared handoff message with all required attachments.',
+  recommendedRecipients: ['Repository owner or maintainer', 'Demo reviewer'],
+  requiredAttachments: [
+    'Handoff package archive handoff-archive-1',
+    'Handoff package archive summary',
+    'Handoff share checklist',
+    'Handoff share center report'
+  ],
+  preSendChecks: [
+    'Confirm the Pull Request link in the handoff package opens correctly.',
+    'Confirm no handoff share checklist warnings remain.'
+  ],
+  messageSubject: 'PatchPilot demo handoff: demo-session-20260624T003000Z',
+  messageBody: 'The PatchPilot demo handoff package is ready to share.',
+  markdownReport: '# PatchPilot Demo Handoff Share Instructions\n\n- Status: `READY`',
+  generatedAt: '2026-06-24T05:45:00Z'
+};
+
 const preparedLaunchCommands: DemoPreparedLaunchCommand[] = [
   {
     triggerComment: '/agent fix replace docs/demo.md PatchPilot smoke test',
@@ -356,6 +379,7 @@ test('renders demo session snapshot summary, evidence, checklist, contract, and 
       handoffPackageArchiveSummary={handoffPackageArchiveSummary}
       handoffShareChecklist={handoffShareChecklist}
       handoffShareCenter={handoffShareCenter}
+      handoffShareInstructions={handoffShareInstructions}
       error={null}
       archiveError={null}
       handoffPackageArchiveError={null}
@@ -369,6 +393,7 @@ test('renders demo session snapshot summary, evidence, checklist, contract, and 
       onDownloadHandoffPackageArchiveReport={vi.fn()}
       onDownloadHandoffPackageArchiveSummaryReport={vi.fn()}
       onDownloadHandoffShareCenterReport={vi.fn()}
+      onDownloadHandoffShareInstructionsReport={vi.fn()}
       onDownloadHandoffShareChecklistReport={vi.fn()}
     />
   );
@@ -412,6 +437,13 @@ test('renders demo session snapshot summary, evidence, checklist, contract, and 
   expect(within(panel).getByText('Download handoff package archive handoff-archive-1.')).toBeInTheDocument();
   expect(within(panel).getByText('Latest package archive is READY.')).toBeInTheDocument();
   expect(within(panel).getByRole('button', { name: 'Download handoff share center' })).toBeInTheDocument();
+  expect(within(panel).getByRole('heading', { name: 'Handoff share instructions' })).toBeInTheDocument();
+  expect(within(panel).getByText('Share the current handoff package with repository maintainers and demo reviewers.')).toBeInTheDocument();
+  expect(within(panel).getByText('Repository owner or maintainer')).toBeInTheDocument();
+  expect(within(panel).getByText('Handoff share center report')).toBeInTheDocument();
+  expect(within(panel).getByText('PatchPilot demo handoff: demo-session-20260624T003000Z')).toBeInTheDocument();
+  expect(within(panel).getByRole('button', { name: 'Copy handoff share instructions' })).toBeInTheDocument();
+  expect(within(panel).getByRole('button', { name: 'Download handoff share instructions' })).toBeInTheDocument();
   expect(within(panel).getByRole('heading', { name: 'Handoff share checklist' })).toBeInTheDocument();
   expect(within(panel).getByRole('button', { name: 'Download handoff share checklist' })).toBeInTheDocument();
   expect(within(panel).getByText('Latest handoff archive is ready to share.')).toBeInTheDocument();
@@ -454,6 +486,7 @@ test('shows loading and API errors without hiding snapshot data', () => {
       onDownloadHandoffPackageArchiveReport={vi.fn()}
       onDownloadHandoffPackageArchiveSummaryReport={vi.fn()}
       onDownloadHandoffShareCenterReport={vi.fn()}
+      onDownloadHandoffShareInstructionsReport={vi.fn()}
       onDownloadHandoffShareChecklistReport={vi.fn()}
     />
   );
@@ -482,6 +515,7 @@ test('shows loading and API errors without hiding snapshot data', () => {
       onDownloadHandoffPackageArchiveReport={vi.fn()}
       onDownloadHandoffPackageArchiveSummaryReport={vi.fn()}
       onDownloadHandoffShareCenterReport={vi.fn()}
+      onDownloadHandoffShareInstructionsReport={vi.fn()}
       onDownloadHandoffShareChecklistReport={vi.fn()}
     />
   );
@@ -524,6 +558,7 @@ test('shows handoff readiness gaps when launch context is missing', () => {
       onDownloadHandoffPackageArchiveReport={vi.fn()}
       onDownloadHandoffPackageArchiveSummaryReport={vi.fn()}
       onDownloadHandoffShareCenterReport={vi.fn()}
+      onDownloadHandoffShareInstructionsReport={vi.fn()}
       onDownloadHandoffShareChecklistReport={vi.fn()}
     />
   );
@@ -569,6 +604,7 @@ test('copies demo session report markdown', async () => {
       onDownloadHandoffPackageArchiveReport={vi.fn()}
       onDownloadHandoffPackageArchiveSummaryReport={vi.fn()}
       onDownloadHandoffShareCenterReport={vi.fn()}
+      onDownloadHandoffShareInstructionsReport={vi.fn()}
       onDownloadHandoffShareChecklistReport={vi.fn()}
     />
   );
@@ -609,6 +645,7 @@ test('copies demo handoff package markdown', async () => {
       onDownloadHandoffPackageArchiveReport={vi.fn()}
       onDownloadHandoffPackageArchiveSummaryReport={vi.fn()}
       onDownloadHandoffShareCenterReport={vi.fn()}
+      onDownloadHandoffShareInstructionsReport={vi.fn()}
       onDownloadHandoffShareChecklistReport={vi.fn()}
     />
   );
@@ -653,6 +690,7 @@ test('downloads demo session report markdown', async () => {
       onDownloadHandoffPackageArchiveReport={vi.fn()}
       onDownloadHandoffPackageArchiveSummaryReport={vi.fn()}
       onDownloadHandoffShareCenterReport={vi.fn()}
+      onDownloadHandoffShareInstructionsReport={vi.fn()}
       onDownloadHandoffShareChecklistReport={vi.fn()}
     />
   );
@@ -699,6 +737,7 @@ test('downloads demo handoff package markdown', async () => {
       onDownloadHandoffPackageArchiveReport={vi.fn()}
       onDownloadHandoffPackageArchiveSummaryReport={vi.fn()}
       onDownloadHandoffShareCenterReport={vi.fn()}
+      onDownloadHandoffShareInstructionsReport={vi.fn()}
       onDownloadHandoffShareChecklistReport={vi.fn()}
     />
   );
@@ -741,6 +780,7 @@ test('copies demo handoff package archive summary markdown', async () => {
       onDownloadHandoffPackageArchiveReport={vi.fn()}
       onDownloadHandoffPackageArchiveSummaryReport={vi.fn()}
       onDownloadHandoffShareCenterReport={vi.fn()}
+      onDownloadHandoffShareInstructionsReport={vi.fn()}
       onDownloadHandoffShareChecklistReport={vi.fn()}
     />
   );
@@ -781,6 +821,7 @@ test('copies demo handoff share checklist markdown', async () => {
       onDownloadHandoffPackageArchiveReport={vi.fn()}
       onDownloadHandoffPackageArchiveSummaryReport={vi.fn()}
       onDownloadHandoffShareCenterReport={vi.fn()}
+      onDownloadHandoffShareInstructionsReport={vi.fn()}
       onDownloadHandoffShareChecklistReport={vi.fn()}
     />
   );
@@ -828,6 +869,7 @@ test('downloads demo handoff share checklist markdown', async () => {
       onDownloadHandoffPackageArchiveReport={vi.fn()}
       onDownloadHandoffPackageArchiveSummaryReport={vi.fn()}
       onDownloadHandoffShareCenterReport={vi.fn()}
+      onDownloadHandoffShareInstructionsReport={vi.fn()}
       onDownloadHandoffShareChecklistReport={onDownloadHandoffShareChecklistReport}
     />
   );
@@ -866,6 +908,7 @@ test('downloads demo handoff share center markdown', async () => {
       handoffPackageArchiveSummary={handoffPackageArchiveSummary}
       handoffShareChecklist={handoffShareChecklist}
       handoffShareCenter={handoffShareCenter}
+      handoffShareInstructions={handoffShareInstructions}
       error={null}
       archiveError={null}
       handoffPackageArchiveError={null}
@@ -879,6 +922,7 @@ test('downloads demo handoff share center markdown', async () => {
       onDownloadHandoffPackageArchiveReport={vi.fn()}
       onDownloadHandoffPackageArchiveSummaryReport={vi.fn()}
       onDownloadHandoffShareCenterReport={onDownloadHandoffShareCenterReport}
+      onDownloadHandoffShareInstructionsReport={vi.fn()}
       onDownloadHandoffShareChecklistReport={vi.fn()}
     />
   );
@@ -890,6 +934,102 @@ test('downloads demo handoff share center markdown', async () => {
   expect(click).toHaveBeenCalledTimes(1);
   expect(revokeObjectURL).toHaveBeenCalledWith('blob:demo-handoff-share-center');
   expect(screen.getByText('Handoff share center downloaded')).toBeInTheDocument();
+});
+
+test('copies demo handoff share instructions markdown', async () => {
+  const writeText = vi.fn().mockResolvedValue(undefined);
+  Object.defineProperty(navigator, 'clipboard', {
+    configurable: true,
+    value: { writeText }
+  });
+
+  render(
+    <DemoSessionSnapshotPanel
+      snapshot={snapshot}
+      preparedLaunchCommands={preparedLaunchCommands}
+      archivedLaunchOutcomes={archivedLaunchOutcomes}
+      handoffReadiness={handoffReadiness}
+      archives={[]}
+      handoffPackageArchives={handoffPackageArchives}
+      handoffPackageArchiveSummary={handoffPackageArchiveSummary}
+      handoffShareChecklist={handoffShareChecklist}
+      handoffShareCenter={handoffShareCenter}
+      handoffShareInstructions={handoffShareInstructions}
+      error={null}
+      archiveError={null}
+      handoffPackageArchiveError={null}
+      onCopyReport={vi.fn()}
+      onDownloadReport={vi.fn()}
+      onArchiveSession={vi.fn()}
+      onCopyHandoffPackage={vi.fn()}
+      onDownloadHandoffPackage={vi.fn()}
+      onArchiveHandoffPackage={vi.fn()}
+      onDownloadArchiveReport={vi.fn()}
+      onDownloadHandoffPackageArchiveReport={vi.fn()}
+      onDownloadHandoffPackageArchiveSummaryReport={vi.fn()}
+      onDownloadHandoffShareCenterReport={vi.fn()}
+      onDownloadHandoffShareInstructionsReport={vi.fn()}
+      onDownloadHandoffShareChecklistReport={vi.fn()}
+    />
+  );
+
+  await userEvent.click(screen.getByRole('button', { name: 'Copy handoff share instructions' }));
+
+  expect(writeText).toHaveBeenCalledWith(handoffShareInstructions.markdownReport);
+  expect(screen.getByText('Handoff share instructions copied')).toBeInTheDocument();
+});
+
+test('downloads demo handoff share instructions markdown', async () => {
+  const reportBlob = new Blob(['# PatchPilot Demo Handoff Share Instructions'], {
+    type: 'text/markdown;charset=UTF-8'
+  });
+  const onDownloadHandoffShareInstructionsReport = vi.fn().mockResolvedValue(reportBlob);
+  const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+  const createObjectURL = vi.fn(() => 'blob:demo-handoff-share-instructions');
+  const revokeObjectURL = vi.fn();
+  vi.stubGlobal('URL', {
+    ...globalThis.URL,
+    createObjectURL,
+    revokeObjectURL
+  });
+
+  render(
+    <DemoSessionSnapshotPanel
+      snapshot={snapshot}
+      preparedLaunchCommands={preparedLaunchCommands}
+      archivedLaunchOutcomes={archivedLaunchOutcomes}
+      handoffReadiness={handoffReadiness}
+      archives={[]}
+      handoffPackageArchives={handoffPackageArchives}
+      handoffPackageArchiveSummary={handoffPackageArchiveSummary}
+      handoffShareChecklist={handoffShareChecklist}
+      handoffShareCenter={handoffShareCenter}
+      handoffShareInstructions={handoffShareInstructions}
+      error={null}
+      archiveError={null}
+      handoffPackageArchiveError={null}
+      onCopyReport={vi.fn()}
+      onDownloadReport={vi.fn()}
+      onArchiveSession={vi.fn()}
+      onCopyHandoffPackage={vi.fn()}
+      onDownloadHandoffPackage={vi.fn()}
+      onArchiveHandoffPackage={vi.fn()}
+      onDownloadArchiveReport={vi.fn()}
+      onDownloadHandoffPackageArchiveReport={vi.fn()}
+      onDownloadHandoffPackageArchiveSummaryReport={vi.fn()}
+      onDownloadHandoffShareCenterReport={vi.fn()}
+      onDownloadHandoffShareInstructionsReport={onDownloadHandoffShareInstructionsReport}
+      onDownloadHandoffShareChecklistReport={vi.fn()}
+    />
+  );
+
+  await userEvent.click(screen.getByRole('button', { name: 'Download handoff share instructions' }));
+
+  expect(onDownloadHandoffShareInstructionsReport).toHaveBeenCalledTimes(1);
+  expect(createObjectURL).toHaveBeenCalledWith(reportBlob);
+  expect(click).toHaveBeenCalledTimes(1);
+  expect(revokeObjectURL).toHaveBeenCalledWith('blob:demo-handoff-share-instructions');
+  expect(screen.getByText('Handoff share instructions downloaded')).toBeInTheDocument();
 });
 
 test('downloads demo handoff package archive summary markdown', async () => {
@@ -928,6 +1068,7 @@ test('downloads demo handoff package archive summary markdown', async () => {
       onDownloadHandoffPackageArchiveReport={vi.fn()}
       onDownloadHandoffPackageArchiveSummaryReport={onDownloadHandoffPackageArchiveSummaryReport}
       onDownloadHandoffShareCenterReport={vi.fn()}
+      onDownloadHandoffShareInstructionsReport={vi.fn()}
       onDownloadHandoffShareChecklistReport={vi.fn()}
     />
   );
@@ -970,6 +1111,7 @@ test('archives current demo session and copies archived report markdown', async 
       onDownloadHandoffPackageArchiveReport={vi.fn()}
       onDownloadHandoffPackageArchiveSummaryReport={vi.fn()}
       onDownloadHandoffShareCenterReport={vi.fn()}
+      onDownloadHandoffShareInstructionsReport={vi.fn()}
       onDownloadHandoffShareChecklistReport={vi.fn()}
     />
   );
@@ -1012,6 +1154,7 @@ test('archives current demo handoff package and copies archived package markdown
       onDownloadHandoffPackageArchiveReport={vi.fn()}
       onDownloadHandoffPackageArchiveSummaryReport={vi.fn()}
       onDownloadHandoffShareCenterReport={vi.fn()}
+      onDownloadHandoffShareInstructionsReport={vi.fn()}
       onDownloadHandoffShareChecklistReport={vi.fn()}
     />
   );
@@ -1058,6 +1201,7 @@ test('downloads archived demo session report markdown', async () => {
       onDownloadHandoffPackageArchiveReport={vi.fn()}
       onDownloadHandoffPackageArchiveSummaryReport={vi.fn()}
       onDownloadHandoffShareCenterReport={vi.fn()}
+      onDownloadHandoffShareInstructionsReport={vi.fn()}
       onDownloadHandoffShareChecklistReport={vi.fn()}
     />
   );
@@ -1104,6 +1248,7 @@ test('downloads archived demo handoff package markdown', async () => {
       onDownloadHandoffPackageArchiveReport={onDownloadHandoffPackageArchiveReport}
       onDownloadHandoffPackageArchiveSummaryReport={vi.fn()}
       onDownloadHandoffShareCenterReport={vi.fn()}
+      onDownloadHandoffShareInstructionsReport={vi.fn()}
       onDownloadHandoffShareChecklistReport={vi.fn()}
     />
   );
