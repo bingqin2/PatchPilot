@@ -24,6 +24,7 @@ import type {
   DemoReadiness,
   DemoReadinessSnapshotArchive,
   DemoReadinessSnapshotTrend,
+  DemoSelfHostedLaunchReadinessArchive,
   DemoSelfHostedLaunchReadiness,
   DemoScript,
   DemoSessionArchive,
@@ -240,6 +241,18 @@ export async function getDemoSelfHostedLaunchReadiness(): Promise<DemoSelfHosted
 
 export async function downloadDemoSelfHostedLaunchReadinessReport(): Promise<Blob> {
   return getBlobApi('/api/demo/self-hosted-launch-readiness/report/download');
+}
+
+export async function archiveDemoSelfHostedLaunchReadiness(): Promise<DemoSelfHostedLaunchReadinessArchive> {
+  return postApi<DemoSelfHostedLaunchReadinessArchive>('/api/demo/self-hosted-launch-readiness/archives');
+}
+
+export async function listDemoSelfHostedLaunchReadinessArchives(): Promise<DemoSelfHostedLaunchReadinessArchive[]> {
+  return getApi<DemoSelfHostedLaunchReadinessArchive[]>('/api/demo/self-hosted-launch-readiness/archives');
+}
+
+export async function downloadDemoSelfHostedLaunchReadinessArchiveReport(archiveId: string): Promise<Blob> {
+  return getBlobApi(`/api/demo/self-hosted-launch-readiness/archives/${encodeURIComponent(archiveId)}/report/download`);
 }
 
 export async function archiveDemoReadinessSnapshot(): Promise<DemoReadinessSnapshotArchive> {

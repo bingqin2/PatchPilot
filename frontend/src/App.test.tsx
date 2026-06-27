@@ -1739,6 +1739,18 @@ const demoSelfHostedLaunchReadiness = {
   markdownReport: '# PatchPilot Self-Hosted Launch Readiness\n\n- Status: `READY`'
 };
 
+const demoSelfHostedLaunchReadinessArchive = {
+  id: 'launch-readiness-archive-1',
+  status: 'READY',
+  readyToLaunch: true,
+  summary: 'Self-hosted PatchPilot is ready for a controlled issue-to-PR launch.',
+  readyCheckCount: 6,
+  needsAttentionCheckCount: 0,
+  blockedCheckCount: 0,
+  createdAt: '2026-06-28T01:30:00Z',
+  report: '# PatchPilot Self-Hosted Launch Readiness\n\n- Status: `READY`'
+};
+
 const demoHandoffShareInstructions = {
   status: 'READY',
   sendReady: true,
@@ -2000,6 +2012,12 @@ beforeEach(() => {
     if (url === '/api/demo/self-hosted-launch-readiness') {
       return jsonResponse(demoSelfHostedLaunchReadiness);
     }
+    if (url === '/api/demo/self-hosted-launch-readiness/archives' && init?.method === 'POST') {
+      return jsonResponse(demoSelfHostedLaunchReadinessArchive);
+    }
+    if (url === '/api/demo/self-hosted-launch-readiness/archives') {
+      return jsonResponse([demoSelfHostedLaunchReadinessArchive]);
+    }
     if (url === '/api/demo/handoff-share-instructions') {
       return jsonResponse(demoHandoffShareInstructions);
     }
@@ -2046,6 +2064,15 @@ beforeEach(() => {
       } as Response);
     }
     if (url === '/api/demo/self-hosted-launch-readiness/report/download') {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        blob: async () => new Blob(['# PatchPilot Self-Hosted Launch Readiness'], {
+          type: 'text/markdown;charset=UTF-8'
+        })
+      } as Response);
+    }
+    if (url === '/api/demo/self-hosted-launch-readiness/archives/launch-readiness-archive-1/report/download') {
       return Promise.resolve({
         ok: true,
         status: 200,
@@ -2489,10 +2516,15 @@ test('renders operational task dashboard from backend APIs', async () => {
   );
   const selfHostedLaunchPanel = screen.getByRole('region', { name: 'Self-hosted launch readiness' });
   expect(within(selfHostedLaunchPanel).getByRole('heading', { name: 'Self-hosted launch readiness' })).toBeInTheDocument();
-  expect(within(selfHostedLaunchPanel).getByText('Self-hosted PatchPilot is ready for a controlled issue-to-PR launch.')).toBeInTheDocument();
+  expect(within(selfHostedLaunchPanel).getAllByText('Self-hosted PatchPilot is ready for a controlled issue-to-PR launch.')).toHaveLength(2);
   expect(within(selfHostedLaunchPanel).getByText('Ready to launch')).toBeInTheDocument();
   expect(within(selfHostedLaunchPanel).getByText('Handoff finalization')).toBeInTheDocument();
+  expect(within(selfHostedLaunchPanel).getByText('Recent launch readiness archives')).toBeInTheDocument();
+  expect(within(selfHostedLaunchPanel).getByText('launch-readiness-archive-1')).toBeInTheDocument();
   expect(within(selfHostedLaunchPanel).getByText('Post the tested /agent fix comment, watch the task reach COMPLETED, then use the generated Pull Request for review.')).toBeInTheDocument();
+  await user.click(within(selfHostedLaunchPanel).getByRole('button', { name: 'Archive launch readiness' }));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/self-hosted-launch-readiness/archives', { method: 'POST' }));
+  expect(within(selfHostedLaunchPanel).getByText('Launch readiness archived')).toBeInTheDocument();
   const demoScriptPanel = screen.getByRole('region', { name: 'Demo script' });
   expect(within(demoScriptPanel).getByRole('heading', { name: 'Demo script' })).toBeInTheDocument();
   expect(within(demoScriptPanel).getByText('Demo script is ready.')).toBeInTheDocument();
@@ -2657,6 +2689,7 @@ test('renders operational task dashboard from backend APIs', async () => {
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/handoff-share-center'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/handoff-finalization'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/self-hosted-launch-readiness'));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/self-hosted-launch-readiness/archives'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/handoff-share-instructions'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/handoff-share-delivery-receipts'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/script'));

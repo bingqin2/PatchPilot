@@ -27,6 +27,7 @@ import io.patchpilot.backend.task.domain.vo.TriggerEvaluationResultVo;
 import io.patchpilot.backend.demo.domain.DemoScriptStepVo;
 import io.patchpilot.backend.demo.domain.DemoScriptVo;
 import io.patchpilot.backend.demo.domain.DemoSelfHostedLaunchCheckVo;
+import io.patchpilot.backend.demo.domain.DemoSelfHostedLaunchReadinessArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoSelfHostedLaunchReadinessVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessSnapshotArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessSnapshotTrendStatus;
@@ -109,6 +110,9 @@ class DemoReadinessControllerTests {
     private SelfHostedLaunchReadinessService selfHostedLaunchReadinessService;
 
     @MockitoBean
+    private SelfHostedLaunchReadinessArchiveService selfHostedLaunchReadinessArchiveService;
+
+    @MockitoBean
     private DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
 
     @MockitoBean
@@ -151,6 +155,69 @@ class DemoReadinessControllerTests {
                 .andExpect(content().contentType("text/markdown;charset=UTF-8"))
                 .andExpect(content().string(containsString("# PatchPilot Self-Hosted Launch Readiness")))
                 .andExpect(content().string(containsString("Ready to launch: `true`")));
+    }
+
+    @Test
+    void should_archive_self_hosted_launch_readiness_package() throws Exception {
+        when(selfHostedLaunchReadinessArchiveService.archiveCurrentReadinessPackage())
+                .thenReturn(selfHostedLaunchReadinessArchive());
+
+        mockMvc.perform(post("/api/demo/self-hosted-launch-readiness/archives"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value("launch-readiness-archive-1"))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.readyToLaunch").value(true))
+                .andExpect(jsonPath("$.data.readyCheckCount").value(2))
+                .andExpect(jsonPath("$.data.report").value(containsString("# PatchPilot Self-Hosted Launch Readiness")));
+
+        verify(operatorSafetyAuditService).recordSafetyAudit(argThat(this::isSelfHostedLaunchReadinessArchiveAudit));
+    }
+
+    private boolean isSelfHostedLaunchReadinessArchiveAudit(RecordOperatorSafetyAuditCommand command) {
+        return command != null
+                && "DEMO_SELF_HOSTED_LAUNCH_READINESS_ARCHIVED".equals(command.action())
+                && "DEMO_SELF_HOSTED_LAUNCH_READINESS_ARCHIVE".equals(command.resourceType())
+                && "launch-readiness-archive-1".equals(command.resourceId())
+                && command.scope() == TriggerQuarantineScope.REPOSITORY
+                && "patchpilot/local-demo".equals(command.scopeKey())
+                && "admin-api".equals(command.operator())
+                && "Archived self-hosted launch readiness READY".equals(command.reason());
+    }
+
+    @Test
+    void should_return_recent_self_hosted_launch_readiness_archives() throws Exception {
+        when(selfHostedLaunchReadinessArchiveService.listRecentArchives())
+                .thenReturn(List.of(selfHostedLaunchReadinessArchive()));
+
+        mockMvc.perform(get("/api/demo/self-hosted-launch-readiness/archives"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].id").value("launch-readiness-archive-1"))
+                .andExpect(jsonPath("$.data[0].status").value("READY"))
+                .andExpect(jsonPath("$.data[0].summary").value("Self-hosted PatchPilot is ready for a controlled issue-to-PR launch."));
+    }
+
+    @Test
+    void should_download_archived_self_hosted_launch_readiness_report_as_markdown_attachment() throws Exception {
+        when(selfHostedLaunchReadinessArchiveService.findArchive("launch-readiness-archive-1"))
+                .thenReturn(Optional.of(selfHostedLaunchReadinessArchive()));
+
+        mockMvc.perform(get("/api/demo/self-hosted-launch-readiness/archives/launch-readiness-archive-1/report/download"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("attachment;")))
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("patchpilot-self-hosted-launch-readiness-launch-readiness-archive-1.md")))
+                .andExpect(content().contentTypeCompatibleWith("text/markdown"))
+                .andExpect(content().string(containsString("# PatchPilot Self-Hosted Launch Readiness")))
+                .andExpect(content().string(containsString("`READY`")));
+    }
+
+    @Test
+    void should_return_not_found_when_archived_self_hosted_launch_readiness_report_is_missing() throws Exception {
+        when(selfHostedLaunchReadinessArchiveService.findArchive("missing-archive")).thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/api/demo/self-hosted-launch-readiness/archives/missing-archive/report/download"))
+                .andExpect(status().isNotFound());
     }
 
     @Test
@@ -1769,6 +1836,20 @@ class DemoReadinessControllerTests {
                 List.of("Post the tested /agent fix comment, watch the task reach COMPLETED, then use the generated Pull Request for review."),
                 Instant.parse("2026-06-27T01:00:00Z"),
                 "# PatchPilot Self-Hosted Launch Readiness\n\n- Status: `READY`\n- Ready to launch: `true`\n"
+        );
+    }
+
+    private static DemoSelfHostedLaunchReadinessArchiveVo selfHostedLaunchReadinessArchive() {
+        return new DemoSelfHostedLaunchReadinessArchiveVo(
+                "launch-readiness-archive-1",
+                DemoReadinessStatus.READY,
+                true,
+                "Self-hosted PatchPilot is ready for a controlled issue-to-PR launch.",
+                2,
+                0,
+                0,
+                Instant.parse("2026-06-28T01:30:00Z"),
+                "# PatchPilot Self-Hosted Launch Readiness\n\n- Status: `READY`\n"
         );
     }
 }
