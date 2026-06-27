@@ -88,12 +88,18 @@ class DemoEvidenceBundleServiceTests {
         assertThat(bundle.handoffShareCenterStatus()).isEqualTo(DemoReadinessStatus.READY);
         assertThat(bundle.handoffShareCenterSummary()).isEqualTo("Post-demo handoff package is ready to share.");
         assertThat(bundle.handoffShareCenterNextAction())
-                .isEqualTo("Download the package, archive summary, and share checklist before sending handoff evidence.");
+                .isEqualTo("Download the package, send the prepared handoff message, then record a delivery receipt.");
         assertThat(bundle.handoffShareCenterDownloadActions()).containsExactly(
                 "Download handoff package archive handoff-archive-1.",
                 "Download handoff package archive summary.",
-                "Download handoff share checklist."
+                "Download handoff share checklist.",
+                "Record a handoff share delivery receipt after sending the package."
         );
+        assertThat(bundle.handoffShareDeliveryReceiptRecorded()).isFalse();
+        assertThat(bundle.handoffShareLatestDeliveryReceiptId()).isNull();
+        assertThat(bundle.handoffShareLatestDeliveryTarget()).isNull();
+        assertThat(bundle.handoffShareLatestDeliveryChannel()).isNull();
+        assertThat(bundle.handoffShareLatestDeliveredAt()).isNull();
         assertThat(bundle.nextActions()).containsExactly(
                 "Fix failing adapter fixtures before a live demo.",
                 "Inspect active trigger quarantines before a live demo."
@@ -114,7 +120,7 @@ class DemoEvidenceBundleServiceTests {
                 () -> rejectedTriggerSummary(0),
                 List::of,
                 DemoEvidenceBundleServiceTests::handoffPackageArchiveSummary,
-                DemoEvidenceBundleServiceTests::handoffShareCenter
+                DemoEvidenceBundleServiceTests::deliveredHandoffShareCenter
         );
 
         DemoEvidenceBundleVo bundle = service.getEvidenceBundle();
@@ -129,6 +135,11 @@ class DemoEvidenceBundleServiceTests {
         assertThat(bundle.handoffShareCenterSummary()).isEqualTo("Post-demo handoff package is ready to share.");
         assertThat(bundle.handoffShareCenterNextAction())
                 .isEqualTo("Download the package, archive summary, and share checklist before sending handoff evidence.");
+        assertThat(bundle.handoffShareDeliveryReceiptRecorded()).isTrue();
+        assertThat(bundle.handoffShareLatestDeliveryReceiptId()).isEqualTo("receipt-1");
+        assertThat(bundle.handoffShareLatestDeliveryTarget()).isEqualTo("Demo reviewer");
+        assertThat(bundle.handoffShareLatestDeliveryChannel()).isEqualTo("email");
+        assertThat(bundle.handoffShareLatestDeliveredAt()).isEqualTo("2026-06-24T05:20:00Z");
         assertThat(bundle.nextActions()).containsExactly("Use this evidence bundle as the live demo baseline.");
     }
 
@@ -331,16 +342,48 @@ class DemoEvidenceBundleServiceTests {
                 DemoReadinessStatus.READY,
                 true,
                 "Post-demo handoff package is ready to share.",
+                "Download the package, send the prepared handoff message, then record a delivery receipt.",
+                "handoff-archive-1",
+                "demo-session-20260624T003000Z",
+                "2026-06-24T04:00:00Z",
+                null,
+                null,
+                null,
+                null,
+                false,
+                List.of(
+                        "Download handoff package archive handoff-archive-1.",
+                        "Download handoff package archive summary.",
+                        "Download handoff share checklist.",
+                        "Record a handoff share delivery receipt after sending the package."
+                ),
+                List.of("Latest package archive status is READY."),
+                "# PatchPilot Demo Handoff Share Center",
+                Instant.parse("2026-06-24T05:30:00Z")
+        );
+    }
+
+    private static DemoHandoffShareCenterVo deliveredHandoffShareCenter() {
+        return new DemoHandoffShareCenterVo(
+                DemoReadinessStatus.READY,
+                true,
+                "Post-demo handoff package is ready to share.",
                 "Download the package, archive summary, and share checklist before sending handoff evidence.",
                 "handoff-archive-1",
                 "demo-session-20260624T003000Z",
                 "2026-06-24T04:00:00Z",
+                "receipt-1",
+                "Demo reviewer",
+                "email",
+                "2026-06-24T05:20:00Z",
+                true,
                 List.of(
                         "Download handoff package archive handoff-archive-1.",
                         "Download handoff package archive summary.",
-                        "Download handoff share checklist."
+                        "Download handoff share checklist.",
+                        "Download handoff share delivery receipt receipt-1."
                 ),
-                List.of("Latest package archive status is READY."),
+                List.of("Latest delivery receipt receipt-1 was recorded for Demo reviewer via email."),
                 "# PatchPilot Demo Handoff Share Center",
                 Instant.parse("2026-06-24T05:30:00Z")
         );

@@ -105,6 +105,18 @@ export function DemoEvidenceBundlePanel({ bundle, error, onCopyRunbook }: DemoEv
               ))}
             </div>
             <div>
+              <span>Handoff share delivery</span>
+              <strong>{bundle.handoffShareDeliveryReceiptRecorded ? bundle.handoffShareLatestDeliveryReceiptId : 'No receipt'}</strong>
+              <small>
+                {bundle.handoffShareDeliveryReceiptRecorded
+                  ? `${bundle.handoffShareLatestDeliveryChannel} - ${bundle.handoffShareLatestDeliveryTarget}`
+                  : 'Record a delivery receipt after sending the package.'}
+              </small>
+              {bundle.handoffShareLatestDeliveredAt ? (
+                <small>Delivered {compactDateTime(bundle.handoffShareLatestDeliveredAt)}</small>
+              ) : null}
+            </div>
+            <div>
               <span>Recent task</span>
               <strong>{bundle.recentTask?.id ?? 'No recent task'}</strong>
               <small>{bundle.recentTask?.status ?? 'No task status'}</small>

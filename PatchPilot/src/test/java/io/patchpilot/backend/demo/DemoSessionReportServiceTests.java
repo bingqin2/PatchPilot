@@ -368,10 +368,10 @@ class DemoSessionReportServiceTests {
                         "No handoff package archive is available for sharing.",
                         "Archive a demo handoff package after a completed live run before sharing handoff evidence.",
                         DemoReadinessStatus.NEEDS_ATTENTION,
-                "No archived handoff package is available for sharing.",
-                "Archive a demo handoff package after a completed live run before sharing handoff evidence.",
-                List.of("Archive a demo handoff package before downloading final handoff evidence."),
-                Instant.parse("2026-06-24T00:00:00Z"),
+                        "No archived handoff package is available for sharing.",
+                        "Archive a demo handoff package after a completed live run before sharing handoff evidence.",
+                        List.of("Archive a demo handoff package before downloading final handoff evidence."),
+                        Instant.parse("2026-06-24T00:00:00Z"),
                         List.of()
                 ),
                 new DemoScriptVo(DemoReadinessStatus.READY, "Demo script is ready.", List.of(), List.of(), List.of(), Instant.parse("2026-06-24T00:30:00Z")),
@@ -478,6 +478,11 @@ class DemoSessionReportServiceTests {
                         "Download handoff package archive summary.",
                         "Download handoff share checklist."
                 ),
+                false,
+                null,
+                null,
+                null,
+                null,
                 Instant.parse("2026-06-24T00:00:00Z"),
                 List.of()
         );

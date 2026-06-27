@@ -163,8 +163,14 @@ const bundle: DemoEvidenceBundle = {
   handoffShareCenterDownloadActions: [
     'Download handoff package archive handoff-archive-1.',
     'Download handoff package archive summary.',
-    'Download handoff share checklist.'
+    'Download handoff share checklist.',
+    'Download handoff share delivery receipt delivery-receipt-1.'
   ],
+  handoffShareDeliveryReceiptRecorded: true,
+  handoffShareLatestDeliveryReceiptId: 'delivery-receipt-1',
+  handoffShareLatestDeliveryTarget: 'maintainer@example.com',
+  handoffShareLatestDeliveryChannel: 'email',
+  handoffShareLatestDeliveredAt: '2026-06-24T06:05:00Z',
   generatedAt: '2026-06-24T00:10:00Z',
   nextActions: ['Fix failing adapter fixtures before a live demo.', 'Inspect active trigger quarantines before a live demo.']
 };
@@ -198,6 +204,9 @@ test('summarizes demo evidence bundle for operators', () => {
   ).toBeInTheDocument();
   expect(within(panel).getByText('Download handoff package archive handoff-archive-1.')).toBeInTheDocument();
   expect(within(panel).getByText('Download handoff package archive summary.')).toBeInTheDocument();
+  expect(within(panel).getByText('Handoff share delivery')).toBeInTheDocument();
+  expect(within(panel).getByText('delivery-receipt-1')).toBeInTheDocument();
+  expect(within(panel).getByText('email - maintainer@example.com')).toBeInTheDocument();
   expect(within(panel).getByText('https://demo.trycloudflare.com/api/github/webhook')).toBeInTheDocument();
   expect(within(panel).getAllByText('delivery-1')).toHaveLength(2);
   expect(within(panel).getByText('Recent webhook delivery trail')).toBeInTheDocument();
