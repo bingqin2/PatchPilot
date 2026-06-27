@@ -7,6 +7,7 @@ import type {
   DemoHandoffPackageArchive,
   DemoHandoffPackageArchiveSummary,
   DemoHandoffPackageArchiveSummaryStatus,
+  DemoHandoffShareChecklist,
   DemoPreparedLaunchCommand,
   DemoReadinessSnapshotTrendStatus,
   DemoReadinessStatus,
@@ -24,11 +25,13 @@ interface DemoSessionSnapshotPanelProps {
   archives: DemoSessionArchive[];
   handoffPackageArchives: DemoHandoffPackageArchive[];
   handoffPackageArchiveSummary?: DemoHandoffPackageArchiveSummary | null;
+  handoffShareChecklist?: DemoHandoffShareChecklist | null;
   error: string | null;
   handoffReadinessError?: string | null;
   archiveError: string | null;
   handoffPackageArchiveError: string | null;
   handoffPackageArchiveSummaryError?: string | null;
+  handoffShareChecklistError?: string | null;
   onCopyReport: (input: DemoSessionReportInput) => Promise<string>;
   onDownloadReport: (input: DemoSessionReportInput) => Promise<Blob>;
   onArchiveSession: (input: DemoSessionReportInput) => Promise<DemoSessionArchive>;
@@ -48,11 +51,13 @@ export function DemoSessionSnapshotPanel({
   archives,
   handoffPackageArchives,
   handoffPackageArchiveSummary = null,
+  handoffShareChecklist = null,
   error,
   handoffReadinessError = null,
   archiveError,
   handoffPackageArchiveError,
   handoffPackageArchiveSummaryError = null,
+  handoffShareChecklistError = null,
   onCopyReport,
   onDownloadReport,
   onArchiveSession,
@@ -183,6 +188,18 @@ export function DemoSessionSnapshotPanel({
     }
   }
 
+  async function copyHandoffShareChecklist() {
+    if (!handoffShareChecklist) {
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(handoffShareChecklist.markdownReport);
+      setCopyStatus('Handoff share checklist copied');
+    } catch {
+      setCopyStatus('Copy failed');
+    }
+  }
+
   async function downloadHandoffPackageArchiveSummary() {
     try {
       const report = await onDownloadHandoffPackageArchiveSummaryReport();
@@ -269,6 +286,13 @@ export function DemoSessionSnapshotPanel({
         <div className="adapter-api-error">
           <strong>Demo handoff package archive summary unavailable</strong>
           <span>{handoffPackageArchiveSummaryError}</span>
+        </div>
+      ) : null}
+
+      {handoffShareChecklistError ? (
+        <div className="adapter-api-error">
+          <strong>Demo handoff share checklist unavailable</strong>
+          <span>{handoffShareChecklistError}</span>
         </div>
       ) : null}
 
@@ -389,6 +413,11 @@ export function DemoSessionSnapshotPanel({
             onDownloadSummary={downloadHandoffPackageArchiveSummary}
           />
 
+          <HandoffShareChecklistPanel
+            checklist={handoffShareChecklist}
+            onCopyChecklist={copyHandoffShareChecklist}
+          />
+
           <div className="demo-session-archives">
             <h3>Recent handoff package archives</h3>
             {handoffPackageArchives.length ? (
@@ -464,6 +493,72 @@ function HandoffReadinessCheckList({ checks }: { checks: DemoHandoffReadinessChe
       ) : (
         <p className="empty-state compact-empty-state">No handoff readiness checks recorded.</p>
       )}
+    </div>
+  );
+}
+
+function HandoffShareChecklistPanel({
+  checklist,
+  onCopyChecklist
+}: {
+  checklist: DemoHandoffShareChecklist | null;
+  onCopyChecklist: () => void;
+}) {
+  if (!checklist) {
+    return null;
+  }
+
+  return (
+    <div className="demo-session-archives">
+      <div className="demo-session-archive-title-row">
+        <h3>Handoff share checklist</h3>
+        <div className="demo-session-archive-actions">
+          <button
+            className="secondary-button"
+            type="button"
+            onClick={() => onCopyChecklist()}
+            aria-label="Copy handoff share checklist"
+          >
+            <Copy size={14} />
+            Copy checklist
+          </button>
+        </div>
+      </div>
+      <div className="demo-session-summary">
+        <div>
+          <span>Share status</span>
+          <strong>{statusLabel(checklist.status)}</strong>
+          <small>{checklist.summary}</small>
+        </div>
+        <div>
+          <span>Checklist evidence</span>
+          <strong>
+            {checklist.checks.length} {plural(checklist.checks.length, 'check')}
+          </strong>
+          <small>Generated {compactDateTime(checklist.generatedAt)}</small>
+        </div>
+        <div>
+          <span>Next action</span>
+          <strong>{checklist.nextAction}</strong>
+          <small>Copy this checklist before sharing the handoff package.</small>
+        </div>
+      </div>
+      <div className="demo-session-handoff-checks">
+        <ul>
+          {checklist.checks.map((check) => (
+            <li key={check.name}>
+              <div>
+                <strong>{check.name}</strong>
+                <small>{check.summary}</small>
+                <small>Next action: {check.nextAction}</small>
+              </div>
+              <span className={`demo-readiness-status demo-readiness-status-${statusClass(check.status)}`}>
+                {statusLabel(check.status)}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }
