@@ -571,6 +571,15 @@ export interface DemoEvidenceBundle {
   handoffShareCenterSummary: string;
   handoffShareCenterNextAction: string;
   handoffShareCenterDownloadActions: string[];
+  launchEvidenceShareCenterStatus: 'NO_ARCHIVE' | DemoReadinessStatus;
+  launchEvidenceShareCenterReady: boolean;
+  launchEvidenceShareCenterSummary: string;
+  launchEvidenceShareCenterNextAction: string;
+  launchEvidenceShareCenterArchiveCount: number;
+  launchEvidenceShareCenterLatestArchiveId: string | null;
+  launchEvidenceShareCenterLatestSessionId: string | null;
+  launchEvidenceShareCenterLatestPullRequestUrl: string | null;
+  launchEvidenceShareCenterDownloadActions: string[];
   handoffShareDeliveryReceiptRecorded: boolean;
   handoffShareLatestDeliveryReceiptId: string | null;
   handoffShareLatestDeliveryTarget: string | null;

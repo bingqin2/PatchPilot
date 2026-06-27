@@ -6,6 +6,7 @@ import io.patchpilot.backend.demo.domain.DemoHandoffFinalizationCheckVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffPackageArchiveSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffShareCenterVo;
+import io.patchpilot.backend.demo.domain.DemoLaunchEvidenceShareCenterVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessCheckVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessStatus;
 import io.patchpilot.backend.demo.domain.DemoReadinessVo;
@@ -57,7 +58,8 @@ class DemoEvidenceBundleServiceTests {
                 DemoEvidenceBundleServiceTests::evaluationRunReadiness,
                 DemoEvidenceBundleServiceTests::handoffPackageArchiveSummary,
                 DemoEvidenceBundleServiceTests::handoffShareCenter,
-                DemoEvidenceBundleServiceTests::handoffFinalizationMissingReceipt
+                DemoEvidenceBundleServiceTests::handoffFinalizationMissingReceipt,
+                DemoEvidenceBundleServiceTests::launchEvidenceShareCenter
         );
 
         DemoEvidenceBundleVo bundle = service.getEvidenceBundle();
@@ -114,6 +116,22 @@ class DemoEvidenceBundleServiceTests {
                 "Download handoff share checklist.",
                 "Record a handoff share delivery receipt after sending the package."
         );
+        assertThat(bundle.launchEvidenceShareCenterStatus()).isEqualTo("READY");
+        assertThat(bundle.launchEvidenceShareCenterReady()).isTrue();
+        assertThat(bundle.launchEvidenceShareCenterSummary())
+                .isEqualTo("Latest archived launch evidence package is READY and can be shared.");
+        assertThat(bundle.launchEvidenceShareCenterNextAction())
+                .isEqualTo("Download the archived launch evidence package and share it with reviewers.");
+        assertThat(bundle.launchEvidenceShareCenterArchiveCount()).isEqualTo(1);
+        assertThat(bundle.launchEvidenceShareCenterLatestArchiveId()).isEqualTo("launch-evidence-archive-1");
+        assertThat(bundle.launchEvidenceShareCenterLatestSessionId()).isEqualTo("demo-session-20260624T003000Z");
+        assertThat(bundle.launchEvidenceShareCenterLatestPullRequestUrl())
+                .isEqualTo("https://github.com/bingqin2/PatchPilot/pull/42");
+        assertThat(bundle.launchEvidenceShareCenterDownloadActions()).containsExactly(
+                "Download launch evidence package archive launch-evidence-archive-1.",
+                "Download launch evidence share center report.",
+                "Open Pull Request https://github.com/bingqin2/PatchPilot/pull/42 for review."
+        );
         assertThat(bundle.handoffShareDeliveryReceiptRecorded()).isFalse();
         assertThat(bundle.handoffShareLatestDeliveryReceiptId()).isNull();
         assertThat(bundle.handoffShareLatestDeliveryTarget()).isNull();
@@ -155,7 +173,8 @@ class DemoEvidenceBundleServiceTests {
                 DemoEvidenceBundleServiceTests::evaluationRunReadiness,
                 DemoEvidenceBundleServiceTests::handoffPackageArchiveSummary,
                 DemoEvidenceBundleServiceTests::deliveredHandoffShareCenter,
-                DemoEvidenceBundleServiceTests::handoffFinalizationReady
+                DemoEvidenceBundleServiceTests::handoffFinalizationReady,
+                DemoEvidenceBundleServiceTests::launchEvidenceShareCenter
         );
 
         DemoEvidenceBundleVo bundle = service.getEvidenceBundle();
@@ -207,7 +226,8 @@ class DemoEvidenceBundleServiceTests {
                 DemoEvidenceBundleServiceTests::evaluationRunMissingReadiness,
                 DemoEvidenceBundleServiceTests::handoffPackageArchiveSummary,
                 DemoEvidenceBundleServiceTests::handoffShareCenter,
-                DemoEvidenceBundleServiceTests::handoffFinalizationMissingReceipt
+                DemoEvidenceBundleServiceTests::handoffFinalizationMissingReceipt,
+                DemoEvidenceBundleServiceTests::launchEvidenceShareCenter
         );
 
         DemoEvidenceBundleVo bundle = service.getEvidenceBundle();
@@ -530,6 +550,31 @@ class DemoEvidenceBundleServiceTests {
                 List.of("Latest delivery receipt receipt-1 was recorded for Demo reviewer via email."),
                 "# PatchPilot Demo Handoff Share Center",
                 Instant.parse("2026-06-24T05:30:00Z")
+        );
+    }
+
+    private static DemoLaunchEvidenceShareCenterVo launchEvidenceShareCenter() {
+        return new DemoLaunchEvidenceShareCenterVo(
+                "READY",
+                true,
+                "Latest archived launch evidence package is READY and can be shared.",
+                "Download the archived launch evidence package and share it with reviewers.",
+                1,
+                "launch-evidence-archive-1",
+                "demo-session-20260624T003000Z",
+                "2026-06-24T07:00:00Z",
+                "task-2",
+                "https://github.com/bingqin2/PatchPilot/pull/42",
+                "delivery-1",
+                "evaluation-run-2",
+                List.of(
+                        "Download launch evidence package archive launch-evidence-archive-1.",
+                        "Download launch evidence share center report.",
+                        "Open Pull Request https://github.com/bingqin2/PatchPilot/pull/42 for review."
+                ),
+                List.of("Latest launch evidence archive status is READY."),
+                "# PatchPilot Demo Launch Evidence Share Center",
+                Instant.parse("2026-06-24T07:15:00Z")
         );
     }
 

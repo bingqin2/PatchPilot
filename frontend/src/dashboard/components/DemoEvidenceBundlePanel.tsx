@@ -120,6 +120,19 @@ export function DemoEvidenceBundlePanel({ bundle, error, onCopyRunbook }: DemoEv
               ))}
             </div>
             <div>
+              <span>Launch evidence share center</span>
+              <strong>{launchShareCenterStatusLabel(bundle.launchEvidenceShareCenterStatus)}</strong>
+              <small>{bundle.launchEvidenceShareCenterSummary}</small>
+              <small>{bundle.launchEvidenceShareCenterNextAction}</small>
+              <small>{bundle.launchEvidenceShareCenterArchiveCount} archived packages</small>
+              <small>{bundle.launchEvidenceShareCenterLatestArchiveId ?? 'No launch archive'}</small>
+              <small>{bundle.launchEvidenceShareCenterLatestSessionId ?? 'No launch session'}</small>
+              <small>{bundle.launchEvidenceShareCenterLatestPullRequestUrl ?? 'No archived launch Pull Request'}</small>
+              {bundle.launchEvidenceShareCenterDownloadActions.slice(0, 2).map((action) => (
+                <small key={action}>{action}</small>
+              ))}
+            </div>
+            <div>
               <span>Handoff share delivery</span>
               <strong>{deliveryFreshnessLabel(bundle.handoffShareDeliveryReceiptFreshness)}</strong>
               <small>{bundle.handoffShareDeliveryReceiptFreshnessSummary}</small>
@@ -230,6 +243,13 @@ function statusLabel(status: DemoReadinessStatus) {
     case 'BLOCKED':
       return 'Blocked';
   }
+}
+
+function launchShareCenterStatusLabel(status: DemoReadinessStatus | 'NO_ARCHIVE') {
+  if (status === 'NO_ARCHIVE') {
+    return 'No archive';
+  }
+  return statusLabel(status);
 }
 
 function deliveryFreshnessLabel(freshness: string) {

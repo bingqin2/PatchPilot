@@ -179,6 +179,19 @@ const bundle: DemoEvidenceBundle = {
     'Download handoff share checklist.',
     'Download handoff share delivery receipt delivery-receipt-1.'
   ],
+  launchEvidenceShareCenterStatus: 'READY',
+  launchEvidenceShareCenterReady: true,
+  launchEvidenceShareCenterSummary: 'Latest archived launch evidence package is READY and can be shared.',
+  launchEvidenceShareCenterNextAction: 'Download the archived launch evidence package and share it with reviewers.',
+  launchEvidenceShareCenterArchiveCount: 1,
+  launchEvidenceShareCenterLatestArchiveId: 'launch-evidence-archive-1',
+  launchEvidenceShareCenterLatestSessionId: 'demo-session-20260624T003000Z',
+  launchEvidenceShareCenterLatestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+  launchEvidenceShareCenterDownloadActions: [
+    'Download launch evidence package archive launch-evidence-archive-1.',
+    'Download launch evidence share center report.',
+    'Open Pull Request https://github.com/bingqin2/PatchPilot/pull/42 for review.'
+  ],
   handoffShareDeliveryReceiptRecorded: true,
   handoffShareLatestDeliveryReceiptId: 'delivery-receipt-1',
   handoffShareLatestDeliveryTarget: 'maintainer@example.com',
@@ -236,6 +249,15 @@ test('summarizes demo evidence bundle for operators', () => {
   ).toBeInTheDocument();
   expect(within(panel).getByText('Download handoff package archive handoff-archive-1.')).toBeInTheDocument();
   expect(within(panel).getByText('Download handoff package archive summary.')).toBeInTheDocument();
+  expect(within(panel).getByText('Launch evidence share center')).toBeInTheDocument();
+  expect(within(panel).getByText('Latest archived launch evidence package is READY and can be shared.')).toBeInTheDocument();
+  expect(
+    within(panel).getByText('Download the archived launch evidence package and share it with reviewers.')
+  ).toBeInTheDocument();
+  expect(within(panel).getByText('launch-evidence-archive-1')).toBeInTheDocument();
+  expect(within(panel).getByText('demo-session-20260624T003000Z')).toBeInTheDocument();
+  expect(within(panel).getByText('Download launch evidence package archive launch-evidence-archive-1.')).toBeInTheDocument();
+  expect(within(panel).getByText('Download launch evidence share center report.')).toBeInTheDocument();
   expect(within(panel).getByText('Handoff share delivery')).toBeInTheDocument();
   expect(within(panel).getAllByText('Fresh').length).toBeGreaterThanOrEqual(2);
   expect(within(panel).getByText('Handoff finalization')).toBeInTheDocument();

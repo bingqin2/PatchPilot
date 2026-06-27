@@ -9,6 +9,7 @@ import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffShareCenterVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffPackageArchiveSummaryVo;
+import io.patchpilot.backend.demo.domain.DemoLaunchEvidenceShareCenterVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessStatus;
 import io.patchpilot.backend.demo.domain.DemoReadinessVo;
 import io.patchpilot.backend.demo.domain.DemoSmokeChecklistStatus;
@@ -56,6 +57,7 @@ public class DemoEvidenceBundleService {
     private final Supplier<DemoHandoffPackageArchiveSummaryVo> handoffPackageArchiveSummarySupplier;
     private final Supplier<DemoHandoffShareCenterVo> handoffShareCenterSupplier;
     private final Supplier<DemoHandoffFinalizationVo> handoffFinalizationSupplier;
+    private final Supplier<DemoLaunchEvidenceShareCenterVo> launchEvidenceShareCenterSupplier;
 
     @Autowired
     public DemoEvidenceBundleService(
@@ -72,7 +74,8 @@ public class DemoEvidenceBundleService {
             EvaluationRunArchiveReadinessSummaryService evaluationRunArchiveReadinessSummaryService,
             DemoHandoffPackageArchiveSummaryService demoHandoffPackageArchiveSummaryService,
             DemoHandoffShareCenterService demoHandoffShareCenterService,
-            DemoHandoffFinalizationService demoHandoffFinalizationService
+            DemoHandoffFinalizationService demoHandoffFinalizationService,
+            DemoLaunchEvidenceShareCenterService demoLaunchEvidenceShareCenterService
     ) {
         this(
                 demoReadinessService::getReadiness,
@@ -97,7 +100,8 @@ public class DemoEvidenceBundleService {
                 evaluationRunArchiveReadinessSummaryService::getSummary,
                 demoHandoffPackageArchiveSummaryService::getArchiveSummary,
                 demoHandoffShareCenterService::getShareCenter,
-                demoHandoffFinalizationService::getFinalizationGate
+                demoHandoffFinalizationService::getFinalizationGate,
+                demoLaunchEvidenceShareCenterService::getShareCenter
         );
     }
 
@@ -115,7 +119,8 @@ public class DemoEvidenceBundleService {
             Supplier<EvaluationRunArchiveReadinessSummaryVo> evaluationRunReadinessSupplier,
             Supplier<DemoHandoffPackageArchiveSummaryVo> handoffPackageArchiveSummarySupplier,
             Supplier<DemoHandoffShareCenterVo> handoffShareCenterSupplier,
-            Supplier<DemoHandoffFinalizationVo> handoffFinalizationSupplier
+            Supplier<DemoHandoffFinalizationVo> handoffFinalizationSupplier,
+            Supplier<DemoLaunchEvidenceShareCenterVo> launchEvidenceShareCenterSupplier
     ) {
         this.readinessSupplier = readinessSupplier;
         this.smokeChecklistSupplier = smokeChecklistSupplier;
@@ -131,6 +136,7 @@ public class DemoEvidenceBundleService {
         this.handoffPackageArchiveSummarySupplier = handoffPackageArchiveSummarySupplier;
         this.handoffShareCenterSupplier = handoffShareCenterSupplier;
         this.handoffFinalizationSupplier = handoffFinalizationSupplier;
+        this.launchEvidenceShareCenterSupplier = launchEvidenceShareCenterSupplier;
     }
 
     public DemoEvidenceBundleVo getEvidenceBundle() {
@@ -148,6 +154,7 @@ public class DemoEvidenceBundleService {
         DemoHandoffPackageArchiveSummaryVo handoffPackageArchiveSummary = handoffPackageArchiveSummarySupplier.get();
         DemoHandoffShareCenterVo handoffShareCenter = handoffShareCenterSupplier.get();
         DemoHandoffFinalizationVo handoffFinalization = handoffFinalizationSupplier.get();
+        DemoLaunchEvidenceShareCenterVo launchEvidenceShareCenter = launchEvidenceShareCenterSupplier.get();
 
         DemoAdapterFixtureEvidenceVo adapterFixtureEvidence = adapterFixtureEvidence(fixtures);
         DemoEvaluationRunReadinessEvidenceVo evaluationRunReadinessEvidence = evaluationRunReadinessEvidence(evaluationRunReadiness);
@@ -207,6 +214,15 @@ public class DemoEvidenceBundleService {
                 handoffShareCenter.summary(),
                 handoffShareCenter.nextAction(),
                 handoffShareCenter.downloadActions(),
+                launchEvidenceShareCenter.status(),
+                launchEvidenceShareCenter.shareReady(),
+                launchEvidenceShareCenter.summary(),
+                launchEvidenceShareCenter.nextAction(),
+                launchEvidenceShareCenter.archiveCount(),
+                launchEvidenceShareCenter.latestArchiveId(),
+                launchEvidenceShareCenter.latestSessionId(),
+                launchEvidenceShareCenter.latestPullRequestUrl(),
+                launchEvidenceShareCenter.downloadActions(),
                 handoffShareCenter.deliveryReceiptRecorded(),
                 handoffShareCenter.latestDeliveryReceiptId(),
                 handoffShareCenter.latestDeliveryTarget(),
