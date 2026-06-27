@@ -18,6 +18,7 @@ import type {
   DemoHandoffShareInstructions,
   DemoHandoffShareChecklist,
   DemoLaunchCommand,
+  DemoLaunchEvidencePackageArchive,
   DemoLaunchEvidencePackage,
   DemoLaunchCommandInput,
   DemoLaunchPreflight,
@@ -264,6 +265,18 @@ export async function getDemoLaunchEvidencePackage(): Promise<DemoLaunchEvidence
 
 export async function downloadDemoLaunchEvidencePackageReport(): Promise<Blob> {
   return getBlobApi('/api/demo/launch-evidence-package/report/download');
+}
+
+export async function archiveDemoLaunchEvidencePackage(): Promise<DemoLaunchEvidencePackageArchive> {
+  return postApi<DemoLaunchEvidencePackageArchive>('/api/demo/launch-evidence-package/archives');
+}
+
+export async function listDemoLaunchEvidencePackageArchives(): Promise<DemoLaunchEvidencePackageArchive[]> {
+  return getApi<DemoLaunchEvidencePackageArchive[]>('/api/demo/launch-evidence-package/archives');
+}
+
+export async function downloadDemoLaunchEvidencePackageArchiveReport(archiveId: string): Promise<Blob> {
+  return getBlobApi(`/api/demo/launch-evidence-package/archives/${encodeURIComponent(archiveId)}/report/download`);
 }
 
 export async function archiveDemoReadinessSnapshot(): Promise<DemoReadinessSnapshotArchive> {

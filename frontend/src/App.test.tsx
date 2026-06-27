@@ -1853,6 +1853,23 @@ const demoLaunchEvidencePackage = {
   generatedAt: '2026-06-24T06:20:00Z'
 };
 
+const demoLaunchEvidencePackageArchive = {
+  id: 'launch-evidence-archive-1',
+  status: 'READY',
+  readyToShare: true,
+  summary: 'PatchPilot launch evidence package is ready to share.',
+  sessionId: 'demo-session-20260624T003000Z',
+  launchReadinessStatus: 'READY',
+  evidenceBundleStatus: 'READY',
+  handoffFinalizationStatus: 'READY',
+  latestTaskId: 'task-1',
+  latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+  latestWebhookDeliveryId: 'delivery-created-status-comment',
+  evaluationRunId: 'evaluation-run-2',
+  createdAt: '2026-06-24T06:30:00Z',
+  report: '# PatchPilot Demo Launch Evidence Package\n\n- Status: `READY`'
+};
+
 const demoHandoffShareInstructions = {
   status: 'READY',
   sendReady: true,
@@ -2123,6 +2140,12 @@ beforeEach(() => {
     if (url === '/api/demo/launch-evidence-package') {
       return jsonResponse(demoLaunchEvidencePackage);
     }
+    if (url === '/api/demo/launch-evidence-package/archives' && init?.method === 'POST') {
+      return jsonResponse(demoLaunchEvidencePackageArchive);
+    }
+    if (url === '/api/demo/launch-evidence-package/archives') {
+      return jsonResponse([demoLaunchEvidencePackageArchive]);
+    }
     if (url === '/api/demo/handoff-share-instructions') {
       return jsonResponse(demoHandoffShareInstructions);
     }
@@ -2187,6 +2210,15 @@ beforeEach(() => {
       } as Response);
     }
     if (url === '/api/demo/launch-evidence-package/report/download') {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        blob: async () => new Blob(['# PatchPilot Demo Launch Evidence Package'], {
+          type: 'text/markdown;charset=UTF-8'
+        })
+      } as Response);
+    }
+    if (url === '/api/demo/launch-evidence-package/archives/launch-evidence-archive-1/report/download') {
       return Promise.resolve({
         ok: true,
         status: 200,
@@ -5272,6 +5304,12 @@ function defaultAppResponse(input: RequestInfo | URL, init?: RequestInit) {
   if (url === '/api/demo/launch-evidence-package') {
     return jsonResponse(demoLaunchEvidencePackage);
   }
+  if (url === '/api/demo/launch-evidence-package/archives' && init?.method === 'POST') {
+    return jsonResponse(demoLaunchEvidencePackageArchive);
+  }
+  if (url === '/api/demo/launch-evidence-package/archives') {
+    return jsonResponse([demoLaunchEvidencePackageArchive]);
+  }
   if (url === '/api/demo/handoff-share-instructions') {
     return jsonResponse(demoHandoffShareInstructions);
   }
@@ -5279,6 +5317,15 @@ function defaultAppResponse(input: RequestInfo | URL, init?: RequestInit) {
     return jsonResponse([demoHandoffShareDeliveryReceipt]);
   }
   if (url === '/api/demo/launch-evidence-package/report/download') {
+    return Promise.resolve({
+      ok: true,
+      status: 200,
+      blob: async () => new Blob(['# PatchPilot Demo Launch Evidence Package'], {
+        type: 'text/markdown;charset=UTF-8'
+      })
+    } as Response);
+  }
+  if (url === '/api/demo/launch-evidence-package/archives/launch-evidence-archive-1/report/download') {
     return Promise.resolve({
       ok: true,
       status: 200,

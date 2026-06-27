@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { DemoLaunchEvidencePackage } from '../../types';
+import type { DemoLaunchEvidencePackage, DemoLaunchEvidencePackageArchive } from '../../types';
 import { DemoLaunchEvidencePackagePanel } from './DemoLaunchEvidencePackagePanel';
 
 const launchEvidencePackage: DemoLaunchEvidencePackage = {
@@ -49,12 +49,33 @@ const launchEvidencePackage: DemoLaunchEvidencePackage = {
   generatedAt: '2026-06-28T02:00:00Z'
 };
 
+const launchEvidenceArchive: DemoLaunchEvidencePackageArchive = {
+  id: 'launch-evidence-archive-1',
+  status: 'READY',
+  readyToShare: true,
+  summary: 'PatchPilot launch evidence package is ready to share.',
+  sessionId: 'demo-session-20260624T003000Z',
+  launchReadinessStatus: 'READY',
+  evidenceBundleStatus: 'READY',
+  handoffFinalizationStatus: 'READY',
+  latestTaskId: 'task-1',
+  latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+  latestWebhookDeliveryId: 'delivery-1',
+  evaluationRunId: 'evaluation-run-2',
+  createdAt: '2026-06-28T02:30:00Z',
+  report: '# PatchPilot Demo Launch Evidence Package'
+};
+
 test('renders demo launch evidence package proof and readiness status', () => {
   render(
     <DemoLaunchEvidencePackagePanel
       evidencePackage={launchEvidencePackage}
       error={null}
+      archives={[launchEvidenceArchive]}
+      archiveError={null}
+      onArchivePackage={async () => launchEvidenceArchive}
       onDownloadReport={async () => new Blob(['report'], { type: 'text/markdown' })}
+      onDownloadArchiveReport={async () => new Blob(['archive report'], { type: 'text/markdown' })}
     />
   );
 
@@ -75,6 +96,11 @@ test('renders demo launch evidence package proof and readiness status', () => {
   expect(within(panel).getByText('Recent task task-1 reached COMPLETED.')).toBeInTheDocument();
   expect(within(panel).getAllByText('Latest delivery receipt delivery-receipt-1 is fresh.').length).toBeGreaterThanOrEqual(2);
   expect(within(panel).getByText(/does not create tasks, call the model, run tests, archive records/)).toBeInTheDocument();
+  expect(within(panel).getByText(/launch-evidence-archive-1/)).toBeInTheDocument();
+  expect(within(panel).getByRole('link', { name: 'PR' })).toHaveAttribute(
+    'href',
+    'https://github.com/bingqin2/PatchPilot/pull/42'
+  );
 });
 
 test('copies and downloads demo launch evidence package markdown report', async () => {
@@ -90,7 +116,11 @@ test('copies and downloads demo launch evidence package markdown report', async 
     <DemoLaunchEvidencePackagePanel
       evidencePackage={launchEvidencePackage}
       error={null}
+      archives={[launchEvidenceArchive]}
+      archiveError={null}
+      onArchivePackage={async () => launchEvidenceArchive}
       onDownloadReport={onDownloadReport}
+      onDownloadArchiveReport={async () => new Blob(['archive report'], { type: 'text/markdown' })}
     />
   );
 
@@ -104,6 +134,41 @@ test('copies and downloads demo launch evidence package markdown report', async 
   expect(click).toHaveBeenCalled();
   expect(revokeObjectURL).toHaveBeenCalledWith('blob:launch-evidence-package');
   expect(screen.getByText('Launch evidence report downloaded')).toBeInTheDocument();
+
+  vi.unstubAllGlobals();
+  click.mockRestore();
+});
+
+test('archives launch evidence package and downloads archived report', async () => {
+  const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+  const createObjectURL = vi.fn(() => 'blob:launch-evidence-package-archive');
+  const revokeObjectURL = vi.fn();
+  vi.stubGlobal('URL', { createObjectURL, revokeObjectURL });
+  const onArchivePackage = vi.fn(async () => launchEvidenceArchive);
+  const onDownloadArchiveReport = vi.fn(async () => new Blob(['archive report'], { type: 'text/markdown' }));
+
+  render(
+    <DemoLaunchEvidencePackagePanel
+      evidencePackage={launchEvidencePackage}
+      error={null}
+      archives={[launchEvidenceArchive]}
+      archiveError={null}
+      onArchivePackage={onArchivePackage}
+      onDownloadReport={async () => new Blob(['report'], { type: 'text/markdown' })}
+      onDownloadArchiveReport={onDownloadArchiveReport}
+    />
+  );
+
+  await userEvent.click(screen.getByRole('button', { name: 'Archive launch evidence package' }));
+  expect(onArchivePackage).toHaveBeenCalled();
+  expect(screen.getByText('Archived launch package launch-evidence-archive-1')).toBeInTheDocument();
+
+  await userEvent.click(screen.getByRole('button', { name: 'Download archived launch evidence report launch-evidence-archive-1' }));
+  expect(onDownloadArchiveReport).toHaveBeenCalledWith('launch-evidence-archive-1');
+  expect(createObjectURL).toHaveBeenCalled();
+  expect(click).toHaveBeenCalled();
+  expect(revokeObjectURL).toHaveBeenCalledWith('blob:launch-evidence-package-archive');
+  expect(screen.getByText('Archived report launch-evidence-archive-1 downloaded')).toBeInTheDocument();
 
   vi.unstubAllGlobals();
   click.mockRestore();

@@ -11,6 +11,7 @@ import io.patchpilot.backend.demo.domain.DemoHandoffShareChecklistVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffShareDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffShareInstructionsVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchCommandVo;
+import io.patchpilot.backend.demo.domain.DemoLaunchEvidencePackageArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchEvidencePackageVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchPreflightVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessSnapshotArchiveVo;
@@ -62,6 +63,7 @@ public class DemoReadinessController {
     private final SelfHostedLaunchReadinessService selfHostedLaunchReadinessService;
     private final SelfHostedLaunchReadinessArchiveService selfHostedLaunchReadinessArchiveService;
     private final DemoLaunchEvidencePackageService demoLaunchEvidencePackageService;
+    private final DemoLaunchEvidencePackageArchiveService demoLaunchEvidencePackageArchiveService;
     private final DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
     private final DemoReadinessSnapshotTrendService demoReadinessSnapshotTrendService;
     private final DemoLaunchPreflightService demoLaunchPreflightService;
@@ -300,6 +302,36 @@ public class DemoReadinessController {
                 "patchpilot-demo-launch-evidence-package.md",
                 demoLaunchEvidencePackageService.getPackage().markdownReport()
         );
+    }
+
+    @PostMapping("/launch-evidence-package/archives")
+    public ApiResponse<DemoLaunchEvidencePackageArchiveVo> archiveLaunchEvidencePackage() {
+        DemoLaunchEvidencePackageArchiveVo archive = demoLaunchEvidencePackageArchiveService.archiveCurrentPackage();
+        operatorSafetyAuditService.recordSafetyAudit(new RecordOperatorSafetyAuditCommand(
+                "DEMO_LAUNCH_EVIDENCE_PACKAGE_ARCHIVED",
+                "DEMO_LAUNCH_EVIDENCE_PACKAGE_ARCHIVE",
+                archive.id(),
+                TriggerQuarantineScope.REPOSITORY,
+                "patchpilot/local-demo",
+                "admin-api",
+                "Archived demo launch evidence package " + archive.status()
+        ));
+        return ApiResponse.ok(archive);
+    }
+
+    @GetMapping("/launch-evidence-package/archives")
+    public ApiResponse<List<DemoLaunchEvidencePackageArchiveVo>> listLaunchEvidencePackageArchives() {
+        return ApiResponse.ok(demoLaunchEvidencePackageArchiveService.listRecentArchives());
+    }
+
+    @GetMapping(value = "/launch-evidence-package/archives/{archiveId}/report/download", produces = "text/markdown;charset=UTF-8")
+    public ResponseEntity<String> downloadArchivedLaunchEvidencePackageReport(@PathVariable String archiveId) {
+        return demoLaunchEvidencePackageArchiveService.findArchive(archiveId)
+                .map(archive -> markdownAttachment(
+                        "patchpilot-demo-launch-evidence-package-" + safeFilenamePart(archive.id()) + ".md",
+                        archive.report()
+                ))
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @PostMapping("/self-hosted-launch-readiness/archives")

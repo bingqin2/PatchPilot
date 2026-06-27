@@ -4,6 +4,25 @@ This file records dated implementation progress, validation commands, and import
 
 ## 2026-06-28
 
+Implemented demo launch evidence package archive from `docs/plans/251-demo-launch-evidence-package-archive.md`.
+
+Changes:
+
+- Added `POST /api/demo/launch-evidence-package/archives`, `GET /api/demo/launch-evidence-package/archives`, and `GET /api/demo/launch-evidence-package/archives/{archiveId}/report/download`.
+- Added archive VO/entity/mapper/converter/repository/service layers with in-memory default storage and MySQL persistence through Flyway/MyBatis for `local`, `docker`, and `idea` profiles.
+- Added protected admin audit recording when the final launch evidence package is archived.
+- Extended the dashboard launch evidence package panel with `Archive package`, recent archive history, Pull Request links, and archived Markdown report downloads.
+- Updated frontend API helpers, typed contracts, App refresh wiring, README, frontend design notes, and this execution log.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=DemoLaunchEvidencePackageArchiveServiceTests,InMemoryDemoLaunchEvidencePackageArchiveRepositoryTests,MyBatisDemoLaunchEvidencePackageArchiveRepositoryTests,DemoLaunchEvidencePackageArchiveMigrationTests,DemoReadinessControllerTests test`: first failed because archive types and repositories did not exist; passed after implementation, 65 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts src/App.test.tsx src/dashboard/components/DemoLaunchEvidencePackagePanel.test.tsx --reporter=basic`: passed after frontend integration, 190 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed after full backend regression verification, 879 tests run, 0 failures.
+- `npm test -- --reporter=basic`: passed after full frontend regression verification, 28 test files and 337 tests run, 0 failures.
+- `npm run build`: passed after production frontend build verification.
+- `git diff --check`: passed.
+
 Implemented demo launch evidence package from `docs/plans/250-demo-launch-evidence-package.md`.
 
 Changes:

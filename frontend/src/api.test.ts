@@ -35,6 +35,9 @@ import {
   createDemoHandoffShareDeliveryReceipt,
   downloadDemoHandoffShareDeliveryReceiptReport,
   getDemoLaunchEvidencePackage,
+  archiveDemoLaunchEvidencePackage,
+  listDemoLaunchEvidencePackageArchives,
+  downloadDemoLaunchEvidencePackageArchiveReport,
   downloadDemoLaunchEvidencePackageReport,
   getDemoHandoffShareCenter,
   getDemoHandoffShareInstructions,
@@ -380,6 +383,94 @@ test('downloads demo launch evidence package report through backend API', async 
   const report = await downloadDemoLaunchEvidencePackageReport();
 
   expect(fetchMock).toHaveBeenCalledWith('/api/demo/launch-evidence-package/report/download');
+  expect(report).toBe(blob);
+});
+
+test('archives demo launch evidence package through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        id: 'launch-evidence-archive-1',
+        status: 'READY',
+        readyToShare: true,
+        summary: 'PatchPilot launch evidence package is ready to share.',
+        sessionId: 'demo-session-20260624T003000Z',
+        launchReadinessStatus: 'READY',
+        evidenceBundleStatus: 'READY',
+        handoffFinalizationStatus: 'READY',
+        latestTaskId: 'task-1',
+        latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+        latestWebhookDeliveryId: 'delivery-1',
+        evaluationRunId: 'evaluation-run-2',
+        createdAt: '2026-06-28T02:30:00Z',
+        report: '# PatchPilot Demo Launch Evidence Package'
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const archive = await archiveDemoLaunchEvidencePackage();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/launch-evidence-package/archives', {
+    method: 'POST'
+  });
+  expect(archive.id).toBe('launch-evidence-archive-1');
+  expect(archive.readyToShare).toBe(true);
+  expect(archive.sessionId).toBe('demo-session-20260624T003000Z');
+});
+
+test('lists demo launch evidence package archives from backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: [
+        {
+          id: 'launch-evidence-archive-1',
+          status: 'READY',
+          readyToShare: true,
+          summary: 'PatchPilot launch evidence package is ready to share.',
+          sessionId: 'demo-session-20260624T003000Z',
+          launchReadinessStatus: 'READY',
+          evidenceBundleStatus: 'READY',
+          handoffFinalizationStatus: 'READY',
+          latestTaskId: 'task-1',
+          latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+          latestWebhookDeliveryId: 'delivery-1',
+          evaluationRunId: 'evaluation-run-2',
+          createdAt: '2026-06-28T02:30:00Z',
+          report: '# PatchPilot Demo Launch Evidence Package'
+        }
+      ],
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const archives = await listDemoLaunchEvidencePackageArchives();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/launch-evidence-package/archives');
+  expect(archives[0].id).toBe('launch-evidence-archive-1');
+  expect(archives[0].latestPullRequestUrl).toBe('https://github.com/bingqin2/PatchPilot/pull/42');
+});
+
+test('downloads archived demo launch evidence package report through backend API', async () => {
+  const blob = new Blob(['# PatchPilot Demo Launch Evidence Package'], { type: 'text/markdown' });
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    blob: async () => blob
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const report = await downloadDemoLaunchEvidencePackageArchiveReport('launch-evidence-archive-1');
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/launch-evidence-package/archives/launch-evidence-archive-1/report/download');
   expect(report).toBe(blob);
 });
 
