@@ -28,8 +28,11 @@ import {
   getDemoHandoffPackage,
   getDemoHandoffReadiness,
   getDemoHandoffPackageArchiveSummary,
+  createDemoHandoffShareDeliveryReceipt,
+  downloadDemoHandoffShareDeliveryReceiptReport,
   getDemoHandoffShareCenter,
   getDemoHandoffShareInstructions,
+  listDemoHandoffShareDeliveryReceipts,
   getDemoHandoffShareChecklist,
   downloadDemoSessionReport,
   downloadDemoHandoffPackage,
@@ -1521,6 +1524,107 @@ test('downloads demo handoff share instructions markdown from backend API', asyn
   const downloadedReport = await downloadDemoHandoffShareInstructionsReport();
 
   expect(fetchMock).toHaveBeenCalledWith('/api/demo/handoff-share-instructions/report/download');
+  expect(downloadedReport).toBe(reportBlob);
+});
+
+test('creates demo handoff share delivery receipt through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        id: 'delivery-receipt-1',
+        status: 'READY',
+        handoffArchiveId: 'handoff-archive-1',
+        sessionId: 'demo-session-20260624T003000Z',
+        deliveryChannel: 'email',
+        deliveryTarget: 'maintainer@example.com',
+        operator: 'local-operator',
+        notes: 'Sent after the demo review.',
+        messageSubject: 'PatchPilot demo handoff: demo-session-20260624T003000Z',
+        deliveredAt: '2026-06-24T06:05:00Z',
+        createdAt: '2026-06-24T06:10:00Z',
+        markdownReport: '# PatchPilot Demo Handoff Share Delivery Receipt\n\n- Status: `READY`'
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const receipt = await createDemoHandoffShareDeliveryReceipt({
+    deliveryChannel: 'email',
+    deliveryTarget: 'maintainer@example.com',
+    operator: 'local-operator',
+    notes: 'Sent after the demo review.',
+    deliveredAt: '2026-06-24T06:05:00Z'
+  });
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/handoff-share-delivery-receipts', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      deliveryChannel: 'email',
+      deliveryTarget: 'maintainer@example.com',
+      operator: 'local-operator',
+      notes: 'Sent after the demo review.',
+      deliveredAt: '2026-06-24T06:05:00Z'
+    })
+  });
+  expect(receipt.id).toBe('delivery-receipt-1');
+  expect(receipt.handoffArchiveId).toBe('handoff-archive-1');
+});
+
+test('loads demo handoff share delivery receipts from backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: [
+        {
+          id: 'delivery-receipt-1',
+          status: 'READY',
+          handoffArchiveId: 'handoff-archive-1',
+          sessionId: 'demo-session-20260624T003000Z',
+          deliveryChannel: 'email',
+          deliveryTarget: 'maintainer@example.com',
+          operator: 'local-operator',
+          notes: 'Sent after the demo review.',
+          messageSubject: 'PatchPilot demo handoff: demo-session-20260624T003000Z',
+          deliveredAt: '2026-06-24T06:05:00Z',
+          createdAt: '2026-06-24T06:10:00Z',
+          markdownReport: '# PatchPilot Demo Handoff Share Delivery Receipt\n\n- Status: `READY`'
+        }
+      ],
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const receipts = await listDemoHandoffShareDeliveryReceipts();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/handoff-share-delivery-receipts');
+  expect(receipts).toHaveLength(1);
+  expect(receipts[0].deliveryTarget).toBe('maintainer@example.com');
+});
+
+test('downloads demo handoff share delivery receipt markdown from backend API', async () => {
+  const reportBlob = new Blob(['# PatchPilot Demo Handoff Share Delivery Receipt'], {
+    type: 'text/markdown;charset=UTF-8'
+  });
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    blob: async () => reportBlob
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const downloadedReport = await downloadDemoHandoffShareDeliveryReceiptReport('delivery-receipt-1');
+
+  expect(fetchMock).toHaveBeenCalledWith(
+    '/api/demo/handoff-share-delivery-receipts/delivery-receipt-1/report/download'
+  );
   expect(downloadedReport).toBe(reportBlob);
 });
 

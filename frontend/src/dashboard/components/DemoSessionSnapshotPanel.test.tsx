@@ -6,6 +6,8 @@ import type {
   DemoHandoffPackageArchive,
   DemoHandoffPackageArchiveSummary,
   DemoHandoffShareCenter,
+  DemoHandoffShareDeliveryReceipt,
+  DemoHandoffShareDeliveryReceiptInput,
   DemoHandoffShareInstructions,
   DemoHandoffShareChecklist,
   DemoPreparedLaunchCommand,
@@ -242,6 +244,8 @@ const handoffShareInstructions: DemoHandoffShareInstructions = {
   sendReady: true,
   summary: 'Share the current handoff package with repository maintainers and demo reviewers.',
   nextAction: 'Send the prepared handoff message with all required attachments.',
+  latestArchiveId: 'handoff-archive-1',
+  latestSessionId: 'demo-session-20260624T003000Z',
   recommendedRecipients: ['Repository owner or maintainer', 'Demo reviewer'],
   requiredAttachments: [
     'Handoff package archive handoff-archive-1',
@@ -258,6 +262,23 @@ const handoffShareInstructions: DemoHandoffShareInstructions = {
   markdownReport: '# PatchPilot Demo Handoff Share Instructions\n\n- Status: `READY`',
   generatedAt: '2026-06-24T05:45:00Z'
 };
+
+const handoffShareDeliveryReceipts: DemoHandoffShareDeliveryReceipt[] = [
+  {
+    id: 'delivery-receipt-1',
+    status: 'READY',
+    handoffArchiveId: 'handoff-archive-1',
+    sessionId: 'demo-session-20260624T003000Z',
+    deliveryChannel: 'email',
+    deliveryTarget: 'maintainer@example.com',
+    operator: 'local-operator',
+    notes: 'Sent after the demo review.',
+    messageSubject: 'PatchPilot demo handoff: demo-session-20260624T003000Z',
+    deliveredAt: '2026-06-24T06:05:00Z',
+    createdAt: '2026-06-24T06:10:00Z',
+    markdownReport: '# PatchPilot Demo Handoff Share Delivery Receipt\n\n- Status: `READY`'
+  }
+];
 
 const preparedLaunchCommands: DemoPreparedLaunchCommand[] = [
   {
@@ -380,6 +401,7 @@ test('renders demo session snapshot summary, evidence, checklist, contract, and 
       handoffShareChecklist={handoffShareChecklist}
       handoffShareCenter={handoffShareCenter}
       handoffShareInstructions={handoffShareInstructions}
+      handoffShareDeliveryReceipts={handoffShareDeliveryReceipts}
       error={null}
       archiveError={null}
       handoffPackageArchiveError={null}
@@ -394,6 +416,8 @@ test('renders demo session snapshot summary, evidence, checklist, contract, and 
       onDownloadHandoffPackageArchiveSummaryReport={vi.fn()}
       onDownloadHandoffShareCenterReport={vi.fn()}
       onDownloadHandoffShareInstructionsReport={vi.fn()}
+      onCreateHandoffShareDeliveryReceipt={vi.fn()}
+      onDownloadHandoffShareDeliveryReceiptReport={vi.fn()}
       onDownloadHandoffShareChecklistReport={vi.fn()}
     />
   );
@@ -441,9 +465,14 @@ test('renders demo session snapshot summary, evidence, checklist, contract, and 
   expect(within(panel).getByText('Share the current handoff package with repository maintainers and demo reviewers.')).toBeInTheDocument();
   expect(within(panel).getByText('Repository owner or maintainer')).toBeInTheDocument();
   expect(within(panel).getByText('Handoff share center report')).toBeInTheDocument();
-  expect(within(panel).getByText('PatchPilot demo handoff: demo-session-20260624T003000Z')).toBeInTheDocument();
+  expect(within(panel).getAllByText('PatchPilot demo handoff: demo-session-20260624T003000Z').length).toBeGreaterThanOrEqual(2);
   expect(within(panel).getByRole('button', { name: 'Copy handoff share instructions' })).toBeInTheDocument();
   expect(within(panel).getByRole('button', { name: 'Download handoff share instructions' })).toBeInTheDocument();
+  expect(within(panel).getByRole('heading', { name: 'Handoff share delivery receipts' })).toBeInTheDocument();
+  expect(within(panel).getByText('delivery-receipt-1')).toBeInTheDocument();
+  expect(within(panel).getByText(/email - maintainer@example\.com/)).toBeInTheDocument();
+  expect(within(panel).getByRole('button', { name: 'Record handoff share delivery receipt' })).toBeInTheDocument();
+  expect(within(panel).getByRole('button', { name: 'Download handoff share delivery receipt delivery-receipt-1' })).toBeInTheDocument();
   expect(within(panel).getByRole('heading', { name: 'Handoff share checklist' })).toBeInTheDocument();
   expect(within(panel).getByRole('button', { name: 'Download handoff share checklist' })).toBeInTheDocument();
   expect(within(panel).getByText('Latest handoff archive is ready to share.')).toBeInTheDocument();
@@ -1030,6 +1059,121 @@ test('downloads demo handoff share instructions markdown', async () => {
   expect(click).toHaveBeenCalledTimes(1);
   expect(revokeObjectURL).toHaveBeenCalledWith('blob:demo-handoff-share-instructions');
   expect(screen.getByText('Handoff share instructions downloaded')).toBeInTheDocument();
+});
+
+test('records demo handoff share delivery receipt', async () => {
+  const onCreateHandoffShareDeliveryReceipt = vi.fn().mockResolvedValue({
+    ...handoffShareDeliveryReceipts[0],
+    id: 'delivery-receipt-2',
+    deliveryTarget: 'reviewer@example.com'
+  });
+
+  render(
+    <DemoSessionSnapshotPanel
+      snapshot={snapshot}
+      preparedLaunchCommands={preparedLaunchCommands}
+      archivedLaunchOutcomes={archivedLaunchOutcomes}
+      handoffReadiness={handoffReadiness}
+      archives={[]}
+      handoffPackageArchives={handoffPackageArchives}
+      handoffPackageArchiveSummary={handoffPackageArchiveSummary}
+      handoffShareChecklist={handoffShareChecklist}
+      handoffShareCenter={handoffShareCenter}
+      handoffShareInstructions={handoffShareInstructions}
+      handoffShareDeliveryReceipts={handoffShareDeliveryReceipts}
+      error={null}
+      archiveError={null}
+      handoffPackageArchiveError={null}
+      onCopyReport={vi.fn()}
+      onDownloadReport={vi.fn()}
+      onArchiveSession={vi.fn()}
+      onCopyHandoffPackage={vi.fn()}
+      onDownloadHandoffPackage={vi.fn()}
+      onArchiveHandoffPackage={vi.fn()}
+      onDownloadArchiveReport={vi.fn()}
+      onDownloadHandoffPackageArchiveReport={vi.fn()}
+      onDownloadHandoffPackageArchiveSummaryReport={vi.fn()}
+      onDownloadHandoffShareCenterReport={vi.fn()}
+      onDownloadHandoffShareInstructionsReport={vi.fn()}
+      onCreateHandoffShareDeliveryReceipt={onCreateHandoffShareDeliveryReceipt}
+      onDownloadHandoffShareDeliveryReceiptReport={vi.fn()}
+      onDownloadHandoffShareChecklistReport={vi.fn()}
+    />
+  );
+
+  await userEvent.clear(screen.getByLabelText('Delivery target'));
+  await userEvent.type(screen.getByLabelText('Delivery target'), 'reviewer@example.com');
+  await userEvent.clear(screen.getByLabelText('Operator'));
+  await userEvent.type(screen.getByLabelText('Operator'), 'local-operator');
+  await userEvent.clear(screen.getByLabelText('Notes'));
+  await userEvent.type(screen.getByLabelText('Notes'), 'Sent after the demo review.');
+  await userEvent.click(screen.getByRole('button', { name: 'Record handoff share delivery receipt' }));
+
+  const receiptInput = onCreateHandoffShareDeliveryReceipt.mock.calls[0][0] as DemoHandoffShareDeliveryReceiptInput;
+  expect(receiptInput.deliveryChannel).toBe('email');
+  expect(receiptInput.deliveryTarget).toBe('reviewer@example.com');
+  expect(receiptInput.operator).toBe('local-operator');
+  expect(receiptInput.notes).toBe('Sent after the demo review.');
+  expect(receiptInput.deliveredAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+  expect(screen.getByText('Handoff share delivery receipt recorded')).toBeInTheDocument();
+});
+
+test('downloads demo handoff share delivery receipt markdown', async () => {
+  const reportBlob = new Blob(['# PatchPilot Demo Handoff Share Delivery Receipt'], {
+    type: 'text/markdown;charset=UTF-8'
+  });
+  const onDownloadHandoffShareDeliveryReceiptReport = vi.fn().mockResolvedValue(reportBlob);
+  const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+  const createObjectURL = vi.fn(() => 'blob:demo-handoff-share-delivery-receipt');
+  const revokeObjectURL = vi.fn();
+  vi.stubGlobal('URL', {
+    ...globalThis.URL,
+    createObjectURL,
+    revokeObjectURL
+  });
+
+  render(
+    <DemoSessionSnapshotPanel
+      snapshot={snapshot}
+      preparedLaunchCommands={preparedLaunchCommands}
+      archivedLaunchOutcomes={archivedLaunchOutcomes}
+      handoffReadiness={handoffReadiness}
+      archives={[]}
+      handoffPackageArchives={handoffPackageArchives}
+      handoffPackageArchiveSummary={handoffPackageArchiveSummary}
+      handoffShareChecklist={handoffShareChecklist}
+      handoffShareCenter={handoffShareCenter}
+      handoffShareInstructions={handoffShareInstructions}
+      handoffShareDeliveryReceipts={handoffShareDeliveryReceipts}
+      error={null}
+      archiveError={null}
+      handoffPackageArchiveError={null}
+      onCopyReport={vi.fn()}
+      onDownloadReport={vi.fn()}
+      onArchiveSession={vi.fn()}
+      onCopyHandoffPackage={vi.fn()}
+      onDownloadHandoffPackage={vi.fn()}
+      onArchiveHandoffPackage={vi.fn()}
+      onDownloadArchiveReport={vi.fn()}
+      onDownloadHandoffPackageArchiveReport={vi.fn()}
+      onDownloadHandoffPackageArchiveSummaryReport={vi.fn()}
+      onDownloadHandoffShareCenterReport={vi.fn()}
+      onDownloadHandoffShareInstructionsReport={vi.fn()}
+      onCreateHandoffShareDeliveryReceipt={vi.fn()}
+      onDownloadHandoffShareDeliveryReceiptReport={onDownloadHandoffShareDeliveryReceiptReport}
+      onDownloadHandoffShareChecklistReport={vi.fn()}
+    />
+  );
+
+  await userEvent.click(screen.getByRole('button', {
+    name: 'Download handoff share delivery receipt delivery-receipt-1'
+  }));
+
+  expect(onDownloadHandoffShareDeliveryReceiptReport).toHaveBeenCalledWith('delivery-receipt-1');
+  expect(createObjectURL).toHaveBeenCalledWith(reportBlob);
+  expect(click).toHaveBeenCalledTimes(1);
+  expect(revokeObjectURL).toHaveBeenCalledWith('blob:demo-handoff-share-delivery-receipt');
+  expect(screen.getByText('Handoff share delivery receipt downloaded')).toBeInTheDocument();
 });
 
 test('downloads demo handoff package archive summary markdown', async () => {

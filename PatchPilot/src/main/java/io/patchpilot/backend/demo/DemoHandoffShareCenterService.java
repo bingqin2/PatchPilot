@@ -101,6 +101,8 @@ public class DemoHandoffShareCenterService {
                 center.shareReady(),
                 summary,
                 nextAction,
+                center.latestArchiveId(),
+                center.latestSessionId(),
                 recipients,
                 attachments,
                 preSendChecks,

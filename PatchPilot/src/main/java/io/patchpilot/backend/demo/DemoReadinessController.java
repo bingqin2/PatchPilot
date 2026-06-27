@@ -7,6 +7,7 @@ import io.patchpilot.backend.demo.domain.DemoHandoffPackageArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffPackageArchiveSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffShareCenterVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffShareChecklistVo;
+import io.patchpilot.backend.demo.domain.DemoHandoffShareDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffShareInstructionsVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchCommandVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchPreflightVo;
@@ -52,6 +53,7 @@ public class DemoReadinessController {
     private final DemoHandoffPackageArchiveService demoHandoffPackageArchiveService;
     private final DemoHandoffShareChecklistService demoHandoffShareChecklistService;
     private final DemoHandoffShareCenterService demoHandoffShareCenterService;
+    private final DemoHandoffShareDeliveryReceiptService demoHandoffShareDeliveryReceiptService;
     private final DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
     private final DemoReadinessSnapshotTrendService demoReadinessSnapshotTrendService;
     private final DemoLaunchPreflightService demoLaunchPreflightService;
@@ -251,6 +253,43 @@ public class DemoReadinessController {
                 "patchpilot-demo-handoff-share-instructions.md",
                 demoHandoffShareCenterService.getShareInstructions().markdownReport()
         );
+    }
+
+    @PostMapping("/handoff-share-delivery-receipts")
+    public ResponseEntity<ApiResponse<DemoHandoffShareDeliveryReceiptVo>> recordHandoffShareDeliveryReceipt(
+            @RequestBody DemoHandoffShareDeliveryReceiptRequestDto request
+    ) {
+        try {
+            DemoHandoffShareDeliveryReceiptVo receipt =
+                    demoHandoffShareDeliveryReceiptService.recordDeliveryReceipt(request);
+            operatorSafetyAuditService.recordSafetyAudit(new RecordOperatorSafetyAuditCommand(
+                    "DEMO_HANDOFF_SHARE_DELIVERY_RECEIPT_RECORDED",
+                    "DEMO_HANDOFF_SHARE_DELIVERY_RECEIPT",
+                    receipt.id(),
+                    TriggerQuarantineScope.REPOSITORY,
+                    "patchpilot/local-demo",
+                    receipt.operator(),
+                    "Recorded demo handoff share delivery receipt for " + receipt.handoffArchiveId()
+            ));
+            return ResponseEntity.ok(ApiResponse.ok(receipt));
+        } catch (IllegalArgumentException | IllegalStateException exception) {
+            return ResponseEntity.badRequest().body(ApiResponse.fail(exception.getMessage()));
+        }
+    }
+
+    @GetMapping("/handoff-share-delivery-receipts")
+    public ApiResponse<List<DemoHandoffShareDeliveryReceiptVo>> listHandoffShareDeliveryReceipts() {
+        return ApiResponse.ok(demoHandoffShareDeliveryReceiptService.listRecentReceipts());
+    }
+
+    @GetMapping(value = "/handoff-share-delivery-receipts/{receiptId}/report/download", produces = "text/markdown;charset=UTF-8")
+    public ResponseEntity<String> downloadHandoffShareDeliveryReceiptReport(@PathVariable String receiptId) {
+        return demoHandoffShareDeliveryReceiptService.findReceipt(receiptId)
+                .map(receipt -> markdownAttachment(
+                        "patchpilot-demo-handoff-share-delivery-receipt-" + safeFilenamePart(receipt.id()) + ".md",
+                        receipt.markdownReport()
+                ))
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @GetMapping(value = "/handoff-share-checklist/report/download", produces = "text/markdown;charset=UTF-8")
