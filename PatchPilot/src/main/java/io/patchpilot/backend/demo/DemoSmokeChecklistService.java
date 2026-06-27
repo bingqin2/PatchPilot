@@ -6,6 +6,8 @@ import io.patchpilot.backend.demo.domain.DemoReadinessCheckVo;
 import io.patchpilot.backend.demo.domain.DemoSmokeChecklistStatus;
 import io.patchpilot.backend.demo.domain.DemoSmokeChecklistStepVo;
 import io.patchpilot.backend.demo.domain.DemoSmokeChecklistVo;
+import io.patchpilot.backend.github.credential.GitHubWebhookSetupReadinessService;
+import io.patchpilot.backend.github.credential.domain.GitHubWebhookSetupReadinessVo;
 import io.patchpilot.backend.github.webhook.domain.WebhookDeliveryDiagnosticStatus;
 import io.patchpilot.backend.github.webhook.domain.WebhookDeliveryDiagnosticVo;
 import io.patchpilot.backend.github.webhook.service.WebhookDeliveryDiagnosticService;
@@ -25,17 +27,20 @@ public class DemoSmokeChecklistService {
 
     private final Supplier<DemoReadinessVo> readinessSupplier;
     private final Supplier<List<WebhookDeliveryDiagnosticVo>> webhookDeliveriesSupplier;
+    private final Supplier<GitHubWebhookSetupReadinessVo> webhookSetupReadinessSupplier;
     private final Supplier<List<FixTaskVo>> recentTasksSupplier;
 
     @Autowired
     public DemoSmokeChecklistService(
             DemoReadinessService demoReadinessService,
+            GitHubWebhookSetupReadinessService gitHubWebhookSetupReadinessService,
             WebhookDeliveryDiagnosticService webhookDeliveryDiagnosticService,
             FixTaskService fixTaskService
     ) {
         this(
                 demoReadinessService::getReadiness,
                 () -> webhookDeliveryDiagnosticService.listRecent(10),
+                gitHubWebhookSetupReadinessService::getReadiness,
                 () -> fixTaskService.listTasks(new FixTaskListQuery(
                         null,
                         null,
@@ -54,20 +59,36 @@ public class DemoSmokeChecklistService {
             Supplier<List<WebhookDeliveryDiagnosticVo>> webhookDeliveriesSupplier,
             Supplier<List<FixTaskVo>> recentTasksSupplier
     ) {
+        this(
+                readinessSupplier,
+                webhookDeliveriesSupplier,
+                DemoSmokeChecklistService::defaultReadyWebhookSetupReadiness,
+                recentTasksSupplier
+        );
+    }
+
+    DemoSmokeChecklistService(
+            Supplier<DemoReadinessVo> readinessSupplier,
+            Supplier<List<WebhookDeliveryDiagnosticVo>> webhookDeliveriesSupplier,
+            Supplier<GitHubWebhookSetupReadinessVo> webhookSetupReadinessSupplier,
+            Supplier<List<FixTaskVo>> recentTasksSupplier
+    ) {
         this.readinessSupplier = readinessSupplier;
         this.webhookDeliveriesSupplier = webhookDeliveriesSupplier;
+        this.webhookSetupReadinessSupplier = webhookSetupReadinessSupplier;
         this.recentTasksSupplier = recentTasksSupplier;
     }
 
     public DemoSmokeChecklistVo getSmokeChecklist() {
         DemoReadinessVo readiness = readinessSupplier.get();
         List<WebhookDeliveryDiagnosticVo> deliveries = webhookDeliveriesSupplier.get();
+        GitHubWebhookSetupReadinessVo webhookSetupReadiness = webhookSetupReadinessSupplier.get();
         List<FixTaskVo> recentTasks = recentTasksSupplier.get();
 
         List<DemoSmokeChecklistStepVo> steps = List.of(
                 readinessStep(readiness),
                 adapterRuntimeStep(readiness),
-                webhookStep(deliveries),
+                webhookStep(webhookSetupReadiness, deliveries),
                 taskExecutionStep(recentTasks),
                 pullRequestStep(recentTasks)
         );
@@ -113,7 +134,30 @@ public class DemoSmokeChecklistService {
         );
     }
 
-    private static DemoSmokeChecklistStepVo webhookStep(List<WebhookDeliveryDiagnosticVo> deliveries) {
+    private static DemoSmokeChecklistStepVo webhookStep(
+            GitHubWebhookSetupReadinessVo setupReadiness,
+            List<WebhookDeliveryDiagnosticVo> deliveries
+    ) {
+        if (setupReadiness == null) {
+            return new DemoSmokeChecklistStepVo(
+                    3,
+                    "Webhook delivery",
+                    DemoSmokeChecklistStatus.NEEDS_ATTENTION,
+                    "Webhook setup readiness has not been evaluated.",
+                    latestDeliveryEvidence(deliveries),
+                    "Open /api/github/webhook-setup-readiness before a live demo."
+            );
+        }
+        if (!GitHubWebhookSetupReadinessService.READY.equals(setupReadiness.status())) {
+            return new DemoSmokeChecklistStepVo(
+                    3,
+                    "Webhook delivery",
+                    toSmokeStatus(setupReadiness.status()),
+                    setupReadiness.summary(),
+                    firstNonBlank(setupReadiness.latestDeliveryId(), latestDeliveryEvidence(deliveries), setupReadiness.payloadUrl()),
+                    firstAction(setupReadiness.nextActions())
+            );
+        }
         if (deliveries.isEmpty()) {
             return new DemoSmokeChecklistStepVo(
                     3,
@@ -153,6 +197,14 @@ public class DemoSmokeChecklistService {
                 latest.deliveryId(),
                 "Post the live /agent fix comment only after confirming the webhook URL is current."
         );
+    }
+
+    private static DemoSmokeChecklistStatus toSmokeStatus(String readinessStatus) {
+        return switch (readinessStatus) {
+            case GitHubWebhookSetupReadinessService.READY -> DemoSmokeChecklistStatus.READY;
+            case GitHubWebhookSetupReadinessService.BLOCKED -> DemoSmokeChecklistStatus.BLOCKED;
+            default -> DemoSmokeChecklistStatus.NEEDS_ATTENTION;
+        };
     }
 
     private static DemoSmokeChecklistStepVo taskExecutionStep(List<FixTaskVo> recentTasks) {
@@ -264,6 +316,40 @@ public class DemoSmokeChecklistService {
 
     private static String firstAction(List<String> actions) {
         return actions.isEmpty() ? "No action needed." : actions.get(0);
+    }
+
+    private static String latestDeliveryEvidence(List<WebhookDeliveryDiagnosticVo> deliveries) {
+        if (deliveries == null || deliveries.isEmpty()) {
+            return "No delivery evidence";
+        }
+        return deliveries.get(0).deliveryId();
+    }
+
+    private static String firstNonBlank(String... values) {
+        for (String value : values) {
+            if (hasText(value)) {
+                return value;
+            }
+        }
+        return "No delivery evidence";
+    }
+
+    private static GitHubWebhookSetupReadinessVo defaultReadyWebhookSetupReadiness() {
+        return new GitHubWebhookSetupReadinessVo(
+                GitHubWebhookSetupReadinessService.READY,
+                true,
+                true,
+                "https://demo.trycloudflare.com",
+                "https://demo.trycloudflare.com/api/github/webhook",
+                "https://demo.trycloudflare.com/health",
+                "TASK_CREATED",
+                "delivery-ready",
+                false,
+                "Webhook setup is ready for GitHub deliveries.",
+                List.of("Use the payload URL in GitHub Webhooks and continue the live demo."),
+                java.time.Instant.EPOCH,
+                "# PatchPilot Webhook Setup Readiness"
+        );
     }
 
     private static String nullToUnknown(String value) {

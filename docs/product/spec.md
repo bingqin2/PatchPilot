@@ -87,6 +87,7 @@ The current implementation target is local self-hosted development first. Hosted
 - Webhook delivery diagnostics should correlate each delivery with its final outcome, including task detail targets, rejected-trigger audit targets, ignored outcomes, duplicate outcomes, and error outcomes.
 - Operators should be able to configure a public webhook base URL, see the derived GitHub Payload URL, and run a read-only health probe against that public URL before posting a live `/agent fix` trigger.
 - Operators should be able to inspect one read-only webhook setup summary that combines webhook secret configuration, public payload URL readiness, latest delivery outcome, redelivery recommendation, next actions, and copyable Markdown evidence without exposing the secret.
+- Demo readiness and the live smoke checklist should consume the same webhook setup summary so a missing secret, unreachable public payload URL, or redelivery-required delivery blocks or warns before an operator posts a live trigger.
 - Operators should be able to paste a GitHub delivery payload into an admin-protected read-only diagnostic endpoint and see signature status, JSON validity, event/action support, `/agent fix` recognition, parsed repository/issue fields, and the next operator action without creating tasks or delivery records.
 
 ### Fix Task Creation

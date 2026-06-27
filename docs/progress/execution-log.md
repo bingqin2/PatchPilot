@@ -4,6 +4,20 @@ This file records dated implementation progress, validation commands, and import
 
 ## 2026-06-27
 
+Implemented demo webhook setup gate from `docs/plans/227-demo-webhook-setup-gate.md`.
+
+Changes:
+
+- Wired `GitHubWebhookSetupReadinessService` into demo readiness and replaced the URL-only readiness check with a `GitHub webhook setup` gate.
+- Wired webhook setup readiness into the smoke checklist so the `Webhook delivery` step blocks or warns before latest-delivery evidence is evaluated.
+- Updated the operator setup checklist to prefer the combined demo readiness setup gate while keeping URL-only readiness as a fallback.
+- Updated README, product spec, frontend design docs, and this execution log.
+
+Validation so far:
+
+- `mvn -pl PatchPilot -Dtest=DemoReadinessServiceTests,DemoSmokeChecklistServiceTests test`: first failed at test compile because demo readiness and smoke checklist did not accept webhook setup readiness suppliers; then passed after backend integration, 24 tests run, 0 failures.
+- `npm test -- --run src/App.test.tsx src/dashboard/components/OperatorSetupChecklistPanel.test.tsx --reporter=basic`: first failed because two frontend assertions still expected the old `Webhook public URL` row; then passed after dashboard fixture/assertion updates, 84 tests run, 0 failures.
+
 Implemented webhook setup readiness summary from `docs/plans/226-webhook-setup-readiness-summary.md`.
 
 Changes:

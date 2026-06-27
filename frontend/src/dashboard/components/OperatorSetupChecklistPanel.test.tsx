@@ -191,7 +191,7 @@ test('shows repository preflight scope as ready when demo fixtures are allowed',
   expect(within(panel).getByText('Ready - GitHub API accepted the configured token.')).toBeInTheDocument();
   expect(within(panel).getByText('Repository access')).toBeInTheDocument();
   expect(within(panel).getByText('Ready - GitHub token can read repository bingqin2/PatchPilot.')).toBeInTheDocument();
-  expect(within(panel).getByText('Webhook public URL')).toBeInTheDocument();
+  expect(within(panel).getByText('Webhook setup')).toBeInTheDocument();
   expect(within(panel).getByText('Ready - Configured public webhook URL reaches PatchPilot health.')).toBeInTheDocument();
   expect(within(panel).getByText('https://demo.trycloudflare.com/api/github/webhook')).toBeInTheDocument();
   expect(within(panel).getByText('Demo target policy')).toBeInTheDocument();
@@ -204,6 +204,26 @@ test('shows repository preflight scope as ready when demo fixtures are allowed',
   expect(within(panel).getByText('Ready - 1/1 runtime executables available')).toBeInTheDocument();
   expect(within(panel).getByText('Worker heartbeat')).toBeInTheDocument();
   expect(within(panel).getByText('Ready - Worker poller is active but no queue item was available.')).toBeInTheDocument();
+});
+
+test('uses demo readiness webhook setup result before URL-only readiness', () => {
+  renderChecklist(configuration, {
+    ...demoReadiness,
+    checks: [
+      ...demoReadiness.checks,
+      {
+        name: 'GitHub webhook setup',
+        status: 'NEEDS_ATTENTION',
+        message: 'Webhook setup needs attention before redelivery.',
+        action: 'Fix the latest webhook delivery issue, then use GitHub Redeliver.'
+      }
+    ]
+  });
+
+  const panel = screen.getByRole('region', { name: 'Operator setup checklist' });
+  expect(within(panel).getByText('Webhook setup')).toBeInTheDocument();
+  expect(within(panel).getByText('Attention - Webhook setup needs attention before redelivery.')).toBeInTheDocument();
+  expect(within(panel).getByText('Fix the latest webhook delivery issue, then use GitHub Redeliver.')).toBeInTheDocument();
 });
 
 test('shows repository preflight scope setup action when demo fixtures are outside allowed roots', () => {
@@ -412,7 +432,7 @@ test('shows webhook URL setup action when the configured public URL is stale', (
 
   const panel = screen.getByRole('region', { name: 'Operator setup checklist' });
   expect(within(panel).getByText('13/14 checks ready')).toBeInTheDocument();
-  expect(within(panel).getByText('Webhook public URL')).toBeInTheDocument();
+  expect(within(panel).getByText('Webhook setup')).toBeInTheDocument();
   expect(within(panel).getByText('Attention - HTTP 502 from public URL.')).toBeInTheDocument();
   expect(within(panel).getByText('Restart cloudflared, update PATCHPILOT_GITHUB_WEBHOOK_PUBLIC_BASE_URL, and set the GitHub webhook Payload URL again.')).toBeInTheDocument();
 });

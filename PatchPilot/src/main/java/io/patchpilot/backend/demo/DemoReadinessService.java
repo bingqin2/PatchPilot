@@ -12,9 +12,11 @@ import io.patchpilot.backend.evaluation.EvaluationFixtureBaselineRunRegressionSu
 import io.patchpilot.backend.evaluation.domain.EvaluationFixtureBaselineRunRegressionSummaryVo;
 import io.patchpilot.backend.github.credential.GitHubCredentialReadinessService;
 import io.patchpilot.backend.github.credential.GitHubRepositoryAccessReadinessService;
+import io.patchpilot.backend.github.credential.GitHubWebhookSetupReadinessService;
 import io.patchpilot.backend.github.credential.GitHubWebhookUrlReadinessService;
 import io.patchpilot.backend.github.credential.domain.GitHubCredentialReadinessVo;
 import io.patchpilot.backend.github.credential.domain.GitHubRepositoryAccessReadinessVo;
+import io.patchpilot.backend.github.credential.domain.GitHubWebhookSetupReadinessVo;
 import io.patchpilot.backend.github.credential.domain.GitHubWebhookUrlReadinessVo;
 import io.patchpilot.backend.language.LanguageAdapterFixtureVerificationService;
 import io.patchpilot.backend.language.LanguageAdapterRuntimeReadinessService;
@@ -45,6 +47,7 @@ public class DemoReadinessService {
     private final Supplier<GitHubCredentialReadinessVo> gitHubCredentialReadinessSupplier;
     private final Supplier<GitHubRepositoryAccessReadinessVo> gitHubRepositoryAccessReadinessSupplier;
     private final Supplier<GitHubWebhookUrlReadinessVo> gitHubWebhookUrlReadinessSupplier;
+    private final Supplier<GitHubWebhookSetupReadinessVo> gitHubWebhookSetupReadinessSupplier;
     private final Supplier<ModelProviderHealthVo> modelProviderHealthSupplier;
     private final Supplier<FixTaskQueueSummaryVo> queueSummarySupplier;
     private final Supplier<FixTaskWorkerHealthVo> workerHealthSupplier;
@@ -59,6 +62,7 @@ public class DemoReadinessService {
             GitHubCredentialReadinessService gitHubCredentialReadinessService,
             GitHubRepositoryAccessReadinessService gitHubRepositoryAccessReadinessService,
             GitHubWebhookUrlReadinessService gitHubWebhookUrlReadinessService,
+            GitHubWebhookSetupReadinessService gitHubWebhookSetupReadinessService,
             DemoProperties demoProperties,
             ModelProviderHealthService modelProviderHealthService,
             FixTaskQueueQueryService fixTaskQueueQueryService,
@@ -76,6 +80,7 @@ public class DemoReadinessService {
                         demoProperties.getRepositoryName()
                 ),
                 gitHubWebhookUrlReadinessService::getReadiness,
+                gitHubWebhookSetupReadinessService::getReadiness,
                 modelProviderHealthService::getHealth,
                 fixTaskQueueQueryService::summary,
                 fixTaskWorkerHealthService::getHealth,
@@ -111,6 +116,7 @@ public class DemoReadinessService {
                 gitHubCredentialReadinessSupplier,
                 gitHubRepositoryAccessReadinessSupplier,
                 DemoReadinessService::defaultReadyWebhookUrlReadiness,
+                DemoReadinessService::defaultReadyWebhookSetupReadiness,
                 modelProviderHealthSupplier,
                 queueSummarySupplier,
                 workerHealthSupplier,
@@ -126,6 +132,7 @@ public class DemoReadinessService {
             Supplier<GitHubCredentialReadinessVo> gitHubCredentialReadinessSupplier,
             Supplier<GitHubRepositoryAccessReadinessVo> gitHubRepositoryAccessReadinessSupplier,
             Supplier<GitHubWebhookUrlReadinessVo> gitHubWebhookUrlReadinessSupplier,
+            Supplier<GitHubWebhookSetupReadinessVo> gitHubWebhookSetupReadinessSupplier,
             Supplier<ModelProviderHealthVo> modelProviderHealthSupplier,
             Supplier<FixTaskQueueSummaryVo> queueSummarySupplier,
             Supplier<FixTaskWorkerHealthVo> workerHealthSupplier,
@@ -138,6 +145,7 @@ public class DemoReadinessService {
         this.gitHubCredentialReadinessSupplier = gitHubCredentialReadinessSupplier;
         this.gitHubRepositoryAccessReadinessSupplier = gitHubRepositoryAccessReadinessSupplier;
         this.gitHubWebhookUrlReadinessSupplier = gitHubWebhookUrlReadinessSupplier;
+        this.gitHubWebhookSetupReadinessSupplier = gitHubWebhookSetupReadinessSupplier;
         this.modelProviderHealthSupplier = modelProviderHealthSupplier;
         this.queueSummarySupplier = queueSummarySupplier;
         this.workerHealthSupplier = workerHealthSupplier;
@@ -151,7 +159,7 @@ public class DemoReadinessService {
         List<LanguageAdapterRuntimeReadinessVo> runtimes = runtimeReadinessSupplier.get();
         GitHubCredentialReadinessVo gitHubCredentialReadiness = gitHubCredentialReadinessSupplier.get();
         GitHubRepositoryAccessReadinessVo gitHubRepositoryAccessReadiness = gitHubRepositoryAccessReadinessSupplier.get();
-        GitHubWebhookUrlReadinessVo gitHubWebhookUrlReadiness = gitHubWebhookUrlReadinessSupplier.get();
+        GitHubWebhookSetupReadinessVo gitHubWebhookSetupReadiness = gitHubWebhookSetupReadinessSupplier.get();
         ModelProviderHealthVo modelProviderHealth = modelProviderHealthSupplier.get();
         FixTaskQueueSummaryVo queueSummary = queueSummarySupplier.get();
         FixTaskWorkerHealthVo workerHealth = workerHealthSupplier.get();
@@ -162,7 +170,7 @@ public class DemoReadinessService {
                 backendCheck(),
                 credentialsCheck(configuration),
                 gitHubCredentialCheck(gitHubCredentialReadiness),
-                gitHubWebhookUrlCheck(gitHubWebhookUrlReadiness),
+                gitHubWebhookSetupCheck(gitHubWebhookSetupReadiness),
                 gitHubRepositoryAccessCheck(gitHubRepositoryAccessReadiness),
                 safetyPolicyCheck(configuration),
                 demoTargetPolicyCheck(configuration, gitHubRepositoryAccessReadiness, recentTasks),
@@ -326,21 +334,38 @@ public class DemoReadinessService {
         );
     }
 
-    private static DemoReadinessCheckVo gitHubWebhookUrlCheck(GitHubWebhookUrlReadinessVo readiness) {
-        if (GitHubWebhookUrlReadinessService.READY.equals(readiness.status())) {
+    private static DemoReadinessCheckVo gitHubWebhookSetupCheck(GitHubWebhookSetupReadinessVo readiness) {
+        if (readiness == null) {
             return new DemoReadinessCheckVo(
-                    "GitHub webhook URL",
-                    DemoReadinessStatus.READY,
-                    readiness.message() + " Payload URL: " + readiness.payloadUrl() + ".",
-                    "No action needed."
+                    "GitHub webhook setup",
+                    DemoReadinessStatus.NEEDS_ATTENTION,
+                    "Webhook setup readiness has not been evaluated.",
+                    "Open /api/github/webhook-setup-readiness before a live demo."
             );
         }
+        DemoReadinessStatus status = switch (readiness.status()) {
+            case GitHubWebhookSetupReadinessService.READY -> DemoReadinessStatus.READY;
+            case GitHubWebhookSetupReadinessService.BLOCKED -> DemoReadinessStatus.BLOCKED;
+            default -> DemoReadinessStatus.NEEDS_ATTENTION;
+        };
         return new DemoReadinessCheckVo(
-                "GitHub webhook URL",
-                DemoReadinessStatus.NEEDS_ATTENTION,
-                readiness.message(),
-                readiness.operatorAction()
+                "GitHub webhook setup",
+                status,
+                webhookSetupMessage(readiness),
+                firstAction(readiness.nextActions())
         );
+    }
+
+    private static String webhookSetupMessage(GitHubWebhookSetupReadinessVo readiness) {
+        List<String> details = new ArrayList<>();
+        details.add(readiness.summary());
+        if (hasText(readiness.payloadUrl())) {
+            details.add("Payload URL: " + readiness.payloadUrl() + ".");
+        }
+        if (hasText(readiness.latestDeliveryStatus())) {
+            details.add("Latest delivery: " + readiness.latestDeliveryStatus() + ".");
+        }
+        return String.join(" ", details);
     }
 
     private static DemoReadinessCheckVo demoTargetPolicyCheck(
@@ -599,6 +624,10 @@ public class DemoReadinessService {
         return List.of("Open a controlled GitHub issue and comment /agent fix with a concrete change request.");
     }
 
+    private static String firstAction(List<String> actions) {
+        return actions == null || actions.isEmpty() ? "No action needed." : actions.get(0);
+    }
+
     private static boolean hasText(String value) {
         return value != null && !value.isBlank();
     }
@@ -641,6 +670,24 @@ public class DemoReadinessService {
                 0,
                 java.time.Instant.EPOCH,
                 "No action needed."
+        );
+    }
+
+    private static GitHubWebhookSetupReadinessVo defaultReadyWebhookSetupReadiness() {
+        return new GitHubWebhookSetupReadinessVo(
+                GitHubWebhookSetupReadinessService.READY,
+                true,
+                true,
+                "https://demo.trycloudflare.com",
+                "https://demo.trycloudflare.com/api/github/webhook",
+                "https://demo.trycloudflare.com/health",
+                "TASK_CREATED",
+                "delivery-ready",
+                false,
+                "Webhook setup is ready for GitHub deliveries.",
+                List.of("Use the payload URL in GitHub Webhooks and continue the live demo."),
+                java.time.Instant.EPOCH,
+                "# PatchPilot Webhook Setup Readiness"
         );
     }
 
