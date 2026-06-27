@@ -28,9 +28,11 @@ import {
   getDemoHandoffPackage,
   getDemoHandoffReadiness,
   getDemoHandoffPackageArchiveSummary,
+  getDemoHandoffShareCenter,
   getDemoHandoffShareChecklist,
   downloadDemoSessionReport,
   downloadDemoHandoffPackage,
+  downloadDemoHandoffShareCenterReport,
   downloadDemoHandoffShareChecklistReport,
   downloadDemoHandoffPackageArchiveSummaryReport,
   downloadDemoHandoffPackageArchiveReport,
@@ -1358,6 +1360,43 @@ test('gets demo handoff share checklist through backend API', async () => {
   expect(checklist.markdownReport).toContain('# PatchPilot Demo Handoff Share Checklist');
 });
 
+test('gets demo handoff share center through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        status: 'READY',
+        shareReady: true,
+        summary: 'Post-demo handoff package is ready to share.',
+        nextAction: 'Download the package, archive summary, and share checklist before sending handoff evidence.',
+        latestArchiveId: 'handoff-archive-1',
+        latestSessionId: 'demo-session-20260624T003000Z',
+        latestCreatedAt: '2026-06-24T04:00:00Z',
+        downloadActions: [
+          'Download handoff package archive handoff-archive-1.',
+          'Download handoff package archive summary.',
+          'Download handoff share checklist.'
+        ],
+        evidenceNotes: ['Latest package archive is READY.', 'Share checklist has 4 checks.'],
+        markdownReport: '# PatchPilot Demo Handoff Share Center\n\n- Status: `READY`',
+        generatedAt: '2026-06-24T05:30:00Z'
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const shareCenter = await getDemoHandoffShareCenter();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/handoff-share-center');
+  expect(shareCenter.status).toBe('READY');
+  expect(shareCenter.shareReady).toBe(true);
+  expect(shareCenter.latestArchiveId).toBe('handoff-archive-1');
+  expect(shareCenter.downloadActions).toContain('Download handoff share checklist.');
+});
+
 test('downloads archived demo handoff package markdown from backend API', async () => {
   const reportBlob = new Blob(['# PatchPilot Demo Handoff Package\n\n- Archive: `handoff-archive-1`'], {
     type: 'text/markdown;charset=UTF-8'
@@ -1406,6 +1445,23 @@ test('downloads demo handoff share checklist markdown from backend API', async (
   const downloadedReport = await downloadDemoHandoffShareChecklistReport();
 
   expect(fetchMock).toHaveBeenCalledWith('/api/demo/handoff-share-checklist/report/download');
+  expect(downloadedReport).toBe(reportBlob);
+});
+
+test('downloads demo handoff share center markdown from backend API', async () => {
+  const reportBlob = new Blob(['# PatchPilot Demo Handoff Share Center\n\n- Status: `READY`'], {
+    type: 'text/markdown;charset=UTF-8'
+  });
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    blob: async () => reportBlob
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const downloadedReport = await downloadDemoHandoffShareCenterReport();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/handoff-share-center/report/download');
   expect(downloadedReport).toBe(reportBlob);
 });
 

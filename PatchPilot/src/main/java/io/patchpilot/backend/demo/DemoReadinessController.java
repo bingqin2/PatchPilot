@@ -5,6 +5,7 @@ import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffReadinessVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffPackageArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffPackageArchiveSummaryVo;
+import io.patchpilot.backend.demo.domain.DemoHandoffShareCenterVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffShareChecklistVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchCommandVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchPreflightVo;
@@ -49,6 +50,7 @@ public class DemoReadinessController {
     private final DemoSessionArchiveService demoSessionArchiveService;
     private final DemoHandoffPackageArchiveService demoHandoffPackageArchiveService;
     private final DemoHandoffShareChecklistService demoHandoffShareChecklistService;
+    private final DemoHandoffShareCenterService demoHandoffShareCenterService;
     private final DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
     private final DemoReadinessSnapshotTrendService demoReadinessSnapshotTrendService;
     private final DemoLaunchPreflightService demoLaunchPreflightService;
@@ -222,6 +224,19 @@ public class DemoReadinessController {
     @GetMapping("/handoff-share-checklist")
     public ApiResponse<DemoHandoffShareChecklistVo> getHandoffShareChecklist() {
         return ApiResponse.ok(demoHandoffShareChecklistService.getShareChecklist());
+    }
+
+    @GetMapping("/handoff-share-center")
+    public ApiResponse<DemoHandoffShareCenterVo> getHandoffShareCenter() {
+        return ApiResponse.ok(demoHandoffShareCenterService.getShareCenter());
+    }
+
+    @GetMapping(value = "/handoff-share-center/report/download", produces = "text/markdown;charset=UTF-8")
+    public ResponseEntity<String> downloadHandoffShareCenterReport() {
+        return markdownAttachment(
+                "patchpilot-demo-handoff-share-center.md",
+                demoHandoffShareCenterService.getShareCenter().markdownReport()
+        );
     }
 
     @GetMapping(value = "/handoff-share-checklist/report/download", produces = "text/markdown;charset=UTF-8")

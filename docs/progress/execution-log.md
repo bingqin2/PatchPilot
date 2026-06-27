@@ -4,6 +4,28 @@ This file records dated implementation progress, validation commands, and import
 
 ## 2026-06-27
 
+Implemented demo handoff share center from `docs/plans/238-demo-handoff-share-center.md`.
+
+Changes:
+
+- Added a read-only `GET /api/demo/handoff-share-center` endpoint that combines the latest handoff package archive summary and handoff share checklist into one final sharing status.
+- Added `GET /api/demo/handoff-share-center/report/download` so operators can download `patchpilot-demo-handoff-share-center.md`.
+- Added backend aggregation logic for send/no-send status, next action, download actions, evidence notes, embedded archive summary, embedded checklist, and read-only side-effect contract.
+- Added frontend API helpers, App refresh wiring, post-archive refresh, and a `Handoff share center` panel in the demo session snapshot.
+- Updated README, product spec, architecture notes, and this execution log.
+
+Validation so far:
+
+- `mvn -q -pl PatchPilot -Dtest=DemoHandoffShareCenterServiceTests,DemoReadinessControllerTests test`: first failed because `DemoHandoffShareCenter*` records and service did not exist; then passed after backend implementation.
+- `npm test -- --run src/api.test.ts src/dashboard/components/DemoSessionSnapshotPanel.test.tsx src/App.test.tsx --reporter=basic`: first failed because the share-center panel and API helper did not exist; then failed twice because existing assertions expected unique `Share-ready` and `handoff-archive-1` text after the new panel intentionally repeated that evidence; passed after frontend implementation and explicit repeated-evidence assertions, 178 tests run, 0 failures.
+
+Final validation:
+
+- `mvn -pl PatchPilot test`: passed, 813 tests run, 0 failures.
+- `npm test -- --reporter=basic`: passed, 26 test files and 300 tests run.
+- `npm run build`: passed after TypeScript and production Vite build verification.
+- `git diff --check`: passed.
+
 Implemented handoff share checklist from `docs/plans/236-handoff-share-checklist.md`.
 
 Changes:
