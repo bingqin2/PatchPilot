@@ -217,6 +217,14 @@ public class DemoReadinessController {
         return ApiResponse.ok(demoHandoffPackageArchiveService.getArchiveSummary());
     }
 
+    @GetMapping(value = "/handoff-package-archives/summary-report/download", produces = "text/markdown;charset=UTF-8")
+    public ResponseEntity<String> downloadHandoffPackageArchiveSummaryReport() {
+        return markdownAttachment(
+                "patchpilot-demo-handoff-package-archive-summary.md",
+                demoHandoffPackageArchiveService.getArchiveSummary().markdownReport()
+        );
+    }
+
     @GetMapping(value = "/handoff-package-archives/{archiveId}/report/download", produces = "text/markdown;charset=UTF-8")
     public ResponseEntity<String> downloadArchivedHandoffPackage(@PathVariable String archiveId) {
         return demoHandoffPackageArchiveService.findArchive(archiveId)

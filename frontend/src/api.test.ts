@@ -30,6 +30,7 @@ import {
   getDemoHandoffPackageArchiveSummary,
   downloadDemoSessionReport,
   downloadDemoHandoffPackage,
+  downloadDemoHandoffPackageArchiveSummaryReport,
   downloadDemoHandoffPackageArchiveReport,
   downloadDemoSessionArchiveReport,
   downloadEvaluationRunSnapshotReport,
@@ -1335,6 +1336,23 @@ test('downloads archived demo handoff package markdown from backend API', async 
   const downloadedReport = await downloadDemoHandoffPackageArchiveReport('handoff-archive-1');
 
   expect(fetchMock).toHaveBeenCalledWith('/api/demo/handoff-package-archives/handoff-archive-1/report/download');
+  expect(downloadedReport).toBe(reportBlob);
+});
+
+test('downloads demo handoff package archive summary markdown from backend API', async () => {
+  const reportBlob = new Blob(['# PatchPilot Handoff Package Archive Summary\n\n- Status: `READY`'], {
+    type: 'text/markdown;charset=UTF-8'
+  });
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    blob: async () => reportBlob
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const downloadedReport = await downloadDemoHandoffPackageArchiveSummaryReport();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/handoff-package-archives/summary-report/download');
   expect(downloadedReport).toBe(reportBlob);
 });
 

@@ -1010,6 +1010,34 @@ class DemoReadinessControllerTests {
     }
 
     @Test
+    void should_download_demo_handoff_package_archive_summary_as_markdown_attachment() throws Exception {
+        when(demoHandoffPackageArchiveService.getArchiveSummary()).thenReturn(new DemoHandoffPackageArchiveSummaryVo(
+                "READY",
+                true,
+                1,
+                "handoff-archive-1",
+                "demo-session-20260624T003000Z",
+                DemoReadinessStatus.READY,
+                Instant.parse("2026-06-24T04:00:00Z"),
+                "Latest archived handoff package is READY and can be shared.",
+                "No missing handoff evidence.",
+                "# PatchPilot Handoff Package Archive Summary\n\n- Status: `READY`\n- Latest archive: `handoff-archive-1`"
+        ));
+
+        mockMvc.perform(get("/api/demo/handoff-package-archives/summary-report/download"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("attachment;")))
+                .andExpect(header().string(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        containsString("patchpilot-demo-handoff-package-archive-summary.md")
+                ))
+                .andExpect(content().contentTypeCompatibleWith("text/markdown"))
+                .andExpect(content().string(containsString("# PatchPilot Handoff Package Archive Summary")))
+                .andExpect(content().string(containsString("`READY`")))
+                .andExpect(content().string(containsString("`handoff-archive-1`")));
+    }
+
+    @Test
     void should_download_archived_demo_handoff_package_as_markdown_attachment() throws Exception {
         when(demoHandoffPackageArchiveService.findArchive("handoff-archive-1")).thenReturn(Optional.of(new DemoHandoffPackageArchiveVo(
                 "handoff-archive-1",
