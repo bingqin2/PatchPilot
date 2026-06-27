@@ -26,6 +26,8 @@ import io.patchpilot.backend.task.domain.vo.TriggerEvaluationDecisionVo;
 import io.patchpilot.backend.task.domain.vo.TriggerEvaluationResultVo;
 import io.patchpilot.backend.demo.domain.DemoScriptStepVo;
 import io.patchpilot.backend.demo.domain.DemoScriptVo;
+import io.patchpilot.backend.demo.domain.DemoSelfHostedLaunchCheckVo;
+import io.patchpilot.backend.demo.domain.DemoSelfHostedLaunchReadinessVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessSnapshotArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessSnapshotTrendStatus;
 import io.patchpilot.backend.demo.domain.DemoReadinessSnapshotTrendVo;
@@ -104,6 +106,9 @@ class DemoReadinessControllerTests {
     private DemoHandoffFinalizationService demoHandoffFinalizationService;
 
     @MockitoBean
+    private SelfHostedLaunchReadinessService selfHostedLaunchReadinessService;
+
+    @MockitoBean
     private DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
 
     @MockitoBean
@@ -117,6 +122,36 @@ class DemoReadinessControllerTests {
 
     @MockitoBean
     private OperatorSafetyAuditService operatorSafetyAuditService;
+
+    @Test
+    void should_return_self_hosted_launch_readiness_package() throws Exception {
+        when(selfHostedLaunchReadinessService.getReadinessPackage()).thenReturn(selfHostedLaunchReadiness());
+
+        mockMvc.perform(get("/api/demo/self-hosted-launch-readiness"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.readyToLaunch").value(true))
+                .andExpect(jsonPath("$.data.summary").value("Self-hosted PatchPilot is ready for a controlled issue-to-PR launch."))
+                .andExpect(jsonPath("$.data.checks.length()").value(2))
+                .andExpect(jsonPath("$.data.checks[0].name").value("Demo readiness"))
+                .andExpect(jsonPath("$.data.checks[0].status").value("READY"))
+                .andExpect(jsonPath("$.data.checks[1].name").value("Evidence bundle"))
+                .andExpect(jsonPath("$.data.nextActions[0]").value("Post the tested /agent fix comment, watch the task reach COMPLETED, then use the generated Pull Request for review."))
+                .andExpect(jsonPath("$.data.markdownReport").value(containsString("# PatchPilot Self-Hosted Launch Readiness")));
+    }
+
+    @Test
+    void should_download_self_hosted_launch_readiness_report() throws Exception {
+        when(selfHostedLaunchReadinessService.getReadinessPackage()).thenReturn(selfHostedLaunchReadiness());
+
+        mockMvc.perform(get("/api/demo/self-hosted-launch-readiness/report/download"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("patchpilot-self-hosted-launch-readiness.md")))
+                .andExpect(content().contentType("text/markdown;charset=UTF-8"))
+                .andExpect(content().string(containsString("# PatchPilot Self-Hosted Launch Readiness")))
+                .andExpect(content().string(containsString("Ready to launch: `true`")));
+    }
 
     @Test
     void should_return_demo_readiness_summary() throws Exception {
@@ -1710,5 +1745,30 @@ class DemoReadinessControllerTests {
                 .andExpect(jsonPath("$.data.blockedCheckDelta").value(-2))
                 .andExpect(jsonPath("$.data.nextAction").value("Use the latest readiness snapshot as demo evidence or archive one more snapshot immediately before the live run."))
                 .andExpect(jsonPath("$.data.markdownReport").value(org.hamcrest.Matchers.containsString("# PatchPilot Demo Readiness Snapshot Trend")));
+    }
+
+    private static DemoSelfHostedLaunchReadinessVo selfHostedLaunchReadiness() {
+        return new DemoSelfHostedLaunchReadinessVo(
+                DemoReadinessStatus.READY,
+                true,
+                "Self-hosted PatchPilot is ready for a controlled issue-to-PR launch.",
+                List.of(
+                        new DemoSelfHostedLaunchCheckVo(
+                                "Demo readiness",
+                                DemoReadinessStatus.READY,
+                                "PatchPilot is ready for a controlled demo.",
+                                "No action needed."
+                        ),
+                        new DemoSelfHostedLaunchCheckVo(
+                                "Evidence bundle",
+                                DemoReadinessStatus.READY,
+                                "Demo evidence bundle is ready.",
+                                "No action needed."
+                        )
+                ),
+                List.of("Post the tested /agent fix comment, watch the task reach COMPLETED, then use the generated Pull Request for review."),
+                Instant.parse("2026-06-27T01:00:00Z"),
+                "# PatchPilot Self-Hosted Launch Readiness\n\n- Status: `READY`\n- Ready to launch: `true`\n"
+        );
     }
 }

@@ -22,6 +22,7 @@ import {
   downloadDemoSessionReport,
   downloadDemoHandoffShareCenterReport,
   downloadDemoHandoffFinalizationReport,
+  downloadDemoSelfHostedLaunchReadinessReport,
   downloadDemoHandoffShareDeliveryReceiptReport,
   downloadDemoHandoffShareInstructionsReport,
   downloadDemoHandoffShareChecklistReport,
@@ -36,6 +37,7 @@ import {
   getDemoHandoffPackageArchiveSummary,
   getDemoHandoffShareCenter,
   getDemoHandoffFinalization,
+  getDemoSelfHostedLaunchReadiness,
   getDemoHandoffShareInstructions,
   getDemoHandoffShareChecklist,
   getDemoSessionSnapshot,
@@ -102,6 +104,7 @@ import { DemoLaunchTrackerPanel } from './dashboard/components/DemoLaunchTracker
 import { DemoSessionSnapshotPanel } from './dashboard/components/DemoSessionSnapshotPanel';
 import { DemoScriptPanel } from './dashboard/components/DemoScriptPanel';
 import { DemoSmokeChecklistPanel } from './dashboard/components/DemoSmokeChecklistPanel';
+import { SelfHostedLaunchReadinessPanel } from './dashboard/components/SelfHostedLaunchReadinessPanel';
 import { EvaluationCaseCatalogPanel } from './dashboard/components/EvaluationCaseCatalogPanel';
 import { FailureCausePanel } from './dashboard/components/FailureCausePanel';
 import { LatencyPanel } from './dashboard/components/LatencyPanel';
@@ -149,6 +152,7 @@ import type {
   DemoLaunchPreflight,
   DemoLaunchPreflightInput,
   DemoScript,
+  DemoSelfHostedLaunchReadiness,
   DemoSessionArchive,
   DemoSessionReportInput,
   DemoSessionSnapshot,
@@ -269,6 +273,9 @@ export default function App() {
   const [demoHandoffShareCenterError, setDemoHandoffShareCenterError] = useState<string | null>(null);
   const [demoHandoffFinalization, setDemoHandoffFinalization] = useState<DemoHandoffFinalization | null>(null);
   const [demoHandoffFinalizationError, setDemoHandoffFinalizationError] = useState<string | null>(null);
+  const [demoSelfHostedLaunchReadiness, setDemoSelfHostedLaunchReadiness] =
+    useState<DemoSelfHostedLaunchReadiness | null>(null);
+  const [demoSelfHostedLaunchReadinessError, setDemoSelfHostedLaunchReadinessError] = useState<string | null>(null);
   const [demoHandoffShareInstructions, setDemoHandoffShareInstructions] =
     useState<DemoHandoffShareInstructions | null>(null);
   const [demoHandoffShareInstructionsError, setDemoHandoffShareInstructionsError] = useState<string | null>(null);
@@ -604,6 +611,7 @@ export default function App() {
         demoHandoffShareChecklistResult,
         demoHandoffShareCenterResult,
         demoHandoffFinalizationResult,
+        demoSelfHostedLaunchReadinessResult,
         demoHandoffShareInstructionsResult,
         demoHandoffShareDeliveryReceiptResult,
         demoScriptResult,
@@ -694,6 +702,10 @@ export default function App() {
         getDemoHandoffFinalization().then(
           (finalization) => ({ finalization, error: null as string | null }),
           (caught) => ({ finalization: null, error: errorMessage(caught) })
+        ),
+        getDemoSelfHostedLaunchReadiness().then(
+          (readiness) => ({ readiness, error: null as string | null }),
+          (caught) => ({ readiness: null, error: errorMessage(caught) })
         ),
         getDemoHandoffShareInstructions().then(
           (instructions) => ({ instructions, error: null as string | null }),
@@ -859,6 +871,10 @@ export default function App() {
         setDemoHandoffFinalization(demoHandoffFinalizationResult.finalization);
       }
       setDemoHandoffFinalizationError(demoHandoffFinalizationResult.error);
+      if (demoSelfHostedLaunchReadinessResult.readiness) {
+        setDemoSelfHostedLaunchReadiness(demoSelfHostedLaunchReadinessResult.readiness);
+      }
+      setDemoSelfHostedLaunchReadinessError(demoSelfHostedLaunchReadinessResult.error);
       if (demoHandoffShareInstructionsResult.instructions) {
         setDemoHandoffShareInstructions(demoHandoffShareInstructionsResult.instructions);
       }
@@ -1136,6 +1152,9 @@ export default function App() {
   const handleDownloadDemoHandoffFinalizationReport = useCallback(() => (
     downloadDemoHandoffFinalizationReport()
   ), []);
+  const handleDownloadDemoSelfHostedLaunchReadinessReport = useCallback(() => (
+    downloadDemoSelfHostedLaunchReadinessReport()
+  ), []);
   const handleDownloadDemoHandoffShareInstructionsReport = useCallback(() => (
     downloadDemoHandoffShareInstructionsReport()
   ), []);
@@ -1165,6 +1184,13 @@ export default function App() {
       setDemoHandoffFinalizationError(null);
     } catch (caught) {
       setDemoHandoffFinalizationError(errorMessage(caught));
+    }
+    try {
+      const readiness = await getDemoSelfHostedLaunchReadiness();
+      setDemoSelfHostedLaunchReadiness(readiness);
+      setDemoSelfHostedLaunchReadinessError(null);
+    } catch (caught) {
+      setDemoSelfHostedLaunchReadinessError(errorMessage(caught));
     }
     return receipt;
   }, []);
@@ -1208,6 +1234,13 @@ export default function App() {
       setDemoHandoffFinalizationError(null);
     } catch (caught) {
       setDemoHandoffFinalizationError(errorMessage(caught));
+    }
+    try {
+      const readiness = await getDemoSelfHostedLaunchReadiness();
+      setDemoSelfHostedLaunchReadiness(readiness);
+      setDemoSelfHostedLaunchReadinessError(null);
+    } catch (caught) {
+      setDemoSelfHostedLaunchReadinessError(errorMessage(caught));
     }
     try {
       const instructions = await getDemoHandoffShareInstructions();
@@ -1567,6 +1600,12 @@ export default function App() {
         workerHealth={workerHealth}
         tasks={tasks}
         hasStoredAdminToken={hasStoredAdminToken}
+      />
+
+      <SelfHostedLaunchReadinessPanel
+        readiness={demoSelfHostedLaunchReadiness}
+        error={demoSelfHostedLaunchReadinessError}
+        onDownloadReport={handleDownloadDemoSelfHostedLaunchReadinessReport}
       />
 
       <DemoEvidenceBundlePanel
