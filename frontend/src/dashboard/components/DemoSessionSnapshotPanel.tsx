@@ -7,6 +7,7 @@ import type {
   DemoHandoffPackageArchive,
   DemoHandoffPackageArchiveSummary,
   DemoHandoffPackageArchiveSummaryStatus,
+  DemoHandoffShareCenter,
   DemoHandoffShareChecklist,
   DemoPreparedLaunchCommand,
   DemoReadinessSnapshotTrendStatus,
@@ -26,12 +27,14 @@ interface DemoSessionSnapshotPanelProps {
   handoffPackageArchives: DemoHandoffPackageArchive[];
   handoffPackageArchiveSummary?: DemoHandoffPackageArchiveSummary | null;
   handoffShareChecklist?: DemoHandoffShareChecklist | null;
+  handoffShareCenter?: DemoHandoffShareCenter | null;
   error: string | null;
   handoffReadinessError?: string | null;
   archiveError: string | null;
   handoffPackageArchiveError: string | null;
   handoffPackageArchiveSummaryError?: string | null;
   handoffShareChecklistError?: string | null;
+  handoffShareCenterError?: string | null;
   onCopyReport: (input: DemoSessionReportInput) => Promise<string>;
   onDownloadReport: (input: DemoSessionReportInput) => Promise<Blob>;
   onArchiveSession: (input: DemoSessionReportInput) => Promise<DemoSessionArchive>;
@@ -41,6 +44,7 @@ interface DemoSessionSnapshotPanelProps {
   onDownloadArchiveReport: (archiveId: string) => Promise<Blob>;
   onDownloadHandoffPackageArchiveReport: (archiveId: string) => Promise<Blob>;
   onDownloadHandoffPackageArchiveSummaryReport: () => Promise<Blob>;
+  onDownloadHandoffShareCenterReport: () => Promise<Blob>;
   onDownloadHandoffShareChecklistReport: () => Promise<Blob>;
 }
 
@@ -53,12 +57,14 @@ export function DemoSessionSnapshotPanel({
   handoffPackageArchives,
   handoffPackageArchiveSummary = null,
   handoffShareChecklist = null,
+  handoffShareCenter = null,
   error,
   handoffReadinessError = null,
   archiveError,
   handoffPackageArchiveError,
   handoffPackageArchiveSummaryError = null,
   handoffShareChecklistError = null,
+  handoffShareCenterError = null,
   onCopyReport,
   onDownloadReport,
   onArchiveSession,
@@ -68,6 +74,7 @@ export function DemoSessionSnapshotPanel({
   onDownloadArchiveReport,
   onDownloadHandoffPackageArchiveReport,
   onDownloadHandoffPackageArchiveSummaryReport,
+  onDownloadHandoffShareCenterReport,
   onDownloadHandoffShareChecklistReport
 }: DemoSessionSnapshotPanelProps) {
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
@@ -212,6 +219,16 @@ export function DemoSessionSnapshotPanel({
     }
   }
 
+  async function downloadHandoffShareCenter() {
+    try {
+      const report = await onDownloadHandoffShareCenterReport();
+      downloadMarkdown(report, 'patchpilot-demo-handoff-share-center.md');
+      setDownloadStatus('Handoff share center downloaded');
+    } catch {
+      setDownloadStatus('Download failed');
+    }
+  }
+
   async function downloadHandoffPackageArchiveSummary() {
     try {
       const report = await onDownloadHandoffPackageArchiveSummaryReport();
@@ -305,6 +322,13 @@ export function DemoSessionSnapshotPanel({
         <div className="adapter-api-error">
           <strong>Demo handoff share checklist unavailable</strong>
           <span>{handoffShareChecklistError}</span>
+        </div>
+      ) : null}
+
+      {handoffShareCenterError ? (
+        <div className="adapter-api-error">
+          <strong>Demo handoff share center unavailable</strong>
+          <span>{handoffShareCenterError}</span>
         </div>
       ) : null}
 
@@ -425,6 +449,11 @@ export function DemoSessionSnapshotPanel({
             onDownloadSummary={downloadHandoffPackageArchiveSummary}
           />
 
+          <HandoffShareCenterPanel
+            center={handoffShareCenter}
+            onDownloadCenter={downloadHandoffShareCenter}
+          />
+
           <HandoffShareChecklistPanel
             checklist={handoffShareChecklist}
             onCopyChecklist={copyHandoffShareChecklist}
@@ -506,6 +535,66 @@ function HandoffReadinessCheckList({ checks }: { checks: DemoHandoffReadinessChe
       ) : (
         <p className="empty-state compact-empty-state">No handoff readiness checks recorded.</p>
       )}
+    </div>
+  );
+}
+
+function HandoffShareCenterPanel({
+  center,
+  onDownloadCenter
+}: {
+  center: DemoHandoffShareCenter | null;
+  onDownloadCenter: () => void;
+}) {
+  if (!center) {
+    return null;
+  }
+
+  return (
+    <div className="demo-session-archives">
+      <div className="demo-session-archive-title-row">
+        <h3>Handoff share center</h3>
+        <div className="demo-session-archive-actions">
+          <button
+            className="secondary-button"
+            type="button"
+            onClick={() => onDownloadCenter()}
+            aria-label="Download handoff share center"
+          >
+            <Download size={14} />
+            Download center
+          </button>
+        </div>
+      </div>
+      <div className="demo-session-summary">
+        <div>
+          <span>Share status</span>
+          <strong>{center.shareReady ? 'Share-ready' : statusLabel(center.status)}</strong>
+          <small>{center.summary}</small>
+        </div>
+        <div>
+          <span>Latest package</span>
+          <strong>{center.latestArchiveId ?? 'No archive'}</strong>
+          <small>{center.latestSessionId ?? 'Archive a handoff package first'}</small>
+        </div>
+        <div>
+          <span>Next action</span>
+          <strong>{center.nextAction}</strong>
+          <small>Generated {compactDateTime(center.generatedAt)}</small>
+        </div>
+      </div>
+      <div className="demo-session-lists compact-demo-session-lists">
+        <SnapshotList
+          title="Share downloads"
+          items={center.downloadActions}
+          emptyText="No share downloads available."
+        />
+        <SnapshotList
+          title="Share evidence"
+          items={center.evidenceNotes}
+          emptyText="No share evidence available."
+        />
+      </div>
     </div>
   );
 }

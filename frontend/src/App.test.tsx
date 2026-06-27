@@ -1616,6 +1616,24 @@ const demoHandoffShareChecklist = {
   generatedAt: '2026-06-24T05:00:00Z'
 };
 
+const demoHandoffShareCenter = {
+  status: 'READY',
+  shareReady: true,
+  summary: 'Post-demo handoff package is ready to share.',
+  nextAction: 'Download the package, archive summary, and share checklist before sending handoff evidence.',
+  latestArchiveId: 'handoff-archive-1',
+  latestSessionId: 'demo-session-20260624T003000Z',
+  latestCreatedAt: '2026-06-24T04:05:00Z',
+  downloadActions: [
+    'Download handoff package archive handoff-archive-1.',
+    'Download handoff package archive summary.',
+    'Download handoff share checklist.'
+  ],
+  evidenceNotes: ['Latest package archive is READY.', 'Share checklist has 2 checks.'],
+  markdownReport: '# PatchPilot Demo Handoff Share Center\n\n- Status: `READY`',
+  generatedAt: '2026-06-24T05:30:00Z'
+};
+
 beforeEach(() => {
   let manualTaskCreated = false;
   vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -1829,6 +1847,9 @@ beforeEach(() => {
     if (url === '/api/demo/handoff-share-checklist') {
       return jsonResponse(demoHandoffShareChecklist);
     }
+    if (url === '/api/demo/handoff-share-center') {
+      return jsonResponse(demoHandoffShareCenter);
+    }
     if (url === '/api/demo/handoff-package-archives/summary-report/download') {
       return Promise.resolve({
         ok: true,
@@ -1843,6 +1864,15 @@ beforeEach(() => {
         ok: true,
         status: 200,
         blob: async () => new Blob(['# PatchPilot Demo Handoff Share Checklist'], {
+          type: 'text/markdown;charset=UTF-8'
+        })
+      } as Response);
+    }
+    if (url === '/api/demo/handoff-share-center/report/download') {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        blob: async () => new Blob(['# PatchPilot Demo Handoff Share Center'], {
           type: 'text/markdown;charset=UTF-8'
         })
       } as Response);
@@ -2423,6 +2453,7 @@ test('renders operational task dashboard from backend APIs', async () => {
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/session-snapshot'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/handoff-package-archives/summary'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/handoff-share-checklist'));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/handoff-share-center'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/script'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/readiness'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/github/credential-readiness'));
@@ -2439,9 +2470,12 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(within(evidencePanel).getByText('Webhook setup is ready for GitHub deliveries.')).toBeInTheDocument();
   expect(within(evidencePanel).getByText('https://demo.trycloudflare.com/api/github/webhook')).toBeInTheDocument();
   expect(screen.getByLabelText('Webhook setup readiness')).toHaveTextContent('# PatchPilot Webhook Setup Readiness');
-  expect(screen.getAllByText('demo-session-20260624T003000Z')).toHaveLength(3);
+  expect(screen.getAllByText('demo-session-20260624T003000Z').length).toBeGreaterThanOrEqual(4);
   expect(screen.getAllByText('Status READY; recent task task-1; recent PR https://github.com/bingqin2/PatchPilot/pull/8.')).toHaveLength(3);
   const sessionPanel = screen.getByRole('region', { name: 'Demo session snapshot' });
+  expect(within(sessionPanel).getByRole('heading', { name: 'Handoff share center' })).toBeInTheDocument();
+  expect(within(sessionPanel).getByText('Post-demo handoff package is ready to share.')).toBeInTheDocument();
+  expect(within(sessionPanel).getByText('Download handoff package archive handoff-archive-1.')).toBeInTheDocument();
   expect(within(sessionPanel).getByText('Readiness trend')).toBeInTheDocument();
   expect(within(sessionPanel).getByText('Improving')).toBeInTheDocument();
   expect(within(sessionPanel).getByText('+2 ready / -1 warning / -1 blocked')).toBeInTheDocument();
@@ -3053,7 +3087,7 @@ test('archives demo handoff package from the session snapshot panel', async () =
   }));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/handoff-share-checklist'));
   expect(within(sessionPanel).getByText('Demo handoff package archived')).toBeInTheDocument();
-  expect(within(sessionPanel).getByText('handoff-archive-1')).toBeInTheDocument();
+  expect(within(sessionPanel).getAllByText('handoff-archive-1').length).toBeGreaterThanOrEqual(1);
 });
 
 test('downloads handoff archive summary evidence from the session snapshot panel', async () => {
@@ -3102,6 +3136,30 @@ test('downloads handoff share checklist evidence from the session snapshot panel
   expect(click).toHaveBeenCalledTimes(1);
   expect(revokeObjectURL).toHaveBeenCalledWith('blob:demo-handoff-share-checklist');
   expect(within(sessionPanel).getByText('Handoff share checklist downloaded')).toBeInTheDocument();
+});
+
+test('downloads handoff share center evidence from the session snapshot panel', async () => {
+  const user = userEvent.setup();
+  const fetchMock = vi.mocked(fetch);
+  const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+  const createObjectURL = vi.fn(() => 'blob:demo-handoff-share-center');
+  const revokeObjectURL = vi.fn();
+  vi.stubGlobal('URL', {
+    ...globalThis.URL,
+    createObjectURL,
+    revokeObjectURL
+  });
+
+  render(<App />);
+
+  const sessionPanel = await screen.findByRole('region', { name: 'Demo session snapshot' });
+  await user.click(within(sessionPanel).getByRole('button', { name: 'Download handoff share center' }));
+
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/handoff-share-center/report/download'));
+  expect(createObjectURL).toHaveBeenCalledWith(expect.any(Blob));
+  expect(click).toHaveBeenCalledTimes(1);
+  expect(revokeObjectURL).toHaveBeenCalledWith('blob:demo-handoff-share-center');
+  expect(within(sessionPanel).getByText('Handoff share center downloaded')).toBeInTheDocument();
 });
 
 test('creates a manual task from the dashboard and refreshes task data', async () => {

@@ -599,6 +599,20 @@ export interface DemoHandoffShareChecklist {
   generatedAt: string;
 }
 
+export interface DemoHandoffShareCenter {
+  status: DemoReadinessStatus;
+  shareReady: boolean;
+  summary: string;
+  nextAction: string;
+  latestArchiveId: string | null;
+  latestSessionId: string | null;
+  latestCreatedAt: string | null;
+  downloadActions: string[];
+  evidenceNotes: string[];
+  markdownReport: string;
+  generatedAt: string;
+}
+
 export interface BackendHealth {
   status: string;
   service: string;
