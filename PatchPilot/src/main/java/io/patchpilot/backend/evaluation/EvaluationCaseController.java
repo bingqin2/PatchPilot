@@ -6,6 +6,7 @@ import io.patchpilot.backend.evaluation.domain.EvaluationCaseFixtureReadinessSum
 import io.patchpilot.backend.evaluation.domain.EvaluationFixtureBaselineRunArchiveVo;
 import io.patchpilot.backend.evaluation.domain.EvaluationFixtureBaselineRunRegressionSummaryVo;
 import io.patchpilot.backend.evaluation.domain.EvaluationFixtureBaselineSummaryVo;
+import io.patchpilot.backend.evaluation.domain.EvaluationRunArchiveReadinessSummaryVo;
 import io.patchpilot.backend.evaluation.domain.EvaluationRunArchiveVo;
 import io.patchpilot.backend.evaluation.domain.EvaluationRunPreviewVo;
 import io.patchpilot.backend.evaluation.domain.EvaluationRunSnapshotArchiveVo;
@@ -37,6 +38,7 @@ public class EvaluationCaseController {
     private final EvaluationFixtureBaselineRunArchiveService evaluationFixtureBaselineRunArchiveService;
     private final EvaluationFixtureBaselineRunRegressionSummaryService evaluationFixtureBaselineRunRegressionSummaryService;
     private final EvaluationRunArchiveService evaluationRunArchiveService;
+    private final EvaluationRunArchiveReadinessSummaryService evaluationRunArchiveReadinessSummaryService;
 
     @GetMapping("/cases")
     public ApiResponse<List<EvaluationCaseVo>> listEvaluationCases() {
@@ -116,6 +118,11 @@ public class EvaluationCaseController {
     @GetMapping("/runs")
     public ApiResponse<List<EvaluationRunArchiveVo>> listEvaluationRuns() {
         return ApiResponse.ok(evaluationRunArchiveService.listRecentArchives());
+    }
+
+    @GetMapping("/runs/summary")
+    public ApiResponse<EvaluationRunArchiveReadinessSummaryVo> getEvaluationRunArchiveReadinessSummary() {
+        return ApiResponse.ok(evaluationRunArchiveReadinessSummaryService.getSummary());
     }
 
     @GetMapping(value = "/runs/{runId}/report/download", produces = "text/markdown;charset=UTF-8")

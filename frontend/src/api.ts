@@ -38,6 +38,7 @@ import type {
   EvaluationFixtureBaselineRunRegressionSummary,
   EvaluationFixtureBaselineSummary,
   EvaluationRunArchive,
+  EvaluationRunArchiveReadinessSummary,
   EvaluationRunPreview,
   EvaluationRunSnapshotArchive,
   FixTask,
@@ -472,6 +473,10 @@ export async function runAndArchiveEvaluation(): Promise<EvaluationRunArchive> {
 
 export async function listEvaluationRuns(): Promise<EvaluationRunArchive[]> {
   return getApi<EvaluationRunArchive[]>('/api/evaluation/runs');
+}
+
+export async function getEvaluationRunArchiveReadinessSummary(): Promise<EvaluationRunArchiveReadinessSummary> {
+  return getApi<EvaluationRunArchiveReadinessSummary>('/api/evaluation/runs/summary');
 }
 
 export async function downloadEvaluationRunReport(runId: string): Promise<Blob> {

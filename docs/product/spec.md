@@ -182,6 +182,7 @@ The current implementation target is local self-hosted development first. Hosted
 - Operators should be able to inspect and copy a read-only evaluation run preview report with expected commands, known gaps, side-effect contract, and next action alongside executable local run archives.
 - Operators should be able to execute and archive local fixture baseline runs for supported checked-in fixtures, then list, copy, or download the archived Markdown reports without creating tasks, calling the model, mutating Git, or writing to GitHub.
 - Local evaluation runs should combine fixture baseline execution output with catalog language/build-system and safety-rejection coverage, record the side-effect contract and next action, and expose a copyable/downloadable Markdown report without creating tasks, calling the model, mutating Git, or writing to GitHub.
+- Operators should be able to inspect a read-only full evaluation run readiness summary that compares the latest two archived full evaluation runs, reports pass/fail/skip deltas, coverage, safety categories, side-effect contract, next action, and copyable Markdown evidence without creating tasks, calling the model, mutating Git, or writing to GitHub.
 - Future model benchmark runs should record model, prompt version, repository revision, success metrics, failure categories, cost, latency, and a copyable Markdown report.
 - Dashboard and API surfaces should make model usage, tool usage, retrieval evidence, evaluation results, budget state, and safety decisions inspectable without exposing secrets.
 
@@ -415,6 +416,7 @@ PatchPilot MVP is successful when:
 - An operator can inspect evaluation fixture readiness that confirms supported cases still map to checked-in fixtures, expected adapter metadata, and expected changed files before using the catalog as demo evidence.
 - An operator can copy an evaluation run preview report that packages expected benchmark coverage and known gaps without cloning repositories, running verification commands, or recording a real benchmark run.
 - An operator can execute and archive a full local evaluation run that combines checked-in fixture baseline output, supported language/build-system coverage, safety rejection coverage, side-effect contract, next action, and a downloadable Markdown report without creating tasks, calling the model, mutating Git, or writing to GitHub.
+- An operator can see missing, failed, or safety-incomplete full evaluation run archive evidence reflected in the demo readiness gate instead of only in the evaluation catalog panel.
 - An operator can see whether each adapter's verification executable is available in the current backend runtime before a live run.
 - An operator can see missing adapter verification executables reflected in the demo readiness gate instead of only in the adapter report.
 - An operator can see fixture baseline regressions reflected in the demo readiness gate instead of only in the evaluation catalog panel.

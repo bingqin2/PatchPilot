@@ -9,6 +9,8 @@ import type {
   EvaluationFixtureBaselineRunRegressionSummary,
   EvaluationFixtureBaselineSummary,
   EvaluationRunArchive,
+  EvaluationRunArchiveDigest,
+  EvaluationRunArchiveReadinessSummary,
   EvaluationRunPreview,
   EvaluationRunSnapshotArchive
 } from '../../types';
@@ -23,6 +25,7 @@ interface EvaluationCaseCatalogPanelProps {
   fixtureBaselineRegressionSummary: EvaluationFixtureBaselineRunRegressionSummary | null;
   runPreview: EvaluationRunPreview | null;
   evaluationRuns: EvaluationRunArchive[];
+  evaluationRunSummary: EvaluationRunArchiveReadinessSummary | null;
   evaluationRunLoading: boolean;
   archives: EvaluationRunSnapshotArchive[];
   error: string | null;
@@ -32,6 +35,7 @@ interface EvaluationCaseCatalogPanelProps {
   fixtureBaselineRegressionError: string | null;
   runPreviewError: string | null;
   evaluationRunError: string | null;
+  evaluationRunSummaryError: string | null;
   archiveError: string | null;
   onRunFixtureBaseline: () => Promise<EvaluationFixtureBaselineSummary>;
   onRunAndArchiveFixtureBaseline: () => Promise<EvaluationFixtureBaselineRunArchive>;
@@ -52,6 +56,7 @@ export function EvaluationCaseCatalogPanel({
   fixtureBaselineRegressionSummary,
   runPreview,
   evaluationRuns,
+  evaluationRunSummary,
   evaluationRunLoading,
   archives,
   error,
@@ -61,6 +66,7 @@ export function EvaluationCaseCatalogPanel({
   fixtureBaselineRegressionError,
   runPreviewError,
   evaluationRunError,
+  evaluationRunSummaryError,
   archiveError,
   onRunFixtureBaseline,
   onRunAndArchiveFixtureBaseline,
@@ -153,6 +159,12 @@ export function EvaluationCaseCatalogPanel({
     await navigator.clipboard?.writeText(archive.report);
   }
 
+  async function copyEvaluationRunSummaryReport() {
+    if (evaluationRunSummary) {
+      await navigator.clipboard?.writeText(evaluationRunSummary.markdownReport);
+    }
+  }
+
   async function downloadEvaluationRunReport(archive: EvaluationRunArchive) {
     const blob = await onDownloadEvaluationRunReport(archive.id);
     const url = URL.createObjectURL(blob);
@@ -228,6 +240,12 @@ export function EvaluationCaseCatalogPanel({
         <div className="adapter-api-error">
           <strong>Evaluation run archive incomplete</strong>
           <span>{evaluationRunError}</span>
+        </div>
+      ) : null}
+      {evaluationRunSummaryError ? (
+        <div className="adapter-api-error">
+          <strong>Evaluation run readiness summary incomplete</strong>
+          <span>{evaluationRunSummaryError}</span>
         </div>
       ) : null}
       {archiveError ? (
@@ -493,6 +511,56 @@ export function EvaluationCaseCatalogPanel({
           ) : null}
         </div>
       ) : null}
+      <div className="adapter-readiness-section evaluation-run-archive-section">
+        <div className="panel-subheader">
+          <div>
+            <h3>Full evaluation run readiness</h3>
+            <p>{evaluationRunSummary ? evaluationRunSummary.nextAction : 'Archive a full evaluation run to produce readiness evidence'}</p>
+          </div>
+          {evaluationRunSummary ? (
+            <button type="button" className="secondary-button" onClick={copyEvaluationRunSummaryReport}>
+              Copy full evaluation readiness report
+            </button>
+          ) : null}
+        </div>
+        {evaluationRunSummary ? (
+          <div className="adapter-readiness-summary">
+            <div>
+              <span>Readiness status</span>
+              <strong>{evaluationRunSummary.status}</strong>
+              <p>{evaluationRunSummary.sideEffectContract}</p>
+            </div>
+            <div>
+              <span>Latest run</span>
+              <strong>{evaluationRunSummary.latestRun?.id ?? 'none'}</strong>
+              <p>{evaluationRunDigestLabel(evaluationRunSummary.latestRun)}</p>
+            </div>
+            <div>
+              <span>Previous run</span>
+              <strong>{evaluationRunSummary.previousRun?.id ?? 'none'}</strong>
+              <p>{evaluationRunDigestLabel(evaluationRunSummary.previousRun)}</p>
+            </div>
+            <div>
+              <span>Deltas</span>
+              <strong>{`Passed ${signedCount(evaluationRunSummary.passedDelta)}`}</strong>
+              <p>{`Failed ${signedCount(evaluationRunSummary.failedDelta)}`}</p>
+              <p>{`Skipped ${signedCount(evaluationRunSummary.skippedDelta)}`}</p>
+            </div>
+            <div>
+              <span>Coverage</span>
+              <strong>{listLabel(evaluationRunSummary.coveredLanguages)}</strong>
+              <p>{listLabel(evaluationRunSummary.coveredBuildSystems)}</p>
+            </div>
+            <div>
+              <span>Safety categories</span>
+              <strong>{listLabel(evaluationRunSummary.safetyRejectionCategories)}</strong>
+              <p>{evaluationRunSummary.nextAction}</p>
+            </div>
+          </div>
+        ) : (
+          <p className="empty-state compact-empty-state">No full evaluation run readiness summary loaded yet.</p>
+        )}
+      </div>
       <div className="adapter-readiness-section evaluation-run-archive-section">
         <div className="panel-subheader">
           <div>
@@ -812,4 +880,11 @@ function baselineRunDigestLabel(run: EvaluationFixtureBaselineRunDigest | null) 
     return 'No archived run available';
   }
   return `${run.status} · ${run.passedCaseCount} passed · ${run.failedCaseCount} failed · ${run.skippedCaseCount} skipped`;
+}
+
+function evaluationRunDigestLabel(run: EvaluationRunArchiveDigest | null) {
+  if (!run) {
+    return 'No archived run available';
+  }
+  return `${run.status} · ${run.passedFixCaseCount} passed · ${run.failedFixCaseCount} failed · ${run.skippedCaseCount} skipped`;
 }

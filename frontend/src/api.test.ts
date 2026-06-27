@@ -56,6 +56,7 @@ import {
   getEvaluationSummary,
   getEvaluationCaseReadiness,
   getEvaluationRunPreview,
+  getEvaluationRunArchiveReadinessSummary,
   runAndArchiveEvaluation,
   runEvaluationFixtureBaseline,
   runAndArchiveEvaluationFixtureBaseline,
@@ -3296,6 +3297,28 @@ test('lists archived full evaluation runs through backend API', async () => {
   expect(archives[0].status).toBe('READY');
 });
 
+test('gets archived full evaluation run readiness summary through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: evaluationRunArchiveReadinessSummary(),
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const summary = await getEvaluationRunArchiveReadinessSummary();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/evaluation/runs/summary');
+  expect(summary.status).toBe('READY');
+  expect(summary.latestRun?.id).toBe('evaluation-run-1');
+  expect(summary.coveredLanguages).toEqual(['go', 'java', 'node', 'python']);
+  expect(summary.safetyRejectionCategories).toEqual(['DANGEROUS_INSTRUCTION', 'NOT_ACTIONABLE']);
+  expect(summary.markdownReport).toContain('# PatchPilot Evaluation Run Readiness Summary');
+});
+
 test('downloads archived full evaluation run report markdown from backend API', async () => {
   const reportBlob = new Blob(['# PatchPilot Evaluation Run\n\n- Evaluation run id: `evaluation-run-1`'], {
     type: 'text/markdown;charset=UTF-8'
@@ -3911,6 +3934,45 @@ function evaluationRunArchive() {
     sideEffectContract: 'Evaluation run executes local checked-in fixture verification commands and records safety coverage only; it does not create tasks, call the model, clone repositories, mutate Git, or write to GitHub.',
     nextAction: 'Evaluation run passed; use the archived report as measurable demo evidence for supported adapters and safety rejections.',
     report: '# PatchPilot Evaluation Run\n\n- Status: `READY`'
+  };
+}
+
+function evaluationRunArchiveReadinessSummary() {
+  return {
+    status: 'READY',
+    latestRun: {
+      id: 'evaluation-run-1',
+      status: 'READY',
+      totalCaseCount: 6,
+      supportedFixCaseCount: 4,
+      safetyRejectionCaseCount: 2,
+      executedFixCaseCount: 4,
+      passedFixCaseCount: 4,
+      failedFixCaseCount: 0,
+      skippedCaseCount: 2,
+      createdAt: '2026-06-28T04:00:00Z'
+    },
+    previousRun: {
+      id: 'evaluation-run-0',
+      status: 'READY',
+      totalCaseCount: 6,
+      supportedFixCaseCount: 4,
+      safetyRejectionCaseCount: 2,
+      executedFixCaseCount: 4,
+      passedFixCaseCount: 3,
+      failedFixCaseCount: 1,
+      skippedCaseCount: 2,
+      createdAt: '2026-06-27T04:00:00Z'
+    },
+    passedDelta: 1,
+    failedDelta: -1,
+    skippedDelta: 0,
+    coveredLanguages: ['go', 'java', 'node', 'python'],
+    coveredBuildSystems: ['go', 'maven', 'npm', 'pytest'],
+    safetyRejectionCategories: ['DANGEROUS_INSTRUCTION', 'NOT_ACTIONABLE'],
+    sideEffectContract: 'Evaluation run readiness summary reads archived full evaluation runs only; it does not create tasks, call the model, mutate Git, or write to GitHub.',
+    nextAction: 'Full evaluation run archive is ready; use it as current demo evidence.',
+    markdownReport: '# PatchPilot Evaluation Run Readiness Summary\n\n- Status: `READY`'
   };
 }
 

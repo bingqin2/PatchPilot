@@ -316,6 +316,15 @@ class EvaluationCaseControllerTests {
                 .andExpect(status().isOk())
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("# PatchPilot Evaluation Run")))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("- Evaluation run id: `evaluation-run-1`")));
+
+        evaluationRunMockMvc.perform(get("/api/evaluation/runs/summary"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.latestRun.id").value("evaluation-run-1"))
+                .andExpect(jsonPath("$.data.coveredLanguages[0]").value("go"))
+                .andExpect(jsonPath("$.data.safetyRejectionCategories[0]").value("DANGEROUS_INSTRUCTION"))
+                .andExpect(jsonPath("$.data.markdownReport").value(org.hamcrest.Matchers.containsString("# PatchPilot Evaluation Run Readiness Summary")));
     }
 
     private static EvaluationRunSnapshotArchiveService archiveService(String snapshotId) {
@@ -368,6 +377,9 @@ class EvaluationCaseControllerTests {
                 Clock.fixed(Instant.parse("2026-06-26T04:00:00Z"), ZoneOffset.UTC),
                 () -> evaluationRunId
         );
+        EvaluationRunArchiveReadinessSummaryService evaluationRunArchiveReadinessSummaryService = new EvaluationRunArchiveReadinessSummaryService(
+                evaluationRunArchiveRepository
+        );
         return new EvaluationCaseController(
                 catalogService,
                 archiveService(snapshotId),
@@ -375,7 +387,8 @@ class EvaluationCaseControllerTests {
                 baselineService,
                 baselineRunArchiveService,
                 new EvaluationFixtureBaselineRunRegressionSummaryService(baselineRunArchiveRepository),
-                evaluationRunArchiveService
+                evaluationRunArchiveService,
+                evaluationRunArchiveReadinessSummaryService
         );
     }
 }
