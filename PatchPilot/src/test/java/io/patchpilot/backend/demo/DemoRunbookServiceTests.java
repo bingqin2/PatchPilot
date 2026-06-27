@@ -67,6 +67,9 @@ class DemoRunbookServiceTests {
                 List.of(),
                 new RejectedTriggerAuditSummaryVo(0, List.of(), List.of(), List.of(), List.of()),
                 0,
+                DemoReadinessStatus.NEEDS_ATTENTION,
+                "No handoff package archive is available for sharing.",
+                "Archive a demo handoff package after a completed live run before sharing handoff evidence.",
                 Instant.parse("2026-06-24T00:00:00Z"),
                 List.of()
         ));
@@ -121,6 +124,9 @@ class DemoRunbookServiceTests {
                 List.of(webhookDelivery()),
                 new RejectedTriggerAuditSummaryVo(4, List.of(), List.of(), List.of(), List.of()),
                 1,
+                DemoReadinessStatus.READY,
+                "Latest handoff archive is ready to share.",
+                "Share the latest handoff package summary and archived package with the reviewer.",
                 Instant.parse("2026-06-24T00:00:00Z"),
                 List.of("Fix the webhook secret or URL, then use GitHub Redeliver before the live demo.")
         );

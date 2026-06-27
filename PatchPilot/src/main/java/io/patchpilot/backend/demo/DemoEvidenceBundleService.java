@@ -5,6 +5,7 @@ import io.patchpilot.backend.configuration.ConfigurationSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoAdapterFixtureEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
+import io.patchpilot.backend.demo.domain.DemoHandoffPackageArchiveSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessStatus;
 import io.patchpilot.backend.demo.domain.DemoReadinessVo;
 import io.patchpilot.backend.demo.domain.DemoSmokeChecklistStatus;
@@ -46,6 +47,7 @@ public class DemoEvidenceBundleService {
     private final Supplier<GitHubWebhookSetupReadinessVo> webhookSetupReadinessSupplier;
     private final Supplier<RejectedTriggerAuditSummaryVo> rejectedTriggerSummarySupplier;
     private final Supplier<List<TriggerQuarantineVo>> activeQuarantinesSupplier;
+    private final Supplier<DemoHandoffPackageArchiveSummaryVo> handoffPackageArchiveSummarySupplier;
 
     @Autowired
     public DemoEvidenceBundleService(
@@ -58,7 +60,8 @@ public class DemoEvidenceBundleService {
             WebhookDeliveryDiagnosticService webhookDeliveryDiagnosticService,
             GitHubWebhookSetupReadinessService gitHubWebhookSetupReadinessService,
             RejectedTriggerAuditService rejectedTriggerAuditService,
-            TriggerQuarantineRecordService triggerQuarantineRecordService
+            TriggerQuarantineRecordService triggerQuarantineRecordService,
+            DemoHandoffPackageArchiveSummaryService demoHandoffPackageArchiveSummaryService
     ) {
         this(
                 demoReadinessService::getReadiness,
@@ -79,7 +82,8 @@ public class DemoEvidenceBundleService {
                 () -> webhookDeliveryDiagnosticService.listRecent(10),
                 gitHubWebhookSetupReadinessService::getReadiness,
                 () -> rejectedTriggerAuditService.summarizeRejectedTriggers(100),
-                () -> triggerQuarantineRecordService.listQuarantines(true, 20)
+                () -> triggerQuarantineRecordService.listQuarantines(true, 20),
+                demoHandoffPackageArchiveSummaryService::getArchiveSummary
         );
     }
 
@@ -93,7 +97,8 @@ public class DemoEvidenceBundleService {
             Supplier<List<WebhookDeliveryDiagnosticVo>> webhookDeliveriesSupplier,
             Supplier<GitHubWebhookSetupReadinessVo> webhookSetupReadinessSupplier,
             Supplier<RejectedTriggerAuditSummaryVo> rejectedTriggerSummarySupplier,
-            Supplier<List<TriggerQuarantineVo>> activeQuarantinesSupplier
+            Supplier<List<TriggerQuarantineVo>> activeQuarantinesSupplier,
+            Supplier<DemoHandoffPackageArchiveSummaryVo> handoffPackageArchiveSummarySupplier
     ) {
         this.readinessSupplier = readinessSupplier;
         this.smokeChecklistSupplier = smokeChecklistSupplier;
@@ -105,6 +110,7 @@ public class DemoEvidenceBundleService {
         this.webhookSetupReadinessSupplier = webhookSetupReadinessSupplier;
         this.rejectedTriggerSummarySupplier = rejectedTriggerSummarySupplier;
         this.activeQuarantinesSupplier = activeQuarantinesSupplier;
+        this.handoffPackageArchiveSummarySupplier = handoffPackageArchiveSummarySupplier;
     }
 
     public DemoEvidenceBundleVo getEvidenceBundle() {
@@ -118,6 +124,7 @@ public class DemoEvidenceBundleService {
         GitHubWebhookSetupReadinessVo webhookSetupReadiness = webhookSetupReadinessSupplier.get();
         RejectedTriggerAuditSummaryVo rejectedTriggerSummary = rejectedTriggerSummarySupplier.get();
         List<TriggerQuarantineVo> activeQuarantines = activeQuarantinesSupplier.get();
+        DemoHandoffPackageArchiveSummaryVo handoffPackageArchiveSummary = handoffPackageArchiveSummarySupplier.get();
 
         DemoAdapterFixtureEvidenceVo adapterFixtureEvidence = adapterFixtureEvidence(fixtures);
         FixTaskVo recentTask = recentTasks.isEmpty() ? null : recentTasks.get(0);
@@ -153,6 +160,9 @@ public class DemoEvidenceBundleService {
                 List.copyOf(webhookDeliveries),
                 rejectedTriggerSummary,
                 activeQuarantines.size(),
+                handoffShareChecklistStatus(handoffPackageArchiveSummary),
+                handoffShareChecklistSummary(handoffPackageArchiveSummary),
+                handoffShareChecklistNextAction(handoffPackageArchiveSummary),
                 Instant.now(),
                 nextActions
         );
@@ -189,6 +199,34 @@ public class DemoEvidenceBundleService {
             case NEEDS_ATTENTION -> "Demo evidence bundle needs attention.";
             case BLOCKED -> "Demo evidence bundle is blocked.";
         };
+    }
+
+    private static DemoReadinessStatus handoffShareChecklistStatus(DemoHandoffPackageArchiveSummaryVo archiveSummary) {
+        if (archiveSummary.latestHandoffReadinessStatus() == DemoReadinessStatus.BLOCKED) {
+            return DemoReadinessStatus.BLOCKED;
+        }
+        return archiveSummary.shareReady() ? DemoReadinessStatus.READY : DemoReadinessStatus.NEEDS_ATTENTION;
+    }
+
+    private static String handoffShareChecklistSummary(DemoHandoffPackageArchiveSummaryVo archiveSummary) {
+        if (archiveSummary.archiveCount() == 0) {
+            return "No handoff package archive is available for sharing.";
+        }
+        DemoReadinessStatus status = handoffShareChecklistStatus(archiveSummary);
+        if (status == DemoReadinessStatus.READY) {
+            return "Latest handoff archive is ready to share.";
+        }
+        if (status == DemoReadinessStatus.BLOCKED) {
+            return "Latest handoff archive is blocked from sharing.";
+        }
+        return "Latest handoff archive needs attention before sharing.";
+    }
+
+    private static String handoffShareChecklistNextAction(DemoHandoffPackageArchiveSummaryVo archiveSummary) {
+        if (handoffShareChecklistStatus(archiveSummary) == DemoReadinessStatus.READY) {
+            return "Share the latest handoff package summary and archived package with the reviewer.";
+        }
+        return archiveSummary.nextAction();
     }
 
     private static List<String> nextActions(

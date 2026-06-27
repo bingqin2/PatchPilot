@@ -224,6 +224,14 @@ public class DemoReadinessController {
         return ApiResponse.ok(demoHandoffShareChecklistService.getShareChecklist());
     }
 
+    @GetMapping(value = "/handoff-share-checklist/report/download", produces = "text/markdown;charset=UTF-8")
+    public ResponseEntity<String> downloadHandoffShareChecklistReport() {
+        return markdownAttachment(
+                "patchpilot-demo-handoff-share-checklist.md",
+                demoHandoffShareChecklistService.getShareChecklist().markdownReport()
+        );
+    }
+
     @GetMapping(value = "/handoff-package-archives/summary-report/download", produces = "text/markdown;charset=UTF-8")
     public ResponseEntity<String> downloadHandoffPackageArchiveSummaryReport() {
         return markdownAttachment(

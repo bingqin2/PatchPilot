@@ -154,6 +154,9 @@ const bundle: DemoEvidenceBundle = {
     repositoryCounts: []
   },
   activeQuarantineCount: 1,
+  handoffShareChecklistStatus: 'READY',
+  handoffShareChecklistSummary: 'Latest handoff archive is ready to share.',
+  handoffShareChecklistNextAction: 'Share the latest handoff package summary and archived package with the reviewer.',
   generatedAt: '2026-06-24T00:10:00Z',
   nextActions: ['Fix failing adapter fixtures before a live demo.', 'Inspect active trigger quarantines before a live demo.']
 };
@@ -175,6 +178,11 @@ test('summarizes demo evidence bundle for operators', () => {
   expect(within(panel).getByText('Latest webhook delivery')).toBeInTheDocument();
   expect(within(panel).getByText('Webhook setup readiness')).toBeInTheDocument();
   expect(within(panel).getByText('Webhook setup is ready for GitHub deliveries.')).toBeInTheDocument();
+  expect(within(panel).getByText('Handoff share checklist')).toBeInTheDocument();
+  expect(within(panel).getByText('Latest handoff archive is ready to share.')).toBeInTheDocument();
+  expect(
+    within(panel).getByText('Share the latest handoff package summary and archived package with the reviewer.')
+  ).toBeInTheDocument();
   expect(within(panel).getByText('https://demo.trycloudflare.com/api/github/webhook')).toBeInTheDocument();
   expect(within(panel).getAllByText('delivery-1')).toHaveLength(2);
   expect(within(panel).getByText('Recent webhook delivery trail')).toBeInTheDocument();

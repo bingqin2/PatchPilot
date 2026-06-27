@@ -19,6 +19,7 @@ import {
   downloadEvaluationRunSnapshotReport,
   downloadDemoHandoffPackage,
   downloadDemoSessionReport,
+  downloadDemoHandoffShareChecklistReport,
   evaluateTrigger,
   evaluateWebhookPayloadDiagnostic,
   getBackendHealth,
@@ -1065,6 +1066,9 @@ export default function App() {
   const handleDownloadDemoHandoffPackageArchiveSummaryReport = useCallback(() => (
     downloadDemoHandoffPackageArchiveSummaryReport()
   ), []);
+  const handleDownloadDemoHandoffShareChecklistReport = useCallback(() => (
+    downloadDemoHandoffShareChecklistReport()
+  ), []);
   const handleArchiveDemoSession = useCallback(async (input: DemoSessionReportInput) => {
     const archive = await archiveDemoSession(input);
     setDemoSessionArchives((current) => [archive, ...current.filter((item) => item.id !== archive.id)].slice(0, 20));
@@ -1472,6 +1476,7 @@ export default function App() {
         onDownloadArchiveReport={handleDownloadDemoSessionArchiveReport}
         onDownloadHandoffPackageArchiveReport={handleDownloadDemoHandoffPackageArchiveReport}
         onDownloadHandoffPackageArchiveSummaryReport={handleDownloadDemoHandoffPackageArchiveSummaryReport}
+        onDownloadHandoffShareChecklistReport={handleDownloadDemoHandoffShareChecklistReport}
       />
 
       <DemoScriptPanel script={demoScript} error={demoScriptError} />

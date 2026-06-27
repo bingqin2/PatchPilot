@@ -4707,6 +4707,24 @@ Validation:
 - `npm run build`: passed after production frontend build verification.
 - `git diff --check`: passed.
 
+Implemented handoff share checklist export from `docs/plans/237-handoff-share-checklist-export.md`.
+
+Changes:
+
+- Added `GET /api/demo/handoff-share-checklist/report/download` so operators can download the latest handoff share checklist Markdown as `patchpilot-demo-handoff-share-checklist.md`.
+- Added handoff share checklist status, summary, and next action to the demo evidence bundle so share readiness appears in the top-level demo readout.
+- Extracted handoff package archive summary calculation into `DemoHandoffPackageArchiveSummaryService` so evidence bundle construction can reuse the latest archive summary without creating a Spring bean dependency cycle.
+- Added a dashboard evidence card for the handoff share checklist and a `Download checklist` action in the demo session snapshot panel.
+- Updated README, product spec, architecture notes, and this execution log.
+
+Validation so far:
+
+- `mvn -q -pl PatchPilot -Dtest=DemoReadinessControllerTests,DemoEvidenceBundleServiceTests test`: first failed because the evidence bundle did not yet expose handoff share checklist fields and the service constructor was not wired for archive summary evidence.
+- `npm test -- --run src/api.test.ts src/dashboard/components/DemoEvidenceBundlePanel.test.tsx src/dashboard/components/DemoSessionSnapshotPanel.test.tsx src/App.test.tsx --reporter=basic`: first failed because the frontend API helper, evidence card, and download action did not exist yet.
+- `mvn -q -pl PatchPilot -Dtest=DemoReadinessControllerTests,DemoEvidenceBundleServiceTests,DemoHandoffPackageArchiveServiceTests,DemoHandoffShareChecklistServiceTests test`: passed after implementation.
+- `npm test -- --run src/api.test.ts src/dashboard/components/DemoEvidenceBundlePanel.test.tsx src/dashboard/components/DemoSessionSnapshotPanel.test.tsx src/App.test.tsx --reporter=basic`: passed after implementation, 177 tests run.
+- `mvn -q -pl PatchPilot test`: passed after backend regression verification.
+
 Implemented GitHub verification result evidence from `docs/plans/185-github-verification-result-evidence.md`.
 
 Changes:

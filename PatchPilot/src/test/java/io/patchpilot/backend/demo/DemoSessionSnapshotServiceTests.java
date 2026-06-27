@@ -114,6 +114,9 @@ class DemoSessionSnapshotServiceTests {
                 List.of(webhookDelivery()),
                 new RejectedTriggerAuditSummaryVo(0, List.of(), List.of(), List.of(), List.of()),
                 0,
+                DemoReadinessStatus.READY,
+                "Latest handoff archive is ready to share.",
+                "Share the latest handoff package summary and archived package with the reviewer.",
                 Instant.parse("2026-06-24T00:00:00Z"),
                 nextActions
         );

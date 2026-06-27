@@ -364,6 +364,9 @@ class DemoSessionReportServiceTests {
                         List.of(),
                         null,
                         0,
+                        DemoReadinessStatus.NEEDS_ATTENTION,
+                        "No handoff package archive is available for sharing.",
+                        "Archive a demo handoff package after a completed live run before sharing handoff evidence.",
                         Instant.parse("2026-06-24T00:00:00Z"),
                         List.of()
                 ),
@@ -460,6 +463,9 @@ class DemoSessionReportServiceTests {
                 deliveries,
                 null,
                 0,
+                DemoReadinessStatus.READY,
+                "Latest handoff archive is ready to share.",
+                "Share the latest handoff package summary and archived package with the reviewer.",
                 Instant.parse("2026-06-24T00:00:00Z"),
                 List.of()
         );

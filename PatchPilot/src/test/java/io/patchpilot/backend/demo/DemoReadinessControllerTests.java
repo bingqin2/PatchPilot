@@ -365,6 +365,9 @@ class DemoReadinessControllerTests {
                 List.of(),
                 null,
                 1,
+                DemoReadinessStatus.READY,
+                "Latest handoff archive is ready to share.",
+                "Share the latest handoff package summary and archived package with the reviewer.",
                 Instant.parse("2026-06-24T00:00:00Z"),
                 List.of("Run one controlled issue-to-PR smoke task before a live demo.")
         ));
@@ -379,6 +382,10 @@ class DemoReadinessControllerTests {
                 .andExpect(jsonPath("$.data.summaryCounts.activeQuarantineCount").value(1))
                 .andExpect(jsonPath("$.data.recentPullRequestUrl").value("https://github.com/bingqin2/PatchPilot/pull/42"))
                 .andExpect(jsonPath("$.data.recentWebhookDeliveries").isArray())
+                .andExpect(jsonPath("$.data.handoffShareChecklistStatus").value("READY"))
+                .andExpect(jsonPath("$.data.handoffShareChecklistSummary").value("Latest handoff archive is ready to share."))
+                .andExpect(jsonPath("$.data.handoffShareChecklistNextAction")
+                        .value("Share the latest handoff package summary and archived package with the reviewer."))
                 .andExpect(jsonPath("$.data.nextActions[0]").value("Run one controlled issue-to-PR smoke task before a live demo."));
     }
 
@@ -463,6 +470,9 @@ class DemoReadinessControllerTests {
                 List.of(),
                 null,
                 0,
+                DemoReadinessStatus.READY,
+                "Latest handoff archive is ready to share.",
+                "Share the latest handoff package summary and archived package with the reviewer.",
                 Instant.parse("2026-06-24T00:00:00Z"),
                 List.of("Follow the script from step 1 through Pull Request review.")
         );
@@ -1078,6 +1088,31 @@ class DemoReadinessControllerTests {
                 .andExpect(jsonPath("$.data.checks[1].name").value("Portable evidence"))
                 .andExpect(jsonPath("$.data.markdownReport")
                         .value(containsString("# PatchPilot Demo Handoff Share Checklist")));
+    }
+
+    @Test
+    void should_download_demo_handoff_share_checklist_as_markdown_attachment() throws Exception {
+        when(demoHandoffShareChecklistService.getShareChecklist()).thenReturn(new DemoHandoffShareChecklistVo(
+                DemoReadinessStatus.READY,
+                "Latest handoff archive is ready to share.",
+                "Share the latest handoff package summary and archived package with the reviewer.",
+                List.of(new DemoHandoffShareChecklistItemVo(
+                        "Handoff package archive",
+                        DemoReadinessStatus.READY,
+                        "1 archived handoff package is available.",
+                        "Use archive handoff-archive-1 as the latest package."
+                )),
+                "# PatchPilot Demo Handoff Share Checklist\n\n- Status: `READY`",
+                Instant.parse("2026-06-24T05:00:00Z")
+        ));
+
+        mockMvc.perform(get("/api/demo/handoff-share-checklist/report/download"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("attachment;")))
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("patchpilot-demo-handoff-share-checklist.md")))
+                .andExpect(content().contentTypeCompatibleWith("text/markdown"))
+                .andExpect(content().string(containsString("# PatchPilot Demo Handoff Share Checklist")))
+                .andExpect(content().string(containsString("`READY`")));
     }
 
     @Test
