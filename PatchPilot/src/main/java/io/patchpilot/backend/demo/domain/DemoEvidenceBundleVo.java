@@ -29,6 +29,10 @@ public record DemoEvidenceBundleVo(
         DemoReadinessStatus handoffShareChecklistStatus,
         String handoffShareChecklistSummary,
         String handoffShareChecklistNextAction,
+        DemoReadinessStatus handoffShareCenterStatus,
+        String handoffShareCenterSummary,
+        String handoffShareCenterNextAction,
+        List<String> handoffShareCenterDownloadActions,
         Instant generatedAt,
         List<String> nextActions
 ) {

@@ -1476,6 +1476,14 @@ const demoEvidenceBundle = {
   handoffShareChecklistStatus: 'READY',
   handoffShareChecklistSummary: 'Latest handoff archive is ready to share.',
   handoffShareChecklistNextAction: 'Share the latest handoff package summary and archived package with the reviewer.',
+  handoffShareCenterStatus: 'READY',
+  handoffShareCenterSummary: 'Post-demo handoff package is ready to share.',
+  handoffShareCenterNextAction: 'Download the package, archive summary, and share checklist before sending handoff evidence.',
+  handoffShareCenterDownloadActions: [
+    'Download handoff package archive handoff-archive-1.',
+    'Download handoff package archive summary.',
+    'Download handoff share checklist.'
+  ],
   generatedAt: '2026-06-21T08:15:00Z',
   nextActions: ['Run one controlled issue-to-PR smoke task before a live demo.']
 };

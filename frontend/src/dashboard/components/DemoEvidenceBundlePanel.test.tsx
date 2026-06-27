@@ -157,6 +157,14 @@ const bundle: DemoEvidenceBundle = {
   handoffShareChecklistStatus: 'READY',
   handoffShareChecklistSummary: 'Latest handoff archive is ready to share.',
   handoffShareChecklistNextAction: 'Share the latest handoff package summary and archived package with the reviewer.',
+  handoffShareCenterStatus: 'READY',
+  handoffShareCenterSummary: 'Post-demo handoff package is ready to share.',
+  handoffShareCenterNextAction: 'Download the package, archive summary, and share checklist before sending handoff evidence.',
+  handoffShareCenterDownloadActions: [
+    'Download handoff package archive handoff-archive-1.',
+    'Download handoff package archive summary.',
+    'Download handoff share checklist.'
+  ],
   generatedAt: '2026-06-24T00:10:00Z',
   nextActions: ['Fix failing adapter fixtures before a live demo.', 'Inspect active trigger quarantines before a live demo.']
 };
@@ -183,6 +191,13 @@ test('summarizes demo evidence bundle for operators', () => {
   expect(
     within(panel).getByText('Share the latest handoff package summary and archived package with the reviewer.')
   ).toBeInTheDocument();
+  expect(within(panel).getByText('Handoff share center')).toBeInTheDocument();
+  expect(within(panel).getByText('Post-demo handoff package is ready to share.')).toBeInTheDocument();
+  expect(
+    within(panel).getByText('Download the package, archive summary, and share checklist before sending handoff evidence.')
+  ).toBeInTheDocument();
+  expect(within(panel).getByText('Download handoff package archive handoff-archive-1.')).toBeInTheDocument();
+  expect(within(panel).getByText('Download handoff package archive summary.')).toBeInTheDocument();
   expect(within(panel).getByText('https://demo.trycloudflare.com/api/github/webhook')).toBeInTheDocument();
   expect(within(panel).getAllByText('delivery-1')).toHaveLength(2);
   expect(within(panel).getByText('Recent webhook delivery trail')).toBeInTheDocument();
