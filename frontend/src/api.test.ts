@@ -27,6 +27,7 @@ import {
   getDemoSessionReport,
   getDemoHandoffPackage,
   getDemoHandoffReadiness,
+  getDemoHandoffPackageArchiveSummary,
   downloadDemoSessionReport,
   downloadDemoHandoffPackage,
   downloadDemoHandoffPackageArchiveReport,
@@ -1286,6 +1287,38 @@ test('lists demo handoff package archives through backend API', async () => {
   expect(archives[0].handoffReadinessStatus).toBe('READY');
   expect(archives[0].handoffReadinessNextAction).toBe('No missing handoff evidence.');
   expect(archives[0].handoffReadyCheckCount).toBe(7);
+});
+
+test('gets demo handoff package archive summary through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        status: 'READY',
+        shareReady: true,
+        archiveCount: 1,
+        latestArchiveId: 'handoff-archive-1',
+        latestSessionId: 'demo-session-20260624T003000Z',
+        latestHandoffReadinessStatus: 'READY',
+        latestCreatedAt: '2026-06-24T04:00:00Z',
+        summary: 'Latest archived handoff package is READY and can be shared.',
+        nextAction: 'No missing handoff evidence.',
+        markdownReport: '# PatchPilot Handoff Package Archive Summary\n\n- Status: `READY`'
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const summary = await getDemoHandoffPackageArchiveSummary();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/handoff-package-archives/summary');
+  expect(summary.status).toBe('READY');
+  expect(summary.shareReady).toBe(true);
+  expect(summary.latestArchiveId).toBe('handoff-archive-1');
+  expect(summary.nextAction).toBe('No missing handoff evidence.');
 });
 
 test('downloads archived demo handoff package markdown from backend API', async () => {

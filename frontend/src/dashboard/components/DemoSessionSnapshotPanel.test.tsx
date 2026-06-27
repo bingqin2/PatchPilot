@@ -4,6 +4,7 @@ import type {
   DemoArchivedLaunchOutcome,
   DemoHandoffReadiness,
   DemoHandoffPackageArchive,
+  DemoHandoffPackageArchiveSummary,
   DemoPreparedLaunchCommand,
   DemoSessionArchive,
   DemoSessionSnapshot
@@ -168,6 +169,19 @@ const handoffPackageArchives: DemoHandoffPackageArchive[] = [
   }
 ];
 
+const handoffPackageArchiveSummary: DemoHandoffPackageArchiveSummary = {
+  status: 'READY',
+  shareReady: true,
+  archiveCount: 1,
+  latestArchiveId: 'handoff-archive-1',
+  latestSessionId: 'demo-session-20260624T003000Z',
+  latestHandoffReadinessStatus: 'READY',
+  latestCreatedAt: '2026-06-24T04:05:00Z',
+  summary: 'Latest archived handoff package is READY and can be shared.',
+  nextAction: 'No missing handoff evidence.',
+  markdownReport: '# PatchPilot Handoff Package Archive Summary\n\n- Status: `READY`'
+};
+
 const preparedLaunchCommands: DemoPreparedLaunchCommand[] = [
   {
     triggerComment: '/agent fix replace docs/demo.md PatchPilot smoke test',
@@ -285,6 +299,7 @@ test('renders demo session snapshot summary, evidence, checklist, contract, and 
       handoffReadiness={handoffReadiness}
       archives={archives}
       handoffPackageArchives={handoffPackageArchives}
+      handoffPackageArchiveSummary={handoffPackageArchiveSummary}
       error={null}
       archiveError={null}
       handoffPackageArchiveError={null}
@@ -319,7 +334,7 @@ test('renders demo session snapshot summary, evidence, checklist, contract, and 
     within(panel).getByText('Handoff package has current webhook delivery, PR, command, outcome, and readiness trend evidence.')
   ).toBeInTheDocument();
   expect(within(panel).getByText('Handoff evidence')).toBeInTheDocument();
-  expect(within(panel).getAllByText('No missing handoff evidence.')).toHaveLength(2);
+  expect(within(panel).getAllByText('No missing handoff evidence.')).toHaveLength(3);
   expect(within(panel).getByText('2 commands / 1 outcome')).toBeInTheDocument();
   expect(within(panel).getByRole('heading', { name: 'Handoff readiness checks' })).toBeInTheDocument();
   expect(within(panel).getByText('Webhook delivery evidence')).toBeInTheDocument();
@@ -332,6 +347,11 @@ test('renders demo session snapshot summary, evidence, checklist, contract, and 
   expect(within(panel).getByRole('heading', { name: 'Recent session archives' })).toBeInTheDocument();
   expect(within(panel).getByText('archive-1')).toBeInTheDocument();
   expect(within(panel).getByRole('heading', { name: 'Recent handoff package archives' })).toBeInTheDocument();
+  expect(within(panel).getByRole('heading', { name: 'Handoff package archive summary' })).toBeInTheDocument();
+  expect(within(panel).getByText('Share-ready')).toBeInTheDocument();
+  expect(within(panel).getByText('Latest archived handoff package is READY and can be shared.')).toBeInTheDocument();
+  expect(within(panel).getByText('1 archived package')).toBeInTheDocument();
+  expect(within(panel).getByText('Latest archive: handoff-archive-1')).toBeInTheDocument();
   expect(within(panel).getByText('handoff-archive-1')).toBeInTheDocument();
   expect(within(panel).getByText('Handoff readiness: Ready')).toBeInTheDocument();
   expect(within(panel).getByText('7 ready / 0 warning / 0 blocked')).toBeInTheDocument();
@@ -377,6 +397,7 @@ test('shows loading and API errors without hiding snapshot data', () => {
       handoffPackageArchives={handoffPackageArchives}
       error="Backend request failed"
       archiveError="Archive request failed"
+      handoffPackageArchiveSummaryError="Handoff package archive summary request failed"
       handoffPackageArchiveError="Handoff package archive request failed"
       onCopyReport={vi.fn()}
       onDownloadReport={vi.fn()}
@@ -393,6 +414,7 @@ test('shows loading and API errors without hiding snapshot data', () => {
   expect(screen.getByText('Backend request failed')).toBeInTheDocument();
   expect(screen.getByText('Archive request failed')).toBeInTheDocument();
   expect(screen.getByText('Handoff package archive request failed')).toBeInTheDocument();
+  expect(screen.getByText('Handoff package archive summary request failed')).toBeInTheDocument();
   expect(screen.getAllByText('demo-session-20260624T003000Z')).toHaveLength(3);
 });
 

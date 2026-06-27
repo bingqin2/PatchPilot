@@ -4,6 +4,7 @@ import io.patchpilot.backend.common.response.ApiResponse;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffReadinessVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffPackageArchiveVo;
+import io.patchpilot.backend.demo.domain.DemoHandoffPackageArchiveSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchCommandVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchPreflightVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessSnapshotArchiveVo;
@@ -209,6 +210,11 @@ public class DemoReadinessController {
     @GetMapping("/handoff-package-archives")
     public ApiResponse<List<DemoHandoffPackageArchiveVo>> listHandoffPackageArchives() {
         return ApiResponse.ok(demoHandoffPackageArchiveService.listRecentArchives());
+    }
+
+    @GetMapping("/handoff-package-archives/summary")
+    public ApiResponse<DemoHandoffPackageArchiveSummaryVo> getHandoffPackageArchiveSummary() {
+        return ApiResponse.ok(demoHandoffPackageArchiveService.getArchiveSummary());
     }
 
     @GetMapping(value = "/handoff-package-archives/{archiveId}/report/download", produces = "text/markdown;charset=UTF-8")

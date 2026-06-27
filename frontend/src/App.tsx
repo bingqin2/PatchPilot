@@ -26,6 +26,7 @@ import {
   getDemoEvidenceBundle,
   getDemoHandoffPackage,
   getDemoHandoffReadiness,
+  getDemoHandoffPackageArchiveSummary,
   getDemoSessionSnapshot,
   getDemoSessionReport,
   getDemoScript,
@@ -124,6 +125,7 @@ import type {
   DemoEvidenceBundle,
   DemoHandoffReadiness,
   DemoHandoffPackageArchive,
+  DemoHandoffPackageArchiveSummary,
   DemoLaunchCommand,
   DemoLaunchCommandInput,
   DemoLaunchPreflight,
@@ -239,6 +241,10 @@ export default function App() {
   const [demoSessionArchiveError, setDemoSessionArchiveError] = useState<string | null>(null);
   const [demoHandoffPackageArchives, setDemoHandoffPackageArchives] = useState<DemoHandoffPackageArchive[]>([]);
   const [demoHandoffPackageArchiveError, setDemoHandoffPackageArchiveError] = useState<string | null>(null);
+  const [demoHandoffPackageArchiveSummary, setDemoHandoffPackageArchiveSummary] =
+    useState<DemoHandoffPackageArchiveSummary | null>(null);
+  const [demoHandoffPackageArchiveSummaryError, setDemoHandoffPackageArchiveSummaryError] =
+    useState<string | null>(null);
   const [demoScript, setDemoScript] = useState<DemoScript | null>(null);
   const [demoScriptError, setDemoScriptError] = useState<string | null>(null);
   const [demoSmokeChecklist, setDemoSmokeChecklist] = useState<DemoSmokeChecklist | null>(null);
@@ -563,6 +569,7 @@ export default function App() {
         demoHandoffReadinessResult,
         demoSessionArchiveResult,
         demoHandoffPackageArchiveResult,
+        demoHandoffPackageArchiveSummaryResult,
         demoScriptResult,
         demoReadinessResult,
         demoReadinessSnapshotResult,
@@ -635,6 +642,10 @@ export default function App() {
         listDemoHandoffPackageArchives().then(
           (archives) => ({ archives, error: null as string | null }),
           (caught) => ({ archives: null, error: errorMessage(caught) })
+        ),
+        getDemoHandoffPackageArchiveSummary().then(
+          (summary) => ({ summary, error: null as string | null }),
+          (caught) => ({ summary: null, error: errorMessage(caught) })
         ),
         getDemoScript().then(
           (script) => ({ script, error: null as string | null }),
@@ -776,6 +787,10 @@ export default function App() {
         setDemoHandoffPackageArchives(demoHandoffPackageArchiveResult.archives);
       }
       setDemoHandoffPackageArchiveError(demoHandoffPackageArchiveResult.error);
+      if (demoHandoffPackageArchiveSummaryResult.summary) {
+        setDemoHandoffPackageArchiveSummary(demoHandoffPackageArchiveSummaryResult.summary);
+      }
+      setDemoHandoffPackageArchiveSummaryError(demoHandoffPackageArchiveSummaryResult.error);
       if (demoScriptResult.script) {
         setDemoScript(demoScriptResult.script);
       }
@@ -1043,6 +1058,13 @@ export default function App() {
     const archive = await archiveDemoHandoffPackage(input);
     setDemoHandoffPackageArchives((current) => [archive, ...current.filter((item) => item.id !== archive.id)].slice(0, 20));
     setDemoHandoffPackageArchiveError(null);
+    try {
+      const summary = await getDemoHandoffPackageArchiveSummary();
+      setDemoHandoffPackageArchiveSummary(summary);
+      setDemoHandoffPackageArchiveSummaryError(null);
+    } catch (caught) {
+      setDemoHandoffPackageArchiveSummaryError(errorMessage(caught));
+    }
     return archive;
   }, []);
 
@@ -1409,10 +1431,12 @@ export default function App() {
         handoffReadiness={demoHandoffReadiness}
         archives={demoSessionArchives}
         handoffPackageArchives={demoHandoffPackageArchives}
+        handoffPackageArchiveSummary={demoHandoffPackageArchiveSummary}
         error={demoSessionSnapshotError}
         handoffReadinessError={demoHandoffReadinessError}
         archiveError={demoSessionArchiveError}
         handoffPackageArchiveError={demoHandoffPackageArchiveError}
+        handoffPackageArchiveSummaryError={demoHandoffPackageArchiveSummaryError}
         onCopyReport={handleCopyDemoSessionReport}
         onDownloadReport={handleDownloadDemoSessionReport}
         onArchiveSession={handleArchiveDemoSession}

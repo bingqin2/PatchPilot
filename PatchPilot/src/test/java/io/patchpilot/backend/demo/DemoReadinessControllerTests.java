@@ -14,6 +14,7 @@ import io.patchpilot.backend.demo.domain.DemoLaunchPreflightVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffReadinessCheckVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffReadinessVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffPackageArchiveVo;
+import io.patchpilot.backend.demo.domain.DemoHandoffPackageArchiveSummaryVo;
 import io.patchpilot.backend.task.domain.vo.TriggerEvaluationDecisionVo;
 import io.patchpilot.backend.task.domain.vo.TriggerEvaluationResultVo;
 import io.patchpilot.backend.demo.domain.DemoScriptStepVo;
@@ -977,6 +978,35 @@ class DemoReadinessControllerTests {
                 .andExpect(jsonPath("$.data[0].handoffReadinessStatus").value("READY"))
                 .andExpect(jsonPath("$.data[0].handoffReadinessNextAction").value("No missing handoff evidence."))
                 .andExpect(jsonPath("$.data[0].shareSummary").value(org.hamcrest.Matchers.containsString("READY")));
+    }
+
+    @Test
+    void should_return_demo_handoff_package_archive_summary() throws Exception {
+        when(demoHandoffPackageArchiveService.getArchiveSummary()).thenReturn(new DemoHandoffPackageArchiveSummaryVo(
+                "READY",
+                true,
+                1,
+                "handoff-archive-1",
+                "demo-session-20260624T003000Z",
+                DemoReadinessStatus.READY,
+                Instant.parse("2026-06-24T04:00:00Z"),
+                "Latest archived handoff package is READY and can be shared.",
+                "No missing handoff evidence.",
+                "# PatchPilot Handoff Package Archive Summary\n\n- Status: `READY`"
+        ));
+
+        mockMvc.perform(get("/api/demo/handoff-package-archives/summary"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.shareReady").value(true))
+                .andExpect(jsonPath("$.data.archiveCount").value(1))
+                .andExpect(jsonPath("$.data.latestArchiveId").value("handoff-archive-1"))
+                .andExpect(jsonPath("$.data.latestSessionId").value("demo-session-20260624T003000Z"))
+                .andExpect(jsonPath("$.data.latestHandoffReadinessStatus").value("READY"))
+                .andExpect(jsonPath("$.data.summary").value("Latest archived handoff package is READY and can be shared."))
+                .andExpect(jsonPath("$.data.nextAction").value("No missing handoff evidence."))
+                .andExpect(jsonPath("$.data.markdownReport").value(containsString("# PatchPilot Handoff Package Archive Summary")));
     }
 
     @Test

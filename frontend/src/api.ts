@@ -10,6 +10,7 @@ import type {
   DemoEvidenceBundle,
   DemoHandoffReadiness,
   DemoHandoffPackageArchive,
+  DemoHandoffPackageArchiveSummary,
   DemoLaunchCommand,
   DemoLaunchCommandInput,
   DemoLaunchPreflight,
@@ -292,6 +293,10 @@ export async function archiveDemoHandoffPackage(input?: DemoSessionReportInput):
 
 export async function listDemoHandoffPackageArchives(): Promise<DemoHandoffPackageArchive[]> {
   return getApi<DemoHandoffPackageArchive[]>('/api/demo/handoff-package-archives');
+}
+
+export async function getDemoHandoffPackageArchiveSummary(): Promise<DemoHandoffPackageArchiveSummary> {
+  return getApi<DemoHandoffPackageArchiveSummary>('/api/demo/handoff-package-archives/summary');
 }
 
 export async function downloadDemoHandoffPackageArchiveReport(archiveId: string): Promise<Blob> {

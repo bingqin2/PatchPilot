@@ -1578,6 +1578,19 @@ const demoHandoffPackageArchive = {
   report: '# PatchPilot Demo Handoff Package\n\n- Status: `READY`'
 };
 
+const demoHandoffPackageArchiveSummary = {
+  status: 'READY',
+  shareReady: true,
+  archiveCount: 1,
+  latestArchiveId: 'handoff-archive-1',
+  latestSessionId: 'demo-session-20260624T003000Z',
+  latestHandoffReadinessStatus: 'READY',
+  latestCreatedAt: '2026-06-24T04:05:00Z',
+  summary: 'Latest archived handoff package is READY and can be shared.',
+  nextAction: 'No missing handoff evidence.',
+  markdownReport: '# PatchPilot Handoff Package Archive Summary\n\n- Status: `READY`'
+};
+
 beforeEach(() => {
   let manualTaskCreated = false;
   vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -1784,6 +1797,9 @@ beforeEach(() => {
     }
     if (url === '/api/demo/handoff-package-archives' && init?.method === 'POST') {
       return jsonResponse(demoHandoffPackageArchive);
+    }
+    if (url === '/api/demo/handoff-package-archives/summary') {
+      return jsonResponse(demoHandoffPackageArchiveSummary);
     }
     if (url === '/api/demo/handoff-package-archives') {
       return jsonResponse([demoHandoffPackageArchive]);
@@ -2359,6 +2375,7 @@ test('renders operational task dashboard from backend APIs', async () => {
   });
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/evidence-bundle'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/session-snapshot'));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/handoff-package-archives/summary'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/script'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/readiness'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/github/credential-readiness'));
@@ -2381,6 +2398,8 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(within(sessionPanel).getByText('Readiness trend')).toBeInTheDocument();
   expect(within(sessionPanel).getByText('Improving')).toBeInTheDocument();
   expect(within(sessionPanel).getByText('+2 ready / -1 warning / -1 blocked')).toBeInTheDocument();
+  expect(within(sessionPanel).getByRole('heading', { name: 'Handoff package archive summary' })).toBeInTheDocument();
+  expect(within(sessionPanel).getByText('Latest archived handoff package is READY and can be shared.')).toBeInTheDocument();
   expect(screen.getByText('Tests run: 247, Failures: 0, Errors: 0')).toBeInTheDocument();
   expect(screen.getByText('replace')).toBeInTheDocument();
   expect(screen.getAllByText('gpt-5.5')).toHaveLength(2);

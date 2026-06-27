@@ -4,6 +4,28 @@ This file records dated implementation progress, validation commands, and import
 
 ## 2026-06-27
 
+Implemented handoff package archive summary from `docs/plans/234-handoff-package-archive-summary.md`.
+
+Changes:
+
+- Added a read-only `GET /api/demo/handoff-package-archives/summary` endpoint.
+- Added a backend archive summary read model with archive count, latest archive metadata, latest handoff readiness status, share-ready flag, next action, and Markdown evidence.
+- Rendered the handoff archive summary in the dashboard above recent handoff package archives.
+- Refreshed the dashboard summary after archiving a new handoff package.
+- Updated README, architecture notes, frontend design docs, and this execution log.
+
+Validation so far:
+
+- `mvn -q -pl PatchPilot -Dtest=DemoHandoffPackageArchiveServiceTests,DemoReadinessControllerTests test`: first failed because `DemoHandoffPackageArchiveSummaryVo` and service/controller summary methods did not exist; then passed after backend implementation.
+- `npm test -- --run src/api.test.ts src/dashboard/components/DemoSessionSnapshotPanel.test.tsx src/App.test.tsx --reporter=basic`: first failed because the API client, component summary panel, and app fetch wiring did not exist; then passed after frontend implementation, 165 tests run, 0 failures.
+
+Final validation:
+
+- `mvn -pl PatchPilot test`: passed, 804 tests run, 0 failures.
+- `npm test -- --reporter=basic`: passed, 26 test files and 287 tests run.
+- `npm run build`: passed after TypeScript and production Vite build verification.
+- `git diff --check`: passed.
+
 Implemented handoff package archive readiness metadata from `docs/plans/233-handoff-package-archive-readiness-metadata.md`.
 
 Changes:
