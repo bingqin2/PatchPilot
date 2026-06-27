@@ -36,6 +36,11 @@ import {
   downloadDemoHandoffShareDeliveryReceiptReport,
   getDemoLaunchEvidencePackage,
   getDemoLaunchEvidenceShareCenter,
+  getDemoLaunchEvidenceFinalization,
+  createDemoLaunchEvidenceShareDeliveryReceipt,
+  listDemoLaunchEvidenceShareDeliveryReceipts,
+  downloadDemoLaunchEvidenceShareDeliveryReceiptReport,
+  downloadDemoLaunchEvidenceFinalizationReport,
   archiveDemoLaunchEvidencePackage,
   listDemoLaunchEvidencePackageArchives,
   downloadDemoLaunchEvidencePackageArchiveReport,
@@ -533,6 +538,172 @@ test('downloads demo launch evidence share center report through backend API', a
 
   expect(fetchMock).toHaveBeenCalledWith('/api/demo/launch-evidence-share-center/report/download');
   expect(report).toBe(blob);
+});
+
+test('loads demo launch evidence finalization from backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        status: 'READY',
+        finalized: true,
+        summary: 'Demo launch evidence is finalized with a fresh delivery receipt for the current archive.',
+        nextAction: 'Use the finalization report as the launch evidence delivery acceptance record.',
+        latestArchiveId: 'launch-evidence-archive-1',
+        latestSessionId: 'demo-session-20260624T003000Z',
+        latestDeliveryReceiptId: 'launch-delivery-receipt-1',
+        latestDeliveryTarget: 'reviewer@example.com',
+        latestDeliveryChannel: 'email',
+        latestDeliveredAt: '2026-06-28T06:05:00Z',
+        deliveryReceiptFreshness: 'FRESH',
+        deliveryReceiptFresh: true,
+        deliveryReceiptFreshnessSummary: 'Latest delivery receipt matches the current launch evidence archive and session.',
+        checks: [
+          {
+            name: 'Launch evidence share readiness',
+            status: 'READY',
+            summary: 'Share center is ready.',
+            nextAction: 'No action needed.'
+          }
+        ],
+        evidenceNotes: ['Finalization report can be downloaded as the launch delivery acceptance record.'],
+        markdownReport: '# PatchPilot Demo Launch Evidence Finalization Gate\n\n- Status: `READY`',
+        generatedAt: '2026-06-28T06:30:00Z'
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const finalization = await getDemoLaunchEvidenceFinalization();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/launch-evidence-finalization');
+  expect(finalization.status).toBe('READY');
+  expect(finalization.finalized).toBe(true);
+  expect(finalization.latestDeliveryReceiptId).toBe('launch-delivery-receipt-1');
+  expect(finalization.deliveryReceiptFreshness).toBe('FRESH');
+  expect(finalization.checks[0].name).toBe('Launch evidence share readiness');
+  expect(finalization.markdownReport).toContain('# PatchPilot Demo Launch Evidence Finalization Gate');
+});
+
+test('creates demo launch evidence share delivery receipt through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        id: 'launch-delivery-receipt-1',
+        status: 'READY',
+        launchEvidenceArchiveId: 'launch-evidence-archive-1',
+        sessionId: 'demo-session-20260624T003000Z',
+        deliveryChannel: 'email',
+        deliveryTarget: 'reviewer@example.com',
+        operator: 'local-operator',
+        notes: 'Sent final launch evidence after the smoke demo.',
+        messageSubject: 'PatchPilot demo launch evidence: demo-session-20260624T003000Z',
+        deliveredAt: '2026-06-28T06:05:00Z',
+        createdAt: '2026-06-28T06:10:00Z',
+        markdownReport: '# PatchPilot Demo Launch Evidence Delivery Receipt\n\n- Status: `READY`'
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const receipt = await createDemoLaunchEvidenceShareDeliveryReceipt({
+    deliveryChannel: 'email',
+    deliveryTarget: 'reviewer@example.com',
+    operator: 'local-operator',
+    notes: 'Sent final launch evidence after the smoke demo.',
+    deliveredAt: '2026-06-28T06:05:00Z'
+  });
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/launch-evidence-share-delivery-receipts', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      deliveryChannel: 'email',
+      deliveryTarget: 'reviewer@example.com',
+      operator: 'local-operator',
+      notes: 'Sent final launch evidence after the smoke demo.',
+      deliveredAt: '2026-06-28T06:05:00Z'
+    })
+  });
+  expect(receipt.id).toBe('launch-delivery-receipt-1');
+  expect(receipt.launchEvidenceArchiveId).toBe('launch-evidence-archive-1');
+});
+
+test('loads demo launch evidence share delivery receipts from backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: [
+        {
+          id: 'launch-delivery-receipt-1',
+          status: 'READY',
+          launchEvidenceArchiveId: 'launch-evidence-archive-1',
+          sessionId: 'demo-session-20260624T003000Z',
+          deliveryChannel: 'email',
+          deliveryTarget: 'reviewer@example.com',
+          operator: 'local-operator',
+          notes: 'Sent final launch evidence after the smoke demo.',
+          messageSubject: 'PatchPilot demo launch evidence: demo-session-20260624T003000Z',
+          deliveredAt: '2026-06-28T06:05:00Z',
+          createdAt: '2026-06-28T06:10:00Z',
+          markdownReport: '# PatchPilot Demo Launch Evidence Delivery Receipt\n\n- Status: `READY`'
+        }
+      ],
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const receipts = await listDemoLaunchEvidenceShareDeliveryReceipts();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/launch-evidence-share-delivery-receipts');
+  expect(receipts).toHaveLength(1);
+  expect(receipts[0].deliveryTarget).toBe('reviewer@example.com');
+});
+
+test('downloads demo launch evidence share delivery receipt markdown from backend API', async () => {
+  const reportBlob = new Blob(['# PatchPilot Demo Launch Evidence Delivery Receipt'], {
+    type: 'text/markdown;charset=UTF-8'
+  });
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    blob: async () => reportBlob
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const downloadedReport = await downloadDemoLaunchEvidenceShareDeliveryReceiptReport('launch-delivery-receipt-1');
+
+  expect(fetchMock).toHaveBeenCalledWith(
+    '/api/demo/launch-evidence-share-delivery-receipts/launch-delivery-receipt-1/report/download'
+  );
+  expect(downloadedReport).toBe(reportBlob);
+});
+
+test('downloads demo launch evidence finalization markdown from backend API', async () => {
+  const reportBlob = new Blob(['# PatchPilot Demo Launch Evidence Finalization Gate\n\n- Status: `READY`'], {
+    type: 'text/markdown;charset=UTF-8'
+  });
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    blob: async () => reportBlob
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const downloadedReport = await downloadDemoLaunchEvidenceFinalizationReport();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/launch-evidence-finalization/report/download');
+  expect(downloadedReport).toBe(reportBlob);
 });
 
 test('evaluates trigger without creating manual task through backend API', async () => {

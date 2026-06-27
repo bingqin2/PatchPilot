@@ -1,9 +1,12 @@
-import { Archive, Copy, Download } from 'lucide-react';
-import { useState } from 'react';
+import { Archive, Copy, Download, Send } from 'lucide-react';
+import { useState, type FormEvent } from 'react';
 import type {
+  DemoLaunchEvidenceFinalization,
   DemoLaunchEvidencePackage,
   DemoLaunchEvidencePackageArchive,
   DemoLaunchEvidenceShareCenter,
+  DemoLaunchEvidenceShareDeliveryReceipt,
+  DemoLaunchEvidenceShareDeliveryReceiptInput,
   DemoReadinessStatus
 } from '../../types';
 import { compactDateTime } from '../format';
@@ -15,10 +18,17 @@ interface DemoLaunchEvidencePackagePanelProps {
   archiveError: string | null;
   shareCenter: DemoLaunchEvidenceShareCenter | null;
   shareCenterError: string | null;
+  finalization: DemoLaunchEvidenceFinalization | null;
+  finalizationError: string | null;
+  deliveryReceipts: DemoLaunchEvidenceShareDeliveryReceipt[];
+  deliveryReceiptError: string | null;
   onArchivePackage: () => Promise<DemoLaunchEvidencePackageArchive>;
   onDownloadReport: () => Promise<Blob>;
   onDownloadArchiveReport: (archiveId: string) => Promise<Blob>;
   onDownloadShareCenterReport: () => Promise<Blob>;
+  onDownloadFinalizationReport: () => Promise<Blob>;
+  onCreateDeliveryReceipt: (input: DemoLaunchEvidenceShareDeliveryReceiptInput) => Promise<DemoLaunchEvidenceShareDeliveryReceipt>;
+  onDownloadDeliveryReceiptReport: (receiptId: string) => Promise<Blob>;
 }
 
 export function DemoLaunchEvidencePackagePanel({
@@ -28,14 +38,26 @@ export function DemoLaunchEvidencePackagePanel({
   archiveError,
   shareCenter,
   shareCenterError,
+  finalization,
+  finalizationError,
+  deliveryReceipts,
+  deliveryReceiptError,
   onArchivePackage,
   onDownloadReport,
   onDownloadArchiveReport,
-  onDownloadShareCenterReport
+  onDownloadShareCenterReport,
+  onDownloadFinalizationReport,
+  onCreateDeliveryReceipt,
+  onDownloadDeliveryReceiptReport
 }: DemoLaunchEvidencePackagePanelProps) {
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
   const [downloadStatus, setDownloadStatus] = useState<string | null>(null);
   const [archiveStatus, setArchiveStatus] = useState<string | null>(null);
+  const [receiptStatus, setReceiptStatus] = useState<string | null>(null);
+  const [deliveryChannel, setDeliveryChannel] = useState('email');
+  const [deliveryTarget, setDeliveryTarget] = useState('');
+  const [deliveryOperator, setDeliveryOperator] = useState('');
+  const [deliveryNotes, setDeliveryNotes] = useState('');
 
   async function copyReport() {
     if (!evidencePackage) {
@@ -85,6 +107,45 @@ export function DemoLaunchEvidencePackagePanel({
       setDownloadStatus('Launch evidence share center downloaded');
     } catch {
       setDownloadStatus('Launch evidence share center download failed');
+    }
+  }
+
+  async function downloadFinalizationReport() {
+    try {
+      const report = await onDownloadFinalizationReport();
+      downloadMarkdown(report, 'patchpilot-demo-launch-evidence-finalization.md');
+      setDownloadStatus('Launch evidence finalization downloaded');
+    } catch {
+      setDownloadStatus('Launch evidence finalization download failed');
+    }
+  }
+
+  async function submitDeliveryReceipt(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    try {
+      const receipt = await onCreateDeliveryReceipt({
+        deliveryChannel,
+        deliveryTarget,
+        operator: deliveryOperator,
+        notes: deliveryNotes,
+        deliveredAt: new Date().toISOString()
+      });
+      setReceiptStatus(`Recorded launch evidence receipt ${receipt.id}`);
+      setDeliveryTarget('');
+      setDeliveryOperator('');
+      setDeliveryNotes('');
+    } catch {
+      setReceiptStatus('Launch evidence receipt record failed');
+    }
+  }
+
+  async function downloadDeliveryReceiptReport(receipt: DemoLaunchEvidenceShareDeliveryReceipt) {
+    try {
+      const report = await onDownloadDeliveryReceiptReport(receipt.id);
+      downloadMarkdown(report, `patchpilot-demo-launch-evidence-delivery-receipt-${receipt.id}.md`);
+      setReceiptStatus(`Launch delivery receipt ${receipt.id} downloaded`);
+    } catch {
+      setReceiptStatus('Launch delivery receipt download failed');
     }
   }
 
@@ -162,6 +223,20 @@ export function DemoLaunchEvidencePackagePanel({
         </div>
       ) : null}
 
+      {finalizationError ? (
+        <div className="adapter-api-error">
+          <strong>Launch evidence finalization unavailable</strong>
+          <span>{finalizationError}</span>
+        </div>
+      ) : null}
+
+      {deliveryReceiptError ? (
+        <div className="adapter-api-error">
+          <strong>Launch evidence delivery receipts unavailable</strong>
+          <span>{deliveryReceiptError}</span>
+        </div>
+      ) : null}
+
       {evidencePackage ? (
         <>
           <div className="demo-evidence-grid">
@@ -218,6 +293,24 @@ export function DemoLaunchEvidencePackagePanel({
             shareCenter={shareCenter}
             onDownloadShareCenterReport={() => void downloadShareCenterReport()}
           />
+          <LaunchEvidenceFinalizationPanel
+            finalization={finalization}
+            onDownloadFinalizationReport={() => void downloadFinalizationReport()}
+          />
+          <LaunchEvidenceDeliveryReceiptPanel
+            deliveryReceipts={deliveryReceipts}
+            deliveryChannel={deliveryChannel}
+            deliveryTarget={deliveryTarget}
+            deliveryOperator={deliveryOperator}
+            deliveryNotes={deliveryNotes}
+            receiptStatus={receiptStatus}
+            onDeliveryChannelChange={setDeliveryChannel}
+            onDeliveryTargetChange={setDeliveryTarget}
+            onDeliveryOperatorChange={setDeliveryOperator}
+            onDeliveryNotesChange={setDeliveryNotes}
+            onSubmitDeliveryReceipt={(event) => void submitDeliveryReceipt(event)}
+            onDownloadDeliveryReceipt={(receipt) => void downloadDeliveryReceiptReport(receipt)}
+          />
         </>
       ) : (
         <div className="empty-state">Demo launch evidence package has not loaded yet.</div>
@@ -273,6 +366,11 @@ function LaunchEvidenceShareCenterPanel({
               <span>Next action</span>
               <strong>{shareCenter.nextAction}</strong>
             </div>
+            <div>
+              <span>Delivery receipt</span>
+              <strong>{shareCenter.latestDeliveryReceiptId ?? 'Missing'}</strong>
+              <small>{shareCenter.deliveryReceiptFreshness}: {shareCenter.deliveryReceiptFresh ? 'fresh' : 'not current'}</small>
+            </div>
           </div>
           {shareCenter.latestPullRequestUrl ? (
             <a href={shareCenter.latestPullRequestUrl} target="_blank" rel="noreferrer">
@@ -284,6 +382,170 @@ function LaunchEvidenceShareCenterPanel({
         </>
       ) : (
         <p>No launch evidence share center loaded.</p>
+      )}
+    </div>
+  );
+}
+
+function LaunchEvidenceFinalizationPanel({
+  finalization,
+  onDownloadFinalizationReport
+}: {
+  finalization: DemoLaunchEvidenceFinalization | null;
+  onDownloadFinalizationReport: () => void;
+}) {
+  return (
+    <div className="demo-evidence-actions">
+      <div className="demo-evidence-list-header">
+        <div>
+          <h3>Launch evidence finalization</h3>
+          <p>{finalization?.summary ?? 'Launch evidence finalization has not loaded yet.'}</p>
+        </div>
+        <button
+          className="secondary-button"
+          type="button"
+          onClick={onDownloadFinalizationReport}
+          aria-label="Download launch evidence finalization"
+          disabled={!finalization}
+        >
+          <Download size={14} />
+          Download finalization
+        </button>
+      </div>
+      {finalization ? (
+        <>
+          <div className="demo-evidence-records">
+            <div>
+              <span>Status</span>
+              <strong>{statusLabel(finalization.status)}</strong>
+              <small>{finalization.finalized ? 'Finalized' : 'Not finalized'}</small>
+            </div>
+            <div>
+              <span>Receipt</span>
+              <strong>{finalization.latestDeliveryReceiptId ?? 'Missing'}</strong>
+              <small>{finalization.deliveryReceiptFreshnessSummary}</small>
+            </div>
+            <div>
+              <span>Archive</span>
+              <strong>{finalization.latestArchiveId ?? 'Missing'}</strong>
+              <small>{finalization.latestSessionId ?? 'No session'}</small>
+            </div>
+            <div>
+              <span>Next action</span>
+              <strong>{finalization.nextAction}</strong>
+            </div>
+          </div>
+          <EvidenceList
+            title="Finalization checks"
+            items={finalization.checks.map((check) => `${check.name}: ${statusLabel(check.status)} - ${check.summary}`)}
+          />
+          <EvidenceList title="Finalization evidence" items={finalization.evidenceNotes} />
+        </>
+      ) : (
+        <p>No launch evidence finalization loaded.</p>
+      )}
+    </div>
+  );
+}
+
+function LaunchEvidenceDeliveryReceiptPanel({
+  deliveryReceipts,
+  deliveryChannel,
+  deliveryTarget,
+  deliveryOperator,
+  deliveryNotes,
+  receiptStatus,
+  onDeliveryChannelChange,
+  onDeliveryTargetChange,
+  onDeliveryOperatorChange,
+  onDeliveryNotesChange,
+  onSubmitDeliveryReceipt,
+  onDownloadDeliveryReceipt
+}: {
+  deliveryReceipts: DemoLaunchEvidenceShareDeliveryReceipt[];
+  deliveryChannel: string;
+  deliveryTarget: string;
+  deliveryOperator: string;
+  deliveryNotes: string;
+  receiptStatus: string | null;
+  onDeliveryChannelChange: (value: string) => void;
+  onDeliveryTargetChange: (value: string) => void;
+  onDeliveryOperatorChange: (value: string) => void;
+  onDeliveryNotesChange: (value: string) => void;
+  onSubmitDeliveryReceipt: (event: FormEvent<HTMLFormElement>) => void;
+  onDownloadDeliveryReceipt: (receipt: DemoLaunchEvidenceShareDeliveryReceipt) => void;
+}) {
+  return (
+    <div className="demo-evidence-actions">
+      <div className="demo-evidence-list-header">
+        <div>
+          <h3>Launch evidence delivery receipts</h3>
+          <p>{deliveryReceipts.length} recorded launch delivery receipts</p>
+        </div>
+        {receiptStatus ? <span className="copy-status">{receiptStatus}</span> : null}
+      </div>
+      <form className="demo-evidence-receipt-form" onSubmit={onSubmitDeliveryReceipt}>
+        <label>
+          <span>Launch delivery channel</span>
+          <input
+            value={deliveryChannel}
+            onChange={(event) => onDeliveryChannelChange(event.target.value)}
+            aria-label="Launch delivery channel"
+            required
+          />
+        </label>
+        <label>
+          <span>Launch delivery target</span>
+          <input
+            value={deliveryTarget}
+            onChange={(event) => onDeliveryTargetChange(event.target.value)}
+            aria-label="Launch delivery target"
+            required
+          />
+        </label>
+        <label>
+          <span>Launch delivery operator</span>
+          <input
+            value={deliveryOperator}
+            onChange={(event) => onDeliveryOperatorChange(event.target.value)}
+            aria-label="Launch delivery operator"
+            required
+          />
+        </label>
+        <label>
+          <span>Launch delivery notes</span>
+          <textarea
+            value={deliveryNotes}
+            onChange={(event) => onDeliveryNotesChange(event.target.value)}
+            aria-label="Launch delivery notes"
+          />
+        </label>
+        <button className="secondary-button" type="submit" aria-label="Record launch evidence delivery receipt">
+          <Send size={14} />
+          Record delivery receipt
+        </button>
+      </form>
+      {deliveryReceipts.length === 0 ? (
+        <p>No launch evidence delivery receipts recorded.</p>
+      ) : (
+        <ul>
+          {deliveryReceipts.map((receipt) => (
+            <li key={receipt.id}>
+              <span>
+                {receipt.id} · {receipt.deliveryTarget} · {receipt.deliveryChannel} · {compactDateTime(receipt.deliveredAt)}
+              </span>
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={() => onDownloadDeliveryReceipt(receipt)}
+                aria-label={`Download launch delivery receipt ${receipt.id}`}
+              >
+                <Download size={14} />
+                Download receipt
+              </button>
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   );

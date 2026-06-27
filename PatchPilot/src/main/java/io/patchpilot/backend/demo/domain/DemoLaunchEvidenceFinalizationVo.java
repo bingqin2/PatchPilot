@@ -3,28 +3,21 @@ package io.patchpilot.backend.demo.domain;
 import java.time.Instant;
 import java.util.List;
 
-public record DemoLaunchEvidenceShareCenterVo(
-        String status,
-        boolean shareReady,
+public record DemoLaunchEvidenceFinalizationVo(
+        DemoReadinessStatus status,
+        boolean finalized,
         String summary,
         String nextAction,
-        int archiveCount,
         String latestArchiveId,
         String latestSessionId,
-        String latestCreatedAt,
-        String latestTaskId,
-        String latestPullRequestUrl,
-        String latestWebhookDeliveryId,
-        String evaluationRunId,
         String latestDeliveryReceiptId,
         String latestDeliveryTarget,
         String latestDeliveryChannel,
         String latestDeliveredAt,
-        boolean deliveryReceiptRecorded,
         String deliveryReceiptFreshness,
         boolean deliveryReceiptFresh,
         String deliveryReceiptFreshnessSummary,
-        List<String> downloadActions,
+        List<DemoLaunchEvidenceFinalizationCheckVo> checks,
         List<String> evidenceNotes,
         String markdownReport,
         Instant generatedAt

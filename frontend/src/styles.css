@@ -1763,6 +1763,65 @@ h3 {
   padding: 12px 16px 16px;
 }
 
+.demo-evidence-list-header {
+  align-items: start;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.demo-evidence-list-header h3,
+.demo-evidence-list-header p {
+  margin: 0;
+}
+
+.demo-evidence-list-header p {
+  color: #52606e;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.demo-evidence-receipt-form {
+  align-items: end;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(130px, 0.8fr) minmax(180px, 1.2fr) minmax(150px, 0.9fr) minmax(240px, 1.6fr) auto;
+  margin-bottom: 12px;
+}
+
+.demo-evidence-receipt-form label {
+  color: #52606e;
+  display: grid;
+  font-size: 12px;
+  font-weight: 800;
+  gap: 6px;
+  min-width: 0;
+}
+
+.demo-evidence-receipt-form input,
+.demo-evidence-receipt-form textarea {
+  background: #ffffff;
+  border: 1px solid #cfd9e2;
+  border-radius: 6px;
+  color: #17202a;
+  font: inherit;
+  min-height: 36px;
+  min-width: 0;
+  padding: 8px 10px;
+}
+
+.demo-evidence-receipt-form textarea {
+  min-height: 64px;
+  resize: vertical;
+}
+
+.demo-evidence-receipt-form input:focus,
+.demo-evidence-receipt-form textarea:focus {
+  border-color: #187b78;
+  outline: 2px solid rgba(24, 123, 120, 0.16);
+}
+
 .demo-evidence-actions ul {
   display: grid;
   gap: 8px;
@@ -4793,6 +4852,7 @@ pre {
   .manual-task-form,
   .demo-launch-command-form,
   .demo-launch-preflight-form,
+  .demo-evidence-receipt-form,
   .demo-launch-preflight-grid,
   .split-section,
   .queue-summary,

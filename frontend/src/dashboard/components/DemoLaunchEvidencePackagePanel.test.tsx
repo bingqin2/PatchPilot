@@ -1,9 +1,11 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type {
+  DemoLaunchEvidenceFinalization,
   DemoLaunchEvidencePackage,
   DemoLaunchEvidencePackageArchive,
-  DemoLaunchEvidenceShareCenter
+  DemoLaunchEvidenceShareCenter,
+  DemoLaunchEvidenceShareDeliveryReceipt
 } from '../../types';
 import { DemoLaunchEvidencePackagePanel } from './DemoLaunchEvidencePackagePanel';
 
@@ -83,17 +85,69 @@ const launchEvidenceShareCenter: DemoLaunchEvidenceShareCenter = {
   latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
   latestWebhookDeliveryId: 'delivery-1',
   evaluationRunId: 'evaluation-run-2',
+  latestDeliveryReceiptId: 'launch-delivery-receipt-1',
+  latestDeliveryTarget: 'reviewer@example.com',
+  latestDeliveryChannel: 'email',
+  latestDeliveredAt: '2026-06-28T06:05:00Z',
+  deliveryReceiptRecorded: true,
+  deliveryReceiptFreshness: 'FRESH',
+  deliveryReceiptFresh: true,
+  deliveryReceiptFreshnessSummary: 'Latest delivery receipt matches the current launch evidence archive and session.',
   downloadActions: [
     'Download launch evidence package archive launch-evidence-archive-1.',
     'Download launch evidence share center report.',
-    'Open Pull Request https://github.com/bingqin2/PatchPilot/pull/42 for review.'
+    'Open Pull Request https://github.com/bingqin2/PatchPilot/pull/42 for review.',
+    'Download launch evidence delivery receipt launch-delivery-receipt-1.'
   ],
   evidenceNotes: [
     'Latest launch evidence archive status is READY.',
+    'Latest delivery receipt launch-delivery-receipt-1 was recorded for reviewer@example.com via email.',
     'Latest Pull Request https://github.com/bingqin2/PatchPilot/pull/42 is ready for review.'
   ],
   markdownReport: '# PatchPilot Demo Launch Evidence Share Center',
   generatedAt: '2026-06-28T02:45:00Z'
+};
+
+const launchEvidenceFinalization: DemoLaunchEvidenceFinalization = {
+  status: 'READY',
+  finalized: true,
+  summary: 'Demo launch evidence is finalized with a fresh delivery receipt for the current archive.',
+  nextAction: 'Use the finalization report as the launch evidence delivery acceptance record.',
+  latestArchiveId: 'launch-evidence-archive-1',
+  latestSessionId: 'demo-session-20260624T003000Z',
+  latestDeliveryReceiptId: 'launch-delivery-receipt-1',
+  latestDeliveryTarget: 'reviewer@example.com',
+  latestDeliveryChannel: 'email',
+  latestDeliveredAt: '2026-06-28T06:05:00Z',
+  deliveryReceiptFreshness: 'FRESH',
+  deliveryReceiptFresh: true,
+  deliveryReceiptFreshnessSummary: 'Latest delivery receipt matches the current launch evidence archive and session.',
+  checks: [
+    {
+      name: 'Launch evidence share readiness',
+      status: 'READY',
+      summary: 'Share center is ready.',
+      nextAction: 'No action needed.'
+    }
+  ],
+  evidenceNotes: ['Finalization report can be downloaded as the launch delivery acceptance record.'],
+  markdownReport: '# PatchPilot Demo Launch Evidence Finalization Gate',
+  generatedAt: '2026-06-28T06:30:00Z'
+};
+
+const launchEvidenceDeliveryReceipt: DemoLaunchEvidenceShareDeliveryReceipt = {
+  id: 'launch-delivery-receipt-1',
+  status: 'READY',
+  launchEvidenceArchiveId: 'launch-evidence-archive-1',
+  sessionId: 'demo-session-20260624T003000Z',
+  deliveryChannel: 'email',
+  deliveryTarget: 'reviewer@example.com',
+  operator: 'local-operator',
+  notes: 'Sent final launch evidence after the smoke demo.',
+  messageSubject: 'PatchPilot demo launch evidence: demo-session-20260624T003000Z',
+  deliveredAt: '2026-06-28T06:05:00Z',
+  createdAt: '2026-06-28T06:10:00Z',
+  markdownReport: '# PatchPilot Demo Launch Evidence Delivery Receipt'
 };
 
 test('renders demo launch evidence package proof and readiness status', () => {
@@ -105,10 +159,17 @@ test('renders demo launch evidence package proof and readiness status', () => {
       archiveError={null}
       shareCenter={launchEvidenceShareCenter}
       shareCenterError={null}
+      finalization={launchEvidenceFinalization}
+      finalizationError={null}
+      deliveryReceipts={[launchEvidenceDeliveryReceipt]}
+      deliveryReceiptError={null}
       onArchivePackage={async () => launchEvidenceArchive}
       onDownloadReport={async () => new Blob(['report'], { type: 'text/markdown' })}
       onDownloadArchiveReport={async () => new Blob(['archive report'], { type: 'text/markdown' })}
       onDownloadShareCenterReport={async () => new Blob(['share report'], { type: 'text/markdown' })}
+      onDownloadFinalizationReport={async () => new Blob(['finalization report'], { type: 'text/markdown' })}
+      onCreateDeliveryReceipt={async () => launchEvidenceDeliveryReceipt}
+      onDownloadDeliveryReceiptReport={async () => new Blob(['receipt report'], { type: 'text/markdown' })}
     />
   );
 
@@ -134,6 +195,12 @@ test('renders demo launch evidence package proof and readiness status', () => {
   expect(within(panel).getByText('Latest archived launch evidence package is READY and can be shared.')).toBeInTheDocument();
   expect(within(panel).getByText('Download launch evidence package archive launch-evidence-archive-1.')).toBeInTheDocument();
   expect(within(panel).getByText('Latest launch evidence archive status is READY.')).toBeInTheDocument();
+  expect(within(panel).getByRole('heading', { name: 'Launch evidence finalization' })).toBeInTheDocument();
+  expect(within(panel).getByText('Demo launch evidence is finalized with a fresh delivery receipt for the current archive.')).toBeInTheDocument();
+  expect(within(panel).getAllByText('launch-delivery-receipt-1').length).toBeGreaterThanOrEqual(2);
+  expect(within(panel).getByText('Latest delivery receipt matches the current launch evidence archive and session.')).toBeInTheDocument();
+  expect(within(panel).getByRole('heading', { name: 'Launch evidence delivery receipts' })).toBeInTheDocument();
+  expect(within(panel).getAllByText(/reviewer@example.com/).length).toBeGreaterThanOrEqual(1);
   expect(within(panel).getByRole('link', { name: 'PR' })).toHaveAttribute(
     'href',
     'https://github.com/bingqin2/PatchPilot/pull/42'
@@ -157,10 +224,17 @@ test('copies and downloads demo launch evidence package markdown report', async 
       archiveError={null}
       shareCenter={launchEvidenceShareCenter}
       shareCenterError={null}
+      finalization={launchEvidenceFinalization}
+      finalizationError={null}
+      deliveryReceipts={[launchEvidenceDeliveryReceipt]}
+      deliveryReceiptError={null}
       onArchivePackage={async () => launchEvidenceArchive}
       onDownloadReport={onDownloadReport}
       onDownloadArchiveReport={async () => new Blob(['archive report'], { type: 'text/markdown' })}
       onDownloadShareCenterReport={async () => new Blob(['share report'], { type: 'text/markdown' })}
+      onDownloadFinalizationReport={async () => new Blob(['finalization report'], { type: 'text/markdown' })}
+      onCreateDeliveryReceipt={async () => launchEvidenceDeliveryReceipt}
+      onDownloadDeliveryReceiptReport={async () => new Blob(['receipt report'], { type: 'text/markdown' })}
     />
   );
 
@@ -195,10 +269,17 @@ test('archives launch evidence package and downloads archived report', async () 
       archiveError={null}
       shareCenter={launchEvidenceShareCenter}
       shareCenterError={null}
+      finalization={launchEvidenceFinalization}
+      finalizationError={null}
+      deliveryReceipts={[launchEvidenceDeliveryReceipt]}
+      deliveryReceiptError={null}
       onArchivePackage={onArchivePackage}
       onDownloadReport={async () => new Blob(['report'], { type: 'text/markdown' })}
       onDownloadArchiveReport={onDownloadArchiveReport}
       onDownloadShareCenterReport={async () => new Blob(['share report'], { type: 'text/markdown' })}
+      onDownloadFinalizationReport={async () => new Blob(['finalization report'], { type: 'text/markdown' })}
+      onCreateDeliveryReceipt={async () => launchEvidenceDeliveryReceipt}
+      onDownloadDeliveryReceiptReport={async () => new Blob(['receipt report'], { type: 'text/markdown' })}
     />
   );
 
@@ -232,10 +313,17 @@ test('downloads launch evidence share center markdown report', async () => {
       archiveError={null}
       shareCenter={launchEvidenceShareCenter}
       shareCenterError={null}
+      finalization={launchEvidenceFinalization}
+      finalizationError={null}
+      deliveryReceipts={[launchEvidenceDeliveryReceipt]}
+      deliveryReceiptError={null}
       onArchivePackage={async () => launchEvidenceArchive}
       onDownloadReport={async () => new Blob(['report'], { type: 'text/markdown' })}
       onDownloadArchiveReport={async () => new Blob(['archive report'], { type: 'text/markdown' })}
       onDownloadShareCenterReport={onDownloadShareCenterReport}
+      onDownloadFinalizationReport={async () => new Blob(['finalization report'], { type: 'text/markdown' })}
+      onCreateDeliveryReceipt={async () => launchEvidenceDeliveryReceipt}
+      onDownloadDeliveryReceiptReport={async () => new Blob(['receipt report'], { type: 'text/markdown' })}
     />
   );
 
@@ -246,6 +334,68 @@ test('downloads launch evidence share center markdown report', async () => {
   expect(click).toHaveBeenCalled();
   expect(revokeObjectURL).toHaveBeenCalledWith('blob:launch-evidence-share-center');
   expect(screen.getByText('Launch evidence share center downloaded')).toBeInTheDocument();
+
+  vi.unstubAllGlobals();
+  click.mockRestore();
+});
+
+test('records launch evidence delivery receipt and downloads finalization evidence', async () => {
+  const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+  const createObjectURL = vi.fn(() => 'blob:launch-finalization');
+  const revokeObjectURL = vi.fn();
+  vi.stubGlobal('URL', { createObjectURL, revokeObjectURL });
+  const onCreateDeliveryReceipt = vi.fn(async () => launchEvidenceDeliveryReceipt);
+  const onDownloadFinalizationReport = vi.fn(async () => new Blob(['finalization report'], { type: 'text/markdown' }));
+  const onDownloadDeliveryReceiptReport = vi.fn(async () => new Blob(['receipt report'], { type: 'text/markdown' }));
+
+  render(
+    <DemoLaunchEvidencePackagePanel
+      evidencePackage={launchEvidencePackage}
+      error={null}
+      archives={[launchEvidenceArchive]}
+      archiveError={null}
+      shareCenter={launchEvidenceShareCenter}
+      shareCenterError={null}
+      finalization={launchEvidenceFinalization}
+      finalizationError={null}
+      deliveryReceipts={[launchEvidenceDeliveryReceipt]}
+      deliveryReceiptError={null}
+      onArchivePackage={async () => launchEvidenceArchive}
+      onDownloadReport={async () => new Blob(['report'], { type: 'text/markdown' })}
+      onDownloadArchiveReport={async () => new Blob(['archive report'], { type: 'text/markdown' })}
+      onDownloadShareCenterReport={async () => new Blob(['share report'], { type: 'text/markdown' })}
+      onDownloadFinalizationReport={onDownloadFinalizationReport}
+      onCreateDeliveryReceipt={onCreateDeliveryReceipt}
+      onDownloadDeliveryReceiptReport={onDownloadDeliveryReceiptReport}
+    />
+  );
+
+  await userEvent.clear(screen.getByLabelText('Launch delivery channel'));
+  await userEvent.type(screen.getByLabelText('Launch delivery channel'), 'email');
+  await userEvent.clear(screen.getByLabelText('Launch delivery target'));
+  await userEvent.type(screen.getByLabelText('Launch delivery target'), 'reviewer@example.com');
+  await userEvent.clear(screen.getByLabelText('Launch delivery operator'));
+  await userEvent.type(screen.getByLabelText('Launch delivery operator'), 'local-operator');
+  await userEvent.clear(screen.getByLabelText('Launch delivery notes'));
+  await userEvent.type(screen.getByLabelText('Launch delivery notes'), 'Sent final launch evidence after the smoke demo.');
+  await userEvent.click(screen.getByRole('button', { name: 'Record launch evidence delivery receipt' }));
+
+  expect(onCreateDeliveryReceipt).toHaveBeenCalledWith({
+    deliveryChannel: 'email',
+    deliveryTarget: 'reviewer@example.com',
+    operator: 'local-operator',
+    notes: 'Sent final launch evidence after the smoke demo.',
+    deliveredAt: expect.any(String)
+  });
+  expect(screen.getByText('Recorded launch evidence receipt launch-delivery-receipt-1')).toBeInTheDocument();
+
+  await userEvent.click(screen.getByRole('button', { name: 'Download launch evidence finalization' }));
+  expect(onDownloadFinalizationReport).toHaveBeenCalledTimes(1);
+  expect(createObjectURL).toHaveBeenCalled();
+  expect(click).toHaveBeenCalled();
+
+  await userEvent.click(screen.getByRole('button', { name: 'Download launch delivery receipt launch-delivery-receipt-1' }));
+  expect(onDownloadDeliveryReceiptReport).toHaveBeenCalledWith('launch-delivery-receipt-1');
 
   vi.unstubAllGlobals();
   click.mockRestore();

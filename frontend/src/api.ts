@@ -19,8 +19,11 @@ import type {
   DemoHandoffShareChecklist,
   DemoLaunchCommand,
   DemoLaunchEvidencePackageArchive,
+  DemoLaunchEvidenceFinalization,
   DemoLaunchEvidencePackage,
   DemoLaunchEvidenceShareCenter,
+  DemoLaunchEvidenceShareDeliveryReceipt,
+  DemoLaunchEvidenceShareDeliveryReceiptInput,
   DemoLaunchCommandInput,
   DemoLaunchPreflight,
   DemoLaunchPreflightInput,
@@ -286,6 +289,28 @@ export async function getDemoLaunchEvidenceShareCenter(): Promise<DemoLaunchEvid
 
 export async function downloadDemoLaunchEvidenceShareCenterReport(): Promise<Blob> {
   return getBlobApi('/api/demo/launch-evidence-share-center/report/download');
+}
+
+export async function getDemoLaunchEvidenceFinalization(): Promise<DemoLaunchEvidenceFinalization> {
+  return getApi<DemoLaunchEvidenceFinalization>('/api/demo/launch-evidence-finalization');
+}
+
+export async function downloadDemoLaunchEvidenceFinalizationReport(): Promise<Blob> {
+  return getBlobApi('/api/demo/launch-evidence-finalization/report/download');
+}
+
+export async function createDemoLaunchEvidenceShareDeliveryReceipt(
+  input: DemoLaunchEvidenceShareDeliveryReceiptInput
+): Promise<DemoLaunchEvidenceShareDeliveryReceipt> {
+  return postApi<DemoLaunchEvidenceShareDeliveryReceipt>('/api/demo/launch-evidence-share-delivery-receipts', input);
+}
+
+export async function listDemoLaunchEvidenceShareDeliveryReceipts(): Promise<DemoLaunchEvidenceShareDeliveryReceipt[]> {
+  return getApi<DemoLaunchEvidenceShareDeliveryReceipt[]>('/api/demo/launch-evidence-share-delivery-receipts');
+}
+
+export async function downloadDemoLaunchEvidenceShareDeliveryReceiptReport(receiptId: string): Promise<Blob> {
+  return getBlobApi(`/api/demo/launch-evidence-share-delivery-receipts/${encodeURIComponent(receiptId)}/report/download`);
 }
 
 export async function archiveDemoReadinessSnapshot(): Promise<DemoReadinessSnapshotArchive> {

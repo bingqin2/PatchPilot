@@ -432,10 +432,68 @@ export interface DemoLaunchEvidenceShareCenter {
   latestPullRequestUrl: string | null;
   latestWebhookDeliveryId: string | null;
   evaluationRunId: string | null;
+  latestDeliveryReceiptId: string | null;
+  latestDeliveryTarget: string | null;
+  latestDeliveryChannel: string | null;
+  latestDeliveredAt: string | null;
+  deliveryReceiptRecorded: boolean;
+  deliveryReceiptFreshness: string;
+  deliveryReceiptFresh: boolean;
+  deliveryReceiptFreshnessSummary: string;
   downloadActions: string[];
   evidenceNotes: string[];
   markdownReport: string;
   generatedAt: string;
+}
+
+export interface DemoLaunchEvidenceFinalizationCheck {
+  name: string;
+  status: DemoReadinessStatus;
+  summary: string;
+  nextAction: string;
+}
+
+export interface DemoLaunchEvidenceFinalization {
+  status: DemoReadinessStatus;
+  finalized: boolean;
+  summary: string;
+  nextAction: string;
+  latestArchiveId: string | null;
+  latestSessionId: string | null;
+  latestDeliveryReceiptId: string | null;
+  latestDeliveryTarget: string | null;
+  latestDeliveryChannel: string | null;
+  latestDeliveredAt: string | null;
+  deliveryReceiptFreshness: string;
+  deliveryReceiptFresh: boolean;
+  deliveryReceiptFreshnessSummary: string;
+  checks: DemoLaunchEvidenceFinalizationCheck[];
+  evidenceNotes: string[];
+  markdownReport: string;
+  generatedAt: string;
+}
+
+export interface DemoLaunchEvidenceShareDeliveryReceipt {
+  id: string;
+  status: string;
+  launchEvidenceArchiveId: string;
+  sessionId: string;
+  deliveryChannel: string;
+  deliveryTarget: string;
+  operator: string;
+  notes: string;
+  messageSubject: string;
+  deliveredAt: string;
+  createdAt: string;
+  markdownReport: string;
+}
+
+export interface DemoLaunchEvidenceShareDeliveryReceiptInput {
+  deliveryChannel: string;
+  deliveryTarget: string;
+  operator: string;
+  notes: string;
+  deliveredAt: string;
 }
 
 export interface DemoReadinessSnapshotArchive {
