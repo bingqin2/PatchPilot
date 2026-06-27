@@ -13,6 +13,7 @@ import io.patchpilot.backend.demo.domain.DemoScriptVo;
 import io.patchpilot.backend.demo.domain.DemoSessionSnapshotVo;
 import io.patchpilot.backend.demo.domain.DemoSmokeChecklistStatus;
 import io.patchpilot.backend.demo.domain.DemoSmokeChecklistVo;
+import io.patchpilot.backend.github.credential.domain.GitHubWebhookSetupReadinessVo;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.vo.FixTaskQueueSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
@@ -39,6 +40,13 @@ class DemoSessionReportServiceTests {
                 .contains("- Share summary: Status READY; recent task task-1; recent PR https://github.com/bingqin2/PatchPilot/pull/42.")
                 .contains("- Recent Pull Request: https://github.com/bingqin2/PatchPilot/pull/42")
                 .contains("- Recent task: `task-1` (`COMPLETED`)")
+                .contains("## Webhook Setup Readiness")
+                .contains("- Status: `READY`")
+                .contains("- Secret configured: `true`")
+                .contains("- Public URL ready: `true`")
+                .contains("- Payload URL: https://demo.trycloudflare.com/api/github/webhook")
+                .contains("- Latest delivery: `TASK_CREATED` (`delivery-1`)")
+                .contains("- Next action: Use the payload URL in GitHub Webhooks and continue the live demo.")
                 .contains("## Readiness Snapshot Trend")
                 .contains("- Trend: `IMPROVING`")
                 .contains("- Latest snapshot: `readiness-snapshot-new`")
@@ -261,6 +269,7 @@ class DemoSessionReportServiceTests {
                         null,
                         null,
                         null,
+                        null,
                         0,
                         Instant.parse("2026-06-24T00:00:00Z"),
                         List.of()
@@ -325,11 +334,30 @@ class DemoSessionReportServiceTests {
                 new FixTaskQueueSummaryVo(2, 0, 0, 0, 0, 2, 0, 0),
                 task(),
                 "https://github.com/bingqin2/PatchPilot/pull/42",
+                webhookSetupReadiness(),
                 null,
                 null,
                 0,
                 Instant.parse("2026-06-24T00:00:00Z"),
                 List.of()
+        );
+    }
+
+    private static GitHubWebhookSetupReadinessVo webhookSetupReadiness() {
+        return new GitHubWebhookSetupReadinessVo(
+                "READY",
+                true,
+                true,
+                "https://demo.trycloudflare.com",
+                "https://demo.trycloudflare.com/api/github/webhook",
+                "https://demo.trycloudflare.com/health",
+                "TASK_CREATED",
+                "delivery-1",
+                false,
+                "Webhook setup is ready for GitHub deliveries.",
+                List.of("Use the payload URL in GitHub Webhooks and continue the live demo."),
+                Instant.parse("2026-06-27T01:00:00Z"),
+                "# PatchPilot Webhook Setup Readiness"
         );
     }
 

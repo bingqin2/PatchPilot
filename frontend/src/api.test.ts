@@ -729,6 +729,7 @@ test('gets demo evidence bundle through backend API', async () => {
         },
         recentTask: null,
         recentPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+        webhookSetupReadiness: null,
         latestWebhookDelivery: null,
         rejectedTriggerSummary: {
           totalCount: 0,
@@ -845,6 +846,7 @@ test('gets demo session snapshot through backend API', async () => {
           },
           recentTask: null,
           recentPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+          webhookSetupReadiness: null,
           latestWebhookDelivery: null,
           rejectedTriggerSummary: null,
           activeQuarantineCount: 0,

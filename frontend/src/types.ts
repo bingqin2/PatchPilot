@@ -457,6 +457,7 @@ export interface DemoEvidenceBundle {
   queueSummary: FixTaskQueueSummary;
   recentTask: FixTask | null;
   recentPullRequestUrl: string | null;
+  webhookSetupReadiness: GitHubWebhookSetupReadiness | null;
   latestWebhookDelivery: WebhookDeliveryDiagnostic | null;
   rejectedTriggerSummary: RejectedTriggerAuditSummary | null;
   activeQuarantineCount: number;

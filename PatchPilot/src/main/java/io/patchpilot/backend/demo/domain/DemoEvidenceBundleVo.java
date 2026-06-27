@@ -1,6 +1,7 @@
 package io.patchpilot.backend.demo.domain;
 
 import io.patchpilot.backend.configuration.ConfigurationSummaryVo;
+import io.patchpilot.backend.github.credential.domain.GitHubWebhookSetupReadinessVo;
 import io.patchpilot.backend.github.webhook.domain.WebhookDeliveryDiagnosticVo;
 import io.patchpilot.backend.safety.domain.RejectedTriggerAuditSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskQueueSummaryVo;
@@ -20,6 +21,7 @@ public record DemoEvidenceBundleVo(
         FixTaskQueueSummaryVo queueSummary,
         FixTaskVo recentTask,
         String recentPullRequestUrl,
+        GitHubWebhookSetupReadinessVo webhookSetupReadiness,
         WebhookDeliveryDiagnosticVo latestWebhookDelivery,
         RejectedTriggerAuditSummaryVo rejectedTriggerSummary,
         long activeQuarantineCount,

@@ -1454,6 +1454,21 @@ const demoEvidenceBundle = {
   queueSummary,
   recentTask: completedTask,
   recentPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+  webhookSetupReadiness: {
+    status: 'READY',
+    secretConfigured: true,
+    publicUrlReady: true,
+    publicBaseUrl: 'https://demo.trycloudflare.com',
+    payloadUrl: 'https://demo.trycloudflare.com/api/github/webhook',
+    healthUrl: 'https://demo.trycloudflare.com/health',
+    latestDeliveryStatus: 'TASK_CREATED',
+    latestDeliveryId: 'delivery-1',
+    redeliveryRecommended: false,
+    summary: 'Webhook setup is ready for GitHub deliveries.',
+    nextActions: ['Use the payload URL in GitHub Webhooks and continue the live demo.'],
+    checkedAt: '2026-06-27T01:00:00Z',
+    markdownReport: '# PatchPilot Webhook Setup Readiness'
+  },
   latestWebhookDelivery: webhookDeliveries[0],
   rejectedTriggerSummary,
   activeQuarantineCount: triggerQuarantines.length,
@@ -2327,7 +2342,9 @@ test('renders operational task dashboard from backend APIs', async () => {
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/admin-audit-events?limit=20'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks/task-1/detail'));
   expect(screen.getByText('Pull request opened')).toBeInTheDocument();
-  expect(screen.getByText('Webhook setup is ready for GitHub deliveries.')).toBeInTheDocument();
+  const evidencePanel = screen.getByRole('region', { name: 'Demo evidence bundle' });
+  expect(within(evidencePanel).getByText('Webhook setup is ready for GitHub deliveries.')).toBeInTheDocument();
+  expect(within(evidencePanel).getByText('https://demo.trycloudflare.com/api/github/webhook')).toBeInTheDocument();
   expect(screen.getByLabelText('Webhook setup readiness')).toHaveTextContent('# PatchPilot Webhook Setup Readiness');
   expect(screen.getAllByText('demo-session-20260624T003000Z')).toHaveLength(3);
   expect(screen.getAllByText('Status READY; recent task task-1; recent PR https://github.com/bingqin2/PatchPilot/pull/8.')).toHaveLength(3);

@@ -85,6 +85,7 @@ class DemoScriptServiceTests {
                 new FixTaskQueueSummaryVo(2, 0, 0, 0, 0, 2, 0, 0),
                 task(),
                 "https://github.com/bingqin2/PatchPilot/pull/42",
+                null,
                 webhookDelivery(),
                 new RejectedTriggerAuditSummaryVo(0, List.of(), List.of(), List.of(), List.of()),
                 0,

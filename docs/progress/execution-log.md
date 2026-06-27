@@ -4511,6 +4511,24 @@ Validation so far:
 - `npm test -- --reporter=basic`: passed after full frontend regression verification, 207 tests run, 0 failures.
 - `npm run build`: passed after production frontend build verification.
 
+Implemented webhook setup evidence bundle from `docs/plans/228-webhook-setup-evidence-bundle.md`.
+
+Changes:
+
+- Added combined webhook setup readiness to `DemoEvidenceBundleVo` and populated it from `GitHubWebhookSetupReadinessService`.
+- Added a `Webhook Setup Readiness` section to generated demo session reports with status, secret flag, public URL flag, payload URL, latest delivery, redelivery recommendation, and next action.
+- Added webhook setup status, summary, and payload URL to the dashboard demo evidence bundle panel.
+- Updated backend and frontend fixtures, README, product spec, frontend design docs, and this execution log.
+
+Validation so far:
+
+- `mvn -pl PatchPilot -Dtest=DemoEvidenceBundleServiceTests,DemoSessionReportServiceTests,DemoReadinessControllerTests test`: first failed because `DemoEvidenceBundleVo` did not expose webhook setup readiness and old fixtures missed the new field; then passed after wiring the service and report output, 38 tests run, 0 failures.
+- `npm test -- --run src/dashboard/components/DemoEvidenceBundlePanel.test.tsx src/App.test.tsx src/api.test.ts --reporter=basic`: first failed because the dashboard evidence panel did not render webhook setup readiness and one app assertion was ambiguous after adding the evidence card; then passed after panel integration and scoped assertions, 155 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed after full backend regression verification, 796 tests run, 0 failures.
+- `npm test -- --reporter=basic`: passed after full frontend regression verification, 285 tests run, 0 failures.
+- `npm run build`: passed after production frontend build verification.
+- `git diff --check`: passed.
+
 Implemented GitHub credential readiness from `docs/plans/197-github-credential-readiness.md`.
 
 Changes:
