@@ -1870,6 +1870,32 @@ const demoLaunchEvidencePackageArchive = {
   report: '# PatchPilot Demo Launch Evidence Package\n\n- Status: `READY`'
 };
 
+const demoLaunchEvidenceShareCenter = {
+  status: 'READY',
+  shareReady: true,
+  summary: 'Latest archived launch evidence package is READY and can be shared.',
+  nextAction: 'Download the archived launch evidence package and share it with reviewers.',
+  archiveCount: 1,
+  latestArchiveId: 'launch-evidence-archive-1',
+  latestSessionId: 'demo-session-20260624T003000Z',
+  latestCreatedAt: '2026-06-24T06:30:00Z',
+  latestTaskId: 'task-1',
+  latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+  latestWebhookDeliveryId: 'delivery-created-status-comment',
+  evaluationRunId: 'evaluation-run-2',
+  downloadActions: [
+    'Download launch evidence package archive launch-evidence-archive-1.',
+    'Download launch evidence share center report.',
+    'Open Pull Request https://github.com/bingqin2/PatchPilot/pull/8 for review.'
+  ],
+  evidenceNotes: [
+    'Latest launch evidence archive status is READY.',
+    'Latest Pull Request https://github.com/bingqin2/PatchPilot/pull/8 is ready for review.'
+  ],
+  markdownReport: '# PatchPilot Demo Launch Evidence Share Center\n\n- Status: `READY`',
+  generatedAt: '2026-06-24T06:35:00Z'
+};
+
 const demoHandoffShareInstructions = {
   status: 'READY',
   sendReady: true,
@@ -2145,6 +2171,9 @@ beforeEach(() => {
     }
     if (url === '/api/demo/launch-evidence-package/archives') {
       return jsonResponse([demoLaunchEvidencePackageArchive]);
+    }
+    if (url === '/api/demo/launch-evidence-share-center') {
+      return jsonResponse(demoLaunchEvidenceShareCenter);
     }
     if (url === '/api/demo/handoff-share-instructions') {
       return jsonResponse(demoHandoffShareInstructions);
@@ -2686,7 +2715,7 @@ test('renders operational task dashboard from backend APIs', async () => {
   const launchEvidencePanel = screen.getByRole('region', { name: 'Demo launch evidence package' });
   expect(within(launchEvidencePanel).getByRole('heading', { name: 'Demo launch evidence package' })).toBeInTheDocument();
   expect(within(launchEvidencePanel).getByText('PatchPilot launch evidence package is ready to share.')).toBeInTheDocument();
-  expect(within(launchEvidencePanel).getByText('Ready to share')).toBeInTheDocument();
+  expect(within(launchEvidencePanel).getAllByText('Ready to share').length).toBeGreaterThanOrEqual(1);
   expect(within(launchEvidencePanel).getByText('evaluation-run-2')).toBeInTheDocument();
   expect(within(launchEvidencePanel).getByText('java, python, maven, pytest')).toBeInTheDocument();
   expect(within(launchEvidencePanel).getByText('Recent task task-1 reached COMPLETED.')).toBeInTheDocument();
@@ -2695,6 +2724,9 @@ test('renders operational task dashboard from backend APIs', async () => {
     'href',
     'https://github.com/bingqin2/PatchPilot/pull/8'
   );
+  expect(within(launchEvidencePanel).getByRole('heading', { name: 'Launch evidence share center' })).toBeInTheDocument();
+  expect(within(launchEvidencePanel).getByText('Latest archived launch evidence package is READY and can be shared.')).toBeInTheDocument();
+  expect(within(launchEvidencePanel).getByText('Download launch evidence share center report.')).toBeInTheDocument();
   expect(within(launchEvidencePanel).getByText(/does not create tasks, call the model, run tests, archive records/)).toBeInTheDocument();
   const demoScriptPanel = screen.getByRole('region', { name: 'Demo script' });
   expect(within(demoScriptPanel).getByRole('heading', { name: 'Demo script' })).toBeInTheDocument();

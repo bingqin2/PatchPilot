@@ -13,6 +13,7 @@ import io.patchpilot.backend.demo.domain.DemoHandoffShareInstructionsVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchCommandVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchEvidencePackageArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchEvidencePackageVo;
+import io.patchpilot.backend.demo.domain.DemoLaunchEvidenceShareCenterVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchPreflightVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessSnapshotArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessSnapshotTrendVo;
@@ -64,6 +65,7 @@ public class DemoReadinessController {
     private final SelfHostedLaunchReadinessArchiveService selfHostedLaunchReadinessArchiveService;
     private final DemoLaunchEvidencePackageService demoLaunchEvidencePackageService;
     private final DemoLaunchEvidencePackageArchiveService demoLaunchEvidencePackageArchiveService;
+    private final DemoLaunchEvidenceShareCenterService demoLaunchEvidenceShareCenterService;
     private final DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
     private final DemoReadinessSnapshotTrendService demoReadinessSnapshotTrendService;
     private final DemoLaunchPreflightService demoLaunchPreflightService;
@@ -264,6 +266,11 @@ public class DemoReadinessController {
         return ApiResponse.ok(demoLaunchEvidencePackageService.getPackage());
     }
 
+    @GetMapping("/launch-evidence-share-center")
+    public ApiResponse<DemoLaunchEvidenceShareCenterVo> getLaunchEvidenceShareCenter() {
+        return ApiResponse.ok(demoLaunchEvidenceShareCenterService.getShareCenter());
+    }
+
     @GetMapping(value = "/handoff-share-center/report/download", produces = "text/markdown;charset=UTF-8")
     public ResponseEntity<String> downloadHandoffShareCenterReport() {
         return markdownAttachment(
@@ -301,6 +308,14 @@ public class DemoReadinessController {
         return markdownAttachment(
                 "patchpilot-demo-launch-evidence-package.md",
                 demoLaunchEvidencePackageService.getPackage().markdownReport()
+        );
+    }
+
+    @GetMapping(value = "/launch-evidence-share-center/report/download", produces = "text/markdown;charset=UTF-8")
+    public ResponseEntity<String> downloadLaunchEvidenceShareCenterReport() {
+        return markdownAttachment(
+                "patchpilot-demo-launch-evidence-share-center.md",
+                demoLaunchEvidenceShareCenterService.getShareCenter().markdownReport()
         );
     }
 

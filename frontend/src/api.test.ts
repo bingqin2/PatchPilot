@@ -35,10 +35,12 @@ import {
   createDemoHandoffShareDeliveryReceipt,
   downloadDemoHandoffShareDeliveryReceiptReport,
   getDemoLaunchEvidencePackage,
+  getDemoLaunchEvidenceShareCenter,
   archiveDemoLaunchEvidencePackage,
   listDemoLaunchEvidencePackageArchives,
   downloadDemoLaunchEvidencePackageArchiveReport,
   downloadDemoLaunchEvidencePackageReport,
+  downloadDemoLaunchEvidenceShareCenterReport,
   getDemoHandoffShareCenter,
   getDemoHandoffShareInstructions,
   listDemoHandoffShareDeliveryReceipts,
@@ -471,6 +473,65 @@ test('downloads archived demo launch evidence package report through backend API
   const report = await downloadDemoLaunchEvidencePackageArchiveReport('launch-evidence-archive-1');
 
   expect(fetchMock).toHaveBeenCalledWith('/api/demo/launch-evidence-package/archives/launch-evidence-archive-1/report/download');
+  expect(report).toBe(blob);
+});
+
+test('gets demo launch evidence share center through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        status: 'READY',
+        shareReady: true,
+        summary: 'Latest archived launch evidence package is READY and can be shared.',
+        nextAction: 'Download the archived launch evidence package and share it with reviewers.',
+        archiveCount: 1,
+        latestArchiveId: 'launch-evidence-archive-1',
+        latestSessionId: 'demo-session-20260624T003000Z',
+        latestCreatedAt: '2026-06-28T02:30:00Z',
+        latestTaskId: 'task-1',
+        latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+        latestWebhookDeliveryId: 'delivery-1',
+        evaluationRunId: 'evaluation-run-2',
+        downloadActions: [
+          'Download launch evidence package archive launch-evidence-archive-1.',
+          'Download launch evidence share center report.'
+        ],
+        evidenceNotes: [
+          'Latest launch evidence archive status is READY.',
+          'Latest Pull Request https://github.com/bingqin2/PatchPilot/pull/42 is ready for review.'
+        ],
+        markdownReport: '# PatchPilot Demo Launch Evidence Share Center',
+        generatedAt: '2026-06-28T02:45:00Z'
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const center = await getDemoLaunchEvidenceShareCenter();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/launch-evidence-share-center');
+  expect(center.status).toBe('READY');
+  expect(center.shareReady).toBe(true);
+  expect(center.latestArchiveId).toBe('launch-evidence-archive-1');
+  expect(center.downloadActions).toContain('Download launch evidence share center report.');
+});
+
+test('downloads demo launch evidence share center report through backend API', async () => {
+  const blob = new Blob(['# PatchPilot Demo Launch Evidence Share Center'], { type: 'text/markdown' });
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    blob: async () => blob
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const report = await downloadDemoLaunchEvidenceShareCenterReport();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/launch-evidence-share-center/report/download');
   expect(report).toBe(blob);
 });
 

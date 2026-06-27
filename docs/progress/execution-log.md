@@ -4,6 +4,24 @@ This file records dated implementation progress, validation commands, and import
 
 ## 2026-06-28
 
+Implemented demo launch evidence share center from `docs/plans/252-demo-launch-evidence-share-center.md`.
+
+Changes:
+
+- Added read-only `GET /api/demo/launch-evidence-share-center` and `GET /api/demo/launch-evidence-share-center/report/download`.
+- Added `DemoLaunchEvidenceShareCenterService` and `DemoLaunchEvidenceShareCenterVo` to derive final share/no-share status, archive count, latest archive/session/task/Pull Request/webhook/evaluation identifiers, download actions, evidence notes, and Markdown evidence from the latest launch evidence package archive.
+- Extended the dashboard launch evidence package panel with a `Launch evidence share center` section, latest-archive status cards, Pull Request evidence link, evidence/download lists, and Markdown download action.
+- Updated frontend API helpers, typed contracts, App refresh wiring, README, product spec, architecture notes, frontend design notes, and this execution log.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=DemoLaunchEvidenceShareCenterServiceTests,DemoReadinessControllerTests test`: first failed because the share-center read model and service did not exist; passed after implementation, 63 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts src/App.test.tsx src/dashboard/components/DemoLaunchEvidencePackagePanel.test.tsx --reporter=basic`: first failed because the launch evidence package panel did not render a share center, then failed again because the same archived session/archive evidence now appears in both the package and share-center sections; passed after implementation and assertion updates, 193 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed after full backend regression verification, 884 tests run, 0 failures.
+- `npm test -- --reporter=basic`: passed after full frontend regression verification, 28 test files and 340 tests run, 0 failures.
+- `npm run build`: passed after production frontend build verification.
+- `git diff --check`: passed.
+
 Implemented demo launch evidence package archive from `docs/plans/251-demo-launch-evidence-package-archive.md`.
 
 Changes:

@@ -5,6 +5,7 @@ import io.patchpilot.backend.demo.domain.DemoEvidenceBundleSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
 import io.patchpilot.backend.demo.domain.DemoEvaluationRunReadinessEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchEvidencePackageVo;
+import io.patchpilot.backend.demo.domain.DemoLaunchEvidencePackageArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessCheckVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessSnapshotTrendStatus;
 import io.patchpilot.backend.demo.domain.DemoReadinessSnapshotTrendVo;
@@ -183,6 +184,28 @@ final class DemoLaunchEvidenceFixtures {
                         + "## Side Effect Contract\n\n"
                         + "- Read-only package evidence.\n",
                 Instant.parse("2026-06-28T02:00:00Z")
+        );
+    }
+
+    static DemoLaunchEvidencePackageArchiveVo launchEvidencePackageArchive(DemoReadinessStatus status) {
+        boolean ready = status == DemoReadinessStatus.READY;
+        return new DemoLaunchEvidencePackageArchiveVo(
+                "launch-evidence-archive-1",
+                status,
+                ready,
+                ready
+                        ? "PatchPilot launch evidence package is ready to share."
+                        : "PatchPilot launch evidence package needs attention before sharing.",
+                "demo-session-20260624T003000Z",
+                status,
+                status,
+                status,
+                "task-1",
+                "https://github.com/bingqin2/PatchPilot/pull/42",
+                "delivery-1",
+                "evaluation-run-2",
+                Instant.parse("2026-06-28T02:30:00Z"),
+                "# PatchPilot Demo Launch Evidence Package\n\n- Status: `" + status + "`"
         );
     }
 

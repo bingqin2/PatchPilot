@@ -419,6 +419,25 @@ export interface DemoLaunchEvidencePackageArchive {
   report: string;
 }
 
+export interface DemoLaunchEvidenceShareCenter {
+  status: 'NO_ARCHIVE' | DemoReadinessStatus;
+  shareReady: boolean;
+  summary: string;
+  nextAction: string;
+  archiveCount: number;
+  latestArchiveId: string | null;
+  latestSessionId: string | null;
+  latestCreatedAt: string | null;
+  latestTaskId: string | null;
+  latestPullRequestUrl: string | null;
+  latestWebhookDeliveryId: string | null;
+  evaluationRunId: string | null;
+  downloadActions: string[];
+  evidenceNotes: string[];
+  markdownReport: string;
+  generatedAt: string;
+}
+
 export interface DemoReadinessSnapshotArchive {
   id: string;
   status: DemoReadinessStatus;

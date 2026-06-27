@@ -27,6 +27,7 @@ import {
   downloadDemoHandoffFinalizationReport,
   downloadDemoLaunchEvidencePackageArchiveReport,
   downloadDemoLaunchEvidencePackageReport,
+  downloadDemoLaunchEvidenceShareCenterReport,
   downloadDemoSelfHostedLaunchReadinessArchiveReport,
   downloadDemoSelfHostedLaunchReadinessReport,
   downloadDemoHandoffShareDeliveryReceiptReport,
@@ -44,6 +45,7 @@ import {
   getDemoHandoffShareCenter,
   getDemoHandoffFinalization,
   getDemoLaunchEvidencePackage,
+  getDemoLaunchEvidenceShareCenter,
   getDemoSelfHostedLaunchReadiness,
   getDemoHandoffShareInstructions,
   getDemoHandoffShareChecklist,
@@ -164,6 +166,7 @@ import type {
   DemoLaunchCommandInput,
   DemoLaunchEvidencePackageArchive,
   DemoLaunchEvidencePackage,
+  DemoLaunchEvidenceShareCenter,
   DemoLaunchPreflight,
   DemoLaunchPreflightInput,
   DemoScript,
@@ -304,6 +307,9 @@ export default function App() {
     useState<DemoLaunchEvidencePackageArchive[]>([]);
   const [demoLaunchEvidencePackageArchiveError, setDemoLaunchEvidencePackageArchiveError] =
     useState<string | null>(null);
+  const [demoLaunchEvidenceShareCenter, setDemoLaunchEvidenceShareCenter] =
+    useState<DemoLaunchEvidenceShareCenter | null>(null);
+  const [demoLaunchEvidenceShareCenterError, setDemoLaunchEvidenceShareCenterError] = useState<string | null>(null);
   const [demoHandoffShareInstructions, setDemoHandoffShareInstructions] =
     useState<DemoHandoffShareInstructions | null>(null);
   const [demoHandoffShareInstructionsError, setDemoHandoffShareInstructionsError] = useState<string | null>(null);
@@ -648,6 +654,7 @@ export default function App() {
         demoSelfHostedLaunchReadinessArchiveResult,
         demoLaunchEvidencePackageResult,
         demoLaunchEvidencePackageArchiveResult,
+        demoLaunchEvidenceShareCenterResult,
         demoHandoffShareInstructionsResult,
         demoHandoffShareDeliveryReceiptResult,
         demoScriptResult,
@@ -756,6 +763,10 @@ export default function App() {
         listDemoLaunchEvidencePackageArchives().then(
           (archives) => ({ archives, error: null as string | null }),
           (caught) => ({ archives: null, error: errorMessage(caught) })
+        ),
+        getDemoLaunchEvidenceShareCenter().then(
+          (center) => ({ center, error: null as string | null }),
+          (caught) => ({ center: null, error: errorMessage(caught) })
         ),
         getDemoHandoffShareInstructions().then(
           (instructions) => ({ instructions, error: null as string | null }),
@@ -945,6 +956,10 @@ export default function App() {
         setDemoLaunchEvidencePackageArchives(demoLaunchEvidencePackageArchiveResult.archives);
       }
       setDemoLaunchEvidencePackageArchiveError(demoLaunchEvidencePackageArchiveResult.error);
+      if (demoLaunchEvidenceShareCenterResult.center) {
+        setDemoLaunchEvidenceShareCenter(demoLaunchEvidenceShareCenterResult.center);
+      }
+      setDemoLaunchEvidenceShareCenterError(demoLaunchEvidenceShareCenterResult.error);
       if (demoHandoffShareInstructionsResult.instructions) {
         setDemoHandoffShareInstructions(demoHandoffShareInstructionsResult.instructions);
       }
@@ -1243,10 +1258,20 @@ export default function App() {
     const archive = await archiveDemoLaunchEvidencePackage();
     setDemoLaunchEvidencePackageArchives((current) => [archive, ...current.filter((item) => item.id !== archive.id)].slice(0, 20));
     setDemoLaunchEvidencePackageArchiveError(null);
+    try {
+      const center = await getDemoLaunchEvidenceShareCenter();
+      setDemoLaunchEvidenceShareCenter(center);
+      setDemoLaunchEvidenceShareCenterError(null);
+    } catch (caught) {
+      setDemoLaunchEvidenceShareCenterError(errorMessage(caught));
+    }
     return archive;
   }, []);
   const handleDownloadDemoLaunchEvidencePackageArchiveReport = useCallback((archiveId: string) => (
     downloadDemoLaunchEvidencePackageArchiveReport(archiveId)
+  ), []);
+  const handleDownloadDemoLaunchEvidenceShareCenterReport = useCallback(() => (
+    downloadDemoLaunchEvidenceShareCenterReport()
   ), []);
   const handleDownloadDemoHandoffShareInstructionsReport = useCallback(() => (
     downloadDemoHandoffShareInstructionsReport()
@@ -1750,9 +1775,12 @@ export default function App() {
         error={demoLaunchEvidencePackageError}
         archives={demoLaunchEvidencePackageArchives}
         archiveError={demoLaunchEvidencePackageArchiveError}
+        shareCenter={demoLaunchEvidenceShareCenter}
+        shareCenterError={demoLaunchEvidenceShareCenterError}
         onArchivePackage={handleArchiveDemoLaunchEvidencePackage}
         onDownloadReport={handleDownloadDemoLaunchEvidencePackageReport}
         onDownloadArchiveReport={handleDownloadDemoLaunchEvidencePackageArchiveReport}
+        onDownloadShareCenterReport={handleDownloadDemoLaunchEvidenceShareCenterReport}
       />
 
       <DemoEvidenceBundlePanel

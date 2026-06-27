@@ -1,6 +1,10 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { DemoLaunchEvidencePackage, DemoLaunchEvidencePackageArchive } from '../../types';
+import type {
+  DemoLaunchEvidencePackage,
+  DemoLaunchEvidencePackageArchive,
+  DemoLaunchEvidenceShareCenter
+} from '../../types';
 import { DemoLaunchEvidencePackagePanel } from './DemoLaunchEvidencePackagePanel';
 
 const launchEvidencePackage: DemoLaunchEvidencePackage = {
@@ -66,6 +70,32 @@ const launchEvidenceArchive: DemoLaunchEvidencePackageArchive = {
   report: '# PatchPilot Demo Launch Evidence Package'
 };
 
+const launchEvidenceShareCenter: DemoLaunchEvidenceShareCenter = {
+  status: 'READY',
+  shareReady: true,
+  summary: 'Latest archived launch evidence package is READY and can be shared.',
+  nextAction: 'Download the archived launch evidence package and share it with reviewers.',
+  archiveCount: 1,
+  latestArchiveId: 'launch-evidence-archive-1',
+  latestSessionId: 'demo-session-20260624T003000Z',
+  latestCreatedAt: '2026-06-28T02:30:00Z',
+  latestTaskId: 'task-1',
+  latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+  latestWebhookDeliveryId: 'delivery-1',
+  evaluationRunId: 'evaluation-run-2',
+  downloadActions: [
+    'Download launch evidence package archive launch-evidence-archive-1.',
+    'Download launch evidence share center report.',
+    'Open Pull Request https://github.com/bingqin2/PatchPilot/pull/42 for review.'
+  ],
+  evidenceNotes: [
+    'Latest launch evidence archive status is READY.',
+    'Latest Pull Request https://github.com/bingqin2/PatchPilot/pull/42 is ready for review.'
+  ],
+  markdownReport: '# PatchPilot Demo Launch Evidence Share Center',
+  generatedAt: '2026-06-28T02:45:00Z'
+};
+
 test('renders demo launch evidence package proof and readiness status', () => {
   render(
     <DemoLaunchEvidencePackagePanel
@@ -73,9 +103,12 @@ test('renders demo launch evidence package proof and readiness status', () => {
       error={null}
       archives={[launchEvidenceArchive]}
       archiveError={null}
+      shareCenter={launchEvidenceShareCenter}
+      shareCenterError={null}
       onArchivePackage={async () => launchEvidenceArchive}
       onDownloadReport={async () => new Blob(['report'], { type: 'text/markdown' })}
       onDownloadArchiveReport={async () => new Blob(['archive report'], { type: 'text/markdown' })}
+      onDownloadShareCenterReport={async () => new Blob(['share report'], { type: 'text/markdown' })}
     />
   );
 
@@ -83,8 +116,8 @@ test('renders demo launch evidence package proof and readiness status', () => {
   expect(within(panel).getByRole('heading', { name: 'Demo launch evidence package' })).toBeInTheDocument();
   expect(within(panel).getByText('PatchPilot launch evidence package is ready to share.')).toBeInTheDocument();
   expect(within(panel).getAllByText('Ready').length).toBeGreaterThanOrEqual(3);
-  expect(within(panel).getByText('Ready to share')).toBeInTheDocument();
-  expect(within(panel).getByText('demo-session-20260624T003000Z')).toBeInTheDocument();
+  expect(within(panel).getAllByText('Ready to share').length).toBeGreaterThanOrEqual(1);
+  expect(within(panel).getAllByText('demo-session-20260624T003000Z').length).toBeGreaterThanOrEqual(2);
   expect(within(panel).getByText('task-1')).toBeInTheDocument();
   expect(within(panel).getByRole('link', { name: 'Open launch Pull Request' })).toHaveAttribute(
     'href',
@@ -96,7 +129,11 @@ test('renders demo launch evidence package proof and readiness status', () => {
   expect(within(panel).getByText('Recent task task-1 reached COMPLETED.')).toBeInTheDocument();
   expect(within(panel).getAllByText('Latest delivery receipt delivery-receipt-1 is fresh.').length).toBeGreaterThanOrEqual(2);
   expect(within(panel).getByText(/does not create tasks, call the model, run tests, archive records/)).toBeInTheDocument();
-  expect(within(panel).getByText(/launch-evidence-archive-1/)).toBeInTheDocument();
+  expect(within(panel).getAllByText(/launch-evidence-archive-1/).length).toBeGreaterThanOrEqual(3);
+  expect(within(panel).getByRole('heading', { name: 'Launch evidence share center' })).toBeInTheDocument();
+  expect(within(panel).getByText('Latest archived launch evidence package is READY and can be shared.')).toBeInTheDocument();
+  expect(within(panel).getByText('Download launch evidence package archive launch-evidence-archive-1.')).toBeInTheDocument();
+  expect(within(panel).getByText('Latest launch evidence archive status is READY.')).toBeInTheDocument();
   expect(within(panel).getByRole('link', { name: 'PR' })).toHaveAttribute(
     'href',
     'https://github.com/bingqin2/PatchPilot/pull/42'
@@ -118,9 +155,12 @@ test('copies and downloads demo launch evidence package markdown report', async 
       error={null}
       archives={[launchEvidenceArchive]}
       archiveError={null}
+      shareCenter={launchEvidenceShareCenter}
+      shareCenterError={null}
       onArchivePackage={async () => launchEvidenceArchive}
       onDownloadReport={onDownloadReport}
       onDownloadArchiveReport={async () => new Blob(['archive report'], { type: 'text/markdown' })}
+      onDownloadShareCenterReport={async () => new Blob(['share report'], { type: 'text/markdown' })}
     />
   );
 
@@ -153,9 +193,12 @@ test('archives launch evidence package and downloads archived report', async () 
       error={null}
       archives={[launchEvidenceArchive]}
       archiveError={null}
+      shareCenter={launchEvidenceShareCenter}
+      shareCenterError={null}
       onArchivePackage={onArchivePackage}
       onDownloadReport={async () => new Blob(['report'], { type: 'text/markdown' })}
       onDownloadArchiveReport={onDownloadArchiveReport}
+      onDownloadShareCenterReport={async () => new Blob(['share report'], { type: 'text/markdown' })}
     />
   );
 
@@ -169,6 +212,40 @@ test('archives launch evidence package and downloads archived report', async () 
   expect(click).toHaveBeenCalled();
   expect(revokeObjectURL).toHaveBeenCalledWith('blob:launch-evidence-package-archive');
   expect(screen.getByText('Archived report launch-evidence-archive-1 downloaded')).toBeInTheDocument();
+
+  vi.unstubAllGlobals();
+  click.mockRestore();
+});
+
+test('downloads launch evidence share center markdown report', async () => {
+  const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+  const createObjectURL = vi.fn(() => 'blob:launch-evidence-share-center');
+  const revokeObjectURL = vi.fn();
+  vi.stubGlobal('URL', { createObjectURL, revokeObjectURL });
+  const onDownloadShareCenterReport = vi.fn(async () => new Blob(['share report'], { type: 'text/markdown' }));
+
+  render(
+    <DemoLaunchEvidencePackagePanel
+      evidencePackage={launchEvidencePackage}
+      error={null}
+      archives={[launchEvidenceArchive]}
+      archiveError={null}
+      shareCenter={launchEvidenceShareCenter}
+      shareCenterError={null}
+      onArchivePackage={async () => launchEvidenceArchive}
+      onDownloadReport={async () => new Blob(['report'], { type: 'text/markdown' })}
+      onDownloadArchiveReport={async () => new Blob(['archive report'], { type: 'text/markdown' })}
+      onDownloadShareCenterReport={onDownloadShareCenterReport}
+    />
+  );
+
+  await userEvent.click(screen.getByRole('button', { name: 'Download launch evidence share center' }));
+
+  expect(onDownloadShareCenterReport).toHaveBeenCalledTimes(1);
+  expect(createObjectURL).toHaveBeenCalled();
+  expect(click).toHaveBeenCalled();
+  expect(revokeObjectURL).toHaveBeenCalledWith('blob:launch-evidence-share-center');
+  expect(screen.getByText('Launch evidence share center downloaded')).toBeInTheDocument();
 
   vi.unstubAllGlobals();
   click.mockRestore();
