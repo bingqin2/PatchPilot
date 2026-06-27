@@ -6,6 +6,7 @@ import io.patchpilot.backend.evaluation.domain.EvaluationCaseFixtureReadinessSum
 import io.patchpilot.backend.evaluation.domain.EvaluationFixtureBaselineRunArchiveVo;
 import io.patchpilot.backend.evaluation.domain.EvaluationFixtureBaselineRunRegressionSummaryVo;
 import io.patchpilot.backend.evaluation.domain.EvaluationFixtureBaselineSummaryVo;
+import io.patchpilot.backend.evaluation.domain.EvaluationRunArchiveVo;
 import io.patchpilot.backend.evaluation.domain.EvaluationRunPreviewVo;
 import io.patchpilot.backend.evaluation.domain.EvaluationRunSnapshotArchiveVo;
 import io.patchpilot.backend.evaluation.domain.EvaluationSummaryVo;
@@ -35,6 +36,7 @@ public class EvaluationCaseController {
     private final EvaluationFixtureBaselineService evaluationFixtureBaselineService;
     private final EvaluationFixtureBaselineRunArchiveService evaluationFixtureBaselineRunArchiveService;
     private final EvaluationFixtureBaselineRunRegressionSummaryService evaluationFixtureBaselineRunRegressionSummaryService;
+    private final EvaluationRunArchiveService evaluationRunArchiveService;
 
     @GetMapping("/cases")
     public ApiResponse<List<EvaluationCaseVo>> listEvaluationCases() {
@@ -101,6 +103,26 @@ public class EvaluationCaseController {
         return evaluationRunSnapshotArchiveService.findArchive(snapshotId)
                 .map(archive -> markdownAttachment(
                         "patchpilot-evaluation-run-snapshot-" + safeFilenamePart(archive.id()) + ".md",
+                        archive.report()
+                ))
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/runs")
+    public ApiResponse<EvaluationRunArchiveVo> runAndArchiveEvaluation() {
+        return ApiResponse.ok(evaluationRunArchiveService.runAndArchiveEvaluation());
+    }
+
+    @GetMapping("/runs")
+    public ApiResponse<List<EvaluationRunArchiveVo>> listEvaluationRuns() {
+        return ApiResponse.ok(evaluationRunArchiveService.listRecentArchives());
+    }
+
+    @GetMapping(value = "/runs/{runId}/report/download", produces = "text/markdown;charset=UTF-8")
+    public ResponseEntity<String> downloadEvaluationRunReport(@PathVariable String runId) {
+        return evaluationRunArchiveService.findArchive(runId)
+                .map(archive -> markdownAttachment(
+                        "patchpilot-evaluation-run-" + safeFilenamePart(archive.id()) + ".md",
                         archive.report()
                 ))
                 .orElseGet(() -> ResponseEntity.notFound().build());

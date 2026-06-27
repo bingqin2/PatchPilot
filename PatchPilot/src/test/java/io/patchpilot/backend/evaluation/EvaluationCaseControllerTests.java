@@ -1,6 +1,7 @@
 package io.patchpilot.backend.evaluation;
 
 import io.patchpilot.backend.evaluation.service.impl.InMemoryEvaluationRunSnapshotArchiveRepository;
+import io.patchpilot.backend.evaluation.service.impl.InMemoryEvaluationRunArchiveRepository;
 import io.patchpilot.backend.evaluation.service.impl.InMemoryEvaluationFixtureBaselineRunArchiveRepository;
 import io.patchpilot.backend.language.LanguageAdapterRegistry;
 import io.patchpilot.backend.language.impl.GoLanguageAdapter;
@@ -274,6 +275,49 @@ class EvaluationCaseControllerTests {
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("- Snapshot id: `" + snapshotId + "`")));
     }
 
+    @Test
+    void should_run_archive_list_and_download_evaluation_runs() throws Exception {
+        MockMvc evaluationRunMockMvc = MockMvcBuilders
+                .standaloneSetup(controller("snapshot-unused", "baseline-run-unused", "evaluation-run-1"))
+                .build();
+
+        evaluationRunMockMvc.perform(post("/api/evaluation/runs"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value("evaluation-run-1"))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.totalCaseCount").value(6))
+                .andExpect(jsonPath("$.data.supportedFixCaseCount").value(4))
+                .andExpect(jsonPath("$.data.safetyRejectionCaseCount").value(2))
+                .andExpect(jsonPath("$.data.executedFixCaseCount").value(4))
+                .andExpect(jsonPath("$.data.passedFixCaseCount").value(4))
+                .andExpect(jsonPath("$.data.failedFixCaseCount").value(0))
+                .andExpect(jsonPath("$.data.skippedCaseCount").value(2))
+                .andExpect(jsonPath("$.data.coveredLanguages[0]").value("go"))
+                .andExpect(jsonPath("$.data.coveredLanguages[1]").value("java"))
+                .andExpect(jsonPath("$.data.coveredLanguages[2]").value("node"))
+                .andExpect(jsonPath("$.data.coveredLanguages[3]").value("python"))
+                .andExpect(jsonPath("$.data.safetyRejectionCategories[0]").value("DANGEROUS_INSTRUCTION"))
+                .andExpect(jsonPath("$.data.safetyRejectionCategories[1]").value("NOT_ACTIONABLE"))
+                .andExpect(jsonPath("$.data.sideEffectContract").value("Evaluation run executes local checked-in fixture verification commands and records safety coverage only; it does not create tasks, call the model, clone repositories, mutate Git, or write to GitHub."))
+                .andExpect(jsonPath("$.data.nextAction").value("Evaluation run passed; use the archived report as measurable demo evidence for supported adapters and safety rejections."))
+                .andExpect(jsonPath("$.data.report").value(org.hamcrest.Matchers.containsString("# PatchPilot Evaluation Run")))
+                .andExpect(jsonPath("$.data.report").value(org.hamcrest.Matchers.containsString("# PatchPilot Evaluation Fixture Baseline")))
+                .andExpect(jsonPath("$.data.report").value(org.hamcrest.Matchers.containsString("# PatchPilot Evaluation Run Preview")));
+
+        evaluationRunMockMvc.perform(get("/api/evaluation/runs"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data", hasSize(1)))
+                .andExpect(jsonPath("$.data[0].id").value("evaluation-run-1"))
+                .andExpect(jsonPath("$.data[0].status").value("READY"));
+
+        evaluationRunMockMvc.perform(get("/api/evaluation/runs/evaluation-run-1/report/download"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("# PatchPilot Evaluation Run")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("- Evaluation run id: `evaluation-run-1`")));
+    }
+
     private static EvaluationRunSnapshotArchiveService archiveService(String snapshotId) {
         return new EvaluationRunSnapshotArchiveService(
                 new EvaluationCaseCatalogService(),
@@ -284,10 +328,14 @@ class EvaluationCaseControllerTests {
     }
 
     private static EvaluationCaseController controller(String snapshotId) {
-        return controller(snapshotId, "baseline-run-default");
+        return controller(snapshotId, "baseline-run-default", "evaluation-run-default");
     }
 
     private static EvaluationCaseController controller(String snapshotId, String baselineRunId) {
+        return controller(snapshotId, baselineRunId, "evaluation-run-default");
+    }
+
+    private static EvaluationCaseController controller(String snapshotId, String baselineRunId, String evaluationRunId) {
         EvaluationCaseCatalogService catalogService = new EvaluationCaseCatalogService();
         LanguageAdapterRegistry languageAdapterRegistry = new LanguageAdapterRegistry(List.of(
                 new JavaMavenLanguageAdapter(),
@@ -312,13 +360,22 @@ class EvaluationCaseControllerTests {
                 Clock.fixed(Instant.parse("2026-06-26T04:00:00Z"), ZoneOffset.UTC),
                 () -> baselineRunId
         );
+        InMemoryEvaluationRunArchiveRepository evaluationRunArchiveRepository = new InMemoryEvaluationRunArchiveRepository();
+        EvaluationRunArchiveService evaluationRunArchiveService = new EvaluationRunArchiveService(
+                catalogService,
+                baselineService::runBaseline,
+                evaluationRunArchiveRepository,
+                Clock.fixed(Instant.parse("2026-06-26T04:00:00Z"), ZoneOffset.UTC),
+                () -> evaluationRunId
+        );
         return new EvaluationCaseController(
                 catalogService,
                 archiveService(snapshotId),
                 readinessService,
                 baselineService,
                 baselineRunArchiveService,
-                new EvaluationFixtureBaselineRunRegressionSummaryService(baselineRunArchiveRepository)
+                new EvaluationFixtureBaselineRunRegressionSummaryService(baselineRunArchiveRepository),
+                evaluationRunArchiveService
         );
     }
 }

@@ -924,6 +924,25 @@ const evaluationRunSnapshotArchive = {
   report: '# PatchPilot Evaluation Run Snapshot\n\n- Snapshot id: `snapshot-1`'
 };
 
+const evaluationRunArchive = {
+  id: 'evaluation-run-1',
+  status: 'READY',
+  totalCaseCount: 3,
+  supportedFixCaseCount: 2,
+  safetyRejectionCaseCount: 1,
+  executedFixCaseCount: 2,
+  passedFixCaseCount: 2,
+  failedFixCaseCount: 0,
+  skippedCaseCount: 1,
+  coveredLanguages: ['java', 'node'],
+  coveredBuildSystems: ['maven', 'npm'],
+  safetyRejectionCategories: ['DANGEROUS_INSTRUCTION'],
+  createdAt: '2026-06-28T04:00:00Z',
+  sideEffectContract: 'Evaluation run executes local checked-in fixture verification commands and records safety coverage only; it does not create tasks, call the model, clone repositories, mutate Git, or write to GitHub.',
+  nextAction: 'Evaluation run passed; use the archived report as measurable demo evidence for supported adapters and safety rejections.',
+  report: '# PatchPilot Evaluation Run\n\n- Evaluation run id: `evaluation-run-1`'
+};
+
 const evaluationFixtureBaselineRunArchive = {
   id: 'baseline-run-1',
   status: 'READY',
@@ -2142,6 +2161,12 @@ beforeEach(() => {
     if (url === '/api/evaluation/run-preview') {
       return jsonResponse(evaluationRunPreview);
     }
+    if (url === '/api/evaluation/runs' && init?.method === 'POST') {
+      return jsonResponse(evaluationRunArchive);
+    }
+    if (url === '/api/evaluation/runs') {
+      return jsonResponse([evaluationRunArchive]);
+    }
     if (url === '/api/evaluation/run-snapshots' && init?.method === 'POST') {
       return jsonResponse(evaluationRunSnapshotArchive);
     }
@@ -2636,11 +2661,12 @@ test('renders operational task dashboard from backend APIs', async () => {
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/evaluation/fixture-baseline-runs'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/evaluation/fixture-baseline-runs/summary'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/evaluation/run-preview'));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/evaluation/runs'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/evaluation/run-snapshots'));
   expect(fetchMock).not.toHaveBeenCalledWith('/api/evaluation/fixture-baseline', { method: 'POST' });
   const evaluationCaseCatalog = screen.getByRole('region', { name: 'Evaluation case catalog' });
   expect(within(evaluationCaseCatalog).getByRole('heading', { name: 'Evaluation case catalog' })).toBeInTheDocument();
-  expect(within(evaluationCaseCatalog).getAllByText('READY')).toHaveLength(5);
+  expect(within(evaluationCaseCatalog).getAllByText('READY')).toHaveLength(6);
   expect(within(evaluationCaseCatalog).getByText('Ready for demo evidence')).toBeInTheDocument();
   expect(within(evaluationCaseCatalog).getByText('3 cases across 2 languages')).toBeInTheDocument();
   expect(within(evaluationCaseCatalog).getByText('2 supported fix cases')).toBeInTheDocument();
@@ -2657,6 +2683,9 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(within(evaluationCaseCatalog).getByText('Archived evaluation run snapshots')).toBeInTheDocument();
   expect(within(evaluationCaseCatalog).getByText('snapshot-1')).toBeInTheDocument();
   expect(within(evaluationCaseCatalog).getByText('2026-06-26T04:00:00Z')).toBeInTheDocument();
+  expect(within(evaluationCaseCatalog).getByText('Archived evaluation runs')).toBeInTheDocument();
+  expect(within(evaluationCaseCatalog).getByText('evaluation-run-1')).toBeInTheDocument();
+  expect(within(evaluationCaseCatalog).getByText('2026-06-28T04:00:00Z')).toBeInTheDocument();
   expect(within(evaluationCaseCatalog).getByText('Archived evaluation fixture baseline runs')).toBeInTheDocument();
   expect(within(evaluationCaseCatalog).getByText('Evaluation fixture baseline regression')).toBeInTheDocument();
   expect(within(evaluationCaseCatalog).getByText('REGRESSED')).toBeInTheDocument();
@@ -2678,6 +2707,8 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(within(evaluationCaseCatalog).getByText('maven ok')).toBeInTheDocument();
   await user.click(within(evaluationCaseCatalog).getByRole('button', { name: 'Run and archive fixture baseline' }));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/evaluation/fixture-baseline-runs', { method: 'POST' }));
+  await user.click(within(evaluationCaseCatalog).getByRole('button', { name: 'Run evaluation' }));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/evaluation/runs', { method: 'POST' }));
   await waitFor(() => {
     const regressionSummaryCalls = fetchMock.mock.calls.filter(([url]) => url === '/api/evaluation/fixture-baseline-runs/summary');
     expect(regressionSummaryCalls.length).toBeGreaterThanOrEqual(2);
@@ -3973,6 +4004,9 @@ test('shows manual task creation failures without clearing the form', async () =
     if (url === '/api/evaluation/run-preview') {
       return jsonResponse(evaluationRunPreview);
     }
+    if (url === '/api/evaluation/runs') {
+      return jsonResponse([]);
+    }
     if (url === '/api/evaluation/run-snapshots') {
       return jsonResponse([]);
     }
@@ -4605,6 +4639,9 @@ test('shows dashboard refresh progress while top-level data is loading', async (
     if (url === '/api/evaluation/run-preview') {
       return jsonResponse(evaluationRunPreview);
     }
+    if (url === '/api/evaluation/runs') {
+      return jsonResponse([]);
+    }
     if (url === '/api/evaluation/run-snapshots') {
       return jsonResponse([]);
     }
@@ -5114,6 +5151,12 @@ function defaultAppResponse(input: RequestInfo | URL, init?: RequestInit) {
   }
   if (url === '/api/evaluation/run-preview') {
     return jsonResponse(evaluationRunPreview);
+  }
+  if (url === '/api/evaluation/runs' && init?.method === 'POST') {
+    return jsonResponse(evaluationRunArchive);
+  }
+  if (url === '/api/evaluation/runs') {
+    return jsonResponse([evaluationRunArchive]);
   }
   if (url === '/api/evaluation/run-snapshots' && init?.method === 'POST') {
     return jsonResponse(evaluationRunSnapshotArchive);

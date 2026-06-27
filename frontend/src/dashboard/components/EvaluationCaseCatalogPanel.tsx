@@ -8,6 +8,7 @@ import type {
   EvaluationFixtureBaselineRunArchive,
   EvaluationFixtureBaselineRunRegressionSummary,
   EvaluationFixtureBaselineSummary,
+  EvaluationRunArchive,
   EvaluationRunPreview,
   EvaluationRunSnapshotArchive
 } from '../../types';
@@ -21,6 +22,8 @@ interface EvaluationCaseCatalogPanelProps {
   fixtureBaselineRuns: EvaluationFixtureBaselineRunArchive[];
   fixtureBaselineRegressionSummary: EvaluationFixtureBaselineRunRegressionSummary | null;
   runPreview: EvaluationRunPreview | null;
+  evaluationRuns: EvaluationRunArchive[];
+  evaluationRunLoading: boolean;
   archives: EvaluationRunSnapshotArchive[];
   error: string | null;
   summaryError: string | null;
@@ -28,11 +31,14 @@ interface EvaluationCaseCatalogPanelProps {
   fixtureBaselineError: string | null;
   fixtureBaselineRegressionError: string | null;
   runPreviewError: string | null;
+  evaluationRunError: string | null;
   archiveError: string | null;
   onRunFixtureBaseline: () => Promise<EvaluationFixtureBaselineSummary>;
   onRunAndArchiveFixtureBaseline: () => Promise<EvaluationFixtureBaselineRunArchive>;
   onDownloadFixtureBaselineRunReport: (runId: string) => Promise<Blob>;
   onArchiveRunSnapshot: () => Promise<EvaluationRunSnapshotArchive>;
+  onRunAndArchiveEvaluation: () => Promise<EvaluationRunArchive>;
+  onDownloadEvaluationRunReport: (runId: string) => Promise<Blob>;
   onDownloadArchiveReport: (snapshotId: string) => Promise<Blob>;
 }
 
@@ -45,6 +51,8 @@ export function EvaluationCaseCatalogPanel({
   fixtureBaselineRuns,
   fixtureBaselineRegressionSummary,
   runPreview,
+  evaluationRuns,
+  evaluationRunLoading,
   archives,
   error,
   summaryError,
@@ -52,11 +60,14 @@ export function EvaluationCaseCatalogPanel({
   fixtureBaselineError,
   fixtureBaselineRegressionError,
   runPreviewError,
+  evaluationRunError,
   archiveError,
   onRunFixtureBaseline,
   onRunAndArchiveFixtureBaseline,
   onDownloadFixtureBaselineRunReport,
   onArchiveRunSnapshot,
+  onRunAndArchiveEvaluation,
+  onDownloadEvaluationRunReport,
   onDownloadArchiveReport
 }: EvaluationCaseCatalogPanelProps) {
   const supportedCases = cases.filter((evaluationCase) => evaluationCase.category === 'SUPPORTED_FIX');
@@ -134,6 +145,24 @@ export function EvaluationCaseCatalogPanel({
     await onArchiveRunSnapshot();
   }
 
+  async function runAndArchiveEvaluation() {
+    await onRunAndArchiveEvaluation();
+  }
+
+  async function copyEvaluationRunReport(archive: EvaluationRunArchive) {
+    await navigator.clipboard?.writeText(archive.report);
+  }
+
+  async function downloadEvaluationRunReport(archive: EvaluationRunArchive) {
+    const blob = await onDownloadEvaluationRunReport(archive.id);
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `patchpilot-evaluation-run-${archive.id}.md`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
+
   async function copyArchivedReport(archive: EvaluationRunSnapshotArchive) {
     await navigator.clipboard?.writeText(archive.report);
   }
@@ -193,6 +222,12 @@ export function EvaluationCaseCatalogPanel({
         <div className="adapter-api-error">
           <strong>Evaluation run preview incomplete</strong>
           <span>{runPreviewError}</span>
+        </div>
+      ) : null}
+      {evaluationRunError ? (
+        <div className="adapter-api-error">
+          <strong>Evaluation run archive incomplete</strong>
+          <span>{evaluationRunError}</span>
         </div>
       ) : null}
       {archiveError ? (
@@ -458,6 +493,65 @@ export function EvaluationCaseCatalogPanel({
           ) : null}
         </div>
       ) : null}
+      <div className="adapter-readiness-section evaluation-run-archive-section">
+        <div className="panel-subheader">
+          <div>
+            <h3>Archived evaluation runs</h3>
+            <p>{evaluationRuns.length > 0 ? `${evaluationRuns.length} archived local evaluation ${evaluationRuns.length === 1 ? 'run' : 'runs'}` : 'Run local fixture and safety coverage evidence on demand'}</p>
+          </div>
+          <button type="button" className="secondary-button" onClick={runAndArchiveEvaluation} disabled={evaluationRunLoading}>
+            {evaluationRunLoading ? 'Running evaluation' : 'Run evaluation'}
+          </button>
+        </div>
+        {evaluationRuns.length > 0 ? (
+          <div className="evaluation-case-list">
+            {evaluationRuns.map((archive) => (
+              <article className="evaluation-case-row" key={archive.id}>
+                <div>
+                  <strong>{archive.status}</strong>
+                  <span>{archive.id}</span>
+                </div>
+                <p>{archive.createdAt}</p>
+                <div className="evaluation-case-facts">
+                  <span>{archive.totalCaseCount} cases</span>
+                  <span>{archive.supportedFixCaseCount} supported</span>
+                  <span>{archive.safetyRejectionCaseCount} safety</span>
+                  <span>{archive.executedFixCaseCount} executed</span>
+                  <span>{archive.passedFixCaseCount} passed</span>
+                  <span>{archive.failedFixCaseCount} failed</span>
+                  <span>{archive.skippedCaseCount} skipped</span>
+                </div>
+                <div className="evaluation-case-detail">
+                  <span>Coverage</span>
+                  <p>{`${archive.coveredLanguages.join(', ') || 'No languages'} / ${archive.coveredBuildSystems.join(', ') || 'No build systems'}`}</p>
+                </div>
+                <div className="evaluation-case-detail">
+                  <span>Safety categories</span>
+                  <p>{archive.safetyRejectionCategories.join(', ') || 'No safety categories'}</p>
+                </div>
+                <div className="evaluation-case-detail">
+                  <span>Archive contract</span>
+                  <p>{archive.sideEffectContract}</p>
+                </div>
+                <div className="evaluation-case-detail">
+                  <span>Next action</span>
+                  <p>{archive.nextAction}</p>
+                </div>
+                <div className="panel-actions">
+                  <button type="button" className="secondary-button" onClick={() => copyEvaluationRunReport(archive)}>
+                    Copy {archive.id} evaluation report
+                  </button>
+                  <button type="button" className="secondary-button" onClick={() => downloadEvaluationRunReport(archive)}>
+                    Download {archive.id} evaluation report
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <p className="empty-state compact-empty-state">No evaluation runs archived yet.</p>
+        )}
+      </div>
       <div className="adapter-readiness-section evaluation-run-archive-section">
         <h3>Archived evaluation run snapshots</h3>
         {archives.length > 0 ? (

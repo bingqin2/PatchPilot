@@ -101,10 +101,11 @@ PatchPilot should be measured through repeatable issue-to-PR fixtures, not only 
 Target capabilities:
 
 - Checked-in evaluation cases with repository fixture, issue text, expected changed files, expected verification command, and success criteria.
-- The first implementation surface is an evaluation case catalog, readiness summary, fixture-readiness report, on-demand fixture execution baseline, fixture baseline run archive, baseline regression summary, demo readiness gate, readiness snapshot trend summary, session handoff trend evidence, and run preview API/dashboard panel, so operators can inspect supported language and safety-rejection scenarios, verify checked-in fixture coverage, run adapter-selected local fixture commands, preserve baseline execution reports, prove whether demo readiness is improving or regressing, carry that trend into session handoff packages, block demo launches on fixture regressions, and copy benchmark-shaped evidence before persisted automated benchmark runs exist.
+- The first implementation surface is an evaluation case catalog, readiness summary, fixture-readiness report, on-demand fixture execution baseline, fixture baseline run archive, baseline regression summary, local full evaluation run archive, demo readiness gate, readiness snapshot trend summary, session handoff trend evidence, and run preview API/dashboard panel, so operators can inspect supported language and safety-rejection scenarios, verify checked-in fixture coverage, run adapter-selected local fixture commands, preserve baseline execution reports, archive combined fixture and safety coverage reports, prove whether demo readiness is improving or regressing, carry that trend into session handoff packages, block demo launches on fixture regressions, and copy benchmark-shaped evidence before hosted model benchmark runs exist.
 - Smoke benchmarks for Java/Maven, Java/Gradle, Go, Node, and Python adapters.
 - Metrics for trigger acceptance accuracy, unsupported-repository rejection accuracy, patch application success, verification pass rate, PR creation success, false rejection rate, false acceptance rate, model cost, and latency.
-- Stored evaluation runs that can compare model, prompt version, adapter, and code revision.
+- Stored local evaluation runs that combine fixture baseline output, adapter coverage, safety-rejection coverage, side-effect contract, and next action without creating tasks, calling the model, mutating Git, or writing to GitHub.
+- Future stored model benchmark runs that can compare model, prompt version, adapter, and code revision.
 - A Markdown report for each benchmark run that can be used in demos and interviews.
 - A small public benchmark set for resume evidence and a private set for regression testing.
 

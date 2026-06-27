@@ -117,6 +117,17 @@ requires redelivery blocks the handoff with the diagnostic operator action. This
 check does not call GitHub, redeliver events, create tasks, mutate queue state,
 archive reports, or write new delivery diagnostics.
 
+Evaluation run archives are PatchPilot-local evidence records. `POST
+/api/evaluation/runs` combines the current evaluation catalog preview with the
+checked-in fixture baseline runner, records language/build-system coverage,
+safety-rejection coverage, local execution counts, side-effect contract, next
+action, and a Markdown report, then stores the latest runs through the active
+archive repository. It may run adapter-selected commands against checked-in
+fixtures, but it must not create tasks, call the model, clone repositories,
+mutate Git, push branches, open Pull Requests, send GitHub comments, or write to
+GitHub. Listing and report-download endpoints are read-only over the same
+archive store.
+
 ## Worker Runtime Health
 
 The single-process backend records queue worker heartbeat state in memory through
