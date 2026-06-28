@@ -1,20 +1,28 @@
-import { Download, ExternalLink } from 'lucide-react';
+import { Copy, Download, ExternalLink } from 'lucide-react';
 import { useState } from 'react';
-import type { DemoAcceptanceSummary, DemoReadinessStatus } from '../../types';
+import type { DemoAcceptanceSummary, DemoFinalAcceptanceSharePackage, DemoReadinessStatus } from '../../types';
 import { compactDateTime } from '../format';
 
 interface DemoAcceptanceSummaryPanelProps {
   summary: DemoAcceptanceSummary | null;
+  sharePackage: DemoFinalAcceptanceSharePackage | null;
   error: string | null;
+  sharePackageError: string | null;
   onDownloadReport: () => Promise<Blob>;
+  onDownloadSharePackageReport: () => Promise<Blob>;
 }
 
 export function DemoAcceptanceSummaryPanel({
   summary,
+  sharePackage,
   error,
-  onDownloadReport
+  sharePackageError,
+  onDownloadReport,
+  onDownloadSharePackageReport
 }: DemoAcceptanceSummaryPanelProps) {
   const [downloadStatus, setDownloadStatus] = useState<string | null>(null);
+  const [sharePackageCopyStatus, setSharePackageCopyStatus] = useState<string | null>(null);
+  const [sharePackageDownloadStatus, setSharePackageDownloadStatus] = useState<string | null>(null);
 
   async function downloadReport() {
     try {
@@ -23,6 +31,28 @@ export function DemoAcceptanceSummaryPanel({
       setDownloadStatus('Final demo acceptance report downloaded');
     } catch {
       setDownloadStatus('Download failed');
+    }
+  }
+
+  async function copySharePackage() {
+    if (!sharePackage) {
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(formatSharePackageClipboard(sharePackage));
+      setSharePackageCopyStatus('Final acceptance share package copied');
+    } catch {
+      setSharePackageCopyStatus('Copy failed');
+    }
+  }
+
+  async function downloadSharePackage() {
+    try {
+      const report = await onDownloadSharePackageReport();
+      downloadMarkdown(report, 'patchpilot-final-demo-acceptance-share-package.md');
+      setSharePackageDownloadStatus('Final acceptance share package downloaded');
+    } catch {
+      setSharePackageDownloadStatus('Download failed');
     }
   }
 
@@ -159,12 +189,160 @@ export function DemoAcceptanceSummaryPanel({
               ))}
             </ul>
           </div>
+
+          <FinalAcceptanceSharePackage
+            sharePackage={sharePackage}
+            error={sharePackageError}
+            copyStatus={sharePackageCopyStatus}
+            downloadStatus={sharePackageDownloadStatus}
+            onCopy={() => void copySharePackage()}
+            onDownload={() => void downloadSharePackage()}
+          />
         </>
       ) : (
         <div className="empty-state">Final demo acceptance summary has not loaded yet.</div>
       )}
     </section>
   );
+}
+
+interface FinalAcceptanceSharePackageProps {
+  sharePackage: DemoFinalAcceptanceSharePackage | null;
+  error: string | null;
+  copyStatus: string | null;
+  downloadStatus: string | null;
+  onCopy: () => void;
+  onDownload: () => void;
+}
+
+function FinalAcceptanceSharePackage({
+  sharePackage,
+  error,
+  copyStatus,
+  downloadStatus,
+  onCopy,
+  onDownload
+}: FinalAcceptanceSharePackageProps) {
+  return (
+    <div className="demo-session-archives">
+      <div className="demo-session-archive-title-row">
+        <h3>Final acceptance share package</h3>
+        <div className="demo-session-archive-actions">
+          <button
+            className="secondary-button"
+            type="button"
+            onClick={() => onCopy()}
+            aria-label="Copy final acceptance share package"
+            disabled={!sharePackage}
+          >
+            <Copy size={14} />
+            Copy package
+          </button>
+          <button
+            className="secondary-button"
+            type="button"
+            onClick={() => onDownload()}
+            aria-label="Download final acceptance share package"
+          >
+            <Download size={14} />
+            Download package
+          </button>
+          {copyStatus ? <span className="copy-status">{copyStatus}</span> : null}
+          {downloadStatus ? <span className="copy-status">{downloadStatus}</span> : null}
+        </div>
+      </div>
+
+      {error ? (
+        <div className="adapter-api-error">
+          <strong>Final acceptance share package unavailable</strong>
+          <span>{error}</span>
+        </div>
+      ) : null}
+
+      {sharePackage ? (
+        <>
+          <div className="demo-session-summary">
+            <div>
+              <span>Send status</span>
+              <strong>{sharePackage.sendReady ? 'Send-ready' : statusLabel(sharePackage.status)}</strong>
+              <small>{sharePackage.summary}</small>
+            </div>
+            <div>
+              <span>Message subject</span>
+              <strong>{sharePackage.messageSubject}</strong>
+              <small>Generated {compactDateTime(sharePackage.generatedAt)}</small>
+            </div>
+            <div>
+              <span>Next action</span>
+              <strong>{sharePackage.nextAction}</strong>
+              <small>{sharePackage.latestPullRequestUrl ?? 'No Pull Request link'}</small>
+            </div>
+          </div>
+          <div className="demo-session-lists compact-demo-session-lists">
+            <CompactList
+              title="Recommended recipients"
+              items={sharePackage.recommendedRecipients}
+              emptyText="No recommended recipients available."
+            />
+            <CompactList
+              title="Required attachments"
+              items={sharePackage.requiredAttachments}
+              emptyText="No required attachments available."
+            />
+            <CompactList
+              title="Pre-send checks"
+              items={sharePackage.preSendChecks}
+              emptyText="No pre-send checks available."
+            />
+          </div>
+          <div className="demo-session-handoff-checks">
+            <h3>Message template</h3>
+            <p>{sharePackage.messageBody}</p>
+            <small>{sharePackage.sideEffectContract}</small>
+          </div>
+        </>
+      ) : (
+        <p className="empty-state">Final acceptance share package has not loaded yet.</p>
+      )}
+    </div>
+  );
+}
+
+interface CompactListProps {
+  title: string;
+  items: string[];
+  emptyText: string;
+}
+
+function CompactList({ title, items, emptyText }: CompactListProps) {
+  return (
+    <div>
+      <h3>{title}</h3>
+      {items.length > 0 ? (
+        <ul>
+          {items.map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+        </ul>
+      ) : (
+        <p>{emptyText}</p>
+      )}
+    </div>
+  );
+}
+
+function formatSharePackageClipboard(sharePackage: DemoFinalAcceptanceSharePackage) {
+  return [
+    `Subject: ${sharePackage.messageSubject}`,
+    '',
+    sharePackage.messageBody,
+    '',
+    'Required attachments:',
+    ...sharePackage.requiredAttachments.map((attachment) => `- ${attachment}`),
+    '',
+    'Pre-send checks:',
+    ...sharePackage.preSendChecks.map((check) => `- ${check}`)
+  ].join('\n');
 }
 
 interface AcceptanceStatProps {

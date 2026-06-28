@@ -14,7 +14,7 @@ Changes:
 - Rendered adapter execution evidence in the dashboard task detail panel, including supported adapter options when repository execution stopped before model generation, verification, Git mutation, push, or Pull Request creation.
 - Updated README, product spec, architecture notes, frontend design notes, API contracts, dashboard fixtures, and this execution log.
 
-Validation so far:
+Validation:
 
 - `mvn -pl PatchPilot -Dtest=TaskControllerTests#should_include_adapter_execution_evidence_in_task_detail test`: first failed because task detail did not expose `adapterExecutionEvidence.status`; passed after adding the backend detail read model.
 - `npm test -- --run src/dashboard/components/TaskDetailPanel.test.tsx --reporter=basic --silent`: first failed because the dashboard did not render `Adapter execution evidence`; passed after adding the task detail section.
@@ -5499,6 +5499,30 @@ Validation:
 - `mvn -q -pl PatchPilot -Dtest=DemoAcceptanceSummaryServiceTests,DemoReadinessControllerTests test`: passed.
 - `mvn -pl PatchPilot -q test`: passed with the existing Mockito dynamic-agent warning on the local JDK.
 - `npm test -- --reporter=basic`: passed, 30 test files and 402 tests.
+- `npm run build`: passed with the existing Vite large-chunk warning.
+- `git diff --check`: passed.
+
+## 2026-06-28 - 278 Final demo acceptance share package
+
+- Started `278-final-demo-acceptance-share-package` to convert final demo acceptance into reviewer-facing send/no-send material without letting PatchPilot send anything externally.
+- Planned a complete feature slice: backend package read model, read-only JSON and Markdown download endpoints, dashboard rendering, copy/download controls, README/product/frontend docs, plan doc, and regression tests.
+- RED backend tests were added first for accepted and not-accepted share package states.
+- RED controller tests were added first for `GET /api/demo/final-acceptance-share-package` and `GET /api/demo/final-acceptance-share-package/report/download`.
+- RED frontend tests were added first for API helpers, dashboard package rendering, copy behavior, download behavior, and App-level loading.
+- Implemented `DemoFinalAcceptanceSharePackageService` to derive send-ready status, recipients, required attachments, pre-send checks, message subject/body, evidence notes, side-effect contract, and Markdown from `DemoAcceptanceSummaryService`.
+- Added `DemoFinalAcceptanceSharePackageVo`, controller endpoints, frontend type/API helpers, App refresh integration, and final acceptance panel copy/download controls.
+- Updated README, product spec, frontend design doc, and this plan document.
+
+Validation so far:
+
+- `mvn -q -pl PatchPilot -Dtest=DemoFinalAcceptanceSharePackageServiceTests test`: first failed because `DemoFinalAcceptanceSharePackageVo` did not exist; passed after service and VO implementation.
+- `mvn -q -pl PatchPilot -Dtest=DemoReadinessControllerTests#should_return_final_demo_acceptance_share_package+should_download_final_demo_acceptance_share_package_report test`: first failed with `404` because the endpoints did not exist; passed after controller implementation.
+- `npm test -- src/api.test.ts -- --reporter=basic`: first failed because the final acceptance share-package API helpers did not exist; passed after frontend API implementation.
+- `npm test -- src/dashboard/components/DemoAcceptanceSummaryPanel.test.tsx -- --reporter=basic`: first failed because the panel did not render share-package controls; passed after UI implementation and repeated read-only contract assertions.
+- `mvn -q -pl PatchPilot -Dtest=DemoFinalAcceptanceSharePackageServiceTests,DemoReadinessControllerTests test`: passed.
+- `npm test -- src/dashboard/components/DemoAcceptanceSummaryPanel.test.tsx src/api.test.ts src/App.test.tsx -- --reporter=basic`: first failed because the App-level acceptance-panel assertion did not account for the package message body repeating the summary text; passed after updating the assertion, 3 test files and 236 tests.
+- `mvn -pl PatchPilot -q test`: passed with the existing Mockito dynamic-agent warning on the local JDK.
+- `npm test -- --reporter=basic`: passed, 30 test files and 405 tests.
 - `npm run build`: passed with the existing Vite large-chunk warning.
 - `git diff --check`: passed.
 

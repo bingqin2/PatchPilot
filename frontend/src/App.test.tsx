@@ -2434,6 +2434,40 @@ const demoAcceptanceSummary = {
   markdownReport: '# PatchPilot Final Demo Acceptance Summary'
 };
 
+const demoFinalAcceptanceSharePackage = {
+  status: 'READY',
+  sendReady: true,
+  summary: 'PatchPilot final demo acceptance package is ready to send.',
+  nextAction: 'Send the prepared final acceptance message with all required attachments.',
+  launchCertificateArchiveId: 'launch-certificate-archive-1',
+  taskCertificateArchiveId: 'task-evidence-certificate-archive-1',
+  latestTaskId: 'task-1',
+  latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+  recommendedRecipients: ['Repository owner or maintainer', 'Demo reviewer'],
+  requiredAttachments: [
+    'Final demo acceptance summary report',
+    'Launch acceptance certificate archive launch-certificate-archive-1',
+    'Task evidence acceptance certificate archive task-evidence-certificate-archive-1',
+    'Pull Request https://github.com/bingqin2/PatchPilot/pull/8'
+  ],
+  preSendChecks: [
+    'Confirm final demo acceptance status is READY and accepted.',
+    'Confirm launch acceptance certificate archive launch-certificate-archive-1 is attached.',
+    'Confirm task evidence acceptance certificate archive task-evidence-certificate-archive-1 is attached.',
+    'Confirm Pull Request https://github.com/bingqin2/PatchPilot/pull/8 opens correctly.'
+  ],
+  messageSubject: 'PatchPilot final demo acceptance: task-1',
+  messageBody: 'PatchPilot final demo acceptance is ready for external review.',
+  evidenceNotes: [
+    'Launch acceptance certificate archive launch-certificate-archive-1 is certified.',
+    'Task evidence acceptance certificate archive task-evidence-certificate-archive-1 is certified.'
+  ],
+  sideEffectContract:
+    'GET /api/demo/final-acceptance-share-package is read-only: it does not create tasks, call the model, run tests, mutate Git, archive records, record receipts, send messages, or write to GitHub.',
+  markdownReport: '# PatchPilot Final Demo Acceptance Share Package',
+  generatedAt: '2026-06-28T15:00:00Z'
+};
+
 const demoLaunchEvidenceDeliveryReceipt = {
   id: 'launch-delivery-receipt-1',
   status: 'READY',
@@ -2649,6 +2683,9 @@ beforeEach(() => {
     }
     if (url === '/api/demo/acceptance-summary') {
       return jsonResponse(demoAcceptanceSummary);
+    }
+    if (url === '/api/demo/final-acceptance-share-package') {
+      return jsonResponse(demoFinalAcceptanceSharePackage);
     }
     if (url === '/api/demo/readiness-snapshots' && init?.method === 'POST') {
       return jsonResponse(demoReadinessSnapshotArchive);
@@ -3723,6 +3760,7 @@ test('renders operational task dashboard from backend APIs', async () => {
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/script'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/readiness'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/acceptance-summary'));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-acceptance-share-package'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/github/credential-readiness'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/github/webhook-setup-readiness'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/github/repository-access-readiness?owner=bingqin2&repository=PatchPilot'));
@@ -3737,7 +3775,10 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(within(evidencePanel).getByText('Webhook setup is ready for GitHub deliveries.')).toBeInTheDocument();
   expect(within(evidencePanel).getByText('https://demo.trycloudflare.com/api/github/webhook')).toBeInTheDocument();
   const acceptancePanel = screen.getByRole('region', { name: 'Final demo acceptance' });
-  expect(within(acceptancePanel).getByText('PatchPilot final demo acceptance is ready for external review.')).toBeInTheDocument();
+  expect(within(acceptancePanel).getAllByText('PatchPilot final demo acceptance is ready for external review.')).not.toHaveLength(0);
+  expect(within(acceptancePanel).getByRole('heading', { name: 'Final acceptance share package' })).toBeInTheDocument();
+  expect(within(acceptancePanel).getByText('PatchPilot final demo acceptance package is ready to send.')).toBeInTheDocument();
+  expect(within(acceptancePanel).getByText('PatchPilot final demo acceptance: task-1')).toBeInTheDocument();
   expect(within(acceptancePanel).getAllByText('task-evidence-certificate-archive-1')).not.toHaveLength(0);
   expect(screen.getByLabelText('Webhook setup readiness')).toHaveTextContent('# PatchPilot Webhook Setup Readiness');
   expect(screen.getAllByText('demo-session-20260624T003000Z').length).toBeGreaterThanOrEqual(4);
@@ -6262,6 +6303,9 @@ function defaultAppResponse(input: RequestInfo | URL, init?: RequestInit) {
   }
   if (url === '/api/demo/acceptance-summary') {
     return jsonResponse(demoAcceptanceSummary);
+  }
+  if (url === '/api/demo/final-acceptance-share-package') {
+    return jsonResponse(demoFinalAcceptanceSharePackage);
   }
   if (url === '/api/demo/launch-preflight' && init?.method === 'POST') {
     return jsonResponse(demoLaunchPreflight);

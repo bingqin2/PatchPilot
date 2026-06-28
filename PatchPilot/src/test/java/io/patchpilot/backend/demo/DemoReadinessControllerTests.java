@@ -7,6 +7,7 @@ import io.patchpilot.backend.demo.domain.DemoAcceptanceSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
 import io.patchpilot.backend.demo.domain.DemoEvaluationRunReadinessEvidenceVo;
+import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceSharePackageVo;
 import io.patchpilot.backend.demo.domain.DemoFinalHandoffReportPackageArchiveEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoFinalHandoffReportPackageArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoFinalHandoffReportPackageVo;
@@ -167,6 +168,9 @@ class DemoReadinessControllerTests {
 
     @MockitoBean
     private DemoAcceptanceSummaryService demoAcceptanceSummaryService;
+
+    @MockitoBean
+    private DemoFinalAcceptanceSharePackageService demoFinalAcceptanceSharePackageService;
 
     @MockitoBean
     private DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
@@ -626,6 +630,36 @@ class DemoReadinessControllerTests {
                 .andExpect(content().contentType("text/markdown;charset=UTF-8"))
                 .andExpect(content().string(containsString("# PatchPilot Final Demo Acceptance Summary")))
                 .andExpect(content().string(containsString("Accepted: `true`")));
+    }
+
+    @Test
+    void should_return_final_demo_acceptance_share_package() throws Exception {
+        when(demoFinalAcceptanceSharePackageService.getSharePackage()).thenReturn(finalAcceptanceSharePackage());
+
+        mockMvc.perform(get("/api/demo/final-acceptance-share-package"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.sendReady").value(true))
+                .andExpect(jsonPath("$.data.summary").value("PatchPilot final demo acceptance package is ready to send."))
+                .andExpect(jsonPath("$.data.launchCertificateArchiveId").value("launch-certificate-archive-1"))
+                .andExpect(jsonPath("$.data.taskCertificateArchiveId").value("task-evidence-certificate-archive-1"))
+                .andExpect(jsonPath("$.data.messageSubject").value("PatchPilot final demo acceptance: task-1"))
+                .andExpect(jsonPath("$.data.requiredAttachments", hasItem("Final demo acceptance summary report")))
+                .andExpect(jsonPath("$.data.preSendChecks", hasItem("Confirm final demo acceptance status is READY and accepted.")))
+                .andExpect(jsonPath("$.data.markdownReport").value(containsString("# PatchPilot Final Demo Acceptance Share Package")));
+    }
+
+    @Test
+    void should_download_final_demo_acceptance_share_package_report() throws Exception {
+        when(demoFinalAcceptanceSharePackageService.getSharePackage()).thenReturn(finalAcceptanceSharePackage());
+
+        mockMvc.perform(get("/api/demo/final-acceptance-share-package/report/download"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("patchpilot-final-demo-acceptance-share-package.md")))
+                .andExpect(content().contentType("text/markdown;charset=UTF-8"))
+                .andExpect(content().string(containsString("# PatchPilot Final Demo Acceptance Share Package")))
+                .andExpect(content().string(containsString("Subject: PatchPilot final demo acceptance: task-1")));
     }
 
     @Test
@@ -3078,6 +3112,38 @@ class DemoReadinessControllerTests {
                 ),
                 "GET /api/demo/acceptance-summary is read-only: it does not create tasks, call the model, run tests, archive records, mutate Git, send messages, record receipts, or write to GitHub.",
                 "# PatchPilot Final Demo Acceptance Summary\n\n- Accepted: `true`\n"
+        );
+    }
+
+    private static DemoFinalAcceptanceSharePackageVo finalAcceptanceSharePackage() {
+        return new DemoFinalAcceptanceSharePackageVo(
+                DemoReadinessStatus.READY,
+                true,
+                "PatchPilot final demo acceptance package is ready to send.",
+                "Send the prepared final acceptance message with all required attachments.",
+                "launch-certificate-archive-1",
+                "task-evidence-certificate-archive-1",
+                "task-1",
+                "https://github.com/bingqin2/PatchPilot/pull/42",
+                List.of("Repository owner or maintainer", "Demo reviewer"),
+                List.of(
+                        "Final demo acceptance summary report",
+                        "Launch acceptance certificate archive launch-certificate-archive-1",
+                        "Task evidence acceptance certificate archive task-evidence-certificate-archive-1",
+                        "Pull Request https://github.com/bingqin2/PatchPilot/pull/42"
+                ),
+                List.of(
+                        "Confirm final demo acceptance status is READY and accepted.",
+                        "Confirm launch acceptance certificate archive launch-certificate-archive-1 is attached.",
+                        "Confirm task evidence acceptance certificate archive task-evidence-certificate-archive-1 is attached.",
+                        "Confirm Pull Request https://github.com/bingqin2/PatchPilot/pull/42 opens correctly."
+                ),
+                "PatchPilot final demo acceptance: task-1",
+                "PatchPilot final demo acceptance is ready for external review.",
+                List.of("Final acceptance status is READY."),
+                "GET /api/demo/final-acceptance-share-package is read-only: it does not create tasks, call the model, run tests, mutate Git, archive records, record receipts, send messages, or write to GitHub.",
+                "# PatchPilot Final Demo Acceptance Share Package\n\nSubject: PatchPilot final demo acceptance: task-1\n",
+                Instant.parse("2026-06-28T15:00:00Z")
         );
     }
 }

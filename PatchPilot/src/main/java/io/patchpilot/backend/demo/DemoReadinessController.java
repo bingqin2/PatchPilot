@@ -3,6 +3,7 @@ package io.patchpilot.backend.demo;
 import io.patchpilot.backend.common.response.ApiResponse;
 import io.patchpilot.backend.demo.domain.DemoAcceptanceSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
+import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceSharePackageVo;
 import io.patchpilot.backend.demo.domain.DemoFinalHandoffReportPackageArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoFinalHandoffReportPackageVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffFinalizationVo;
@@ -84,6 +85,7 @@ public class DemoReadinessController {
     private final DemoLaunchAcceptanceCertificateService demoLaunchAcceptanceCertificateService;
     private final DemoLaunchAcceptanceCertificateArchiveService demoLaunchAcceptanceCertificateArchiveService;
     private final DemoAcceptanceSummaryService demoAcceptanceSummaryService;
+    private final DemoFinalAcceptanceSharePackageService demoFinalAcceptanceSharePackageService;
     private final DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
     private final DemoReadinessSnapshotTrendService demoReadinessSnapshotTrendService;
     private final DemoLaunchPreflightService demoLaunchPreflightService;
@@ -335,6 +337,11 @@ public class DemoReadinessController {
         return ApiResponse.ok(demoAcceptanceSummaryService.getSummary());
     }
 
+    @GetMapping("/final-acceptance-share-package")
+    public ApiResponse<DemoFinalAcceptanceSharePackageVo> getFinalAcceptanceSharePackage() {
+        return ApiResponse.ok(demoFinalAcceptanceSharePackageService.getSharePackage());
+    }
+
     @GetMapping(value = "/handoff-share-center/report/download", produces = "text/markdown;charset=UTF-8")
     public ResponseEntity<String> downloadHandoffShareCenterReport() {
         return markdownAttachment(
@@ -430,6 +437,14 @@ public class DemoReadinessController {
         return markdownAttachment(
                 "patchpilot-final-demo-acceptance-summary.md",
                 demoAcceptanceSummaryService.getSummary().markdownReport()
+        );
+    }
+
+    @GetMapping(value = "/final-acceptance-share-package/report/download", produces = "text/markdown;charset=UTF-8")
+    public ResponseEntity<String> downloadFinalAcceptanceSharePackageReport() {
+        return markdownAttachment(
+                "patchpilot-final-demo-acceptance-share-package.md",
+                demoFinalAcceptanceSharePackageService.getSharePackage().markdownReport()
         );
     }
 
