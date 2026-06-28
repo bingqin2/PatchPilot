@@ -5351,3 +5351,24 @@ Validation so far:
 - `npm test -- --reporter=basic`: passed, 29 test files and 382 tests.
 - `npm run build`: passed.
 - `git diff --check`: passed.
+
+## 2026-06-28 - 267 Task evidence acceptance closeout archive
+
+- Started `267-task-evidence-acceptance-closeout-archive` to preserve finalized task evidence acceptance as durable PatchPilot-local evidence.
+- Planned a complete feature slice: backend archive storage, Flyway/MyBatis persistence, create/list/download APIs, dashboard archive controls, docs, and regression tests.
+- RED controller and frontend tests were added first for creating, listing, downloading, and displaying acceptance closeout archives.
+- Implemented persistent acceptance closeout archives with in-memory and MyBatis repositories plus Flyway migration `V43__create_fix_task_evidence_acceptance_closeout_archive.sql`.
+- Added `POST /api/tasks/evidence-packages/acceptance-closeout/archives`, `GET /api/tasks/evidence-packages/acceptance-closeout/archives`, and archived report download.
+- Added a service guard so closeout archives can only be created when the task evidence finalization gate is `READY`.
+- Updated the `Task evidence archive review` dashboard panel with recent closeout archives, archive creation, report download, and error/status feedback.
+- Updated README and added this plan document.
+
+Validation so far:
+
+- `mvn -pl PatchPilot -Dtest=TaskControllerTests#should_archive_list_and_download_task_evidence_acceptance_closeout test`: first failed because the closeout archive endpoint did not exist; passed after backend implementation.
+- `npm test -- src/api.test.ts src/dashboard/components/TaskEvidenceArchiveReviewPanel.test.tsx src/App.test.tsx -- --reporter=basic`: first failed because frontend API helpers, panel controls, and dashboard wiring were missing; passed after implementation, 226 tests run.
+- `mvn -pl PatchPilot -Dtest=TaskControllerTests#should_archive_list_and_download_task_evidence_acceptance_closeout+should_reject_task_evidence_acceptance_closeout_archive_until_finalization_is_ready,FixTaskEvidencePackageAcceptanceCloseoutArchiveServiceTests,FixTaskEvidencePackageAcceptanceCloseoutArchiveConvertTests,InMemoryFixTaskEvidencePackageAcceptanceCloseoutArchiveRepositoryTests,MyBatisFixTaskEvidencePackageAcceptanceCloseoutArchiveRepositoryTests,FixTaskEvidencePackageAcceptanceCloseoutArchiveMigrationTests test`: passed, 10 tests run.
+- `mvn -q -pl PatchPilot test`: first failed because an older controller test assumed missing delivery receipts instead of stale receipts in a shared test context; passed after asserting the stable no-fresh-receipt behavior, 964 tests run.
+- `npm test -- --reporter=basic`: passed, 29 test files and 386 tests.
+- `npm run build`: passed.
+- `git diff --check`: passed.

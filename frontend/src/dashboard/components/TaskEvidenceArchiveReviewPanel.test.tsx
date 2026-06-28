@@ -2,6 +2,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type {
   FixTaskEvidencePackageArchive,
+  FixTaskEvidencePackageAcceptanceCloseoutArchive,
   FixTaskEvidencePackageFinalization,
   FixTaskEvidencePackageArchiveShareCenter,
   FixTaskEvidencePackageArchiveSummary,
@@ -145,6 +146,22 @@ const deliveryReceipt: FixTaskEvidencePackageShareDeliveryReceipt = {
   markdownReport: '# PatchPilot Task Evidence Delivery Receipt'
 };
 
+const closeoutArchive: FixTaskEvidencePackageAcceptanceCloseoutArchive = {
+  id: 'task-evidence-closeout-archive-1',
+  status: 'READY',
+  accepted: true,
+  summary: 'Task evidence is finalized with a fresh delivery receipt for the current shareable archive.',
+  latestArchiveId: 'task-evidence-archive-1',
+  latestTaskId: 'task-1',
+  latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+  latestDeliveryReceiptId: 'task-evidence-delivery-receipt-1',
+  latestDeliveryTarget: 'reviewer@example.com',
+  latestDeliveryChannel: 'email',
+  deliveryReceiptFreshness: 'FRESH',
+  createdAt: '2026-06-28T07:00:00Z',
+  report: '# PatchPilot Task Evidence Acceptance Closeout Archive'
+};
+
 test('shows global task evidence archive summary and recent archives', () => {
   render(
     <TaskEvidenceArchiveReviewPanel
@@ -152,16 +169,20 @@ test('shows global task evidence archive summary and recent archives', () => {
       shareCenter={shareCenter}
       finalization={finalization}
       deliveryReceipts={[deliveryReceipt]}
+      closeoutArchives={[closeoutArchive]}
       archives={archives}
       error={null}
       shareCenterError={null}
       finalizationError={null}
       deliveryReceiptError={null}
+      closeoutArchiveError={null}
       onDownloadArchiveReport={vi.fn()}
       onDownloadShareCenterReport={vi.fn()}
       onDownloadFinalizationReport={vi.fn()}
       onCreateDeliveryReceipt={vi.fn()}
       onDownloadDeliveryReceiptReport={vi.fn()}
+      onArchiveAcceptanceCloseout={vi.fn()}
+      onDownloadAcceptanceCloseoutArchiveReport={vi.fn()}
       onSelectTask={vi.fn()}
     />
   );
@@ -180,6 +201,10 @@ test('shows global task evidence archive summary and recent archives', () => {
   const receiptPanel = screen.getByLabelText('Task evidence delivery receipts');
   expect(within(receiptPanel).getByText('task-evidence-delivery-receipt-1')).toBeInTheDocument();
   expect(within(receiptPanel).getByText(/reviewer@example.com.*email.*delivered/)).toBeInTheDocument();
+  const closeoutPanel = screen.getByLabelText('Task evidence acceptance closeout archives');
+  expect(within(closeoutPanel).getByText('Task evidence acceptance closeout archives')).toBeInTheDocument();
+  expect(within(closeoutPanel).getByText('task-evidence-closeout-archive-1')).toBeInTheDocument();
+  expect(within(closeoutPanel).getByText(/accepted.*task-evidence-archive-1.*task-evidence-delivery-receipt-1/i)).toBeInTheDocument();
   expect(within(panel).getByText('Task evidence archive review')).toBeInTheDocument();
   expect(within(panel).getByText('2 archived reports')).toBeInTheDocument();
   expect(within(panel).getByText('Completed')).toBeInTheDocument();
@@ -208,16 +233,20 @@ test('downloads archived evidence and opens related task from review panel', asy
       shareCenter={shareCenter}
       finalization={finalization}
       deliveryReceipts={[deliveryReceipt]}
+      closeoutArchives={[closeoutArchive]}
       archives={archives}
       error={null}
       shareCenterError={null}
       finalizationError={null}
       deliveryReceiptError={null}
+      closeoutArchiveError={null}
       onDownloadArchiveReport={download}
       onDownloadShareCenterReport={vi.fn()}
       onDownloadFinalizationReport={vi.fn()}
       onCreateDeliveryReceipt={vi.fn()}
       onDownloadDeliveryReceiptReport={vi.fn()}
+      onArchiveAcceptanceCloseout={vi.fn()}
+      onDownloadAcceptanceCloseoutArchiveReport={vi.fn()}
       onSelectTask={selectTask}
     />
   );
@@ -247,16 +276,20 @@ test('downloads task evidence share center report from review panel', async () =
       shareCenter={shareCenter}
       finalization={finalization}
       deliveryReceipts={[deliveryReceipt]}
+      closeoutArchives={[closeoutArchive]}
       archives={archives}
       error={null}
       shareCenterError={null}
       finalizationError={null}
       deliveryReceiptError={null}
+      closeoutArchiveError={null}
       onDownloadArchiveReport={vi.fn()}
       onDownloadShareCenterReport={downloadShareCenterReport}
       onDownloadFinalizationReport={vi.fn()}
       onCreateDeliveryReceipt={vi.fn()}
       onDownloadDeliveryReceiptReport={vi.fn()}
+      onArchiveAcceptanceCloseout={vi.fn()}
+      onDownloadAcceptanceCloseoutArchiveReport={vi.fn()}
       onSelectTask={vi.fn()}
     />
   );
@@ -293,16 +326,20 @@ test('records delivery receipt and downloads finalization evidence from review p
       shareCenter={shareCenter}
       finalization={finalization}
       deliveryReceipts={[deliveryReceipt]}
+      closeoutArchives={[closeoutArchive]}
       archives={archives}
       error={null}
       shareCenterError={null}
       finalizationError={null}
       deliveryReceiptError={null}
+      closeoutArchiveError={null}
       onDownloadArchiveReport={vi.fn()}
       onDownloadShareCenterReport={vi.fn()}
       onDownloadFinalizationReport={downloadFinalizationReport}
       onCreateDeliveryReceipt={createReceipt}
       onDownloadDeliveryReceiptReport={downloadReceiptReport}
+      onArchiveAcceptanceCloseout={vi.fn()}
+      onDownloadAcceptanceCloseoutArchiveReport={vi.fn()}
       onSelectTask={vi.fn()}
     />
   );
@@ -329,4 +366,55 @@ test('records delivery receipt and downloads finalization evidence from review p
     name: 'Download task evidence delivery receipt task-evidence-delivery-receipt-1'
   }));
   expect(downloadReceiptReport).toHaveBeenCalledWith('task-evidence-delivery-receipt-1');
+});
+
+test('archives and downloads task evidence acceptance closeout from review panel', async () => {
+  const user = userEvent.setup();
+  const archiveCloseout = vi.fn(async () => ({
+    ...closeoutArchive,
+    id: 'task-evidence-closeout-archive-2'
+  }));
+  const downloadCloseoutReport = vi.fn(async () => new Blob(['# Closeout archive'], {
+    type: 'text/markdown;charset=UTF-8'
+  }));
+  const createObjectURL = vi.fn(() => 'blob:task-evidence-closeout');
+  const revokeObjectURL = vi.fn();
+  const anchorClick = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
+  vi.stubGlobal('URL', { createObjectURL, revokeObjectURL });
+
+  render(
+    <TaskEvidenceArchiveReviewPanel
+      summary={summary}
+      shareCenter={shareCenter}
+      finalization={finalization}
+      deliveryReceipts={[deliveryReceipt]}
+      closeoutArchives={[closeoutArchive]}
+      archives={archives}
+      error={null}
+      shareCenterError={null}
+      finalizationError={null}
+      deliveryReceiptError={null}
+      closeoutArchiveError={null}
+      onDownloadArchiveReport={vi.fn()}
+      onDownloadShareCenterReport={vi.fn()}
+      onDownloadFinalizationReport={vi.fn()}
+      onCreateDeliveryReceipt={vi.fn()}
+      onDownloadDeliveryReceiptReport={vi.fn()}
+      onArchiveAcceptanceCloseout={archiveCloseout}
+      onDownloadAcceptanceCloseoutArchiveReport={downloadCloseoutReport}
+      onSelectTask={vi.fn()}
+    />
+  );
+
+  const closeoutPanel = screen.getByLabelText('Task evidence acceptance closeout archives');
+  await user.click(within(closeoutPanel).getByRole('button', { name: 'Archive task evidence acceptance closeout' }));
+  expect(archiveCloseout).toHaveBeenCalled();
+  expect(screen.getByText('Task evidence acceptance closeout task-evidence-closeout-archive-2 archived')).toBeInTheDocument();
+
+  await user.click(within(closeoutPanel).getByRole('button', {
+    name: 'Download task evidence acceptance closeout task-evidence-closeout-archive-1'
+  }));
+  expect(downloadCloseoutReport).toHaveBeenCalledWith('task-evidence-closeout-archive-1');
+  expect(anchorClick).toHaveBeenCalled();
+  expect(screen.getByText('Task evidence acceptance closeout task-evidence-closeout-archive-1 downloaded')).toBeInTheDocument();
 });

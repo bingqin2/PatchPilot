@@ -24,6 +24,7 @@ import io.patchpilot.backend.task.domain.enums.TriggerEvaluationSource;
 import io.patchpilot.backend.task.domain.vo.FixTaskFailureCauseSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskAdapterExecutionEvidenceVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskAuditSummaryVo;
+import io.patchpilot.backend.task.domain.vo.FixTaskEvidencePackageAcceptanceCloseoutArchiveVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskEvidencePackageArchiveVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskEvidencePackageArchiveSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskEvidencePackageFinalizationVo;
@@ -53,6 +54,7 @@ import io.patchpilot.backend.task.domain.vo.IssueContextVo;
 import io.patchpilot.backend.task.domain.vo.RepositorySupportGuidanceVo;
 import io.patchpilot.backend.task.service.FixTaskAuditSummaryService;
 import io.patchpilot.backend.task.service.FixTaskControlService;
+import io.patchpilot.backend.task.service.FixTaskEvidencePackageAcceptanceCloseoutArchiveService;
 import io.patchpilot.backend.task.service.FixTaskEvidencePackageArchiveService;
 import io.patchpilot.backend.task.service.FixTaskEvidencePackageFinalizationService;
 import io.patchpilot.backend.task.service.FixTaskEvidencePackageShareDeliveryReceiptService;
@@ -103,6 +105,8 @@ public class TaskController {
     private final FixTaskPatchReviewService fixTaskPatchReviewService;
     private final FixTaskPreExecutionDecisionService fixTaskPreExecutionDecisionService;
     private final FixTaskControlService fixTaskControlService;
+    private final FixTaskEvidencePackageAcceptanceCloseoutArchiveService
+            fixTaskEvidencePackageAcceptanceCloseoutArchiveService;
     private final FixTaskEvidencePackageArchiveService fixTaskEvidencePackageArchiveService;
     private final FixTaskEvidencePackageShareDeliveryReceiptService fixTaskEvidencePackageShareDeliveryReceiptService;
     private final FixTaskEvidencePackageFinalizationService fixTaskEvidencePackageFinalizationService;
@@ -437,6 +441,51 @@ public class TaskController {
                 "patchpilot-task-evidence-finalization.md",
                 fixTaskEvidencePackageFinalizationService.report()
         );
+    }
+
+    @PostMapping("/evidence-packages/acceptance-closeout/archives")
+    public ResponseEntity<ApiResponse<FixTaskEvidencePackageAcceptanceCloseoutArchiveVo>>
+    archiveTaskEvidencePackageAcceptanceCloseout() {
+        try {
+            FixTaskEvidencePackageAcceptanceCloseoutArchiveVo archive =
+                    fixTaskEvidencePackageAcceptanceCloseoutArchiveService.archiveCurrentCloseout();
+            operatorSafetyAuditService.recordSafetyAudit(new RecordOperatorSafetyAuditCommand(
+                    "TASK_EVIDENCE_ACCEPTANCE_CLOSEOUT_ARCHIVED",
+                    "TASK_EVIDENCE_ACCEPTANCE_CLOSEOUT_ARCHIVE",
+                    archive.id(),
+                    TriggerQuarantineScope.REPOSITORY,
+                    "task-evidence",
+                    "admin-api",
+                    "Archived task evidence acceptance closeout for task " + archive.latestTaskId()
+            ));
+            return ResponseEntity.ok(ApiResponse.ok(archive));
+        } catch (IllegalStateException exception) {
+            return ResponseEntity.badRequest().body(ApiResponse.fail(exception.getMessage()));
+        }
+    }
+
+    @GetMapping("/evidence-packages/acceptance-closeout/archives")
+    public ResponseEntity<ApiResponse<List<FixTaskEvidencePackageAcceptanceCloseoutArchiveVo>>>
+    listTaskEvidencePackageAcceptanceCloseoutArchives() {
+        return ResponseEntity.ok(ApiResponse.ok(
+                fixTaskEvidencePackageAcceptanceCloseoutArchiveService.listRecentArchives()
+        ));
+    }
+
+    @GetMapping(
+            value = "/evidence-packages/acceptance-closeout/archives/{archiveId}/report/download",
+            produces = "text/markdown;charset=UTF-8"
+    )
+    public ResponseEntity<String> downloadTaskEvidencePackageAcceptanceCloseoutArchiveReport(
+            @PathVariable String archiveId
+    ) {
+        return fixTaskEvidencePackageAcceptanceCloseoutArchiveService.findArchive(archiveId)
+                .map(archive -> markdownAttachment(
+                        "patchpilot-task-evidence-acceptance-closeout-"
+                                + safeFilenamePart(archive.id()) + ".md",
+                        archive.report()
+                ))
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @GetMapping(value = "/evidence-packages/{archiveId}/report/download", produces = "text/markdown;charset=UTF-8")

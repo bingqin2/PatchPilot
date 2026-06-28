@@ -445,6 +445,22 @@ const taskEvidencePackageFinalization = {
   generatedAt: '2026-06-28T06:30:00Z'
 };
 
+const taskEvidencePackageAcceptanceCloseoutArchive = {
+  id: 'task-evidence-closeout-archive-1',
+  status: 'READY',
+  accepted: true,
+  summary: 'Task evidence is finalized with a fresh delivery receipt for the current shareable archive.',
+  latestArchiveId: 'task-evidence-archive-1',
+  latestTaskId: 'task-1',
+  latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+  latestDeliveryReceiptId: 'task-evidence-delivery-receipt-1',
+  latestDeliveryTarget: 'reviewer@example.com',
+  latestDeliveryChannel: 'email',
+  deliveryReceiptFreshness: 'FRESH',
+  createdAt: '2026-06-28T07:00:00Z',
+  report: '# PatchPilot Task Evidence Acceptance Closeout Archive'
+};
+
 const detail = {
   summary,
   queueItem: {
@@ -2892,6 +2908,15 @@ beforeEach(() => {
     if (url === '/api/tasks/evidence-packages/share-delivery-receipts') {
       return jsonResponse([taskEvidencePackageDeliveryReceipt]);
     }
+    if (url === '/api/tasks/evidence-packages/acceptance-closeout/archives' && init?.method === 'POST') {
+      return jsonResponse({
+        ...taskEvidencePackageAcceptanceCloseoutArchive,
+        id: 'task-evidence-closeout-archive-2'
+      });
+    }
+    if (url === '/api/tasks/evidence-packages/acceptance-closeout/archives') {
+      return jsonResponse([taskEvidencePackageAcceptanceCloseoutArchive]);
+    }
     if (url === '/api/tasks/manual-task-1/detail') {
       return jsonResponse(manualTaskDetail);
     }
@@ -2954,6 +2979,15 @@ beforeEach(() => {
         ok: true,
         status: 200,
         blob: async () => new Blob(['# PatchPilot Task Evidence Delivery Receipt'], {
+          type: 'text/markdown;charset=UTF-8'
+        })
+      } as Response);
+    }
+    if (url === '/api/tasks/evidence-packages/acceptance-closeout/archives/task-evidence-closeout-archive-1/report/download') {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        blob: async () => new Blob(['# PatchPilot Task Evidence Acceptance Closeout Archive'], {
           type: 'text/markdown;charset=UTF-8'
         })
       } as Response);
@@ -4021,6 +4055,37 @@ test('records task evidence delivery receipt and downloads finalization reports 
   ));
   expect(click).toHaveBeenCalledTimes(2);
   expect(revokeObjectURL).toHaveBeenCalledWith('blob:task-evidence-delivery');
+});
+
+test('archives task evidence acceptance closeout from dashboard', async () => {
+  const user = userEvent.setup();
+  const fetchMock = vi.mocked(fetch);
+  const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+  const createObjectURL = vi.fn(() => 'blob:task-evidence-closeout');
+  const revokeObjectURL = vi.fn();
+  vi.stubGlobal('URL', blobUrlConstructor(createObjectURL, revokeObjectURL));
+
+  render(<App />);
+
+  const reviewPanel = await screen.findByRole('region', { name: 'Task evidence archive review' });
+  const closeoutPanel = within(reviewPanel).getByLabelText('Task evidence acceptance closeout archives');
+  expect(within(closeoutPanel).getByText('task-evidence-closeout-archive-1')).toBeInTheDocument();
+
+  await user.click(within(closeoutPanel).getByRole('button', { name: 'Archive task evidence acceptance closeout' }));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
+    '/api/tasks/evidence-packages/acceptance-closeout/archives',
+    { method: 'POST' }
+  ));
+  expect(screen.getByText('Task evidence acceptance closeout task-evidence-closeout-archive-2 archived')).toBeInTheDocument();
+
+  await user.click(within(closeoutPanel).getByRole('button', {
+    name: 'Download task evidence acceptance closeout task-evidence-closeout-archive-1'
+  }));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
+    '/api/tasks/evidence-packages/acceptance-closeout/archives/task-evidence-closeout-archive-1/report/download'
+  ));
+  expect(click).toHaveBeenCalledTimes(1);
+  expect(revokeObjectURL).toHaveBeenCalledWith('blob:task-evidence-closeout');
 });
 
 test('copies demo runbook from backend API', async () => {
@@ -6156,6 +6221,15 @@ function defaultAppResponse(input: RequestInfo | URL, init?: RequestInit) {
   if (url === '/api/tasks/evidence-packages/share-delivery-receipts') {
     return jsonResponse([taskEvidencePackageDeliveryReceipt]);
   }
+  if (url === '/api/tasks/evidence-packages/acceptance-closeout/archives' && init?.method === 'POST') {
+    return jsonResponse({
+      ...taskEvidencePackageAcceptanceCloseoutArchive,
+      id: 'task-evidence-closeout-archive-2'
+    });
+  }
+  if (url === '/api/tasks/evidence-packages/acceptance-closeout/archives') {
+    return jsonResponse([taskEvidencePackageAcceptanceCloseoutArchive]);
+  }
   if (url === '/api/tasks/task-1/retry-preflight') {
     return jsonResponse({
       taskId: 'task-1',
@@ -6210,6 +6284,15 @@ function defaultAppResponse(input: RequestInfo | URL, init?: RequestInit) {
       ok: true,
       status: 200,
       blob: async () => new Blob(['# PatchPilot Task Evidence Delivery Receipt'], {
+        type: 'text/markdown;charset=UTF-8'
+      })
+    } as Response);
+  }
+  if (url === '/api/tasks/evidence-packages/acceptance-closeout/archives/task-evidence-closeout-archive-1/report/download') {
+    return Promise.resolve({
+      ok: true,
+      status: 200,
+      blob: async () => new Blob(['# PatchPilot Task Evidence Acceptance Closeout Archive'], {
         type: 'text/markdown;charset=UTF-8'
       })
     } as Response);

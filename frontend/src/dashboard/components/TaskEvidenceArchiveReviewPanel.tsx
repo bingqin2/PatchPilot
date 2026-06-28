@@ -2,6 +2,7 @@ import { Download, ExternalLink, FileText, Send } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import type {
   FixTaskEvidencePackageArchive,
+  FixTaskEvidencePackageAcceptanceCloseoutArchive,
   FixTaskEvidencePackageFinalization,
   FixTaskEvidencePackageArchiveShareCenter,
   FixTaskEvidencePackageArchiveSummary,
@@ -15,16 +16,20 @@ interface TaskEvidenceArchiveReviewPanelProps {
   shareCenter: FixTaskEvidencePackageArchiveShareCenter | null;
   finalization: FixTaskEvidencePackageFinalization | null;
   deliveryReceipts: FixTaskEvidencePackageShareDeliveryReceipt[];
+  closeoutArchives: FixTaskEvidencePackageAcceptanceCloseoutArchive[];
   archives: FixTaskEvidencePackageArchive[];
   error: string | null;
   shareCenterError: string | null;
   finalizationError: string | null;
   deliveryReceiptError: string | null;
+  closeoutArchiveError: string | null;
   onDownloadArchiveReport: (archiveId: string) => Promise<Blob>;
   onDownloadShareCenterReport: () => Promise<Blob>;
   onDownloadFinalizationReport: () => Promise<Blob>;
   onCreateDeliveryReceipt: (input: FixTaskEvidencePackageShareDeliveryReceiptInput) => Promise<FixTaskEvidencePackageShareDeliveryReceipt>;
   onDownloadDeliveryReceiptReport: (receiptId: string) => Promise<Blob>;
+  onArchiveAcceptanceCloseout: () => Promise<FixTaskEvidencePackageAcceptanceCloseoutArchive>;
+  onDownloadAcceptanceCloseoutArchiveReport: (archiveId: string) => Promise<Blob>;
   onSelectTask: (taskId: string) => void;
 }
 
@@ -33,16 +38,20 @@ export function TaskEvidenceArchiveReviewPanel({
   shareCenter,
   finalization,
   deliveryReceipts,
+  closeoutArchives,
   archives,
   error,
   shareCenterError,
   finalizationError,
   deliveryReceiptError,
+  closeoutArchiveError,
   onDownloadArchiveReport,
   onDownloadShareCenterReport,
   onDownloadFinalizationReport,
   onCreateDeliveryReceipt,
   onDownloadDeliveryReceiptReport,
+  onArchiveAcceptanceCloseout,
+  onDownloadAcceptanceCloseoutArchiveReport,
   onSelectTask
 }: TaskEvidenceArchiveReviewPanelProps) {
   const [downloadStatus, setDownloadStatus] = useState<string | null>(null);
@@ -51,6 +60,7 @@ export function TaskEvidenceArchiveReviewPanel({
   const [deliveryOperator, setDeliveryOperator] = useState('local-operator');
   const [deliveryNotes, setDeliveryNotes] = useState('');
   const [receiptStatus, setReceiptStatus] = useState<string | null>(null);
+  const [closeoutStatus, setCloseoutStatus] = useState<string | null>(null);
 
   async function downloadArchive(archive: FixTaskEvidencePackageArchive) {
     try {
@@ -111,6 +121,25 @@ export function TaskEvidenceArchiveReviewPanel({
     }
   }
 
+  async function archiveAcceptanceCloseout() {
+    try {
+      const archive = await onArchiveAcceptanceCloseout();
+      setCloseoutStatus(`Task evidence acceptance closeout ${archive.id} archived`);
+    } catch {
+      setCloseoutStatus('Task evidence acceptance closeout archive failed');
+    }
+  }
+
+  async function downloadAcceptanceCloseoutArchive(archive: FixTaskEvidencePackageAcceptanceCloseoutArchive) {
+    try {
+      const report = await onDownloadAcceptanceCloseoutArchiveReport(archive.id);
+      downloadMarkdown(report, `patchpilot-task-evidence-acceptance-closeout-${safeFilenamePart(archive.id)}.md`);
+      setDownloadStatus(`Task evidence acceptance closeout ${archive.id} downloaded`);
+    } catch {
+      setDownloadStatus('Download failed');
+    }
+  }
+
   return (
     <section className="panel task-evidence-archive-review-panel" aria-label="Task evidence archive review">
       <div className="panel-header">
@@ -125,6 +154,7 @@ export function TaskEvidenceArchiveReviewPanel({
       {shareCenterError ? <p className="panel-error">{shareCenterError}</p> : null}
       {finalizationError ? <p className="panel-error">{finalizationError}</p> : null}
       {deliveryReceiptError ? <p className="panel-error">{deliveryReceiptError}</p> : null}
+      {closeoutArchiveError ? <p className="panel-error">{closeoutArchiveError}</p> : null}
 
       {shareCenter ? (
         <section
@@ -245,6 +275,59 @@ export function TaskEvidenceArchiveReviewPanel({
           </div>
         </section>
       ) : null}
+
+      <section className="task-evidence-share-center" aria-label="Task evidence acceptance closeout archives">
+        <div className="task-evidence-share-center-heading">
+          <div>
+            <span>Task evidence acceptance closeout archives</span>
+            <strong>{closeoutArchives.length}</strong>
+            <p>local final acceptance records for delivered task evidence</p>
+          </div>
+          <button
+            className="secondary-button"
+            type="button"
+            onClick={() => void archiveAcceptanceCloseout()}
+            aria-label="Archive task evidence acceptance closeout"
+            disabled={!finalization?.finalized}
+          >
+            <FileText size={14} />
+            Archive closeout
+          </button>
+        </div>
+        {closeoutStatus ? <span className="copy-status">{closeoutStatus}</span> : null}
+        {closeoutArchives.length === 0 ? (
+          <p className="empty-state compact-empty-state">No task evidence acceptance closeouts archived.</p>
+        ) : (
+          <div className="task-evidence-archive-list">
+            {closeoutArchives.map((archive) => (
+              <article className="task-evidence-archive-row" key={archive.id}>
+                <div>
+                  <strong>{archive.id}</strong>
+                  <p>
+                    {archive.accepted ? 'accepted' : formatFinalizationStatus(archive.status)}
+                    {' '}· {archive.latestArchiveId ?? 'no archive'} · {archive.latestDeliveryReceiptId ?? 'no receipt'}
+                  </p>
+                  <span>
+                    {archive.latestTaskId ?? 'No task'} · {archive.deliveryReceiptFreshness} · archived{' '}
+                    {compactTime(archive.createdAt)}
+                  </span>
+                </div>
+                <div className="task-evidence-archive-actions">
+                  <button
+                    className="secondary-button"
+                    type="button"
+                    onClick={() => void downloadAcceptanceCloseoutArchive(archive)}
+                    aria-label={`Download task evidence acceptance closeout ${archive.id}`}
+                  >
+                    <Download size={14} />
+                    Download closeout
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
 
       <section className="task-evidence-share-center" aria-label="Task evidence delivery receipts">
         <div className="task-evidence-share-center-heading">

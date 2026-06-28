@@ -111,12 +111,15 @@ import {
   getTaskReport,
   downloadTaskReport,
   archiveTaskEvidencePackage,
+  archiveTaskEvidencePackageAcceptanceCloseout,
   createTaskEvidencePackageShareDeliveryReceipt,
   downloadTaskEvidencePackageFinalizationReport,
+  downloadTaskEvidencePackageAcceptanceCloseoutArchiveReport,
   getTaskEvidencePackageArchiveSummary,
   getTaskEvidencePackageFinalization,
   getTaskEvidencePackageShareCenter,
   listTaskEvidencePackageArchives,
+  listTaskEvidencePackageAcceptanceCloseoutArchives,
   listTaskEvidencePackageShareDeliveryReceipts,
   listRecentTaskEvidencePackageArchives,
   downloadTaskEvidencePackageReport,
@@ -5038,6 +5041,95 @@ test('downloads task evidence receipt and finalization reports through backend A
   expect(fetchMock).toHaveBeenNthCalledWith(2, '/api/tasks/evidence-packages/finalization/report/download');
   expect(receiptReport).toBe(receiptBlob);
   expect(finalizationReport).toBe(finalizationBlob);
+});
+
+test('archives task evidence acceptance closeout through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        id: 'task-evidence-closeout-archive-1',
+        status: 'READY',
+        accepted: true,
+        summary: 'Task evidence is finalized with a fresh delivery receipt for the current shareable archive.',
+        latestArchiveId: 'task-evidence-archive-1',
+        latestTaskId: 'task-1',
+        latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+        latestDeliveryReceiptId: 'task-evidence-delivery-receipt-1',
+        latestDeliveryTarget: 'reviewer@example.com',
+        latestDeliveryChannel: 'email',
+        deliveryReceiptFreshness: 'FRESH',
+        createdAt: '2026-06-28T07:00:00Z',
+        report: '# PatchPilot Task Evidence Acceptance Closeout Archive'
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const archive = await archiveTaskEvidencePackageAcceptanceCloseout();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/tasks/evidence-packages/acceptance-closeout/archives', {
+    method: 'POST'
+  });
+  expect(archive.id).toBe('task-evidence-closeout-archive-1');
+  expect(archive.accepted).toBe(true);
+  expect(archive.latestDeliveryReceiptId).toBe('task-evidence-delivery-receipt-1');
+});
+
+test('lists and downloads task evidence acceptance closeout archives through backend API', async () => {
+  const reportBlob = new Blob(['# PatchPilot Task Evidence Acceptance Closeout Archive'], {
+    type: 'text/markdown;charset=UTF-8'
+  });
+  const fetchMock = vi.fn(async (path: string) => {
+    if (path.includes('/report/download')) {
+      return {
+        ok: true,
+        status: 200,
+        blob: async () => reportBlob
+      } as Response;
+    }
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({
+        success: true,
+        data: [
+          {
+            id: 'task-evidence-closeout-archive-1',
+            status: 'READY',
+            accepted: true,
+            summary: 'Task evidence is finalized with a fresh delivery receipt for the current shareable archive.',
+            latestArchiveId: 'task-evidence-archive-1',
+            latestTaskId: 'task-1',
+            latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+            latestDeliveryReceiptId: 'task-evidence-delivery-receipt-1',
+            latestDeliveryTarget: 'reviewer@example.com',
+            latestDeliveryChannel: 'email',
+            deliveryReceiptFreshness: 'FRESH',
+            createdAt: '2026-06-28T07:00:00Z',
+            report: '# PatchPilot Task Evidence Acceptance Closeout Archive'
+          }
+        ],
+        message: null
+      })
+    } as Response;
+  });
+  vi.stubGlobal('fetch', fetchMock);
+
+  const archives = await listTaskEvidencePackageAcceptanceCloseoutArchives();
+  const report = await downloadTaskEvidencePackageAcceptanceCloseoutArchiveReport('task evidence closeout 1');
+
+  expect(fetchMock).toHaveBeenNthCalledWith(1, '/api/tasks/evidence-packages/acceptance-closeout/archives');
+  expect(fetchMock).toHaveBeenNthCalledWith(
+    2,
+    '/api/tasks/evidence-packages/acceptance-closeout/archives/task%20evidence%20closeout%201/report/download'
+  );
+  expect(archives).toHaveLength(1);
+  expect(archives[0].latestArchiveId).toBe('task-evidence-archive-1');
+  expect(report).toBe(reportBlob);
 });
 
 test('shows actionable backend guidance when API response is empty', async () => {
