@@ -227,6 +227,48 @@ export interface FixTaskEvidencePackageAcceptanceCloseoutArchive {
   report: string;
 }
 
+export interface FixTaskEvidencePackageAcceptanceCertificate {
+  status: 'READY' | 'NEEDS_ATTENTION' | 'BLOCKED';
+  certified: boolean;
+  summary: string;
+  nextAction: string;
+  archiveCount: number;
+  latestCloseoutArchiveId: string | null;
+  latestEvidenceArchiveId: string | null;
+  latestDeliveryReceiptId: string | null;
+  latestTaskId: string | null;
+  latestPullRequestUrl: string | null;
+  latestDeliveryTarget: string | null;
+  latestDeliveryChannel: string | null;
+  deliveryReceiptFreshness: 'FRESH' | 'MISSING' | 'STALE';
+  latestArchivedAt: string | null;
+  generatedAt: string;
+  downloadActions: string[];
+  markdownReport: string;
+}
+
+export interface FixTaskEvidencePackageAcceptanceCertificateArchive {
+  id: string;
+  status: 'READY' | 'NEEDS_ATTENTION' | 'BLOCKED';
+  certified: boolean;
+  summary: string;
+  nextAction: string;
+  archiveCount: number;
+  latestCloseoutArchiveId: string | null;
+  latestEvidenceArchiveId: string | null;
+  latestDeliveryReceiptId: string | null;
+  latestTaskId: string | null;
+  latestPullRequestUrl: string | null;
+  latestDeliveryTarget: string | null;
+  latestDeliveryChannel: string | null;
+  deliveryReceiptFreshness: 'FRESH' | 'MISSING' | 'STALE';
+  latestArchivedAt: string | null;
+  generatedAt: string;
+  archivedAt: string;
+  downloadActions: string[];
+  report: string;
+}
+
 export interface FixTaskRetryPreflight {
   taskId: string;
   status: TaskStatus;

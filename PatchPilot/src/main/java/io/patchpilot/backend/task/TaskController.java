@@ -24,6 +24,8 @@ import io.patchpilot.backend.task.domain.enums.TriggerEvaluationSource;
 import io.patchpilot.backend.task.domain.vo.FixTaskFailureCauseSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskAdapterExecutionEvidenceVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskAuditSummaryVo;
+import io.patchpilot.backend.task.domain.vo.FixTaskEvidencePackageAcceptanceCertificateArchiveVo;
+import io.patchpilot.backend.task.domain.vo.FixTaskEvidencePackageAcceptanceCertificateVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskEvidencePackageAcceptanceCloseoutArchiveVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskEvidencePackageArchiveVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskEvidencePackageArchiveSummaryVo;
@@ -54,6 +56,8 @@ import io.patchpilot.backend.task.domain.vo.IssueContextVo;
 import io.patchpilot.backend.task.domain.vo.RepositorySupportGuidanceVo;
 import io.patchpilot.backend.task.service.FixTaskAuditSummaryService;
 import io.patchpilot.backend.task.service.FixTaskControlService;
+import io.patchpilot.backend.task.service.FixTaskEvidencePackageAcceptanceCertificateArchiveService;
+import io.patchpilot.backend.task.service.FixTaskEvidencePackageAcceptanceCertificateService;
 import io.patchpilot.backend.task.service.FixTaskEvidencePackageAcceptanceCloseoutArchiveService;
 import io.patchpilot.backend.task.service.FixTaskEvidencePackageArchiveService;
 import io.patchpilot.backend.task.service.FixTaskEvidencePackageFinalizationService;
@@ -105,6 +109,10 @@ public class TaskController {
     private final FixTaskPatchReviewService fixTaskPatchReviewService;
     private final FixTaskPreExecutionDecisionService fixTaskPreExecutionDecisionService;
     private final FixTaskControlService fixTaskControlService;
+    private final FixTaskEvidencePackageAcceptanceCertificateService
+            fixTaskEvidencePackageAcceptanceCertificateService;
+    private final FixTaskEvidencePackageAcceptanceCertificateArchiveService
+            fixTaskEvidencePackageAcceptanceCertificateArchiveService;
     private final FixTaskEvidencePackageAcceptanceCloseoutArchiveService
             fixTaskEvidencePackageAcceptanceCloseoutArchiveService;
     private final FixTaskEvidencePackageArchiveService fixTaskEvidencePackageArchiveService;
@@ -482,6 +490,71 @@ public class TaskController {
         return fixTaskEvidencePackageAcceptanceCloseoutArchiveService.findArchive(archiveId)
                 .map(archive -> markdownAttachment(
                         "patchpilot-task-evidence-acceptance-closeout-"
+                                + safeFilenamePart(archive.id()) + ".md",
+                        archive.report()
+                ))
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/evidence-packages/acceptance-certificate")
+    public ResponseEntity<ApiResponse<FixTaskEvidencePackageAcceptanceCertificateVo>>
+    getTaskEvidencePackageAcceptanceCertificate() {
+        return ResponseEntity.ok(ApiResponse.ok(
+                fixTaskEvidencePackageAcceptanceCertificateService.getCertificate()
+        ));
+    }
+
+    @GetMapping(
+            value = "/evidence-packages/acceptance-certificate/report/download",
+            produces = "text/markdown;charset=UTF-8"
+    )
+    public ResponseEntity<String> downloadTaskEvidencePackageAcceptanceCertificateReport() {
+        return markdownAttachment(
+                "patchpilot-task-evidence-acceptance-certificate.md",
+                fixTaskEvidencePackageAcceptanceCertificateService.report()
+        );
+    }
+
+    @PostMapping("/evidence-packages/acceptance-certificate/archives")
+    public ResponseEntity<ApiResponse<FixTaskEvidencePackageAcceptanceCertificateArchiveVo>>
+    archiveTaskEvidencePackageAcceptanceCertificate() {
+        try {
+            FixTaskEvidencePackageAcceptanceCertificateArchiveVo archive =
+                    fixTaskEvidencePackageAcceptanceCertificateArchiveService.archiveCurrentCertificate();
+            operatorSafetyAuditService.recordSafetyAudit(new RecordOperatorSafetyAuditCommand(
+                    "TASK_EVIDENCE_ACCEPTANCE_CERTIFICATE_ARCHIVED",
+                    "TASK_EVIDENCE_ACCEPTANCE_CERTIFICATE_ARCHIVE",
+                    archive.id(),
+                    TriggerQuarantineScope.REPOSITORY,
+                    "task-evidence",
+                    "admin-api",
+                    "Archived task evidence acceptance certificate for closeout "
+                            + archive.latestCloseoutArchiveId()
+            ));
+            return ResponseEntity.ok(ApiResponse.ok(archive));
+        } catch (IllegalStateException exception) {
+            return ResponseEntity.badRequest().body(ApiResponse.fail(exception.getMessage()));
+        }
+    }
+
+    @GetMapping("/evidence-packages/acceptance-certificate/archives")
+    public ResponseEntity<ApiResponse<List<FixTaskEvidencePackageAcceptanceCertificateArchiveVo>>>
+    listTaskEvidencePackageAcceptanceCertificateArchives() {
+        return ResponseEntity.ok(ApiResponse.ok(
+                fixTaskEvidencePackageAcceptanceCertificateArchiveService.listRecentArchives()
+        ));
+    }
+
+    @GetMapping(
+            value = "/evidence-packages/acceptance-certificate/archives/{archiveId}/report/download",
+            produces = "text/markdown;charset=UTF-8"
+    )
+    public ResponseEntity<String> downloadTaskEvidencePackageAcceptanceCertificateArchiveReport(
+            @PathVariable String archiveId
+    ) {
+        return fixTaskEvidencePackageAcceptanceCertificateArchiveService.findArchive(archiveId)
+                .map(archive -> markdownAttachment(
+                        "patchpilot-task-evidence-acceptance-certificate-"
                                 + safeFilenamePart(archive.id()) + ".md",
                         archive.report()
                 ))

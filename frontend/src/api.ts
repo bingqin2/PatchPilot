@@ -51,6 +51,8 @@ import type {
   EvaluationRunArchiveReadinessSummary,
   EvaluationRunPreview,
   EvaluationRunSnapshotArchive,
+  FixTaskEvidencePackageAcceptanceCertificate,
+  FixTaskEvidencePackageAcceptanceCertificateArchive,
   FixTask,
   FixTaskEvidencePackageAcceptanceCloseoutArchive,
   FixTaskEvidencePackageArchive,
@@ -781,6 +783,32 @@ export async function listTaskEvidencePackageAcceptanceCloseoutArchives(): Promi
 export async function downloadTaskEvidencePackageAcceptanceCloseoutArchiveReport(archiveId: string): Promise<Blob> {
   return getBlobApi(
     `/api/tasks/evidence-packages/acceptance-closeout/archives/${encodeURIComponent(archiveId)}/report/download`
+  );
+}
+
+export async function getTaskEvidencePackageAcceptanceCertificate(): Promise<FixTaskEvidencePackageAcceptanceCertificate> {
+  return getApi<FixTaskEvidencePackageAcceptanceCertificate>('/api/tasks/evidence-packages/acceptance-certificate');
+}
+
+export async function downloadTaskEvidencePackageAcceptanceCertificateReport(): Promise<Blob> {
+  return getBlobApi('/api/tasks/evidence-packages/acceptance-certificate/report/download');
+}
+
+export async function archiveTaskEvidencePackageAcceptanceCertificate(): Promise<FixTaskEvidencePackageAcceptanceCertificateArchive> {
+  return postApi<FixTaskEvidencePackageAcceptanceCertificateArchive>(
+    '/api/tasks/evidence-packages/acceptance-certificate/archives'
+  );
+}
+
+export async function listTaskEvidencePackageAcceptanceCertificateArchives(): Promise<FixTaskEvidencePackageAcceptanceCertificateArchive[]> {
+  return getApi<FixTaskEvidencePackageAcceptanceCertificateArchive[]>(
+    '/api/tasks/evidence-packages/acceptance-certificate/archives'
+  );
+}
+
+export async function downloadTaskEvidencePackageAcceptanceCertificateArchiveReport(archiveId: string): Promise<Blob> {
+  return getBlobApi(
+    `/api/tasks/evidence-packages/acceptance-certificate/archives/${encodeURIComponent(archiveId)}/report/download`
   );
 }
 

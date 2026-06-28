@@ -1788,6 +1788,103 @@ class TaskControllerTests {
     }
 
     @Test
+    void should_certify_archive_list_and_download_task_evidence_acceptance_certificate() throws Exception {
+        FixTaskVo completedTask = createTask("delivery-task-evidence-acceptance-certificate");
+        fixTaskService.markCompleted(completedTask.id(), "https://github.com/octocat/hello-world/pull/91");
+
+        MvcResult evidenceArchiveResult = mockMvc.perform(post("/api/tasks/{id}/evidence-packages", completedTask.id()))
+                .andExpect(status().isOk())
+                .andReturn();
+        String evidenceArchiveId = JsonPath.read(evidenceArchiveResult.getResponse().getContentAsString(), "$.data.id");
+
+        MvcResult receiptResult = mockMvc.perform(post("/api/tasks/evidence-packages/share-delivery-receipts")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "deliveryChannel": "email",
+                                  "deliveryTarget": "reviewer@example.com",
+                                  "operator": "local-operator",
+                                  "notes": "Sent task evidence after PR review.",
+                                  "deliveredAt": "2026-06-28T06:05:00Z"
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn();
+        String receiptId = JsonPath.read(receiptResult.getResponse().getContentAsString(), "$.data.id");
+
+        MvcResult closeoutResult = mockMvc.perform(post("/api/tasks/evidence-packages/acceptance-closeout/archives"))
+                .andExpect(status().isOk())
+                .andReturn();
+        String closeoutArchiveId = JsonPath.read(closeoutResult.getResponse().getContentAsString(), "$.data.id");
+
+        mockMvc.perform(get("/api/tasks/evidence-packages/acceptance-certificate"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.certified").value(true))
+                .andExpect(jsonPath("$.data.latestCloseoutArchiveId").value(closeoutArchiveId))
+                .andExpect(jsonPath("$.data.latestEvidenceArchiveId").value(evidenceArchiveId))
+                .andExpect(jsonPath("$.data.latestTaskId").value(completedTask.id()))
+                .andExpect(jsonPath("$.data.latestPullRequestUrl").value("https://github.com/octocat/hello-world/pull/91"))
+                .andExpect(jsonPath("$.data.latestDeliveryReceiptId").value(receiptId))
+                .andExpect(jsonPath("$.data.deliveryReceiptFreshness").value("FRESH"))
+                .andExpect(jsonPath("$.data.markdownReport").value(org.hamcrest.Matchers.containsString("# PatchPilot Task Evidence Acceptance Certificate")));
+
+        mockMvc.perform(get("/api/tasks/evidence-packages/acceptance-certificate/report/download"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(
+                        "Content-Disposition",
+                        org.hamcrest.Matchers.containsString("patchpilot-task-evidence-acceptance-certificate.md")
+                ))
+                .andExpect(content().contentType("text/markdown;charset=UTF-8"))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("- Certified: `true`")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("- Closeout archive: `" + closeoutArchiveId + "`")));
+
+        MvcResult certificateArchiveResult =
+                mockMvc.perform(post("/api/tasks/evidence-packages/acceptance-certificate/archives"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.success").value(true))
+                        .andExpect(jsonPath("$.data.id").value(not(nullValue())))
+                        .andExpect(jsonPath("$.data.status").value("READY"))
+                        .andExpect(jsonPath("$.data.certified").value(true))
+                        .andExpect(jsonPath("$.data.latestCloseoutArchiveId").value(closeoutArchiveId))
+                        .andExpect(jsonPath("$.data.latestEvidenceArchiveId").value(evidenceArchiveId))
+                        .andExpect(jsonPath("$.data.latestDeliveryReceiptId").value(receiptId))
+                        .andExpect(jsonPath("$.data.report").value(org.hamcrest.Matchers.containsString("# PatchPilot Task Evidence Acceptance Certificate")))
+                        .andReturn();
+        String certificateArchiveId =
+                JsonPath.read(certificateArchiveResult.getResponse().getContentAsString(), "$.data.id");
+
+        assertAuditRecorded(
+                "TASK_EVIDENCE_ACCEPTANCE_CERTIFICATE_ARCHIVED",
+                "TASK_EVIDENCE_ACCEPTANCE_CERTIFICATE_ARCHIVE",
+                certificateArchiveId,
+                "admin-api",
+                "Archived task evidence acceptance certificate for closeout " + closeoutArchiveId
+        );
+
+        mockMvc.perform(get("/api/tasks/evidence-packages/acceptance-certificate/archives"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].id").value(certificateArchiveId))
+                .andExpect(jsonPath("$.data[0].certified").value(true))
+                .andExpect(jsonPath("$.data[0].latestCloseoutArchiveId").value(closeoutArchiveId));
+
+        mockMvc.perform(get(
+                        "/api/tasks/evidence-packages/acceptance-certificate/archives/{archiveId}/report/download",
+                        certificateArchiveId
+                ))
+                .andExpect(status().isOk())
+                .andExpect(header().string(
+                        "Content-Disposition",
+                        org.hamcrest.Matchers.containsString("patchpilot-task-evidence-acceptance-certificate-")
+                ))
+                .andExpect(content().contentType("text/markdown;charset=UTF-8"))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("# PatchPilot Task Evidence Acceptance Certificate")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("- Certified: `true`")));
+    }
+
+    @Test
     void should_reject_task_evidence_acceptance_closeout_archive_until_finalization_is_ready() throws Exception {
         FixTaskVo completedTask = createTask("delivery-task-evidence-acceptance-closeout-not-ready");
         fixTaskService.markCompleted(completedTask.id(), "https://github.com/octocat/hello-world/pull/90");

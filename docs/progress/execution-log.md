@@ -1406,6 +1406,27 @@ Validation:
 - `npm run build`: passed.
 - `git diff --check`: passed.
 
+## 2026-06-28 - 268 Task evidence acceptance certificate
+
+- Started `268-task-evidence-acceptance-certificate` to turn the latest accepted task evidence closeout archive into one certified evidence record.
+- Planned a complete feature slice: backend certificate read model, persistent certificate archives, create/list/download APIs, dashboard certificate controls, docs, and regression tests.
+- RED controller and frontend tests were added first for reading, downloading, archiving, listing, and displaying task evidence acceptance certificates.
+- Implemented the certificate read model from the latest accepted `READY` closeout archive, with explicit certified/not-certified status, source evidence identifiers, download actions, summary, next action, generated time, and a read-only side-effect contract.
+- Added persistent certificate archives with in-memory and MyBatis repositories plus Flyway migration `V44__create_fix_task_evidence_acceptance_certificate_archive.sql`.
+- Added `GET /api/tasks/evidence-packages/acceptance-certificate`, certificate Markdown download, certificate archive creation, archive listing, and archived report download.
+- Added a service guard so certificate archives can only be created when the current certificate is certified.
+- Updated the `Task evidence archive review` dashboard panel with the current certificate, current certificate download, certificate archive creation, recent certificate archives, archived report download, and status/error feedback.
+- Updated README and added this plan document.
+
+Validation so far:
+
+- `mvn -q -pl PatchPilot -Dtest=TaskControllerTests#should_certify_archive_list_and_download_task_evidence_acceptance_certificate,FixTaskEvidencePackageAcceptanceCertificateServiceTests,FixTaskEvidencePackageAcceptanceCertificateArchiveServiceTests,FixTaskEvidencePackageAcceptanceCertificateArchiveConvertTests,InMemoryFixTaskEvidencePackageAcceptanceCertificateArchiveRepositoryTests,MyBatisFixTaskEvidencePackageAcceptanceCertificateArchiveRepositoryTests,FixTaskEvidencePackageAcceptanceCertificateArchiveMigrationTests test`: passed.
+- `npm test -- src/api.test.ts src/dashboard/components/TaskEvidenceArchiveReviewPanel.test.tsx src/App.test.tsx -- --reporter=basic`: passed, 3 test files and 230 tests.
+- `mvn -pl PatchPilot -q test`: passed.
+- `npm test -- --reporter=basic`: passed, 29 test files and 390 tests.
+- `npm run build`: passed.
+- `git diff --check`: passed.
+
 ## 2026-06-25
 
 Implemented manual trigger evaluation evidence reports from `docs/plans/180-manual-trigger-evaluation-report.md`.
