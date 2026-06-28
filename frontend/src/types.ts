@@ -1137,6 +1137,7 @@ export interface DemoEvidenceBundle {
   launchAcceptanceCertificateEvidence: DemoLaunchAcceptanceCertificateEvidence;
   taskEvidenceAcceptanceCertificateEvidence: DemoTaskEvidenceAcceptanceCertificateEvidence;
   finalHandoffReportPackageArchiveEvidence: DemoFinalHandoffReportPackageArchiveEvidence;
+  finalAcceptanceShareFinalization: DemoFinalAcceptanceShareFinalization;
   handoffShareDeliveryReceiptRecorded: boolean;
   handoffShareLatestDeliveryReceiptId: string | null;
   handoffShareLatestDeliveryTarget: string | null;

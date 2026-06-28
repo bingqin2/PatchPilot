@@ -1384,6 +1384,7 @@ class DemoReadinessControllerTests {
                         null,
                         List.of("Archive the final handoff report package before using the evidence bundle as post-demo closeout proof.")
                 ),
+                finalAcceptanceShareFinalization(),
                 false,
                 null,
                 null,
@@ -1461,6 +1462,22 @@ class DemoReadinessControllerTests {
                         .value("No final handoff report package archive is available."))
                 .andExpect(jsonPath("$.data.finalHandoffReportPackageArchiveEvidence.nextAction")
                         .value("Archive the final handoff report package after the post-demo handoff package is finalized."))
+                .andExpect(jsonPath("$.data.finalAcceptanceShareFinalization.status").value("READY"))
+                .andExpect(jsonPath("$.data.finalAcceptanceShareFinalization.finalized").value(true))
+                .andExpect(jsonPath("$.data.finalAcceptanceShareFinalization.summary")
+                        .value("Final demo acceptance share package is finalized with a fresh delivery receipt."))
+                .andExpect(jsonPath("$.data.finalAcceptanceShareFinalization.nextAction")
+                        .value("Use the finalization report as the external-review acceptance delivery record."))
+                .andExpect(jsonPath("$.data.finalAcceptanceShareFinalization.latestArchiveId")
+                        .value("final-acceptance-share-package-archive-1"))
+                .andExpect(jsonPath("$.data.finalAcceptanceShareFinalization.latestTaskId").value("task-1"))
+                .andExpect(jsonPath("$.data.finalAcceptanceShareFinalization.latestDeliveryReceiptId")
+                        .value("final-acceptance-delivery-receipt-1"))
+                .andExpect(jsonPath("$.data.finalAcceptanceShareFinalization.latestDeliveryTarget")
+                        .value("reviewer@example.com"))
+                .andExpect(jsonPath("$.data.finalAcceptanceShareFinalization.latestDeliveryChannel").value("email"))
+                .andExpect(jsonPath("$.data.finalAcceptanceShareFinalization.deliveryReceiptFreshness").value("FRESH"))
+                .andExpect(jsonPath("$.data.finalAcceptanceShareFinalization.deliveryReceiptFresh").value(true))
                 .andExpect(jsonPath("$.data.nextActions[0]").value("Run one controlled issue-to-PR smoke task before a live demo."));
     }
 

@@ -5645,3 +5645,24 @@ Validation:
 - `npm test -- --reporter=basic`: passed, 30 test files and 416 tests.
 - `npm run build`: passed with the existing Vite large-chunk warning.
 - `git diff --check`: passed.
+
+## 2026-06-29 - 281 Final acceptance delivery evidence bundle
+
+- Started `281-final-acceptance-delivery-evidence-bundle` to make reviewer-facing final acceptance delivery proof visible from the first demo evidence readout instead of only from the final acceptance panel.
+- Planned a complete feature slice: backend evidence-bundle read model, aggregate status/next-action gating, copied runbook Markdown, dashboard evidence card, legacy response fallback, README/product/frontend docs, plan doc, and regression tests.
+- RED backend tests were added first for bundle aggregation, missing delivery receipt guidance, copied runbook Markdown, and REST serialization of final acceptance finalization evidence.
+- RED frontend tests were added first for rendering the final acceptance delivery evidence card and the legacy missing-field fallback in `DemoEvidenceBundlePanel`.
+- Implemented `finalAcceptanceShareFinalization` in `DemoEvidenceBundleVo` and wired `DemoEvidenceBundleService` to include the final acceptance share finalization gate in the top-level bundle status and next actions.
+- Updated the copied demo runbook with final acceptance archive, task, delivery receipt, delivery target/channel, receipt freshness, and next-action lines.
+- Updated the dashboard evidence bundle panel so operators can see final acceptance delivery/finalization evidence, receipt freshness, and blocking guidance without opening the final demo acceptance panel.
+- Updated README, product spec, frontend design notes, and added this plan document.
+
+Validation so far:
+
+- `mvn -q -pl PatchPilot -Dtest=DemoEvidenceBundleServiceTests,DemoRunbookServiceTests,DemoReadinessControllerTests test`: first failed because the new bundle field/constructor wiring did not exist; passed after backend implementation.
+- `npm test -- src/dashboard/components/DemoEvidenceBundlePanel.test.tsx src/App.test.tsx -- --reporter=basic`: first failed because the dashboard did not render `Final acceptance delivery`; passed after frontend type, fixture, panel, and fallback updates, 2 test files and 88 tests.
+- `mvn -q -pl PatchPilot test`: passed.
+- `npm run build`: first failed because `DemoSessionSnapshotPanel.test.tsx` still used the old `DemoEvidenceBundle` fixture shape and then used the backend field name `reportMarkdown`; passed after adding `finalAcceptanceShareFinalization` with the frontend `markdownReport` field, with the existing Vite large-chunk warning.
+- `npm test -- src/dashboard/components/DemoSessionSnapshotPanel.test.tsx -- --reporter=basic`: passed after adding the missing session snapshot fixture field, 23 tests.
+- `npm test -- --reporter=basic`: first hit an isolated 5s timeout in the existing admin-token dashboard test during a parallel verification run; passed on clean rerun, 30 test files and 416 tests.
+- `git diff --check`: passed.

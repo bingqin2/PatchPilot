@@ -4,6 +4,7 @@ import io.patchpilot.backend.demo.domain.DemoAdapterFixtureEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoEvaluationRunReadinessEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
+import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceShareFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoFinalHandoffReportPackageArchiveEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchAcceptanceCertificateEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchAcceptanceCloseoutEvidenceVo;
@@ -91,6 +92,13 @@ class DemoRunbookServiceTests {
                 .contains("- Final handoff report package task certificate: `task-evidence-certificate-archive-1`")
                 .contains("- Final handoff report package next action: Use the archived final handoff report package as the post-demo closeout proof.")
                 .contains("- Final handoff report package download: Download final handoff report package archive final-handoff-package-archive-1.")
+                .contains("- Final acceptance share finalization: `READY` - Final demo acceptance share package is finalized with a fresh delivery receipt.")
+                .contains("- Final acceptance share archive: `final-acceptance-share-package-archive-1`")
+                .contains("- Final acceptance share task: `task-2`")
+                .contains("- Final acceptance delivery receipt: `final-acceptance-delivery-receipt-1`")
+                .contains("- Final acceptance delivery target: reviewer@example.com via email")
+                .contains("- Final acceptance receipt freshness: `FRESH`")
+                .contains("- Final acceptance finalization next action: Use the finalization report as the external-review acceptance delivery record.")
                 .contains("## Readiness")
                 .contains("- `Credentials`: `READY` - Required credentials are configured.")
                 .contains("## Smoke Checklist")
@@ -282,6 +290,7 @@ class DemoRunbookServiceTests {
                                 "Download linked handoff package archive handoff-archive-1."
                         )
                 ),
+                finalAcceptanceShareFinalization(),
                 true,
                 "delivery-receipt-1",
                 "Demo reviewer",
@@ -358,6 +367,33 @@ class DemoRunbookServiceTests {
                 "/agent fix replace docs/demo.md demo",
                 "Task created.",
                 Instant.parse("2026-06-24T00:00:00Z")
+        );
+    }
+
+    private static DemoFinalAcceptanceShareFinalizationVo finalAcceptanceShareFinalization() {
+        return new DemoFinalAcceptanceShareFinalizationVo(
+                DemoReadinessStatus.READY,
+                true,
+                "Final demo acceptance share package is finalized with a fresh delivery receipt.",
+                "Use the finalization report as the external-review acceptance delivery record.",
+                "final-acceptance-share-package-archive-1",
+                "task-2",
+                "final-acceptance-delivery-receipt-1",
+                "reviewer@example.com",
+                "email",
+                "2026-06-29T03:05:00Z",
+                "FRESH",
+                true,
+                "Latest delivery receipt matches the current final acceptance share package archive.",
+                List.of(new DemoFinalAcceptanceShareFinalizationVo.Check(
+                        "Final acceptance delivery evidence",
+                        DemoReadinessStatus.READY,
+                        "Finalization report is ready as the external-review acceptance record.",
+                        "Download the finalization report."
+                )),
+                List.of("Latest delivery receipt final-acceptance-delivery-receipt-1 is fresh for final-acceptance-share-package-archive-1."),
+                "# PatchPilot Final Demo Acceptance Share Finalization Gate",
+                Instant.parse("2026-06-29T03:30:00Z")
         );
     }
 }
