@@ -5478,3 +5478,23 @@ Validation so far:
 - `npm test -- --reporter=basic`: passed, 29 test files and 393 tests.
 - `npm run build`: passed with the existing Vite large-chunk warning.
 - `git diff --check`: passed.
+
+## 2026-06-28 - 273 Demo final handoff report package archives
+
+- Started `273-demo-final-handoff-report-archives` to preserve the exact final handoff report package as a durable closeout artifact after the live read model changes.
+- Planned a complete feature slice: backend archive VO/entity/converter/mapper/repositories/service/controller endpoints, Flyway migration, operator audit event, dashboard archive/list/download controls, README docs, plan doc, and regression tests.
+- RED backend tests were added first for archiving the current final handoff report package, trimming to the 20 most recent archives, converting JSON list fields, MyBatis repository behavior, migration text, controller archive/list/download endpoints, missing archive downloads, and operator audit recording.
+- RED frontend tests were added first for final package archive API helpers, demo session panel archive controls, archived Markdown download behavior, and full App data loading.
+- Implemented `DemoFinalHandoffReportPackageArchiveService` with in-memory and MyBatis-backed repositories, persisted report-package metadata, Markdown report content, generated timestamp, and archived timestamp.
+- Added `POST /api/demo/final-handoff-report-package/archives`, `GET /api/demo/final-handoff-report-package/archives`, and `GET /api/demo/final-handoff-report-package/archives/{archiveId}/report/download`.
+- Updated the demo session dashboard panel with an archive action, recent final package archive list, archived package status/evidence, archive download buttons, and archive-load error handling.
+- Updated README and added this plan document.
+
+Validation so far:
+
+- `mvn -q -pl PatchPilot -Dtest=DemoFinalHandoffReportPackageArchiveServiceTests,DemoFinalHandoffReportPackageArchiveConvertTests,InMemoryDemoFinalHandoffReportPackageArchiveRepositoryTests,MyBatisDemoFinalHandoffReportPackageArchiveRepositoryTests,DemoFinalHandoffReportPackageArchiveMigrationTests,DemoReadinessControllerTests test`: passed.
+- `npm test -- src/api.test.ts src/dashboard/components/DemoSessionSnapshotPanel.test.tsx src/App.test.tsx -- --reporter=basic`: first failed because the final package summary is now intentionally rendered in both the live package and recent archive list; passed after updating the assertion to require repeated evidence, 3 test files and 252 tests.
+- `mvn -q -pl PatchPilot test`: passed.
+- `npm test -- --reporter=basic`: passed, 29 test files and 398 tests.
+- `npm run build`: passed with the existing Vite large-chunk warning.
+- `git diff --check`: passed.

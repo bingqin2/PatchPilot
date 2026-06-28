@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import type {
   DemoArchivedLaunchOutcome,
   DemoFinalHandoffReportPackage,
+  DemoFinalHandoffReportPackageArchive,
   DemoHandoffFinalization,
   DemoHandoffReadiness,
   DemoHandoffPackageArchive,
@@ -459,6 +460,29 @@ const finalHandoffReportPackage: DemoFinalHandoffReportPackage = {
   generatedAt: '2026-06-24T07:00:00Z'
 };
 
+const finalHandoffReportPackageArchives: DemoFinalHandoffReportPackageArchive[] = [
+  {
+    id: 'final-handoff-package-archive-1',
+    status: 'READY',
+    downloadReady: true,
+    summary: 'Final demo handoff report package is ready to deliver.',
+    nextAction: 'Download this final handoff report package and attach the listed evidence files.',
+    latestArchiveId: 'handoff-archive-1',
+    latestSessionId: 'demo-session-20260624T003000Z',
+    latestDeliveryReceiptId: 'delivery-receipt-1',
+    taskCertificateArchiveId: 'task-evidence-certificate-archive-1',
+    taskCertificateReady: true,
+    readinessChecks: ['Finalization: READY'],
+    requiredAttachments: ['Finalization report'],
+    preSendChecks: ['Confirm no handoff share checklist warnings remain.'],
+    evidenceNotes: ['Latest delivery receipt delivery-receipt-1 is fresh.'],
+    sourceReports: ['Handoff finalization'],
+    report: '# PatchPilot Final Demo Handoff Report Package\n\n- Status: `READY`',
+    generatedAt: '2026-06-24T07:00:00Z',
+    archivedAt: '2026-06-24T07:30:00Z'
+  }
+];
+
 const handoffShareDeliveryReceipts: DemoHandoffShareDeliveryReceipt[] = [
   {
     id: 'delivery-receipt-1',
@@ -599,6 +623,7 @@ test('renders demo session snapshot summary, evidence, checklist, contract, and 
       handoffFinalization={handoffFinalization}
       handoffShareInstructions={handoffShareInstructions}
       finalHandoffReportPackage={finalHandoffReportPackage}
+      finalHandoffReportPackageArchives={finalHandoffReportPackageArchives}
       handoffShareDeliveryReceipts={handoffShareDeliveryReceipts}
       error={null}
       archiveError={null}
@@ -618,6 +643,8 @@ test('renders demo session snapshot summary, evidence, checklist, contract, and 
       onDownloadHandoffShareDeliveryReceiptReport={vi.fn()}
       onDownloadHandoffShareChecklistReport={vi.fn()}
       onDownloadFinalHandoffReportPackage={vi.fn()}
+      onArchiveFinalHandoffReportPackage={vi.fn()}
+      onDownloadFinalHandoffReportPackageArchiveReport={vi.fn()}
     />
   );
 
@@ -693,8 +720,20 @@ test('renders demo session snapshot summary, evidence, checklist, contract, and 
   expect(within(panel).getByText('Finalization report can be downloaded as the acceptance record.')).toBeInTheDocument();
   expect(within(panel).getByRole('button', { name: 'Download handoff finalization' })).toBeInTheDocument();
   expect(within(panel).getByRole('heading', { name: 'Final handoff report package' })).toBeInTheDocument();
-  expect(within(panel).getByText('Download-ready')).toBeInTheDocument();
-  expect(within(panel).getByText('Final demo handoff report package is ready to deliver.')).toBeInTheDocument();
+  expect(within(panel).getAllByText('Download-ready').length).toBeGreaterThanOrEqual(2);
+  expect(
+    within(panel).getAllByText('Final demo handoff report package is ready to deliver.').length
+  ).toBeGreaterThanOrEqual(2);
+  expect(within(panel).getByRole('button', { name: 'Archive final handoff report package' })).toBeInTheDocument();
+  expect(
+    within(panel).getByRole('heading', { name: 'Recent final handoff report package archives' })
+  ).toBeInTheDocument();
+  expect(within(panel).getByText('final-handoff-package-archive-1')).toBeInTheDocument();
+  expect(
+    within(panel).getByRole('button', {
+      name: 'Download archived final handoff report package final-handoff-package-archive-1'
+    })
+  ).toBeInTheDocument();
   expect(within(panel).getByText('Task evidence certificate: READY')).toBeInTheDocument();
   expect(within(panel).getAllByText('Task evidence acceptance certificate archive task-evidence-certificate-archive-1').length)
     .toBeGreaterThanOrEqual(2);
@@ -1358,6 +1397,112 @@ test('downloads final handoff report package markdown', async () => {
   expect(click).toHaveBeenCalledTimes(1);
   expect(revokeObjectURL).toHaveBeenCalledWith('blob:demo-final-handoff-report-package');
   expect(screen.getByText('Final handoff report package downloaded')).toBeInTheDocument();
+});
+
+test('archives final handoff report package', async () => {
+  const onArchiveFinalHandoffReportPackage = vi.fn().mockResolvedValue(finalHandoffReportPackageArchives[0]);
+
+  render(
+    <DemoSessionSnapshotPanel
+      snapshot={snapshot}
+      preparedLaunchCommands={preparedLaunchCommands}
+      archivedLaunchOutcomes={archivedLaunchOutcomes}
+      handoffReadiness={handoffReadiness}
+      archives={[]}
+      handoffPackageArchives={handoffPackageArchives}
+      handoffPackageArchiveSummary={handoffPackageArchiveSummary}
+      handoffShareChecklist={handoffShareChecklist}
+      handoffShareCenter={handoffShareCenter}
+      handoffFinalization={handoffFinalization}
+      handoffShareInstructions={handoffShareInstructions}
+      finalHandoffReportPackage={finalHandoffReportPackage}
+      finalHandoffReportPackageArchives={[]}
+      error={null}
+      archiveError={null}
+      handoffPackageArchiveError={null}
+      onCopyReport={vi.fn()}
+      onDownloadReport={vi.fn()}
+      onArchiveSession={vi.fn()}
+      onCopyHandoffPackage={vi.fn()}
+      onDownloadHandoffPackage={vi.fn()}
+      onArchiveHandoffPackage={vi.fn()}
+      onDownloadArchiveReport={vi.fn()}
+      onDownloadHandoffPackageArchiveReport={vi.fn()}
+      onDownloadHandoffPackageArchiveSummaryReport={vi.fn()}
+      onDownloadHandoffShareCenterReport={vi.fn()}
+      onDownloadHandoffShareInstructionsReport={vi.fn()}
+      onDownloadHandoffShareChecklistReport={vi.fn()}
+      onDownloadFinalHandoffReportPackage={vi.fn()}
+      onArchiveFinalHandoffReportPackage={onArchiveFinalHandoffReportPackage}
+      onDownloadFinalHandoffReportPackageArchiveReport={vi.fn()}
+    />
+  );
+
+  await userEvent.click(screen.getByRole('button', { name: 'Archive final handoff report package' }));
+
+  expect(onArchiveFinalHandoffReportPackage).toHaveBeenCalledTimes(1);
+  expect(screen.getByText('Final handoff report package archived')).toBeInTheDocument();
+});
+
+test('downloads archived final handoff report package markdown', async () => {
+  const reportBlob = new Blob(['# PatchPilot Final Demo Handoff Report Package'], {
+    type: 'text/markdown;charset=UTF-8'
+  });
+  const onDownloadFinalHandoffReportPackageArchiveReport = vi.fn().mockResolvedValue(reportBlob);
+  const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+  const createObjectURL = vi.fn(() => 'blob:demo-final-handoff-report-package-archive');
+  const revokeObjectURL = vi.fn();
+  vi.stubGlobal('URL', {
+    ...globalThis.URL,
+    createObjectURL,
+    revokeObjectURL
+  });
+
+  render(
+    <DemoSessionSnapshotPanel
+      snapshot={snapshot}
+      preparedLaunchCommands={preparedLaunchCommands}
+      archivedLaunchOutcomes={archivedLaunchOutcomes}
+      handoffReadiness={handoffReadiness}
+      archives={[]}
+      handoffPackageArchives={handoffPackageArchives}
+      handoffPackageArchiveSummary={handoffPackageArchiveSummary}
+      handoffShareChecklist={handoffShareChecklist}
+      handoffShareCenter={handoffShareCenter}
+      handoffFinalization={handoffFinalization}
+      handoffShareInstructions={handoffShareInstructions}
+      finalHandoffReportPackage={finalHandoffReportPackage}
+      finalHandoffReportPackageArchives={finalHandoffReportPackageArchives}
+      error={null}
+      archiveError={null}
+      handoffPackageArchiveError={null}
+      onCopyReport={vi.fn()}
+      onDownloadReport={vi.fn()}
+      onArchiveSession={vi.fn()}
+      onCopyHandoffPackage={vi.fn()}
+      onDownloadHandoffPackage={vi.fn()}
+      onArchiveHandoffPackage={vi.fn()}
+      onDownloadArchiveReport={vi.fn()}
+      onDownloadHandoffPackageArchiveReport={vi.fn()}
+      onDownloadHandoffPackageArchiveSummaryReport={vi.fn()}
+      onDownloadHandoffShareCenterReport={vi.fn()}
+      onDownloadHandoffShareInstructionsReport={vi.fn()}
+      onDownloadHandoffShareChecklistReport={vi.fn()}
+      onDownloadFinalHandoffReportPackage={vi.fn()}
+      onArchiveFinalHandoffReportPackage={vi.fn()}
+      onDownloadFinalHandoffReportPackageArchiveReport={onDownloadFinalHandoffReportPackageArchiveReport}
+    />
+  );
+
+  await userEvent.click(screen.getByRole('button', {
+    name: 'Download archived final handoff report package final-handoff-package-archive-1'
+  }));
+
+  expect(onDownloadFinalHandoffReportPackageArchiveReport).toHaveBeenCalledWith('final-handoff-package-archive-1');
+  expect(createObjectURL).toHaveBeenCalledWith(reportBlob);
+  expect(click).toHaveBeenCalledTimes(1);
+  expect(revokeObjectURL).toHaveBeenCalledWith('blob:demo-final-handoff-report-package-archive');
+  expect(screen.getByText('Archived final handoff report package downloaded')).toBeInTheDocument();
 });
 
 test('records demo handoff share delivery receipt', async () => {

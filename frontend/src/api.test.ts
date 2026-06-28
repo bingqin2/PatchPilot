@@ -17,8 +17,10 @@ import {
   getModelProviderHealth,
   getModelUsageSummary,
   getDemoScript,
+  archiveDemoFinalHandoffReportPackage,
   archiveDemoHandoffPackage,
   archiveDemoSession,
+  listDemoFinalHandoffReportPackageArchives,
   listDemoHandoffPackageArchives,
   archiveEvaluationRunSnapshot,
   listDemoSessionArchives,
@@ -66,6 +68,7 @@ import {
   downloadDemoHandoffShareCenterReport,
   downloadDemoHandoffFinalizationReport,
   downloadDemoFinalHandoffReportPackage,
+  downloadDemoFinalHandoffReportPackageArchiveReport,
   downloadDemoSelfHostedLaunchReadinessReport,
   downloadDemoSelfHostedLaunchReadinessArchiveReport,
   downloadDemoHandoffShareInstructionsReport,
@@ -2374,6 +2377,87 @@ test('gets demo final handoff report package through backend API', async () => {
   expect(reportPackage.markdownReport).toContain('# PatchPilot Final Demo Handoff Report Package');
 });
 
+test('archives demo final handoff report package through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        id: 'final-handoff-package-archive-1',
+        status: 'READY',
+        downloadReady: true,
+        summary: 'Final demo handoff report package is ready to deliver.',
+        nextAction: 'Download this final handoff report package and attach the listed evidence files.',
+        latestArchiveId: 'handoff-archive-1',
+        latestSessionId: 'demo-session-20260624T003000Z',
+        latestDeliveryReceiptId: 'receipt-1',
+        taskCertificateArchiveId: 'task-certificate-archive-1',
+        taskCertificateReady: true,
+        readinessChecks: ['Finalization: READY'],
+        requiredAttachments: ['Finalization report'],
+        preSendChecks: ['Confirm no handoff share checklist warnings remain.'],
+        evidenceNotes: ['Finalization report can be downloaded as the acceptance record.'],
+        sourceReports: ['Handoff finalization'],
+        report: '# PatchPilot Final Demo Handoff Report Package\n\n- Status: `READY`',
+        generatedAt: '2026-06-24T07:00:00Z',
+        archivedAt: '2026-06-24T07:30:00Z'
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const archive = await archiveDemoFinalHandoffReportPackage();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-handoff-report-package/archives', {
+    method: 'POST'
+  });
+  expect(archive.id).toBe('final-handoff-package-archive-1');
+  expect(archive.downloadReady).toBe(true);
+  expect(archive.report).toContain('# PatchPilot Final Demo Handoff Report Package');
+});
+
+test('lists demo final handoff report package archives through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: [
+        {
+          id: 'final-handoff-package-archive-1',
+          status: 'READY',
+          downloadReady: true,
+          summary: 'Final demo handoff report package is ready to deliver.',
+          nextAction: 'Download this final handoff report package and attach the listed evidence files.',
+          latestArchiveId: 'handoff-archive-1',
+          latestSessionId: 'demo-session-20260624T003000Z',
+          latestDeliveryReceiptId: 'receipt-1',
+          taskCertificateArchiveId: 'task-certificate-archive-1',
+          taskCertificateReady: true,
+          readinessChecks: ['Finalization: READY'],
+          requiredAttachments: ['Finalization report'],
+          preSendChecks: ['Confirm no handoff share checklist warnings remain.'],
+          evidenceNotes: ['Finalization report can be downloaded as the acceptance record.'],
+          sourceReports: ['Handoff finalization'],
+          report: '# PatchPilot Final Demo Handoff Report Package\n\n- Status: `READY`',
+          generatedAt: '2026-06-24T07:00:00Z',
+          archivedAt: '2026-06-24T07:30:00Z'
+        }
+      ],
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const archives = await listDemoFinalHandoffReportPackageArchives();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-handoff-report-package/archives');
+  expect(archives).toHaveLength(1);
+  expect(archives[0].latestDeliveryReceiptId).toBe('receipt-1');
+});
+
 test('downloads demo final handoff report package markdown from backend API', async () => {
   const reportBlob = new Blob(['# PatchPilot Final Demo Handoff Report Package\n\n- Status: `READY`'], {
     type: 'text/markdown;charset=UTF-8'
@@ -2388,6 +2472,25 @@ test('downloads demo final handoff report package markdown from backend API', as
   const downloadedReport = await downloadDemoFinalHandoffReportPackage();
 
   expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-handoff-report-package/report/download');
+  expect(downloadedReport).toBe(reportBlob);
+});
+
+test('downloads archived demo final handoff report package markdown from backend API', async () => {
+  const reportBlob = new Blob(['# PatchPilot Final Demo Handoff Report Package\n\n- Status: `READY`'], {
+    type: 'text/markdown;charset=UTF-8'
+  });
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    blob: async () => reportBlob
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const downloadedReport = await downloadDemoFinalHandoffReportPackageArchiveReport('final archive/1');
+
+  expect(fetchMock).toHaveBeenCalledWith(
+    '/api/demo/final-handoff-report-package/archives/final%20archive%2F1/report/download'
+  );
   expect(downloadedReport).toBe(reportBlob);
 });
 

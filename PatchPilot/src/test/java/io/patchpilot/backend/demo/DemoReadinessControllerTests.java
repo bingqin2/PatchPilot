@@ -6,6 +6,7 @@ import io.patchpilot.backend.demo.domain.DemoReadinessVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
 import io.patchpilot.backend.demo.domain.DemoEvaluationRunReadinessEvidenceVo;
+import io.patchpilot.backend.demo.domain.DemoFinalHandoffReportPackageArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoFinalHandoffReportPackageVo;
 import io.patchpilot.backend.demo.domain.DemoAdapterFixtureEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoSmokeChecklistStatus;
@@ -124,6 +125,9 @@ class DemoReadinessControllerTests {
 
     @MockitoBean
     private DemoFinalHandoffReportPackageService demoFinalHandoffReportPackageService;
+
+    @MockitoBean
+    private DemoFinalHandoffReportPackageArchiveService demoFinalHandoffReportPackageArchiveService;
 
     @MockitoBean
     private SelfHostedLaunchReadinessService selfHostedLaunchReadinessService;
@@ -2211,6 +2215,80 @@ class DemoReadinessControllerTests {
     }
 
     @Test
+    void should_archive_demo_final_handoff_report_package() throws Exception {
+        when(demoFinalHandoffReportPackageArchiveService.archiveCurrentReportPackage())
+                .thenReturn(finalHandoffReportPackageArchive());
+
+        mockMvc.perform(post("/api/demo/final-handoff-report-package/archives"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value("final-handoff-package-archive-1"))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.downloadReady").value(true))
+                .andExpect(jsonPath("$.data.latestArchiveId").value("handoff-archive-1"))
+                .andExpect(jsonPath("$.data.latestSessionId").value("demo-session-20260624T003000Z"))
+                .andExpect(jsonPath("$.data.latestDeliveryReceiptId").value("delivery-receipt-1"))
+                .andExpect(jsonPath("$.data.taskCertificateArchiveId").value("task-evidence-certificate-archive-1"))
+                .andExpect(jsonPath("$.data.taskCertificateReady").value(true))
+                .andExpect(jsonPath("$.data.readinessChecks[0]").value("Finalization: READY"))
+                .andExpect(jsonPath("$.data.report")
+                        .value(containsString("# PatchPilot Final Demo Handoff Report Package")));
+
+        verify(operatorSafetyAuditService).recordSafetyAudit(argThat(this::isFinalHandoffReportPackageArchiveAudit));
+    }
+
+    private boolean isFinalHandoffReportPackageArchiveAudit(RecordOperatorSafetyAuditCommand command) {
+        return command != null
+                && "DEMO_FINAL_HANDOFF_REPORT_PACKAGE_ARCHIVED".equals(command.action())
+                && "DEMO_FINAL_HANDOFF_REPORT_PACKAGE_ARCHIVE".equals(command.resourceType())
+                && "final-handoff-package-archive-1".equals(command.resourceId())
+                && command.scope() == TriggerQuarantineScope.REPOSITORY
+                && "patchpilot/local-demo".equals(command.scopeKey())
+                && "admin-api".equals(command.operator())
+                && "Archived demo final handoff report package READY".equals(command.reason());
+    }
+
+    @Test
+    void should_return_recent_demo_final_handoff_report_package_archives() throws Exception {
+        when(demoFinalHandoffReportPackageArchiveService.listRecentArchives())
+                .thenReturn(List.of(finalHandoffReportPackageArchive()));
+
+        mockMvc.perform(get("/api/demo/final-handoff-report-package/archives"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].id").value("final-handoff-package-archive-1"))
+                .andExpect(jsonPath("$.data[0].status").value("READY"))
+                .andExpect(jsonPath("$.data[0].downloadReady").value(true))
+                .andExpect(jsonPath("$.data[0].latestArchiveId").value("handoff-archive-1"))
+                .andExpect(jsonPath("$.data[0].latestDeliveryReceiptId").value("delivery-receipt-1"));
+    }
+
+    @Test
+    void should_download_archived_demo_final_handoff_report_package_as_markdown_attachment() throws Exception {
+        when(demoFinalHandoffReportPackageArchiveService.findArchive("final-handoff-package-archive-1"))
+                .thenReturn(Optional.of(finalHandoffReportPackageArchive()));
+
+        mockMvc.perform(get("/api/demo/final-handoff-report-package/archives/final-handoff-package-archive-1/report/download"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("attachment;")))
+                .andExpect(header().string(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        containsString("patchpilot-demo-final-handoff-report-package-final-handoff-package-archive-1.md")
+                ))
+                .andExpect(content().contentTypeCompatibleWith("text/markdown"))
+                .andExpect(content().string(containsString("# PatchPilot Final Demo Handoff Report Package")))
+                .andExpect(content().string(containsString("handoff-archive-1")));
+    }
+
+    @Test
+    void should_return_not_found_when_archived_demo_final_handoff_report_package_is_missing() throws Exception {
+        when(demoFinalHandoffReportPackageArchiveService.findArchive("missing-archive")).thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/api/demo/final-handoff-report-package/archives/missing-archive/report/download"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
     void should_record_demo_handoff_share_delivery_receipt() throws Exception {
         when(demoHandoffShareDeliveryReceiptService.recordDeliveryReceipt(argThat(request ->
                 request.deliveryChannel().equals("email")
@@ -2816,6 +2894,29 @@ class DemoReadinessControllerTests {
                         "Download launch acceptance closeout archive launch-closeout-archive-1."
                 ),
                 "# PatchPilot Launch Acceptance Certificate\n\n- Closeout archive: `launch-closeout-archive-1`\n"
+        );
+    }
+
+    private static DemoFinalHandoffReportPackageArchiveVo finalHandoffReportPackageArchive() {
+        return new DemoFinalHandoffReportPackageArchiveVo(
+                "final-handoff-package-archive-1",
+                DemoReadinessStatus.READY,
+                true,
+                "Final demo handoff report package is ready to deliver.",
+                "Download this final handoff report package and attach the listed evidence files.",
+                "handoff-archive-1",
+                "demo-session-20260624T003000Z",
+                "delivery-receipt-1",
+                "task-evidence-certificate-archive-1",
+                true,
+                List.of("Finalization: READY"),
+                List.of("Finalization report"),
+                List.of("Confirm no handoff share checklist warnings remain."),
+                List.of("Latest delivery receipt delivery-receipt-1 is fresh."),
+                List.of("Handoff finalization"),
+                "# PatchPilot Final Demo Handoff Report Package\n\n- Latest archive: `handoff-archive-1`\n",
+                Instant.parse("2026-06-28T11:00:00Z"),
+                Instant.parse("2026-06-28T11:30:00Z")
         );
     }
 }

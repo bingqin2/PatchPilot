@@ -2,6 +2,7 @@ package io.patchpilot.backend.demo;
 
 import io.patchpilot.backend.common.response.ApiResponse;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
+import io.patchpilot.backend.demo.domain.DemoFinalHandoffReportPackageArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoFinalHandoffReportPackageVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffReadinessVo;
@@ -69,6 +70,7 @@ public class DemoReadinessController {
     private final DemoHandoffShareDeliveryReceiptService demoHandoffShareDeliveryReceiptService;
     private final DemoHandoffFinalizationService demoHandoffFinalizationService;
     private final DemoFinalHandoffReportPackageService demoFinalHandoffReportPackageService;
+    private final DemoFinalHandoffReportPackageArchiveService demoFinalHandoffReportPackageArchiveService;
     private final SelfHostedLaunchReadinessService selfHostedLaunchReadinessService;
     private final SelfHostedLaunchReadinessArchiveService selfHostedLaunchReadinessArchiveService;
     private final DemoLaunchEvidencePackageService demoLaunchEvidencePackageService;
@@ -275,6 +277,27 @@ public class DemoReadinessController {
         return ApiResponse.ok(demoFinalHandoffReportPackageService.getReportPackage());
     }
 
+    @PostMapping("/final-handoff-report-package/archives")
+    public ApiResponse<DemoFinalHandoffReportPackageArchiveVo> archiveFinalHandoffReportPackage() {
+        DemoFinalHandoffReportPackageArchiveVo archive =
+                demoFinalHandoffReportPackageArchiveService.archiveCurrentReportPackage();
+        operatorSafetyAuditService.recordSafetyAudit(new RecordOperatorSafetyAuditCommand(
+                "DEMO_FINAL_HANDOFF_REPORT_PACKAGE_ARCHIVED",
+                "DEMO_FINAL_HANDOFF_REPORT_PACKAGE_ARCHIVE",
+                archive.id(),
+                TriggerQuarantineScope.REPOSITORY,
+                "patchpilot/local-demo",
+                "admin-api",
+                "Archived demo final handoff report package " + archive.status()
+        ));
+        return ApiResponse.ok(archive);
+    }
+
+    @GetMapping("/final-handoff-report-package/archives")
+    public ApiResponse<List<DemoFinalHandoffReportPackageArchiveVo>> listFinalHandoffReportPackageArchives() {
+        return ApiResponse.ok(demoFinalHandoffReportPackageArchiveService.listRecentArchives());
+    }
+
     @GetMapping("/self-hosted-launch-readiness")
     public ApiResponse<DemoSelfHostedLaunchReadinessVo> getSelfHostedLaunchReadiness() {
         return ApiResponse.ok(selfHostedLaunchReadinessService.getReadinessPackage());
@@ -335,6 +358,16 @@ public class DemoReadinessController {
                 "patchpilot-demo-final-handoff-report-package.md",
                 demoFinalHandoffReportPackageService.getReportPackage().markdownReport()
         );
+    }
+
+    @GetMapping(value = "/final-handoff-report-package/archives/{archiveId}/report/download", produces = "text/markdown;charset=UTF-8")
+    public ResponseEntity<String> downloadArchivedFinalHandoffReportPackage(@PathVariable String archiveId) {
+        return demoFinalHandoffReportPackageArchiveService.findArchive(archiveId)
+                .map(archive -> markdownAttachment(
+                        "patchpilot-demo-final-handoff-report-package-" + safeFilenamePart(archive.id()) + ".md",
+                        archive.report()
+                ))
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @GetMapping(value = "/self-hosted-launch-readiness/report/download", produces = "text/markdown;charset=UTF-8")

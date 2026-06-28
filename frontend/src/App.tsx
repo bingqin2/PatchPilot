@@ -9,6 +9,7 @@ import {
   archiveDemoLaunchAcceptanceCertificate,
   archiveDemoLaunchAcceptanceCloseout,
   archiveDemoLaunchEvidencePackage,
+  archiveDemoFinalHandoffReportPackage,
   archiveDemoHandoffPackage,
   archiveDemoReadinessSnapshot,
   archiveDemoSelfHostedLaunchReadiness,
@@ -47,6 +48,7 @@ import {
   downloadDemoHandoffShareInstructionsReport,
   downloadDemoHandoffShareChecklistReport,
   downloadDemoFinalHandoffReportPackage,
+  downloadDemoFinalHandoffReportPackageArchiveReport,
   downloadTaskEvidencePackageReport,
   downloadTaskEvidencePackageAcceptanceCertificateArchiveReport,
   downloadTaskEvidencePackageAcceptanceCertificateReport,
@@ -82,6 +84,7 @@ import {
   getDemoReadiness,
   getDemoReadinessSnapshotTrend,
   getDemoSmokeChecklist,
+  listDemoFinalHandoffReportPackageArchives,
   listDemoLaunchEvidenceShareDeliveryReceipts,
   getEvaluationCaseReadiness,
   getEvaluationFixtureBaselineRunRegressionSummary,
@@ -192,6 +195,7 @@ import type {
   DemoReadinessSnapshotArchive,
   DemoReadinessSnapshotTrend,
   DemoEvidenceBundle,
+  DemoFinalHandoffReportPackageArchive,
   DemoFinalHandoffReportPackage,
   DemoHandoffFinalization,
   DemoHandoffReadiness,
@@ -353,6 +357,10 @@ export default function App() {
   const [demoFinalHandoffReportPackage, setDemoFinalHandoffReportPackage] =
     useState<DemoFinalHandoffReportPackage | null>(null);
   const [demoFinalHandoffReportPackageError, setDemoFinalHandoffReportPackageError] = useState<string | null>(null);
+  const [demoFinalHandoffReportPackageArchives, setDemoFinalHandoffReportPackageArchives] =
+    useState<DemoFinalHandoffReportPackageArchive[]>([]);
+  const [demoFinalHandoffReportPackageArchiveError, setDemoFinalHandoffReportPackageArchiveError] =
+    useState<string | null>(null);
   const [demoSelfHostedLaunchReadiness, setDemoSelfHostedLaunchReadiness] =
     useState<DemoSelfHostedLaunchReadiness | null>(null);
   const [demoSelfHostedLaunchReadinessError, setDemoSelfHostedLaunchReadinessError] = useState<string | null>(null);
@@ -756,6 +764,7 @@ export default function App() {
         demoHandoffShareCenterResult,
         demoHandoffFinalizationResult,
         demoFinalHandoffReportPackageResult,
+        demoFinalHandoffReportPackageArchiveResult,
         demoSelfHostedLaunchReadinessResult,
         demoSelfHostedLaunchReadinessArchiveResult,
         demoLaunchEvidencePackageResult,
@@ -871,6 +880,10 @@ export default function App() {
         getDemoFinalHandoffReportPackage().then(
           (reportPackage) => ({ reportPackage, error: null as string | null }),
           (caught) => ({ reportPackage: null, error: errorMessage(caught) })
+        ),
+        listDemoFinalHandoffReportPackageArchives().then(
+          (archives) => ({ archives, error: null as string | null }),
+          (caught) => ({ archives: null, error: errorMessage(caught) })
         ),
         getDemoSelfHostedLaunchReadiness().then(
           (readiness) => ({ readiness, error: null as string | null }),
@@ -1124,6 +1137,10 @@ export default function App() {
         setDemoFinalHandoffReportPackage(demoFinalHandoffReportPackageResult.reportPackage);
       }
       setDemoFinalHandoffReportPackageError(demoFinalHandoffReportPackageResult.error);
+      if (demoFinalHandoffReportPackageArchiveResult.archives) {
+        setDemoFinalHandoffReportPackageArchives(demoFinalHandoffReportPackageArchiveResult.archives);
+      }
+      setDemoFinalHandoffReportPackageArchiveError(demoFinalHandoffReportPackageArchiveResult.error);
       if (demoSelfHostedLaunchReadinessResult.readiness) {
         setDemoSelfHostedLaunchReadiness(demoSelfHostedLaunchReadinessResult.readiness);
       }
@@ -1603,6 +1620,25 @@ export default function App() {
   ), []);
   const handleDownloadDemoFinalHandoffReportPackage = useCallback(() => (
     downloadDemoFinalHandoffReportPackage()
+  ), []);
+  const handleArchiveDemoFinalHandoffReportPackage = useCallback(async () => {
+    const archive = await archiveDemoFinalHandoffReportPackage();
+    setDemoFinalHandoffReportPackageArchives((current) => [
+      archive,
+      ...current.filter((item) => item.id !== archive.id)
+    ].slice(0, 20));
+    setDemoFinalHandoffReportPackageArchiveError(null);
+    try {
+      const reportPackage = await getDemoFinalHandoffReportPackage();
+      setDemoFinalHandoffReportPackage(reportPackage);
+      setDemoFinalHandoffReportPackageError(null);
+    } catch (caught) {
+      setDemoFinalHandoffReportPackageError(errorMessage(caught));
+    }
+    return archive;
+  }, []);
+  const handleDownloadDemoFinalHandoffReportPackageArchiveReport = useCallback((archiveId: string) => (
+    downloadDemoFinalHandoffReportPackageArchiveReport(archiveId)
   ), []);
   const handleDownloadDemoSelfHostedLaunchReadinessReport = useCallback(() => (
     downloadDemoSelfHostedLaunchReadinessReport()
@@ -2282,6 +2318,7 @@ export default function App() {
         handoffShareCenter={demoHandoffShareCenter}
         handoffFinalization={demoHandoffFinalization}
         finalHandoffReportPackage={demoFinalHandoffReportPackage}
+        finalHandoffReportPackageArchives={demoFinalHandoffReportPackageArchives}
         handoffShareInstructions={demoHandoffShareInstructions}
         handoffShareDeliveryReceipts={demoHandoffShareDeliveryReceipts}
         error={demoSessionSnapshotError}
@@ -2293,6 +2330,7 @@ export default function App() {
         handoffShareCenterError={demoHandoffShareCenterError}
         handoffFinalizationError={demoHandoffFinalizationError}
         finalHandoffReportPackageError={demoFinalHandoffReportPackageError}
+        finalHandoffReportPackageArchiveError={demoFinalHandoffReportPackageArchiveError}
         handoffShareInstructionsError={demoHandoffShareInstructionsError}
         handoffShareDeliveryReceiptError={demoHandoffShareDeliveryReceiptError}
         onCopyReport={handleCopyDemoSessionReport}
@@ -2307,6 +2345,8 @@ export default function App() {
         onDownloadHandoffShareCenterReport={handleDownloadDemoHandoffShareCenterReport}
         onDownloadHandoffFinalizationReport={handleDownloadDemoHandoffFinalizationReport}
         onDownloadFinalHandoffReportPackage={handleDownloadDemoFinalHandoffReportPackage}
+        onArchiveFinalHandoffReportPackage={handleArchiveDemoFinalHandoffReportPackage}
+        onDownloadFinalHandoffReportPackageArchiveReport={handleDownloadDemoFinalHandoffReportPackageArchiveReport}
         onDownloadHandoffShareInstructionsReport={handleDownloadDemoHandoffShareInstructionsReport}
         onCreateHandoffShareDeliveryReceipt={handleCreateDemoHandoffShareDeliveryReceipt}
         onDownloadHandoffShareDeliveryReceiptReport={handleDownloadDemoHandoffShareDeliveryReceiptReport}

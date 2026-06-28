@@ -55,6 +55,7 @@ PatchPilot is not a chatbot and does not auto-merge code. The current target is 
 - Demo handoff share center that combines the latest package archive summary, share checklist, task evidence acceptance certificate, and latest delivery receipt into one final send/no-send status, download action list, evidence notes, receipt freshness state, and downloadable Markdown report.
 - Demo handoff finalization gate that requires a share-ready package, certified task evidence acceptance certificate proof, and a fresh delivery receipt before the post-demo package is treated as accepted handoff evidence, with a downloadable Markdown acceptance report.
 - Demo final handoff report package that combines the latest archive summary, share checklist, share center, share instructions, finalization gate, delivery receipt, and task evidence certificate proof into one read-only downloadable operator artifact.
+- Demo final handoff report package archives that preserve exact final package snapshots, list recent closeout archives, and download archived Markdown reports after the live package view changes.
 - Demo handoff share instructions that convert the share center into recommended recipients, required attachments, pre-send checks, and a copyable/downloadable message template without sending anything externally.
 - Demo handoff share delivery receipts that record local proof that an operator delivered the prepared package through an external channel, with recent receipts and downloadable Markdown evidence, without sending anything externally from PatchPilot.
 - Self-hosted launch readiness package that combines demo readiness, evidence bundle, handoff finalization, credentials, webhook setup, queue/worker health, next actions, and a downloadable Markdown report into one final pre-launch readout.
@@ -557,6 +558,9 @@ curl "${ADMIN_HEADER[@]}" http://127.0.0.1:8080/api/demo/handoff-finalization
 curl -OJ "${ADMIN_HEADER[@]}" http://127.0.0.1:8080/api/demo/handoff-finalization/report/download
 curl "${ADMIN_HEADER[@]}" http://127.0.0.1:8080/api/demo/final-handoff-report-package
 curl -OJ "${ADMIN_HEADER[@]}" http://127.0.0.1:8080/api/demo/final-handoff-report-package/report/download
+curl "${ADMIN_HEADER[@]}" http://127.0.0.1:8080/api/demo/final-handoff-report-package/archives
+curl -X POST "${ADMIN_HEADER[@]}" http://127.0.0.1:8080/api/demo/final-handoff-report-package/archives
+curl -OJ "${ADMIN_HEADER[@]}" http://127.0.0.1:8080/api/demo/final-handoff-report-package/archives/{archiveId}/report/download
 curl "${ADMIN_HEADER[@]}" http://127.0.0.1:8080/api/demo/self-hosted-launch-readiness
 curl -OJ "${ADMIN_HEADER[@]}" http://127.0.0.1:8080/api/demo/self-hosted-launch-readiness/report/download
 curl "${ADMIN_HEADER[@]}" http://127.0.0.1:8080/api/demo/self-hosted-launch-readiness/archives
