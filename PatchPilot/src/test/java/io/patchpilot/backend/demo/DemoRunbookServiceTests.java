@@ -4,6 +4,7 @@ import io.patchpilot.backend.demo.domain.DemoAdapterFixtureEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoEvaluationRunReadinessEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
+import io.patchpilot.backend.demo.domain.DemoLaunchAcceptanceCertificateEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchAcceptanceCloseoutEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessCheckVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessStatus;
@@ -63,6 +64,14 @@ class DemoRunbookServiceTests {
                 .contains("- Launch acceptance closeout receipt: `launch-delivery-receipt-1`")
                 .contains("- Launch acceptance closeout next action: Use the archived launch acceptance closeout as the final launch evidence record.")
                 .contains("- Launch acceptance closeout download: Download launch acceptance closeout archive launch-closeout-archive-1.")
+                .contains("- Launch acceptance certificate: `READY` - Latest launch acceptance certificate archive is certified and ready.")
+                .contains("- Launch acceptance certificate archive: `launch-certificate-archive-1`")
+                .contains("- Launch acceptance certificate closeout archive: `launch-closeout-archive-1`")
+                .contains("- Launch acceptance certificate evidence archive: `launch-evidence-archive-1`")
+                .contains("- Launch acceptance certificate receipt: `launch-delivery-receipt-1`")
+                .contains("- Launch acceptance certificate Pull Request: https://github.com/bingqin2/PatchPilot/pull/42")
+                .contains("- Launch acceptance certificate next action: Use the archived launch acceptance certificate as the external-review launch record.")
+                .contains("- Launch acceptance certificate download: Download launch acceptance certificate archive launch-certificate-archive-1.")
                 .contains("## Readiness")
                 .contains("- `Credentials`: `READY` - Required credentials are configured.")
                 .contains("## Smoke Checklist")
@@ -196,6 +205,24 @@ class DemoRunbookServiceTests {
                         List.of(
                                 "Download launch acceptance closeout archive launch-closeout-archive-1.",
                                 "Download linked launch evidence archive launch-evidence-archive-1."
+                        )
+                ),
+                new DemoLaunchAcceptanceCertificateEvidenceVo(
+                        DemoReadinessStatus.READY,
+                        true,
+                        true,
+                        "Latest launch acceptance certificate archive is certified and ready.",
+                        "Use the archived launch acceptance certificate as the external-review launch record.",
+                        1,
+                        "launch-certificate-archive-1",
+                        "launch-closeout-archive-1",
+                        "launch-evidence-archive-1",
+                        "launch-delivery-receipt-1",
+                        "https://github.com/bingqin2/PatchPilot/pull/42",
+                        Instant.parse("2026-06-24T08:30:00Z"),
+                        List.of(
+                                "Download launch acceptance certificate archive launch-certificate-archive-1.",
+                                "Download linked launch acceptance closeout archive launch-closeout-archive-1."
                         )
                 ),
                 true,

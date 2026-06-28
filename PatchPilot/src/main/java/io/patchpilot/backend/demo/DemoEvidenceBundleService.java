@@ -9,6 +9,8 @@ import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffShareCenterVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffPackageArchiveSummaryVo;
+import io.patchpilot.backend.demo.domain.DemoLaunchAcceptanceCertificateArchiveVo;
+import io.patchpilot.backend.demo.domain.DemoLaunchAcceptanceCertificateEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchAcceptanceCloseoutArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchAcceptanceCloseoutEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchEvidenceFinalizationVo;
@@ -17,6 +19,7 @@ import io.patchpilot.backend.demo.domain.DemoReadinessStatus;
 import io.patchpilot.backend.demo.domain.DemoReadinessVo;
 import io.patchpilot.backend.demo.domain.DemoSmokeChecklistStatus;
 import io.patchpilot.backend.demo.domain.DemoSmokeChecklistVo;
+import io.patchpilot.backend.demo.service.DemoLaunchAcceptanceCertificateArchiveRepository;
 import io.patchpilot.backend.demo.service.DemoLaunchAcceptanceCloseoutArchiveRepository;
 import io.patchpilot.backend.evaluation.EvaluationRunArchiveReadinessSummaryService;
 import io.patchpilot.backend.evaluation.domain.EvaluationRunArchiveReadinessSummaryVo;
@@ -64,6 +67,7 @@ public class DemoEvidenceBundleService {
     private final Supplier<DemoLaunchEvidenceShareCenterVo> launchEvidenceShareCenterSupplier;
     private final Supplier<DemoLaunchEvidenceFinalizationVo> launchEvidenceFinalizationSupplier;
     private final Supplier<List<DemoLaunchAcceptanceCloseoutArchiveVo>> launchAcceptanceCloseoutArchiveSupplier;
+    private final Supplier<List<DemoLaunchAcceptanceCertificateArchiveVo>> launchAcceptanceCertificateArchiveSupplier;
 
     @Autowired
     public DemoEvidenceBundleService(
@@ -83,7 +87,8 @@ public class DemoEvidenceBundleService {
             DemoHandoffFinalizationService demoHandoffFinalizationService,
             DemoLaunchEvidenceShareCenterService demoLaunchEvidenceShareCenterService,
             DemoLaunchEvidenceFinalizationService demoLaunchEvidenceFinalizationService,
-            DemoLaunchAcceptanceCloseoutArchiveRepository launchAcceptanceCloseoutArchiveRepository
+            DemoLaunchAcceptanceCloseoutArchiveRepository launchAcceptanceCloseoutArchiveRepository,
+            DemoLaunchAcceptanceCertificateArchiveRepository launchAcceptanceCertificateArchiveRepository
     ) {
         this(
                 demoReadinessService::getReadiness,
@@ -111,7 +116,8 @@ public class DemoEvidenceBundleService {
                 demoHandoffFinalizationService::getFinalizationGate,
                 demoLaunchEvidenceShareCenterService::getShareCenter,
                 demoLaunchEvidenceFinalizationService::getFinalizationGate,
-                () -> launchAcceptanceCloseoutArchiveRepository.listRecentArchives(20)
+                () -> launchAcceptanceCloseoutArchiveRepository.listRecentArchives(20),
+                () -> launchAcceptanceCertificateArchiveRepository.listRecentArchives(20)
         );
     }
 
@@ -132,7 +138,8 @@ public class DemoEvidenceBundleService {
             Supplier<DemoHandoffFinalizationVo> handoffFinalizationSupplier,
             Supplier<DemoLaunchEvidenceShareCenterVo> launchEvidenceShareCenterSupplier,
             Supplier<DemoLaunchEvidenceFinalizationVo> launchEvidenceFinalizationSupplier,
-            Supplier<List<DemoLaunchAcceptanceCloseoutArchiveVo>> launchAcceptanceCloseoutArchiveSupplier
+            Supplier<List<DemoLaunchAcceptanceCloseoutArchiveVo>> launchAcceptanceCloseoutArchiveSupplier,
+            Supplier<List<DemoLaunchAcceptanceCertificateArchiveVo>> launchAcceptanceCertificateArchiveSupplier
     ) {
         this.readinessSupplier = readinessSupplier;
         this.smokeChecklistSupplier = smokeChecklistSupplier;
@@ -151,6 +158,7 @@ public class DemoEvidenceBundleService {
         this.launchEvidenceShareCenterSupplier = launchEvidenceShareCenterSupplier;
         this.launchEvidenceFinalizationSupplier = launchEvidenceFinalizationSupplier;
         this.launchAcceptanceCloseoutArchiveSupplier = launchAcceptanceCloseoutArchiveSupplier;
+        this.launchAcceptanceCertificateArchiveSupplier = launchAcceptanceCertificateArchiveSupplier;
     }
 
     public DemoEvidenceBundleVo getEvidenceBundle() {
@@ -172,6 +180,8 @@ public class DemoEvidenceBundleService {
         DemoLaunchEvidenceFinalizationVo launchEvidenceFinalization = launchEvidenceFinalizationSupplier.get();
         DemoLaunchAcceptanceCloseoutEvidenceVo launchAcceptanceCloseoutEvidence =
                 launchAcceptanceCloseoutEvidence(launchAcceptanceCloseoutArchiveSupplier.get());
+        DemoLaunchAcceptanceCertificateEvidenceVo launchAcceptanceCertificateEvidence =
+                launchAcceptanceCertificateEvidence(launchAcceptanceCertificateArchiveSupplier.get());
 
         DemoAdapterFixtureEvidenceVo adapterFixtureEvidence = adapterFixtureEvidence(fixtures);
         DemoEvaluationRunReadinessEvidenceVo evaluationRunReadinessEvidence = evaluationRunReadinessEvidence(evaluationRunReadiness);
@@ -192,7 +202,8 @@ public class DemoEvidenceBundleService {
                 recentPullRequestUrl,
                 handoffFinalization,
                 launchEvidenceFinalization,
-                launchAcceptanceCloseoutEvidence
+                launchAcceptanceCloseoutEvidence,
+                launchAcceptanceCertificateEvidence
         );
         DemoReadinessStatus status = aggregateStatus(
                 readiness,
@@ -202,7 +213,8 @@ public class DemoEvidenceBundleService {
                 activeQuarantines.size(),
                 handoffFinalization,
                 launchEvidenceFinalization,
-                launchAcceptanceCloseoutEvidence
+                launchAcceptanceCloseoutEvidence,
+                launchAcceptanceCertificateEvidence
         );
 
         return new DemoEvidenceBundleVo(
@@ -252,6 +264,7 @@ public class DemoEvidenceBundleService {
                 launchEvidenceFinalization.deliveryReceiptFresh(),
                 launchEvidenceFinalization.latestDeliveryReceiptId(),
                 launchAcceptanceCloseoutEvidence,
+                launchAcceptanceCertificateEvidence,
                 handoffShareCenter.deliveryReceiptRecorded(),
                 handoffShareCenter.latestDeliveryReceiptId(),
                 handoffShareCenter.latestDeliveryTarget(),
@@ -370,6 +383,81 @@ public class DemoEvidenceBundleService {
         return "Latest launch acceptance closeout archive is not accepted yet.";
     }
 
+    private static DemoLaunchAcceptanceCertificateEvidenceVo launchAcceptanceCertificateEvidence(
+            List<DemoLaunchAcceptanceCertificateArchiveVo> archives
+    ) {
+        DemoLaunchAcceptanceCertificateArchiveVo latestArchive = archives.isEmpty() ? null : archives.get(0);
+        if (latestArchive == null) {
+            return new DemoLaunchAcceptanceCertificateEvidenceVo(
+                    DemoReadinessStatus.NEEDS_ATTENTION,
+                    false,
+                    false,
+                    "No launch acceptance certificate archive is available.",
+                    "Archive the final launch acceptance certificate after the launch acceptance closeout is certified.",
+                    0,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    List.of("Archive the final launch acceptance certificate before using the evidence bundle as the external-review launch record.")
+            );
+        }
+
+        boolean certified = latestArchive.status() == DemoReadinessStatus.READY && latestArchive.certified();
+        DemoReadinessStatus status = certificateEvidenceStatus(latestArchive);
+        String nextAction = certified
+                ? "Use the archived launch acceptance certificate as the external-review launch record."
+                : "Resolve launch acceptance certificate blockers, then archive a new certified certificate.";
+        List<String> downloadActions = new ArrayList<>();
+        downloadActions.add("Download launch acceptance certificate archive " + latestArchive.id() + ".");
+        if (hasText(latestArchive.latestCloseoutArchiveId())) {
+            downloadActions.add("Download linked launch acceptance closeout archive " + latestArchive.latestCloseoutArchiveId() + ".");
+        }
+        if (hasText(latestArchive.latestDeliveryReceiptId())) {
+            downloadActions.add("Download launch evidence delivery receipt " + latestArchive.latestDeliveryReceiptId() + ".");
+        }
+
+        return new DemoLaunchAcceptanceCertificateEvidenceVo(
+                status,
+                true,
+                certified,
+                certificateEvidenceSummary(latestArchive, certified),
+                nextAction,
+                archives.size(),
+                latestArchive.id(),
+                latestArchive.latestCloseoutArchiveId(),
+                latestArchive.latestLaunchEvidenceArchiveId(),
+                latestArchive.latestDeliveryReceiptId(),
+                latestArchive.latestPullRequestUrl(),
+                latestArchive.archivedAt(),
+                List.copyOf(downloadActions)
+        );
+    }
+
+    private static DemoReadinessStatus certificateEvidenceStatus(DemoLaunchAcceptanceCertificateArchiveVo archive) {
+        if (archive.status() == DemoReadinessStatus.BLOCKED) {
+            return DemoReadinessStatus.BLOCKED;
+        }
+        return archive.status() == DemoReadinessStatus.READY && archive.certified()
+                ? DemoReadinessStatus.READY
+                : DemoReadinessStatus.NEEDS_ATTENTION;
+    }
+
+    private static String certificateEvidenceSummary(
+            DemoLaunchAcceptanceCertificateArchiveVo archive,
+            boolean certified
+    ) {
+        if (certified) {
+            return "Latest launch acceptance certificate archive is certified and ready.";
+        }
+        if (archive.status() == DemoReadinessStatus.BLOCKED) {
+            return "Latest launch acceptance certificate archive is blocked.";
+        }
+        return "Latest launch acceptance certificate archive is not certified yet.";
+    }
+
     private static DemoReadinessStatus aggregateStatus(
             DemoReadinessVo readiness,
             DemoSmokeChecklistVo smokeChecklist,
@@ -378,14 +466,16 @@ public class DemoEvidenceBundleService {
             long activeQuarantineCount,
             DemoHandoffFinalizationVo handoffFinalization,
             DemoLaunchEvidenceFinalizationVo launchEvidenceFinalization,
-            DemoLaunchAcceptanceCloseoutEvidenceVo launchAcceptanceCloseoutEvidence
+            DemoLaunchAcceptanceCloseoutEvidenceVo launchAcceptanceCloseoutEvidence,
+            DemoLaunchAcceptanceCertificateEvidenceVo launchAcceptanceCertificateEvidence
     ) {
         if (readiness.status() == DemoReadinessStatus.BLOCKED
                 || smokeChecklist.status() == DemoSmokeChecklistStatus.BLOCKED
                 || evaluationRunReadiness.status() == DemoReadinessStatus.BLOCKED
                 || handoffFinalization.status() == DemoReadinessStatus.BLOCKED
                 || launchEvidenceFinalization.status() == DemoReadinessStatus.BLOCKED
-                || launchAcceptanceCloseoutEvidence.status() == DemoReadinessStatus.BLOCKED) {
+                || launchAcceptanceCloseoutEvidence.status() == DemoReadinessStatus.BLOCKED
+                || launchAcceptanceCertificateEvidence.status() == DemoReadinessStatus.BLOCKED) {
             return DemoReadinessStatus.BLOCKED;
         }
         if (readiness.status() == DemoReadinessStatus.NEEDS_ATTENTION
@@ -395,7 +485,8 @@ public class DemoEvidenceBundleService {
                 || activeQuarantineCount > 0
                 || handoffFinalization.status() == DemoReadinessStatus.NEEDS_ATTENTION
                 || launchEvidenceFinalization.status() == DemoReadinessStatus.NEEDS_ATTENTION
-                || launchAcceptanceCloseoutEvidence.status() == DemoReadinessStatus.NEEDS_ATTENTION) {
+                || launchAcceptanceCloseoutEvidence.status() == DemoReadinessStatus.NEEDS_ATTENTION
+                || launchAcceptanceCertificateEvidence.status() == DemoReadinessStatus.NEEDS_ATTENTION) {
             return DemoReadinessStatus.NEEDS_ATTENTION;
         }
         return DemoReadinessStatus.READY;
@@ -446,7 +537,8 @@ public class DemoEvidenceBundleService {
             String recentPullRequestUrl,
             DemoHandoffFinalizationVo handoffFinalization,
             DemoLaunchEvidenceFinalizationVo launchEvidenceFinalization,
-            DemoLaunchAcceptanceCloseoutEvidenceVo launchAcceptanceCloseoutEvidence
+            DemoLaunchAcceptanceCloseoutEvidenceVo launchAcceptanceCloseoutEvidence,
+            DemoLaunchAcceptanceCertificateEvidenceVo launchAcceptanceCertificateEvidence
     ) {
         List<String> actions = new ArrayList<>();
         actions.addAll(readiness.nextActions());
@@ -471,6 +563,9 @@ public class DemoEvidenceBundleService {
         }
         if (launchAcceptanceCloseoutEvidence.status() != DemoReadinessStatus.READY) {
             actions.add(launchAcceptanceCloseoutEvidence.nextAction());
+        }
+        if (launchAcceptanceCertificateEvidence.status() != DemoReadinessStatus.READY) {
+            actions.add(launchAcceptanceCertificateEvidence.nextAction());
         }
         List<String> distinctActions = actions.stream()
                 .filter(DemoEvidenceBundleService::hasText)

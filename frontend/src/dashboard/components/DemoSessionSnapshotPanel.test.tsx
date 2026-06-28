@@ -94,6 +94,24 @@ const snapshot: DemoSessionSnapshot = {
         'Download linked launch evidence archive launch-evidence-archive-1.'
       ]
     },
+    launchAcceptanceCertificateEvidence: {
+      status: 'READY',
+      archived: true,
+      certified: true,
+      summary: 'Latest launch acceptance certificate archive is certified and ready.',
+      nextAction: 'Use the archived launch acceptance certificate as the external-review launch record.',
+      archiveCount: 1,
+      latestArchiveId: 'launch-certificate-archive-1',
+      latestCloseoutArchiveId: 'launch-closeout-archive-1',
+      latestEvidenceArchiveId: 'launch-evidence-archive-1',
+      latestDeliveryReceiptId: 'launch-delivery-receipt-1',
+      latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+      latestArchivedAt: '2026-06-24T08:30:00Z',
+      downloadActions: [
+        'Download launch acceptance certificate archive launch-certificate-archive-1.',
+        'Download linked launch acceptance closeout archive launch-closeout-archive-1.'
+      ]
+    },
     handoffShareDeliveryReceiptRecorded: true,
     handoffShareLatestDeliveryReceiptId: 'delivery-receipt-1',
     handoffShareLatestDeliveryTarget: 'maintainer@example.com',

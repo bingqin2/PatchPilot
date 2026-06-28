@@ -11,6 +11,23 @@ interface DemoEvidenceBundlePanelProps {
 
 export function DemoEvidenceBundlePanel({ bundle, error, onCopyRunbook }: DemoEvidenceBundlePanelProps) {
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
+  const certificateEvidence = bundle?.launchAcceptanceCertificateEvidence ?? {
+    status: 'NEEDS_ATTENTION' as DemoReadinessStatus,
+    archived: false,
+    certified: false,
+    summary: 'No launch acceptance certificate archive is available.',
+    nextAction: 'Archive the final launch acceptance certificate after the launch acceptance closeout is certified.',
+    archiveCount: 0,
+    latestArchiveId: null,
+    latestCloseoutArchiveId: null,
+    latestEvidenceArchiveId: null,
+    latestDeliveryReceiptId: null,
+    latestPullRequestUrl: null,
+    latestArchivedAt: null,
+    downloadActions: [
+      'Archive the final launch acceptance certificate before using the evidence bundle as the external-review launch record.'
+    ]
+  };
 
   async function copyRunbook() {
     try {
@@ -157,6 +174,32 @@ export function DemoEvidenceBundlePanel({ bundle, error, onCopyRunbook }: DemoEv
                 <small>Archived {compactDateTime(bundle.launchAcceptanceCloseoutEvidence.latestArchivedAt)}</small>
               ) : null}
               {bundle.launchAcceptanceCloseoutEvidence.downloadActions.slice(0, 2).map((action) => (
+                <small key={action}>{action}</small>
+              ))}
+            </div>
+            <div>
+              <span>Launch acceptance certificate</span>
+              <strong>
+                {certificateEvidence.certified
+                  ? 'Certified archive'
+                  : statusLabel(certificateEvidence.status)}
+              </strong>
+              <small>{certificateEvidence.summary}</small>
+              <small>{certificateEvidence.nextAction}</small>
+              <small>{certificateEvidence.archiveCount} certificate archives</small>
+              <small>{certificateEvidence.latestArchiveId ?? 'No certificate archive'}</small>
+              <small>{certificateEvidence.latestCloseoutArchiveId ?? 'No linked closeout archive'}</small>
+              <small>{certificateEvidence.latestEvidenceArchiveId ?? 'No linked launch evidence archive'}</small>
+              <small>{certificateEvidence.latestDeliveryReceiptId ?? 'No accepted launch receipt'}</small>
+              {certificateEvidence.latestPullRequestUrl ? (
+                <a href={certificateEvidence.latestPullRequestUrl}>Open certificate Pull Request</a>
+              ) : (
+                <small>No certificate Pull Request</small>
+              )}
+              {certificateEvidence.latestArchivedAt ? (
+                <small>Certified {compactDateTime(certificateEvidence.latestArchivedAt)}</small>
+              ) : null}
+              {certificateEvidence.downloadActions.slice(0, 2).map((action) => (
                 <small key={action}>{action}</small>
               ))}
             </div>

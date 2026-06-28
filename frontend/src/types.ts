@@ -717,6 +717,22 @@ export interface DemoLaunchAcceptanceCloseoutEvidence {
   downloadActions: string[];
 }
 
+export interface DemoLaunchAcceptanceCertificateEvidence {
+  status: DemoReadinessStatus;
+  archived: boolean;
+  certified: boolean;
+  summary: string;
+  nextAction: string;
+  archiveCount: number;
+  latestArchiveId: string | null;
+  latestCloseoutArchiveId: string | null;
+  latestEvidenceArchiveId: string | null;
+  latestDeliveryReceiptId: string | null;
+  latestPullRequestUrl: string | null;
+  latestArchivedAt: string | null;
+  downloadActions: string[];
+}
+
 export interface DemoEvidenceBundle {
   status: DemoReadinessStatus;
   summary: string;
@@ -758,6 +774,7 @@ export interface DemoEvidenceBundle {
   launchEvidenceFinalizationDeliveryReceiptFresh: boolean;
   launchEvidenceFinalizationLatestDeliveryReceiptId: string | null;
   launchAcceptanceCloseoutEvidence: DemoLaunchAcceptanceCloseoutEvidence;
+  launchAcceptanceCertificateEvidence: DemoLaunchAcceptanceCertificateEvidence;
   handoffShareDeliveryReceiptRecorded: boolean;
   handoffShareLatestDeliveryReceiptId: string | null;
   handoffShareLatestDeliveryTarget: string | null;
