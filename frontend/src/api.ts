@@ -9,6 +9,9 @@ import type {
   DashboardBootstrap,
   DemoEvidenceBundle,
   DemoAcceptanceSummary,
+  DemoFinalAcceptanceShareDeliveryReceipt,
+  DemoFinalAcceptanceShareDeliveryReceiptInput,
+  DemoFinalAcceptanceShareFinalization,
   DemoFinalAcceptanceSharePackageArchive,
   DemoFinalAcceptanceSharePackage,
   DemoFinalHandoffReportPackage,
@@ -287,6 +290,28 @@ export async function listDemoFinalAcceptanceSharePackageArchives(): Promise<Dem
 
 export async function downloadDemoFinalAcceptanceSharePackageArchiveReport(archiveId: string): Promise<Blob> {
   return getBlobApi(`/api/demo/final-acceptance-share-package/archives/${encodeURIComponent(archiveId)}/report/download`);
+}
+
+export async function createDemoFinalAcceptanceShareDeliveryReceipt(
+  input: DemoFinalAcceptanceShareDeliveryReceiptInput
+): Promise<DemoFinalAcceptanceShareDeliveryReceipt> {
+  return postApi<DemoFinalAcceptanceShareDeliveryReceipt>('/api/demo/final-acceptance-share-delivery-receipts', input);
+}
+
+export async function listDemoFinalAcceptanceShareDeliveryReceipts(): Promise<DemoFinalAcceptanceShareDeliveryReceipt[]> {
+  return getApi<DemoFinalAcceptanceShareDeliveryReceipt[]>('/api/demo/final-acceptance-share-delivery-receipts');
+}
+
+export async function downloadDemoFinalAcceptanceShareDeliveryReceiptReport(receiptId: string): Promise<Blob> {
+  return getBlobApi(`/api/demo/final-acceptance-share-delivery-receipts/${encodeURIComponent(receiptId)}/report/download`);
+}
+
+export async function getDemoFinalAcceptanceShareFinalization(): Promise<DemoFinalAcceptanceShareFinalization> {
+  return getApi<DemoFinalAcceptanceShareFinalization>('/api/demo/final-acceptance-share-finalization');
+}
+
+export async function downloadDemoFinalAcceptanceShareFinalizationReport(): Promise<Blob> {
+  return getBlobApi('/api/demo/final-acceptance-share-finalization/report/download');
 }
 
 export async function getDemoSelfHostedLaunchReadiness(): Promise<DemoSelfHostedLaunchReadiness> {
