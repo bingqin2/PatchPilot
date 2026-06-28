@@ -62,6 +62,8 @@ import {
   archiveDemoFinalAcceptanceCompletion,
   listDemoFinalAcceptanceCompletionArchives,
   downloadDemoFinalAcceptanceCompletionArchiveReport,
+  getDemoFinalAcceptanceCompletionEvidenceBundle,
+  downloadDemoFinalAcceptanceCompletionEvidenceBundleReport,
   archiveDemoLaunchAcceptanceCertificate,
   listDemoLaunchAcceptanceCertificateArchives,
   downloadDemoLaunchAcceptanceCertificateArchiveReport,
@@ -1368,6 +1370,62 @@ test('downloads final acceptance completion archive report through backend API',
   const downloadedReport = await downloadDemoFinalAcceptanceCompletionArchiveReport('completion/1');
 
   expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-acceptance-completion-archives/completion%2F1/report/download');
+  expect(downloadedReport).toBe(reportBlob);
+});
+
+test('loads final acceptance completion evidence bundle through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        status: 'READY',
+        readyToShare: true,
+        summary: 'PatchPilot final acceptance completion evidence bundle is ready to share.',
+        nextAction: 'Share this final acceptance completion evidence bundle with reviewers.',
+        latestCompletionArchiveId: 'final-acceptance-completion-archive-1',
+        latestSharePackageArchiveId: 'final-acceptance-share-package-archive-1',
+        latestDeliveryReceiptId: 'final-acceptance-delivery-receipt-1',
+        latestDeliveryTarget: 'reviewer@example.com',
+        latestDeliveryChannel: 'email',
+        latestTaskId: 'task-1',
+        completionArchiveCount: 1,
+        latestArchivedAt: '2026-06-29T04:00:00Z',
+        generatedAt: '2026-06-29T04:05:00Z',
+        evidenceNotes: ['Latest completion archive final-acceptance-completion-archive-1 is finalized.'],
+        downloadActions: ['Download final acceptance completion evidence bundle.'],
+        sideEffectContract:
+          'GET /api/demo/final-acceptance-completion-evidence-bundle is read-only: it does not create tasks, call the model, run tests, archive records, record receipts, mutate Git, send messages, or write to GitHub.',
+        markdownReport: '# PatchPilot Final Acceptance Completion Evidence Bundle'
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const bundle = await getDemoFinalAcceptanceCompletionEvidenceBundle();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-acceptance-completion-evidence-bundle');
+  expect(bundle.readyToShare).toBe(true);
+  expect(bundle.latestCompletionArchiveId).toBe('final-acceptance-completion-archive-1');
+  expect(bundle.latestDeliveryReceiptId).toBe('final-acceptance-delivery-receipt-1');
+});
+
+test('downloads final acceptance completion evidence bundle report through backend API', async () => {
+  const reportBlob = new Blob(['# PatchPilot Final Acceptance Completion Evidence Bundle'], {
+    type: 'text/markdown;charset=UTF-8'
+  });
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    blob: async () => reportBlob
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const downloadedReport = await downloadDemoFinalAcceptanceCompletionEvidenceBundleReport();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-acceptance-completion-evidence-bundle/report/download');
   expect(downloadedReport).toBe(reportBlob);
 });
 

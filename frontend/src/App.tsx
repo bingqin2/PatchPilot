@@ -43,6 +43,7 @@ import {
   downloadDemoLaunchAcceptanceCertificateReport,
   downloadDemoAcceptanceSummaryReport,
   downloadDemoFinalAcceptanceCompletionArchiveReport,
+  downloadDemoFinalAcceptanceCompletionEvidenceBundleReport,
   downloadDemoFinalAcceptanceShareDeliveryReceiptReport,
   downloadDemoFinalAcceptanceShareFinalizationReport,
   downloadDemoFinalAcceptanceSharePackageArchiveReport,
@@ -92,6 +93,7 @@ import {
   getDemoRunbook,
   getDemoReadiness,
   getDemoAcceptanceSummary,
+  getDemoFinalAcceptanceCompletionEvidenceBundle,
   getDemoFinalAcceptanceShareFinalization,
   getDemoFinalAcceptanceSharePackage,
   getDemoReadinessSnapshotTrend,
@@ -210,6 +212,7 @@ import type {
   DemoReadiness,
   DemoAcceptanceSummary,
   DemoFinalAcceptanceCompletionArchive,
+  DemoFinalAcceptanceCompletionEvidenceBundle,
   DemoFinalAcceptanceShareDeliveryReceipt,
   DemoFinalAcceptanceShareDeliveryReceiptInput,
   DemoFinalAcceptanceShareFinalization,
@@ -369,6 +372,10 @@ export default function App() {
   const [demoFinalAcceptanceShareFinalization, setDemoFinalAcceptanceShareFinalization] =
     useState<DemoFinalAcceptanceShareFinalization | null>(null);
   const [demoFinalAcceptanceShareFinalizationError, setDemoFinalAcceptanceShareFinalizationError] =
+    useState<string | null>(null);
+  const [demoFinalAcceptanceCompletionEvidenceBundle, setDemoFinalAcceptanceCompletionEvidenceBundle] =
+    useState<DemoFinalAcceptanceCompletionEvidenceBundle | null>(null);
+  const [demoFinalAcceptanceCompletionEvidenceBundleError, setDemoFinalAcceptanceCompletionEvidenceBundleError] =
     useState<string | null>(null);
   const [demoFinalAcceptanceCompletionArchives, setDemoFinalAcceptanceCompletionArchives] =
     useState<DemoFinalAcceptanceCompletionArchive[]>([]);
@@ -829,6 +836,7 @@ export default function App() {
         demoFinalAcceptanceSharePackageArchiveResult,
         demoFinalAcceptanceShareDeliveryReceiptResult,
         demoFinalAcceptanceShareFinalizationResult,
+        demoFinalAcceptanceCompletionEvidenceBundleResult,
         demoFinalAcceptanceCompletionArchiveResult,
         demoReadinessSnapshotResult,
         demoReadinessSnapshotTrendResult,
@@ -1014,6 +1022,10 @@ export default function App() {
         getDemoFinalAcceptanceShareFinalization().then(
           (finalization) => ({ finalization, error: null as string | null }),
           (caught) => ({ finalization: null, error: errorMessage(caught) })
+        ),
+        getDemoFinalAcceptanceCompletionEvidenceBundle().then(
+          (bundle) => ({ bundle, error: null as string | null }),
+          (caught) => ({ bundle: null, error: errorMessage(caught) })
         ),
         listDemoFinalAcceptanceCompletionArchives().then(
           (archives) => ({ archives, error: null as string | null }),
@@ -1295,6 +1307,10 @@ export default function App() {
         setDemoFinalAcceptanceShareFinalization(demoFinalAcceptanceShareFinalizationResult.finalization);
       }
       setDemoFinalAcceptanceShareFinalizationError(demoFinalAcceptanceShareFinalizationResult.error);
+      if (demoFinalAcceptanceCompletionEvidenceBundleResult.bundle) {
+        setDemoFinalAcceptanceCompletionEvidenceBundle(demoFinalAcceptanceCompletionEvidenceBundleResult.bundle);
+      }
+      setDemoFinalAcceptanceCompletionEvidenceBundleError(demoFinalAcceptanceCompletionEvidenceBundleResult.error);
       if (demoFinalAcceptanceCompletionArchiveResult.archives) {
         setDemoFinalAcceptanceCompletionArchives(demoFinalAcceptanceCompletionArchiveResult.archives);
       }
@@ -1842,6 +1858,9 @@ export default function App() {
   const handleDownloadDemoFinalAcceptanceShareFinalizationReport = useCallback(() => (
     downloadDemoFinalAcceptanceShareFinalizationReport()
   ), []);
+  const handleDownloadDemoFinalAcceptanceCompletionEvidenceBundleReport = useCallback(() => (
+    downloadDemoFinalAcceptanceCompletionEvidenceBundleReport()
+  ), []);
   const handleArchiveDemoFinalAcceptanceCompletion = useCallback(async () => {
     const archive = await archiveDemoFinalAcceptanceCompletion();
     setDemoFinalAcceptanceCompletionArchives((current) => [
@@ -1855,6 +1874,13 @@ export default function App() {
       setDemoFinalAcceptanceCompletionArchiveError(null);
     } catch (caught) {
       setDemoFinalAcceptanceCompletionArchiveError(errorMessage(caught));
+    }
+    try {
+      const bundle = await getDemoFinalAcceptanceCompletionEvidenceBundle();
+      setDemoFinalAcceptanceCompletionEvidenceBundle(bundle);
+      setDemoFinalAcceptanceCompletionEvidenceBundleError(null);
+    } catch (caught) {
+      setDemoFinalAcceptanceCompletionEvidenceBundleError(errorMessage(caught));
     }
     return archive;
   }, []);
@@ -2485,12 +2511,14 @@ export default function App() {
         sharePackageArchives={demoFinalAcceptanceSharePackageArchives}
         shareDeliveryReceipts={demoFinalAcceptanceShareDeliveryReceipts}
         shareFinalization={demoFinalAcceptanceShareFinalization}
+        completionEvidenceBundle={demoFinalAcceptanceCompletionEvidenceBundle}
         completionArchives={demoFinalAcceptanceCompletionArchives}
         error={demoAcceptanceSummaryError}
         sharePackageError={demoFinalAcceptanceSharePackageError}
         sharePackageArchiveError={demoFinalAcceptanceSharePackageArchiveError}
         shareDeliveryReceiptError={demoFinalAcceptanceShareDeliveryReceiptError}
         shareFinalizationError={demoFinalAcceptanceShareFinalizationError}
+        completionEvidenceBundleError={demoFinalAcceptanceCompletionEvidenceBundleError}
         completionArchiveError={demoFinalAcceptanceCompletionArchiveError}
         onDownloadReport={handleDownloadDemoAcceptanceSummaryReport}
         onDownloadSharePackageReport={handleDownloadDemoFinalAcceptanceSharePackageReport}
@@ -2499,6 +2527,7 @@ export default function App() {
         onCreateShareDeliveryReceipt={handleCreateDemoFinalAcceptanceShareDeliveryReceipt}
         onDownloadShareDeliveryReceiptReport={handleDownloadDemoFinalAcceptanceShareDeliveryReceiptReport}
         onDownloadShareFinalizationReport={handleDownloadDemoFinalAcceptanceShareFinalizationReport}
+        onDownloadCompletionEvidenceBundleReport={handleDownloadDemoFinalAcceptanceCompletionEvidenceBundleReport}
         onArchiveCompletion={handleArchiveDemoFinalAcceptanceCompletion}
         onDownloadCompletionArchiveReport={handleDownloadDemoFinalAcceptanceCompletionArchiveReport}
       />

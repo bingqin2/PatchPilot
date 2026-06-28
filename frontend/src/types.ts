@@ -917,6 +917,26 @@ export interface DemoFinalAcceptanceCompletionArchive {
   archivedAt: string;
 }
 
+export interface DemoFinalAcceptanceCompletionEvidenceBundle {
+  status: DemoReadinessStatus;
+  readyToShare: boolean;
+  summary: string;
+  nextAction: string;
+  latestCompletionArchiveId: string | null;
+  latestSharePackageArchiveId: string | null;
+  latestDeliveryReceiptId: string | null;
+  latestDeliveryTarget: string | null;
+  latestDeliveryChannel: string | null;
+  latestTaskId: string | null;
+  completionArchiveCount: number;
+  latestArchivedAt: string | null;
+  generatedAt: string;
+  evidenceNotes: string[];
+  downloadActions: string[];
+  sideEffectContract: string;
+  markdownReport: string;
+}
+
 export interface DemoLaunchEvidenceShareDeliveryReceipt {
   id: string;
   status: string;
