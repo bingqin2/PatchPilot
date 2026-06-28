@@ -68,6 +68,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasItem;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.verify;
@@ -389,10 +390,16 @@ class DemoReadinessControllerTests {
                 .andExpect(jsonPath("$.data.sessionId").value("demo-session-20260624T003000Z"))
                 .andExpect(jsonPath("$.data.latestPullRequestUrl").value("https://github.com/bingqin2/PatchPilot/pull/42"))
                 .andExpect(jsonPath("$.data.latestArchiveId").value("launch-evidence-archive-1"))
+                .andExpect(jsonPath("$.data.finalHandoffReportPackageArchiveStatus").value("READY"))
+                .andExpect(jsonPath("$.data.finalHandoffReportPackageArchiveReady").value(true))
+                .andExpect(jsonPath("$.data.finalHandoffReportPackageArchiveId").value("final-handoff-report-package-archive-1"))
+                .andExpect(jsonPath("$.data.finalHandoffReportPackageArchiveSummary")
+                        .value("Latest final handoff report package archive is download-ready and ready."))
                 .andExpect(jsonPath("$.data.latestDeliveryReceiptId").value("launch-delivery-receipt-1"))
                 .andExpect(jsonPath("$.data.deliveryReceiptFreshness").value("FRESH"))
                 .andExpect(jsonPath("$.data.checks[0].name").value("Self-hosted launch readiness"))
-                .andExpect(jsonPath("$.data.downloadActions[4]").value("Download launch acceptance closeout report."))
+                .andExpect(jsonPath("$.data.downloadActions").value(hasItem("Download final handoff report package archive final-handoff-report-package-archive-1.")))
+                .andExpect(jsonPath("$.data.downloadActions").value(hasItem("Download launch acceptance closeout report.")))
                 .andExpect(jsonPath("$.data.markdownReport").value(containsString("# PatchPilot Launch Acceptance Closeout")));
     }
 
@@ -490,9 +497,16 @@ class DemoReadinessControllerTests {
                         .value("Share the certificate and archived closeout report with reviewers."))
                 .andExpect(jsonPath("$.data.latestCloseoutArchiveId").value("launch-closeout-archive-1"))
                 .andExpect(jsonPath("$.data.latestLaunchEvidenceArchiveId").value("launch-evidence-archive-1"))
+                .andExpect(jsonPath("$.data.finalHandoffReportPackageArchiveStatus").value("READY"))
+                .andExpect(jsonPath("$.data.finalHandoffReportPackageArchiveReady").value(true))
+                .andExpect(jsonPath("$.data.finalHandoffReportPackageArchiveId").value("final-handoff-report-package-archive-1"))
+                .andExpect(jsonPath("$.data.finalHandoffReportPackageArchiveSummary")
+                        .value("Latest final handoff report package archive is download-ready and ready."))
                 .andExpect(jsonPath("$.data.latestDeliveryReceiptId").value("launch-delivery-receipt-1"))
                 .andExpect(jsonPath("$.data.latestPullRequestUrl").value("https://github.com/bingqin2/PatchPilot/pull/42"))
-                .andExpect(jsonPath("$.data.downloadActions[0]").value("Download launch acceptance certificate."));
+                .andExpect(jsonPath("$.data.downloadActions").value(hasItem("Download launch acceptance certificate.")))
+                .andExpect(jsonPath("$.data.downloadActions")
+                        .value(hasItem("Download final handoff report package archive final-handoff-report-package-archive-1.")));
     }
 
     @Test
@@ -521,6 +535,9 @@ class DemoReadinessControllerTests {
                 .andExpect(jsonPath("$.data.certified").value(true))
                 .andExpect(jsonPath("$.data.latestCloseoutArchiveId").value("launch-closeout-archive-1"))
                 .andExpect(jsonPath("$.data.latestLaunchEvidenceArchiveId").value("launch-evidence-archive-1"))
+                .andExpect(jsonPath("$.data.finalHandoffReportPackageArchiveStatus").value("READY"))
+                .andExpect(jsonPath("$.data.finalHandoffReportPackageArchiveReady").value(true))
+                .andExpect(jsonPath("$.data.finalHandoffReportPackageArchiveId").value("final-handoff-report-package-archive-1"))
                 .andExpect(jsonPath("$.data.latestDeliveryReceiptId").value("launch-delivery-receipt-1"))
                 .andExpect(jsonPath("$.data.latestPullRequestUrl").value("https://github.com/bingqin2/PatchPilot/pull/42"))
                 .andExpect(jsonPath("$.data.report").value(containsString("# PatchPilot Launch Acceptance Certificate")));
@@ -2827,6 +2844,10 @@ class DemoReadinessControllerTests {
                 "delivery-1",
                 "evaluation-run-2",
                 "launch-evidence-archive-1",
+                DemoReadinessStatus.READY,
+                true,
+                "final-handoff-report-package-archive-1",
+                "Latest final handoff report package archive is download-ready and ready.",
                 "launch-delivery-receipt-1",
                 "reviewer@example.com",
                 "email",
@@ -2847,9 +2868,10 @@ class DemoReadinessControllerTests {
                         "Download launch evidence package report.",
                         "Download launch evidence share center report.",
                         "Download launch evidence finalization report.",
+                        "Download final handoff report package archive final-handoff-report-package-archive-1.",
                         "Download launch acceptance closeout report."
                 ),
-                "# PatchPilot Launch Acceptance Closeout\n\n- Receipt: `launch-delivery-receipt-1`"
+                "# PatchPilot Launch Acceptance Closeout\n\n- Final handoff archive: `final-handoff-report-package-archive-1`\n- Receipt: `launch-delivery-receipt-1`"
         );
     }
 
@@ -2865,6 +2887,10 @@ class DemoReadinessControllerTests {
                 "delivery-1",
                 "evaluation-run-2",
                 "launch-evidence-archive-1",
+                DemoReadinessStatus.READY,
+                true,
+                "final-handoff-report-package-archive-1",
+                "Latest final handoff report package archive is download-ready and ready.",
                 "launch-delivery-receipt-1",
                 "reviewer@example.com",
                 "email",
@@ -2883,6 +2909,10 @@ class DemoReadinessControllerTests {
                 1,
                 "launch-closeout-archive-1",
                 "launch-evidence-archive-1",
+                DemoReadinessStatus.READY,
+                true,
+                "final-handoff-report-package-archive-1",
+                "Latest final handoff report package archive is download-ready and ready.",
                 "launch-delivery-receipt-1",
                 "demo-session-20260624T003000Z",
                 "task-1",
@@ -2896,9 +2926,12 @@ class DemoReadinessControllerTests {
                 Instant.parse("2026-06-28T09:00:00Z"),
                 List.of(
                         "Download launch acceptance certificate.",
-                        "Download launch acceptance closeout archive launch-closeout-archive-1."
+                        "Download launch acceptance closeout archive launch-closeout-archive-1.",
+                        "Download final handoff report package archive final-handoff-report-package-archive-1."
                 ),
-                "# PatchPilot Launch Acceptance Certificate\n\n- Closeout archive: `launch-closeout-archive-1`\n"
+                "# PatchPilot Launch Acceptance Certificate\n\n"
+                        + "- Closeout archive: `launch-closeout-archive-1`\n"
+                        + "- Final handoff archive: `final-handoff-report-package-archive-1`\n"
         );
     }
 
@@ -2912,6 +2945,10 @@ class DemoReadinessControllerTests {
                 1,
                 "launch-closeout-archive-1",
                 "launch-evidence-archive-1",
+                DemoReadinessStatus.READY,
+                true,
+                "final-handoff-report-package-archive-1",
+                "Latest final handoff report package archive is download-ready and ready.",
                 "launch-delivery-receipt-1",
                 "demo-session-20260624T003000Z",
                 "task-1",
@@ -2926,9 +2963,12 @@ class DemoReadinessControllerTests {
                 Instant.parse("2026-06-28T10:30:00Z"),
                 List.of(
                         "Download launch acceptance certificate.",
-                        "Download launch acceptance closeout archive launch-closeout-archive-1."
+                        "Download launch acceptance closeout archive launch-closeout-archive-1.",
+                        "Download final handoff report package archive final-handoff-report-package-archive-1."
                 ),
-                "# PatchPilot Launch Acceptance Certificate\n\n- Closeout archive: `launch-closeout-archive-1`\n"
+                "# PatchPilot Launch Acceptance Certificate\n\n"
+                        + "- Closeout archive: `launch-closeout-archive-1`\n"
+                        + "- Final handoff archive: `final-handoff-report-package-archive-1`\n"
         );
     }
 

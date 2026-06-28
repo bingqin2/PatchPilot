@@ -35,6 +35,11 @@ class DemoLaunchAcceptanceCloseoutArchiveServiceTests {
         assertThat(archive.latestWebhookDeliveryId()).isEqualTo("delivery-1");
         assertThat(archive.evaluationRunId()).isEqualTo("evaluation-run-2");
         assertThat(archive.latestArchiveId()).isEqualTo("launch-evidence-archive-1");
+        assertThat(archive.finalHandoffReportPackageArchiveStatus()).isEqualTo(DemoReadinessStatus.READY);
+        assertThat(archive.finalHandoffReportPackageArchiveReady()).isTrue();
+        assertThat(archive.finalHandoffReportPackageArchiveId()).isEqualTo("final-handoff-report-package-archive-1");
+        assertThat(archive.finalHandoffReportPackageArchiveSummary())
+                .isEqualTo("Latest final handoff report package archive is download-ready and ready.");
         assertThat(archive.latestDeliveryReceiptId()).isEqualTo("launch-delivery-receipt-1");
         assertThat(archive.latestDeliveryTarget()).isEqualTo("reviewer@example.com");
         assertThat(archive.latestDeliveryChannel()).isEqualTo("email");

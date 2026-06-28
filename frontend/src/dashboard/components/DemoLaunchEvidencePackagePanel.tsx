@@ -520,6 +520,13 @@ function LaunchAcceptanceCloseoutPanel({
               <small>{closeout.sessionId}</small>
             </div>
             <div>
+              <span>Final handoff archive</span>
+              <strong>{statusLabel(closeout.finalHandoffReportPackageArchiveStatus)}</strong>
+              <small>{closeout.finalHandoffReportPackageArchiveReady ? 'Download-ready' : 'Not download-ready'}</small>
+              <small>{closeout.finalHandoffReportPackageArchiveId ?? 'No final handoff archive recorded.'}</small>
+              <small>{closeout.finalHandoffReportPackageArchiveSummary}</small>
+            </div>
+            <div>
               <span>Next action</span>
               <strong>{closeout.nextAction}</strong>
             </div>
@@ -571,6 +578,9 @@ function LaunchAcceptanceCloseoutArchiveList({
               <span>
                 {archive.id} · {statusLabel(archive.status)} · {archive.accepted ? 'Accepted closeout' : 'Not accepted'} · {archive.sessionId} · {compactDateTime(archive.createdAt)}
               </span>
+              <small>
+                Final handoff archive: {archive.finalHandoffReportPackageArchiveId ?? 'missing'} · {statusLabel(archive.finalHandoffReportPackageArchiveStatus)}
+              </small>
               {archive.latestPullRequestUrl ? (
                 <a href={archive.latestPullRequestUrl} target="_blank" rel="noreferrer">
                   PR
@@ -655,6 +665,13 @@ function LaunchAcceptanceCertificatePanel({
               <small>{certificate.latestSessionId ?? 'No session'}</small>
             </div>
             <div>
+              <span>Final handoff proof</span>
+              <strong>{statusLabel(certificate.finalHandoffReportPackageArchiveStatus)}</strong>
+              <small>{certificate.finalHandoffReportPackageArchiveReady ? 'Download-ready' : 'Not download-ready'}</small>
+              <small>{certificate.finalHandoffReportPackageArchiveId ?? 'No final handoff archive recorded.'}</small>
+              <small>{certificate.finalHandoffReportPackageArchiveSummary}</small>
+            </div>
+            <div>
               <span>Receipt</span>
               <strong>{certificate.latestDeliveryReceiptId ?? 'Missing'}</strong>
               <small>{certificate.deliveryReceiptFreshness}</small>
@@ -706,6 +723,9 @@ function LaunchAcceptanceCertificateArchiveList({
               <span>
                 {archive.id} · {statusLabel(archive.status)} · {archive.certified ? 'Certified' : 'Not certified'} · {archive.latestCloseoutArchiveId ?? 'No closeout'} · {compactDateTime(archive.archivedAt)}
               </span>
+              <small>
+                Final handoff archive: {archive.finalHandoffReportPackageArchiveId ?? 'missing'} · {statusLabel(archive.finalHandoffReportPackageArchiveStatus)}
+              </small>
               {archive.latestPullRequestUrl ? (
                 <a href={archive.latestPullRequestUrl} target="_blank" rel="noreferrer">
                   PR

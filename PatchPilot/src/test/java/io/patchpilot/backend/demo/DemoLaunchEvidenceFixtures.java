@@ -277,6 +277,12 @@ final class DemoLaunchEvidenceFixtures {
                 "delivery-1",
                 "evaluation-run-2",
                 "launch-evidence-archive-1",
+                status,
+                ready,
+                ready ? "final-handoff-report-package-archive-1" : null,
+                ready
+                        ? "Latest final handoff report package archive is download-ready and ready."
+                        : "No final handoff report package archive evidence recorded.",
                 ready ? "launch-delivery-receipt-1" : null,
                 ready ? "reviewer@example.com" : null,
                 ready ? "email" : null,
@@ -301,6 +307,9 @@ final class DemoLaunchEvidenceFixtures {
                         "Download launch evidence package report.",
                         "Download launch evidence share center report.",
                         "Download launch evidence finalization report.",
+                        ready
+                                ? "Download final handoff report package archive final-handoff-report-package-archive-1."
+                                : "Archive a final handoff report package before treating launch closeout as accepted.",
                         "Download launch acceptance closeout report."
                 ),
                 "# PatchPilot Launch Acceptance Closeout\n\n"

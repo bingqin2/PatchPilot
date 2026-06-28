@@ -673,6 +673,10 @@ export interface DemoLaunchAcceptanceCloseout {
   latestWebhookDeliveryId: string | null;
   evaluationRunId: string | null;
   latestArchiveId: string | null;
+  finalHandoffReportPackageArchiveStatus: DemoReadinessStatus;
+  finalHandoffReportPackageArchiveReady: boolean;
+  finalHandoffReportPackageArchiveId: string | null;
+  finalHandoffReportPackageArchiveSummary: string;
   latestDeliveryReceiptId: string | null;
   latestDeliveryTarget: string | null;
   latestDeliveryChannel: string | null;
@@ -696,6 +700,10 @@ export interface DemoLaunchAcceptanceCloseoutArchive {
   latestWebhookDeliveryId: string | null;
   evaluationRunId: string | null;
   latestArchiveId: string | null;
+  finalHandoffReportPackageArchiveStatus: DemoReadinessStatus;
+  finalHandoffReportPackageArchiveReady: boolean;
+  finalHandoffReportPackageArchiveId: string | null;
+  finalHandoffReportPackageArchiveSummary: string;
   latestDeliveryReceiptId: string | null;
   latestDeliveryTarget: string | null;
   latestDeliveryChannel: string | null;
@@ -712,6 +720,10 @@ export interface DemoLaunchAcceptanceCertificate {
   archiveCount: number;
   latestCloseoutArchiveId: string | null;
   latestLaunchEvidenceArchiveId: string | null;
+  finalHandoffReportPackageArchiveStatus: DemoReadinessStatus;
+  finalHandoffReportPackageArchiveReady: boolean;
+  finalHandoffReportPackageArchiveId: string | null;
+  finalHandoffReportPackageArchiveSummary: string;
   latestDeliveryReceiptId: string | null;
   latestSessionId: string | null;
   latestTaskId: string | null;
@@ -736,6 +748,10 @@ export interface DemoLaunchAcceptanceCertificateArchive {
   archiveCount: number;
   latestCloseoutArchiveId: string | null;
   latestLaunchEvidenceArchiveId: string | null;
+  finalHandoffReportPackageArchiveStatus: DemoReadinessStatus;
+  finalHandoffReportPackageArchiveReady: boolean;
+  finalHandoffReportPackageArchiveId: string | null;
+  finalHandoffReportPackageArchiveSummary: string;
   latestDeliveryReceiptId: string | null;
   latestSessionId: string | null;
   latestTaskId: string | null;

@@ -28,6 +28,10 @@ public final class DemoLaunchAcceptanceCertificateArchiveConvert {
         entity.setArchiveCount(archive.archiveCount());
         entity.setLatestCloseoutArchiveId(archive.latestCloseoutArchiveId());
         entity.setLatestLaunchEvidenceArchiveId(archive.latestLaunchEvidenceArchiveId());
+        entity.setFinalHandoffReportPackageArchiveStatus(archive.finalHandoffReportPackageArchiveStatus().name());
+        entity.setFinalHandoffReportPackageArchiveReady(archive.finalHandoffReportPackageArchiveReady());
+        entity.setFinalHandoffReportPackageArchiveId(archive.finalHandoffReportPackageArchiveId());
+        entity.setFinalHandoffReportPackageArchiveSummary(archive.finalHandoffReportPackageArchiveSummary());
         entity.setLatestDeliveryReceiptId(archive.latestDeliveryReceiptId());
         entity.setLatestSessionId(archive.latestSessionId());
         entity.setLatestTaskId(archive.latestTaskId());
@@ -55,6 +59,10 @@ public final class DemoLaunchAcceptanceCertificateArchiveConvert {
                 entity.getArchiveCount() == null ? 0 : entity.getArchiveCount(),
                 entity.getLatestCloseoutArchiveId(),
                 entity.getLatestLaunchEvidenceArchiveId(),
+                statusOrNeedsAttention(entity.getFinalHandoffReportPackageArchiveStatus()),
+                Boolean.TRUE.equals(entity.getFinalHandoffReportPackageArchiveReady()),
+                entity.getFinalHandoffReportPackageArchiveId(),
+                summaryOrMissing(entity.getFinalHandoffReportPackageArchiveSummary()),
                 entity.getLatestDeliveryReceiptId(),
                 entity.getLatestSessionId(),
                 entity.getLatestTaskId(),
@@ -78,6 +86,18 @@ public final class DemoLaunchAcceptanceCertificateArchiveConvert {
         } catch (JsonProcessingException exception) {
             throw new IllegalArgumentException("Failed to serialize launch acceptance certificate archive actions", exception);
         }
+    }
+
+    private static DemoReadinessStatus statusOrNeedsAttention(String status) {
+        return status == null || status.isBlank()
+                ? DemoReadinessStatus.NEEDS_ATTENTION
+                : DemoReadinessStatus.valueOf(status);
+    }
+
+    private static String summaryOrMissing(String summary) {
+        return summary == null || summary.isBlank()
+                ? "No final handoff report package archive evidence recorded."
+                : summary;
     }
 
     private static List<String> fromJson(String value) {

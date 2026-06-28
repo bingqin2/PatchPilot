@@ -69,7 +69,7 @@ public class DemoLaunchAcceptanceCloseoutService {
                 finalization
         );
         List<String> evidenceNotes = evidenceNotes(launchReadiness, evidencePackage, shareCenter, finalization);
-        List<String> downloadActions = downloadActions();
+        List<String> downloadActions = downloadActions(evidencePackage);
         String summary = summary(status);
         String nextAction = nextAction(status, evidencePackage, shareCenter, finalization);
         String markdownReport = markdownReport(
@@ -96,6 +96,10 @@ public class DemoLaunchAcceptanceCloseoutService {
                 evidencePackage.latestWebhookDeliveryId(),
                 evidencePackage.evaluationRunId(),
                 shareCenter.latestArchiveId(),
+                evidencePackage.finalHandoffReportPackageArchiveStatus(),
+                evidencePackage.finalHandoffReportPackageArchiveReady(),
+                evidencePackage.finalHandoffReportPackageArchiveId(),
+                evidencePackage.finalHandoffReportPackageArchiveSummary(),
                 finalization.latestDeliveryReceiptId(),
                 finalization.latestDeliveryTarget(),
                 finalization.latestDeliveryChannel(),
@@ -117,12 +121,15 @@ public class DemoLaunchAcceptanceCloseoutService {
     ) {
         if (launchReadiness.status() == DemoReadinessStatus.BLOCKED
                 || evidencePackage.status() == DemoReadinessStatus.BLOCKED
+                || evidencePackage.finalHandoffReportPackageArchiveStatus() == DemoReadinessStatus.BLOCKED
                 || shareCenterStatus(shareCenter) == DemoReadinessStatus.BLOCKED
                 || finalization.status() == DemoReadinessStatus.BLOCKED) {
             return DemoReadinessStatus.BLOCKED;
         }
         if (launchReadiness.status() == DemoReadinessStatus.NEEDS_ATTENTION
                 || evidencePackage.status() == DemoReadinessStatus.NEEDS_ATTENTION
+                || evidencePackage.finalHandoffReportPackageArchiveStatus() == DemoReadinessStatus.NEEDS_ATTENTION
+                || !evidencePackage.finalHandoffReportPackageArchiveReady()
                 || !shareCenter.shareReady()
                 || !finalization.finalized()) {
             return DemoReadinessStatus.NEEDS_ATTENTION;
@@ -148,6 +155,14 @@ public class DemoLaunchAcceptanceCloseoutService {
                         evidencePackage.status(),
                         evidencePackage.summary(),
                         firstAction(evidencePackage.nextActions())
+                ),
+                new DemoLaunchAcceptanceCloseoutCheckVo(
+                        "Final handoff package archive",
+                        evidencePackage.finalHandoffReportPackageArchiveStatus(),
+                        evidencePackage.finalHandoffReportPackageArchiveSummary(),
+                        evidencePackage.finalHandoffReportPackageArchiveReady()
+                                ? "No action needed."
+                                : "Archive a final handoff report package before treating launch closeout as accepted."
                 ),
                 new DemoLaunchAcceptanceCloseoutCheckVo(
                         "Launch evidence share center",
@@ -215,6 +230,9 @@ public class DemoLaunchAcceptanceCloseoutService {
         if (!finalization.finalized()) {
             return finalization.nextAction();
         }
+        if (!evidencePackage.finalHandoffReportPackageArchiveReady()) {
+            return "Archive a final handoff report package before treating launch closeout as accepted.";
+        }
         if (!shareCenter.shareReady()) {
             return shareCenter.nextAction();
         }
@@ -230,6 +248,15 @@ public class DemoLaunchAcceptanceCloseoutService {
         List<String> notes = new ArrayList<>();
         notes.add("Launch readiness status is " + launchReadiness.status() + ".");
         notes.add("Launch evidence package status is " + evidencePackage.status() + ".");
+        if (evidencePackage.finalHandoffReportPackageArchiveReady()) {
+            notes.add("Final handoff report package archive "
+                    + valueOrNone(evidencePackage.finalHandoffReportPackageArchiveId())
+                    + " is " + evidencePackage.finalHandoffReportPackageArchiveStatus()
+                    + " and download-ready.");
+        } else {
+            notes.add("Final handoff report package archive is not ready: "
+                    + evidencePackage.finalHandoffReportPackageArchiveSummary());
+        }
         if (shareCenter.shareReady()) {
             notes.add("Launch evidence archive " + valueOrNone(shareCenter.latestArchiveId()) + " is share-ready.");
         } else {
@@ -248,14 +275,18 @@ public class DemoLaunchAcceptanceCloseoutService {
         return List.copyOf(notes);
     }
 
-    private static List<String> downloadActions() {
-        return List.of(
-                "Download self-hosted launch readiness report.",
-                "Download launch evidence package report.",
-                "Download launch evidence share center report.",
-                "Download launch evidence finalization report.",
-                "Download launch acceptance closeout report."
-        );
+    private static List<String> downloadActions(DemoLaunchEvidencePackageVo evidencePackage) {
+        List<String> actions = new ArrayList<>();
+        actions.add("Download self-hosted launch readiness report.");
+        actions.add("Download launch evidence package report.");
+        actions.add("Download launch evidence share center report.");
+        actions.add("Download launch evidence finalization report.");
+        if (evidencePackage.finalHandoffReportPackageArchiveId() != null) {
+            actions.add("Download final handoff report package archive "
+                    + evidencePackage.finalHandoffReportPackageArchiveId() + ".");
+        }
+        actions.add("Download launch acceptance closeout report.");
+        return List.copyOf(actions);
     }
 
     private static String markdownReport(
@@ -283,6 +314,18 @@ public class DemoLaunchAcceptanceCloseoutService {
         report.append("- Webhook delivery: `").append(valueOrNone(evidencePackage.latestWebhookDeliveryId())).append("`\n");
         report.append("- Evaluation run: `").append(valueOrNone(evidencePackage.evaluationRunId())).append("`\n");
         report.append("- Launch evidence archive: `").append(valueOrNone(shareCenter.latestArchiveId())).append("`\n");
+        report.append("- Final handoff archive: `")
+                .append(valueOrNone(evidencePackage.finalHandoffReportPackageArchiveId()))
+                .append("`\n");
+        report.append("- Final handoff archive status: `")
+                .append(evidencePackage.finalHandoffReportPackageArchiveStatus())
+                .append("`\n");
+        report.append("- Final handoff archive ready: `")
+                .append(evidencePackage.finalHandoffReportPackageArchiveReady())
+                .append("`\n");
+        report.append("- Final handoff archive summary: ")
+                .append(evidencePackage.finalHandoffReportPackageArchiveSummary())
+                .append("\n");
         report.append("- Delivery receipt: `").append(valueOrNone(finalization.latestDeliveryReceiptId())).append("`\n");
         report.append("- Delivery target: `").append(valueOrNone(finalization.latestDeliveryTarget())).append("`\n");
         report.append("- Delivery channel: `").append(valueOrNone(finalization.latestDeliveryChannel())).append("`\n");
