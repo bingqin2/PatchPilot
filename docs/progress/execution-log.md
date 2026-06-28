@@ -5686,3 +5686,23 @@ Validation so far:
 - `npm test -- --reporter=basic`: passed, 30 test files and 420 tests.
 - `npm run build`: passed with the existing Vite large-chunk warning.
 - `git diff --check`: passed.
+
+## 2026-06-29 - 283 Final acceptance completion evidence bundle
+
+- Started `283-final-acceptance-completion-evidence-bundle` to summarize the final acceptance finalization and latest completion archive into one reviewer-facing proof bundle.
+- Planned a complete feature slice: backend bundle VO/service/controller endpoints, frontend type/API/App loading, final acceptance panel bundle rendering/downloads, README/product/frontend docs, plan doc, and regression tests.
+- RED backend tests were added first for READY bundle generation, missing completion archive guidance, blocked finalization guidance, REST serialization, and Markdown report download.
+- RED frontend tests were added first for completion evidence bundle API helpers, final acceptance panel rendering, bundle download behavior, and full App data loading.
+- Implemented `DemoFinalAcceptanceCompletionEvidenceBundleService` and `DemoFinalAcceptanceCompletionEvidenceBundleVo` so the bundle is share-ready only when finalization is READY and a finalized READY completion archive exists.
+- Added `GET /api/demo/final-acceptance-completion-evidence-bundle` and `GET /api/demo/final-acceptance-completion-evidence-bundle/report/download`.
+- Updated the final demo acceptance dashboard panel with completion evidence bundle status, latest archive/receipt proof, evidence notes, download actions, side-effect contract, and Markdown download.
+- Updated README, product spec, frontend design doc, and added this plan document.
+
+Validation so far:
+
+- `mvn -q -pl PatchPilot -Dtest=DemoFinalAcceptanceCompletionEvidenceBundleServiceTests,DemoReadinessControllerTests test`: first failed because the bundle VO/service did not exist; passed after backend service and controller implementation.
+- `npm test -- src/api.test.ts src/dashboard/components/DemoAcceptanceSummaryPanel.test.tsx src/App.test.tsx --reporter=basic`: first failed because the API helpers and panel bundle section did not exist, then failed on expected duplicate side-effect/archive evidence after adding the new section; passed after frontend implementation and assertion updates, 3 test files and 254 tests.
+- `mvn -q -pl PatchPilot test`: passed.
+- `npm test -- --reporter=basic`: passed, 30 test files and 423 tests.
+- `npm run build`: passed with the existing Vite large-chunk warning.
+- `git diff --check`: passed.

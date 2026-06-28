@@ -11,6 +11,7 @@ import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceSharePackageArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceShareDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceShareFinalizationVo;
+import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionEvidenceBundleVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceSharePackageVo;
 import io.patchpilot.backend.demo.domain.DemoFinalHandoffReportPackageArchiveEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoFinalHandoffReportPackageArchiveVo;
@@ -188,6 +189,9 @@ class DemoReadinessControllerTests {
 
     @MockitoBean
     private DemoFinalAcceptanceCompletionArchiveService demoFinalAcceptanceCompletionArchiveService;
+
+    @MockitoBean
+    private DemoFinalAcceptanceCompletionEvidenceBundleService demoFinalAcceptanceCompletionEvidenceBundleService;
 
     @MockitoBean
     private DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
@@ -856,6 +860,38 @@ class DemoReadinessControllerTests {
                 .andExpect(content().contentType("text/markdown;charset=UTF-8"))
                 .andExpect(content().string(containsString("# PatchPilot Final Demo Acceptance Share Finalization Gate")))
                 .andExpect(content().string(containsString("final-acceptance-delivery-receipt-1")));
+    }
+
+    @Test
+    void should_return_final_acceptance_completion_evidence_bundle() throws Exception {
+        when(demoFinalAcceptanceCompletionEvidenceBundleService.getBundle())
+                .thenReturn(finalAcceptanceCompletionEvidenceBundle());
+
+        mockMvc.perform(get("/api/demo/final-acceptance-completion-evidence-bundle"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.readyToShare").value(true))
+                .andExpect(jsonPath("$.data.latestCompletionArchiveId").value("final-acceptance-completion-archive-1"))
+                .andExpect(jsonPath("$.data.latestSharePackageArchiveId").value("final-acceptance-share-package-archive-1"))
+                .andExpect(jsonPath("$.data.latestDeliveryReceiptId").value("final-acceptance-delivery-receipt-1"))
+                .andExpect(jsonPath("$.data.latestDeliveryTarget").value("reviewer@example.com"))
+                .andExpect(jsonPath("$.data.downloadActions[0]").value("Download final acceptance completion evidence bundle."))
+                .andExpect(jsonPath("$.data.sideEffectContract").value(containsString("read-only")))
+                .andExpect(jsonPath("$.data.markdownReport").value(containsString("# PatchPilot Final Acceptance Completion Evidence Bundle")));
+    }
+
+    @Test
+    void should_download_final_acceptance_completion_evidence_bundle_report() throws Exception {
+        when(demoFinalAcceptanceCompletionEvidenceBundleService.getBundle())
+                .thenReturn(finalAcceptanceCompletionEvidenceBundle());
+
+        mockMvc.perform(get("/api/demo/final-acceptance-completion-evidence-bundle/report/download"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("patchpilot-final-acceptance-completion-evidence-bundle.md")))
+                .andExpect(content().contentType("text/markdown;charset=UTF-8"))
+                .andExpect(content().string(containsString("# PatchPilot Final Acceptance Completion Evidence Bundle")))
+                .andExpect(content().string(containsString("final-acceptance-completion-archive-1")));
     }
 
     @Test
@@ -3542,6 +3578,35 @@ class DemoReadinessControllerTests {
                 "# PatchPilot Final Demo Acceptance Share Finalization Gate\n\n- Latest delivery receipt: `final-acceptance-delivery-receipt-1`",
                 Instant.parse("2026-06-29T03:30:00Z"),
                 Instant.parse("2026-06-29T04:00:00Z")
+        );
+    }
+
+    private static DemoFinalAcceptanceCompletionEvidenceBundleVo finalAcceptanceCompletionEvidenceBundle() {
+        return new DemoFinalAcceptanceCompletionEvidenceBundleVo(
+                DemoReadinessStatus.READY,
+                true,
+                "PatchPilot final acceptance completion evidence bundle is ready to share.",
+                "Share this final acceptance completion evidence bundle with reviewers.",
+                "final-acceptance-completion-archive-1",
+                "final-acceptance-share-package-archive-1",
+                "final-acceptance-delivery-receipt-1",
+                "reviewer@example.com",
+                "email",
+                "task-1",
+                1,
+                Instant.parse("2026-06-29T04:00:00Z"),
+                Instant.parse("2026-06-29T04:05:00Z"),
+                List.of(
+                        "Latest completion archive final-acceptance-completion-archive-1 is finalized.",
+                        "Latest delivery receipt final-acceptance-delivery-receipt-1 is fresh for final-acceptance-share-package-archive-1."
+                ),
+                List.of(
+                        "Download final acceptance completion evidence bundle.",
+                        "Download final acceptance completion archive final-acceptance-completion-archive-1.",
+                        "Download final acceptance share finalization report."
+                ),
+                "GET /api/demo/final-acceptance-completion-evidence-bundle is read-only: it does not create tasks, call the model, run tests, archive records, record receipts, mutate Git, send messages, or write to GitHub.",
+                "# PatchPilot Final Acceptance Completion Evidence Bundle\n\n- Latest completion archive: `final-acceptance-completion-archive-1`\n"
         );
     }
 }

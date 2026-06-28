@@ -4,6 +4,7 @@ import io.patchpilot.backend.common.response.ApiResponse;
 import io.patchpilot.backend.demo.domain.DemoAcceptanceSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionArchiveVo;
+import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionEvidenceBundleVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceShareDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceShareFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceSharePackageArchiveVo;
@@ -94,6 +95,7 @@ public class DemoReadinessController {
     private final DemoFinalAcceptanceShareDeliveryReceiptService demoFinalAcceptanceShareDeliveryReceiptService;
     private final DemoFinalAcceptanceShareFinalizationService demoFinalAcceptanceShareFinalizationService;
     private final DemoFinalAcceptanceCompletionArchiveService demoFinalAcceptanceCompletionArchiveService;
+    private final DemoFinalAcceptanceCompletionEvidenceBundleService demoFinalAcceptanceCompletionEvidenceBundleService;
     private final DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
     private final DemoReadinessSnapshotTrendService demoReadinessSnapshotTrendService;
     private final DemoLaunchPreflightService demoLaunchPreflightService;
@@ -376,6 +378,11 @@ public class DemoReadinessController {
         return ApiResponse.ok(demoFinalAcceptanceShareFinalizationService.getFinalizationGate());
     }
 
+    @GetMapping("/final-acceptance-completion-evidence-bundle")
+    public ApiResponse<DemoFinalAcceptanceCompletionEvidenceBundleVo> getFinalAcceptanceCompletionEvidenceBundle() {
+        return ApiResponse.ok(demoFinalAcceptanceCompletionEvidenceBundleService.getBundle());
+    }
+
     @PostMapping("/final-acceptance-completion-archives")
     public ResponseEntity<ApiResponse<DemoFinalAcceptanceCompletionArchiveVo>> archiveFinalAcceptanceCompletion() {
         try {
@@ -523,6 +530,14 @@ public class DemoReadinessController {
         return markdownAttachment(
                 "patchpilot-final-demo-acceptance-share-finalization.md",
                 demoFinalAcceptanceShareFinalizationService.getFinalizationGate().markdownReport()
+        );
+    }
+
+    @GetMapping(value = "/final-acceptance-completion-evidence-bundle/report/download", produces = "text/markdown;charset=UTF-8")
+    public ResponseEntity<String> downloadFinalAcceptanceCompletionEvidenceBundleReport() {
+        return markdownAttachment(
+                "patchpilot-final-acceptance-completion-evidence-bundle.md",
+                demoFinalAcceptanceCompletionEvidenceBundleService.getBundle().markdownReport()
         );
     }
 
