@@ -98,6 +98,19 @@ export interface FixTask {
   retriedAt: string | null;
 }
 
+export interface FixTaskEvidencePackageArchive {
+  id: string;
+  taskId: string;
+  repositoryOwner: string;
+  repositoryName: string;
+  issueNumber: number;
+  status: TaskStatus;
+  pullRequestUrl: string | null;
+  archivedAt: string;
+  summary: string;
+  report: string;
+}
+
 export interface FixTaskRetryPreflight {
   taskId: string;
   status: TaskStatus;

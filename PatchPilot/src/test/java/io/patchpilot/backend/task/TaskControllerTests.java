@@ -39,6 +39,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultMatcher;
 
 import java.time.Instant;
@@ -52,6 +53,7 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -1453,6 +1455,88 @@ class TaskControllerTests {
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Edited files: `docs/demo.md`, `src/main/App.java`")))
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("## Model Calls")))
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- `gpt-5.5` -> success, 200 tokens")));
+    }
+
+    @Test
+    void should_download_task_report_as_markdown_attachment() throws Exception {
+        FixTaskVo task = createTask("delivery-report-download");
+        fixTaskService.recordAdapterMetadata(
+                task.id(),
+                "java",
+                "maven",
+                "./mvnw test",
+                "pom.xml detected with mvnw wrapper"
+        );
+        fixTaskService.markCompleted(task.id(), "https://github.com/octocat/hello-world/pull/9");
+
+        mockMvc.perform(get("/api/tasks/{id}/report/download", task.id()))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString("attachment")))
+                .andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString("patchpilot-task-" + task.id() + "-report.md")))
+                .andExpect(content().contentType("text/markdown;charset=UTF-8"))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("# PatchPilot Task Report")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("- Task: `" + task.id() + "`")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("- Status: `COMPLETED`")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("- Pull Request: https://github.com/octocat/hello-world/pull/9")));
+    }
+
+    @Test
+    void should_archive_list_and_download_task_evidence_package() throws Exception {
+        FixTaskVo task = createTask("delivery-task-evidence-package");
+        fixTaskService.recordAdapterMetadata(
+                task.id(),
+                "java",
+                "maven",
+                "./mvnw test",
+                "pom.xml detected with mvnw wrapper"
+        );
+        fixTaskService.markCompleted(task.id(), "https://github.com/octocat/hello-world/pull/10");
+        fixTaskTimelineService.recordEvent(task.id(), FixTaskTimelineEventType.COMPLETED, "Task completed");
+
+        MvcResult archiveResult = mockMvc.perform(post("/api/tasks/{id}/evidence-packages", task.id()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value(not(nullValue())))
+                .andExpect(jsonPath("$.data.taskId").value(task.id()))
+                .andExpect(jsonPath("$.data.repositoryOwner").value("octocat"))
+                .andExpect(jsonPath("$.data.repositoryName").value("hello-world"))
+                .andExpect(jsonPath("$.data.issueNumber").value(42))
+                .andExpect(jsonPath("$.data.status").value("COMPLETED"))
+                .andExpect(jsonPath("$.data.pullRequestUrl").value("https://github.com/octocat/hello-world/pull/10"))
+                .andExpect(jsonPath("$.data.summary").value("Task COMPLETED for octocat/hello-world#42 archived as evidence."))
+                .andExpect(jsonPath("$.data.report").value(org.hamcrest.Matchers.containsString("# PatchPilot Task Report")))
+                .andExpect(jsonPath("$.data.report").value(org.hamcrest.Matchers.containsString("- Task: `" + task.id() + "`")))
+                .andReturn();
+
+        String responseBody = archiveResult.getResponse().getContentAsString();
+        String archiveId = JsonPath.read(responseBody, "$.data.id");
+        String archivedReport = JsonPath.read(responseBody, "$.data.report");
+
+        assertAuditRecorded(
+                "TASK_EVIDENCE_PACKAGE_ARCHIVED",
+                "TASK_EVIDENCE_PACKAGE_ARCHIVE",
+                archiveId,
+                "admin-api",
+                "Archived task evidence package for task " + task.id()
+        );
+
+        fixTaskService.markFailed(task.id(), "late failure after archive should not rewrite archived package");
+
+        mockMvc.perform(get("/api/tasks/{id}/evidence-packages", task.id()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].id").value(archiveId))
+                .andExpect(jsonPath("$.data[0].taskId").value(task.id()))
+                .andExpect(jsonPath("$.data[0].status").value("COMPLETED"));
+
+        mockMvc.perform(get("/api/tasks/evidence-packages/{archiveId}/report/download", archiveId))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString("patchpilot-task-" + task.id() + "-evidence-" + archiveId + ".md")))
+                .andExpect(content().contentType("text/markdown;charset=UTF-8"))
+                .andExpect(content().string(archivedReport))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("- Status: `COMPLETED`")))
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("late failure after archive"))));
     }
 
     @Test

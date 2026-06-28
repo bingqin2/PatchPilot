@@ -23,6 +23,7 @@ import io.patchpilot.backend.task.domain.enums.TriggerEvaluationSource;
 import io.patchpilot.backend.task.domain.vo.FixTaskFailureCauseSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskAdapterExecutionEvidenceVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskAuditSummaryVo;
+import io.patchpilot.backend.task.domain.vo.FixTaskEvidencePackageArchiveVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskFailureDiagnosisVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskGeneratedDiffVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskLatencySummaryVo;
@@ -47,6 +48,7 @@ import io.patchpilot.backend.task.domain.vo.IssueContextVo;
 import io.patchpilot.backend.task.domain.vo.RepositorySupportGuidanceVo;
 import io.patchpilot.backend.task.service.FixTaskAuditSummaryService;
 import io.patchpilot.backend.task.service.FixTaskControlService;
+import io.patchpilot.backend.task.service.FixTaskEvidencePackageArchiveService;
 import io.patchpilot.backend.task.service.FixTaskMetricsService;
 import io.patchpilot.backend.task.service.FixTaskModelCallService;
 import io.patchpilot.backend.task.service.FixTaskPatchReviewService;
@@ -63,6 +65,8 @@ import io.patchpilot.backend.task.service.TaskFailureFeedback;
 import io.patchpilot.backend.task.service.TriggerEvaluationService;
 import io.patchpilot.backend.task.domain.vo.TriggerEvaluationResultVo;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -73,6 +77,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.List;
@@ -91,6 +96,7 @@ public class TaskController {
     private final FixTaskPatchReviewService fixTaskPatchReviewService;
     private final FixTaskPreExecutionDecisionService fixTaskPreExecutionDecisionService;
     private final FixTaskControlService fixTaskControlService;
+    private final FixTaskEvidencePackageArchiveService fixTaskEvidencePackageArchiveService;
     private final FixTaskMetricsService fixTaskMetricsService;
     private final FixTaskAuditSummaryService fixTaskAuditSummaryService;
     private final FixTaskQueueQueryService fixTaskQueueQueryService;
@@ -307,6 +313,49 @@ public class TaskController {
         return fixTaskAuditSummaryService.summary(id)
                 .map(summary -> ResponseEntity.ok(ApiResponse.ok(fixTaskReportFormatter.format(buildTaskDetail(id, summary)))))
                 .orElseGet(() -> ResponseEntity.status(404).body(ApiResponse.fail("Task not found")));
+    }
+
+    @GetMapping(value = "/{id}/report/download", produces = "text/markdown;charset=UTF-8")
+    public ResponseEntity<String> downloadTaskReport(@PathVariable String id) {
+        return fixTaskAuditSummaryService.summary(id)
+                .map(summary -> markdownAttachment(
+                        "patchpilot-task-" + safeFilenamePart(id) + "-report.md",
+                        fixTaskReportFormatter.format(buildTaskDetail(id, summary))
+                ))
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/{id}/evidence-packages")
+    public ResponseEntity<ApiResponse<FixTaskEvidencePackageArchiveVo>> archiveTaskEvidencePackage(@PathVariable String id) {
+        return fixTaskAuditSummaryService.summary(id)
+                .map(summary -> {
+                    FixTaskEvidencePackageArchiveVo archive =
+                            fixTaskEvidencePackageArchiveService.archive(buildTaskDetail(id, summary));
+                    recordEvidencePackageArchiveAudit(archive);
+                    return ResponseEntity.ok(ApiResponse.ok(archive));
+                })
+                .orElseGet(() -> ResponseEntity.status(404).body(ApiResponse.fail("Task not found")));
+    }
+
+    @GetMapping("/{id}/evidence-packages")
+    public ResponseEntity<ApiResponse<List<FixTaskEvidencePackageArchiveVo>>> listTaskEvidencePackages(
+            @PathVariable String id
+    ) {
+        if (fixTaskService.findTask(id).isEmpty()) {
+            return ResponseEntity.status(404).body(ApiResponse.fail("Task not found"));
+        }
+        return ResponseEntity.ok(ApiResponse.ok(fixTaskEvidencePackageArchiveService.listByTaskId(id)));
+    }
+
+    @GetMapping(value = "/evidence-packages/{archiveId}/report/download", produces = "text/markdown;charset=UTF-8")
+    public ResponseEntity<String> downloadTaskEvidencePackageReport(@PathVariable String archiveId) {
+        return fixTaskEvidencePackageArchiveService.findById(archiveId)
+                .map(archive -> markdownAttachment(
+                        "patchpilot-task-" + safeFilenamePart(archive.taskId())
+                                + "-evidence-" + safeFilenamePart(archive.id()) + ".md",
+                        archive.report()
+                ))
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @GetMapping("/{id}/timeline")
@@ -951,6 +1000,29 @@ public class TaskController {
                 operator,
                 reason
         ));
+    }
+
+    private void recordEvidencePackageArchiveAudit(FixTaskEvidencePackageArchiveVo archive) {
+        operatorSafetyAuditService.recordSafetyAudit(new RecordOperatorSafetyAuditCommand(
+                "TASK_EVIDENCE_PACKAGE_ARCHIVED",
+                "TASK_EVIDENCE_PACKAGE_ARCHIVE",
+                archive.id(),
+                TriggerQuarantineScope.REPOSITORY,
+                archive.repositoryOwner() + "/" + archive.repositoryName(),
+                "admin-api",
+                "Archived task evidence package for task " + archive.taskId()
+        ));
+    }
+
+    private static ResponseEntity<String> markdownAttachment(String filename, String body) {
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .contentType(new MediaType("text", "markdown", StandardCharsets.UTF_8))
+                .body(body);
+    }
+
+    private static String safeFilenamePart(String value) {
+        return value.replaceAll("[^A-Za-z0-9._-]", "-");
     }
 
     private static String requiredText(String value, String message) {

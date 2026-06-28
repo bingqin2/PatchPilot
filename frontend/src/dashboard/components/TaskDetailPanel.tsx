@@ -1,6 +1,6 @@
-import { CheckCircle2, Copy, ExternalLink, RotateCcw, XCircle } from 'lucide-react';
+import { Archive, CheckCircle2, Copy, Download, ExternalLink, RotateCcw, XCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import type { ApproveReviewInput, FixTask, RetryTaskInput } from '../../types';
+import type { ApproveReviewInput, FixTask, FixTaskEvidencePackageArchive, RetryTaskInput } from '../../types';
 import { compactTime, duration, issueUrl } from '../format';
 import type { TaskDetailState } from '../types';
 import { RecordLine } from './RecordLine';
@@ -16,6 +16,9 @@ interface TaskDetailPanelProps {
   onRetryTask: (taskId: string, input: RetryTaskInput) => Promise<void>;
   onApproveReview: (taskId: string, input: ApproveReviewInput) => Promise<void>;
   onCopyReport: (taskId: string) => Promise<string>;
+  onDownloadReport?: (taskId: string) => Promise<Blob>;
+  onArchiveEvidencePackage?: (taskId: string) => Promise<FixTaskEvidencePackageArchive>;
+  onDownloadEvidencePackageReport?: (archiveId: string) => Promise<Blob>;
 }
 
 export function TaskDetailPanel({
@@ -27,7 +30,10 @@ export function TaskDetailPanel({
   onCancelTask,
   onRetryTask,
   onApproveReview,
-  onCopyReport
+  onCopyReport,
+  onDownloadReport,
+  onArchiveEvidencePackage,
+  onDownloadEvidencePackageReport
 }: TaskDetailPanelProps) {
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
   const [approvalOperator, setApprovalOperator] = useState('');
@@ -63,6 +69,7 @@ export function TaskDetailPanel({
   const retryReasonReady = retryReason.trim().length > 0;
   const canApproveReview = task.status === 'PENDING_REVIEW';
   const reviewApprovalConfigured = reviewApprovalAllowedOperators.length > 0;
+  const evidencePackageArchives = detail.evidencePackageArchives ?? [];
   const latestTestStatus = testStatus(detail.summary?.latestTestRunExitCode);
   const generatedDiffRiskBlocked = detail.toolCalls.some(
     (call) => call.toolName === 'GeneratedDiffRiskGate' && !call.success
@@ -98,6 +105,50 @@ export function TaskDetailPanel({
     }
   }
 
+  async function downloadTaskReport() {
+    if (!task || !onDownloadReport) {
+      return;
+    }
+
+    try {
+      const report = await onDownloadReport(task.id);
+      downloadMarkdown(report, `patchpilot-task-${safeFilenamePart(task.id)}-report.md`);
+      setCopyStatus('Task report downloaded');
+    } catch {
+      setCopyStatus('Download failed');
+    }
+  }
+
+  async function archiveEvidencePackage() {
+    if (!task || !onArchiveEvidencePackage) {
+      return;
+    }
+
+    try {
+      const archive = await onArchiveEvidencePackage(task.id);
+      setCopyStatus(`Evidence archived ${archive.id}`);
+    } catch {
+      setCopyStatus('Archive failed');
+    }
+  }
+
+  async function downloadArchivedEvidence(archive: FixTaskEvidencePackageArchive) {
+    if (!onDownloadEvidencePackageReport) {
+      return;
+    }
+
+    try {
+      const report = await onDownloadEvidencePackageReport(archive.id);
+      downloadMarkdown(
+        report,
+        `patchpilot-task-${safeFilenamePart(archive.taskId)}-evidence-${safeFilenamePart(archive.id)}.md`
+      );
+      setCopyStatus(`Archived evidence ${archive.id} downloaded`);
+    } catch {
+      setCopyStatus('Download failed');
+    }
+  }
+
   async function approveReview() {
     if (!task || !approvalInputReady) {
       return;
@@ -124,6 +175,23 @@ export function TaskDetailPanel({
             <Copy size={14} />
             Copy report
           </button>
+          {onDownloadReport ? (
+            <button className="secondary-button" type="button" onClick={() => void downloadTaskReport()}>
+              <Download size={14} />
+              Download report
+            </button>
+          ) : null}
+          {onArchiveEvidencePackage ? (
+            <button
+              className="secondary-button"
+              type="button"
+              disabled={actionInFlight}
+              onClick={() => void archiveEvidencePackage()}
+            >
+              <Archive size={14} />
+              Archive evidence
+            </button>
+          ) : null}
           {copyStatus ? <span className="copy-status">{copyStatus}</span> : null}
           <a className="external-link" href={issueUrl(task)} target="_blank" rel="noreferrer">
             Open Issue
@@ -195,6 +263,43 @@ export function TaskDetailPanel({
           </strong>
         ) : null}
       </div>
+
+      <section className="detail-section evidence-package-section" aria-label="Task evidence packages">
+        <div className="evidence-package-header">
+          <div>
+            <h3>Task evidence packages</h3>
+            <p>{evidencePackageArchives.length} archived snapshots</p>
+          </div>
+        </div>
+        {evidencePackageArchives.length > 0 ? (
+          <div className="evidence-package-list">
+            {evidencePackageArchives.map((archive) => (
+              <div className="evidence-package-item" key={archive.id}>
+                <div>
+                  <strong>{archive.id}</strong>
+                  <p>{archive.summary}</p>
+                  <span>
+                    {archive.status} · archived {compactTime(archive.archivedAt)}
+                  </span>
+                </div>
+                {onDownloadEvidencePackageReport ? (
+                  <button
+                    className="secondary-button"
+                    type="button"
+                    onClick={() => void downloadArchivedEvidence(archive)}
+                    aria-label={`Download archived evidence ${archive.id}`}
+                  >
+                    <Download size={14} />
+                    Download
+                  </button>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="empty-state">No archived task evidence packages.</p>
+        )}
+      </section>
 
       {detail.triggerIntentAudit ? (
         <section className="detail-section trigger-intent-section" aria-label="Trigger intent">
@@ -689,6 +794,19 @@ function shortText(value: string, maxLength: number) {
     return normalized;
   }
   return `${normalized.slice(0, maxLength)}...`;
+}
+
+function downloadMarkdown(blob: Blob, filename: string) {
+  const objectUrl = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = objectUrl;
+  anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(objectUrl);
+}
+
+function safeFilenamePart(value: string) {
+  return value.replace(/[^A-Za-z0-9._-]/g, '-');
 }
 
 const failureDiagnosisLabels: Record<string, string> = {

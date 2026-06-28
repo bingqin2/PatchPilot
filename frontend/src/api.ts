@@ -52,6 +52,7 @@ import type {
   EvaluationRunPreview,
   EvaluationRunSnapshotArchive,
   FixTask,
+  FixTaskEvidencePackageArchive,
   FixTaskFailureCauseSummary,
   FixTaskLatencySummary,
   FixTaskPage,
@@ -692,6 +693,22 @@ export async function getTaskRetryPreflight(taskId: string): Promise<FixTaskRetr
 
 export async function getTaskReport(taskId: string): Promise<string> {
   return getApi<string>(`/api/tasks/${taskId}/report`);
+}
+
+export async function downloadTaskReport(taskId: string): Promise<Blob> {
+  return getBlobApi(`/api/tasks/${encodeURIComponent(taskId)}/report/download`);
+}
+
+export async function archiveTaskEvidencePackage(taskId: string): Promise<FixTaskEvidencePackageArchive> {
+  return postApi<FixTaskEvidencePackageArchive>(`/api/tasks/${encodeURIComponent(taskId)}/evidence-packages`);
+}
+
+export async function listTaskEvidencePackageArchives(taskId: string): Promise<FixTaskEvidencePackageArchive[]> {
+  return getApi<FixTaskEvidencePackageArchive[]>(`/api/tasks/${encodeURIComponent(taskId)}/evidence-packages`);
+}
+
+export async function downloadTaskEvidencePackageReport(archiveId: string): Promise<Blob> {
+  return getBlobApi(`/api/tasks/evidence-packages/${encodeURIComponent(archiveId)}/report/download`);
 }
 
 export async function getTimeline(taskId: string): Promise<FixTaskTimelineEvent[]> {

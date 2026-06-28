@@ -324,6 +324,19 @@ const modelCalls = [
   }
 ];
 
+const taskEvidencePackageArchive = {
+  id: 'task-evidence-archive-1',
+  taskId: 'task-1',
+  repositoryOwner: 'bingqin2',
+  repositoryName: 'PatchPilot',
+  issueNumber: 1,
+  status: 'COMPLETED',
+  pullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+  archivedAt: '2026-06-20T01:05:00Z',
+  summary: 'Task COMPLETED for bingqin2/PatchPilot#1 archived as evidence.',
+  report: '# PatchPilot Task Report\n\n- Task: `task-1`'
+};
+
 const detail = {
   summary,
   queueItem: {
@@ -394,6 +407,7 @@ const detail = {
   },
   failureDiagnosis: null,
   retryPreflight: null,
+  evidencePackageArchives: [],
   adapterExecutionEvidence: javaAdapterExecutionEvidence,
   repositorySupportGuidance: null
 };
@@ -437,6 +451,7 @@ const manualTaskDetail = {
   issueContext: null,
   failureDiagnosis: null,
   retryPreflight: null,
+  evidencePackageArchives: [],
   adapterExecutionEvidence: pendingAdapterExecutionEvidence,
   repositorySupportGuidance: null
 };
@@ -2740,6 +2755,12 @@ beforeEach(() => {
     if (url === '/api/tasks/task-1/detail') {
       return jsonResponse(detail);
     }
+    if (url === '/api/tasks/task-1/evidence-packages' && init?.method === 'POST') {
+      return jsonResponse(taskEvidencePackageArchive);
+    }
+    if (url === '/api/tasks/task-1/evidence-packages') {
+      return jsonResponse([taskEvidencePackageArchive]);
+    }
     if (url === '/api/tasks/manual-task-1/detail') {
       return jsonResponse(manualTaskDetail);
     }
@@ -2760,6 +2781,24 @@ beforeEach(() => {
     }
     if (url === '/api/tasks/task-1/model-calls') {
       return jsonResponse(modelCalls);
+    }
+    if (url === '/api/tasks/task-1/report/download') {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        blob: async () => new Blob(['# PatchPilot Task Report'], {
+          type: 'text/markdown;charset=UTF-8'
+        })
+      } as Response);
+    }
+    if (url === '/api/tasks/evidence-packages/task-evidence-archive-1/report/download') {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        blob: async () => new Blob(['# PatchPilot Task Report'], {
+          type: 'text/markdown;charset=UTF-8'
+        })
+      } as Response);
     }
     if (url === '/api/tasks/task-2/summary') {
       return jsonResponse({
@@ -3730,6 +3769,42 @@ test('copies selected task report from backend API', async () => {
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks/task-1/report'));
   expect(writeText).toHaveBeenCalledWith('# PatchPilot Task Report\n\n- Task: `task-1`');
   expect(screen.getByText('Task report copied')).toBeInTheDocument();
+});
+
+test('downloads and archives selected task evidence package from backend APIs', async () => {
+  const user = userEvent.setup();
+  const fetchMock = vi.mocked(fetch);
+  const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+  const createObjectURL = vi.fn(() => 'blob:task-evidence-package');
+  const revokeObjectURL = vi.fn();
+  vi.stubGlobal('URL', blobUrlConstructor(createObjectURL, revokeObjectURL));
+
+  render(<App />);
+
+  await user.click(await screen.findByRole('button', { name: 'Archive evidence' }));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks/task-1/evidence-packages', {
+    method: 'POST'
+  }));
+  expect(await screen.findByText('Evidence archived task-evidence-archive-1')).toBeInTheDocument();
+
+  await user.click(screen.getByRole('button', { name: 'Download report' }));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks/task-1/report/download'));
+  expect(createObjectURL).toHaveBeenCalledWith(expect.any(Blob));
+  expect(click).toHaveBeenCalledTimes(1);
+  expect(screen.getByText('Task report downloaded')).toBeInTheDocument();
+
+  const evidencePackages = screen.getByLabelText('Task evidence packages');
+  expect(within(evidencePackages).getByText('task-evidence-archive-1')).toBeInTheDocument();
+  await user.click(within(evidencePackages).getByRole('button', {
+    name: 'Download archived evidence task-evidence-archive-1'
+  }));
+
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
+    '/api/tasks/evidence-packages/task-evidence-archive-1/report/download'
+  ));
+  expect(click).toHaveBeenCalledTimes(2);
+  expect(revokeObjectURL).toHaveBeenCalledWith('blob:task-evidence-package');
+  expect(screen.getByText('Archived evidence task-evidence-archive-1 downloaded')).toBeInTheDocument();
 });
 
 test('copies demo runbook from backend API', async () => {
@@ -5836,6 +5911,12 @@ function defaultAppResponse(input: RequestInfo | URL, init?: RequestInit) {
   if (url === '/api/tasks/task-1/detail') {
     return jsonResponse(detail);
   }
+  if (url === '/api/tasks/task-1/evidence-packages' && init?.method === 'POST') {
+    return jsonResponse(taskEvidencePackageArchive);
+  }
+  if (url === '/api/tasks/task-1/evidence-packages') {
+    return jsonResponse([taskEvidencePackageArchive]);
+  }
   if (url === '/api/tasks/task-1/retry-preflight') {
     return jsonResponse({
       taskId: 'task-1',
@@ -5848,6 +5929,24 @@ function defaultAppResponse(input: RequestInfo | URL, init?: RequestInit) {
   }
   if (url === '/api/tasks/task-1/report') {
     return jsonResponse('# PatchPilot Task Report\n\n- Task: `task-1`');
+  }
+  if (url === '/api/tasks/task-1/report/download') {
+    return Promise.resolve({
+      ok: true,
+      status: 200,
+      blob: async () => new Blob(['# PatchPilot Task Report'], {
+        type: 'text/markdown;charset=UTF-8'
+      })
+    } as Response);
+  }
+  if (url === '/api/tasks/evidence-packages/task-evidence-archive-1/report/download') {
+    return Promise.resolve({
+      ok: true,
+      status: 200,
+      blob: async () => new Blob(['# PatchPilot Task Report'], {
+        type: 'text/markdown;charset=UTF-8'
+      })
+    } as Response);
   }
   if (url === '/api/tasks' && init?.method === 'POST') {
     return jsonResponse(manuallyCreatedTask, true, null, 201);
@@ -5866,6 +5965,20 @@ function headersRecord(headers?: HeadersInit): Record<string, string> {
     return Object.fromEntries(headers);
   }
   return { ...headers };
+}
+
+function blobUrlConstructor(createObjectURL: (blob: Blob) => string, revokeObjectURL: (url: string) => void) {
+  const NativeURL = globalThis.URL;
+  class BlobURL extends NativeURL {
+    static createObjectURL(blob: Blob) {
+      return createObjectURL(blob);
+    }
+
+    static revokeObjectURL(url: string) {
+      revokeObjectURL(url);
+    }
+  }
+  return BlobURL;
 }
 
 function sessionReportRequestBody(fetchMock: ReturnType<typeof vi.mocked<typeof fetch>>) {
