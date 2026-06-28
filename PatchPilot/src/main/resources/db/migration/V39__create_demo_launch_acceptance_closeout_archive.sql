@@ -1,0 +1,20 @@
+CREATE TABLE demo_launch_acceptance_closeout_archive (
+    id VARCHAR(36) NOT NULL PRIMARY KEY,
+    status VARCHAR(32) NOT NULL,
+    accepted BOOLEAN NOT NULL,
+    summary VARCHAR(1024) NOT NULL,
+    session_id VARCHAR(128) NOT NULL,
+    latest_task_id VARCHAR(64),
+    latest_pull_request_url VARCHAR(512),
+    latest_webhook_delivery_id VARCHAR(128),
+    evaluation_run_id VARCHAR(128),
+    latest_archive_id VARCHAR(36),
+    latest_delivery_receipt_id VARCHAR(36),
+    latest_delivery_target VARCHAR(512),
+    latest_delivery_channel VARCHAR(128),
+    delivery_receipt_freshness VARCHAR(32) NOT NULL,
+    created_at TIMESTAMP(6) NOT NULL,
+    report MEDIUMTEXT NOT NULL,
+    INDEX idx_demo_launch_acceptance_closeout_archive_created (created_at),
+    INDEX idx_demo_launch_acceptance_closeout_archive_status_created (status, created_at)
+);

@@ -10,6 +10,7 @@ import io.patchpilot.backend.demo.domain.DemoHandoffShareCenterVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffShareChecklistVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffShareDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffShareInstructionsVo;
+import io.patchpilot.backend.demo.domain.DemoLaunchAcceptanceCloseoutArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchAcceptanceCloseoutVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchCommandVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchEvidenceFinalizationVo;
@@ -72,6 +73,7 @@ public class DemoReadinessController {
     private final DemoLaunchEvidenceShareDeliveryReceiptService demoLaunchEvidenceShareDeliveryReceiptService;
     private final DemoLaunchEvidenceFinalizationService demoLaunchEvidenceFinalizationService;
     private final DemoLaunchAcceptanceCloseoutService demoLaunchAcceptanceCloseoutService;
+    private final DemoLaunchAcceptanceCloseoutArchiveService demoLaunchAcceptanceCloseoutArchiveService;
     private final DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
     private final DemoReadinessSnapshotTrendService demoReadinessSnapshotTrendService;
     private final DemoLaunchPreflightService demoLaunchPreflightService;
@@ -376,6 +378,37 @@ public class DemoReadinessController {
         return demoLaunchEvidencePackageArchiveService.findArchive(archiveId)
                 .map(archive -> markdownAttachment(
                         "patchpilot-demo-launch-evidence-package-" + safeFilenamePart(archive.id()) + ".md",
+                        archive.report()
+                ))
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/launch-acceptance-closeout/archives")
+    public ApiResponse<DemoLaunchAcceptanceCloseoutArchiveVo> archiveLaunchAcceptanceCloseout() {
+        DemoLaunchAcceptanceCloseoutArchiveVo archive =
+                demoLaunchAcceptanceCloseoutArchiveService.archiveCurrentCloseout();
+        operatorSafetyAuditService.recordSafetyAudit(new RecordOperatorSafetyAuditCommand(
+                "DEMO_LAUNCH_ACCEPTANCE_CLOSEOUT_ARCHIVED",
+                "DEMO_LAUNCH_ACCEPTANCE_CLOSEOUT_ARCHIVE",
+                archive.id(),
+                TriggerQuarantineScope.REPOSITORY,
+                "patchpilot/local-demo",
+                "admin-api",
+                "Archived demo launch acceptance closeout " + archive.status()
+        ));
+        return ApiResponse.ok(archive);
+    }
+
+    @GetMapping("/launch-acceptance-closeout/archives")
+    public ApiResponse<List<DemoLaunchAcceptanceCloseoutArchiveVo>> listLaunchAcceptanceCloseoutArchives() {
+        return ApiResponse.ok(demoLaunchAcceptanceCloseoutArchiveService.listRecentArchives());
+    }
+
+    @GetMapping(value = "/launch-acceptance-closeout/archives/{archiveId}/report/download", produces = "text/markdown;charset=UTF-8")
+    public ResponseEntity<String> downloadArchivedLaunchAcceptanceCloseoutReport(@PathVariable String archiveId) {
+        return demoLaunchAcceptanceCloseoutArchiveService.findArchive(archiveId)
+                .map(archive -> markdownAttachment(
+                        "patchpilot-launch-acceptance-closeout-" + safeFilenamePart(archive.id()) + ".md",
                         archive.report()
                 ))
                 .orElseGet(() -> ResponseEntity.notFound().build());

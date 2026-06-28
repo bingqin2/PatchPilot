@@ -2,6 +2,7 @@ import { Archive, Copy, Download, Send } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import type {
   DemoLaunchAcceptanceCloseout,
+  DemoLaunchAcceptanceCloseoutArchive,
   DemoLaunchEvidenceFinalization,
   DemoLaunchEvidencePackage,
   DemoLaunchEvidencePackageArchive,
@@ -23,6 +24,8 @@ interface DemoLaunchEvidencePackagePanelProps {
   finalizationError: string | null;
   closeout: DemoLaunchAcceptanceCloseout | null;
   closeoutError: string | null;
+  closeoutArchives: DemoLaunchAcceptanceCloseoutArchive[];
+  closeoutArchiveError: string | null;
   deliveryReceipts: DemoLaunchEvidenceShareDeliveryReceipt[];
   deliveryReceiptError: string | null;
   onArchivePackage: () => Promise<DemoLaunchEvidencePackageArchive>;
@@ -31,6 +34,8 @@ interface DemoLaunchEvidencePackagePanelProps {
   onDownloadShareCenterReport: () => Promise<Blob>;
   onDownloadFinalizationReport: () => Promise<Blob>;
   onDownloadCloseoutReport: () => Promise<Blob>;
+  onArchiveCloseout: () => Promise<DemoLaunchAcceptanceCloseoutArchive>;
+  onDownloadCloseoutArchiveReport: (archiveId: string) => Promise<Blob>;
   onCreateDeliveryReceipt: (input: DemoLaunchEvidenceShareDeliveryReceiptInput) => Promise<DemoLaunchEvidenceShareDeliveryReceipt>;
   onDownloadDeliveryReceiptReport: (receiptId: string) => Promise<Blob>;
 }
@@ -46,6 +51,8 @@ export function DemoLaunchEvidencePackagePanel({
   finalizationError,
   closeout,
   closeoutError,
+  closeoutArchives,
+  closeoutArchiveError,
   deliveryReceipts,
   deliveryReceiptError,
   onArchivePackage,
@@ -54,6 +61,8 @@ export function DemoLaunchEvidencePackagePanel({
   onDownloadShareCenterReport,
   onDownloadFinalizationReport,
   onDownloadCloseoutReport,
+  onArchiveCloseout,
+  onDownloadCloseoutArchiveReport,
   onCreateDeliveryReceipt,
   onDownloadDeliveryReceiptReport
 }: DemoLaunchEvidencePackagePanelProps) {
@@ -134,6 +143,25 @@ export function DemoLaunchEvidencePackagePanel({
       setDownloadStatus('Launch acceptance closeout downloaded');
     } catch {
       setDownloadStatus('Launch acceptance closeout download failed');
+    }
+  }
+
+  async function archiveCloseout() {
+    try {
+      const archive = await onArchiveCloseout();
+      setArchiveStatus(`Archived launch closeout ${archive.id}`);
+    } catch {
+      setArchiveStatus('Launch closeout archive failed');
+    }
+  }
+
+  async function downloadCloseoutArchiveReport(archive: DemoLaunchAcceptanceCloseoutArchive) {
+    try {
+      const report = await onDownloadCloseoutArchiveReport(archive.id);
+      downloadMarkdown(report, `patchpilot-launch-acceptance-closeout-${archive.id}.md`);
+      setArchiveStatus(`Archived closeout ${archive.id} downloaded`);
+    } catch {
+      setArchiveStatus('Archived launch closeout download failed');
     }
   }
 
@@ -261,6 +289,13 @@ export function DemoLaunchEvidencePackagePanel({
         </div>
       ) : null}
 
+      {closeoutArchiveError ? (
+        <div className="adapter-api-error">
+          <strong>Archived launch acceptance closeouts unavailable</strong>
+          <span>{closeoutArchiveError}</span>
+        </div>
+      ) : null}
+
       {evidencePackage ? (
         <>
           <div className="demo-evidence-grid">
@@ -324,6 +359,9 @@ export function DemoLaunchEvidencePackagePanel({
           <LaunchAcceptanceCloseoutPanel
             closeout={closeout}
             onDownloadCloseoutReport={() => void downloadCloseoutReport()}
+            onArchiveCloseout={() => void archiveCloseout()}
+            archives={closeoutArchives}
+            onDownloadCloseoutArchiveReport={(archive) => void downloadCloseoutArchiveReport(archive)}
           />
           <LaunchEvidenceDeliveryReceiptPanel
             deliveryReceipts={deliveryReceipts}
@@ -349,10 +387,16 @@ export function DemoLaunchEvidencePackagePanel({
 
 function LaunchAcceptanceCloseoutPanel({
   closeout,
-  onDownloadCloseoutReport
+  onDownloadCloseoutReport,
+  onArchiveCloseout,
+  archives,
+  onDownloadCloseoutArchiveReport
 }: {
   closeout: DemoLaunchAcceptanceCloseout | null;
   onDownloadCloseoutReport: () => void;
+  onArchiveCloseout: () => void;
+  archives: DemoLaunchAcceptanceCloseoutArchive[];
+  onDownloadCloseoutArchiveReport: (archive: DemoLaunchAcceptanceCloseoutArchive) => void;
 }) {
   return (
     <div className="demo-evidence-actions">
@@ -361,16 +405,28 @@ function LaunchAcceptanceCloseoutPanel({
           <h3>Launch acceptance closeout</h3>
           <p>{closeout?.summary ?? 'Launch acceptance closeout has not loaded yet.'}</p>
         </div>
-        <button
-          className="secondary-button"
-          type="button"
-          onClick={onDownloadCloseoutReport}
-          aria-label="Download launch acceptance closeout"
-          disabled={!closeout}
-        >
-          <Download size={14} />
-          Download closeout
-        </button>
+        <div className="demo-evidence-header-actions">
+          <button
+            className="secondary-button"
+            type="button"
+            onClick={onArchiveCloseout}
+            aria-label="Archive launch acceptance closeout"
+            disabled={!closeout}
+          >
+            <Archive size={14} />
+            Archive closeout
+          </button>
+          <button
+            className="secondary-button"
+            type="button"
+            onClick={onDownloadCloseoutReport}
+            aria-label="Download launch acceptance closeout"
+            disabled={!closeout}
+          >
+            <Download size={14} />
+            Download closeout
+          </button>
+        </div>
       </div>
       {closeout ? (
         <>
@@ -411,9 +467,54 @@ function LaunchAcceptanceCloseoutPanel({
           />
           <EvidenceList title="Closeout evidence" items={closeout.evidenceNotes} />
           <EvidenceList title="Closeout downloads" items={closeout.downloadActions} />
+          <LaunchAcceptanceCloseoutArchiveList
+            archives={archives}
+            onDownloadCloseoutArchiveReport={onDownloadCloseoutArchiveReport}
+          />
         </>
       ) : (
         <p>No launch acceptance closeout loaded.</p>
+      )}
+    </div>
+  );
+}
+
+function LaunchAcceptanceCloseoutArchiveList({
+  archives,
+  onDownloadCloseoutArchiveReport
+}: {
+  archives: DemoLaunchAcceptanceCloseoutArchive[];
+  onDownloadCloseoutArchiveReport: (archive: DemoLaunchAcceptanceCloseoutArchive) => void;
+}) {
+  return (
+    <div className="demo-evidence-actions">
+      <h3>Recent launch acceptance closeouts</h3>
+      {archives.length === 0 ? (
+        <p>No archived launch acceptance closeouts yet.</p>
+      ) : (
+        <ul>
+          {archives.map((archive) => (
+            <li key={archive.id}>
+              <span>
+                {archive.id} · {statusLabel(archive.status)} · {archive.accepted ? 'Accepted closeout' : 'Not accepted'} · {archive.sessionId} · {compactDateTime(archive.createdAt)}
+              </span>
+              {archive.latestPullRequestUrl ? (
+                <a href={archive.latestPullRequestUrl} target="_blank" rel="noreferrer">
+                  PR
+                </a>
+              ) : null}
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={() => onDownloadCloseoutArchiveReport(archive)}
+                aria-label={`Download archived launch acceptance closeout ${archive.id}`}
+              >
+                <Download size={14} />
+                Download archived closeout
+              </button>
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   );

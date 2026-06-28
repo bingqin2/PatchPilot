@@ -2,6 +2,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type {
   DemoLaunchAcceptanceCloseout,
+  DemoLaunchAcceptanceCloseoutArchive,
   DemoLaunchEvidenceFinalization,
   DemoLaunchEvidencePackage,
   DemoLaunchEvidencePackageArchive,
@@ -175,6 +176,25 @@ const launchAcceptanceCloseout: DemoLaunchAcceptanceCloseout = {
   markdownReport: '# PatchPilot Launch Acceptance Closeout'
 };
 
+const launchAcceptanceCloseoutArchive: DemoLaunchAcceptanceCloseoutArchive = {
+  id: 'launch-closeout-archive-1',
+  status: 'READY',
+  accepted: true,
+  summary: 'PatchPilot launch acceptance closeout is complete.',
+  sessionId: 'demo-session-20260624T003000Z',
+  latestTaskId: 'task-1',
+  latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+  latestWebhookDeliveryId: 'delivery-1',
+  evaluationRunId: 'evaluation-run-2',
+  latestArchiveId: 'launch-evidence-archive-1',
+  latestDeliveryReceiptId: 'launch-delivery-receipt-1',
+  latestDeliveryTarget: 'reviewer@example.com',
+  latestDeliveryChannel: 'email',
+  deliveryReceiptFreshness: 'FRESH',
+  createdAt: '2026-06-28T08:30:00Z',
+  report: '# PatchPilot Launch Acceptance Closeout'
+};
+
 const launchEvidenceDeliveryReceipt: DemoLaunchEvidenceShareDeliveryReceipt = {
   id: 'launch-delivery-receipt-1',
   status: 'READY',
@@ -190,8 +210,10 @@ const launchEvidenceDeliveryReceipt: DemoLaunchEvidenceShareDeliveryReceipt = {
   markdownReport: '# PatchPilot Demo Launch Evidence Delivery Receipt'
 };
 
-test('renders demo launch evidence package proof and readiness status', () => {
-  render(
+type PanelOverrides = Partial<Parameters<typeof DemoLaunchEvidencePackagePanel>[0]>;
+
+function renderPanel(overrides: PanelOverrides = {}) {
+  return render(
     <DemoLaunchEvidencePackagePanel
       evidencePackage={launchEvidencePackage}
       error={null}
@@ -203,6 +225,8 @@ test('renders demo launch evidence package proof and readiness status', () => {
       finalizationError={null}
       closeout={launchAcceptanceCloseout}
       closeoutError={null}
+      closeoutArchives={[launchAcceptanceCloseoutArchive]}
+      closeoutArchiveError={null}
       deliveryReceipts={[launchEvidenceDeliveryReceipt]}
       deliveryReceiptError={null}
       onArchivePackage={async () => launchEvidenceArchive}
@@ -211,10 +235,17 @@ test('renders demo launch evidence package proof and readiness status', () => {
       onDownloadShareCenterReport={async () => new Blob(['share report'], { type: 'text/markdown' })}
       onDownloadFinalizationReport={async () => new Blob(['finalization report'], { type: 'text/markdown' })}
       onDownloadCloseoutReport={async () => new Blob(['closeout report'], { type: 'text/markdown' })}
+      onArchiveCloseout={async () => launchAcceptanceCloseoutArchive}
+      onDownloadCloseoutArchiveReport={async () => new Blob(['closeout archive report'], { type: 'text/markdown' })}
       onCreateDeliveryReceipt={async () => launchEvidenceDeliveryReceipt}
       onDownloadDeliveryReceiptReport={async () => new Blob(['receipt report'], { type: 'text/markdown' })}
+      {...overrides}
     />
   );
+}
+
+test('renders demo launch evidence package proof and readiness status', () => {
+  renderPanel();
 
   const panel = screen.getByRole('region', { name: 'Demo launch evidence package' });
   expect(within(panel).getByRole('heading', { name: 'Demo launch evidence package' })).toBeInTheDocument();
@@ -245,14 +276,18 @@ test('renders demo launch evidence package proof and readiness status', () => {
   expect(within(panel).getByText('Accepted')).toBeInTheDocument();
   expect(within(panel).getByText('Use this closeout report as the final self-hosted launch acceptance record.')).toBeInTheDocument();
   expect(within(panel).getByText('Download launch acceptance closeout report.')).toBeInTheDocument();
+  expect(within(panel).getByRole('heading', { name: 'Recent launch acceptance closeouts' })).toBeInTheDocument();
+  expect(within(panel).getByText(/launch-closeout-archive-1/)).toBeInTheDocument();
+  expect(within(panel).getByText(/Accepted closeout/)).toBeInTheDocument();
   expect(within(panel).getAllByText('launch-delivery-receipt-1').length).toBeGreaterThanOrEqual(2);
   expect(within(panel).getByText('Latest delivery receipt matches the current launch evidence archive and session.')).toBeInTheDocument();
   expect(within(panel).getByRole('heading', { name: 'Launch evidence delivery receipts' })).toBeInTheDocument();
   expect(within(panel).getAllByText(/reviewer@example.com/).length).toBeGreaterThanOrEqual(1);
-  expect(within(panel).getByRole('link', { name: 'PR' })).toHaveAttribute(
-    'href',
-    'https://github.com/bingqin2/PatchPilot/pull/42'
-  );
+  expect(
+    within(panel)
+      .getAllByRole('link', { name: 'PR' })
+      .some((link) => link.getAttribute('href') === 'https://github.com/bingqin2/PatchPilot/pull/42')
+  ).toBe(true);
 });
 
 test('copies and downloads demo launch evidence package markdown report', async () => {
@@ -264,30 +299,7 @@ test('copies and downloads demo launch evidence package markdown report', async 
   vi.stubGlobal('URL', { createObjectURL, revokeObjectURL });
   const onDownloadReport = vi.fn(async () => new Blob(['report'], { type: 'text/markdown' }));
 
-  render(
-    <DemoLaunchEvidencePackagePanel
-      evidencePackage={launchEvidencePackage}
-      error={null}
-      archives={[launchEvidenceArchive]}
-      archiveError={null}
-      shareCenter={launchEvidenceShareCenter}
-      shareCenterError={null}
-      finalization={launchEvidenceFinalization}
-      finalizationError={null}
-      closeout={launchAcceptanceCloseout}
-      closeoutError={null}
-      deliveryReceipts={[launchEvidenceDeliveryReceipt]}
-      deliveryReceiptError={null}
-      onArchivePackage={async () => launchEvidenceArchive}
-      onDownloadReport={onDownloadReport}
-      onDownloadArchiveReport={async () => new Blob(['archive report'], { type: 'text/markdown' })}
-      onDownloadShareCenterReport={async () => new Blob(['share report'], { type: 'text/markdown' })}
-      onDownloadFinalizationReport={async () => new Blob(['finalization report'], { type: 'text/markdown' })}
-      onDownloadCloseoutReport={async () => new Blob(['closeout report'], { type: 'text/markdown' })}
-      onCreateDeliveryReceipt={async () => launchEvidenceDeliveryReceipt}
-      onDownloadDeliveryReceiptReport={async () => new Blob(['receipt report'], { type: 'text/markdown' })}
-    />
-  );
+  renderPanel({ onDownloadReport });
 
   await userEvent.click(screen.getByRole('button', { name: 'Copy launch evidence report' }));
   expect(writeText).toHaveBeenCalledWith('# PatchPilot Demo Launch Evidence Package');
@@ -312,30 +324,7 @@ test('archives launch evidence package and downloads archived report', async () 
   const onArchivePackage = vi.fn(async () => launchEvidenceArchive);
   const onDownloadArchiveReport = vi.fn(async () => new Blob(['archive report'], { type: 'text/markdown' }));
 
-  render(
-    <DemoLaunchEvidencePackagePanel
-      evidencePackage={launchEvidencePackage}
-      error={null}
-      archives={[launchEvidenceArchive]}
-      archiveError={null}
-      shareCenter={launchEvidenceShareCenter}
-      shareCenterError={null}
-      finalization={launchEvidenceFinalization}
-      finalizationError={null}
-      closeout={launchAcceptanceCloseout}
-      closeoutError={null}
-      deliveryReceipts={[launchEvidenceDeliveryReceipt]}
-      deliveryReceiptError={null}
-      onArchivePackage={onArchivePackage}
-      onDownloadReport={async () => new Blob(['report'], { type: 'text/markdown' })}
-      onDownloadArchiveReport={onDownloadArchiveReport}
-      onDownloadShareCenterReport={async () => new Blob(['share report'], { type: 'text/markdown' })}
-      onDownloadFinalizationReport={async () => new Blob(['finalization report'], { type: 'text/markdown' })}
-      onDownloadCloseoutReport={async () => new Blob(['closeout report'], { type: 'text/markdown' })}
-      onCreateDeliveryReceipt={async () => launchEvidenceDeliveryReceipt}
-      onDownloadDeliveryReceiptReport={async () => new Blob(['receipt report'], { type: 'text/markdown' })}
-    />
-  );
+  renderPanel({ onArchivePackage, onDownloadArchiveReport });
 
   await userEvent.click(screen.getByRole('button', { name: 'Archive launch evidence package' }));
   expect(onArchivePackage).toHaveBeenCalled();
@@ -359,30 +348,7 @@ test('downloads launch evidence share center markdown report', async () => {
   vi.stubGlobal('URL', { createObjectURL, revokeObjectURL });
   const onDownloadShareCenterReport = vi.fn(async () => new Blob(['share report'], { type: 'text/markdown' }));
 
-  render(
-    <DemoLaunchEvidencePackagePanel
-      evidencePackage={launchEvidencePackage}
-      error={null}
-      archives={[launchEvidenceArchive]}
-      archiveError={null}
-      shareCenter={launchEvidenceShareCenter}
-      shareCenterError={null}
-      finalization={launchEvidenceFinalization}
-      finalizationError={null}
-      closeout={launchAcceptanceCloseout}
-      closeoutError={null}
-      deliveryReceipts={[launchEvidenceDeliveryReceipt]}
-      deliveryReceiptError={null}
-      onArchivePackage={async () => launchEvidenceArchive}
-      onDownloadReport={async () => new Blob(['report'], { type: 'text/markdown' })}
-      onDownloadArchiveReport={async () => new Blob(['archive report'], { type: 'text/markdown' })}
-      onDownloadShareCenterReport={onDownloadShareCenterReport}
-      onDownloadFinalizationReport={async () => new Blob(['finalization report'], { type: 'text/markdown' })}
-      onDownloadCloseoutReport={async () => new Blob(['closeout report'], { type: 'text/markdown' })}
-      onCreateDeliveryReceipt={async () => launchEvidenceDeliveryReceipt}
-      onDownloadDeliveryReceiptReport={async () => new Blob(['receipt report'], { type: 'text/markdown' })}
-    />
-  );
+  renderPanel({ onDownloadShareCenterReport });
 
   await userEvent.click(screen.getByRole('button', { name: 'Download launch evidence share center' }));
 
@@ -391,6 +357,33 @@ test('downloads launch evidence share center markdown report', async () => {
   expect(click).toHaveBeenCalled();
   expect(revokeObjectURL).toHaveBeenCalledWith('blob:launch-evidence-share-center');
   expect(screen.getByText('Launch evidence share center downloaded')).toBeInTheDocument();
+
+  vi.unstubAllGlobals();
+  click.mockRestore();
+});
+
+test('archives launch acceptance closeout and downloads archived closeout report', async () => {
+  const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+  const createObjectURL = vi.fn(() => 'blob:launch-closeout-archive');
+  const revokeObjectURL = vi.fn();
+  vi.stubGlobal('URL', { createObjectURL, revokeObjectURL });
+  const onArchiveCloseout = vi.fn(async () => launchAcceptanceCloseoutArchive);
+  const onDownloadCloseoutArchiveReport = vi.fn(async () => new Blob(['closeout archive report'], { type: 'text/markdown' }));
+
+  renderPanel({ onArchiveCloseout, onDownloadCloseoutArchiveReport });
+
+  await userEvent.click(screen.getByRole('button', { name: 'Archive launch acceptance closeout' }));
+  expect(onArchiveCloseout).toHaveBeenCalledTimes(1);
+  expect(screen.getByText('Archived launch closeout launch-closeout-archive-1')).toBeInTheDocument();
+
+  await userEvent.click(
+    screen.getByRole('button', { name: 'Download archived launch acceptance closeout launch-closeout-archive-1' })
+  );
+  expect(onDownloadCloseoutArchiveReport).toHaveBeenCalledWith('launch-closeout-archive-1');
+  expect(createObjectURL).toHaveBeenCalled();
+  expect(click).toHaveBeenCalled();
+  expect(revokeObjectURL).toHaveBeenCalledWith('blob:launch-closeout-archive');
+  expect(screen.getByText('Archived closeout launch-closeout-archive-1 downloaded')).toBeInTheDocument();
 
   vi.unstubAllGlobals();
   click.mockRestore();
@@ -406,30 +399,12 @@ test('records launch evidence delivery receipt and downloads finalization eviden
   const onDownloadCloseoutReport = vi.fn(async () => new Blob(['closeout report'], { type: 'text/markdown' }));
   const onDownloadDeliveryReceiptReport = vi.fn(async () => new Blob(['receipt report'], { type: 'text/markdown' }));
 
-  render(
-    <DemoLaunchEvidencePackagePanel
-      evidencePackage={launchEvidencePackage}
-      error={null}
-      archives={[launchEvidenceArchive]}
-      archiveError={null}
-      shareCenter={launchEvidenceShareCenter}
-      shareCenterError={null}
-      finalization={launchEvidenceFinalization}
-      finalizationError={null}
-      closeout={launchAcceptanceCloseout}
-      closeoutError={null}
-      deliveryReceipts={[launchEvidenceDeliveryReceipt]}
-      deliveryReceiptError={null}
-      onArchivePackage={async () => launchEvidenceArchive}
-      onDownloadReport={async () => new Blob(['report'], { type: 'text/markdown' })}
-      onDownloadArchiveReport={async () => new Blob(['archive report'], { type: 'text/markdown' })}
-      onDownloadShareCenterReport={async () => new Blob(['share report'], { type: 'text/markdown' })}
-      onDownloadFinalizationReport={onDownloadFinalizationReport}
-      onDownloadCloseoutReport={onDownloadCloseoutReport}
-      onCreateDeliveryReceipt={onCreateDeliveryReceipt}
-      onDownloadDeliveryReceiptReport={onDownloadDeliveryReceiptReport}
-    />
-  );
+  renderPanel({
+    onDownloadFinalizationReport,
+    onDownloadCloseoutReport,
+    onCreateDeliveryReceipt,
+    onDownloadDeliveryReceiptReport
+  });
 
   await userEvent.clear(screen.getByLabelText('Launch delivery channel'));
   await userEvent.type(screen.getByLabelText('Launch delivery channel'), 'email');

@@ -503,6 +503,25 @@ export interface DemoLaunchAcceptanceCloseout {
   markdownReport: string;
 }
 
+export interface DemoLaunchAcceptanceCloseoutArchive {
+  id: string;
+  status: DemoReadinessStatus;
+  accepted: boolean;
+  summary: string;
+  sessionId: string;
+  latestTaskId: string | null;
+  latestPullRequestUrl: string | null;
+  latestWebhookDeliveryId: string | null;
+  evaluationRunId: string | null;
+  latestArchiveId: string | null;
+  latestDeliveryReceiptId: string | null;
+  latestDeliveryTarget: string | null;
+  latestDeliveryChannel: string | null;
+  deliveryReceiptFreshness: string;
+  createdAt: string;
+  report: string;
+}
+
 export interface DemoLaunchEvidenceShareDeliveryReceipt {
   id: string;
   status: string;

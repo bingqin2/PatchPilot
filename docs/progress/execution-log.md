@@ -4,6 +4,24 @@ This file records dated implementation progress, validation commands, and import
 
 ## 2026-06-28
 
+Implemented launch acceptance closeout archive from `docs/plans/257-launch-acceptance-closeout-archive.md`.
+
+Changes:
+
+- Added a backend closeout archive service, repository boundary, in-memory repository, MyBatis repository, entity/mapper/converter, and Flyway migration for local durable launch acceptance closeout evidence.
+- Added `POST /api/demo/launch-acceptance-closeout/archives`, `GET /api/demo/launch-acceptance-closeout/archives`, and `GET /api/demo/launch-acceptance-closeout/archives/{archiveId}/report/download` with protected admin audit evidence for archive creation.
+- Added frontend types, API helpers, App refresh/state wiring, and dashboard controls to archive the final closeout, list recent closeout archives, open archived Pull Request evidence, and download archived Markdown reports.
+- Updated README, product spec, frontend design notes, and this execution log.
+
+Validation so far:
+
+- `mvn -pl PatchPilot -Dtest=DemoLaunchAcceptanceCloseoutArchiveServiceTests,InMemoryDemoLaunchAcceptanceCloseoutArchiveRepositoryTests,MyBatisDemoLaunchAcceptanceCloseoutArchiveRepositoryTests,DemoLaunchAcceptanceCloseoutArchiveMigrationTests,DemoReadinessControllerTests test`: first failed because the archive service, VO, repositories, mapper, migration, and controller endpoints did not exist; passed after backend implementation, 80 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts src/dashboard/components/DemoLaunchEvidencePackagePanel.test.tsx src/App.test.tsx --reporter=basic`: first failed because the dashboard had no `Archive launch acceptance closeout` action or closeout archive API helpers; then failed once because the new archive list made an older `PR` link assertion non-unique; passed after API, App, panel, and assertion updates, 3 test files and 205 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed after full backend regression verification, 919 tests run, 0 failures.
+- `npm test -- --reporter=basic`: passed after full frontend regression verification, 28 test files and 352 tests run, 0 failures.
+- `npm run build`: passed after production frontend build verification.
+- `git diff --check`: passed.
+
 Implemented launch acceptance closeout from `docs/plans/256-launch-acceptance-closeout.md`.
 
 Changes:

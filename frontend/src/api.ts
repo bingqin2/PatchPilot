@@ -19,6 +19,7 @@ import type {
   DemoHandoffShareChecklist,
   DemoLaunchCommand,
   DemoLaunchAcceptanceCloseout,
+  DemoLaunchAcceptanceCloseoutArchive,
   DemoLaunchEvidencePackageArchive,
   DemoLaunchEvidenceFinalization,
   DemoLaunchEvidencePackage,
@@ -306,6 +307,18 @@ export async function getDemoLaunchAcceptanceCloseout(): Promise<DemoLaunchAccep
 
 export async function downloadDemoLaunchAcceptanceCloseoutReport(): Promise<Blob> {
   return getBlobApi('/api/demo/launch-acceptance-closeout/report/download');
+}
+
+export async function archiveDemoLaunchAcceptanceCloseout(): Promise<DemoLaunchAcceptanceCloseoutArchive> {
+  return postApi<DemoLaunchAcceptanceCloseoutArchive>('/api/demo/launch-acceptance-closeout/archives');
+}
+
+export async function listDemoLaunchAcceptanceCloseoutArchives(): Promise<DemoLaunchAcceptanceCloseoutArchive[]> {
+  return getApi<DemoLaunchAcceptanceCloseoutArchive[]>('/api/demo/launch-acceptance-closeout/archives');
+}
+
+export async function downloadDemoLaunchAcceptanceCloseoutArchiveReport(archiveId: string): Promise<Blob> {
+  return getBlobApi(`/api/demo/launch-acceptance-closeout/archives/${encodeURIComponent(archiveId)}/report/download`);
 }
 
 export async function createDemoLaunchEvidenceShareDeliveryReceipt(
