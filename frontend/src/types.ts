@@ -824,6 +824,28 @@ export interface DemoFinalAcceptanceSharePackage {
   generatedAt: string;
 }
 
+export interface DemoFinalAcceptanceSharePackageArchive {
+  id: string;
+  status: DemoReadinessStatus;
+  sendReady: boolean;
+  summary: string;
+  nextAction: string;
+  launchCertificateArchiveId: string | null;
+  taskCertificateArchiveId: string | null;
+  latestTaskId: string | null;
+  latestPullRequestUrl: string | null;
+  recommendedRecipients: string[];
+  requiredAttachments: string[];
+  preSendChecks: string[];
+  messageSubject: string;
+  messageBody: string;
+  evidenceNotes: string[];
+  sideEffectContract: string;
+  report: string;
+  generatedAt: string;
+  archivedAt: string;
+}
+
 export interface DemoLaunchEvidenceShareDeliveryReceipt {
   id: string;
   status: string;

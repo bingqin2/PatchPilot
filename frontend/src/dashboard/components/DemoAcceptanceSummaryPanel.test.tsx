@@ -1,6 +1,10 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { DemoAcceptanceSummary, DemoFinalAcceptanceSharePackage } from '../../types';
+import type {
+  DemoAcceptanceSummary,
+  DemoFinalAcceptanceSharePackage,
+  DemoFinalAcceptanceSharePackageArchive
+} from '../../types';
 import { DemoAcceptanceSummaryPanel } from './DemoAcceptanceSummaryPanel';
 
 const summary: DemoAcceptanceSummary = {
@@ -81,15 +85,42 @@ const sharePackage: DemoFinalAcceptanceSharePackage = {
   generatedAt: '2026-06-28T15:00:00Z'
 };
 
+const sharePackageArchive: DemoFinalAcceptanceSharePackageArchive = {
+  id: 'final-acceptance-share-package-archive-1',
+  status: 'READY',
+  sendReady: true,
+  summary: 'PatchPilot final demo acceptance package is ready to send.',
+  nextAction: 'Send the prepared final acceptance message with all required attachments.',
+  launchCertificateArchiveId: 'launch-certificate-archive-1',
+  taskCertificateArchiveId: 'task-evidence-certificate-archive-1',
+  latestTaskId: 'task-1',
+  latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+  recommendedRecipients: ['Repository owner or maintainer', 'Demo reviewer'],
+  requiredAttachments: ['Final demo acceptance summary report'],
+  preSendChecks: ['Confirm final demo acceptance status is READY and accepted.'],
+  messageSubject: 'PatchPilot final demo acceptance: task-1',
+  messageBody: 'PatchPilot final demo acceptance is ready for external review.',
+  evidenceNotes: ['Final acceptance status is READY.'],
+  sideEffectContract:
+    'POST /api/demo/final-acceptance-share-package/archives archives a read-only snapshot and does not create tasks, call the model, run tests, mutate Git, send messages, or write to GitHub.',
+  report: '# PatchPilot Final Demo Acceptance Share Package',
+  generatedAt: '2026-06-29T01:30:00Z',
+  archivedAt: '2026-06-29T02:00:00Z'
+};
+
 test('shows final demo acceptance status and certificate evidence', () => {
   render(
     <DemoAcceptanceSummaryPanel
       summary={summary}
       sharePackage={sharePackage}
+      sharePackageArchives={[sharePackageArchive]}
       error={null}
       sharePackageError={null}
+      sharePackageArchiveError={null}
       onDownloadReport={vi.fn()}
       onDownloadSharePackageReport={vi.fn()}
+      onArchiveSharePackage={vi.fn()}
+      onDownloadSharePackageArchiveReport={vi.fn()}
     />
   );
 
@@ -103,8 +134,10 @@ test('shows final demo acceptance status and certificate evidence', () => {
   expect(within(panel).getAllByText(/does not create tasks/)).toHaveLength(2);
   expect(within(panel).getByRole('heading', { name: 'Final acceptance share package' })).toBeInTheDocument();
   expect(within(panel).getByText('PatchPilot final demo acceptance package is ready to send.')).toBeInTheDocument();
-  expect(within(panel).getByText('PatchPilot final demo acceptance: task-1')).toBeInTheDocument();
+  expect(within(panel).getAllByText('PatchPilot final demo acceptance: task-1')).not.toHaveLength(0);
   expect(within(panel).getByText('Final demo acceptance summary report')).toBeInTheDocument();
+  expect(within(panel).getByRole('heading', { name: 'Archived final acceptance packages' })).toBeInTheDocument();
+  expect(within(panel).getByText('final-acceptance-share-package-archive-1')).toBeInTheDocument();
 });
 
 test('downloads the final demo acceptance markdown report', async () => {
@@ -124,10 +157,14 @@ test('downloads the final demo acceptance markdown report', async () => {
     <DemoAcceptanceSummaryPanel
       summary={summary}
       sharePackage={sharePackage}
+      sharePackageArchives={[sharePackageArchive]}
       error={null}
       sharePackageError={null}
+      sharePackageArchiveError={null}
       onDownloadReport={downloadReport}
       onDownloadSharePackageReport={vi.fn()}
+      onArchiveSharePackage={vi.fn()}
+      onDownloadSharePackageArchiveReport={vi.fn()}
     />
   );
 
@@ -162,10 +199,14 @@ test('copies and downloads the final acceptance share package', async () => {
     <DemoAcceptanceSummaryPanel
       summary={summary}
       sharePackage={sharePackage}
+      sharePackageArchives={[sharePackageArchive]}
       error={null}
       sharePackageError={null}
+      sharePackageArchiveError={null}
       onDownloadReport={vi.fn()}
       onDownloadSharePackageReport={downloadSharePackageReport}
+      onArchiveSharePackage={vi.fn()}
+      onDownloadSharePackageArchiveReport={vi.fn()}
     />
   );
 
@@ -178,4 +219,44 @@ test('copies and downloads the final acceptance share package', async () => {
   expect(revokeObjectUrl).toHaveBeenCalledWith('blob:final-acceptance-share-package');
   expect(screen.getByText('Final acceptance share package copied')).toBeInTheDocument();
   expect(screen.getByText('Final acceptance share package downloaded')).toBeInTheDocument();
+});
+
+test('archives and downloads final acceptance share package archives', async () => {
+  const user = userEvent.setup();
+  const archiveSharePackage = vi.fn(async () => sharePackageArchive);
+  const downloadArchiveReport = vi.fn(async () => new Blob(['# Archived Final Acceptance Package'], {
+    type: 'text/markdown'
+  }));
+  const createObjectUrl = vi.fn(() => 'blob:final-acceptance-share-package-archive');
+  const revokeObjectUrl = vi.fn();
+  const anchorClick = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
+  vi.stubGlobal('URL', {
+    createObjectURL: createObjectUrl,
+    revokeObjectURL: revokeObjectUrl
+  });
+
+  render(
+    <DemoAcceptanceSummaryPanel
+      summary={summary}
+      sharePackage={sharePackage}
+      sharePackageArchives={[sharePackageArchive]}
+      error={null}
+      sharePackageError={null}
+      sharePackageArchiveError={null}
+      onDownloadReport={vi.fn()}
+      onDownloadSharePackageReport={vi.fn()}
+      onArchiveSharePackage={archiveSharePackage}
+      onDownloadSharePackageArchiveReport={downloadArchiveReport}
+    />
+  );
+
+  await user.click(screen.getByRole('button', { name: 'Archive final acceptance share package' }));
+  await user.click(screen.getByRole('button', { name: 'Download archived final acceptance package final-acceptance-share-package-archive-1' }));
+
+  expect(archiveSharePackage).toHaveBeenCalled();
+  expect(downloadArchiveReport).toHaveBeenCalledWith('final-acceptance-share-package-archive-1');
+  expect(anchorClick).toHaveBeenCalled();
+  expect(revokeObjectUrl).toHaveBeenCalledWith('blob:final-acceptance-share-package-archive');
+  expect(screen.getByText('Final acceptance share package archived')).toBeInTheDocument();
+  expect(screen.getByText('Archived final acceptance package downloaded')).toBeInTheDocument();
 });

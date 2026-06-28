@@ -3,6 +3,7 @@ package io.patchpilot.backend.demo;
 import io.patchpilot.backend.common.response.ApiResponse;
 import io.patchpilot.backend.demo.domain.DemoAcceptanceSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
+import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceSharePackageArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceSharePackageVo;
 import io.patchpilot.backend.demo.domain.DemoFinalHandoffReportPackageArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoFinalHandoffReportPackageVo;
@@ -86,6 +87,7 @@ public class DemoReadinessController {
     private final DemoLaunchAcceptanceCertificateArchiveService demoLaunchAcceptanceCertificateArchiveService;
     private final DemoAcceptanceSummaryService demoAcceptanceSummaryService;
     private final DemoFinalAcceptanceSharePackageService demoFinalAcceptanceSharePackageService;
+    private final DemoFinalAcceptanceSharePackageArchiveService demoFinalAcceptanceSharePackageArchiveService;
     private final DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
     private final DemoReadinessSnapshotTrendService demoReadinessSnapshotTrendService;
     private final DemoLaunchPreflightService demoLaunchPreflightService;
@@ -342,6 +344,27 @@ public class DemoReadinessController {
         return ApiResponse.ok(demoFinalAcceptanceSharePackageService.getSharePackage());
     }
 
+    @PostMapping("/final-acceptance-share-package/archives")
+    public ApiResponse<DemoFinalAcceptanceSharePackageArchiveVo> archiveFinalAcceptanceSharePackage() {
+        DemoFinalAcceptanceSharePackageArchiveVo archive =
+                demoFinalAcceptanceSharePackageArchiveService.archiveCurrentSharePackage();
+        operatorSafetyAuditService.recordSafetyAudit(new RecordOperatorSafetyAuditCommand(
+                "DEMO_FINAL_ACCEPTANCE_SHARE_PACKAGE_ARCHIVED",
+                "DEMO_FINAL_ACCEPTANCE_SHARE_PACKAGE_ARCHIVE",
+                archive.id(),
+                TriggerQuarantineScope.REPOSITORY,
+                "patchpilot/local-demo",
+                "admin-api",
+                "Archived demo final acceptance share package " + archive.status()
+        ));
+        return ApiResponse.ok(archive);
+    }
+
+    @GetMapping("/final-acceptance-share-package/archives")
+    public ApiResponse<List<DemoFinalAcceptanceSharePackageArchiveVo>> listFinalAcceptanceSharePackageArchives() {
+        return ApiResponse.ok(demoFinalAcceptanceSharePackageArchiveService.listRecentArchives());
+    }
+
     @GetMapping(value = "/handoff-share-center/report/download", produces = "text/markdown;charset=UTF-8")
     public ResponseEntity<String> downloadHandoffShareCenterReport() {
         return markdownAttachment(
@@ -446,6 +469,16 @@ public class DemoReadinessController {
                 "patchpilot-final-demo-acceptance-share-package.md",
                 demoFinalAcceptanceSharePackageService.getSharePackage().markdownReport()
         );
+    }
+
+    @GetMapping(value = "/final-acceptance-share-package/archives/{archiveId}/report/download", produces = "text/markdown;charset=UTF-8")
+    public ResponseEntity<String> downloadArchivedFinalAcceptanceSharePackageReport(@PathVariable String archiveId) {
+        return demoFinalAcceptanceSharePackageArchiveService.findArchive(archiveId)
+                .map(archive -> markdownAttachment(
+                        "patchpilot-final-demo-acceptance-share-package-" + safeFilenamePart(archive.id()) + ".md",
+                        archive.report()
+                ))
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @PostMapping("/launch-acceptance-certificate/archives")

@@ -7,6 +7,7 @@ import io.patchpilot.backend.demo.domain.DemoAcceptanceSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
 import io.patchpilot.backend.demo.domain.DemoEvaluationRunReadinessEvidenceVo;
+import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceSharePackageArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceSharePackageVo;
 import io.patchpilot.backend.demo.domain.DemoFinalHandoffReportPackageArchiveEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoFinalHandoffReportPackageArchiveVo;
@@ -171,6 +172,9 @@ class DemoReadinessControllerTests {
 
     @MockitoBean
     private DemoFinalAcceptanceSharePackageService demoFinalAcceptanceSharePackageService;
+
+    @MockitoBean
+    private DemoFinalAcceptanceSharePackageArchiveService demoFinalAcceptanceSharePackageArchiveService;
 
     @MockitoBean
     private DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
@@ -660,6 +664,63 @@ class DemoReadinessControllerTests {
                 .andExpect(content().contentType("text/markdown;charset=UTF-8"))
                 .andExpect(content().string(containsString("# PatchPilot Final Demo Acceptance Share Package")))
                 .andExpect(content().string(containsString("Subject: PatchPilot final demo acceptance: task-1")));
+    }
+
+    @Test
+    void should_archive_final_demo_acceptance_share_package_and_record_audit() throws Exception {
+        when(demoFinalAcceptanceSharePackageArchiveService.archiveCurrentSharePackage())
+                .thenReturn(finalAcceptanceSharePackageArchive());
+
+        mockMvc.perform(post("/api/demo/final-acceptance-share-package/archives"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value("final-acceptance-share-package-archive-1"))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.sendReady").value(true))
+                .andExpect(jsonPath("$.data.messageSubject").value("PatchPilot final demo acceptance: task-1"))
+                .andExpect(jsonPath("$.data.requiredAttachments", hasItem("Final demo acceptance summary report")))
+                .andExpect(jsonPath("$.data.report").value(containsString("# PatchPilot Final Demo Acceptance Share Package")));
+
+        verify(operatorSafetyAuditService).recordSafetyAudit(argThat(command ->
+                command.action().equals("DEMO_FINAL_ACCEPTANCE_SHARE_PACKAGE_ARCHIVED")
+                        && command.resourceType().equals("DEMO_FINAL_ACCEPTANCE_SHARE_PACKAGE_ARCHIVE")
+                        && command.resourceId().equals("final-acceptance-share-package-archive-1")
+                        && command.reason().contains("READY")
+        ));
+    }
+
+    @Test
+    void should_list_final_demo_acceptance_share_package_archives() throws Exception {
+        when(demoFinalAcceptanceSharePackageArchiveService.listRecentArchives())
+                .thenReturn(List.of(finalAcceptanceSharePackageArchive()));
+
+        mockMvc.perform(get("/api/demo/final-acceptance-share-package/archives"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].id").value("final-acceptance-share-package-archive-1"))
+                .andExpect(jsonPath("$.data[0].archivedAt").value("2026-06-29T02:00:00Z"));
+    }
+
+    @Test
+    void should_download_archived_final_demo_acceptance_share_package_report() throws Exception {
+        when(demoFinalAcceptanceSharePackageArchiveService.findArchive("final-acceptance-share-package-archive-1"))
+                .thenReturn(Optional.of(finalAcceptanceSharePackageArchive()));
+
+        mockMvc.perform(get("/api/demo/final-acceptance-share-package/archives/final-acceptance-share-package-archive-1/report/download"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("patchpilot-final-demo-acceptance-share-package-final-acceptance-share-package-archive-1.md")))
+                .andExpect(content().contentType("text/markdown;charset=UTF-8"))
+                .andExpect(content().string(containsString("# PatchPilot Final Demo Acceptance Share Package")))
+                .andExpect(content().string(containsString("Subject: PatchPilot final demo acceptance: task-1")));
+    }
+
+    @Test
+    void should_return_not_found_when_final_demo_acceptance_share_package_archive_is_missing() throws Exception {
+        when(demoFinalAcceptanceSharePackageArchiveService.findArchive("missing")).thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/api/demo/final-acceptance-share-package/archives/missing/report/download"))
+                .andExpect(status().isNotFound());
     }
 
     @Test
@@ -3144,6 +3205,35 @@ class DemoReadinessControllerTests {
                 "GET /api/demo/final-acceptance-share-package is read-only: it does not create tasks, call the model, run tests, mutate Git, archive records, record receipts, send messages, or write to GitHub.",
                 "# PatchPilot Final Demo Acceptance Share Package\n\nSubject: PatchPilot final demo acceptance: task-1\n",
                 Instant.parse("2026-06-28T15:00:00Z")
+        );
+    }
+
+    private static DemoFinalAcceptanceSharePackageArchiveVo finalAcceptanceSharePackageArchive() {
+        return new DemoFinalAcceptanceSharePackageArchiveVo(
+                "final-acceptance-share-package-archive-1",
+                DemoReadinessStatus.READY,
+                true,
+                "PatchPilot final demo acceptance package is ready to send.",
+                "Send the prepared final acceptance message with all required attachments.",
+                "launch-certificate-archive-1",
+                "task-evidence-certificate-archive-1",
+                "task-1",
+                "https://github.com/bingqin2/PatchPilot/pull/42",
+                List.of("Repository owner or maintainer", "Demo reviewer"),
+                List.of(
+                        "Final demo acceptance summary report",
+                        "Launch acceptance certificate archive launch-certificate-archive-1",
+                        "Task evidence acceptance certificate archive task-evidence-certificate-archive-1",
+                        "Pull Request https://github.com/bingqin2/PatchPilot/pull/42"
+                ),
+                List.of("Confirm final demo acceptance status is READY and accepted."),
+                "PatchPilot final demo acceptance: task-1",
+                "PatchPilot final demo acceptance is ready for external review.",
+                List.of("Final acceptance status is READY."),
+                "POST /api/demo/final-acceptance-share-package/archives archives a read-only snapshot and does not create tasks, call the model, run tests, mutate Git, send messages, or write to GitHub.",
+                "# PatchPilot Final Demo Acceptance Share Package\n\nSubject: PatchPilot final demo acceptance: task-1\n",
+                Instant.parse("2026-06-29T01:30:00Z"),
+                Instant.parse("2026-06-29T02:00:00Z")
         );
     }
 }
