@@ -904,6 +904,23 @@ export interface DemoLaunchAcceptanceCertificateEvidence {
   downloadActions: string[];
 }
 
+export interface DemoTaskEvidenceAcceptanceCertificateEvidence {
+  status: DemoReadinessStatus;
+  archived: boolean;
+  certified: boolean;
+  summary: string;
+  nextAction: string;
+  archiveCount: number;
+  latestArchiveId: string | null;
+  latestCloseoutArchiveId: string | null;
+  latestEvidenceArchiveId: string | null;
+  latestDeliveryReceiptId: string | null;
+  latestTaskId: string | null;
+  latestPullRequestUrl: string | null;
+  latestArchivedAt: string | null;
+  downloadActions: string[];
+}
+
 export interface DemoEvidenceBundle {
   status: DemoReadinessStatus;
   summary: string;
@@ -946,6 +963,7 @@ export interface DemoEvidenceBundle {
   launchEvidenceFinalizationLatestDeliveryReceiptId: string | null;
   launchAcceptanceCloseoutEvidence: DemoLaunchAcceptanceCloseoutEvidence;
   launchAcceptanceCertificateEvidence: DemoLaunchAcceptanceCertificateEvidence;
+  taskEvidenceAcceptanceCertificateEvidence: DemoTaskEvidenceAcceptanceCertificateEvidence;
   handoffShareDeliveryReceiptRecorded: boolean;
   handoffShareLatestDeliveryReceiptId: string | null;
   handoffShareLatestDeliveryTarget: string | null;

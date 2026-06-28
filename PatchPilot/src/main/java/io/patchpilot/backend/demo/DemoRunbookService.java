@@ -170,6 +170,38 @@ public class DemoRunbookService {
                         .append("- Launch acceptance certificate download: ")
                         .append(action)
                         .append("\n"));
+
+        runbook.append("- Task evidence acceptance certificate: `")
+                .append(bundle.taskEvidenceAcceptanceCertificateEvidence().status())
+                .append("` - ")
+                .append(bundle.taskEvidenceAcceptanceCertificateEvidence().summary())
+                .append("\n")
+                .append("- Task evidence acceptance certificate archive: ")
+                .append(valueOrNoneBackticked(bundle.taskEvidenceAcceptanceCertificateEvidence().latestArchiveId()))
+                .append("\n")
+                .append("- Task evidence acceptance certificate closeout archive: ")
+                .append(valueOrNoneBackticked(bundle.taskEvidenceAcceptanceCertificateEvidence().latestCloseoutArchiveId()))
+                .append("\n")
+                .append("- Task evidence acceptance certificate evidence archive: ")
+                .append(valueOrNoneBackticked(bundle.taskEvidenceAcceptanceCertificateEvidence().latestEvidenceArchiveId()))
+                .append("\n")
+                .append("- Task evidence acceptance certificate receipt: ")
+                .append(valueOrNoneBackticked(bundle.taskEvidenceAcceptanceCertificateEvidence().latestDeliveryReceiptId()))
+                .append("\n")
+                .append("- Task evidence acceptance certificate task: ")
+                .append(valueOrNoneBackticked(bundle.taskEvidenceAcceptanceCertificateEvidence().latestTaskId()))
+                .append("\n")
+                .append("- Task evidence acceptance certificate Pull Request: ")
+                .append(valueOrNone(bundle.taskEvidenceAcceptanceCertificateEvidence().latestPullRequestUrl()))
+                .append("\n")
+                .append("- Task evidence acceptance certificate next action: ")
+                .append(bundle.taskEvidenceAcceptanceCertificateEvidence().nextAction())
+                .append("\n");
+        bundle.taskEvidenceAcceptanceCertificateEvidence().downloadActions()
+                .forEach(action -> runbook
+                        .append("- Task evidence acceptance certificate download: ")
+                        .append(action)
+                        .append("\n"));
     }
 
     private static void appendEvaluationRunReadiness(

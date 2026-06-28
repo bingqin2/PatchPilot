@@ -29,12 +29,14 @@ import io.patchpilot.backend.demo.domain.DemoLaunchAcceptanceCertificateVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchAcceptanceCloseoutArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchAcceptanceCloseoutEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchAcceptanceCloseoutVo;
+import io.patchpilot.backend.demo.domain.DemoLaunchAcceptanceCertificateEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchEvidencePackageArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchEvidenceFinalizationCheckVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchEvidenceFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchEvidenceShareCenterVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchEvidenceShareDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchEvidencePackageVo;
+import io.patchpilot.backend.demo.domain.DemoTaskEvidenceAcceptanceCertificateEvidenceVo;
 import io.patchpilot.backend.task.domain.vo.TriggerEvaluationDecisionVo;
 import io.patchpilot.backend.task.domain.vo.TriggerEvaluationResultVo;
 import io.patchpilot.backend.demo.domain.DemoScriptStepVo;
@@ -1047,6 +1049,37 @@ class DemoReadinessControllerTests {
                         null,
                         List.of("Archive the final launch acceptance closeout before using the evidence bundle as the launch record.")
                 ),
+                new DemoLaunchAcceptanceCertificateEvidenceVo(
+                        DemoReadinessStatus.NEEDS_ATTENTION,
+                        false,
+                        false,
+                        "No launch acceptance certificate archive is available.",
+                        "Archive the final launch acceptance certificate after the launch acceptance closeout is certified.",
+                        0,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        List.of("Archive the final launch acceptance certificate before using the evidence bundle as the external-review launch record.")
+                ),
+                new DemoTaskEvidenceAcceptanceCertificateEvidenceVo(
+                        DemoReadinessStatus.NEEDS_ATTENTION,
+                        false,
+                        false,
+                        "No task evidence acceptance certificate archive is available.",
+                        "Archive a certified task evidence acceptance certificate after final task evidence closeout.",
+                        0,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        List.of("Archive a task evidence acceptance certificate before using the evidence bundle as task-level review proof.")
+                ),
                 false,
                 null,
                 null,
@@ -1110,6 +1143,13 @@ class DemoReadinessControllerTests {
                         .value("No launch acceptance closeout archive is available."))
                 .andExpect(jsonPath("$.data.launchAcceptanceCloseoutEvidence.nextAction")
                         .value("Archive the final launch acceptance closeout after launch evidence is accepted."))
+                .andExpect(jsonPath("$.data.taskEvidenceAcceptanceCertificateEvidence.status").value("NEEDS_ATTENTION"))
+                .andExpect(jsonPath("$.data.taskEvidenceAcceptanceCertificateEvidence.archived").value(false))
+                .andExpect(jsonPath("$.data.taskEvidenceAcceptanceCertificateEvidence.certified").value(false))
+                .andExpect(jsonPath("$.data.taskEvidenceAcceptanceCertificateEvidence.summary")
+                        .value("No task evidence acceptance certificate archive is available."))
+                .andExpect(jsonPath("$.data.taskEvidenceAcceptanceCertificateEvidence.nextAction")
+                        .value("Archive a certified task evidence acceptance certificate after final task evidence closeout."))
                 .andExpect(jsonPath("$.data.nextActions[0]").value("Run one controlled issue-to-PR smoke task before a live demo."));
     }
 

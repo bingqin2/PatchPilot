@@ -29,6 +29,7 @@ import io.patchpilot.backend.safety.domain.RejectedTriggerCountVo;
 import io.patchpilot.backend.safety.domain.TriggerQuarantineScope;
 import io.patchpilot.backend.safety.domain.TriggerQuarantineVo;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
+import io.patchpilot.backend.task.domain.vo.FixTaskEvidencePackageAcceptanceCertificateArchiveVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskQueueSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import org.junit.jupiter.api.Test;
@@ -66,7 +67,8 @@ class DemoEvidenceBundleServiceTests {
                 DemoEvidenceBundleServiceTests::launchEvidenceShareCenter,
                 DemoEvidenceBundleServiceTests::launchEvidenceFinalizationReady,
                 () -> List.of(launchAcceptanceCloseoutArchive(DemoReadinessStatus.READY, true)),
-                () -> List.of(launchAcceptanceCertificateArchive(DemoReadinessStatus.READY, true))
+                () -> List.of(launchAcceptanceCertificateArchive(DemoReadinessStatus.READY, true)),
+                () -> List.of(taskEvidenceAcceptanceCertificateArchive("READY", true))
         );
 
         DemoEvidenceBundleVo bundle = service.getEvidenceBundle();
@@ -193,6 +195,30 @@ class DemoEvidenceBundleServiceTests {
                 "Download linked launch acceptance closeout archive launch-closeout-archive-1.",
                 "Download launch evidence delivery receipt launch-delivery-receipt-1."
         );
+        assertThat(bundle.taskEvidenceAcceptanceCertificateEvidence().status()).isEqualTo(DemoReadinessStatus.READY);
+        assertThat(bundle.taskEvidenceAcceptanceCertificateEvidence().archived()).isTrue();
+        assertThat(bundle.taskEvidenceAcceptanceCertificateEvidence().certified()).isTrue();
+        assertThat(bundle.taskEvidenceAcceptanceCertificateEvidence().summary())
+                .isEqualTo("Latest task evidence acceptance certificate archive is certified and ready.");
+        assertThat(bundle.taskEvidenceAcceptanceCertificateEvidence().nextAction())
+                .isEqualTo("Use the archived task evidence acceptance certificate as task-level review proof.");
+        assertThat(bundle.taskEvidenceAcceptanceCertificateEvidence().archiveCount()).isEqualTo(1);
+        assertThat(bundle.taskEvidenceAcceptanceCertificateEvidence().latestArchiveId())
+                .isEqualTo("task-evidence-certificate-archive-1");
+        assertThat(bundle.taskEvidenceAcceptanceCertificateEvidence().latestCloseoutArchiveId())
+                .isEqualTo("task-evidence-closeout-archive-1");
+        assertThat(bundle.taskEvidenceAcceptanceCertificateEvidence().latestEvidenceArchiveId())
+                .isEqualTo("task-evidence-archive-1");
+        assertThat(bundle.taskEvidenceAcceptanceCertificateEvidence().latestDeliveryReceiptId())
+                .isEqualTo("task-evidence-receipt-1");
+        assertThat(bundle.taskEvidenceAcceptanceCertificateEvidence().latestTaskId()).isEqualTo("task-2");
+        assertThat(bundle.taskEvidenceAcceptanceCertificateEvidence().latestPullRequestUrl())
+                .isEqualTo("https://github.com/bingqin2/PatchPilot/pull/42");
+        assertThat(bundle.taskEvidenceAcceptanceCertificateEvidence().downloadActions()).containsExactly(
+                "Download task evidence acceptance certificate archive task-evidence-certificate-archive-1.",
+                "Download linked task evidence acceptance closeout archive task-evidence-closeout-archive-1.",
+                "Download task evidence delivery receipt task-evidence-receipt-1."
+        );
         assertThat(bundle.handoffShareDeliveryReceiptRecorded()).isFalse();
         assertThat(bundle.handoffShareLatestDeliveryReceiptId()).isNull();
         assertThat(bundle.handoffShareLatestDeliveryTarget()).isNull();
@@ -238,7 +264,8 @@ class DemoEvidenceBundleServiceTests {
                 DemoEvidenceBundleServiceTests::launchEvidenceShareCenter,
                 DemoEvidenceBundleServiceTests::launchEvidenceFinalizationReady,
                 () -> List.of(launchAcceptanceCloseoutArchive(DemoReadinessStatus.READY, true)),
-                () -> List.of(launchAcceptanceCertificateArchive(DemoReadinessStatus.READY, true))
+                () -> List.of(launchAcceptanceCertificateArchive(DemoReadinessStatus.READY, true)),
+                () -> List.of(taskEvidenceAcceptanceCertificateArchive("READY", true))
         );
 
         DemoEvidenceBundleVo bundle = service.getEvidenceBundle();
@@ -276,6 +303,7 @@ class DemoEvidenceBundleServiceTests {
         assertThat(bundle.launchEvidenceFinalizationLatestDeliveryReceiptId()).isEqualTo("launch-delivery-receipt-1");
         assertThat(bundle.launchAcceptanceCloseoutEvidence().accepted()).isTrue();
         assertThat(bundle.launchAcceptanceCertificateEvidence().certified()).isTrue();
+        assertThat(bundle.taskEvidenceAcceptanceCertificateEvidence().certified()).isTrue();
         assertThat(bundle.nextActions()).containsExactly("Use this evidence bundle as the live demo baseline.");
     }
 
@@ -299,7 +327,8 @@ class DemoEvidenceBundleServiceTests {
                 DemoEvidenceBundleServiceTests::launchEvidenceShareCenter,
                 DemoEvidenceBundleServiceTests::launchEvidenceFinalizationReady,
                 List::of,
-                () -> List.of(launchAcceptanceCertificateArchive(DemoReadinessStatus.READY, true))
+                () -> List.of(launchAcceptanceCertificateArchive(DemoReadinessStatus.READY, true)),
+                () -> List.of(taskEvidenceAcceptanceCertificateArchive("READY", true))
         );
 
         DemoEvidenceBundleVo bundle = service.getEvidenceBundle();
@@ -338,7 +367,8 @@ class DemoEvidenceBundleServiceTests {
                 DemoEvidenceBundleServiceTests::launchEvidenceShareCenter,
                 DemoEvidenceBundleServiceTests::launchEvidenceFinalizationReady,
                 () -> List.of(launchAcceptanceCloseoutArchive(DemoReadinessStatus.READY, true)),
-                List::of
+                List::of,
+                () -> List.of(taskEvidenceAcceptanceCertificateArchive("READY", true))
         );
 
         DemoEvidenceBundleVo bundle = service.getEvidenceBundle();
@@ -355,6 +385,46 @@ class DemoEvidenceBundleServiceTests {
                 .isEqualTo("Archive the final launch acceptance certificate after the launch acceptance closeout is certified.");
         assertThat(bundle.nextActions()).containsExactly(
                 "Archive the final launch acceptance certificate after the launch acceptance closeout is certified."
+        );
+    }
+
+    @Test
+    void should_require_task_evidence_acceptance_certificate_archive_before_reporting_bundle_ready() {
+        DemoEvidenceBundleService service = new DemoEvidenceBundleService(
+                () -> readiness(DemoReadinessStatus.READY, List.of()),
+                () -> smokeChecklist(DemoSmokeChecklistStatus.READY, List.of()),
+                DemoEvidenceBundleServiceTests::configuration,
+                () -> List.of(fixture("java-maven", "PASS")),
+                FixTaskQueueSummaryVo::empty,
+                () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/42")),
+                () -> List.of(webhookDelivery("delivery-1", WebhookDeliveryDiagnosticStatus.TASK_CREATED, "task-1")),
+                DemoEvidenceBundleServiceTests::webhookSetupReadiness,
+                () -> rejectedTriggerSummary(0),
+                List::of,
+                DemoEvidenceBundleServiceTests::evaluationRunReadiness,
+                DemoEvidenceBundleServiceTests::handoffPackageArchiveSummary,
+                DemoEvidenceBundleServiceTests::deliveredHandoffShareCenter,
+                DemoEvidenceBundleServiceTests::handoffFinalizationReady,
+                DemoEvidenceBundleServiceTests::launchEvidenceShareCenter,
+                DemoEvidenceBundleServiceTests::launchEvidenceFinalizationReady,
+                () -> List.of(launchAcceptanceCloseoutArchive(DemoReadinessStatus.READY, true)),
+                () -> List.of(launchAcceptanceCertificateArchive(DemoReadinessStatus.READY, true)),
+                List::of
+        );
+
+        DemoEvidenceBundleVo bundle = service.getEvidenceBundle();
+
+        assertThat(bundle.status()).isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
+        assertThat(bundle.summary()).isEqualTo("Demo evidence bundle needs attention.");
+        assertThat(bundle.taskEvidenceAcceptanceCertificateEvidence().status()).isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
+        assertThat(bundle.taskEvidenceAcceptanceCertificateEvidence().archived()).isFalse();
+        assertThat(bundle.taskEvidenceAcceptanceCertificateEvidence().certified()).isFalse();
+        assertThat(bundle.taskEvidenceAcceptanceCertificateEvidence().summary())
+                .isEqualTo("No task evidence acceptance certificate archive is available.");
+        assertThat(bundle.taskEvidenceAcceptanceCertificateEvidence().nextAction())
+                .isEqualTo("Archive a certified task evidence acceptance certificate after final task evidence closeout.");
+        assertThat(bundle.nextActions()).containsExactly(
+                "Archive a certified task evidence acceptance certificate after final task evidence closeout."
         );
     }
 
@@ -862,6 +932,36 @@ class DemoEvidenceBundleServiceTests {
                         "Download linked launch acceptance closeout archive launch-closeout-archive-1."
                 ),
                 "# PatchPilot Launch Acceptance Certificate Archive"
+        );
+    }
+
+    private static FixTaskEvidencePackageAcceptanceCertificateArchiveVo taskEvidenceAcceptanceCertificateArchive(
+            String status,
+            boolean certified
+    ) {
+        return new FixTaskEvidencePackageAcceptanceCertificateArchiveVo(
+                "task-evidence-certificate-archive-1",
+                status,
+                certified,
+                "Task evidence acceptance is certified from the latest accepted closeout archive.",
+                "Share the certificate and archived closeout report with reviewers.",
+                1,
+                "task-evidence-closeout-archive-1",
+                "task-evidence-archive-1",
+                "task-evidence-receipt-1",
+                "task-2",
+                "https://github.com/bingqin2/PatchPilot/pull/42",
+                "Demo reviewer",
+                "email",
+                "FRESH",
+                Instant.parse("2026-06-24T09:00:00Z"),
+                Instant.parse("2026-06-24T09:25:00Z"),
+                Instant.parse("2026-06-24T09:30:00Z"),
+                List.of(
+                        "Download task evidence acceptance certificate archive task-evidence-certificate-archive-1.",
+                        "Download linked task evidence acceptance closeout archive task-evidence-closeout-archive-1."
+                ),
+                "# PatchPilot Task Evidence Acceptance Certificate Archive"
         );
     }
 }

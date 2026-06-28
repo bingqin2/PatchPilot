@@ -235,6 +235,25 @@ const bundle: DemoEvidenceBundle = {
       'Download linked launch acceptance closeout archive launch-closeout-archive-1.'
     ]
   },
+  taskEvidenceAcceptanceCertificateEvidence: {
+    status: 'READY',
+    archived: true,
+    certified: true,
+    summary: 'Latest task evidence acceptance certificate archive is certified and ready.',
+    nextAction: 'Use the archived task evidence acceptance certificate as task-level review proof.',
+    archiveCount: 1,
+    latestArchiveId: 'task-evidence-certificate-archive-1',
+    latestCloseoutArchiveId: 'task-evidence-closeout-archive-1',
+    latestEvidenceArchiveId: 'task-evidence-archive-1',
+    latestDeliveryReceiptId: 'task-evidence-receipt-1',
+    latestTaskId: 'task-2',
+    latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+    latestArchivedAt: '2026-06-24T09:30:00Z',
+    downloadActions: [
+      'Download task evidence acceptance certificate archive task-evidence-certificate-archive-1.',
+      'Download linked task evidence acceptance closeout archive task-evidence-closeout-archive-1.'
+    ]
+  },
   handoffShareDeliveryReceiptRecorded: true,
   handoffShareLatestDeliveryReceiptId: 'delivery-receipt-1',
   handoffShareLatestDeliveryTarget: 'maintainer@example.com',
@@ -321,12 +340,10 @@ test('summarizes demo evidence bundle for operators', () => {
   ).toBeInTheDocument();
   expect(within(panel).getByText('Download linked launch evidence archive launch-evidence-archive-1.')).toBeInTheDocument();
   expect(within(panel).getByText('Launch acceptance certificate')).toBeInTheDocument();
-  expect(within(panel).getByText('Certified archive')).toBeInTheDocument();
   expect(within(panel).getByText('Latest launch acceptance certificate archive is certified and ready.')).toBeInTheDocument();
   expect(
     within(panel).getByText('Use the archived launch acceptance certificate as the external-review launch record.')
   ).toBeInTheDocument();
-  expect(within(panel).getByText('1 certificate archives')).toBeInTheDocument();
   expect(within(panel).getByText('launch-certificate-archive-1')).toBeInTheDocument();
   expect(within(panel).getAllByText('launch-closeout-archive-1').length).toBeGreaterThanOrEqual(2);
   expect(within(panel).getByRole('link', { name: 'Open certificate Pull Request' })).toHaveAttribute(
@@ -337,6 +354,28 @@ test('summarizes demo evidence bundle for operators', () => {
     within(panel).getByText('Download launch acceptance certificate archive launch-certificate-archive-1.')
   ).toBeInTheDocument();
   expect(within(panel).getByText('Download linked launch acceptance closeout archive launch-closeout-archive-1.')).toBeInTheDocument();
+  expect(within(panel).getByText('Task evidence acceptance certificate')).toBeInTheDocument();
+  expect(within(panel).getAllByText('Certified archive')).toHaveLength(2);
+  expect(within(panel).getByText('Latest task evidence acceptance certificate archive is certified and ready.')).toBeInTheDocument();
+  expect(
+    within(panel).getByText('Use the archived task evidence acceptance certificate as task-level review proof.')
+  ).toBeInTheDocument();
+  expect(within(panel).getAllByText('1 certificate archives').length).toBeGreaterThanOrEqual(2);
+  expect(within(panel).getByText('task-evidence-certificate-archive-1')).toBeInTheDocument();
+  expect(within(panel).getByText('task-evidence-closeout-archive-1')).toBeInTheDocument();
+  expect(within(panel).getByText('task-evidence-archive-1')).toBeInTheDocument();
+  expect(within(panel).getByText('task-evidence-receipt-1')).toBeInTheDocument();
+  expect(within(panel).getByText('Task task-2')).toBeInTheDocument();
+  expect(within(panel).getByRole('link', { name: 'Open task certificate Pull Request' })).toHaveAttribute(
+    'href',
+    'https://github.com/bingqin2/PatchPilot/pull/42'
+  );
+  expect(
+    within(panel).getByText('Download task evidence acceptance certificate archive task-evidence-certificate-archive-1.')
+  ).toBeInTheDocument();
+  expect(
+    within(panel).getByText('Download linked task evidence acceptance closeout archive task-evidence-closeout-archive-1.')
+  ).toBeInTheDocument();
   expect(within(panel).getByText('Handoff share delivery')).toBeInTheDocument();
   expect(within(panel).getAllByText('Fresh').length).toBeGreaterThanOrEqual(2);
   expect(within(panel).getByText('Handoff finalization')).toBeInTheDocument();
@@ -373,7 +412,11 @@ test('shows loading and API errors without hiding existing bundle data', () => {
 });
 
 test('renders missing certificate evidence for legacy bundle responses', () => {
-  const legacyBundle = { ...bundle, launchAcceptanceCertificateEvidence: undefined } as unknown as DemoEvidenceBundle;
+  const legacyBundle = {
+    ...bundle,
+    launchAcceptanceCertificateEvidence: undefined,
+    taskEvidenceAcceptanceCertificateEvidence: undefined
+  } as unknown as DemoEvidenceBundle;
 
   render(<DemoEvidenceBundlePanel bundle={legacyBundle} error={null} onCopyRunbook={vi.fn()} />);
 
@@ -384,6 +427,12 @@ test('renders missing certificate evidence for legacy bundle responses', () => {
     screen.getByText('Archive the final launch acceptance certificate after the launch acceptance closeout is certified.')
   ).toBeInTheDocument();
   expect(screen.getByText('No certificate Pull Request')).toBeInTheDocument();
+  expect(screen.getByText('Task evidence acceptance certificate')).toBeInTheDocument();
+  expect(screen.getByText('No task evidence acceptance certificate archive is available.')).toBeInTheDocument();
+  expect(
+    screen.getByText('Archive a certified task evidence acceptance certificate after final task evidence closeout.')
+  ).toBeInTheDocument();
+  expect(screen.getByText('No task certificate Pull Request')).toBeInTheDocument();
 });
 
 test('copies demo runbook markdown', async () => {
