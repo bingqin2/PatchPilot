@@ -24,6 +24,7 @@ import io.patchpilot.backend.demo.domain.DemoHandoffShareInstructionsVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffFinalizationCheckVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchAcceptanceCloseoutCheckVo;
+import io.patchpilot.backend.demo.domain.DemoLaunchAcceptanceCloseoutArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchAcceptanceCloseoutVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchEvidencePackageArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchEvidenceFinalizationCheckVo;
@@ -138,6 +139,9 @@ class DemoReadinessControllerTests {
 
     @MockitoBean
     private DemoLaunchAcceptanceCloseoutService demoLaunchAcceptanceCloseoutService;
+
+    @MockitoBean
+    private DemoLaunchAcceptanceCloseoutArchiveService demoLaunchAcceptanceCloseoutArchiveService;
 
     @MockitoBean
     private DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
@@ -383,6 +387,72 @@ class DemoReadinessControllerTests {
                 .andExpect(content().contentTypeCompatibleWith("text/markdown"))
                 .andExpect(content().string(containsString("# PatchPilot Launch Acceptance Closeout")))
                 .andExpect(content().string(containsString("launch-delivery-receipt-1")));
+    }
+
+    @Test
+    void should_archive_demo_launch_acceptance_closeout() throws Exception {
+        when(demoLaunchAcceptanceCloseoutArchiveService.archiveCurrentCloseout())
+                .thenReturn(launchAcceptanceCloseoutArchive());
+
+        mockMvc.perform(post("/api/demo/launch-acceptance-closeout/archives"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value("launch-closeout-archive-1"))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.accepted").value(true))
+                .andExpect(jsonPath("$.data.sessionId").value("demo-session-20260624T003000Z"))
+                .andExpect(jsonPath("$.data.latestPullRequestUrl").value("https://github.com/bingqin2/PatchPilot/pull/42"))
+                .andExpect(jsonPath("$.data.latestDeliveryReceiptId").value("launch-delivery-receipt-1"))
+                .andExpect(jsonPath("$.data.report").value(containsString("# PatchPilot Launch Acceptance Closeout")));
+
+        verify(operatorSafetyAuditService).recordSafetyAudit(argThat(this::isLaunchAcceptanceCloseoutArchiveAudit));
+    }
+
+    private boolean isLaunchAcceptanceCloseoutArchiveAudit(RecordOperatorSafetyAuditCommand command) {
+        return command != null
+                && "DEMO_LAUNCH_ACCEPTANCE_CLOSEOUT_ARCHIVED".equals(command.action())
+                && "DEMO_LAUNCH_ACCEPTANCE_CLOSEOUT_ARCHIVE".equals(command.resourceType())
+                && "launch-closeout-archive-1".equals(command.resourceId())
+                && command.scope() == TriggerQuarantineScope.REPOSITORY
+                && "patchpilot/local-demo".equals(command.scopeKey())
+                && "admin-api".equals(command.operator())
+                && "Archived demo launch acceptance closeout READY".equals(command.reason());
+    }
+
+    @Test
+    void should_return_recent_demo_launch_acceptance_closeout_archives() throws Exception {
+        when(demoLaunchAcceptanceCloseoutArchiveService.listRecentArchives())
+                .thenReturn(List.of(launchAcceptanceCloseoutArchive()));
+
+        mockMvc.perform(get("/api/demo/launch-acceptance-closeout/archives"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].id").value("launch-closeout-archive-1"))
+                .andExpect(jsonPath("$.data[0].status").value("READY"))
+                .andExpect(jsonPath("$.data[0].accepted").value(true))
+                .andExpect(jsonPath("$.data[0].summary").value("PatchPilot launch acceptance closeout is complete."));
+    }
+
+    @Test
+    void should_download_archived_demo_launch_acceptance_closeout_report_as_markdown_attachment() throws Exception {
+        when(demoLaunchAcceptanceCloseoutArchiveService.findArchive("launch-closeout-archive-1"))
+                .thenReturn(Optional.of(launchAcceptanceCloseoutArchive()));
+
+        mockMvc.perform(get("/api/demo/launch-acceptance-closeout/archives/launch-closeout-archive-1/report/download"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("attachment;")))
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("patchpilot-launch-acceptance-closeout-launch-closeout-archive-1.md")))
+                .andExpect(content().contentTypeCompatibleWith("text/markdown"))
+                .andExpect(content().string(containsString("# PatchPilot Launch Acceptance Closeout")))
+                .andExpect(content().string(containsString("launch-delivery-receipt-1")));
+    }
+
+    @Test
+    void should_return_not_found_when_archived_demo_launch_acceptance_closeout_report_is_missing() throws Exception {
+        when(demoLaunchAcceptanceCloseoutArchiveService.findArchive("missing-archive")).thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/api/demo/launch-acceptance-closeout/archives/missing-archive/report/download"))
+                .andExpect(status().isNotFound());
     }
 
     @Test
@@ -2397,6 +2467,27 @@ class DemoReadinessControllerTests {
                         "Download launch evidence finalization report.",
                         "Download launch acceptance closeout report."
                 ),
+                "# PatchPilot Launch Acceptance Closeout\n\n- Receipt: `launch-delivery-receipt-1`"
+        );
+    }
+
+    private static DemoLaunchAcceptanceCloseoutArchiveVo launchAcceptanceCloseoutArchive() {
+        return new DemoLaunchAcceptanceCloseoutArchiveVo(
+                "launch-closeout-archive-1",
+                DemoReadinessStatus.READY,
+                true,
+                "PatchPilot launch acceptance closeout is complete.",
+                "demo-session-20260624T003000Z",
+                "task-1",
+                "https://github.com/bingqin2/PatchPilot/pull/42",
+                "delivery-1",
+                "evaluation-run-2",
+                "launch-evidence-archive-1",
+                "launch-delivery-receipt-1",
+                "reviewer@example.com",
+                "email",
+                "FRESH",
+                Instant.parse("2026-06-28T08:30:00Z"),
                 "# PatchPilot Launch Acceptance Closeout\n\n- Receipt: `launch-delivery-receipt-1`"
         );
     }

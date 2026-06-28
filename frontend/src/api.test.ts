@@ -43,6 +43,9 @@ import {
   downloadDemoLaunchEvidenceShareDeliveryReceiptReport,
   downloadDemoLaunchEvidenceFinalizationReport,
   downloadDemoLaunchAcceptanceCloseoutReport,
+  archiveDemoLaunchAcceptanceCloseout,
+  listDemoLaunchAcceptanceCloseoutArchives,
+  downloadDemoLaunchAcceptanceCloseoutArchiveReport,
   archiveDemoLaunchEvidencePackage,
   listDemoLaunchEvidencePackageArchives,
   downloadDemoLaunchEvidencePackageArchiveReport,
@@ -772,6 +775,101 @@ test('downloads demo launch acceptance closeout markdown from backend API', asyn
   const downloadedReport = await downloadDemoLaunchAcceptanceCloseoutReport();
 
   expect(fetchMock).toHaveBeenCalledWith('/api/demo/launch-acceptance-closeout/report/download');
+  expect(downloadedReport).toBe(reportBlob);
+});
+
+test('archives demo launch acceptance closeout through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        id: 'launch-closeout-archive-1',
+        status: 'READY',
+        accepted: true,
+        summary: 'PatchPilot launch acceptance closeout is complete.',
+        sessionId: 'demo-session-20260624T003000Z',
+        latestTaskId: 'task-1',
+        latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+        latestWebhookDeliveryId: 'delivery-1',
+        evaluationRunId: 'evaluation-run-2',
+        latestArchiveId: 'launch-evidence-archive-1',
+        latestDeliveryReceiptId: 'launch-delivery-receipt-1',
+        latestDeliveryTarget: 'reviewer@example.com',
+        latestDeliveryChannel: 'email',
+        deliveryReceiptFreshness: 'FRESH',
+        createdAt: '2026-06-28T08:30:00Z',
+        report: '# PatchPilot Launch Acceptance Closeout\n\n- Status: `READY`'
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const archive = await archiveDemoLaunchAcceptanceCloseout();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/launch-acceptance-closeout/archives', { method: 'POST' });
+  expect(archive.id).toBe('launch-closeout-archive-1');
+  expect(archive.accepted).toBe(true);
+  expect(archive.latestDeliveryReceiptId).toBe('launch-delivery-receipt-1');
+});
+
+test('lists demo launch acceptance closeout archives from backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: [
+        {
+          id: 'launch-closeout-archive-1',
+          status: 'READY',
+          accepted: true,
+          summary: 'PatchPilot launch acceptance closeout is complete.',
+          sessionId: 'demo-session-20260624T003000Z',
+          latestTaskId: 'task-1',
+          latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+          latestWebhookDeliveryId: 'delivery-1',
+          evaluationRunId: 'evaluation-run-2',
+          latestArchiveId: 'launch-evidence-archive-1',
+          latestDeliveryReceiptId: 'launch-delivery-receipt-1',
+          latestDeliveryTarget: 'reviewer@example.com',
+          latestDeliveryChannel: 'email',
+          deliveryReceiptFreshness: 'FRESH',
+          createdAt: '2026-06-28T08:30:00Z',
+          report: '# PatchPilot Launch Acceptance Closeout\n\n- Status: `READY`'
+        }
+      ],
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const archives = await listDemoLaunchAcceptanceCloseoutArchives();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/launch-acceptance-closeout/archives');
+  expect(archives).toHaveLength(1);
+  expect(archives[0].id).toBe('launch-closeout-archive-1');
+  expect(archives[0].latestPullRequestUrl).toBe('https://github.com/bingqin2/PatchPilot/pull/42');
+});
+
+test('downloads archived demo launch acceptance closeout markdown from backend API', async () => {
+  const reportBlob = new Blob(['# PatchPilot Launch Acceptance Closeout\n\n- Archive: `launch-closeout-archive-1`'], {
+    type: 'text/markdown;charset=UTF-8'
+  });
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    blob: async () => reportBlob
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const downloadedReport = await downloadDemoLaunchAcceptanceCloseoutArchiveReport('launch-closeout-archive-1');
+
+  expect(fetchMock).toHaveBeenCalledWith(
+    '/api/demo/launch-acceptance-closeout/archives/launch-closeout-archive-1/report/download'
+  );
   expect(downloadedReport).toBe(reportBlob);
 });
 

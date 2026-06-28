@@ -1992,6 +1992,25 @@ const demoLaunchAcceptanceCloseout = {
   markdownReport: '# PatchPilot Launch Acceptance Closeout\n\n- Status: `READY`'
 };
 
+const demoLaunchAcceptanceCloseoutArchive = {
+  id: 'launch-closeout-archive-1',
+  status: 'READY',
+  accepted: true,
+  summary: 'PatchPilot launch acceptance closeout is complete.',
+  sessionId: 'demo-session-20260624T003000Z',
+  latestTaskId: 'task-1',
+  latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+  latestWebhookDeliveryId: 'delivery-created-status-comment',
+  evaluationRunId: 'evaluation-run-2',
+  latestArchiveId: 'launch-evidence-archive-1',
+  latestDeliveryReceiptId: 'launch-delivery-receipt-1',
+  latestDeliveryTarget: 'reviewer@example.com',
+  latestDeliveryChannel: 'email',
+  deliveryReceiptFreshness: 'FRESH',
+  createdAt: '2026-06-24T07:20:00Z',
+  report: '# PatchPilot Launch Acceptance Closeout\n\n- Status: `READY`'
+};
+
 const demoLaunchEvidenceDeliveryReceipt = {
   id: 'launch-delivery-receipt-1',
   status: 'READY',
@@ -2291,6 +2310,12 @@ beforeEach(() => {
     }
     if (url === '/api/demo/launch-acceptance-closeout') {
       return jsonResponse(demoLaunchAcceptanceCloseout);
+    }
+    if (url === '/api/demo/launch-acceptance-closeout/archives' && init?.method === 'POST') {
+      return jsonResponse(demoLaunchAcceptanceCloseoutArchive);
+    }
+    if (url === '/api/demo/launch-acceptance-closeout/archives') {
+      return jsonResponse([demoLaunchAcceptanceCloseoutArchive]);
     }
     if (url === '/api/demo/launch-evidence-share-delivery-receipts' && init?.method === 'POST') {
       return jsonResponse(demoLaunchEvidenceDeliveryReceipt);
@@ -2889,6 +2914,13 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(within(launchEvidencePanel).getByRole('heading', { name: 'Launch acceptance closeout' })).toBeInTheDocument();
   expect(within(launchEvidencePanel).getByText('PatchPilot launch acceptance closeout is complete.')).toBeInTheDocument();
   expect(within(launchEvidencePanel).getByText('Download launch acceptance closeout report.')).toBeInTheDocument();
+  expect(within(launchEvidencePanel).getByRole('heading', { name: 'Recent launch acceptance closeouts' })).toBeInTheDocument();
+  expect(within(launchEvidencePanel).getByText(/launch-closeout-archive-1/)).toBeInTheDocument();
+  await user.click(within(launchEvidencePanel).getByRole('button', { name: 'Archive launch acceptance closeout' }));
+  await waitFor(() =>
+    expect(fetchMock).toHaveBeenCalledWith('/api/demo/launch-acceptance-closeout/archives', { method: 'POST' })
+  );
+  expect(within(launchEvidencePanel).getByText('Archived launch closeout launch-closeout-archive-1')).toBeInTheDocument();
   expect(within(launchEvidencePanel).getByText(/does not create tasks, call the model, run tests, archive records/)).toBeInTheDocument();
   const demoScriptPanel = screen.getByRole('region', { name: 'Demo script' });
   expect(within(demoScriptPanel).getByRole('heading', { name: 'Demo script' })).toBeInTheDocument();

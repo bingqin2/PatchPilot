@@ -6,6 +6,8 @@ import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
 import io.patchpilot.backend.demo.domain.DemoEvaluationRunReadinessEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchEvidencePackageVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchEvidencePackageArchiveVo;
+import io.patchpilot.backend.demo.domain.DemoLaunchAcceptanceCloseoutCheckVo;
+import io.patchpilot.backend.demo.domain.DemoLaunchAcceptanceCloseoutVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessCheckVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessSnapshotTrendStatus;
 import io.patchpilot.backend.demo.domain.DemoReadinessSnapshotTrendVo;
@@ -232,6 +234,55 @@ final class DemoLaunchEvidenceFixtures {
                 "evaluation-run-2",
                 Instant.parse("2026-06-28T02:30:00Z"),
                 "# PatchPilot Demo Launch Evidence Package\n\n- Status: `" + status + "`"
+        );
+    }
+
+    static DemoLaunchAcceptanceCloseoutVo launchAcceptanceCloseout(DemoReadinessStatus status) {
+        boolean ready = status == DemoReadinessStatus.READY;
+        return new DemoLaunchAcceptanceCloseoutVo(
+                status,
+                ready,
+                ready
+                        ? "PatchPilot launch acceptance closeout is complete."
+                        : "PatchPilot launch acceptance closeout needs attention.",
+                ready
+                        ? "Use this closeout report as the final self-hosted launch acceptance record."
+                        : "Resolve launch closeout warnings before treating the demo as accepted.",
+                "demo-session-20260624T003000Z",
+                "task-1",
+                "https://github.com/bingqin2/PatchPilot/pull/42",
+                "delivery-1",
+                "evaluation-run-2",
+                "launch-evidence-archive-1",
+                ready ? "launch-delivery-receipt-1" : null,
+                ready ? "reviewer@example.com" : null,
+                ready ? "email" : null,
+                ready ? "2026-06-28T06:05:00Z" : null,
+                ready ? "FRESH" : "MISSING",
+                Instant.parse("2026-06-28T07:15:00Z"),
+                List.of(
+                        new DemoLaunchAcceptanceCloseoutCheckVo(
+                                "Self-hosted launch readiness",
+                                status,
+                                ready
+                                        ? "Self-hosted PatchPilot is ready for a controlled issue-to-PR launch."
+                                        : "Self-hosted PatchPilot needs attention before launch.",
+                                ready ? "No action needed." : "Resolve launch package warnings."
+                        )
+                ),
+                ready
+                        ? List.of("Delivery receipt launch-delivery-receipt-1 is fresh for demo-session-20260624T003000Z.")
+                        : List.of("No accepted delivery receipt is available for demo-session-20260624T003000Z."),
+                List.of(
+                        "Download self-hosted launch readiness report.",
+                        "Download launch evidence package report.",
+                        "Download launch evidence share center report.",
+                        "Download launch evidence finalization report.",
+                        "Download launch acceptance closeout report."
+                ),
+                "# PatchPilot Launch Acceptance Closeout\n\n"
+                        + "- Status: `" + status + "`\n"
+                        + "- Receipt: `" + (ready ? "launch-delivery-receipt-1" : "none") + "`"
         );
     }
 
