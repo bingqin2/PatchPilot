@@ -1540,6 +1540,47 @@ class TaskControllerTests {
     }
 
     @Test
+    void should_list_recent_task_evidence_package_archives_and_summary() throws Exception {
+        FixTaskVo completedTask = createTask("delivery-task-evidence-package-review-completed");
+        FixTaskVo failedTask = createTask("delivery-task-evidence-package-review-failed");
+        fixTaskService.markCompleted(completedTask.id(), "https://github.com/octocat/hello-world/pull/11");
+        fixTaskService.markFailed(failedTask.id(), "verification failed");
+
+        MvcResult completedArchiveResult = mockMvc.perform(post("/api/tasks/{id}/evidence-packages", completedTask.id()))
+                .andExpect(status().isOk())
+                .andReturn();
+        String completedArchiveId = JsonPath.read(completedArchiveResult.getResponse().getContentAsString(), "$.data.id");
+
+        MvcResult failedArchiveResult = mockMvc.perform(post("/api/tasks/{id}/evidence-packages", failedTask.id()))
+                .andExpect(status().isOk())
+                .andReturn();
+        String failedArchiveId = JsonPath.read(failedArchiveResult.getResponse().getContentAsString(), "$.data.id");
+
+        mockMvc.perform(get("/api/tasks/evidence-packages").param("limit", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].id").value(failedArchiveId))
+                .andExpect(jsonPath("$.data[0].taskId").value(failedTask.id()))
+                .andExpect(jsonPath("$.data[0].status").value("FAILED"));
+
+        mockMvc.perform(get("/api/tasks/evidence-packages/summary").param("limit", "20"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.totalArchiveCount").value(greaterThanOrEqualTo(2)))
+                .andExpect(jsonPath("$.data.completedArchiveCount").value(greaterThanOrEqualTo(1)))
+                .andExpect(jsonPath("$.data.failedArchiveCount").value(greaterThanOrEqualTo(1)))
+                .andExpect(jsonPath("$.data.latestArchiveId").value(failedArchiveId))
+                .andExpect(jsonPath("$.data.latestTaskId").value(failedTask.id()))
+                .andExpect(jsonPath("$.data.latestRepositoryOwner").value("octocat"))
+                .andExpect(jsonPath("$.data.latestRepositoryName").value("hello-world"))
+                .andExpect(jsonPath("$.data.latestIssueNumber").value(42))
+                .andExpect(jsonPath("$.data.sideEffectContract").value(org.hamcrest.Matchers.containsString("does not create tasks")))
+                .andExpect(jsonPath("$.data.nextAction").value(org.hamcrest.Matchers.containsString("Download")))
+                .andExpect(jsonPath("$.data.latestArchiveId").value(not(completedArchiveId)));
+    }
+
+    @Test
     void should_prefer_persisted_pre_execution_decision_in_task_report() throws Exception {
         FixTaskVo task = createTask("delivery-persisted-report");
         fixTaskTimelineService.recordEvent(

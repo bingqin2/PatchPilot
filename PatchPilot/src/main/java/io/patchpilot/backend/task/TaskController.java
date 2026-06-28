@@ -24,6 +24,7 @@ import io.patchpilot.backend.task.domain.vo.FixTaskFailureCauseSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskAdapterExecutionEvidenceVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskAuditSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskEvidencePackageArchiveVo;
+import io.patchpilot.backend.task.domain.vo.FixTaskEvidencePackageArchiveSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskFailureDiagnosisVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskGeneratedDiffVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskLatencySummaryVo;
@@ -345,6 +346,20 @@ public class TaskController {
             return ResponseEntity.status(404).body(ApiResponse.fail("Task not found"));
         }
         return ResponseEntity.ok(ApiResponse.ok(fixTaskEvidencePackageArchiveService.listByTaskId(id)));
+    }
+
+    @GetMapping("/evidence-packages")
+    public ResponseEntity<ApiResponse<List<FixTaskEvidencePackageArchiveVo>>> listRecentTaskEvidencePackages(
+            @RequestParam(defaultValue = "20") int limit
+    ) {
+        return ResponseEntity.ok(ApiResponse.ok(fixTaskEvidencePackageArchiveService.listRecent(limit)));
+    }
+
+    @GetMapping("/evidence-packages/summary")
+    public ResponseEntity<ApiResponse<FixTaskEvidencePackageArchiveSummaryVo>> getTaskEvidencePackageArchiveSummary(
+            @RequestParam(defaultValue = "50") int limit
+    ) {
+        return ResponseEntity.ok(ApiResponse.ok(fixTaskEvidencePackageArchiveService.summary(limit)));
     }
 
     @GetMapping(value = "/evidence-packages/{archiveId}/report/download", produces = "text/markdown;charset=UTF-8")

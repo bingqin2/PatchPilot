@@ -111,7 +111,9 @@ import {
   getTaskReport,
   downloadTaskReport,
   archiveTaskEvidencePackage,
+  getTaskEvidencePackageArchiveSummary,
   listTaskEvidencePackageArchives,
+  listRecentTaskEvidencePackageArchives,
   downloadTaskEvidencePackageReport,
   getTaskDetail,
   getTaskRetryPreflight,
@@ -4725,6 +4727,71 @@ test('lists task evidence package archives through backend API', async () => {
   expect(fetchMock).toHaveBeenCalledWith('/api/tasks/task%201/evidence-packages');
   expect(archives).toHaveLength(1);
   expect(archives[0].taskId).toBe('task-1');
+});
+
+test('lists recent task evidence package archives through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: [
+        {
+          id: 'task-evidence-archive-2',
+          taskId: 'task-2',
+          repositoryOwner: 'bingqin2',
+          repositoryName: 'PatchPilot',
+          issueNumber: 2,
+          status: 'FAILED',
+          pullRequestUrl: null,
+          archivedAt: '2026-06-20T01:10:00Z',
+          summary: 'Task FAILED for bingqin2/PatchPilot#2 archived as evidence.',
+          report: '# PatchPilot Task Report\n\n- Task: `task-2`'
+        }
+      ],
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const archives = await listRecentTaskEvidencePackageArchives(10);
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/tasks/evidence-packages?limit=10');
+  expect(archives).toHaveLength(1);
+  expect(archives[0].id).toBe('task-evidence-archive-2');
+});
+
+test('gets task evidence package archive summary through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        totalArchiveCount: 2,
+        completedArchiveCount: 1,
+        failedArchiveCount: 1,
+        pendingReviewArchiveCount: 0,
+        cancelledArchiveCount: 0,
+        latestArchiveId: 'task-evidence-archive-2',
+        latestTaskId: 'task-2',
+        latestRepositoryOwner: 'bingqin2',
+        latestRepositoryName: 'PatchPilot',
+        latestIssueNumber: 2,
+        latestArchivedAt: '2026-06-20T01:10:00Z',
+        sideEffectContract: 'Read-only archive review.',
+        nextAction: 'Download the latest archived evidence report.'
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const summary = await getTaskEvidencePackageArchiveSummary(25);
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/tasks/evidence-packages/summary?limit=25');
+  expect(summary.totalArchiveCount).toBe(2);
+  expect(summary.latestArchiveId).toBe('task-evidence-archive-2');
 });
 
 test('downloads archived task evidence package report through backend API', async () => {

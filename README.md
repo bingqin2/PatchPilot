@@ -615,6 +615,16 @@ The demo handoff package archive endpoints store the final handoff package separ
 The demo script endpoint turns the current evidence bundle into an ordered live-demo script. Each step includes an operator action, a verification command, success criteria, a dashboard troubleshooting panel, and the current evidence. Its health contract states that `GET /api/demo/script` is read-only and does not create tasks, call the model, run tests, mutate Git, or write to GitHub.
 The runbook endpoint formats the same evidence bundle as Markdown for demos, handoff notes, or issue comments. It is read-only and does not create tasks, call the model, run tests, or write to GitHub.
 
+Task evidence package archive review:
+
+```bash
+curl "${ADMIN_HEADER[@]}" http://127.0.0.1:8080/api/tasks/evidence-packages
+curl "${ADMIN_HEADER[@]}" http://127.0.0.1:8080/api/tasks/evidence-packages/summary
+curl -OJ "${ADMIN_HEADER[@]}" http://127.0.0.1:8080/api/tasks/evidence-packages/{archiveId}/report/download
+```
+
+The task evidence archive review endpoints list recent archived task reports across tasks and summarize the current archive inventory, including completed/failed/pending-review/cancelled counts, latest archive identifiers, a side-effect contract, and the next operator action. The dashboard surfaces the same data in `Task evidence archive review` so operators can download archived task reports or open the related task without selecting each task first. These review endpoints are read-only and do not create tasks, call the model, run verification commands, mutate Git, push branches, open Pull Requests, or write GitHub comments.
+
 Queue state:
 
 ```bash

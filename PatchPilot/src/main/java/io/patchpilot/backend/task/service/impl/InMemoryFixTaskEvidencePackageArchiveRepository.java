@@ -33,6 +33,13 @@ public class InMemoryFixTaskEvidencePackageArchiveRepository implements FixTaskE
     }
 
     @Override
+    public List<FixTaskEvidencePackageArchiveVo> listRecent(int limit) {
+        return archives.stream()
+                .limit(limit)
+                .toList();
+    }
+
+    @Override
     public Optional<FixTaskEvidencePackageArchiveVo> findById(String archiveId) {
         return archives.stream()
                 .filter(archive -> archive.id().equals(archiveId))

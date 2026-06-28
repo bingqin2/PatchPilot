@@ -5293,3 +5293,21 @@ Validation so far:
 - `npm test`: passed after full frontend regression verification, 193 tests run, 0 failures.
 - `npm run build`: passed after production frontend build verification.
 - `git diff --check`: passed.
+## 2026-06-28 - 264 Task evidence archive review center
+
+- Started `264-task-evidence-archive-review-center` to turn archived task evidence packages into a cross-task review surface for demo handoff.
+- Planned backend recent archive and summary APIs plus a dashboard review panel with download and task-open actions.
+- RED tests added first for backend controller behavior, frontend API paths, and the new review panel.
+- Implemented read-only recent archive and summary APIs, plus the dashboard `Task evidence archive review` panel with global archive counts, latest task evidence, side-effect contract, report downloads, and task-open actions.
+- Updated README operator API documentation for the new archive review endpoints.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=TaskControllerTests#should_list_recent_task_evidence_package_archives_and_summary test`: first failed with `/api/tasks/evidence-packages` routed to `/{id}` and returning 404; passed after adding the specific archive review routes, 1 test run, 0 failures.
+- `npm test -- src/api.test.ts src/dashboard/components/TaskEvidenceArchiveReviewPanel.test.tsx`: first failed because the new API functions and component did not exist; passed after frontend implementation, 133 tests run, 0 failures.
+- `npm test -- src/App.test.tsx -t "renders operational task dashboard from backend APIs|downloads and archives selected task evidence package"`: passed after wiring the dashboard data flow, 2 selected tests run, 0 failures.
+- `mvn -pl PatchPilot -Dtest=TaskControllerTests test`: passed, 77 tests run, 0 failures.
+- `npm test`: passed, 373 tests run, 0 failures.
+- `npm run build`: passed.
+- `mvn -pl PatchPilot test`: passed, 941 tests run, 0 failures.
+- `git diff --check`: passed.

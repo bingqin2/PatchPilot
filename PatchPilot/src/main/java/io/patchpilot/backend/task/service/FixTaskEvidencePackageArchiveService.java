@@ -2,6 +2,7 @@ package io.patchpilot.backend.task.service;
 
 import io.patchpilot.backend.task.domain.vo.FixTaskDetailVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskEvidencePackageArchiveVo;
+import io.patchpilot.backend.task.domain.vo.FixTaskEvidencePackageArchiveSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -16,6 +17,10 @@ import java.util.function.Supplier;
 public class FixTaskEvidencePackageArchiveService {
 
     private static final int DEFAULT_LIMIT = 20;
+    private static final int MAX_LIMIT = 100;
+    private static final String SIDE_EFFECT_CONTRACT = "Task evidence archive review reads PatchPilot-local archived "
+            + "reports only; it does not create tasks, call the model, run verification commands, mutate Git, "
+            + "push, open Pull Requests, or write GitHub comments.";
 
     private final FixTaskEvidencePackageArchiveRepository archiveRepository;
     private final FixTaskReportFormatter reportFormatter;
@@ -69,6 +74,30 @@ public class FixTaskEvidencePackageArchiveService {
         return archiveRepository.listByTaskId(taskId, DEFAULT_LIMIT);
     }
 
+    public List<FixTaskEvidencePackageArchiveVo> listRecent(int limit) {
+        return archiveRepository.listRecent(normalizeLimit(limit));
+    }
+
+    public FixTaskEvidencePackageArchiveSummaryVo summary(int limit) {
+        List<FixTaskEvidencePackageArchiveVo> archives = listRecent(limit);
+        FixTaskEvidencePackageArchiveVo latest = archives.isEmpty() ? null : archives.get(0);
+        return new FixTaskEvidencePackageArchiveSummaryVo(
+                archives.size(),
+                countStatus(archives, "COMPLETED"),
+                countStatus(archives, "FAILED"),
+                countStatus(archives, "PENDING_REVIEW"),
+                countStatus(archives, "CANCELLED"),
+                latest == null ? null : latest.id(),
+                latest == null ? null : latest.taskId(),
+                latest == null ? null : latest.repositoryOwner(),
+                latest == null ? null : latest.repositoryName(),
+                latest == null ? null : latest.issueNumber(),
+                latest == null ? null : latest.archivedAt(),
+                SIDE_EFFECT_CONTRACT,
+                nextAction(latest)
+        );
+    }
+
     public Optional<FixTaskEvidencePackageArchiveVo> findById(String archiveId) {
         return archiveRepository.findById(archiveId);
     }
@@ -78,5 +107,27 @@ public class FixTaskEvidencePackageArchiveService {
                 + " for " + task.repositoryOwner() + "/" + task.repositoryName()
                 + "#" + task.issueNumber()
                 + " archived as evidence.";
+    }
+
+    private static int countStatus(List<FixTaskEvidencePackageArchiveVo> archives, String status) {
+        return (int) archives.stream()
+                .filter(archive -> status.equals(archive.status()))
+                .count();
+    }
+
+    private static String nextAction(FixTaskEvidencePackageArchiveVo latest) {
+        if (latest == null) {
+            return "Archive a completed, failed, cancelled, or pending-review task from Task Detail before sharing evidence.";
+        }
+        return "Download archived task evidence " + latest.id()
+                + " or open task " + latest.taskId()
+                + " before sharing review notes.";
+    }
+
+    private static int normalizeLimit(int limit) {
+        if (limit <= 0) {
+            return DEFAULT_LIMIT;
+        }
+        return Math.min(limit, MAX_LIMIT);
     }
 }
