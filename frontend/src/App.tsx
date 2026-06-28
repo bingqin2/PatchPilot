@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react
 import {
   ADMIN_TOKEN_STORAGE_KEY,
   approveTaskReview,
+  archiveTaskEvidencePackageAcceptanceCloseout,
   archiveTaskEvidencePackage,
   archiveDemoLaunchAcceptanceCertificate,
   archiveDemoLaunchAcceptanceCloseout,
@@ -45,6 +46,7 @@ import {
   downloadDemoHandoffShareInstructionsReport,
   downloadDemoHandoffShareChecklistReport,
   downloadTaskEvidencePackageReport,
+  downloadTaskEvidencePackageAcceptanceCloseoutArchiveReport,
   downloadTaskEvidencePackageFinalizationReport,
   downloadTaskEvidencePackageShareDeliveryReceiptReport,
   downloadTaskEvidencePackageShareCenterReport,
@@ -128,6 +130,7 @@ import {
   listWebhookDeliveries,
   listTasks,
   listTaskEvidencePackageArchives,
+  listTaskEvidencePackageAcceptanceCloseoutArchives,
   listTaskEvidencePackageShareDeliveryReceipts,
   listRecentTaskEvidencePackageArchives,
   preflightRepository,
@@ -223,6 +226,7 @@ import type {
   EvaluationRunPreview,
   EvaluationRunSnapshotArchive,
   FixTask,
+  FixTaskEvidencePackageAcceptanceCloseoutArchive,
   FixTaskEvidencePackageArchive,
   FixTaskEvidencePackageFinalization,
   FixTaskEvidencePackageArchiveShareCenter,
@@ -436,10 +440,13 @@ export default function App() {
     useState<FixTaskEvidencePackageFinalization | null>(null);
   const [taskEvidenceDeliveryReceipts, setTaskEvidenceDeliveryReceipts] =
     useState<FixTaskEvidencePackageShareDeliveryReceipt[]>([]);
+  const [taskEvidenceCloseoutArchives, setTaskEvidenceCloseoutArchives] =
+    useState<FixTaskEvidencePackageAcceptanceCloseoutArchive[]>([]);
   const [taskEvidenceArchiveError, setTaskEvidenceArchiveError] = useState<string | null>(null);
   const [taskEvidenceShareCenterError, setTaskEvidenceShareCenterError] = useState<string | null>(null);
   const [taskEvidenceFinalizationError, setTaskEvidenceFinalizationError] = useState<string | null>(null);
   const [taskEvidenceDeliveryReceiptError, setTaskEvidenceDeliveryReceiptError] = useState<string | null>(null);
+  const [taskEvidenceCloseoutArchiveError, setTaskEvidenceCloseoutArchiveError] = useState<string | null>(null);
   const [webhookDeliveries, setWebhookDeliveries] = useState<WebhookDeliveryDiagnostic[]>([]);
   const [webhookDeliveryError, setWebhookDeliveryError] = useState<string | null>(null);
   const [webhookPayloadDiagnostic, setWebhookPayloadDiagnostic] = useState<WebhookPayloadDiagnosticResult | null>(null);
@@ -765,6 +772,7 @@ export default function App() {
         taskEvidenceShareCenterResult,
         taskEvidenceFinalizationResult,
         taskEvidenceDeliveryReceiptResult,
+        taskEvidenceCloseoutArchiveResult,
         webhookDeliveryResult,
         acceptedTriggerDecisionResult,
         rejectedTriggerResult,
@@ -978,6 +986,10 @@ export default function App() {
         listTaskEvidencePackageShareDeliveryReceipts().then(
           (receipts) => ({ receipts, error: null as string | null }),
           (caught) => ({ receipts: null, error: errorMessage(caught) })
+        ),
+        listTaskEvidencePackageAcceptanceCloseoutArchives().then(
+          (archives) => ({ archives, error: null as string | null }),
+          (caught) => ({ archives: null, error: errorMessage(caught) })
         ),
         listWebhookDeliveries(10).then(
           (deliveries) => ({ deliveries, error: null as string | null }),
@@ -1216,6 +1228,10 @@ export default function App() {
         setTaskEvidenceDeliveryReceipts(taskEvidenceDeliveryReceiptResult.receipts);
       }
       setTaskEvidenceDeliveryReceiptError(taskEvidenceDeliveryReceiptResult.error);
+      if (taskEvidenceCloseoutArchiveResult.archives) {
+        setTaskEvidenceCloseoutArchives(taskEvidenceCloseoutArchiveResult.archives);
+      }
+      setTaskEvidenceCloseoutArchiveError(taskEvidenceCloseoutArchiveResult.error);
       if (webhookDeliveryResult.deliveries) {
         setWebhookDeliveries(webhookDeliveryResult.deliveries);
       }
@@ -1473,6 +1489,15 @@ export default function App() {
   }, []);
   const handleDownloadTaskEvidencePackageShareDeliveryReceiptReport = useCallback((receiptId: string) => (
     downloadTaskEvidencePackageShareDeliveryReceiptReport(receiptId)
+  ), []);
+  const handleArchiveTaskEvidencePackageAcceptanceCloseout = useCallback(async () => {
+    const archive = await archiveTaskEvidencePackageAcceptanceCloseout();
+    setTaskEvidenceCloseoutArchives((current) => [archive, ...current.filter((item) => item.id !== archive.id)].slice(0, 20));
+    setTaskEvidenceCloseoutArchiveError(null);
+    return archive;
+  }, []);
+  const handleDownloadTaskEvidencePackageAcceptanceCloseoutArchiveReport = useCallback((archiveId: string) => (
+    downloadTaskEvidencePackageAcceptanceCloseoutArchiveReport(archiveId)
   ), []);
   const handleCopyDemoRunbook = useCallback(() => getDemoRunbook(), []);
   const handleCopyDemoSessionReport = useCallback((input: DemoSessionReportInput) => getDemoSessionReport(input), []);
@@ -2319,16 +2344,20 @@ export default function App() {
         shareCenter={taskEvidenceShareCenter}
         finalization={taskEvidenceFinalization}
         deliveryReceipts={taskEvidenceDeliveryReceipts}
+        closeoutArchives={taskEvidenceCloseoutArchives}
         archives={taskEvidenceArchives}
         error={taskEvidenceArchiveError}
         shareCenterError={taskEvidenceShareCenterError}
         finalizationError={taskEvidenceFinalizationError}
         deliveryReceiptError={taskEvidenceDeliveryReceiptError}
+        closeoutArchiveError={taskEvidenceCloseoutArchiveError}
         onDownloadArchiveReport={handleDownloadTaskEvidencePackageReport}
         onDownloadShareCenterReport={handleDownloadTaskEvidencePackageShareCenterReport}
         onDownloadFinalizationReport={handleDownloadTaskEvidencePackageFinalizationReport}
         onCreateDeliveryReceipt={handleCreateTaskEvidencePackageShareDeliveryReceipt}
         onDownloadDeliveryReceiptReport={handleDownloadTaskEvidencePackageShareDeliveryReceiptReport}
+        onArchiveAcceptanceCloseout={handleArchiveTaskEvidencePackageAcceptanceCloseout}
+        onDownloadAcceptanceCloseoutArchiveReport={handleDownloadTaskEvidencePackageAcceptanceCloseoutArchiveReport}
         onSelectTask={selectTask}
       />
 

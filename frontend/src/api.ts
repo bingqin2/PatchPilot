@@ -52,6 +52,7 @@ import type {
   EvaluationRunPreview,
   EvaluationRunSnapshotArchive,
   FixTask,
+  FixTaskEvidencePackageAcceptanceCloseoutArchive,
   FixTaskEvidencePackageArchive,
   FixTaskEvidencePackageFinalization,
   FixTaskEvidencePackageArchiveShareCenter,
@@ -763,6 +764,24 @@ export async function getTaskEvidencePackageFinalization(): Promise<FixTaskEvide
 
 export async function downloadTaskEvidencePackageFinalizationReport(): Promise<Blob> {
   return getBlobApi('/api/tasks/evidence-packages/finalization/report/download');
+}
+
+export async function archiveTaskEvidencePackageAcceptanceCloseout(): Promise<FixTaskEvidencePackageAcceptanceCloseoutArchive> {
+  return postApi<FixTaskEvidencePackageAcceptanceCloseoutArchive>(
+    '/api/tasks/evidence-packages/acceptance-closeout/archives'
+  );
+}
+
+export async function listTaskEvidencePackageAcceptanceCloseoutArchives(): Promise<FixTaskEvidencePackageAcceptanceCloseoutArchive[]> {
+  return getApi<FixTaskEvidencePackageAcceptanceCloseoutArchive[]>(
+    '/api/tasks/evidence-packages/acceptance-closeout/archives'
+  );
+}
+
+export async function downloadTaskEvidencePackageAcceptanceCloseoutArchiveReport(archiveId: string): Promise<Blob> {
+  return getBlobApi(
+    `/api/tasks/evidence-packages/acceptance-closeout/archives/${encodeURIComponent(archiveId)}/report/download`
+  );
 }
 
 export async function getTimeline(taskId: string): Promise<FixTaskTimelineEvent[]> {

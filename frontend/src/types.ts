@@ -211,6 +211,22 @@ export interface FixTaskEvidencePackageFinalization {
   generatedAt: string;
 }
 
+export interface FixTaskEvidencePackageAcceptanceCloseoutArchive {
+  id: string;
+  status: 'READY' | 'NEEDS_ATTENTION' | 'BLOCKED';
+  accepted: boolean;
+  summary: string;
+  latestArchiveId: string | null;
+  latestTaskId: string | null;
+  latestPullRequestUrl: string | null;
+  latestDeliveryReceiptId: string | null;
+  latestDeliveryTarget: string | null;
+  latestDeliveryChannel: string | null;
+  deliveryReceiptFreshness: 'FRESH' | 'MISSING' | 'STALE';
+  createdAt: string;
+  report: string;
+}
+
 export interface FixTaskRetryPreflight {
   taskId: string;
   status: TaskStatus;
