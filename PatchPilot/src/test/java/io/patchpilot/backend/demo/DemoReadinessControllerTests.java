@@ -24,6 +24,7 @@ import io.patchpilot.backend.demo.domain.DemoHandoffShareInstructionsVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffFinalizationCheckVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchAcceptanceCloseoutCheckVo;
+import io.patchpilot.backend.demo.domain.DemoLaunchAcceptanceCertificateVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchAcceptanceCloseoutArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchAcceptanceCloseoutEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchAcceptanceCloseoutVo;
@@ -143,6 +144,9 @@ class DemoReadinessControllerTests {
 
     @MockitoBean
     private DemoLaunchAcceptanceCloseoutArchiveService demoLaunchAcceptanceCloseoutArchiveService;
+
+    @MockitoBean
+    private DemoLaunchAcceptanceCertificateService demoLaunchAcceptanceCertificateService;
 
     @MockitoBean
     private DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
@@ -454,6 +458,39 @@ class DemoReadinessControllerTests {
 
         mockMvc.perform(get("/api/demo/launch-acceptance-closeout/archives/missing-archive/report/download"))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void should_return_launch_acceptance_certificate() throws Exception {
+        when(demoLaunchAcceptanceCertificateService.getCertificate()).thenReturn(launchAcceptanceCertificate());
+
+        mockMvc.perform(get("/api/demo/launch-acceptance-certificate"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.certified").value(true))
+                .andExpect(jsonPath("$.data.summary")
+                        .value("PatchPilot launch acceptance is certified from the latest accepted closeout archive."))
+                .andExpect(jsonPath("$.data.nextAction")
+                        .value("Share the certificate and archived closeout report with reviewers."))
+                .andExpect(jsonPath("$.data.latestCloseoutArchiveId").value("launch-closeout-archive-1"))
+                .andExpect(jsonPath("$.data.latestLaunchEvidenceArchiveId").value("launch-evidence-archive-1"))
+                .andExpect(jsonPath("$.data.latestDeliveryReceiptId").value("launch-delivery-receipt-1"))
+                .andExpect(jsonPath("$.data.latestPullRequestUrl").value("https://github.com/bingqin2/PatchPilot/pull/42"))
+                .andExpect(jsonPath("$.data.downloadActions[0]").value("Download launch acceptance certificate."));
+    }
+
+    @Test
+    void should_download_launch_acceptance_certificate_report() throws Exception {
+        when(demoLaunchAcceptanceCertificateService.getCertificate()).thenReturn(launchAcceptanceCertificate());
+
+        mockMvc.perform(get("/api/demo/launch-acceptance-certificate/report/download"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("attachment;")))
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("patchpilot-launch-acceptance-certificate.md")))
+                .andExpect(content().contentTypeCompatibleWith("text/markdown"))
+                .andExpect(content().string(containsString("# PatchPilot Launch Acceptance Certificate")))
+                .andExpect(content().string(containsString("launch-closeout-archive-1")));
     }
 
     @Test
@@ -2527,6 +2564,34 @@ class DemoReadinessControllerTests {
                 "FRESH",
                 Instant.parse("2026-06-28T08:30:00Z"),
                 "# PatchPilot Launch Acceptance Closeout\n\n- Receipt: `launch-delivery-receipt-1`"
+        );
+    }
+
+    private static DemoLaunchAcceptanceCertificateVo launchAcceptanceCertificate() {
+        return new DemoLaunchAcceptanceCertificateVo(
+                DemoReadinessStatus.READY,
+                true,
+                "PatchPilot launch acceptance is certified from the latest accepted closeout archive.",
+                "Share the certificate and archived closeout report with reviewers.",
+                1,
+                "launch-closeout-archive-1",
+                "launch-evidence-archive-1",
+                "launch-delivery-receipt-1",
+                "demo-session-20260624T003000Z",
+                "task-1",
+                "https://github.com/bingqin2/PatchPilot/pull/42",
+                "delivery-1",
+                "evaluation-run-2",
+                "reviewer@example.com",
+                "email",
+                "FRESH",
+                Instant.parse("2026-06-28T08:30:00Z"),
+                Instant.parse("2026-06-28T09:00:00Z"),
+                List.of(
+                        "Download launch acceptance certificate.",
+                        "Download launch acceptance closeout archive launch-closeout-archive-1."
+                ),
+                "# PatchPilot Launch Acceptance Certificate\n\n- Closeout archive: `launch-closeout-archive-1`\n"
         );
     }
 }

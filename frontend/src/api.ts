@@ -17,6 +17,7 @@ import type {
   DemoHandoffShareDeliveryReceiptInput,
   DemoHandoffShareInstructions,
   DemoHandoffShareChecklist,
+  DemoLaunchAcceptanceCertificate,
   DemoLaunchCommand,
   DemoLaunchAcceptanceCloseout,
   DemoLaunchAcceptanceCloseoutArchive,
@@ -305,8 +306,16 @@ export async function getDemoLaunchAcceptanceCloseout(): Promise<DemoLaunchAccep
   return getApi<DemoLaunchAcceptanceCloseout>('/api/demo/launch-acceptance-closeout');
 }
 
+export async function getDemoLaunchAcceptanceCertificate(): Promise<DemoLaunchAcceptanceCertificate> {
+  return getApi<DemoLaunchAcceptanceCertificate>('/api/demo/launch-acceptance-certificate');
+}
+
 export async function downloadDemoLaunchAcceptanceCloseoutReport(): Promise<Blob> {
   return getBlobApi('/api/demo/launch-acceptance-closeout/report/download');
+}
+
+export async function downloadDemoLaunchAcceptanceCertificateReport(): Promise<Blob> {
+  return getBlobApi('/api/demo/launch-acceptance-certificate/report/download');
 }
 
 export async function archiveDemoLaunchAcceptanceCloseout(): Promise<DemoLaunchAcceptanceCloseoutArchive> {

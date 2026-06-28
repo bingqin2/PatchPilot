@@ -522,6 +522,29 @@ export interface DemoLaunchAcceptanceCloseoutArchive {
   report: string;
 }
 
+export interface DemoLaunchAcceptanceCertificate {
+  status: DemoReadinessStatus;
+  certified: boolean;
+  summary: string;
+  nextAction: string;
+  archiveCount: number;
+  latestCloseoutArchiveId: string | null;
+  latestLaunchEvidenceArchiveId: string | null;
+  latestDeliveryReceiptId: string | null;
+  latestSessionId: string | null;
+  latestTaskId: string | null;
+  latestPullRequestUrl: string | null;
+  latestWebhookDeliveryId: string | null;
+  evaluationRunId: string | null;
+  latestDeliveryTarget: string | null;
+  latestDeliveryChannel: string | null;
+  deliveryReceiptFreshness: string;
+  latestArchivedAt: string | null;
+  generatedAt: string;
+  downloadActions: string[];
+  markdownReport: string;
+}
+
 export interface DemoLaunchEvidenceShareDeliveryReceipt {
   id: string;
   status: string;

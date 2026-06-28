@@ -30,6 +30,7 @@ import {
   downloadDemoLaunchEvidencePackageArchiveReport,
   downloadDemoLaunchEvidencePackageReport,
   downloadDemoLaunchAcceptanceCloseoutArchiveReport,
+  downloadDemoLaunchAcceptanceCertificateReport,
   downloadDemoLaunchAcceptanceCloseoutReport,
   downloadDemoLaunchEvidenceFinalizationReport,
   downloadDemoLaunchEvidenceShareDeliveryReceiptReport,
@@ -50,6 +51,7 @@ import {
   getDemoHandoffPackageArchiveSummary,
   getDemoHandoffShareCenter,
   getDemoHandoffFinalization,
+  getDemoLaunchAcceptanceCertificate,
   getDemoLaunchAcceptanceCloseout,
   getDemoLaunchEvidenceFinalization,
   getDemoLaunchEvidencePackage,
@@ -172,6 +174,7 @@ import type {
   DemoHandoffShareDeliveryReceiptInput,
   DemoHandoffShareInstructions,
   DemoHandoffShareChecklist,
+  DemoLaunchAcceptanceCertificate,
   DemoLaunchAcceptanceCloseout,
   DemoLaunchAcceptanceCloseoutArchive,
   DemoLaunchCommand,
@@ -334,6 +337,10 @@ export default function App() {
   const [demoLaunchAcceptanceCloseoutArchives, setDemoLaunchAcceptanceCloseoutArchives] =
     useState<DemoLaunchAcceptanceCloseoutArchive[]>([]);
   const [demoLaunchAcceptanceCloseoutArchiveError, setDemoLaunchAcceptanceCloseoutArchiveError] =
+    useState<string | null>(null);
+  const [demoLaunchAcceptanceCertificate, setDemoLaunchAcceptanceCertificate] =
+    useState<DemoLaunchAcceptanceCertificate | null>(null);
+  const [demoLaunchAcceptanceCertificateError, setDemoLaunchAcceptanceCertificateError] =
     useState<string | null>(null);
   const [demoLaunchEvidenceDeliveryReceipts, setDemoLaunchEvidenceDeliveryReceipts] =
     useState<DemoLaunchEvidenceShareDeliveryReceipt[]>([]);
@@ -687,6 +694,7 @@ export default function App() {
         demoLaunchEvidenceFinalizationResult,
         demoLaunchAcceptanceCloseoutResult,
         demoLaunchAcceptanceCloseoutArchiveResult,
+        demoLaunchAcceptanceCertificateResult,
         demoLaunchEvidenceDeliveryReceiptResult,
         demoHandoffShareInstructionsResult,
         demoHandoffShareDeliveryReceiptResult,
@@ -812,6 +820,10 @@ export default function App() {
         listDemoLaunchAcceptanceCloseoutArchives().then(
           (archives) => ({ archives, error: null as string | null }),
           (caught) => ({ archives: null, error: errorMessage(caught) })
+        ),
+        getDemoLaunchAcceptanceCertificate().then(
+          (certificate) => ({ certificate, error: null as string | null }),
+          (caught) => ({ certificate: null, error: errorMessage(caught) })
         ),
         listDemoLaunchEvidenceShareDeliveryReceipts().then(
           (receipts) => ({ receipts, error: null as string | null }),
@@ -1021,6 +1033,10 @@ export default function App() {
         setDemoLaunchAcceptanceCloseoutArchives(demoLaunchAcceptanceCloseoutArchiveResult.archives);
       }
       setDemoLaunchAcceptanceCloseoutArchiveError(demoLaunchAcceptanceCloseoutArchiveResult.error);
+      if (demoLaunchAcceptanceCertificateResult.certificate) {
+        setDemoLaunchAcceptanceCertificate(demoLaunchAcceptanceCertificateResult.certificate);
+      }
+      setDemoLaunchAcceptanceCertificateError(demoLaunchAcceptanceCertificateResult.error);
       if (demoLaunchEvidenceDeliveryReceiptResult.receipts) {
         setDemoLaunchEvidenceDeliveryReceipts(demoLaunchEvidenceDeliveryReceiptResult.receipts);
       }
@@ -1358,10 +1374,20 @@ export default function App() {
   const handleDownloadDemoLaunchAcceptanceCloseoutReport = useCallback(() => (
     downloadDemoLaunchAcceptanceCloseoutReport()
   ), []);
+  const handleDownloadDemoLaunchAcceptanceCertificateReport = useCallback(() => (
+    downloadDemoLaunchAcceptanceCertificateReport()
+  ), []);
   const handleArchiveDemoLaunchAcceptanceCloseout = useCallback(async () => {
     const archive = await archiveDemoLaunchAcceptanceCloseout();
     setDemoLaunchAcceptanceCloseoutArchives((current) => [archive, ...current.filter((item) => item.id !== archive.id)].slice(0, 20));
     setDemoLaunchAcceptanceCloseoutArchiveError(null);
+    try {
+      const certificate = await getDemoLaunchAcceptanceCertificate();
+      setDemoLaunchAcceptanceCertificate(certificate);
+      setDemoLaunchAcceptanceCertificateError(null);
+    } catch (caught) {
+      setDemoLaunchAcceptanceCertificateError(errorMessage(caught));
+    }
     return archive;
   }, []);
   const handleDownloadDemoLaunchAcceptanceCloseoutArchiveReport = useCallback((archiveId: string) => (
@@ -1916,6 +1942,8 @@ export default function App() {
         closeoutError={demoLaunchAcceptanceCloseoutError}
         closeoutArchives={demoLaunchAcceptanceCloseoutArchives}
         closeoutArchiveError={demoLaunchAcceptanceCloseoutArchiveError}
+        certificate={demoLaunchAcceptanceCertificate}
+        certificateError={demoLaunchAcceptanceCertificateError}
         deliveryReceipts={demoLaunchEvidenceDeliveryReceipts}
         deliveryReceiptError={demoLaunchEvidenceDeliveryReceiptError}
         onArchivePackage={handleArchiveDemoLaunchEvidencePackage}
@@ -1926,6 +1954,7 @@ export default function App() {
         onDownloadCloseoutReport={handleDownloadDemoLaunchAcceptanceCloseoutReport}
         onArchiveCloseout={handleArchiveDemoLaunchAcceptanceCloseout}
         onDownloadCloseoutArchiveReport={handleDownloadDemoLaunchAcceptanceCloseoutArchiveReport}
+        onDownloadCertificateReport={handleDownloadDemoLaunchAcceptanceCertificateReport}
         onCreateDeliveryReceipt={handleCreateDemoLaunchEvidenceDeliveryReceipt}
         onDownloadDeliveryReceiptReport={handleDownloadDemoLaunchEvidenceDeliveryReceiptReport}
       />
