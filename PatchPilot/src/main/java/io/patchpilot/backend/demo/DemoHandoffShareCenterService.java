@@ -6,6 +6,7 @@ import io.patchpilot.backend.demo.domain.DemoHandoffShareChecklistVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffShareDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffShareInstructionsVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessStatus;
+import io.patchpilot.backend.demo.domain.DemoTaskEvidenceAcceptanceCertificateEvidenceVo;
 import io.patchpilot.backend.demo.service.DemoHandoffShareDeliveryReceiptRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,7 @@ public class DemoHandoffShareCenterService {
 
     private final DemoHandoffPackageArchiveSummaryService archiveSummaryService;
     private final DemoHandoffShareChecklistService shareChecklistService;
+    private final DemoTaskEvidenceAcceptanceCertificateEvidenceService taskCertificateEvidenceService;
     private final DemoHandoffShareDeliveryReceiptRepository receiptRepository;
     private final Clock clock;
 
@@ -27,19 +29,22 @@ public class DemoHandoffShareCenterService {
     public DemoHandoffShareCenterService(
             DemoHandoffPackageArchiveSummaryService archiveSummaryService,
             DemoHandoffShareChecklistService shareChecklistService,
+            DemoTaskEvidenceAcceptanceCertificateEvidenceService taskCertificateEvidenceService,
             DemoHandoffShareDeliveryReceiptRepository receiptRepository
     ) {
-        this(archiveSummaryService, shareChecklistService, receiptRepository, Clock.systemUTC());
+        this(archiveSummaryService, shareChecklistService, taskCertificateEvidenceService, receiptRepository, Clock.systemUTC());
     }
 
     DemoHandoffShareCenterService(
             DemoHandoffPackageArchiveSummaryService archiveSummaryService,
             DemoHandoffShareChecklistService shareChecklistService,
+            DemoTaskEvidenceAcceptanceCertificateEvidenceService taskCertificateEvidenceService,
             DemoHandoffShareDeliveryReceiptRepository receiptRepository,
             Clock clock
     ) {
         this.archiveSummaryService = archiveSummaryService;
         this.shareChecklistService = shareChecklistService;
+        this.taskCertificateEvidenceService = taskCertificateEvidenceService;
         this.receiptRepository = receiptRepository;
         this.clock = clock;
     }
@@ -47,17 +52,21 @@ public class DemoHandoffShareCenterService {
     public DemoHandoffShareCenterVo getShareCenter() {
         DemoHandoffPackageArchiveSummaryVo archiveSummary = archiveSummaryService.getArchiveSummary();
         DemoHandoffShareChecklistVo checklist = shareChecklistService.getShareChecklist();
+        DemoTaskEvidenceAcceptanceCertificateEvidenceVo taskCertificate = taskCertificateEvidenceService.getEvidence();
         DemoHandoffShareDeliveryReceiptVo latestReceipt = receiptRepository.listRecentReceipts(1).stream()
                 .findFirst()
                 .orElse(null);
-        DemoReadinessStatus status = centerStatus(archiveSummary, checklist);
-        boolean shareReady = archiveSummary.shareReady() && checklist.status() == DemoReadinessStatus.READY;
+        DemoReadinessStatus status = centerStatus(archiveSummary, checklist, taskCertificate);
+        boolean taskCertificateReady = taskCertificate.status() == DemoReadinessStatus.READY && taskCertificate.certified();
+        boolean shareReady = archiveSummary.shareReady()
+                && checklist.status() == DemoReadinessStatus.READY
+                && taskCertificateReady;
         DeliveryReceiptFreshness receiptFreshness = deliveryReceiptFreshness(archiveSummary, latestReceipt);
         Instant generatedAt = Instant.now(clock);
-        List<String> downloadActions = downloadActions(archiveSummary, checklist, latestReceipt, receiptFreshness);
-        List<String> evidenceNotes = evidenceNotes(archiveSummary, checklist, latestReceipt, receiptFreshness);
-        String summary = centerSummary(archiveSummary, checklist, shareReady, status);
-        String nextAction = centerNextAction(archiveSummary, checklist, shareReady, receiptFreshness);
+        List<String> downloadActions = downloadActions(archiveSummary, checklist, taskCertificate, latestReceipt, receiptFreshness);
+        List<String> evidenceNotes = evidenceNotes(archiveSummary, checklist, taskCertificate, latestReceipt, receiptFreshness);
+        String summary = centerSummary(archiveSummary, checklist, taskCertificate, shareReady, status);
+        String nextAction = centerNextAction(archiveSummary, checklist, taskCertificate, shareReady, receiptFreshness);
         String latestCreatedAt = archiveSummary.latestCreatedAt() == null ? null : archiveSummary.latestCreatedAt().toString();
         String latestDeliveredAt = latestReceipt == null ? null : latestReceipt.deliveredAt().toString();
         String markdownReport = formatMarkdown(
@@ -67,6 +76,8 @@ public class DemoHandoffShareCenterService {
                 nextAction,
                 archiveSummary,
                 checklist,
+                taskCertificate,
+                taskCertificateReady,
                 latestReceipt,
                 receiptFreshness,
                 downloadActions,
@@ -89,6 +100,13 @@ public class DemoHandoffShareCenterService {
                 receiptFreshness.status(),
                 receiptFreshness.fresh(),
                 receiptFreshness.summary(),
+                taskCertificate.status(),
+                taskCertificateReady,
+                taskCertificate.summary(),
+                taskCertificate.nextAction(),
+                taskCertificate.latestArchiveId(),
+                taskCertificate.latestTaskId(),
+                taskCertificate.latestPullRequestUrl(),
                 downloadActions,
                 evidenceNotes,
                 markdownReport,
@@ -136,13 +154,18 @@ public class DemoHandoffShareCenterService {
 
     private static DemoReadinessStatus centerStatus(
             DemoHandoffPackageArchiveSummaryVo archiveSummary,
-            DemoHandoffShareChecklistVo checklist
+            DemoHandoffShareChecklistVo checklist,
+            DemoTaskEvidenceAcceptanceCertificateEvidenceVo taskCertificate
     ) {
         if (archiveSummary.latestHandoffReadinessStatus() == DemoReadinessStatus.BLOCKED
-                || checklist.status() == DemoReadinessStatus.BLOCKED) {
+                || checklist.status() == DemoReadinessStatus.BLOCKED
+                || taskCertificate.status() == DemoReadinessStatus.BLOCKED) {
             return DemoReadinessStatus.BLOCKED;
         }
-        if (!archiveSummary.shareReady() || checklist.status() == DemoReadinessStatus.NEEDS_ATTENTION) {
+        if (!archiveSummary.shareReady()
+                || checklist.status() == DemoReadinessStatus.NEEDS_ATTENTION
+                || taskCertificate.status() != DemoReadinessStatus.READY
+                || !taskCertificate.certified()) {
             return DemoReadinessStatus.NEEDS_ATTENTION;
         }
         return DemoReadinessStatus.READY;
@@ -151,6 +174,7 @@ public class DemoHandoffShareCenterService {
     private static List<String> downloadActions(
             DemoHandoffPackageArchiveSummaryVo archiveSummary,
             DemoHandoffShareChecklistVo checklist,
+            DemoTaskEvidenceAcceptanceCertificateEvidenceVo taskCertificate,
             DemoHandoffShareDeliveryReceiptVo latestReceipt,
             DeliveryReceiptFreshness receiptFreshness
     ) {
@@ -162,6 +186,11 @@ public class DemoHandoffShareCenterService {
         }
         actions.add("Download handoff package archive summary.");
         actions.add("Download handoff share checklist.");
+        if (taskCertificate.status() == DemoReadinessStatus.READY && hasText(taskCertificate.latestArchiveId())) {
+            actions.addAll(taskCertificate.downloadActions());
+        } else {
+            actions.add("Archive a task evidence acceptance certificate before sending final handoff evidence.");
+        }
         if (latestReceipt == null) {
             actions.add("Record a handoff share delivery receipt after sending the package.");
         } else if (!receiptFreshness.fresh()) {
@@ -179,12 +208,19 @@ public class DemoHandoffShareCenterService {
     private static List<String> evidenceNotes(
             DemoHandoffPackageArchiveSummaryVo archiveSummary,
             DemoHandoffShareChecklistVo checklist,
+            DemoTaskEvidenceAcceptanceCertificateEvidenceVo taskCertificate,
             DemoHandoffShareDeliveryReceiptVo latestReceipt,
             DeliveryReceiptFreshness receiptFreshness
     ) {
         List<String> notes = new ArrayList<>();
         notes.add("Latest package archive status is " + archiveSummary.status() + ".");
         notes.add("Share checklist has " + checklist.checks().size() + " checks.");
+        if (taskCertificate.status() == DemoReadinessStatus.READY && hasText(taskCertificate.latestArchiveId())) {
+            notes.add("Task evidence acceptance certificate " + taskCertificate.latestArchiveId()
+                    + " is READY for task " + valueOrNone(taskCertificate.latestTaskId()) + ".");
+        } else {
+            notes.add("Task evidence acceptance certificate is not ready: " + taskCertificate.summary());
+        }
         if (latestReceipt == null) {
             notes.add("No handoff share delivery receipt has been recorded yet.");
         } else {
@@ -201,6 +237,7 @@ public class DemoHandoffShareCenterService {
     private static String centerSummary(
             DemoHandoffPackageArchiveSummaryVo archiveSummary,
             DemoHandoffShareChecklistVo checklist,
+            DemoTaskEvidenceAcceptanceCertificateEvidenceVo taskCertificate,
             boolean shareReady,
             DemoReadinessStatus status
     ) {
@@ -213,6 +250,9 @@ public class DemoHandoffShareCenterService {
         if (status == DemoReadinessStatus.BLOCKED) {
             return "Post-demo handoff package is blocked from sharing.";
         }
+        if (taskCertificate.status() != DemoReadinessStatus.READY || !taskCertificate.certified()) {
+            return "Task evidence acceptance certificate is not ready for handoff sharing.";
+        }
         if (checklist.status() != DemoReadinessStatus.READY) {
             return checklist.summary();
         }
@@ -222,6 +262,7 @@ public class DemoHandoffShareCenterService {
     private static String centerNextAction(
             DemoHandoffPackageArchiveSummaryVo archiveSummary,
             DemoHandoffShareChecklistVo checklist,
+            DemoTaskEvidenceAcceptanceCertificateEvidenceVo taskCertificate,
             boolean shareReady,
             DeliveryReceiptFreshness receiptFreshness
     ) {
@@ -238,6 +279,9 @@ public class DemoHandoffShareCenterService {
         if (checklist.status() != DemoReadinessStatus.READY) {
             return checklist.nextAction();
         }
+        if (taskCertificate.status() != DemoReadinessStatus.READY || !taskCertificate.certified()) {
+            return taskCertificate.nextAction();
+        }
         return archiveSummary.nextAction();
     }
 
@@ -248,6 +292,8 @@ public class DemoHandoffShareCenterService {
             String nextAction,
             DemoHandoffPackageArchiveSummaryVo archiveSummary,
             DemoHandoffShareChecklistVo checklist,
+            DemoTaskEvidenceAcceptanceCertificateEvidenceVo taskCertificate,
+            boolean taskCertificateReady,
             DemoHandoffShareDeliveryReceiptVo latestReceipt,
             DeliveryReceiptFreshness receiptFreshness,
             List<String> downloadActions,
@@ -268,6 +314,11 @@ public class DemoHandoffShareCenterService {
         builder.append("- Delivery target: `").append(latestReceipt == null ? "none" : latestReceipt.deliveryTarget()).append("`\n");
         builder.append("- Delivery channel: `").append(latestReceipt == null ? "none" : latestReceipt.deliveryChannel()).append("`\n");
         builder.append("- Delivered at: `").append(latestReceipt == null ? "none" : latestReceipt.deliveredAt()).append("`\n");
+        builder.append("- Task certificate status: `").append(taskCertificate.status().name()).append("`\n");
+        builder.append("- Task certificate ready: `").append(taskCertificateReady).append("`\n");
+        builder.append("- Task certificate archive: `").append(valueOrNone(taskCertificate.latestArchiveId())).append("`\n");
+        builder.append("- Task certificate task: `").append(valueOrNone(taskCertificate.latestTaskId())).append("`\n");
+        builder.append("- Task certificate Pull Request: ").append(valueOrNone(taskCertificate.latestPullRequestUrl())).append("\n");
         builder.append("- Generated at: `").append(generatedAt).append("`\n\n");
         builder.append("## Summary\n\n").append(summary).append("\n\n");
         builder.append("## Next Action\n\n").append(nextAction).append("\n\n");
@@ -296,12 +347,15 @@ public class DemoHandoffShareCenterService {
         if (!hasText(center.latestArchiveId())) {
             return List.of("Create a handoff package archive before attaching final handoff evidence.");
         }
-        return List.of(
-                "Handoff package archive " + center.latestArchiveId(),
-                "Handoff package archive summary",
-                "Handoff share checklist",
-                "Handoff share center report"
-        );
+        List<String> attachments = new ArrayList<>();
+        attachments.add("Handoff package archive " + center.latestArchiveId());
+        attachments.add("Handoff package archive summary");
+        attachments.add("Handoff share checklist");
+        attachments.add("Handoff share center report");
+        if (hasText(center.taskCertificateArchiveId())) {
+            attachments.add("Task evidence acceptance certificate archive " + center.taskCertificateArchiveId());
+        }
+        return List.copyOf(attachments);
     }
 
     private static List<String> preSendChecks(DemoHandoffShareCenterVo center) {
@@ -309,6 +363,9 @@ public class DemoHandoffShareCenterService {
         if (center.shareReady()) {
             checks.add("Confirm the Pull Request link in the handoff package opens correctly.");
             checks.add("Confirm the archived package, archive summary, checklist, and share-center report were downloaded.");
+            if (hasText(center.taskCertificateArchiveId())) {
+                checks.add("Confirm task evidence acceptance certificate " + center.taskCertificateArchiveId() + " is attached.");
+            }
             checks.add("Confirm no handoff share checklist warnings remain.");
         } else {
             checks.add("Resolve the share center next action before sending: " + center.nextAction());

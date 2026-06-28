@@ -740,6 +740,14 @@ function HandoffShareCenterPanel({
           <small>{center.latestSessionId ?? 'Archive a handoff package first'}</small>
         </div>
         <div>
+          <span>Task certificate gate</span>
+          <strong>{center.taskCertificateReady ? 'Certificate-ready' : statusLabel(center.taskCertificateStatus ?? 'NEEDS_ATTENTION')}</strong>
+          <small>{center.taskCertificateSummary ?? 'Task evidence acceptance certificate evidence is unavailable.'}</small>
+          <small>{center.taskCertificateArchiveId ?? 'No certificate archive'}</small>
+          <small>{center.taskCertificateTaskId ? `Task ${center.taskCertificateTaskId}` : 'No task linked'}</small>
+          {center.taskCertificatePullRequestUrl ? <small>{center.taskCertificatePullRequestUrl}</small> : null}
+        </div>
+        <div>
           <span>Latest delivery</span>
           <strong>{deliveryFreshnessLabel(center.deliveryReceiptFreshness)}</strong>
           <small>{center.deliveryReceiptFreshnessSummary}</small>

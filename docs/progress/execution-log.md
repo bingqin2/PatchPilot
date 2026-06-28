@@ -5432,3 +5432,28 @@ Validation so far:
 - `npm test -- --reporter=basic`: passed, 29 test files and 390 tests.
 - `npm run build`: passed.
 - `git diff --check`: passed.
+
+## 2026-06-28 - 271 Handoff certificate share gate
+
+- Started `271-handoff-certificate-share-gate` to make the final post-demo handoff share path enforce task evidence acceptance certificate readiness.
+- Planned a complete feature slice: reusable task certificate evidence read model, handoff share-center certificate gate, share instructions attachment/check updates, finalization certificate check, dashboard rendering, README docs, plan doc, and regression tests.
+- RED backend tests were added first for share center blocking when task certificate evidence is missing and for finalization including a task evidence certificate check.
+- RED frontend test was added first for rendering the task certificate gate in the handoff share center, finalization gate, and share instructions.
+- Implemented `DemoTaskEvidenceAcceptanceCertificateEvidenceService` so handoff sharing can reuse latest task certificate archive evidence without parsing Markdown.
+- Extended `DemoHandoffShareCenterVo` with task certificate status, readiness, summary, next action, archive id, task id, and Pull Request URL.
+- Updated handoff share center status/next-action/download/evidence calculations so final sharing is not `shareReady` unless the task evidence acceptance certificate is `READY` and certified.
+- Updated handoff share instructions to include the task evidence certificate archive as a required attachment and pre-send check.
+- Updated handoff finalization with a `Task evidence certificate` check and evidence note so final acceptance depends on both certificate proof and delivery receipt freshness.
+- Updated the dashboard session panel to show the task certificate gate inside the final handoff share center and finalization evidence.
+- Updated README and added this plan document.
+
+Validation so far:
+
+- `mvn -q -pl PatchPilot -Dtest=DemoHandoffShareCenterServiceTests,DemoHandoffFinalizationServiceTests test`: first failed because `DemoTaskEvidenceAcceptanceCertificateEvidenceService` and new share-center fields did not exist; passed after backend implementation.
+- `npm test -- src/dashboard/components/DemoSessionSnapshotPanel.test.tsx -- --reporter=basic`: first failed because the session panel did not render the share-center/finalization task certificate gate; passed after frontend type and panel updates, 20 tests run.
+- `mvn -q -pl PatchPilot -Dtest=DemoHandoffShareCenterServiceTests,DemoHandoffFinalizationServiceTests,DemoReadinessControllerTests,DemoEvidenceBundleServiceTests test`: passed.
+- `npm test -- src/dashboard/components/DemoSessionSnapshotPanel.test.tsx src/App.test.tsx src/api.test.ts -- --reporter=basic`: passed, 3 test files and 244 tests.
+- `mvn -q -pl PatchPilot test`: passed.
+- `npm test -- --reporter=basic`: passed, 29 test files and 390 tests.
+- `npm run build`: first failed because the task certificate fields were added to the launch evidence share-center TypeScript interface instead of `DemoHandoffShareCenter`; passed after moving those fields to the correct interface.
+- `git diff --check`: passed.
