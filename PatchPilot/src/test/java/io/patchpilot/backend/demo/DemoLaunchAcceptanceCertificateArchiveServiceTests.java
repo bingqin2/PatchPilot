@@ -33,6 +33,11 @@ class DemoLaunchAcceptanceCertificateArchiveServiceTests {
         assertThat(archive.nextAction()).isEqualTo("Share the certificate and archived closeout report with reviewers.");
         assertThat(archive.latestCloseoutArchiveId()).isEqualTo("launch-closeout-archive-1");
         assertThat(archive.latestLaunchEvidenceArchiveId()).isEqualTo("launch-evidence-archive-1");
+        assertThat(archive.finalHandoffReportPackageArchiveStatus()).isEqualTo(DemoReadinessStatus.READY);
+        assertThat(archive.finalHandoffReportPackageArchiveReady()).isTrue();
+        assertThat(archive.finalHandoffReportPackageArchiveId()).isEqualTo("final-handoff-report-package-archive-1");
+        assertThat(archive.finalHandoffReportPackageArchiveSummary())
+                .isEqualTo("Latest final handoff report package archive is download-ready and ready.");
         assertThat(archive.latestDeliveryReceiptId()).isEqualTo("launch-delivery-receipt-1");
         assertThat(archive.latestPullRequestUrl()).isEqualTo("https://github.com/bingqin2/PatchPilot/pull/42");
         assertThat(archive.deliveryReceiptFreshness()).isEqualTo("FRESH");
@@ -96,6 +101,10 @@ class DemoLaunchAcceptanceCertificateArchiveServiceTests {
                 1,
                 "launch-closeout-archive-1",
                 "launch-evidence-archive-1",
+                DemoReadinessStatus.READY,
+                true,
+                "final-handoff-report-package-archive-1",
+                "Latest final handoff report package archive is download-ready and ready.",
                 "launch-delivery-receipt-1",
                 "demo-session-20260624T003000Z",
                 "task-1",
@@ -107,8 +116,13 @@ class DemoLaunchAcceptanceCertificateArchiveServiceTests {
                 "FRESH",
                 Instant.parse("2026-06-28T08:30:00Z"),
                 Instant.parse("2026-06-28T09:00:00Z"),
-                List.of("Download launch acceptance certificate."),
-                "# PatchPilot Launch Acceptance Certificate\n\n- Closeout archive: `launch-closeout-archive-1`\n"
+                List.of(
+                        "Download launch acceptance certificate.",
+                        "Download final handoff report package archive final-handoff-report-package-archive-1."
+                ),
+                "# PatchPilot Launch Acceptance Certificate\n\n"
+                        + "- Closeout archive: `launch-closeout-archive-1`\n"
+                        + "- Final handoff archive: `final-handoff-report-package-archive-1`\n"
         );
     }
 

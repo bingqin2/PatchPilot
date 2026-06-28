@@ -21,6 +21,10 @@ public final class DemoLaunchAcceptanceCloseoutArchiveConvert {
         entity.setLatestWebhookDeliveryId(archive.latestWebhookDeliveryId());
         entity.setEvaluationRunId(archive.evaluationRunId());
         entity.setLatestArchiveId(archive.latestArchiveId());
+        entity.setFinalHandoffReportPackageArchiveStatus(archive.finalHandoffReportPackageArchiveStatus().name());
+        entity.setFinalHandoffReportPackageArchiveReady(archive.finalHandoffReportPackageArchiveReady());
+        entity.setFinalHandoffReportPackageArchiveId(archive.finalHandoffReportPackageArchiveId());
+        entity.setFinalHandoffReportPackageArchiveSummary(archive.finalHandoffReportPackageArchiveSummary());
         entity.setLatestDeliveryReceiptId(archive.latestDeliveryReceiptId());
         entity.setLatestDeliveryTarget(archive.latestDeliveryTarget());
         entity.setLatestDeliveryChannel(archive.latestDeliveryChannel());
@@ -42,6 +46,10 @@ public final class DemoLaunchAcceptanceCloseoutArchiveConvert {
                 entity.getLatestWebhookDeliveryId(),
                 entity.getEvaluationRunId(),
                 entity.getLatestArchiveId(),
+                statusOrNeedsAttention(entity.getFinalHandoffReportPackageArchiveStatus()),
+                Boolean.TRUE.equals(entity.getFinalHandoffReportPackageArchiveReady()),
+                entity.getFinalHandoffReportPackageArchiveId(),
+                summaryOrMissing(entity.getFinalHandoffReportPackageArchiveSummary()),
                 entity.getLatestDeliveryReceiptId(),
                 entity.getLatestDeliveryTarget(),
                 entity.getLatestDeliveryChannel(),
@@ -49,5 +57,17 @@ public final class DemoLaunchAcceptanceCloseoutArchiveConvert {
                 entity.getCreatedAt(),
                 entity.getReport()
         );
+    }
+
+    private static DemoReadinessStatus statusOrNeedsAttention(String status) {
+        return status == null || status.isBlank()
+                ? DemoReadinessStatus.NEEDS_ATTENTION
+                : DemoReadinessStatus.valueOf(status);
+    }
+
+    private static String summaryOrMissing(String summary) {
+        return summary == null || summary.isBlank()
+                ? "No final handoff report package archive evidence recorded."
+                : summary;
     }
 }

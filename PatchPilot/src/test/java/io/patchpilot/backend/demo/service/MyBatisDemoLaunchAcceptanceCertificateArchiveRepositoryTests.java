@@ -39,6 +39,11 @@ class MyBatisDemoLaunchAcceptanceCertificateArchiveRepositoryTests {
         assertThat(insertedEntity.getCertified()).isTrue();
         assertThat(insertedEntity.getLatestCloseoutArchiveId()).isEqualTo("launch-closeout-archive-1");
         assertThat(insertedEntity.getLatestLaunchEvidenceArchiveId()).isEqualTo("launch-evidence-archive-1");
+        assertThat(insertedEntity.getFinalHandoffReportPackageArchiveStatus()).isEqualTo("READY");
+        assertThat(insertedEntity.getFinalHandoffReportPackageArchiveReady()).isTrue();
+        assertThat(insertedEntity.getFinalHandoffReportPackageArchiveId()).isEqualTo("final-handoff-report-package-archive-1");
+        assertThat(insertedEntity.getFinalHandoffReportPackageArchiveSummary())
+                .isEqualTo("Latest final handoff report package archive is download-ready and ready.");
         assertThat(insertedEntity.getLatestDeliveryReceiptId()).isEqualTo("launch-delivery-receipt-1");
         assertThat(insertedEntity.getLatestPullRequestUrl()).isEqualTo("https://github.com/bingqin2/PatchPilot/pull/42");
         assertThat(insertedEntity.getDeliveryReceiptFreshness()).isEqualTo("FRESH");
@@ -81,6 +86,10 @@ class MyBatisDemoLaunchAcceptanceCertificateArchiveRepositoryTests {
                 1,
                 "launch-closeout-archive-1",
                 "launch-evidence-archive-1",
+                DemoReadinessStatus.READY,
+                true,
+                "final-handoff-report-package-archive-1",
+                "Latest final handoff report package archive is download-ready and ready.",
                 "launch-delivery-receipt-1",
                 "demo-session-20260624T003000Z",
                 "task-1",
@@ -108,6 +117,10 @@ class MyBatisDemoLaunchAcceptanceCertificateArchiveRepositoryTests {
         entity.setArchiveCount(1);
         entity.setLatestCloseoutArchiveId("launch-closeout-archive-1");
         entity.setLatestLaunchEvidenceArchiveId("launch-evidence-archive-1");
+        entity.setFinalHandoffReportPackageArchiveStatus("READY");
+        entity.setFinalHandoffReportPackageArchiveReady(true);
+        entity.setFinalHandoffReportPackageArchiveId("final-handoff-report-package-archive-1");
+        entity.setFinalHandoffReportPackageArchiveSummary("Latest final handoff report package archive is download-ready and ready.");
         entity.setLatestDeliveryReceiptId("launch-delivery-receipt-1");
         entity.setLatestSessionId("demo-session-20260624T003000Z");
         entity.setLatestTaskId("task-1");

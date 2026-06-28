@@ -44,4 +44,16 @@ class DemoLaunchAcceptanceCertificateArchiveMigrationTests {
         assertThat(sql).contains("idx_demo_launch_acceptance_certificate_archive_status_archived");
         assertThat(sql).contains("(status, archived_at)");
     }
+
+    @Test
+    void should_add_final_handoff_archive_proof_columns_to_launch_acceptance_certificate_archive() throws IOException {
+        String sql = Files.readString(Path.of("src/main/resources/db/migration/V48__add_launch_acceptance_certificate_final_handoff_archive_proof.sql"))
+                .toLowerCase(Locale.ROOT);
+
+        assertThat(sql).contains("alter table demo_launch_acceptance_certificate_archive");
+        assertThat(sql).contains("final_handoff_report_package_archive_status varchar(32) not null default 'needs_attention'");
+        assertThat(sql).contains("final_handoff_report_package_archive_ready boolean not null default false");
+        assertThat(sql).contains("final_handoff_report_package_archive_id varchar(128)");
+        assertThat(sql).contains("final_handoff_report_package_archive_summary varchar(1024) not null default 'no final handoff report package archive evidence recorded.'");
+    }
 }

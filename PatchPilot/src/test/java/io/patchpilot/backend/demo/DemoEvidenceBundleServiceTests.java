@@ -972,6 +972,12 @@ class DemoEvidenceBundleServiceTests {
                 "delivery-1",
                 "evaluation-run-2",
                 "launch-evidence-archive-1",
+                status,
+                accepted,
+                accepted ? "final-handoff-report-package-archive-1" : null,
+                accepted
+                        ? "Latest final handoff report package archive is download-ready and ready."
+                        : "No final handoff report package archive evidence recorded.",
                 "launch-delivery-receipt-1",
                 "Demo reviewer",
                 "email",
@@ -994,6 +1000,12 @@ class DemoEvidenceBundleServiceTests {
                 1,
                 "launch-closeout-archive-1",
                 "launch-evidence-archive-1",
+                status,
+                certified,
+                certified ? "final-handoff-report-package-archive-1" : null,
+                certified
+                        ? "Latest final handoff report package archive is download-ready and ready."
+                        : "No final handoff report package archive evidence recorded.",
                 "launch-delivery-receipt-1",
                 "demo-session-20260624T003000Z",
                 "task-2",

@@ -164,6 +164,10 @@ const launchAcceptanceCloseout: DemoLaunchAcceptanceCloseout = {
   latestWebhookDeliveryId: 'delivery-1',
   evaluationRunId: 'evaluation-run-2',
   latestArchiveId: 'launch-evidence-archive-1',
+  finalHandoffReportPackageArchiveStatus: 'READY',
+  finalHandoffReportPackageArchiveReady: true,
+  finalHandoffReportPackageArchiveId: 'final-handoff-report-package-archive-1',
+  finalHandoffReportPackageArchiveSummary: 'Latest final handoff report package archive is download-ready and ready.',
   latestDeliveryReceiptId: 'launch-delivery-receipt-1',
   latestDeliveryTarget: 'reviewer@example.com',
   latestDeliveryChannel: 'email',
@@ -187,6 +191,7 @@ const launchAcceptanceCloseout: DemoLaunchAcceptanceCloseout = {
     'Download launch evidence package report.',
     'Download launch evidence share center report.',
     'Download launch evidence finalization report.',
+    'Download final handoff report package archive final-handoff-report-package-archive-1.',
     'Download launch acceptance closeout report.'
   ],
   markdownReport: '# PatchPilot Launch Acceptance Closeout'
@@ -203,6 +208,10 @@ const launchAcceptanceCloseoutArchive: DemoLaunchAcceptanceCloseoutArchive = {
   latestWebhookDeliveryId: 'delivery-1',
   evaluationRunId: 'evaluation-run-2',
   latestArchiveId: 'launch-evidence-archive-1',
+  finalHandoffReportPackageArchiveStatus: 'READY',
+  finalHandoffReportPackageArchiveReady: true,
+  finalHandoffReportPackageArchiveId: 'final-handoff-report-package-archive-1',
+  finalHandoffReportPackageArchiveSummary: 'Latest final handoff report package archive is download-ready and ready.',
   latestDeliveryReceiptId: 'launch-delivery-receipt-1',
   latestDeliveryTarget: 'reviewer@example.com',
   latestDeliveryChannel: 'email',
@@ -219,6 +228,10 @@ const launchAcceptanceCertificate: DemoLaunchAcceptanceCertificate = {
   archiveCount: 1,
   latestCloseoutArchiveId: 'launch-closeout-archive-1',
   latestLaunchEvidenceArchiveId: 'launch-evidence-archive-1',
+  finalHandoffReportPackageArchiveStatus: 'READY',
+  finalHandoffReportPackageArchiveReady: true,
+  finalHandoffReportPackageArchiveId: 'final-handoff-report-package-archive-1',
+  finalHandoffReportPackageArchiveSummary: 'Latest final handoff report package archive is download-ready and ready.',
   latestDeliveryReceiptId: 'launch-delivery-receipt-1',
   latestSessionId: 'demo-session-20260624T003000Z',
   latestTaskId: 'task-1',
@@ -233,6 +246,7 @@ const launchAcceptanceCertificate: DemoLaunchAcceptanceCertificate = {
   downloadActions: [
     'Download launch acceptance certificate.',
     'Download launch acceptance closeout archive launch-closeout-archive-1.',
+    'Download final handoff report package archive final-handoff-report-package-archive-1.',
     'Open Pull Request https://github.com/bingqin2/PatchPilot/pull/42 for review.'
   ],
   markdownReport: '# PatchPilot Launch Acceptance Certificate'
@@ -247,6 +261,10 @@ const launchAcceptanceCertificateArchive: DemoLaunchAcceptanceCertificateArchive
   archiveCount: 1,
   latestCloseoutArchiveId: 'launch-closeout-archive-1',
   latestLaunchEvidenceArchiveId: 'launch-evidence-archive-1',
+  finalHandoffReportPackageArchiveStatus: 'READY',
+  finalHandoffReportPackageArchiveReady: true,
+  finalHandoffReportPackageArchiveId: 'final-handoff-report-package-archive-1',
+  finalHandoffReportPackageArchiveSummary: 'Latest final handoff report package archive is download-ready and ready.',
   latestDeliveryReceiptId: 'launch-delivery-receipt-1',
   latestSessionId: 'demo-session-20260624T003000Z',
   latestTaskId: 'task-1',
@@ -338,7 +356,7 @@ test('renders demo launch evidence package proof and readiness status', () => {
   expect(within(panel).getByText('java, python, maven, pytest')).toBeInTheDocument();
   expect(within(panel).getAllByText('Final handoff package archive').length).toBeGreaterThanOrEqual(2);
   expect(within(panel).getAllByText('final-handoff-report-package-archive-1').length).toBeGreaterThanOrEqual(1);
-  expect(within(panel).getByText('Latest final handoff report package archive is download-ready and ready.')).toBeInTheDocument();
+  expect(within(panel).getAllByText('Latest final handoff report package archive is download-ready and ready.').length).toBeGreaterThanOrEqual(1);
   expect(within(panel).getByText('Recent task task-1 reached COMPLETED.')).toBeInTheDocument();
   expect(within(panel).getAllByText('Latest delivery receipt delivery-receipt-1 is fresh.').length).toBeGreaterThanOrEqual(2);
   expect(within(panel).getByText(/does not create tasks, call the model, run tests, archive records/)).toBeInTheDocument();
@@ -353,6 +371,13 @@ test('renders demo launch evidence package proof and readiness status', () => {
   expect(within(panel).getByText('PatchPilot launch acceptance closeout is complete.')).toBeInTheDocument();
   expect(within(panel).getByText('Accepted')).toBeInTheDocument();
   expect(within(panel).getByText('Use this closeout report as the final self-hosted launch acceptance record.')).toBeInTheDocument();
+  expect(within(panel).getAllByText('Final handoff archive').length).toBeGreaterThanOrEqual(1);
+  expect(within(panel).getByText('Final handoff proof')).toBeInTheDocument();
+  expect(within(panel).getAllByText('Download-ready').length).toBeGreaterThanOrEqual(3);
+  expect(within(panel).getAllByText('Latest final handoff report package archive is download-ready and ready.').length).toBeGreaterThanOrEqual(3);
+  expect(
+    within(panel).getAllByText('Download final handoff report package archive final-handoff-report-package-archive-1.').length
+  ).toBeGreaterThanOrEqual(3);
   expect(within(panel).getByText('Download launch acceptance closeout report.')).toBeInTheDocument();
   expect(within(panel).getByRole('heading', { name: 'Recent launch acceptance closeouts' })).toBeInTheDocument();
   expect(within(panel).getAllByText(/launch-closeout-archive-1/).length).toBeGreaterThanOrEqual(2);

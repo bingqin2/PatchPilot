@@ -39,6 +39,11 @@ class MyBatisDemoLaunchAcceptanceCloseoutArchiveRepositoryTests {
         assertThat(insertedEntity.getAccepted()).isTrue();
         assertThat(insertedEntity.getSessionId()).isEqualTo("demo-session-20260624T003000Z");
         assertThat(insertedEntity.getLatestPullRequestUrl()).isEqualTo("https://github.com/bingqin2/PatchPilot/pull/42");
+        assertThat(insertedEntity.getFinalHandoffReportPackageArchiveStatus()).isEqualTo("READY");
+        assertThat(insertedEntity.getFinalHandoffReportPackageArchiveReady()).isTrue();
+        assertThat(insertedEntity.getFinalHandoffReportPackageArchiveId()).isEqualTo("final-handoff-report-package-archive-1");
+        assertThat(insertedEntity.getFinalHandoffReportPackageArchiveSummary())
+                .isEqualTo("Latest final handoff report package archive is download-ready and ready.");
         assertThat(insertedEntity.getLatestDeliveryReceiptId()).isEqualTo("launch-delivery-receipt-1");
         assertThat(insertedEntity.getReport()).contains("# PatchPilot Launch Acceptance Closeout");
         assertThat(savedArchive).isEqualTo(archive);
@@ -81,6 +86,10 @@ class MyBatisDemoLaunchAcceptanceCloseoutArchiveRepositoryTests {
                 "delivery-1",
                 "evaluation-run-2",
                 "launch-evidence-archive-1",
+                DemoReadinessStatus.READY,
+                true,
+                "final-handoff-report-package-archive-1",
+                "Latest final handoff report package archive is download-ready and ready.",
                 "launch-delivery-receipt-1",
                 "reviewer@example.com",
                 "email",
@@ -102,6 +111,10 @@ class MyBatisDemoLaunchAcceptanceCloseoutArchiveRepositoryTests {
         entity.setLatestWebhookDeliveryId("delivery-1");
         entity.setEvaluationRunId("evaluation-run-2");
         entity.setLatestArchiveId("launch-evidence-archive-1");
+        entity.setFinalHandoffReportPackageArchiveStatus("READY");
+        entity.setFinalHandoffReportPackageArchiveReady(true);
+        entity.setFinalHandoffReportPackageArchiveId("final-handoff-report-package-archive-1");
+        entity.setFinalHandoffReportPackageArchiveSummary("Latest final handoff report package archive is download-ready and ready.");
         entity.setLatestDeliveryReceiptId("launch-delivery-receipt-1");
         entity.setLatestDeliveryTarget("reviewer@example.com");
         entity.setLatestDeliveryChannel("email");

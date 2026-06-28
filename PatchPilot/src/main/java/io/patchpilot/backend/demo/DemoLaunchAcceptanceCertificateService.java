@@ -61,6 +61,10 @@ public class DemoLaunchAcceptanceCertificateService {
                 archives.size(),
                 latest.id(),
                 latest.latestArchiveId(),
+                latest.finalHandoffReportPackageArchiveStatus(),
+                latest.finalHandoffReportPackageArchiveReady(),
+                latest.finalHandoffReportPackageArchiveId(),
+                latest.finalHandoffReportPackageArchiveSummary(),
                 latest.latestDeliveryReceiptId(),
                 latest.sessionId(),
                 latest.latestTaskId(),
@@ -98,6 +102,10 @@ public class DemoLaunchAcceptanceCertificateService {
                 0,
                 null,
                 null,
+                DemoReadinessStatus.NEEDS_ATTENTION,
+                false,
+                null,
+                "No final handoff report package archive evidence recorded.",
                 null,
                 null,
                 null,
@@ -127,6 +135,10 @@ public class DemoLaunchAcceptanceCertificateService {
         List<String> actions = new ArrayList<>();
         actions.add("Download launch acceptance certificate.");
         actions.add("Download launch acceptance closeout archive " + latest.id() + ".");
+        if (latest.finalHandoffReportPackageArchiveId() != null) {
+            actions.add("Download final handoff report package archive "
+                    + latest.finalHandoffReportPackageArchiveId() + ".");
+        }
         if (latest.latestPullRequestUrl() != null) {
             actions.add("Open Pull Request " + latest.latestPullRequestUrl() + " for review.");
         }
@@ -153,6 +165,18 @@ public class DemoLaunchAcceptanceCertificateService {
         if (latest != null) {
             builder.append("- Closeout archive: `").append(latest.id()).append("`\n");
             builder.append("- Launch evidence archive: `").append(valueOrNone(latest.latestArchiveId())).append("`\n");
+            builder.append("- Final handoff archive: `")
+                    .append(valueOrNone(latest.finalHandoffReportPackageArchiveId()))
+                    .append("`\n");
+            builder.append("- Final handoff archive status: `")
+                    .append(latest.finalHandoffReportPackageArchiveStatus())
+                    .append("`\n");
+            builder.append("- Final handoff archive ready: `")
+                    .append(latest.finalHandoffReportPackageArchiveReady())
+                    .append("`\n");
+            builder.append("- Final handoff archive summary: ")
+                    .append(latest.finalHandoffReportPackageArchiveSummary())
+                    .append("\n");
             builder.append("- Delivery receipt: `").append(valueOrNone(latest.latestDeliveryReceiptId())).append("`\n");
             builder.append("- Session: `").append(valueOrNone(latest.sessionId())).append("`\n");
             builder.append("- Pull Request: ").append(valueOrNone(latest.latestPullRequestUrl())).append("\n");

@@ -33,19 +33,27 @@ class DemoLaunchAcceptanceCertificateServiceTests {
         assertThat(certificate.archiveCount()).isEqualTo(1);
         assertThat(certificate.latestCloseoutArchiveId()).isEqualTo("launch-closeout-archive-1");
         assertThat(certificate.latestLaunchEvidenceArchiveId()).isEqualTo("launch-evidence-archive-1");
+        assertThat(certificate.finalHandoffReportPackageArchiveStatus()).isEqualTo(DemoReadinessStatus.READY);
+        assertThat(certificate.finalHandoffReportPackageArchiveReady()).isTrue();
+        assertThat(certificate.finalHandoffReportPackageArchiveId()).isEqualTo("final-handoff-report-package-archive-1");
+        assertThat(certificate.finalHandoffReportPackageArchiveSummary())
+                .isEqualTo("Latest final handoff report package archive is download-ready and ready.");
         assertThat(certificate.latestDeliveryReceiptId()).isEqualTo("launch-delivery-receipt-1");
         assertThat(certificate.latestPullRequestUrl()).isEqualTo("https://github.com/bingqin2/PatchPilot/pull/42");
         assertThat(certificate.generatedAt()).isEqualTo(Instant.parse("2026-06-28T09:00:00Z"));
         assertThat(certificate.downloadActions())
                 .containsExactly(
-                        "Download launch acceptance certificate.",
-                        "Download launch acceptance closeout archive launch-closeout-archive-1.",
-                        "Open Pull Request https://github.com/bingqin2/PatchPilot/pull/42 for review."
-                );
+                "Download launch acceptance certificate.",
+                "Download launch acceptance closeout archive launch-closeout-archive-1.",
+                "Download final handoff report package archive final-handoff-report-package-archive-1.",
+                "Open Pull Request https://github.com/bingqin2/PatchPilot/pull/42 for review."
+        );
         assertThat(certificate.markdownReport())
                 .contains("# PatchPilot Launch Acceptance Certificate")
                 .contains("- Certified: `true`")
                 .contains("- Closeout archive: `launch-closeout-archive-1`")
+                .contains("- Final handoff archive: `final-handoff-report-package-archive-1`")
+                .contains("- Final handoff archive status: `READY`")
                 .contains("GET /api/demo/launch-acceptance-certificate is read-only");
     }
 
@@ -109,6 +117,10 @@ class DemoLaunchAcceptanceCertificateServiceTests {
                 "delivery-1",
                 "evaluation-run-2",
                 "launch-evidence-archive-1",
+                DemoReadinessStatus.READY,
+                true,
+                "final-handoff-report-package-archive-1",
+                "Latest final handoff report package archive is download-ready and ready.",
                 accepted ? "launch-delivery-receipt-1" : null,
                 accepted ? "reviewer@example.com" : null,
                 accepted ? "email" : null,

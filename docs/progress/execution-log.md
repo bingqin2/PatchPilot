@@ -5499,6 +5499,25 @@ Validation so far:
 - `npm run build`: passed with the existing Vite large-chunk warning.
 - `git diff --check`: passed.
 
+## 2026-06-28 - 276 Launch acceptance final handoff proof
+
+- Started `276-launch-acceptance-final-handoff-proof` so the final launch acceptance closeout and certificate preserve the same final handoff report package archive proof already carried by the launch evidence package.
+- Planned a complete feature slice: closeout/certificate read-model fields, archive persistence, controller JSON, Markdown reports, dashboard closeout/certificate rendering, README/product/frontend docs, Flyway migrations, and regression tests.
+- RED backend tests were added first for closeout/certificate status, checks, evidence notes, download actions, Markdown, archive services, converters, MyBatis repositories, migrations, and controller response fields.
+- RED frontend tests were added first for rendering final handoff archive proof in the launch acceptance closeout and certificate sections.
+- Extended launch acceptance closeout and certificate VOs with final handoff report package archive status, ready flag, archive id, and summary.
+- Persisted the same proof in closeout and certificate archives through Flyway/MyBatis fields with safe defaults for existing archive rows.
+- Updated closeout and certificate Markdown, evidence notes, blocking next actions, and download actions so a missing final handoff package archive keeps final launch acceptance from being treated as complete.
+- Updated the dashboard launch evidence package panel, recent closeout archive rows, recent certificate archive rows, frontend types, README, product spec, frontend design doc, and this execution log.
+
+Validation:
+
+- `mvn -q -pl PatchPilot -Dtest=DemoLaunchAcceptanceCloseoutServiceTests,DemoLaunchAcceptanceCertificateServiceTests,DemoLaunchAcceptanceCloseoutArchiveServiceTests,DemoLaunchAcceptanceCertificateArchiveServiceTests,MyBatisDemoLaunchAcceptanceCloseoutArchiveRepositoryTests,MyBatisDemoLaunchAcceptanceCertificateArchiveRepositoryTests,DemoLaunchAcceptanceCloseoutArchiveMigrationTests,DemoLaunchAcceptanceCertificateArchiveMigrationTests,DemoReadinessControllerTests test`: first failed because the new read-model/archive fields did not exist; passed after backend implementation, migrations, and fixture updates.
+- `npm test -- src/dashboard/components/DemoLaunchEvidencePackagePanel.test.tsx -- --reporter=basic`: first failed because the panel did not render `Final handoff archive`; passed after UI rendering and assertion updates, 8 tests.
+- `npm test -- --reporter=basic`: passed, 29 test files and 398 tests.
+- `npm run build`: passed with the existing Vite large-chunk warning.
+- `mvn -q -pl PatchPilot test`: passed.
+
 ## 2026-06-28 - 274 Final handoff package evidence bundle
 
 - Started `274-final-handoff-package-evidence-bundle` to make the latest archived final handoff report package visible from the first evidence bundle readout and copied runbook.

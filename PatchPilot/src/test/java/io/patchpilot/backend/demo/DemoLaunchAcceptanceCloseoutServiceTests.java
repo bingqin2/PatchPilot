@@ -52,6 +52,11 @@ class DemoLaunchAcceptanceCloseoutServiceTests {
         assertThat(closeout.latestWebhookDeliveryId()).isEqualTo("delivery-1");
         assertThat(closeout.evaluationRunId()).isEqualTo("evaluation-run-2");
         assertThat(closeout.latestArchiveId()).isEqualTo("launch-evidence-archive-1");
+        assertThat(closeout.finalHandoffReportPackageArchiveStatus()).isEqualTo(DemoReadinessStatus.READY);
+        assertThat(closeout.finalHandoffReportPackageArchiveReady()).isTrue();
+        assertThat(closeout.finalHandoffReportPackageArchiveId()).isEqualTo("final-handoff-report-package-archive-1");
+        assertThat(closeout.finalHandoffReportPackageArchiveSummary())
+                .isEqualTo("Latest final handoff report package archive is download-ready and ready.");
         assertThat(closeout.latestDeliveryReceiptId()).isEqualTo("launch-delivery-receipt-1");
         assertThat(closeout.latestDeliveryTarget()).isEqualTo("reviewer@example.com");
         assertThat(closeout.latestDeliveryChannel()).isEqualTo("email");
@@ -63,11 +68,13 @@ class DemoLaunchAcceptanceCloseoutServiceTests {
                 .containsExactly(
                         "Self-hosted launch readiness:READY",
                         "Launch evidence package:READY",
+                        "Final handoff package archive:READY",
                         "Launch evidence share center:READY",
                         "Launch evidence finalization:READY"
                 );
         assertThat(closeout.evidenceNotes()).contains(
                 "Launch readiness status is READY.",
+                "Final handoff report package archive final-handoff-report-package-archive-1 is READY and download-ready.",
                 "Launch evidence archive launch-evidence-archive-1 is share-ready.",
                 "Delivery receipt launch-delivery-receipt-1 is fresh for demo-session-20260624T003000Z."
         );
@@ -76,12 +83,15 @@ class DemoLaunchAcceptanceCloseoutServiceTests {
                 "Download launch evidence package report.",
                 "Download launch evidence share center report.",
                 "Download launch evidence finalization report.",
+                "Download final handoff report package archive final-handoff-report-package-archive-1.",
                 "Download launch acceptance closeout report."
         );
         assertThat(closeout.markdownReport())
                 .contains("# PatchPilot Launch Acceptance Closeout")
                 .contains("- Status: `READY`")
                 .contains("- Accepted: `true`")
+                .contains("- Final handoff archive: `final-handoff-report-package-archive-1`")
+                .contains("- Final handoff archive status: `READY`")
                 .contains("- Pull Request: `https://github.com/bingqin2/PatchPilot/pull/42`")
                 .contains("GET /api/demo/launch-acceptance-closeout is read-only");
     }
@@ -107,9 +117,47 @@ class DemoLaunchAcceptanceCloseoutServiceTests {
                 .containsExactly(
                         "Self-hosted launch readiness:READY",
                         "Launch evidence package:READY",
+                        "Final handoff package archive:READY",
                         "Launch evidence share center:NEEDS_ATTENTION",
                         "Launch evidence finalization:NEEDS_ATTENTION"
                 );
+    }
+
+    @Test
+    void should_need_attention_when_final_handoff_report_package_archive_is_not_ready() {
+        when(launchReadinessService.getReadinessPackage()).thenReturn(launchReadiness(DemoReadinessStatus.READY));
+        when(launchEvidencePackageService.getPackage()).thenReturn(launchEvidencePackage(
+                DemoReadinessStatus.READY,
+                DemoReadinessStatus.NEEDS_ATTENTION,
+                false,
+                null,
+                "No final handoff report package archive evidence recorded."
+        ));
+        when(shareCenterService.getShareCenter()).thenReturn(launchShareCenter(true, true));
+        when(finalizationService.getFinalizationGate()).thenReturn(launchFinalization(DemoReadinessStatus.READY, true));
+
+        DemoLaunchAcceptanceCloseoutVo closeout = service.getCloseout();
+
+        assertThat(closeout.status()).isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
+        assertThat(closeout.accepted()).isFalse();
+        assertThat(closeout.finalHandoffReportPackageArchiveStatus()).isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
+        assertThat(closeout.finalHandoffReportPackageArchiveReady()).isFalse();
+        assertThat(closeout.finalHandoffReportPackageArchiveId()).isNull();
+        assertThat(closeout.finalHandoffReportPackageArchiveSummary())
+                .isEqualTo("No final handoff report package archive evidence recorded.");
+        assertThat(closeout.nextAction())
+                .isEqualTo("Archive a final handoff report package before treating launch closeout as accepted.");
+        assertThat(closeout.checks())
+                .extracting(check -> check.name() + ":" + check.status())
+                .containsExactly(
+                        "Self-hosted launch readiness:READY",
+                        "Launch evidence package:READY",
+                        "Final handoff package archive:NEEDS_ATTENTION",
+                        "Launch evidence share center:READY",
+                        "Launch evidence finalization:READY"
+                );
+        assertThat(closeout.evidenceNotes())
+                .contains("Final handoff report package archive is not ready: No final handoff report package archive evidence recorded.");
     }
 
     @Test
@@ -129,6 +177,7 @@ class DemoLaunchAcceptanceCloseoutServiceTests {
                 .containsExactly(
                         "Self-hosted launch readiness:BLOCKED",
                         "Launch evidence package:READY",
+                        "Final handoff package archive:READY",
                         "Launch evidence share center:READY",
                         "Launch evidence finalization:READY"
                 );
@@ -151,6 +200,22 @@ class DemoLaunchAcceptanceCloseoutServiceTests {
     }
 
     private static DemoLaunchEvidencePackageVo launchEvidencePackage(DemoReadinessStatus status) {
+        return launchEvidencePackage(
+                status,
+                DemoReadinessStatus.READY,
+                true,
+                "final-handoff-report-package-archive-1",
+                "Latest final handoff report package archive is download-ready and ready."
+        );
+    }
+
+    private static DemoLaunchEvidencePackageVo launchEvidencePackage(
+            DemoReadinessStatus status,
+            DemoReadinessStatus archiveStatus,
+            boolean archiveReady,
+            String archiveId,
+            String archiveSummary
+    ) {
         return new DemoLaunchEvidencePackageVo(
                 status,
                 status == DemoReadinessStatus.READY,
@@ -161,10 +226,10 @@ class DemoLaunchAcceptanceCloseoutServiceTests {
                 DemoReadinessStatus.READY,
                 DemoReadinessStatus.READY,
                 DemoReadinessStatus.READY,
-                DemoReadinessStatus.READY,
-                true,
-                "final-handoff-report-package-archive-1",
-                "Latest final handoff report package archive is download-ready and ready.",
+                archiveStatus,
+                archiveReady,
+                archiveId,
+                archiveSummary,
                 "task-1",
                 "https://github.com/bingqin2/PatchPilot/pull/42",
                 "delivery-1",
