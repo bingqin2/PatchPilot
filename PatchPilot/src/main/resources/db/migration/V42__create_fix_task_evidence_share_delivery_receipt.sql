@@ -1,0 +1,20 @@
+CREATE TABLE fix_task_evidence_share_delivery_receipt (
+    id VARCHAR(36) NOT NULL PRIMARY KEY,
+    status VARCHAR(32) NOT NULL,
+    task_evidence_archive_id VARCHAR(36) NOT NULL,
+    task_id VARCHAR(64) NOT NULL,
+    repository_owner VARCHAR(255) NOT NULL,
+    repository_name VARCHAR(255) NOT NULL,
+    issue_number BIGINT NOT NULL,
+    pull_request_url VARCHAR(512),
+    delivery_channel VARCHAR(128) NOT NULL,
+    delivery_target VARCHAR(512) NOT NULL,
+    operator VARCHAR(255) NOT NULL,
+    notes TEXT,
+    message_subject VARCHAR(512) NOT NULL,
+    delivered_at TIMESTAMP(6) NOT NULL,
+    created_at TIMESTAMP(6) NOT NULL,
+    markdown_report MEDIUMTEXT NOT NULL,
+    INDEX idx_fix_task_evidence_delivery_receipt_created (created_at),
+    INDEX idx_fix_task_evidence_delivery_receipt_archive_created (task_evidence_archive_id, created_at)
+);
