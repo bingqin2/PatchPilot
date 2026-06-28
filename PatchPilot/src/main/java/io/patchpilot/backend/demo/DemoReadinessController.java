@@ -3,6 +3,7 @@ package io.patchpilot.backend.demo;
 import io.patchpilot.backend.common.response.ApiResponse;
 import io.patchpilot.backend.demo.domain.DemoAcceptanceSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
+import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceShareDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceShareFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceSharePackageArchiveVo;
@@ -92,6 +93,7 @@ public class DemoReadinessController {
     private final DemoFinalAcceptanceSharePackageArchiveService demoFinalAcceptanceSharePackageArchiveService;
     private final DemoFinalAcceptanceShareDeliveryReceiptService demoFinalAcceptanceShareDeliveryReceiptService;
     private final DemoFinalAcceptanceShareFinalizationService demoFinalAcceptanceShareFinalizationService;
+    private final DemoFinalAcceptanceCompletionArchiveService demoFinalAcceptanceCompletionArchiveService;
     private final DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
     private final DemoReadinessSnapshotTrendService demoReadinessSnapshotTrendService;
     private final DemoLaunchPreflightService demoLaunchPreflightService;
@@ -374,6 +376,32 @@ public class DemoReadinessController {
         return ApiResponse.ok(demoFinalAcceptanceShareFinalizationService.getFinalizationGate());
     }
 
+    @PostMapping("/final-acceptance-completion-archives")
+    public ResponseEntity<ApiResponse<DemoFinalAcceptanceCompletionArchiveVo>> archiveFinalAcceptanceCompletion() {
+        try {
+            DemoFinalAcceptanceCompletionArchiveVo archive =
+                    demoFinalAcceptanceCompletionArchiveService.archiveCurrentCompletion();
+            operatorSafetyAuditService.recordSafetyAudit(new RecordOperatorSafetyAuditCommand(
+                    "DEMO_FINAL_ACCEPTANCE_COMPLETION_ARCHIVED",
+                    "DEMO_FINAL_ACCEPTANCE_COMPLETION_ARCHIVE",
+                    archive.id(),
+                    TriggerQuarantineScope.REPOSITORY,
+                    "patchpilot/local-demo",
+                    "admin-api",
+                    "Archived final acceptance completion " + archive.status()
+                            + " with receipt " + archive.latestDeliveryReceiptId()
+            ));
+            return ResponseEntity.ok(ApiResponse.ok(archive));
+        } catch (IllegalStateException exception) {
+            return ResponseEntity.badRequest().body(ApiResponse.fail(exception.getMessage()));
+        }
+    }
+
+    @GetMapping("/final-acceptance-completion-archives")
+    public ApiResponse<List<DemoFinalAcceptanceCompletionArchiveVo>> listFinalAcceptanceCompletionArchives() {
+        return ApiResponse.ok(demoFinalAcceptanceCompletionArchiveService.listRecentArchives());
+    }
+
     @GetMapping(value = "/handoff-share-center/report/download", produces = "text/markdown;charset=UTF-8")
     public ResponseEntity<String> downloadHandoffShareCenterReport() {
         return markdownAttachment(
@@ -496,6 +524,16 @@ public class DemoReadinessController {
                 "patchpilot-final-demo-acceptance-share-finalization.md",
                 demoFinalAcceptanceShareFinalizationService.getFinalizationGate().markdownReport()
         );
+    }
+
+    @GetMapping(value = "/final-acceptance-completion-archives/{archiveId}/report/download", produces = "text/markdown;charset=UTF-8")
+    public ResponseEntity<String> downloadArchivedFinalAcceptanceCompletionReport(@PathVariable String archiveId) {
+        return demoFinalAcceptanceCompletionArchiveService.findArchive(archiveId)
+                .map(archive -> markdownAttachment(
+                        "patchpilot-final-acceptance-completion-" + safeFilenamePart(archive.id()) + ".md",
+                        archive.report()
+                ))
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @PostMapping("/launch-acceptance-certificate/archives")

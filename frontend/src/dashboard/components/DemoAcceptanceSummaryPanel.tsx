@@ -2,6 +2,7 @@ import { Archive, Copy, Download, ExternalLink } from 'lucide-react';
 import { useState } from 'react';
 import type {
   DemoAcceptanceSummary,
+  DemoFinalAcceptanceCompletionArchive,
   DemoFinalAcceptanceShareDeliveryReceipt,
   DemoFinalAcceptanceShareDeliveryReceiptInput,
   DemoFinalAcceptanceShareFinalization,
@@ -17,11 +18,13 @@ interface DemoAcceptanceSummaryPanelProps {
   sharePackageArchives: DemoFinalAcceptanceSharePackageArchive[];
   shareDeliveryReceipts: DemoFinalAcceptanceShareDeliveryReceipt[];
   shareFinalization: DemoFinalAcceptanceShareFinalization | null;
+  completionArchives: DemoFinalAcceptanceCompletionArchive[];
   error: string | null;
   sharePackageError: string | null;
   sharePackageArchiveError: string | null;
   shareDeliveryReceiptError: string | null;
   shareFinalizationError: string | null;
+  completionArchiveError: string | null;
   onDownloadReport: () => Promise<Blob>;
   onDownloadSharePackageReport: () => Promise<Blob>;
   onArchiveSharePackage: () => Promise<DemoFinalAcceptanceSharePackageArchive>;
@@ -31,6 +34,8 @@ interface DemoAcceptanceSummaryPanelProps {
   ) => Promise<DemoFinalAcceptanceShareDeliveryReceipt>;
   onDownloadShareDeliveryReceiptReport: (receiptId: string) => Promise<Blob>;
   onDownloadShareFinalizationReport: () => Promise<Blob>;
+  onArchiveCompletion: () => Promise<DemoFinalAcceptanceCompletionArchive>;
+  onDownloadCompletionArchiveReport: (archiveId: string) => Promise<Blob>;
 }
 
 export function DemoAcceptanceSummaryPanel({
@@ -39,18 +44,22 @@ export function DemoAcceptanceSummaryPanel({
   sharePackageArchives,
   shareDeliveryReceipts,
   shareFinalization,
+  completionArchives,
   error,
   sharePackageError,
   sharePackageArchiveError,
   shareDeliveryReceiptError,
   shareFinalizationError,
+  completionArchiveError,
   onDownloadReport,
   onDownloadSharePackageReport,
   onArchiveSharePackage,
   onDownloadSharePackageArchiveReport,
   onCreateShareDeliveryReceipt,
   onDownloadShareDeliveryReceiptReport,
-  onDownloadShareFinalizationReport
+  onDownloadShareFinalizationReport,
+  onArchiveCompletion,
+  onDownloadCompletionArchiveReport
 }: DemoAcceptanceSummaryPanelProps) {
   const [downloadStatus, setDownloadStatus] = useState<string | null>(null);
   const [sharePackageCopyStatus, setSharePackageCopyStatus] = useState<string | null>(null);
@@ -59,6 +68,8 @@ export function DemoAcceptanceSummaryPanel({
   const [sharePackageArchiveDownloadStatus, setSharePackageArchiveDownloadStatus] = useState<string | null>(null);
   const [shareDeliveryReceiptStatus, setShareDeliveryReceiptStatus] = useState<string | null>(null);
   const [shareFinalizationDownloadStatus, setShareFinalizationDownloadStatus] = useState<string | null>(null);
+  const [completionArchiveStatus, setCompletionArchiveStatus] = useState<string | null>(null);
+  const [completionArchiveDownloadStatus, setCompletionArchiveDownloadStatus] = useState<string | null>(null);
   const [deliveryChannel, setDeliveryChannel] = useState('email');
   const [deliveryTarget, setDeliveryTarget] = useState('');
   const [operator, setOperator] = useState('');
@@ -146,6 +157,25 @@ export function DemoAcceptanceSummaryPanel({
       setShareDeliveryReceiptStatus(`Final acceptance delivery receipt ${receipt.id} downloaded`);
     } catch {
       setShareDeliveryReceiptStatus('Delivery receipt download failed');
+    }
+  }
+
+  async function archiveCompletion() {
+    try {
+      await onArchiveCompletion();
+      setCompletionArchiveStatus('Final acceptance completion archived');
+    } catch {
+      setCompletionArchiveStatus('Final acceptance completion archive failed');
+    }
+  }
+
+  async function downloadCompletionArchive(archive: DemoFinalAcceptanceCompletionArchive) {
+    try {
+      const report = await onDownloadCompletionArchiveReport(archive.id);
+      downloadMarkdown(report, `patchpilot-final-acceptance-completion-${archive.id}.md`);
+      setCompletionArchiveDownloadStatus('Final acceptance completion archive downloaded');
+    } catch {
+      setCompletionArchiveDownloadStatus('Final acceptance completion archive download failed');
     }
   }
 
@@ -298,6 +328,10 @@ export function DemoAcceptanceSummaryPanel({
             archiveDownloadStatus={sharePackageArchiveDownloadStatus}
             deliveryReceiptStatus={shareDeliveryReceiptStatus}
             finalizationDownloadStatus={shareFinalizationDownloadStatus}
+            completionArchives={completionArchives}
+            completionArchiveError={completionArchiveError}
+            completionArchiveStatus={completionArchiveStatus}
+            completionArchiveDownloadStatus={completionArchiveDownloadStatus}
             deliveryChannel={deliveryChannel}
             deliveryTarget={deliveryTarget}
             operator={operator}
@@ -313,6 +347,8 @@ export function DemoAcceptanceSummaryPanel({
             onCreateDeliveryReceipt={() => void createShareDeliveryReceipt()}
             onDownloadDeliveryReceipt={(receipt) => void downloadShareDeliveryReceipt(receipt)}
             onDownloadFinalization={() => void downloadShareFinalization()}
+            onArchiveCompletion={() => void archiveCompletion()}
+            onDownloadCompletionArchive={(archive) => void downloadCompletionArchive(archive)}
           />
         </>
       ) : (
@@ -327,16 +363,20 @@ interface FinalAcceptanceSharePackageProps {
   archives: DemoFinalAcceptanceSharePackageArchive[];
   deliveryReceipts: DemoFinalAcceptanceShareDeliveryReceipt[];
   finalization: DemoFinalAcceptanceShareFinalization | null;
+  completionArchives: DemoFinalAcceptanceCompletionArchive[];
   error: string | null;
   archiveError: string | null;
   deliveryReceiptError: string | null;
   finalizationError: string | null;
+  completionArchiveError: string | null;
   copyStatus: string | null;
   downloadStatus: string | null;
   archiveStatus: string | null;
   archiveDownloadStatus: string | null;
   deliveryReceiptStatus: string | null;
   finalizationDownloadStatus: string | null;
+  completionArchiveStatus: string | null;
+  completionArchiveDownloadStatus: string | null;
   deliveryChannel: string;
   deliveryTarget: string;
   operator: string;
@@ -352,6 +392,8 @@ interface FinalAcceptanceSharePackageProps {
   onCreateDeliveryReceipt: () => void;
   onDownloadDeliveryReceipt: (receipt: DemoFinalAcceptanceShareDeliveryReceipt) => void;
   onDownloadFinalization: () => void;
+  onArchiveCompletion: () => void;
+  onDownloadCompletionArchive: (archive: DemoFinalAcceptanceCompletionArchive) => void;
 }
 
 function FinalAcceptanceSharePackage({
@@ -359,16 +401,20 @@ function FinalAcceptanceSharePackage({
   archives,
   deliveryReceipts,
   finalization,
+  completionArchives,
   error,
   archiveError,
   deliveryReceiptError,
   finalizationError,
+  completionArchiveError,
   copyStatus,
   downloadStatus,
   archiveStatus,
   archiveDownloadStatus,
   deliveryReceiptStatus,
   finalizationDownloadStatus,
+  completionArchiveStatus,
+  completionArchiveDownloadStatus,
   deliveryChannel,
   deliveryTarget,
   operator,
@@ -383,7 +429,9 @@ function FinalAcceptanceSharePackage({
   onDeliveryNotesChange,
   onCreateDeliveryReceipt,
   onDownloadDeliveryReceipt,
-  onDownloadFinalization
+  onDownloadFinalization,
+  onArchiveCompletion,
+  onDownloadCompletionArchive
 }: FinalAcceptanceSharePackageProps) {
   return (
     <div className="demo-session-archives">
@@ -656,6 +704,65 @@ function FinalAcceptanceSharePackage({
               </ul>
             ) : (
               <p className="empty-state">No final acceptance delivery receipts recorded.</p>
+            )}
+          </div>
+
+          <div className="demo-session-handoff-checks">
+            <div className="demo-session-archive-title-row">
+              <h3>Archived final acceptance completions</h3>
+              <div className="demo-session-archive-actions">
+                <span>{completionArchives.length} archives</span>
+                <button
+                  className="secondary-button"
+                  type="button"
+                  onClick={() => onArchiveCompletion()}
+                  aria-label="Archive final acceptance completion"
+                  disabled={!finalization?.finalized}
+                >
+                  <Archive size={14} />
+                  Archive final acceptance completion
+                </button>
+                {completionArchiveStatus ? <span className="copy-status">{completionArchiveStatus}</span> : null}
+                {completionArchiveDownloadStatus ? (
+                  <span className="copy-status">{completionArchiveDownloadStatus}</span>
+                ) : null}
+              </div>
+            </div>
+            {completionArchiveError ? (
+              <div className="adapter-api-error">
+                <strong>Final acceptance completion archives unavailable</strong>
+                <span>{completionArchiveError}</span>
+              </div>
+            ) : null}
+            {completionArchives.length > 0 ? (
+              <ul>
+                {completionArchives.map((archive) => (
+                  <li key={archive.id}>
+                    <div className="demo-webhook-delivery-main">
+                      <strong>{archive.id}</strong>
+                      <span>{archive.finalized ? 'Finalized' : statusLabel(archive.status)}</span>
+                    </div>
+                    <p>{archive.deliveryReceiptFreshnessSummary}</p>
+                    <small>Receipt {archive.latestDeliveryReceiptId ?? 'missing'}</small>
+                    <small>Target {archive.latestDeliveryTarget ?? 'missing'}</small>
+                    <small>Freshness {archive.deliveryReceiptFreshness}</small>
+                    <small>Archived {compactDateTime(archive.archivedAt)}</small>
+                    <div className="demo-session-archive-actions">
+                      <button
+                        className="secondary-button"
+                        type="button"
+                        onClick={() => onDownloadCompletionArchive(archive)}
+                        aria-label={`Download final acceptance completion ${archive.id}`}
+                      >
+                        <Download size={14} />
+                        Download final acceptance completion {archive.id}
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="empty-state">No final acceptance completion archives yet.</p>
             )}
           </div>
         </>

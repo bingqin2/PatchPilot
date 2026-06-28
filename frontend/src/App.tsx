@@ -2,6 +2,7 @@ import { AlertCircle, RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import {
   ADMIN_TOKEN_STORAGE_KEY,
+  archiveDemoFinalAcceptanceCompletion,
   approveTaskReview,
   archiveTaskEvidencePackageAcceptanceCertificate,
   archiveTaskEvidencePackageAcceptanceCloseout,
@@ -41,6 +42,7 @@ import {
   downloadDemoLaunchAcceptanceCertificateArchiveReport,
   downloadDemoLaunchAcceptanceCertificateReport,
   downloadDemoAcceptanceSummaryReport,
+  downloadDemoFinalAcceptanceCompletionArchiveReport,
   downloadDemoFinalAcceptanceShareDeliveryReceiptReport,
   downloadDemoFinalAcceptanceShareFinalizationReport,
   downloadDemoFinalAcceptanceSharePackageArchiveReport,
@@ -95,6 +97,7 @@ import {
   getDemoReadinessSnapshotTrend,
   getDemoSmokeChecklist,
   listDemoFinalHandoffReportPackageArchives,
+  listDemoFinalAcceptanceCompletionArchives,
   listDemoFinalAcceptanceShareDeliveryReceipts,
   listDemoFinalAcceptanceSharePackageArchives,
   listDemoLaunchEvidenceShareDeliveryReceipts,
@@ -206,6 +209,7 @@ import type {
   CreateTriggerQuarantineInput,
   DemoReadiness,
   DemoAcceptanceSummary,
+  DemoFinalAcceptanceCompletionArchive,
   DemoFinalAcceptanceShareDeliveryReceipt,
   DemoFinalAcceptanceShareDeliveryReceiptInput,
   DemoFinalAcceptanceShareFinalization,
@@ -365,6 +369,10 @@ export default function App() {
   const [demoFinalAcceptanceShareFinalization, setDemoFinalAcceptanceShareFinalization] =
     useState<DemoFinalAcceptanceShareFinalization | null>(null);
   const [demoFinalAcceptanceShareFinalizationError, setDemoFinalAcceptanceShareFinalizationError] =
+    useState<string | null>(null);
+  const [demoFinalAcceptanceCompletionArchives, setDemoFinalAcceptanceCompletionArchives] =
+    useState<DemoFinalAcceptanceCompletionArchive[]>([]);
+  const [demoFinalAcceptanceCompletionArchiveError, setDemoFinalAcceptanceCompletionArchiveError] =
     useState<string | null>(null);
   const [demoReadinessSnapshots, setDemoReadinessSnapshots] = useState<DemoReadinessSnapshotArchive[]>([]);
   const [demoReadinessSnapshotError, setDemoReadinessSnapshotError] = useState<string | null>(null);
@@ -821,6 +829,7 @@ export default function App() {
         demoFinalAcceptanceSharePackageArchiveResult,
         demoFinalAcceptanceShareDeliveryReceiptResult,
         demoFinalAcceptanceShareFinalizationResult,
+        demoFinalAcceptanceCompletionArchiveResult,
         demoReadinessSnapshotResult,
         demoReadinessSnapshotTrendResult,
         demoSmokeChecklistResult,
@@ -1005,6 +1014,10 @@ export default function App() {
         getDemoFinalAcceptanceShareFinalization().then(
           (finalization) => ({ finalization, error: null as string | null }),
           (caught) => ({ finalization: null, error: errorMessage(caught) })
+        ),
+        listDemoFinalAcceptanceCompletionArchives().then(
+          (archives) => ({ archives, error: null as string | null }),
+          (caught) => ({ archives: null, error: errorMessage(caught) })
         ),
         listDemoReadinessSnapshots().then(
           (snapshots) => ({ snapshots, error: null as string | null }),
@@ -1282,6 +1295,10 @@ export default function App() {
         setDemoFinalAcceptanceShareFinalization(demoFinalAcceptanceShareFinalizationResult.finalization);
       }
       setDemoFinalAcceptanceShareFinalizationError(demoFinalAcceptanceShareFinalizationResult.error);
+      if (demoFinalAcceptanceCompletionArchiveResult.archives) {
+        setDemoFinalAcceptanceCompletionArchives(demoFinalAcceptanceCompletionArchiveResult.archives);
+      }
+      setDemoFinalAcceptanceCompletionArchiveError(demoFinalAcceptanceCompletionArchiveResult.error);
       if (demoReadinessSnapshotResult.snapshots) {
         setDemoReadinessSnapshots(demoReadinessSnapshotResult.snapshots);
       }
@@ -1824,6 +1841,25 @@ export default function App() {
   ), []);
   const handleDownloadDemoFinalAcceptanceShareFinalizationReport = useCallback(() => (
     downloadDemoFinalAcceptanceShareFinalizationReport()
+  ), []);
+  const handleArchiveDemoFinalAcceptanceCompletion = useCallback(async () => {
+    const archive = await archiveDemoFinalAcceptanceCompletion();
+    setDemoFinalAcceptanceCompletionArchives((current) => [
+      archive,
+      ...current.filter((item) => item.id !== archive.id)
+    ].slice(0, 20));
+    setDemoFinalAcceptanceCompletionArchiveError(null);
+    try {
+      const archives = await listDemoFinalAcceptanceCompletionArchives();
+      setDemoFinalAcceptanceCompletionArchives(archives);
+      setDemoFinalAcceptanceCompletionArchiveError(null);
+    } catch (caught) {
+      setDemoFinalAcceptanceCompletionArchiveError(errorMessage(caught));
+    }
+    return archive;
+  }, []);
+  const handleDownloadDemoFinalAcceptanceCompletionArchiveReport = useCallback((archiveId: string) => (
+    downloadDemoFinalAcceptanceCompletionArchiveReport(archiveId)
   ), []);
   const handleCreateDemoFinalAcceptanceShareDeliveryReceipt = useCallback(async (
     input: DemoFinalAcceptanceShareDeliveryReceiptInput
@@ -2449,11 +2485,13 @@ export default function App() {
         sharePackageArchives={demoFinalAcceptanceSharePackageArchives}
         shareDeliveryReceipts={demoFinalAcceptanceShareDeliveryReceipts}
         shareFinalization={demoFinalAcceptanceShareFinalization}
+        completionArchives={demoFinalAcceptanceCompletionArchives}
         error={demoAcceptanceSummaryError}
         sharePackageError={demoFinalAcceptanceSharePackageError}
         sharePackageArchiveError={demoFinalAcceptanceSharePackageArchiveError}
         shareDeliveryReceiptError={demoFinalAcceptanceShareDeliveryReceiptError}
         shareFinalizationError={demoFinalAcceptanceShareFinalizationError}
+        completionArchiveError={demoFinalAcceptanceCompletionArchiveError}
         onDownloadReport={handleDownloadDemoAcceptanceSummaryReport}
         onDownloadSharePackageReport={handleDownloadDemoFinalAcceptanceSharePackageReport}
         onArchiveSharePackage={handleArchiveDemoFinalAcceptanceSharePackage}
@@ -2461,6 +2499,8 @@ export default function App() {
         onCreateShareDeliveryReceipt={handleCreateDemoFinalAcceptanceShareDeliveryReceipt}
         onDownloadShareDeliveryReceiptReport={handleDownloadDemoFinalAcceptanceShareDeliveryReceiptReport}
         onDownloadShareFinalizationReport={handleDownloadDemoFinalAcceptanceShareFinalizationReport}
+        onArchiveCompletion={handleArchiveDemoFinalAcceptanceCompletion}
+        onDownloadCompletionArchiveReport={handleDownloadDemoFinalAcceptanceCompletionArchiveReport}
       />
 
       <DemoSessionSnapshotPanel

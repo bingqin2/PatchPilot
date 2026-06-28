@@ -5666,3 +5666,23 @@ Validation so far:
 - `npm test -- src/dashboard/components/DemoSessionSnapshotPanel.test.tsx -- --reporter=basic`: passed after adding the missing session snapshot fixture field, 23 tests.
 - `npm test -- --reporter=basic`: first hit an isolated 5s timeout in the existing admin-token dashboard test during a parallel verification run; passed on clean rerun, 30 test files and 416 tests.
 - `git diff --check`: passed.
+
+## 2026-06-29 - 282 Final acceptance completion archives
+
+- Started `282-final-acceptance-completion-archive` to preserve the final reviewer-facing acceptance handoff after the final acceptance share finalization gate is `READY`.
+- Planned a complete feature slice: backend completion archive VO/entity/converter/mapper/repositories/service/controller endpoints, Flyway migration, protected audit event, dashboard archive/list/download controls, README/product/frontend docs, and regression tests.
+- RED backend tests were added first for archiving READY finalization evidence, rejecting not-ready finalization, trimming recent archives, converter/entity mapping, migration text, controller archive/list/download endpoints, missing archive downloads, and operator audit recording.
+- RED frontend tests were added first for completion archive API helpers, final acceptance panel archive controls, archived report downloads, and full App data loading.
+- Implemented `DemoFinalAcceptanceCompletionArchiveService` with in-memory and MyBatis-backed repositories, READY-only archive creation, finalization metadata capture, Markdown report preservation, generated timestamp, and archived timestamp.
+- Added `POST /api/demo/final-acceptance-completion-archives`, `GET /api/demo/final-acceptance-completion-archives`, and `GET /api/demo/final-acceptance-completion-archives/{archiveId}/report/download`.
+- Updated the final demo acceptance dashboard panel with a completion archive action, recent completion archive list, archived completion report downloads, and completion archive load error handling.
+- Updated README, product spec, frontend design doc, and added this plan document.
+
+Validation so far:
+
+- `mvn -q -pl PatchPilot -Dtest=DemoFinalAcceptanceCompletionArchiveServiceTests,DemoFinalAcceptanceCompletionArchiveConvertTests,InMemoryDemoFinalAcceptanceCompletionArchiveRepositoryTests,MyBatisDemoFinalAcceptanceCompletionArchiveRepositoryTests,DemoFinalAcceptanceCompletionArchiveMigrationTests,DemoReadinessControllerTests test`: first failed because the new completion archive VO/service/repository/entity/converter did not exist; passed after backend implementation, MyBatis repository coverage, and controller wiring.
+- `npm test -- src/api.test.ts src/dashboard/components/DemoAcceptanceSummaryPanel.test.tsx src/App.test.tsx --reporter=basic`: first failed because the new API helpers and dashboard controls did not exist, then failed once because an archived completion row reused the live finalization summary text; passed after API/App/panel implementation and archive-row wording adjustment, 3 test files and 251 tests.
+- `mvn -q -pl PatchPilot test`: passed.
+- `npm test -- --reporter=basic`: passed, 30 test files and 420 tests.
+- `npm run build`: passed with the existing Vite large-chunk warning.
+- `git diff --check`: passed.
