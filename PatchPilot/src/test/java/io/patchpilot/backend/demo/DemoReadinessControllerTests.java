@@ -7,6 +7,7 @@ import io.patchpilot.backend.demo.domain.DemoAcceptanceSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
 import io.patchpilot.backend.demo.domain.DemoEvaluationRunReadinessEvidenceVo;
+import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceSharePackageArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceShareDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceShareFinalizationVo;
@@ -184,6 +185,9 @@ class DemoReadinessControllerTests {
 
     @MockitoBean
     private DemoFinalAcceptanceShareFinalizationService demoFinalAcceptanceShareFinalizationService;
+
+    @MockitoBean
+    private DemoFinalAcceptanceCompletionArchiveService demoFinalAcceptanceCompletionArchiveService;
 
     @MockitoBean
     private DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
@@ -852,6 +856,75 @@ class DemoReadinessControllerTests {
                 .andExpect(content().contentType("text/markdown;charset=UTF-8"))
                 .andExpect(content().string(containsString("# PatchPilot Final Demo Acceptance Share Finalization Gate")))
                 .andExpect(content().string(containsString("final-acceptance-delivery-receipt-1")));
+    }
+
+    @Test
+    void should_archive_final_acceptance_completion_and_record_audit() throws Exception {
+        when(demoFinalAcceptanceCompletionArchiveService.archiveCurrentCompletion())
+                .thenReturn(finalAcceptanceCompletionArchive());
+
+        mockMvc.perform(post("/api/demo/final-acceptance-completion-archives"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value("final-acceptance-completion-archive-1"))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.finalized").value(true))
+                .andExpect(jsonPath("$.data.latestArchiveId").value("final-acceptance-share-package-archive-1"))
+                .andExpect(jsonPath("$.data.latestDeliveryReceiptId").value("final-acceptance-delivery-receipt-1"))
+                .andExpect(jsonPath("$.data.deliveryReceiptFreshness").value("FRESH"))
+                .andExpect(jsonPath("$.data.report").value(containsString("# PatchPilot Final Demo Acceptance Share Finalization Gate")));
+
+        verify(operatorSafetyAuditService).recordSafetyAudit(argThat(command ->
+                command.action().equals("DEMO_FINAL_ACCEPTANCE_COMPLETION_ARCHIVED")
+                        && command.resourceType().equals("DEMO_FINAL_ACCEPTANCE_COMPLETION_ARCHIVE")
+                        && command.resourceId().equals("final-acceptance-completion-archive-1")
+                        && command.reason().contains("final-acceptance-delivery-receipt-1")
+        ));
+    }
+
+    @Test
+    void should_reject_final_acceptance_completion_archive_when_finalization_is_not_ready() throws Exception {
+        when(demoFinalAcceptanceCompletionArchiveService.archiveCurrentCompletion())
+                .thenThrow(new IllegalStateException("final acceptance share finalization is not ready"));
+
+        mockMvc.perform(post("/api/demo/final-acceptance-completion-archives"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("final acceptance share finalization is not ready"));
+    }
+
+    @Test
+    void should_list_final_acceptance_completion_archives() throws Exception {
+        when(demoFinalAcceptanceCompletionArchiveService.listRecentArchives())
+                .thenReturn(List.of(finalAcceptanceCompletionArchive()));
+
+        mockMvc.perform(get("/api/demo/final-acceptance-completion-archives"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].id").value("final-acceptance-completion-archive-1"))
+                .andExpect(jsonPath("$.data[0].archivedAt").value("2026-06-29T04:00:00Z"));
+    }
+
+    @Test
+    void should_download_archived_final_acceptance_completion_report() throws Exception {
+        when(demoFinalAcceptanceCompletionArchiveService.findArchive("final-acceptance-completion-archive-1"))
+                .thenReturn(Optional.of(finalAcceptanceCompletionArchive()));
+
+        mockMvc.perform(get("/api/demo/final-acceptance-completion-archives/final-acceptance-completion-archive-1/report/download"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("patchpilot-final-acceptance-completion-final-acceptance-completion-archive-1.md")))
+                .andExpect(content().contentType("text/markdown;charset=UTF-8"))
+                .andExpect(content().string(containsString("# PatchPilot Final Demo Acceptance Share Finalization Gate")))
+                .andExpect(content().string(containsString("final-acceptance-delivery-receipt-1")));
+    }
+
+    @Test
+    void should_return_not_found_when_final_acceptance_completion_archive_is_missing() throws Exception {
+        when(demoFinalAcceptanceCompletionArchiveService.findArchive("missing")).thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/api/demo/final-acceptance-completion-archives/missing/report/download"))
+                .andExpect(status().isNotFound());
     }
 
     @Test
@@ -3443,6 +3516,32 @@ class DemoReadinessControllerTests {
                 ),
                 "# PatchPilot Final Demo Acceptance Share Finalization Gate\n\n- Latest delivery receipt: `final-acceptance-delivery-receipt-1`",
                 Instant.parse("2026-06-29T03:30:00Z")
+        );
+    }
+
+    private static DemoFinalAcceptanceCompletionArchiveVo finalAcceptanceCompletionArchive() {
+        return new DemoFinalAcceptanceCompletionArchiveVo(
+                "final-acceptance-completion-archive-1",
+                DemoReadinessStatus.READY,
+                true,
+                "Final demo acceptance share package is finalized with a fresh delivery receipt.",
+                "Use the finalization report as the external-review acceptance delivery record.",
+                "final-acceptance-share-package-archive-1",
+                "task-1",
+                "final-acceptance-delivery-receipt-1",
+                "reviewer@example.com",
+                "email",
+                "2026-06-29T03:05:00Z",
+                "FRESH",
+                true,
+                "Latest delivery receipt matches the current final acceptance share package archive.",
+                List.of(
+                        "Latest final acceptance archive final-acceptance-share-package-archive-1 is send-ready.",
+                        "Latest delivery receipt final-acceptance-delivery-receipt-1 is fresh for final-acceptance-share-package-archive-1."
+                ),
+                "# PatchPilot Final Demo Acceptance Share Finalization Gate\n\n- Latest delivery receipt: `final-acceptance-delivery-receipt-1`",
+                Instant.parse("2026-06-29T03:30:00Z"),
+                Instant.parse("2026-06-29T04:00:00Z")
         );
     }
 }

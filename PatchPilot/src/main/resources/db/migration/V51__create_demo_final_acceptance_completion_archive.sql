@@ -1,0 +1,22 @@
+CREATE TABLE IF NOT EXISTS demo_final_acceptance_completion_archive (
+    id VARCHAR(64) PRIMARY KEY,
+    status VARCHAR(32) NOT NULL,
+    finalized BOOLEAN NOT NULL,
+    summary VARCHAR(1024) NOT NULL,
+    next_action VARCHAR(1024) NOT NULL,
+    latest_archive_id VARCHAR(64),
+    latest_task_id VARCHAR(64),
+    latest_delivery_receipt_id VARCHAR(64),
+    latest_delivery_target VARCHAR(512),
+    latest_delivery_channel VARCHAR(64),
+    latest_delivered_at VARCHAR(64),
+    delivery_receipt_freshness VARCHAR(32) NOT NULL,
+    delivery_receipt_fresh BOOLEAN NOT NULL,
+    delivery_receipt_freshness_summary VARCHAR(1024) NOT NULL,
+    evidence_notes_json JSON NOT NULL,
+    report MEDIUMTEXT NOT NULL,
+    generated_at TIMESTAMP(6) NOT NULL,
+    archived_at TIMESTAMP(6) NOT NULL,
+    INDEX idx_final_acceptance_completion_archive_archived_at (archived_at),
+    INDEX idx_final_acceptance_completion_archive_status (status)
+);

@@ -59,6 +59,9 @@ import {
   downloadDemoFinalAcceptanceShareDeliveryReceiptReport,
   getDemoFinalAcceptanceShareFinalization,
   downloadDemoFinalAcceptanceShareFinalizationReport,
+  archiveDemoFinalAcceptanceCompletion,
+  listDemoFinalAcceptanceCompletionArchives,
+  downloadDemoFinalAcceptanceCompletionArchiveReport,
   archiveDemoLaunchAcceptanceCertificate,
   listDemoLaunchAcceptanceCertificateArchives,
   downloadDemoLaunchAcceptanceCertificateArchiveReport,
@@ -1269,6 +1272,102 @@ test('downloads final demo acceptance share finalization report through backend 
   const downloadedReport = await downloadDemoFinalAcceptanceShareFinalizationReport();
 
   expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-acceptance-share-finalization/report/download');
+  expect(downloadedReport).toBe(reportBlob);
+});
+
+test('archives final acceptance completion through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        id: 'final-acceptance-completion-archive-1',
+        status: 'READY',
+        finalized: true,
+        summary: 'Final demo acceptance share package is finalized with a fresh delivery receipt.',
+        nextAction: 'Use the finalization report as the external-review acceptance delivery record.',
+        latestArchiveId: 'final-acceptance-share-package-archive-1',
+        latestTaskId: 'task-1',
+        latestDeliveryReceiptId: 'final-acceptance-delivery-receipt-1',
+        latestDeliveryTarget: 'reviewer@example.com',
+        latestDeliveryChannel: 'email',
+        latestDeliveredAt: '2026-06-29T03:05:00Z',
+        deliveryReceiptFreshness: 'FRESH',
+        deliveryReceiptFresh: true,
+        deliveryReceiptFreshnessSummary: 'Latest delivery receipt matches the current final acceptance share package archive.',
+        evidenceNotes: ['Latest final acceptance share package archive is send-ready.'],
+        report: '# PatchPilot Final Demo Acceptance Share Finalization Gate',
+        generatedAt: '2026-06-29T03:30:00Z',
+        archivedAt: '2026-06-29T04:00:00Z'
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const archive = await archiveDemoFinalAcceptanceCompletion();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-acceptance-completion-archives', { method: 'POST' });
+  expect(archive.id).toBe('final-acceptance-completion-archive-1');
+  expect(archive.finalized).toBe(true);
+  expect(archive.latestDeliveryReceiptId).toBe('final-acceptance-delivery-receipt-1');
+});
+
+test('lists final acceptance completion archives through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: [
+        {
+          id: 'final-acceptance-completion-archive-1',
+          status: 'READY',
+          finalized: true,
+          summary: 'Final demo acceptance share package is finalized with a fresh delivery receipt.',
+          nextAction: 'Use the finalization report as the external-review acceptance delivery record.',
+          latestArchiveId: 'final-acceptance-share-package-archive-1',
+          latestTaskId: 'task-1',
+          latestDeliveryReceiptId: 'final-acceptance-delivery-receipt-1',
+          latestDeliveryTarget: 'reviewer@example.com',
+          latestDeliveryChannel: 'email',
+          latestDeliveredAt: '2026-06-29T03:05:00Z',
+          deliveryReceiptFreshness: 'FRESH',
+          deliveryReceiptFresh: true,
+          deliveryReceiptFreshnessSummary: 'Latest delivery receipt matches the current final acceptance share package archive.',
+          evidenceNotes: ['Latest final acceptance share package archive is send-ready.'],
+          report: '# PatchPilot Final Demo Acceptance Share Finalization Gate',
+          generatedAt: '2026-06-29T03:30:00Z',
+          archivedAt: '2026-06-29T04:00:00Z'
+        }
+      ],
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const archives = await listDemoFinalAcceptanceCompletionArchives();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-acceptance-completion-archives');
+  expect(archives).toHaveLength(1);
+  expect(archives[0].id).toBe('final-acceptance-completion-archive-1');
+});
+
+test('downloads final acceptance completion archive report through backend API', async () => {
+  const reportBlob = new Blob(['# PatchPilot Final Demo Acceptance Share Finalization Gate'], {
+    type: 'text/markdown;charset=UTF-8'
+  });
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    blob: async () => reportBlob
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const downloadedReport = await downloadDemoFinalAcceptanceCompletionArchiveReport('completion/1');
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-acceptance-completion-archives/completion%2F1/report/download');
   expect(downloadedReport).toBe(reportBlob);
 });
 
