@@ -1413,6 +1413,11 @@ class TaskControllerTests {
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Build system: `maven`")))
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Verification: `./mvnw test`")))
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Detection reason: pom.xml detected with mvnw wrapper")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("## Adapter Execution Evidence")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Status: `SUPPORTED`")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Selected adapter: `java/maven`")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Allowlisted verification command: `./mvnw test`")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Safety: Verification command came from a registered language adapter, not from the issue comment.")))
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("## Trigger Intent Audit")))
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Safety: safety gate accepted")))
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Issue context: issue context loaded")))
@@ -1494,8 +1499,80 @@ class TaskControllerTests {
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Status: `UNSUPPORTED`")))
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Reason: Unsupported repository: no supported language adapter detected")))
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Action: Add one supported project marker and deterministic test command, then trigger /agent fix again. PatchPilot will not run arbitrary commands for unsupported repositories.")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("## Adapter Execution Evidence")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Status: `UNSUPPORTED`")))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- Safety: PatchPilot stopped before model patch generation, verification, commit, push, or Pull Request creation.")))
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- `java/maven`: verify `mvn test`, signals `pom.xml`, `mvnw`")))
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("- `go/go`: verify `go test ./...`, signals `go.mod`, `*_test.go`")));
+    }
+
+    @Test
+    void should_include_adapter_execution_evidence_in_task_detail() throws Exception {
+        FixTaskVo task = createTask(command(
+                "adapter-evidence-owner",
+                "adapter-evidence-repo",
+                "delivery-adapter-evidence"
+        ));
+        fixTaskService.recordAdapterMetadata(
+                task.id(),
+                "node",
+                "npm",
+                "npm test",
+                "package.json contains a non-empty scripts.test"
+        );
+
+        mockMvc.perform(get("/api/tasks/{id}/detail", task.id()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.adapterExecutionEvidence.status").value("SUPPORTED"))
+                .andExpect(jsonPath("$.data.adapterExecutionEvidence.language").value("node"))
+                .andExpect(jsonPath("$.data.adapterExecutionEvidence.buildSystem").value("npm"))
+                .andExpect(jsonPath("$.data.adapterExecutionEvidence.verificationCommand").value("npm test"))
+                .andExpect(jsonPath("$.data.adapterExecutionEvidence.detectionReason").value("package.json contains a non-empty scripts.test"))
+                .andExpect(jsonPath("$.data.adapterExecutionEvidence.operatorAction").value("Review verification output and Pull Request evidence for this selected adapter."))
+                .andExpect(jsonPath("$.data.adapterExecutionEvidence.safetyNote").value("Verification command came from a registered language adapter, not from the issue comment."))
+                .andExpect(jsonPath("$.data.adapterExecutionEvidence.supportedAdapters.length()").value(0));
+    }
+
+    @Test
+    void should_report_pending_adapter_execution_evidence_before_preflight_records_metadata() throws Exception {
+        FixTaskVo task = createTask(command(
+                "adapter-evidence-owner",
+                "adapter-evidence-repo",
+                "delivery-adapter-evidence-pending"
+        ));
+
+        mockMvc.perform(get("/api/tasks/{id}/detail", task.id()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.adapterExecutionEvidence.status").value("PENDING"))
+                .andExpect(jsonPath("$.data.adapterExecutionEvidence.language").value(nullValue()))
+                .andExpect(jsonPath("$.data.adapterExecutionEvidence.buildSystem").value(nullValue()))
+                .andExpect(jsonPath("$.data.adapterExecutionEvidence.verificationCommand").value(nullValue()))
+                .andExpect(jsonPath("$.data.adapterExecutionEvidence.operatorAction").value("Wait for workspace preflight to record adapter evidence before trusting verification status."))
+                .andExpect(jsonPath("$.data.adapterExecutionEvidence.safetyNote").value("No adapter-selected verification command has been recorded for this task yet."));
+    }
+
+    @Test
+    void should_report_unsupported_adapter_execution_evidence_for_unsupported_repository_failures() throws Exception {
+        FixTaskVo task = createTask(command(
+                "adapter-evidence-owner",
+                "adapter-evidence-repo",
+                "delivery-adapter-evidence-unsupported"
+        ));
+        fixTaskService.markFailed(task.id(), "Unsupported repository: no supported language adapter detected");
+
+        mockMvc.perform(get("/api/tasks/{id}/detail", task.id()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.adapterExecutionEvidence.status").value("UNSUPPORTED"))
+                .andExpect(jsonPath("$.data.adapterExecutionEvidence.language").value(nullValue()))
+                .andExpect(jsonPath("$.data.adapterExecutionEvidence.verificationCommand").value(nullValue()))
+                .andExpect(jsonPath("$.data.adapterExecutionEvidence.detectionReason").value("Unsupported repository: no supported language adapter detected"))
+                .andExpect(jsonPath("$.data.adapterExecutionEvidence.operatorAction").value("Add one supported project marker and deterministic test command, then trigger /agent fix again. PatchPilot will not run arbitrary commands for unsupported repositories."))
+                .andExpect(jsonPath("$.data.adapterExecutionEvidence.safetyNote").value("PatchPilot stopped before model patch generation, verification, commit, push, or Pull Request creation."))
+                .andExpect(jsonPath("$.data.adapterExecutionEvidence.supportedAdapters.length()").value(greaterThanOrEqualTo(2)))
+                .andExpect(jsonPath("$.data.adapterExecutionEvidence.supportedAdapters[0].language").value("java"));
     }
 
     @Test

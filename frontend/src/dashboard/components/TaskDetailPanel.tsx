@@ -304,6 +304,54 @@ export function TaskDetailPanel({
         </section>
       ) : null}
 
+      {detail.adapterExecutionEvidence ? (
+        <section
+          className={`detail-section adapter-evidence-section adapter-evidence-${detail.adapterExecutionEvidence.status.toLowerCase()}`}
+          aria-label="Adapter execution evidence"
+        >
+          <div className="adapter-evidence-header">
+            <div>
+              <h3>Adapter execution evidence</h3>
+              <p>{detail.adapterExecutionEvidence.operatorAction}</p>
+            </div>
+            <strong>{detail.adapterExecutionEvidence.status}</strong>
+          </div>
+          <div className="trigger-intent-grid">
+            <div>
+              <span>Adapter</span>
+              <p>
+                {detail.adapterExecutionEvidence.language && detail.adapterExecutionEvidence.buildSystem
+                  ? `${detail.adapterExecutionEvidence.language} / ${detail.adapterExecutionEvidence.buildSystem}`
+                  : 'Not selected yet'}
+              </p>
+            </div>
+            <div>
+              <span>Verification</span>
+              <p>{detail.adapterExecutionEvidence.verificationCommand ?? 'No adapter-selected command'}</p>
+            </div>
+            <div>
+              <span>Detection</span>
+              <p>{detail.adapterExecutionEvidence.detectionReason ?? 'No detection evidence recorded'}</p>
+            </div>
+          </div>
+          <p>{detail.adapterExecutionEvidence.safetyNote}</p>
+          {detail.adapterExecutionEvidence.supportedAdapters.length > 0 ? (
+            <div className="repository-support-adapters">
+              {detail.adapterExecutionEvidence.supportedAdapters.map((adapter) => (
+                <div
+                  className="repository-support-adapter"
+                  key={`${adapter.language}-${adapter.buildSystem}`}
+                >
+                  <strong>{adapter.language} / {adapter.buildSystem}</strong>
+                  <span>{adapter.verificationCommand.join(' ')}</span>
+                  <p>{adapter.detectionSignals.join(', ')}</p>
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </section>
+      ) : null}
+
       {detail.failureDiagnosis ? (
         <section className="detail-section failure-diagnosis-section" aria-label="Failure diagnosis">
           <div className="failure-diagnosis-header">

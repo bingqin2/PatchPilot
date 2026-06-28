@@ -3302,6 +3302,45 @@ h3 {
   overflow-wrap: anywhere;
 }
 
+.adapter-evidence-section {
+  background: #f6fbf8;
+  display: grid;
+  gap: 12px;
+}
+
+.adapter-evidence-header {
+  align-items: start;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+}
+
+.adapter-evidence-header p,
+.adapter-evidence-section > p {
+  color: #52606e;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.adapter-evidence-header strong {
+  background: #dff6e7;
+  border-radius: 999px;
+  color: #126b35;
+  font-size: 12px;
+  padding: 5px 9px;
+  white-space: nowrap;
+}
+
+.adapter-evidence-pending .adapter-evidence-header strong {
+  background: #edf5ff;
+  color: #24527c;
+}
+
+.adapter-evidence-unsupported .adapter-evidence-header strong {
+  background: #fde5df;
+  color: #a13724;
+}
+
 .failure-diagnosis-section {
   background: #fff7f7;
   display: grid;
