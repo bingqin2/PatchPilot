@@ -53,6 +53,7 @@ import type {
   EvaluationRunSnapshotArchive,
   FixTask,
   FixTaskEvidencePackageArchive,
+  FixTaskEvidencePackageArchiveSummary,
   FixTaskFailureCauseSummary,
   FixTaskLatencySummary,
   FixTaskPage,
@@ -705,6 +706,16 @@ export async function archiveTaskEvidencePackage(taskId: string): Promise<FixTas
 
 export async function listTaskEvidencePackageArchives(taskId: string): Promise<FixTaskEvidencePackageArchive[]> {
   return getApi<FixTaskEvidencePackageArchive[]>(`/api/tasks/${encodeURIComponent(taskId)}/evidence-packages`);
+}
+
+export async function listRecentTaskEvidencePackageArchives(limit = 20): Promise<FixTaskEvidencePackageArchive[]> {
+  return getApi<FixTaskEvidencePackageArchive[]>(`/api/tasks/evidence-packages?limit=${encodeURIComponent(limit)}`);
+}
+
+export async function getTaskEvidencePackageArchiveSummary(limit = 50): Promise<FixTaskEvidencePackageArchiveSummary> {
+  return getApi<FixTaskEvidencePackageArchiveSummary>(
+    `/api/tasks/evidence-packages/summary?limit=${encodeURIComponent(limit)}`
+  );
 }
 
 export async function downloadTaskEvidencePackageReport(archiveId: string): Promise<Blob> {

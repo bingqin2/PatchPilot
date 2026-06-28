@@ -94,6 +94,7 @@ import {
   getModelUsageSummary,
   getQueueSummary,
   getTaskDetail,
+  getTaskEvidencePackageArchiveSummary,
   getTaskRetryPreflight,
   getTaskReport,
   getTaskStatusCounts,
@@ -121,6 +122,7 @@ import {
   listWebhookDeliveries,
   listTasks,
   listTaskEvidencePackageArchives,
+  listRecentTaskEvidencePackageArchives,
   preflightRepository,
   retryRejectedTrigger,
   releaseTriggerQuarantine,
@@ -152,6 +154,7 @@ import { RejectedTriggerPanel } from './dashboard/components/RejectedTriggerPane
 import { RepositoryPreflightPanel } from './dashboard/components/RepositoryPreflightPanel';
 import { SupportedAdaptersPanel } from './dashboard/components/SupportedAdaptersPanel';
 import { TaskDetailPanel } from './dashboard/components/TaskDetailPanel';
+import { TaskEvidenceArchiveReviewPanel } from './dashboard/components/TaskEvidenceArchiveReviewPanel';
 import { TaskListPanel } from './dashboard/components/TaskListPanel';
 import { TriggerDecisionPanel } from './dashboard/components/TriggerDecisionPanel';
 import { WebhookDeliveryPanel } from './dashboard/components/WebhookDeliveryPanel';
@@ -213,6 +216,8 @@ import type {
   EvaluationRunPreview,
   EvaluationRunSnapshotArchive,
   FixTask,
+  FixTaskEvidencePackageArchive,
+  FixTaskEvidencePackageArchiveSummary,
   FixTaskFailureCauseSummary,
   FixTaskLatencySummary,
   FixTaskMetricsSummary,
@@ -411,6 +416,10 @@ export default function App() {
   const [queueSummary, setQueueSummary] = useState<FixTaskQueueSummary | null>(null);
   const [workerHealth, setWorkerHealth] = useState<FixTaskWorkerHealth | null>(null);
   const [queueItems, setQueueItems] = useState<FixTaskQueueItem[]>([]);
+  const [taskEvidenceArchives, setTaskEvidenceArchives] = useState<FixTaskEvidencePackageArchive[]>([]);
+  const [taskEvidenceArchiveSummary, setTaskEvidenceArchiveSummary] =
+    useState<FixTaskEvidencePackageArchiveSummary | null>(null);
+  const [taskEvidenceArchiveError, setTaskEvidenceArchiveError] = useState<string | null>(null);
   const [webhookDeliveries, setWebhookDeliveries] = useState<WebhookDeliveryDiagnostic[]>([]);
   const [webhookDeliveryError, setWebhookDeliveryError] = useState<string | null>(null);
   const [webhookPayloadDiagnostic, setWebhookPayloadDiagnostic] = useState<WebhookPayloadDiagnosticResult | null>(null);
@@ -731,6 +740,8 @@ export default function App() {
         queueSummaryData,
         queueItemList,
         workerHealthData,
+        taskEvidenceArchiveResult,
+        taskEvidenceArchiveSummaryResult,
         webhookDeliveryResult,
         acceptedTriggerDecisionResult,
         rejectedTriggerResult,
@@ -925,6 +936,14 @@ export default function App() {
         getQueueSummary(),
         listQueueItems(),
         getWorkerHealth(),
+        listRecentTaskEvidencePackageArchives(20).then(
+          (archives) => ({ archives, error: null as string | null }),
+          (caught) => ({ archives: null, error: errorMessage(caught) })
+        ),
+        getTaskEvidencePackageArchiveSummary(50).then(
+          (summary) => ({ summary, error: null as string | null }),
+          (caught) => ({ summary: null, error: errorMessage(caught) })
+        ),
         listWebhookDeliveries(10).then(
           (deliveries) => ({ deliveries, error: null as string | null }),
           (caught) => ({ deliveries: null, error: errorMessage(caught) })
@@ -1143,6 +1162,13 @@ export default function App() {
       setQueueSummary(queueSummaryData);
       setQueueItems(queueItemList);
       setWorkerHealth(workerHealthData);
+      if (taskEvidenceArchiveResult.archives) {
+        setTaskEvidenceArchives(taskEvidenceArchiveResult.archives);
+      }
+      if (taskEvidenceArchiveSummaryResult.summary) {
+        setTaskEvidenceArchiveSummary(taskEvidenceArchiveSummaryResult.summary);
+      }
+      setTaskEvidenceArchiveError(taskEvidenceArchiveResult.error ?? taskEvidenceArchiveSummaryResult.error);
       if (webhookDeliveryResult.deliveries) {
         setWebhookDeliveries(webhookDeliveryResult.deliveries);
       }
@@ -1335,6 +1361,26 @@ export default function App() {
         ...(current.evidencePackageArchives ?? []).filter((item) => item.id !== archive.id)
       ]
     }));
+    setTaskEvidenceArchives((current) => [archive, ...current.filter((item) => item.id !== archive.id)].slice(0, 20));
+    setTaskEvidenceArchiveSummary((current) => current
+      ? {
+          ...current,
+          totalArchiveCount: current.totalArchiveCount + 1,
+          completedArchiveCount: current.completedArchiveCount + (archive.status === 'COMPLETED' ? 1 : 0),
+          failedArchiveCount: current.failedArchiveCount + (archive.status === 'FAILED' ? 1 : 0),
+          pendingReviewArchiveCount: current.pendingReviewArchiveCount + (archive.status === 'PENDING_REVIEW' ? 1 : 0),
+          cancelledArchiveCount: current.cancelledArchiveCount + (archive.status === 'CANCELLED' ? 1 : 0),
+          latestArchiveId: archive.id,
+          latestTaskId: archive.taskId,
+          latestRepositoryOwner: archive.repositoryOwner,
+          latestRepositoryName: archive.repositoryName,
+          latestIssueNumber: archive.issueNumber,
+          latestArchivedAt: archive.archivedAt,
+          nextAction: `Download archived task evidence ${archive.id} or open task ${archive.taskId} before sharing review notes.`
+        }
+      : current
+    );
+    setTaskEvidenceArchiveError(null);
     return archive;
   }, []);
   const handleDownloadTaskEvidencePackageReport = useCallback((archiveId: string) => (
@@ -2179,6 +2225,14 @@ export default function App() {
           onDownloadEvidencePackageReport={handleDownloadTaskEvidencePackageReport}
         />
       </section>
+
+      <TaskEvidenceArchiveReviewPanel
+        summary={taskEvidenceArchiveSummary}
+        archives={taskEvidenceArchives}
+        error={taskEvidenceArchiveError}
+        onDownloadArchiveReport={handleDownloadTaskEvidencePackageReport}
+        onSelectTask={selectTask}
+      />
 
       <TriggerDecisionPanel
         task={selectedTask}

@@ -337,6 +337,23 @@ const taskEvidencePackageArchive = {
   report: '# PatchPilot Task Report\n\n- Task: `task-1`'
 };
 
+const taskEvidencePackageArchiveSummary = {
+  totalArchiveCount: 1,
+  completedArchiveCount: 1,
+  failedArchiveCount: 0,
+  pendingReviewArchiveCount: 0,
+  cancelledArchiveCount: 0,
+  latestArchiveId: 'task-evidence-archive-1',
+  latestTaskId: 'task-1',
+  latestRepositoryOwner: 'bingqin2',
+  latestRepositoryName: 'PatchPilot',
+  latestIssueNumber: 1,
+  latestArchivedAt: '2026-06-20T01:05:00Z',
+  sideEffectContract:
+    'Task evidence archive review reads PatchPilot-local archived reports only; it does not create tasks, call the model, run verification commands, mutate Git, push, open Pull Requests, or write GitHub comments.',
+  nextAction: 'Download archived task evidence task-evidence-archive-1 or open task task-1 before sharing review notes.'
+};
+
 const detail = {
   summary,
   queueItem: {
@@ -2761,6 +2778,12 @@ beforeEach(() => {
     if (url === '/api/tasks/task-1/evidence-packages') {
       return jsonResponse([taskEvidencePackageArchive]);
     }
+    if (url === '/api/tasks/evidence-packages?limit=20') {
+      return jsonResponse([taskEvidencePackageArchive]);
+    }
+    if (url === '/api/tasks/evidence-packages/summary?limit=50') {
+      return jsonResponse(taskEvidencePackageArchiveSummary);
+    }
     if (url === '/api/tasks/manual-task-1/detail') {
       return jsonResponse(manualTaskDetail);
     }
@@ -3012,6 +3035,11 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(screen.getByText('4.0s model avg')).toBeInTheDocument();
   expect(screen.getByText('2.0s tool avg')).toBeInTheDocument();
   expect(screen.getByText('7.0s test avg')).toBeInTheDocument();
+  const taskEvidenceReview = screen.getByLabelText('Task evidence archive review');
+  expect(within(taskEvidenceReview).getByText('Task evidence archive review')).toBeInTheDocument();
+  expect(within(taskEvidenceReview).getByText('1 archived reports')).toBeInTheDocument();
+  expect(within(taskEvidenceReview).getByText('task-evidence-archive-1')).toBeInTheDocument();
+  expect(within(taskEvidenceReview).getByText(taskEvidencePackageArchiveSummary.sideEffectContract)).toBeInTheDocument();
   expect(screen.getByText('Configuration')).toBeInTheDocument();
   expect(screen.getByText('openai-compatible')).toBeInTheDocument();
   expect(screen.getByText('https://api.example.test/v1')).toBeInTheDocument();
@@ -5916,6 +5944,12 @@ function defaultAppResponse(input: RequestInfo | URL, init?: RequestInit) {
   }
   if (url === '/api/tasks/task-1/evidence-packages') {
     return jsonResponse([taskEvidencePackageArchive]);
+  }
+  if (url === '/api/tasks/evidence-packages?limit=20') {
+    return jsonResponse([taskEvidencePackageArchive]);
+  }
+  if (url === '/api/tasks/evidence-packages/summary?limit=50') {
+    return jsonResponse(taskEvidencePackageArchiveSummary);
   }
   if (url === '/api/tasks/task-1/retry-preflight') {
     return jsonResponse({

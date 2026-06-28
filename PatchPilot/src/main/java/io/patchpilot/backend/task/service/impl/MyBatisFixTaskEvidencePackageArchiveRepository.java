@@ -39,6 +39,17 @@ public class MyBatisFixTaskEvidencePackageArchiveRepository implements FixTaskEv
     }
 
     @Override
+    public List<FixTaskEvidencePackageArchiveVo> listRecent(int limit) {
+        LambdaQueryWrapper<FixTaskEvidencePackageArchiveEntity> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper
+                .orderByDesc(FixTaskEvidencePackageArchiveEntity::getArchivedAt)
+                .last("LIMIT " + limit);
+        return archiveMapper.selectList(queryWrapper).stream()
+                .map(FixTaskEvidencePackageArchiveConvert::toVo)
+                .toList();
+    }
+
+    @Override
     public Optional<FixTaskEvidencePackageArchiveVo> findById(String archiveId) {
         return Optional.ofNullable(archiveMapper.selectById(archiveId))
                 .map(FixTaskEvidencePackageArchiveConvert::toVo);

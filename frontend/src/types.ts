@@ -111,6 +111,22 @@ export interface FixTaskEvidencePackageArchive {
   report: string;
 }
 
+export interface FixTaskEvidencePackageArchiveSummary {
+  totalArchiveCount: number;
+  completedArchiveCount: number;
+  failedArchiveCount: number;
+  pendingReviewArchiveCount: number;
+  cancelledArchiveCount: number;
+  latestArchiveId: string | null;
+  latestTaskId: string | null;
+  latestRepositoryOwner: string | null;
+  latestRepositoryName: string | null;
+  latestIssueNumber: number | null;
+  latestArchivedAt: string | null;
+  sideEffectContract: string;
+  nextAction: string;
+}
+
 export interface FixTaskRetryPreflight {
   taskId: string;
   status: TaskStatus;

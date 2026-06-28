@@ -11,5 +11,7 @@ public interface FixTaskEvidencePackageArchiveRepository {
 
     List<FixTaskEvidencePackageArchiveVo> listByTaskId(String taskId, int limit);
 
+    List<FixTaskEvidencePackageArchiveVo> listRecent(int limit);
+
     Optional<FixTaskEvidencePackageArchiveVo> findById(String archiveId);
 }
