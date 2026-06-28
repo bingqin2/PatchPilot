@@ -21,6 +21,10 @@ const launchEvidencePackage: DemoLaunchEvidencePackage = {
   launchReadinessStatus: 'READY',
   evidenceBundleStatus: 'READY',
   handoffFinalizationStatus: 'READY',
+  finalHandoffReportPackageArchiveStatus: 'READY',
+  finalHandoffReportPackageArchiveReady: true,
+  finalHandoffReportPackageArchiveId: 'final-handoff-report-package-archive-1',
+  finalHandoffReportPackageArchiveSummary: 'Latest final handoff report package archive is download-ready and ready.',
   latestTaskId: 'task-1',
   latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
   latestWebhookDeliveryId: 'delivery-1',
@@ -47,7 +51,8 @@ const launchEvidencePackage: DemoLaunchEvidencePackage = {
   ],
   postDemoProof: [
     'Handoff finalization is READY.',
-    'Latest delivery receipt delivery-receipt-1 is fresh.'
+    'Latest delivery receipt delivery-receipt-1 is fresh.',
+    'Final handoff report package archive final-handoff-report-package-archive-1 is download-ready.'
   ],
   nextActions: [
     'Post the tested /agent fix comment, watch the task reach COMPLETED, then use the generated Pull Request for review.'
@@ -68,6 +73,10 @@ const launchEvidenceArchive: DemoLaunchEvidencePackageArchive = {
   launchReadinessStatus: 'READY',
   evidenceBundleStatus: 'READY',
   handoffFinalizationStatus: 'READY',
+  finalHandoffReportPackageArchiveStatus: 'READY',
+  finalHandoffReportPackageArchiveReady: true,
+  finalHandoffReportPackageArchiveId: 'final-handoff-report-package-archive-1',
+  finalHandoffReportPackageArchiveSummary: 'Latest final handoff report package archive is download-ready and ready.',
   latestTaskId: 'task-1',
   latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
   latestWebhookDeliveryId: 'delivery-1',
@@ -89,6 +98,9 @@ const launchEvidenceShareCenter: DemoLaunchEvidenceShareCenter = {
   latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
   latestWebhookDeliveryId: 'delivery-1',
   evaluationRunId: 'evaluation-run-2',
+  finalHandoffReportPackageArchiveStatus: 'READY',
+  finalHandoffReportPackageArchiveReady: true,
+  finalHandoffReportPackageArchiveId: 'final-handoff-report-package-archive-1',
   latestDeliveryReceiptId: 'launch-delivery-receipt-1',
   latestDeliveryTarget: 'reviewer@example.com',
   latestDeliveryChannel: 'email',
@@ -100,11 +112,13 @@ const launchEvidenceShareCenter: DemoLaunchEvidenceShareCenter = {
   downloadActions: [
     'Download launch evidence package archive launch-evidence-archive-1.',
     'Download launch evidence share center report.',
+    'Download final handoff report package archive final-handoff-report-package-archive-1.',
     'Open Pull Request https://github.com/bingqin2/PatchPilot/pull/42 for review.',
     'Download launch evidence delivery receipt launch-delivery-receipt-1.'
   ],
   evidenceNotes: [
     'Latest launch evidence archive status is READY.',
+    'Final handoff report package archive final-handoff-report-package-archive-1 is READY and download-ready.',
     'Latest delivery receipt launch-delivery-receipt-1 was recorded for reviewer@example.com via email.',
     'Latest Pull Request https://github.com/bingqin2/PatchPilot/pull/42 is ready for review.'
   ],
@@ -322,6 +336,9 @@ test('renders demo launch evidence package proof and readiness status', () => {
   expect(within(panel).getByText('delivery-1')).toBeInTheDocument();
   expect(within(panel).getByText('evaluation-run-2')).toBeInTheDocument();
   expect(within(panel).getByText('java, python, maven, pytest')).toBeInTheDocument();
+  expect(within(panel).getAllByText('Final handoff package archive').length).toBeGreaterThanOrEqual(2);
+  expect(within(panel).getAllByText('final-handoff-report-package-archive-1').length).toBeGreaterThanOrEqual(1);
+  expect(within(panel).getByText('Latest final handoff report package archive is download-ready and ready.')).toBeInTheDocument();
   expect(within(panel).getByText('Recent task task-1 reached COMPLETED.')).toBeInTheDocument();
   expect(within(panel).getAllByText('Latest delivery receipt delivery-receipt-1 is fresh.').length).toBeGreaterThanOrEqual(2);
   expect(within(panel).getByText(/does not create tasks, call the model, run tests, archive records/)).toBeInTheDocument();

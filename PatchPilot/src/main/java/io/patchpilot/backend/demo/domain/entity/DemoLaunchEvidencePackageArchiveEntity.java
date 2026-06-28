@@ -36,6 +36,18 @@ public class DemoLaunchEvidencePackageArchiveEntity {
     @TableField("handoff_finalization_status")
     private String handoffFinalizationStatus;
 
+    @TableField("final_handoff_report_package_archive_status")
+    private String finalHandoffReportPackageArchiveStatus;
+
+    @TableField("final_handoff_report_package_archive_ready")
+    private Boolean finalHandoffReportPackageArchiveReady;
+
+    @TableField("final_handoff_report_package_archive_id")
+    private String finalHandoffReportPackageArchiveId;
+
+    @TableField("final_handoff_report_package_archive_summary")
+    private String finalHandoffReportPackageArchiveSummary;
+
     @TableField("latest_task_id")
     private String latestTaskId;
 

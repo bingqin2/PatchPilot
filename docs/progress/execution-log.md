@@ -5518,3 +5518,24 @@ Validation:
 - `npm test -- --reporter=basic`: passed, 29 test files and 398 tests.
 - `npm run build`: first failed because `DemoSessionSnapshotPanel.test.tsx` still used the old `DemoEvidenceBundle` fixture shape; passed after adding `finalHandoffReportPackageArchiveEvidence` to that fixture, with the existing Vite large-chunk warning.
 - `git diff --check`: passed.
+
+## 2026-06-28 - 275 Launch package final handoff archive proof
+
+- Started `275-launch-package-final-handoff-archive-proof` so the final shareable launch evidence package proves that the post-demo final handoff report package archive is ready and downloadable.
+- Planned a complete feature slice: launch evidence package fields, archived launch package persistence, share-center notes/downloads, dashboard rendering, README docs, plan doc, Flyway migration, and regression tests.
+- RED backend tests were added first for package JSON/Markdown, archive service fields, archive converter/entity mapping, migration columns, in-memory repository compatibility, and share-center evidence/download actions.
+- RED frontend test was added first for rendering the final handoff package archive proof in the launch evidence package panel.
+- Extended launch evidence package and archive VOs with final handoff report package archive status, ready flag, archive id, and summary.
+- Added Flyway/MyBatis persistence for the launch archive proof columns and kept default migration values safe for existing archives.
+- Updated the launch evidence package Markdown, archive rows, and launch evidence share center so operators can download or cite the final handoff report package archive from the final launch artifact.
+- Updated the dashboard launch evidence package panel, share center section, recent archive list, frontend types, and API/App fixtures with the same final handoff archive proof.
+- Updated README and added this plan document.
+
+Validation:
+
+- `mvn -q -pl PatchPilot -Dtest=DemoLaunchEvidencePackageServiceTests,DemoLaunchEvidencePackageArchiveServiceTests,DemoLaunchEvidenceShareCenterServiceTests,DemoLaunchEvidencePackageArchiveConvertTests,DemoLaunchEvidencePackageArchiveMigrationTests,InMemoryDemoLaunchEvidencePackageArchiveRepositoryTests test`: first failed because the new VO/entity fields did not exist, then failed on fixture import/constructor field order; passed after backend implementation and fixture updates.
+- `npm test -- src/dashboard/components/DemoLaunchEvidencePackagePanel.test.tsx -- --reporter=basic`: first failed because the panel did not render `Final handoff package archive`, then failed because the proof appears in both package and share center sections; passed after UI rendering and assertion updates, 8 tests.
+- `mvn -q -pl PatchPilot test`: passed.
+- `npm test -- --reporter=basic`: passed, 29 test files and 398 tests.
+- `npm run build`: passed with the existing Vite large-chunk warning.
+- `git diff --check`: passed.

@@ -2151,6 +2151,10 @@ const demoLaunchEvidencePackage = {
   launchReadinessStatus: 'READY',
   evidenceBundleStatus: 'READY',
   handoffFinalizationStatus: 'READY',
+  finalHandoffReportPackageArchiveStatus: 'READY',
+  finalHandoffReportPackageArchiveReady: true,
+  finalHandoffReportPackageArchiveId: 'final-handoff-report-package-archive-1',
+  finalHandoffReportPackageArchiveSummary: 'Latest final handoff report package archive is download-ready and ready.',
   latestTaskId: 'task-1',
   latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
   latestWebhookDeliveryId: 'delivery-created-status-comment',
@@ -2164,7 +2168,8 @@ const demoLaunchEvidencePackage = {
   ],
   postDemoProof: [
     'Handoff finalization is READY.',
-    'Latest delivery receipt delivery-receipt-1 is fresh.'
+    'Latest delivery receipt delivery-receipt-1 is fresh.',
+    'Final handoff report package archive final-handoff-report-package-archive-1 is download-ready.'
   ],
   nextActions: [
     'Post the tested /agent fix comment, watch the task reach COMPLETED, then use the generated Pull Request for review.'
@@ -2185,6 +2190,10 @@ const demoLaunchEvidencePackageArchive = {
   launchReadinessStatus: 'READY',
   evidenceBundleStatus: 'READY',
   handoffFinalizationStatus: 'READY',
+  finalHandoffReportPackageArchiveStatus: 'READY',
+  finalHandoffReportPackageArchiveReady: true,
+  finalHandoffReportPackageArchiveId: 'final-handoff-report-package-archive-1',
+  finalHandoffReportPackageArchiveSummary: 'Latest final handoff report package archive is download-ready and ready.',
   latestTaskId: 'task-1',
   latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
   latestWebhookDeliveryId: 'delivery-created-status-comment',
@@ -2206,6 +2215,9 @@ const demoLaunchEvidenceShareCenter = {
   latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
   latestWebhookDeliveryId: 'delivery-created-status-comment',
   evaluationRunId: 'evaluation-run-2',
+  finalHandoffReportPackageArchiveStatus: 'READY',
+  finalHandoffReportPackageArchiveReady: true,
+  finalHandoffReportPackageArchiveId: 'final-handoff-report-package-archive-1',
   latestDeliveryReceiptId: 'launch-delivery-receipt-1',
   latestDeliveryTarget: 'reviewer@example.com',
   latestDeliveryChannel: 'email',
@@ -2217,11 +2229,13 @@ const demoLaunchEvidenceShareCenter = {
   downloadActions: [
     'Download launch evidence package archive launch-evidence-archive-1.',
     'Download launch evidence share center report.',
+    'Download final handoff report package archive final-handoff-report-package-archive-1.',
     'Open Pull Request https://github.com/bingqin2/PatchPilot/pull/8 for review.',
     'Download launch evidence delivery receipt launch-delivery-receipt-1.'
   ],
   evidenceNotes: [
     'Latest launch evidence archive status is READY.',
+    'Final handoff report package archive final-handoff-report-package-archive-1 is READY and download-ready.',
     'Latest delivery receipt launch-delivery-receipt-1 was recorded for reviewer@example.com via email.',
     'Latest Pull Request https://github.com/bingqin2/PatchPilot/pull/8 is ready for review.'
   ],

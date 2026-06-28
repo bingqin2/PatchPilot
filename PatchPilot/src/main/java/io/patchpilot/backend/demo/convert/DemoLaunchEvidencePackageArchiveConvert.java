@@ -19,6 +19,10 @@ public final class DemoLaunchEvidencePackageArchiveConvert {
         entity.setLaunchReadinessStatus(archive.launchReadinessStatus().name());
         entity.setEvidenceBundleStatus(archive.evidenceBundleStatus().name());
         entity.setHandoffFinalizationStatus(archive.handoffFinalizationStatus().name());
+        entity.setFinalHandoffReportPackageArchiveStatus(archive.finalHandoffReportPackageArchiveStatus().name());
+        entity.setFinalHandoffReportPackageArchiveReady(archive.finalHandoffReportPackageArchiveReady());
+        entity.setFinalHandoffReportPackageArchiveId(archive.finalHandoffReportPackageArchiveId());
+        entity.setFinalHandoffReportPackageArchiveSummary(archive.finalHandoffReportPackageArchiveSummary());
         entity.setLatestTaskId(archive.latestTaskId());
         entity.setLatestPullRequestUrl(archive.latestPullRequestUrl());
         entity.setLatestWebhookDeliveryId(archive.latestWebhookDeliveryId());
@@ -38,6 +42,10 @@ public final class DemoLaunchEvidencePackageArchiveConvert {
                 DemoReadinessStatus.valueOf(entity.getLaunchReadinessStatus()),
                 DemoReadinessStatus.valueOf(entity.getEvidenceBundleStatus()),
                 DemoReadinessStatus.valueOf(entity.getHandoffFinalizationStatus()),
+                DemoReadinessStatus.valueOf(entity.getFinalHandoffReportPackageArchiveStatus()),
+                Boolean.TRUE.equals(entity.getFinalHandoffReportPackageArchiveReady()),
+                entity.getFinalHandoffReportPackageArchiveId(),
+                entity.getFinalHandoffReportPackageArchiveSummary(),
                 entity.getLatestTaskId(),
                 entity.getLatestPullRequestUrl(),
                 entity.getLatestWebhookDeliveryId(),

@@ -24,6 +24,12 @@ class DemoLaunchEvidencePackageServiceTests {
         assertThat(evidencePackage.launchReadinessStatus()).isEqualTo(DemoReadinessStatus.READY);
         assertThat(evidencePackage.evidenceBundleStatus()).isEqualTo(DemoReadinessStatus.READY);
         assertThat(evidencePackage.handoffFinalizationStatus()).isEqualTo(DemoReadinessStatus.READY);
+        assertThat(evidencePackage.finalHandoffReportPackageArchiveStatus()).isEqualTo(DemoReadinessStatus.READY);
+        assertThat(evidencePackage.finalHandoffReportPackageArchiveReady()).isTrue();
+        assertThat(evidencePackage.finalHandoffReportPackageArchiveId())
+                .isEqualTo("final-handoff-report-package-archive-1");
+        assertThat(evidencePackage.finalHandoffReportPackageArchiveSummary())
+                .isEqualTo("Latest final handoff report package archive is download-ready and ready.");
         assertThat(evidencePackage.latestTaskId()).isEqualTo("task-1");
         assertThat(evidencePackage.latestPullRequestUrl()).isEqualTo("https://github.com/bingqin2/PatchPilot/pull/42");
         assertThat(evidencePackage.latestWebhookDeliveryId()).isEqualTo("delivery-1");
@@ -39,7 +45,8 @@ class DemoLaunchEvidencePackageServiceTests {
         );
         assertThat(evidencePackage.postDemoProof()).contains(
                 "Handoff finalization is READY.",
-                "Latest delivery receipt delivery-receipt-1 is fresh."
+                "Latest delivery receipt delivery-receipt-1 is fresh.",
+                "Final handoff report package archive final-handoff-report-package-archive-1 is download-ready."
         );
         assertThat(evidencePackage.nextActions()).containsExactly(
                 "Post the tested /agent fix comment, watch the task reach COMPLETED, then use the generated Pull Request for review.",
@@ -57,6 +64,8 @@ class DemoLaunchEvidencePackageServiceTests {
                 .contains("Recent Pull Request https://github.com/bingqin2/PatchPilot/pull/42 is available.")
                 .contains("## Evaluation Proof")
                 .contains("evaluation-run-2")
+                .contains("- Final handoff report package archive: `final-handoff-report-package-archive-1`")
+                .contains("- Final handoff report package archive status: `READY`")
                 .contains("## Side Effect Contract");
     }
 
@@ -73,6 +82,9 @@ class DemoLaunchEvidencePackageServiceTests {
         assertThat(evidencePackage.readyToShare()).isFalse();
         assertThat(evidencePackage.summary()).isEqualTo("PatchPilot launch evidence package needs attention before sharing.");
         assertThat(evidencePackage.handoffFinalizationStatus()).isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
+        assertThat(evidencePackage.finalHandoffReportPackageArchiveStatus()).isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
+        assertThat(evidencePackage.finalHandoffReportPackageArchiveReady()).isFalse();
+        assertThat(evidencePackage.finalHandoffReportPackageArchiveId()).isNull();
         assertThat(evidencePackage.nextActions()).contains(
                 "Resolve launch package warnings, then rerun this readiness package.",
                 "Fix demo evidence bundle before launch."

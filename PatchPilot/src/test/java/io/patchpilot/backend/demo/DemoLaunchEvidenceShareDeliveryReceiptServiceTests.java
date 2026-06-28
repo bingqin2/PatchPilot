@@ -2,6 +2,7 @@ package io.patchpilot.backend.demo;
 
 import io.patchpilot.backend.demo.domain.DemoLaunchEvidenceShareCenterVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchEvidenceShareDeliveryReceiptVo;
+import io.patchpilot.backend.demo.domain.DemoReadinessStatus;
 import io.patchpilot.backend.demo.service.impl.InMemoryDemoLaunchEvidenceShareDeliveryReceiptRepository;
 import org.junit.jupiter.api.Test;
 
@@ -94,6 +95,9 @@ class DemoLaunchEvidenceShareDeliveryReceiptServiceTests {
                 "https://github.com/bingqin2/PatchPilot/pull/42",
                 "delivery-1",
                 "evaluation-run-2",
+                DemoReadinessStatus.READY,
+                true,
+                "final-handoff-report-package-archive-1",
                 null,
                 null,
                 null,
@@ -122,6 +126,9 @@ class DemoLaunchEvidenceShareDeliveryReceiptServiceTests {
                 null,
                 null,
                 null,
+                null,
+                DemoReadinessStatus.NEEDS_ATTENTION,
+                false,
                 null,
                 null,
                 null,

@@ -387,6 +387,13 @@ export function DemoLaunchEvidencePackagePanel({
               ))}
             </div>
             <div>
+              <span>Final handoff package archive</span>
+              <strong>{statusLabel(evidencePackage.finalHandoffReportPackageArchiveStatus)}</strong>
+              <small>{evidencePackage.finalHandoffReportPackageArchiveReady ? 'Download-ready' : 'Not download-ready'}</small>
+              <small>{evidencePackage.finalHandoffReportPackageArchiveId ?? 'No final handoff archive recorded.'}</small>
+              <small>{evidencePackage.finalHandoffReportPackageArchiveSummary}</small>
+            </div>
+            <div>
               <span>Pull Request</span>
               {evidencePackage.latestPullRequestUrl ? (
                 <a href={evidencePackage.latestPullRequestUrl} target="_blank" rel="noreferrer">
@@ -773,6 +780,12 @@ function LaunchEvidenceShareCenterPanel({
               <strong>{shareCenter.latestDeliveryReceiptId ?? 'Missing'}</strong>
               <small>{shareCenter.deliveryReceiptFreshness}: {shareCenter.deliveryReceiptFresh ? 'fresh' : 'not current'}</small>
             </div>
+            <div>
+              <span>Final handoff package archive</span>
+              <strong>{statusLabel(shareCenter.finalHandoffReportPackageArchiveStatus)}</strong>
+              <small>{shareCenter.finalHandoffReportPackageArchiveReady ? 'Download-ready' : 'Not download-ready'}</small>
+              <small>{shareCenter.finalHandoffReportPackageArchiveId ?? 'No final handoff archive recorded.'}</small>
+            </div>
           </div>
           {shareCenter.latestPullRequestUrl ? (
             <a href={shareCenter.latestPullRequestUrl} target="_blank" rel="noreferrer">
@@ -972,6 +985,9 @@ function LaunchEvidenceArchiveList({
               <span>
                 {archive.id} · {statusLabel(archive.status)} · {archive.sessionId} · {compactDateTime(archive.createdAt)}
               </span>
+              <small>
+                Final handoff archive: {archive.finalHandoffReportPackageArchiveId ?? 'missing'} · {statusLabel(archive.finalHandoffReportPackageArchiveStatus)}
+              </small>
               {archive.latestPullRequestUrl ? (
                 <a href={archive.latestPullRequestUrl} target="_blank" rel="noreferrer">
                   PR

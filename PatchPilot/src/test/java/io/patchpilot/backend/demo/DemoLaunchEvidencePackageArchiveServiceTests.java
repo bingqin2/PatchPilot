@@ -33,6 +33,12 @@ class DemoLaunchEvidencePackageArchiveServiceTests {
         assertThat(archive.launchReadinessStatus()).isEqualTo(DemoReadinessStatus.READY);
         assertThat(archive.evidenceBundleStatus()).isEqualTo(DemoReadinessStatus.READY);
         assertThat(archive.handoffFinalizationStatus()).isEqualTo(DemoReadinessStatus.READY);
+        assertThat(archive.finalHandoffReportPackageArchiveStatus()).isEqualTo(DemoReadinessStatus.READY);
+        assertThat(archive.finalHandoffReportPackageArchiveReady()).isTrue();
+        assertThat(archive.finalHandoffReportPackageArchiveId())
+                .isEqualTo("final-handoff-report-package-archive-1");
+        assertThat(archive.finalHandoffReportPackageArchiveSummary())
+                .isEqualTo("Latest final handoff report package archive is download-ready and ready.");
         assertThat(archive.latestTaskId()).isEqualTo("task-1");
         assertThat(archive.latestPullRequestUrl()).isEqualTo("https://github.com/bingqin2/PatchPilot/pull/42");
         assertThat(archive.latestWebhookDeliveryId()).isEqualTo("delivery-1");
