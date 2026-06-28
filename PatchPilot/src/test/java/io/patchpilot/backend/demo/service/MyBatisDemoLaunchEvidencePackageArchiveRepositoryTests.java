@@ -38,6 +38,10 @@ class MyBatisDemoLaunchEvidencePackageArchiveRepositoryTests {
         assertThat(insertedEntity.getStatus()).isEqualTo("READY");
         assertThat(insertedEntity.getReadyToShare()).isTrue();
         assertThat(insertedEntity.getSessionId()).isEqualTo("demo-session-20260624T003000Z");
+        assertThat(insertedEntity.getFinalHandoffReportPackageArchiveStatus()).isEqualTo("READY");
+        assertThat(insertedEntity.getFinalHandoffReportPackageArchiveReady()).isTrue();
+        assertThat(insertedEntity.getFinalHandoffReportPackageArchiveId())
+                .isEqualTo("final-handoff-report-package-archive-1");
         assertThat(insertedEntity.getLatestPullRequestUrl()).isEqualTo("https://github.com/bingqin2/PatchPilot/pull/42");
         assertThat(insertedEntity.getReport()).contains("# PatchPilot Demo Launch Evidence Package");
         assertThat(savedArchive).isEqualTo(archive);
@@ -78,6 +82,10 @@ class MyBatisDemoLaunchEvidencePackageArchiveRepositoryTests {
                 DemoReadinessStatus.READY,
                 DemoReadinessStatus.READY,
                 DemoReadinessStatus.READY,
+                DemoReadinessStatus.READY,
+                true,
+                "final-handoff-report-package-archive-1",
+                "Latest final handoff report package archive is download-ready and ready.",
                 "task-1",
                 "https://github.com/bingqin2/PatchPilot/pull/42",
                 "delivery-1",
@@ -97,6 +105,10 @@ class MyBatisDemoLaunchEvidencePackageArchiveRepositoryTests {
         entity.setLaunchReadinessStatus(DemoReadinessStatus.READY.name());
         entity.setEvidenceBundleStatus(DemoReadinessStatus.READY.name());
         entity.setHandoffFinalizationStatus(DemoReadinessStatus.READY.name());
+        entity.setFinalHandoffReportPackageArchiveStatus(DemoReadinessStatus.READY.name());
+        entity.setFinalHandoffReportPackageArchiveReady(true);
+        entity.setFinalHandoffReportPackageArchiveId("final-handoff-report-package-archive-1");
+        entity.setFinalHandoffReportPackageArchiveSummary("Latest final handoff report package archive is download-ready and ready.");
         entity.setLatestTaskId("task-1");
         entity.setLatestPullRequestUrl("https://github.com/bingqin2/PatchPilot/pull/42");
         entity.setLatestWebhookDeliveryId("delivery-1");

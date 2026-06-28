@@ -4,6 +4,10 @@ import io.patchpilot.backend.demo.domain.DemoAdapterFixtureEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
 import io.patchpilot.backend.demo.domain.DemoEvaluationRunReadinessEvidenceVo;
+import io.patchpilot.backend.demo.domain.DemoFinalHandoffReportPackageArchiveEvidenceVo;
+import io.patchpilot.backend.demo.domain.DemoLaunchAcceptanceCertificateEvidenceVo;
+import io.patchpilot.backend.demo.domain.DemoLaunchAcceptanceCloseoutEvidenceVo;
+import io.patchpilot.backend.demo.domain.DemoTaskEvidenceAcceptanceCertificateEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchEvidencePackageVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchEvidencePackageArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchAcceptanceCloseoutCheckVo;
@@ -146,6 +150,10 @@ final class DemoLaunchEvidenceFixtures {
                 ready ? "FRESH" : "MISSING",
                 ready,
                 ready ? "launch-delivery-receipt-1" : null,
+                launchAcceptanceCloseoutEvidence(ready),
+                launchAcceptanceCertificateEvidence(ready),
+                taskEvidenceAcceptanceCertificateEvidence(ready),
+                finalHandoffArchiveEvidence(ready),
                 true,
                 "delivery-receipt-1",
                 "Demo reviewer",
@@ -184,6 +192,12 @@ final class DemoLaunchEvidenceFixtures {
                 status,
                 status,
                 status,
+                status,
+                ready,
+                ready ? "final-handoff-report-package-archive-1" : null,
+                ready
+                        ? "Latest final handoff report package archive is download-ready and ready."
+                        : "No final handoff report package archive evidence recorded.",
                 "task-1",
                 "https://github.com/bingqin2/PatchPilot/pull/42",
                 "delivery-1",
@@ -197,7 +211,10 @@ final class DemoLaunchEvidenceFixtures {
                 ),
                 List.of(
                         "Handoff finalization is " + status + ".",
-                        ready ? "Latest delivery receipt delivery-receipt-1 is fresh." : "Delivery receipt evidence is not current."
+                        ready ? "Latest delivery receipt delivery-receipt-1 is fresh." : "Delivery receipt evidence is not current.",
+                        ready
+                                ? "Final handoff report package archive final-handoff-report-package-archive-1 is download-ready."
+                                : "No final handoff report package archive evidence recorded."
                 ),
                 ready
                         ? List.of("Post the tested /agent fix comment, watch the task reach COMPLETED, then use the generated Pull Request for review.")
@@ -228,6 +245,12 @@ final class DemoLaunchEvidenceFixtures {
                 status,
                 status,
                 status,
+                status,
+                ready,
+                ready ? "final-handoff-report-package-archive-1" : null,
+                ready
+                        ? "Latest final handoff report package archive is download-ready and ready."
+                        : "No final handoff report package archive evidence recorded.",
                 "task-1",
                 "https://github.com/bingqin2/PatchPilot/pull/42",
                 "delivery-1",
@@ -301,6 +324,103 @@ final class DemoLaunchEvidenceFixtures {
                 status == DemoReadinessStatus.READY
                         ? "Full evaluation run archive is ready; use it as current demo evidence."
                         : "Run and archive a full evaluation before using it as demo readiness evidence."
+        );
+    }
+
+    private static DemoFinalHandoffReportPackageArchiveEvidenceVo finalHandoffArchiveEvidence(boolean ready) {
+        return new DemoFinalHandoffReportPackageArchiveEvidenceVo(
+                ready ? DemoReadinessStatus.READY : DemoReadinessStatus.NEEDS_ATTENTION,
+                ready,
+                ready,
+                ready
+                        ? "Latest final handoff report package archive is download-ready and ready."
+                        : "No final handoff report package archive evidence recorded.",
+                ready
+                        ? "Download final handoff report package archive final-handoff-report-package-archive-1."
+                        : "Archive the final handoff report package before using the launch evidence package as post-demo closeout proof.",
+                ready ? 1 : 0,
+                ready ? "final-handoff-report-package-archive-1" : null,
+                ready ? "handoff-archive-1" : null,
+                ready ? "demo-session-20260624T003000Z" : null,
+                ready ? "delivery-receipt-1" : null,
+                ready ? "task-evidence-certificate-archive-1" : null,
+                ready,
+                ready ? Instant.parse("2026-06-28T01:45:00Z") : null,
+                ready
+                        ? List.of("Download final handoff report package archive final-handoff-report-package-archive-1.")
+                        : List.of("Archive the final handoff report package before using the evidence bundle as post-demo closeout proof.")
+        );
+    }
+
+    private static DemoLaunchAcceptanceCloseoutEvidenceVo launchAcceptanceCloseoutEvidence(boolean ready) {
+        return new DemoLaunchAcceptanceCloseoutEvidenceVo(
+                ready ? DemoReadinessStatus.READY : DemoReadinessStatus.NEEDS_ATTENTION,
+                ready,
+                ready,
+                ready
+                        ? "Latest launch acceptance closeout archive is accepted and ready."
+                        : "No launch acceptance closeout archive is available.",
+                ready
+                        ? "Download launch acceptance closeout archive launch-closeout-archive-1."
+                        : "Archive the final launch acceptance closeout after launch evidence is accepted.",
+                ready ? 1 : 0,
+                ready ? "launch-closeout-archive-1" : null,
+                ready ? "launch-evidence-archive-1" : null,
+                ready ? "launch-delivery-receipt-1" : null,
+                ready ? "https://github.com/bingqin2/PatchPilot/pull/42" : null,
+                ready ? Instant.parse("2026-06-28T08:30:00Z") : null,
+                ready
+                        ? List.of("Download launch acceptance closeout archive launch-closeout-archive-1.")
+                        : List.of("Archive the final launch acceptance closeout before using the evidence bundle as launch proof.")
+        );
+    }
+
+    private static DemoLaunchAcceptanceCertificateEvidenceVo launchAcceptanceCertificateEvidence(boolean ready) {
+        return new DemoLaunchAcceptanceCertificateEvidenceVo(
+                ready ? DemoReadinessStatus.READY : DemoReadinessStatus.NEEDS_ATTENTION,
+                ready,
+                ready,
+                ready
+                        ? "Latest launch acceptance certificate archive is certified and ready."
+                        : "No launch acceptance certificate archive is available.",
+                ready
+                        ? "Download launch acceptance certificate archive launch-certificate-archive-1."
+                        : "Archive the final launch acceptance certificate after closeout certification.",
+                ready ? 1 : 0,
+                ready ? "launch-certificate-archive-1" : null,
+                ready ? "launch-closeout-archive-1" : null,
+                ready ? "launch-evidence-archive-1" : null,
+                ready ? "launch-delivery-receipt-1" : null,
+                ready ? "https://github.com/bingqin2/PatchPilot/pull/42" : null,
+                ready ? Instant.parse("2026-06-28T10:30:00Z") : null,
+                ready
+                        ? List.of("Download launch acceptance certificate archive launch-certificate-archive-1.")
+                        : List.of("Archive the final launch acceptance certificate before external review.")
+        );
+    }
+
+    private static DemoTaskEvidenceAcceptanceCertificateEvidenceVo taskEvidenceAcceptanceCertificateEvidence(boolean ready) {
+        return new DemoTaskEvidenceAcceptanceCertificateEvidenceVo(
+                ready ? DemoReadinessStatus.READY : DemoReadinessStatus.NEEDS_ATTENTION,
+                ready,
+                ready,
+                ready
+                        ? "Latest task evidence acceptance certificate archive is certified and ready."
+                        : "No task evidence acceptance certificate archive is available.",
+                ready
+                        ? "Download task evidence acceptance certificate archive task-evidence-certificate-archive-1."
+                        : "Archive a task evidence acceptance certificate before using task evidence as review proof.",
+                ready ? 1 : 0,
+                ready ? "task-evidence-certificate-archive-1" : null,
+                ready ? "task-evidence-closeout-archive-1" : null,
+                ready ? "task-evidence-archive-1" : null,
+                ready ? "task-evidence-delivery-receipt-1" : null,
+                ready ? "task-1" : null,
+                ready ? "https://github.com/bingqin2/PatchPilot/pull/42" : null,
+                ready ? Instant.parse("2026-06-28T00:30:00Z") : null,
+                ready
+                        ? List.of("Download task evidence acceptance certificate archive task-evidence-certificate-archive-1.")
+                        : List.of("Archive a task evidence acceptance certificate before using task evidence as review proof.")
         );
     }
 

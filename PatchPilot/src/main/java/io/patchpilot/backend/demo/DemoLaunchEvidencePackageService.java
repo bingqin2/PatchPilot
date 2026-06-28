@@ -2,6 +2,7 @@ package io.patchpilot.backend.demo;
 
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
 import io.patchpilot.backend.demo.domain.DemoEvaluationRunReadinessEvidenceVo;
+import io.patchpilot.backend.demo.domain.DemoFinalHandoffReportPackageArchiveEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchEvidencePackageVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessStatus;
 import io.patchpilot.backend.demo.domain.DemoSelfHostedLaunchReadinessVo;
@@ -85,6 +86,11 @@ public class DemoLaunchEvidencePackageService {
                 launchReadiness.status(),
                 evidenceBundle.status(),
                 evidenceBundle.handoffFinalizationStatus(),
+                evidenceBundle.finalHandoffReportPackageArchiveEvidence().status(),
+                evidenceBundle.finalHandoffReportPackageArchiveEvidence().archived()
+                        && evidenceBundle.finalHandoffReportPackageArchiveEvidence().downloadReady(),
+                evidenceBundle.finalHandoffReportPackageArchiveEvidence().latestArchiveId(),
+                evidenceBundle.finalHandoffReportPackageArchiveEvidence().summary(),
                 evidenceBundle.recentTask() == null ? null : evidenceBundle.recentTask().id(),
                 evidenceBundle.recentPullRequestUrl(),
                 evidenceBundle.latestWebhookDelivery() == null ? null : evidenceBundle.latestWebhookDelivery().deliveryId(),
@@ -108,13 +114,15 @@ public class DemoLaunchEvidencePackageService {
         if (launchReadiness.status() == DemoReadinessStatus.BLOCKED
                 || sessionSnapshot.status() == DemoReadinessStatus.BLOCKED
                 || evidenceBundle.status() == DemoReadinessStatus.BLOCKED
-                || evidenceBundle.handoffFinalizationStatus() == DemoReadinessStatus.BLOCKED) {
+                || evidenceBundle.handoffFinalizationStatus() == DemoReadinessStatus.BLOCKED
+                || evidenceBundle.finalHandoffReportPackageArchiveEvidence().status() == DemoReadinessStatus.BLOCKED) {
             return DemoReadinessStatus.BLOCKED;
         }
         if (launchReadiness.status() == DemoReadinessStatus.NEEDS_ATTENTION
                 || sessionSnapshot.status() == DemoReadinessStatus.NEEDS_ATTENTION
                 || evidenceBundle.status() == DemoReadinessStatus.NEEDS_ATTENTION
-                || evidenceBundle.handoffFinalizationStatus() == DemoReadinessStatus.NEEDS_ATTENTION) {
+                || evidenceBundle.handoffFinalizationStatus() == DemoReadinessStatus.NEEDS_ATTENTION
+                || evidenceBundle.finalHandoffReportPackageArchiveEvidence().status() == DemoReadinessStatus.NEEDS_ATTENTION) {
             return DemoReadinessStatus.NEEDS_ATTENTION;
         }
         return DemoReadinessStatus.READY;
@@ -147,6 +155,14 @@ public class DemoLaunchEvidencePackageService {
             proof.add("Latest delivery receipt " + evidenceBundle.handoffFinalizationLatestDeliveryReceiptId() + " is fresh.");
         } else {
             proof.add(evidenceBundle.handoffFinalizationSummary());
+        }
+        DemoFinalHandoffReportPackageArchiveEvidenceVo finalArchive =
+                evidenceBundle.finalHandoffReportPackageArchiveEvidence();
+        if (finalArchive.archived() && finalArchive.downloadReady() && hasText(finalArchive.latestArchiveId())) {
+            proof.add("Final handoff report package archive " + finalArchive.latestArchiveId()
+                    + " is download-ready.");
+        } else {
+            proof.add(finalArchive.summary());
         }
         return proof;
     }
@@ -218,6 +234,7 @@ public class DemoLaunchEvidencePackageService {
         liveRunProof.forEach(proof -> report.append("- ").append(proof).append("\n"));
         report.append("\n## Post-Demo Handoff Proof\n\n");
         postDemoProof.forEach(proof -> report.append("- ").append(proof).append("\n"));
+        appendFinalHandoffArchiveProof(report, evidenceBundle.finalHandoffReportPackageArchiveEvidence());
         appendEvaluationProof(report, evidenceBundle.evaluationRunReadiness());
         report.append("\n## Next Actions\n\n");
         nextActions.forEach(action -> report.append("- ").append(action).append("\n"));
@@ -242,6 +259,25 @@ public class DemoLaunchEvidencePackageService {
                 .append("\n")
                 .append("- Side effect contract: ")
                 .append(evaluationReadiness.sideEffectContract())
+                .append("\n");
+    }
+
+    private static void appendFinalHandoffArchiveProof(
+            StringBuilder report,
+            DemoFinalHandoffReportPackageArchiveEvidenceVo finalArchive
+    ) {
+        report.append("\n## Final Handoff Report Package Archive Proof\n\n")
+                .append("- Final handoff report package archive: `")
+                .append(valueOrNone(finalArchive.latestArchiveId()))
+                .append("`\n")
+                .append("- Final handoff report package archive status: `")
+                .append(finalArchive.status())
+                .append("`\n")
+                .append("- Final handoff report package archive download-ready: `")
+                .append(finalArchive.archived() && finalArchive.downloadReady())
+                .append("`\n")
+                .append("- Final handoff report package archive summary: ")
+                .append(finalArchive.summary())
                 .append("\n");
     }
 

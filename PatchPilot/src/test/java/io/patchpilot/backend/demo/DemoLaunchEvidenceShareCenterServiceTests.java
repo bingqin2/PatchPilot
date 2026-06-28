@@ -48,6 +48,10 @@ class DemoLaunchEvidenceShareCenterServiceTests {
         assertThat(center.latestPullRequestUrl()).isEqualTo("https://github.com/bingqin2/PatchPilot/pull/42");
         assertThat(center.latestWebhookDeliveryId()).isEqualTo("delivery-1");
         assertThat(center.evaluationRunId()).isEqualTo("evaluation-run-2");
+        assertThat(center.finalHandoffReportPackageArchiveStatus()).isEqualTo(DemoReadinessStatus.READY);
+        assertThat(center.finalHandoffReportPackageArchiveReady()).isTrue();
+        assertThat(center.finalHandoffReportPackageArchiveId())
+                .isEqualTo("final-handoff-report-package-archive-1");
         assertThat(center.deliveryReceiptRecorded()).isFalse();
         assertThat(center.deliveryReceiptFreshness()).isEqualTo("MISSING");
         assertThat(center.deliveryReceiptFresh()).isFalse();
@@ -57,6 +61,7 @@ class DemoLaunchEvidenceShareCenterServiceTests {
         assertThat(center.downloadActions()).containsExactly(
                 "Download launch evidence package archive launch-evidence-archive-1.",
                 "Download launch evidence share center report.",
+                "Download final handoff report package archive final-handoff-report-package-archive-1.",
                 "Open Pull Request https://github.com/bingqin2/PatchPilot/pull/42 for review.",
                 "Record a launch evidence delivery receipt after sharing the package."
         );
@@ -67,6 +72,7 @@ class DemoLaunchEvidenceShareCenterServiceTests {
                 "Latest Pull Request https://github.com/bingqin2/PatchPilot/pull/42 is ready for review.",
                 "Latest webhook delivery evidence is delivery-1.",
                 "Latest evaluation run evidence is evaluation-run-2.",
+                "Final handoff report package archive final-handoff-report-package-archive-1 is READY and download-ready.",
                 "No launch evidence delivery receipt has been recorded yet.",
                 "No delivery receipt has been recorded for the current launch evidence package."
         );
@@ -75,6 +81,8 @@ class DemoLaunchEvidenceShareCenterServiceTests {
                 .contains("- Status: `READY`")
                 .contains("- Share ready: `true`")
                 .contains("- Latest archive: `launch-evidence-archive-1`")
+                .contains("- Final handoff report package archive: `final-handoff-report-package-archive-1`")
+                .contains("- Final handoff report package archive status: `READY`")
                 .contains("- Delivery receipt recorded: `false`")
                 .contains("- Delivery receipt freshness: `MISSING`")
                 .contains("## Downloads")
@@ -96,6 +104,9 @@ class DemoLaunchEvidenceShareCenterServiceTests {
         assertThat(center.archiveCount()).isZero();
         assertThat(center.latestArchiveId()).isNull();
         assertThat(center.latestSessionId()).isNull();
+        assertThat(center.finalHandoffReportPackageArchiveStatus()).isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
+        assertThat(center.finalHandoffReportPackageArchiveReady()).isFalse();
+        assertThat(center.finalHandoffReportPackageArchiveId()).isNull();
         assertThat(center.deliveryReceiptRecorded()).isFalse();
         assertThat(center.deliveryReceiptFreshness()).isEqualTo("MISSING");
         assertThat(center.downloadActions()).containsExactly(

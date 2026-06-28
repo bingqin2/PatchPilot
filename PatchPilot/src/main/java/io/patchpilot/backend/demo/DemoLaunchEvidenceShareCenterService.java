@@ -73,6 +73,9 @@ public class DemoLaunchEvidenceShareCenterService {
                     null,
                     null,
                     null,
+                    DemoReadinessStatus.NEEDS_ATTENTION,
+                    false,
+                    null,
                     null,
                     null,
                     null,
@@ -123,6 +126,9 @@ public class DemoLaunchEvidenceShareCenterService {
                 latest.latestPullRequestUrl(),
                 latest.latestWebhookDeliveryId(),
                 latest.evaluationRunId(),
+                latest.finalHandoffReportPackageArchiveStatus(),
+                latest.finalHandoffReportPackageArchiveReady(),
+                latest.finalHandoffReportPackageArchiveId(),
                 latestReceipt == null ? null : latestReceipt.id(),
                 latestReceipt == null ? null : latestReceipt.deliveryTarget(),
                 latestReceipt == null ? null : latestReceipt.deliveryChannel(),
@@ -177,6 +183,11 @@ public class DemoLaunchEvidenceShareCenterService {
         List<String> actions = new ArrayList<>();
         actions.add("Download launch evidence package archive " + latest.id() + ".");
         actions.add("Download launch evidence share center report.");
+        if (latest.finalHandoffReportPackageArchiveReady()
+                && hasText(latest.finalHandoffReportPackageArchiveId())) {
+            actions.add("Download final handoff report package archive "
+                    + latest.finalHandoffReportPackageArchiveId() + ".");
+        }
         if (shareReady && hasText(latest.latestPullRequestUrl())) {
             actions.add("Open Pull Request " + latest.latestPullRequestUrl() + " for review.");
         }
@@ -212,6 +223,16 @@ public class DemoLaunchEvidenceShareCenterService {
         }
         if (hasText(latest.evaluationRunId())) {
             notes.add("Latest evaluation run evidence is " + latest.evaluationRunId() + ".");
+        }
+        if (hasText(latest.finalHandoffReportPackageArchiveId())) {
+            notes.add("Final handoff report package archive "
+                    + latest.finalHandoffReportPackageArchiveId()
+                    + " is " + latest.finalHandoffReportPackageArchiveStatus().name()
+                    + (latest.finalHandoffReportPackageArchiveReady()
+                    ? " and download-ready."
+                    : " and not download-ready."));
+        } else {
+            notes.add(latest.finalHandoffReportPackageArchiveSummary());
         }
         if (latestReceipt == null) {
             notes.add("No launch evidence delivery receipt has been recorded yet.");
@@ -249,6 +270,15 @@ public class DemoLaunchEvidenceShareCenterService {
         builder.append("- Latest Pull Request: `").append(latest == null ? "none" : valueOrNone(latest.latestPullRequestUrl())).append("`\n");
         builder.append("- Latest webhook delivery: `").append(latest == null ? "none" : valueOrNone(latest.latestWebhookDeliveryId())).append("`\n");
         builder.append("- Evaluation run: `").append(latest == null ? "none" : valueOrNone(latest.evaluationRunId())).append("`\n");
+        builder.append("- Final handoff report package archive: `")
+                .append(latest == null ? "none" : valueOrNone(latest.finalHandoffReportPackageArchiveId()))
+                .append("`\n");
+        builder.append("- Final handoff report package archive status: `")
+                .append(latest == null ? DemoReadinessStatus.NEEDS_ATTENTION : latest.finalHandoffReportPackageArchiveStatus())
+                .append("`\n");
+        builder.append("- Final handoff report package archive download-ready: `")
+                .append(latest != null && latest.finalHandoffReportPackageArchiveReady())
+                .append("`\n");
         builder.append("- Delivery receipt recorded: `").append(latestReceipt != null).append("`\n");
         builder.append("- Delivery receipt freshness: `").append(receiptFreshness.status()).append("`\n");
         builder.append("- Delivery receipt fresh: `").append(receiptFreshness.fresh()).append("`\n");

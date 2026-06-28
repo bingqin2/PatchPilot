@@ -559,6 +559,10 @@ export interface DemoLaunchEvidencePackage {
   launchReadinessStatus: DemoReadinessStatus;
   evidenceBundleStatus: DemoReadinessStatus;
   handoffFinalizationStatus: DemoReadinessStatus;
+  finalHandoffReportPackageArchiveStatus: DemoReadinessStatus;
+  finalHandoffReportPackageArchiveReady: boolean;
+  finalHandoffReportPackageArchiveId: string | null;
+  finalHandoffReportPackageArchiveSummary: string;
   latestTaskId: string | null;
   latestPullRequestUrl: string | null;
   latestWebhookDeliveryId: string | null;
@@ -582,6 +586,10 @@ export interface DemoLaunchEvidencePackageArchive {
   launchReadinessStatus: DemoReadinessStatus;
   evidenceBundleStatus: DemoReadinessStatus;
   handoffFinalizationStatus: DemoReadinessStatus;
+  finalHandoffReportPackageArchiveStatus: DemoReadinessStatus;
+  finalHandoffReportPackageArchiveReady: boolean;
+  finalHandoffReportPackageArchiveId: string | null;
+  finalHandoffReportPackageArchiveSummary: string;
   latestTaskId: string | null;
   latestPullRequestUrl: string | null;
   latestWebhookDeliveryId: string | null;
@@ -603,6 +611,9 @@ export interface DemoLaunchEvidenceShareCenter {
   latestPullRequestUrl: string | null;
   latestWebhookDeliveryId: string | null;
   evaluationRunId: string | null;
+  finalHandoffReportPackageArchiveStatus: DemoReadinessStatus;
+  finalHandoffReportPackageArchiveReady: boolean;
+  finalHandoffReportPackageArchiveId: string | null;
   latestDeliveryReceiptId: string | null;
   latestDeliveryTarget: string | null;
   latestDeliveryChannel: string | null;
