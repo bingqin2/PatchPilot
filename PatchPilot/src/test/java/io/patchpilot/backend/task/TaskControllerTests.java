@@ -1628,6 +1628,87 @@ class TaskControllerTests {
     }
 
     @Test
+    void should_record_task_evidence_delivery_receipt_and_finalize_current_shareable_archive() throws Exception {
+        FixTaskVo completedTask = createTask("delivery-task-evidence-finalization-completed");
+        fixTaskService.markCompleted(completedTask.id(), "https://github.com/octocat/hello-world/pull/88");
+
+        MvcResult archiveResult = mockMvc.perform(post("/api/tasks/{id}/evidence-packages", completedTask.id()))
+                .andExpect(status().isOk())
+                .andReturn();
+        String archiveId = JsonPath.read(archiveResult.getResponse().getContentAsString(), "$.data.id");
+
+        mockMvc.perform(get("/api/tasks/evidence-packages/finalization"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.status").value("NEEDS_ATTENTION"))
+                .andExpect(jsonPath("$.data.finalized").value(false))
+                .andExpect(jsonPath("$.data.latestArchiveId").value(archiveId))
+                .andExpect(jsonPath("$.data.deliveryReceiptFreshness").value("MISSING"))
+                .andExpect(jsonPath("$.data.nextAction").value(org.hamcrest.Matchers.containsString("record a delivery receipt")));
+
+        MvcResult receiptResult = mockMvc.perform(post("/api/tasks/evidence-packages/share-delivery-receipts")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "deliveryChannel": "email",
+                                  "deliveryTarget": "reviewer@example.com",
+                                  "operator": "local-operator",
+                                  "notes": "Sent task evidence after PR review.",
+                                  "deliveredAt": "2026-06-28T06:05:00Z"
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(header().string("Location", org.hamcrest.Matchers.startsWith("/api/tasks/evidence-packages/share-delivery-receipts/")))
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.taskEvidenceArchiveId").value(archiveId))
+                .andExpect(jsonPath("$.data.taskId").value(completedTask.id()))
+                .andExpect(jsonPath("$.data.pullRequestUrl").value("https://github.com/octocat/hello-world/pull/88"))
+                .andExpect(jsonPath("$.data.deliveryChannel").value("email"))
+                .andExpect(jsonPath("$.data.deliveryTarget").value("reviewer@example.com"))
+                .andExpect(jsonPath("$.data.operator").value("local-operator"))
+                .andExpect(jsonPath("$.data.messageSubject").value(org.hamcrest.Matchers.containsString(completedTask.id())))
+                .andExpect(jsonPath("$.data.markdownReport").value(org.hamcrest.Matchers.containsString("# PatchPilot Task Evidence Delivery Receipt")))
+                .andReturn();
+        String receiptId = JsonPath.read(receiptResult.getResponse().getContentAsString(), "$.data.id");
+
+        mockMvc.perform(get("/api/tasks/evidence-packages/share-delivery-receipts"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].id").value(receiptId))
+                .andExpect(jsonPath("$.data[0].taskEvidenceArchiveId").value(archiveId));
+
+        mockMvc.perform(get("/api/tasks/evidence-packages/share-delivery-receipts/{receiptId}/report/download", receiptId))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString("patchpilot-task-evidence-share-delivery-receipt-")))
+                .andExpect(content().contentType("text/markdown;charset=UTF-8"))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("# PatchPilot Task Evidence Delivery Receipt")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("- Task evidence archive: `" + archiveId + "`")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("POST /api/tasks/evidence-packages/share-delivery-receipts records local evidence only")));
+
+        mockMvc.perform(get("/api/tasks/evidence-packages/finalization"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.finalized").value(true))
+                .andExpect(jsonPath("$.data.latestArchiveId").value(archiveId))
+                .andExpect(jsonPath("$.data.latestDeliveryReceiptId").value(receiptId))
+                .andExpect(jsonPath("$.data.deliveryReceiptFreshness").value("FRESH"))
+                .andExpect(jsonPath("$.data.deliveryReceiptFresh").value(true))
+                .andExpect(jsonPath("$.data.checks[0].name").value("Task evidence share readiness"))
+                .andExpect(jsonPath("$.data.checks[1].name").value("Delivery receipt freshness"))
+                .andExpect(jsonPath("$.data.checks[2].name").value("Task evidence acceptance"))
+                .andExpect(jsonPath("$.data.markdownReport").value(org.hamcrest.Matchers.containsString("# PatchPilot Task Evidence Finalization Gate")));
+
+        mockMvc.perform(get("/api/tasks/evidence-packages/finalization/report/download"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString("patchpilot-task-evidence-finalization.md")))
+                .andExpect(content().contentType("text/markdown;charset=UTF-8"))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("- Status: `READY`")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("- Latest delivery receipt: `" + receiptId + "`")));
+    }
+
+    @Test
     void should_prefer_persisted_pre_execution_decision_in_task_report() throws Exception {
         FixTaskVo task = createTask("delivery-persisted-report");
         fixTaskTimelineService.recordEvent(

@@ -1,34 +1,56 @@
-import { Download, ExternalLink, FileText } from 'lucide-react';
-import { useState } from 'react';
+import { Download, ExternalLink, FileText, Send } from 'lucide-react';
+import { useState, type FormEvent } from 'react';
 import type {
   FixTaskEvidencePackageArchive,
+  FixTaskEvidencePackageFinalization,
   FixTaskEvidencePackageArchiveShareCenter,
-  FixTaskEvidencePackageArchiveSummary
+  FixTaskEvidencePackageArchiveSummary,
+  FixTaskEvidencePackageShareDeliveryReceipt,
+  FixTaskEvidencePackageShareDeliveryReceiptInput
 } from '../../types';
 import { compactTime } from '../format';
 
 interface TaskEvidenceArchiveReviewPanelProps {
   summary: FixTaskEvidencePackageArchiveSummary | null;
   shareCenter: FixTaskEvidencePackageArchiveShareCenter | null;
+  finalization: FixTaskEvidencePackageFinalization | null;
+  deliveryReceipts: FixTaskEvidencePackageShareDeliveryReceipt[];
   archives: FixTaskEvidencePackageArchive[];
   error: string | null;
   shareCenterError: string | null;
+  finalizationError: string | null;
+  deliveryReceiptError: string | null;
   onDownloadArchiveReport: (archiveId: string) => Promise<Blob>;
   onDownloadShareCenterReport: () => Promise<Blob>;
+  onDownloadFinalizationReport: () => Promise<Blob>;
+  onCreateDeliveryReceipt: (input: FixTaskEvidencePackageShareDeliveryReceiptInput) => Promise<FixTaskEvidencePackageShareDeliveryReceipt>;
+  onDownloadDeliveryReceiptReport: (receiptId: string) => Promise<Blob>;
   onSelectTask: (taskId: string) => void;
 }
 
 export function TaskEvidenceArchiveReviewPanel({
   summary,
   shareCenter,
+  finalization,
+  deliveryReceipts,
   archives,
   error,
   shareCenterError,
+  finalizationError,
+  deliveryReceiptError,
   onDownloadArchiveReport,
   onDownloadShareCenterReport,
+  onDownloadFinalizationReport,
+  onCreateDeliveryReceipt,
+  onDownloadDeliveryReceiptReport,
   onSelectTask
 }: TaskEvidenceArchiveReviewPanelProps) {
   const [downloadStatus, setDownloadStatus] = useState<string | null>(null);
+  const [deliveryChannel, setDeliveryChannel] = useState('email');
+  const [deliveryTarget, setDeliveryTarget] = useState('');
+  const [deliveryOperator, setDeliveryOperator] = useState('local-operator');
+  const [deliveryNotes, setDeliveryNotes] = useState('');
+  const [receiptStatus, setReceiptStatus] = useState<string | null>(null);
 
   async function downloadArchive(archive: FixTaskEvidencePackageArchive) {
     try {
@@ -53,6 +75,42 @@ export function TaskEvidenceArchiveReviewPanel({
     }
   }
 
+  async function downloadFinalizationReport() {
+    try {
+      const report = await onDownloadFinalizationReport();
+      downloadMarkdown(report, 'patchpilot-task-evidence-finalization.md');
+      setDownloadStatus('Task evidence finalization report downloaded');
+    } catch {
+      setDownloadStatus('Download failed');
+    }
+  }
+
+  async function submitDeliveryReceipt(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    try {
+      const receipt = await onCreateDeliveryReceipt({
+        deliveryChannel,
+        deliveryTarget,
+        operator: deliveryOperator,
+        notes: deliveryNotes
+      });
+      setReceiptStatus(`Task evidence delivery receipt ${receipt.id} recorded`);
+      setDeliveryNotes('');
+    } catch {
+      setReceiptStatus('Task evidence delivery receipt failed');
+    }
+  }
+
+  async function downloadDeliveryReceipt(receipt: FixTaskEvidencePackageShareDeliveryReceipt) {
+    try {
+      const report = await onDownloadDeliveryReceiptReport(receipt.id);
+      downloadMarkdown(report, `patchpilot-task-evidence-delivery-receipt-${safeFilenamePart(receipt.id)}.md`);
+      setDownloadStatus(`Task evidence delivery receipt ${receipt.id} downloaded`);
+    } catch {
+      setDownloadStatus('Download failed');
+    }
+  }
+
   return (
     <section className="panel task-evidence-archive-review-panel" aria-label="Task evidence archive review">
       <div className="panel-header">
@@ -65,6 +123,8 @@ export function TaskEvidenceArchiveReviewPanel({
 
       {error ? <p className="panel-error">{error}</p> : null}
       {shareCenterError ? <p className="panel-error">{shareCenterError}</p> : null}
+      {finalizationError ? <p className="panel-error">{finalizationError}</p> : null}
+      {deliveryReceiptError ? <p className="panel-error">{deliveryReceiptError}</p> : null}
 
       {shareCenter ? (
         <section
@@ -126,6 +186,150 @@ export function TaskEvidenceArchiveReviewPanel({
           <strong>{shareCenter.nextAction}</strong>
         </section>
       ) : null}
+
+      {finalization ? (
+        <section
+          className={`task-evidence-share-center task-evidence-share-center-${finalization.status.toLowerCase().replace('_', '-')}`}
+          aria-label="Task evidence finalization"
+        >
+          <div className="task-evidence-share-center-heading">
+            <div>
+              <span>Task evidence finalization</span>
+              <strong>{formatFinalizationStatus(finalization.status)}</strong>
+              <p>{finalization.summary}</p>
+            </div>
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={() => void downloadFinalizationReport()}
+              aria-label="Download task evidence finalization report"
+            >
+              <FileText size={14} />
+              Download finalization report
+            </button>
+          </div>
+          <div className="task-evidence-share-center-grid">
+            <div>
+              <span>Finalized</span>
+              <strong>{finalization.finalized ? 'Yes' : 'No'}</strong>
+              <p>{finalization.nextAction}</p>
+            </div>
+            <div>
+              <span>Delivery receipt</span>
+              <strong>{finalization.latestDeliveryReceiptId ?? 'Missing'}</strong>
+              <p>{finalization.deliveryReceiptFreshness}: {finalization.deliveryReceiptFreshnessSummary}</p>
+            </div>
+            <div>
+              <span>Shareable archive</span>
+              <strong>{finalization.latestArchiveId ?? 'None'}</strong>
+              <p>{finalization.latestTaskId ? `Task ${finalization.latestTaskId}` : 'No current task evidence'}</p>
+            </div>
+          </div>
+          <div className="task-evidence-share-center-notes">
+            <div>
+              <span>Finalization checks</span>
+              <ul>
+                {finalization.checks.map((check) => (
+                  <li key={check.name}>{check.name}: {formatFinalizationStatus(check.status)} - {check.summary}</li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <span>Evidence notes</span>
+              <ul>
+                {finalization.evidenceNotes.map((note) => (
+                  <li key={note}>{note}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      <section className="task-evidence-share-center" aria-label="Task evidence delivery receipts">
+        <div className="task-evidence-share-center-heading">
+          <div>
+            <span>Task evidence delivery receipts</span>
+            <strong>{deliveryReceipts.length}</strong>
+            <p>local delivery records for the current task evidence share flow</p>
+          </div>
+          {receiptStatus ? <span className="copy-status">{receiptStatus}</span> : null}
+        </div>
+        <form className="demo-evidence-receipt-form" onSubmit={(event) => void submitDeliveryReceipt(event)}>
+          <label>
+            <span>Delivery channel</span>
+            <input
+              value={deliveryChannel}
+              onChange={(event) => setDeliveryChannel(event.target.value)}
+              aria-label="Task evidence delivery channel"
+              required
+            />
+          </label>
+          <label>
+            <span>Delivery target</span>
+            <input
+              value={deliveryTarget}
+              onChange={(event) => setDeliveryTarget(event.target.value)}
+              aria-label="Task evidence delivery target"
+              required
+            />
+          </label>
+          <label>
+            <span>Delivery operator</span>
+            <input
+              value={deliveryOperator}
+              onChange={(event) => setDeliveryOperator(event.target.value)}
+              aria-label="Task evidence delivery operator"
+              required
+            />
+          </label>
+          <label>
+            <span>Delivery notes</span>
+            <textarea
+              value={deliveryNotes}
+              onChange={(event) => setDeliveryNotes(event.target.value)}
+              aria-label="Task evidence delivery notes"
+            />
+          </label>
+          <button
+            className="secondary-button"
+            type="submit"
+            aria-label="Record task evidence delivery receipt"
+            disabled={!shareCenter?.shareReady}
+          >
+            <Send size={14} />
+            Record delivery receipt
+          </button>
+        </form>
+        {deliveryReceipts.length === 0 ? (
+          <p className="empty-state compact-empty-state">No task evidence delivery receipts recorded.</p>
+        ) : (
+          <div className="task-evidence-archive-list">
+            {deliveryReceipts.map((receipt) => (
+              <article className="task-evidence-archive-row" key={receipt.id}>
+                <div>
+                  <strong>{receipt.id}</strong>
+                  <p>{receipt.deliveryTarget} · {receipt.deliveryChannel} · delivered {compactTime(receipt.deliveredAt)}</p>
+                  <span>
+                    {receipt.repositoryOwner}/{receipt.repositoryName} #{receipt.issueNumber} · {receipt.taskEvidenceArchiveId}
+                  </span>
+                </div>
+                <div className="task-evidence-archive-actions">
+                  <button
+                    className="secondary-button"
+                    type="button"
+                    onClick={() => void downloadDeliveryReceipt(receipt)}
+                    aria-label={`Download task evidence delivery receipt ${receipt.id}`}
+                  >
+                    <Download size={14} />
+                    Download receipt
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
 
       <div className="task-evidence-archive-summary">
         <div>
@@ -211,6 +415,10 @@ function countStatus(archives: FixTaskEvidencePackageArchive[], status: string) 
 }
 
 function formatShareCenterStatus(status: FixTaskEvidencePackageArchiveShareCenter['status']) {
+  return formatFinalizationStatus(status);
+}
+
+function formatFinalizationStatus(status: string) {
   return status
     .split('_')
     .map((part) => part.charAt(0) + part.slice(1).toLowerCase())

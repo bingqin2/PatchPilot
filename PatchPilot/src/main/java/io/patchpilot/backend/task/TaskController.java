@@ -15,6 +15,7 @@ import io.patchpilot.backend.task.domain.bo.RetryTaskCommand;
 import io.patchpilot.backend.task.domain.dto.ApproveReviewDto;
 import io.patchpilot.backend.task.domain.dto.CreateFixTaskDto;
 import io.patchpilot.backend.task.domain.dto.EvaluateTriggerDto;
+import io.patchpilot.backend.task.domain.dto.FixTaskEvidencePackageShareDeliveryReceiptDto;
 import io.patchpilot.backend.task.domain.dto.RetryTaskDto;
 import io.patchpilot.backend.task.domain.enums.FixTaskTimelineEventType;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
@@ -25,7 +26,9 @@ import io.patchpilot.backend.task.domain.vo.FixTaskAdapterExecutionEvidenceVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskAuditSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskEvidencePackageArchiveVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskEvidencePackageArchiveSummaryVo;
+import io.patchpilot.backend.task.domain.vo.FixTaskEvidencePackageFinalizationVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskEvidencePackageShareCenterVo;
+import io.patchpilot.backend.task.domain.vo.FixTaskEvidencePackageShareDeliveryReceiptVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskFailureDiagnosisVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskGeneratedDiffVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskLatencySummaryVo;
@@ -51,6 +54,8 @@ import io.patchpilot.backend.task.domain.vo.RepositorySupportGuidanceVo;
 import io.patchpilot.backend.task.service.FixTaskAuditSummaryService;
 import io.patchpilot.backend.task.service.FixTaskControlService;
 import io.patchpilot.backend.task.service.FixTaskEvidencePackageArchiveService;
+import io.patchpilot.backend.task.service.FixTaskEvidencePackageFinalizationService;
+import io.patchpilot.backend.task.service.FixTaskEvidencePackageShareDeliveryReceiptService;
 import io.patchpilot.backend.task.service.FixTaskMetricsService;
 import io.patchpilot.backend.task.service.FixTaskModelCallService;
 import io.patchpilot.backend.task.service.FixTaskPatchReviewService;
@@ -99,6 +104,8 @@ public class TaskController {
     private final FixTaskPreExecutionDecisionService fixTaskPreExecutionDecisionService;
     private final FixTaskControlService fixTaskControlService;
     private final FixTaskEvidencePackageArchiveService fixTaskEvidencePackageArchiveService;
+    private final FixTaskEvidencePackageShareDeliveryReceiptService fixTaskEvidencePackageShareDeliveryReceiptService;
+    private final FixTaskEvidencePackageFinalizationService fixTaskEvidencePackageFinalizationService;
     private final FixTaskMetricsService fixTaskMetricsService;
     private final FixTaskAuditSummaryService fixTaskAuditSummaryService;
     private final FixTaskQueueQueryService fixTaskQueueQueryService;
@@ -377,6 +384,58 @@ public class TaskController {
         return markdownAttachment(
                 "patchpilot-task-evidence-share-center.md",
                 fixTaskEvidencePackageArchiveService.shareCenterReport(limit)
+        );
+    }
+
+    @PostMapping("/evidence-packages/share-delivery-receipts")
+    public ResponseEntity<ApiResponse<FixTaskEvidencePackageShareDeliveryReceiptVo>> recordTaskEvidencePackageDeliveryReceipt(
+            @RequestBody FixTaskEvidencePackageShareDeliveryReceiptDto request
+    ) {
+        try {
+            FixTaskEvidencePackageShareDeliveryReceiptVo receipt =
+                    fixTaskEvidencePackageShareDeliveryReceiptService.recordDeliveryReceipt(request);
+            operatorSafetyAuditService.recordSafetyAudit(new RecordOperatorSafetyAuditCommand(
+                    "TASK_EVIDENCE_DELIVERY_RECEIPT_RECORDED",
+                    "TASK_EVIDENCE_DELIVERY_RECEIPT",
+                    receipt.id(),
+                    TriggerQuarantineScope.REPOSITORY,
+                    receipt.repositoryOwner() + "/" + receipt.repositoryName(),
+                    receipt.operator(),
+                    "Recorded task evidence delivery receipt for " + receipt.taskEvidenceArchiveId()
+            ));
+            return ResponseEntity.created(URI.create("/api/tasks/evidence-packages/share-delivery-receipts/" + receipt.id()))
+                    .body(ApiResponse.ok(receipt));
+        } catch (IllegalArgumentException | IllegalStateException exception) {
+            return ResponseEntity.badRequest().body(ApiResponse.fail(exception.getMessage()));
+        }
+    }
+
+    @GetMapping("/evidence-packages/share-delivery-receipts")
+    public ResponseEntity<ApiResponse<List<FixTaskEvidencePackageShareDeliveryReceiptVo>>> listTaskEvidencePackageDeliveryReceipts() {
+        return ResponseEntity.ok(ApiResponse.ok(fixTaskEvidencePackageShareDeliveryReceiptService.listRecentReceipts()));
+    }
+
+    @GetMapping(value = "/evidence-packages/share-delivery-receipts/{receiptId}/report/download", produces = "text/markdown;charset=UTF-8")
+    public ResponseEntity<String> downloadTaskEvidencePackageDeliveryReceiptReport(@PathVariable String receiptId) {
+        return fixTaskEvidencePackageShareDeliveryReceiptService.findReceipt(receiptId)
+                .map(receipt -> markdownAttachment(
+                        "patchpilot-task-evidence-share-delivery-receipt-"
+                                + safeFilenamePart(receipt.id()) + ".md",
+                        receipt.markdownReport()
+                ))
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/evidence-packages/finalization")
+    public ResponseEntity<ApiResponse<FixTaskEvidencePackageFinalizationVo>> getTaskEvidencePackageFinalization() {
+        return ResponseEntity.ok(ApiResponse.ok(fixTaskEvidencePackageFinalizationService.getFinalizationGate()));
+    }
+
+    @GetMapping(value = "/evidence-packages/finalization/report/download", produces = "text/markdown;charset=UTF-8")
+    public ResponseEntity<String> downloadTaskEvidencePackageFinalizationReport() {
+        return markdownAttachment(
+                "patchpilot-task-evidence-finalization.md",
+                fixTaskEvidencePackageFinalizationService.report()
         );
     }
 

@@ -16,6 +16,7 @@ import {
   composeDemoLaunchCommand,
   createDemoHandoffShareDeliveryReceipt,
   createDemoLaunchEvidenceShareDeliveryReceipt,
+  createTaskEvidencePackageShareDeliveryReceipt,
   createTask,
   createTriggerQuarantine,
   downloadDemoSessionArchiveReport,
@@ -44,6 +45,8 @@ import {
   downloadDemoHandoffShareInstructionsReport,
   downloadDemoHandoffShareChecklistReport,
   downloadTaskEvidencePackageReport,
+  downloadTaskEvidencePackageFinalizationReport,
+  downloadTaskEvidencePackageShareDeliveryReceiptReport,
   downloadTaskEvidencePackageShareCenterReport,
   downloadTaskReport,
   evaluateTrigger,
@@ -96,6 +99,7 @@ import {
   getQueueSummary,
   getTaskDetail,
   getTaskEvidencePackageArchiveSummary,
+  getTaskEvidencePackageFinalization,
   getTaskEvidencePackageShareCenter,
   getTaskRetryPreflight,
   getTaskReport,
@@ -124,6 +128,7 @@ import {
   listWebhookDeliveries,
   listTasks,
   listTaskEvidencePackageArchives,
+  listTaskEvidencePackageShareDeliveryReceipts,
   listRecentTaskEvidencePackageArchives,
   preflightRepository,
   retryRejectedTrigger,
@@ -219,8 +224,11 @@ import type {
   EvaluationRunSnapshotArchive,
   FixTask,
   FixTaskEvidencePackageArchive,
+  FixTaskEvidencePackageFinalization,
   FixTaskEvidencePackageArchiveShareCenter,
   FixTaskEvidencePackageArchiveSummary,
+  FixTaskEvidencePackageShareDeliveryReceipt,
+  FixTaskEvidencePackageShareDeliveryReceiptInput,
   FixTaskFailureCauseSummary,
   FixTaskLatencySummary,
   FixTaskMetricsSummary,
@@ -424,8 +432,14 @@ export default function App() {
     useState<FixTaskEvidencePackageArchiveSummary | null>(null);
   const [taskEvidenceShareCenter, setTaskEvidenceShareCenter] =
     useState<FixTaskEvidencePackageArchiveShareCenter | null>(null);
+  const [taskEvidenceFinalization, setTaskEvidenceFinalization] =
+    useState<FixTaskEvidencePackageFinalization | null>(null);
+  const [taskEvidenceDeliveryReceipts, setTaskEvidenceDeliveryReceipts] =
+    useState<FixTaskEvidencePackageShareDeliveryReceipt[]>([]);
   const [taskEvidenceArchiveError, setTaskEvidenceArchiveError] = useState<string | null>(null);
   const [taskEvidenceShareCenterError, setTaskEvidenceShareCenterError] = useState<string | null>(null);
+  const [taskEvidenceFinalizationError, setTaskEvidenceFinalizationError] = useState<string | null>(null);
+  const [taskEvidenceDeliveryReceiptError, setTaskEvidenceDeliveryReceiptError] = useState<string | null>(null);
   const [webhookDeliveries, setWebhookDeliveries] = useState<WebhookDeliveryDiagnostic[]>([]);
   const [webhookDeliveryError, setWebhookDeliveryError] = useState<string | null>(null);
   const [webhookPayloadDiagnostic, setWebhookPayloadDiagnostic] = useState<WebhookPayloadDiagnosticResult | null>(null);
@@ -749,6 +763,8 @@ export default function App() {
         taskEvidenceArchiveResult,
         taskEvidenceArchiveSummaryResult,
         taskEvidenceShareCenterResult,
+        taskEvidenceFinalizationResult,
+        taskEvidenceDeliveryReceiptResult,
         webhookDeliveryResult,
         acceptedTriggerDecisionResult,
         rejectedTriggerResult,
@@ -954,6 +970,14 @@ export default function App() {
         getTaskEvidencePackageShareCenter(20).then(
           (shareCenter) => ({ shareCenter, error: null as string | null }),
           (caught) => ({ shareCenter: null, error: errorMessage(caught) })
+        ),
+        getTaskEvidencePackageFinalization().then(
+          (finalization) => ({ finalization, error: null as string | null }),
+          (caught) => ({ finalization: null, error: errorMessage(caught) })
+        ),
+        listTaskEvidencePackageShareDeliveryReceipts().then(
+          (receipts) => ({ receipts, error: null as string | null }),
+          (caught) => ({ receipts: null, error: errorMessage(caught) })
         ),
         listWebhookDeliveries(10).then(
           (deliveries) => ({ deliveries, error: null as string | null }),
@@ -1184,6 +1208,14 @@ export default function App() {
         setTaskEvidenceShareCenter(taskEvidenceShareCenterResult.shareCenter);
       }
       setTaskEvidenceShareCenterError(taskEvidenceShareCenterResult.error);
+      if (taskEvidenceFinalizationResult.finalization) {
+        setTaskEvidenceFinalization(taskEvidenceFinalizationResult.finalization);
+      }
+      setTaskEvidenceFinalizationError(taskEvidenceFinalizationResult.error);
+      if (taskEvidenceDeliveryReceiptResult.receipts) {
+        setTaskEvidenceDeliveryReceipts(taskEvidenceDeliveryReceiptResult.receipts);
+      }
+      setTaskEvidenceDeliveryReceiptError(taskEvidenceDeliveryReceiptResult.error);
       if (webhookDeliveryResult.deliveries) {
         setWebhookDeliveries(webhookDeliveryResult.deliveries);
       }
@@ -1401,6 +1433,12 @@ export default function App() {
     } catch (caught) {
       setTaskEvidenceShareCenterError(errorMessage(caught));
     }
+    try {
+      setTaskEvidenceFinalization(await getTaskEvidencePackageFinalization());
+      setTaskEvidenceFinalizationError(null);
+    } catch (caught) {
+      setTaskEvidenceFinalizationError(errorMessage(caught));
+    }
     setTaskEvidenceArchiveError(null);
     return archive;
   }, []);
@@ -1409,6 +1447,32 @@ export default function App() {
   ), []);
   const handleDownloadTaskEvidencePackageReport = useCallback((archiveId: string) => (
     downloadTaskEvidencePackageReport(archiveId)
+  ), []);
+  const handleDownloadTaskEvidencePackageFinalizationReport = useCallback(() => (
+    downloadTaskEvidencePackageFinalizationReport()
+  ), []);
+  const handleCreateTaskEvidencePackageShareDeliveryReceipt = useCallback(async (
+    input: FixTaskEvidencePackageShareDeliveryReceiptInput
+  ) => {
+    const receipt = await createTaskEvidencePackageShareDeliveryReceipt(input);
+    setTaskEvidenceDeliveryReceipts((current) => [receipt, ...current.filter((item) => item.id !== receipt.id)].slice(0, 20));
+    setTaskEvidenceDeliveryReceiptError(null);
+    try {
+      setTaskEvidenceDeliveryReceipts(await listTaskEvidencePackageShareDeliveryReceipts());
+      setTaskEvidenceDeliveryReceiptError(null);
+    } catch (caught) {
+      setTaskEvidenceDeliveryReceiptError(errorMessage(caught));
+    }
+    try {
+      setTaskEvidenceFinalization(await getTaskEvidencePackageFinalization());
+      setTaskEvidenceFinalizationError(null);
+    } catch (caught) {
+      setTaskEvidenceFinalizationError(errorMessage(caught));
+    }
+    return receipt;
+  }, []);
+  const handleDownloadTaskEvidencePackageShareDeliveryReceiptReport = useCallback((receiptId: string) => (
+    downloadTaskEvidencePackageShareDeliveryReceiptReport(receiptId)
   ), []);
   const handleCopyDemoRunbook = useCallback(() => getDemoRunbook(), []);
   const handleCopyDemoSessionReport = useCallback((input: DemoSessionReportInput) => getDemoSessionReport(input), []);
@@ -2253,11 +2317,18 @@ export default function App() {
       <TaskEvidenceArchiveReviewPanel
         summary={taskEvidenceArchiveSummary}
         shareCenter={taskEvidenceShareCenter}
+        finalization={taskEvidenceFinalization}
+        deliveryReceipts={taskEvidenceDeliveryReceipts}
         archives={taskEvidenceArchives}
         error={taskEvidenceArchiveError}
         shareCenterError={taskEvidenceShareCenterError}
+        finalizationError={taskEvidenceFinalizationError}
+        deliveryReceiptError={taskEvidenceDeliveryReceiptError}
         onDownloadArchiveReport={handleDownloadTaskEvidencePackageReport}
         onDownloadShareCenterReport={handleDownloadTaskEvidencePackageShareCenterReport}
+        onDownloadFinalizationReport={handleDownloadTaskEvidencePackageFinalizationReport}
+        onCreateDeliveryReceipt={handleCreateTaskEvidencePackageShareDeliveryReceipt}
+        onDownloadDeliveryReceiptReport={handleDownloadTaskEvidencePackageShareDeliveryReceiptReport}
         onSelectTask={selectTask}
       />
 

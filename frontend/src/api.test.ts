@@ -111,11 +111,16 @@ import {
   getTaskReport,
   downloadTaskReport,
   archiveTaskEvidencePackage,
+  createTaskEvidencePackageShareDeliveryReceipt,
+  downloadTaskEvidencePackageFinalizationReport,
   getTaskEvidencePackageArchiveSummary,
+  getTaskEvidencePackageFinalization,
   getTaskEvidencePackageShareCenter,
   listTaskEvidencePackageArchives,
+  listTaskEvidencePackageShareDeliveryReceipts,
   listRecentTaskEvidencePackageArchives,
   downloadTaskEvidencePackageReport,
+  downloadTaskEvidencePackageShareDeliveryReceiptReport,
   downloadTaskEvidencePackageShareCenterReport,
   getTaskDetail,
   getTaskRetryPreflight,
@@ -4820,6 +4825,9 @@ test('gets task evidence package share center through backend API', async () => 
         latestArchivedAt: '2026-06-20T01:10:00Z',
         shareableArchiveId: 'task-evidence-archive-1',
         shareableTaskId: 'task-1',
+        shareableRepositoryOwner: 'bingqin2',
+        shareableRepositoryName: 'PatchPilot',
+        shareableIssueNumber: 1,
         shareablePullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
         downloadActions: ['Download archived task evidence task-evidence-archive-1.'],
         evidenceNotes: ['Latest archive task-evidence-archive-2 is FAILED.'],
@@ -4871,6 +4879,165 @@ test('downloads task evidence package share center report through backend API', 
 
   expect(fetchMock).toHaveBeenCalledWith('/api/tasks/evidence-packages/share-center/report/download');
   expect(report).toBe(reportBlob);
+});
+
+test('records task evidence delivery receipt through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 201,
+    json: async () => ({
+      success: true,
+      data: {
+        id: 'task-evidence-delivery-receipt-1',
+        status: 'READY',
+        taskEvidenceArchiveId: 'task-evidence-archive-1',
+        taskId: 'task-1',
+        repositoryOwner: 'bingqin2',
+        repositoryName: 'PatchPilot',
+        issueNumber: 1,
+        pullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+        deliveryChannel: 'email',
+        deliveryTarget: 'reviewer@example.com',
+        operator: 'local-operator',
+        notes: 'Sent task evidence after PR review.',
+        messageSubject: 'PatchPilot task evidence: task-1',
+        deliveredAt: '2026-06-28T06:05:00Z',
+        createdAt: '2026-06-28T06:10:00Z',
+        markdownReport: '# PatchPilot Task Evidence Delivery Receipt'
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const receipt = await createTaskEvidencePackageShareDeliveryReceipt({
+    deliveryChannel: 'email',
+    deliveryTarget: 'reviewer@example.com',
+    operator: 'local-operator',
+    notes: 'Sent task evidence after PR review.'
+  });
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/tasks/evidence-packages/share-delivery-receipts', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      deliveryChannel: 'email',
+      deliveryTarget: 'reviewer@example.com',
+      operator: 'local-operator',
+      notes: 'Sent task evidence after PR review.'
+    })
+  });
+  expect(receipt.id).toBe('task-evidence-delivery-receipt-1');
+  expect(receipt.taskEvidenceArchiveId).toBe('task-evidence-archive-1');
+});
+
+test('lists task evidence delivery receipts through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: [
+        {
+          id: 'task-evidence-delivery-receipt-1',
+          status: 'READY',
+          taskEvidenceArchiveId: 'task-evidence-archive-1',
+          taskId: 'task-1',
+          repositoryOwner: 'bingqin2',
+          repositoryName: 'PatchPilot',
+          issueNumber: 1,
+          pullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+          deliveryChannel: 'email',
+          deliveryTarget: 'reviewer@example.com',
+          operator: 'local-operator',
+          notes: 'Sent task evidence after PR review.',
+          messageSubject: 'PatchPilot task evidence: task-1',
+          deliveredAt: '2026-06-28T06:05:00Z',
+          createdAt: '2026-06-28T06:10:00Z',
+          markdownReport: '# PatchPilot Task Evidence Delivery Receipt'
+        }
+      ],
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const receipts = await listTaskEvidencePackageShareDeliveryReceipts();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/tasks/evidence-packages/share-delivery-receipts');
+  expect(receipts).toHaveLength(1);
+  expect(receipts[0].deliveryTarget).toBe('reviewer@example.com');
+});
+
+test('gets task evidence finalization gate through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        status: 'READY',
+        finalized: true,
+        summary: 'Task evidence is finalized with a fresh delivery receipt for the current shareable archive.',
+        nextAction: 'Use the finalization report as the accepted task evidence delivery record.',
+        latestArchiveId: 'task-evidence-archive-1',
+        latestTaskId: 'task-1',
+        latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+        latestDeliveryReceiptId: 'task-evidence-delivery-receipt-1',
+        latestDeliveryTarget: 'reviewer@example.com',
+        latestDeliveryChannel: 'email',
+        latestDeliveredAt: '2026-06-28T06:05:00Z',
+        deliveryReceiptFreshness: 'FRESH',
+        deliveryReceiptFresh: true,
+        deliveryReceiptFreshnessSummary: 'Latest delivery receipt matches the current task evidence archive and task.',
+        checks: [
+          {
+            name: 'Task evidence acceptance',
+            status: 'READY',
+            summary: 'Finalization report is ready as the task evidence acceptance record.',
+            nextAction: 'Download the finalization report.'
+          }
+        ],
+        evidenceNotes: ['Finalization report can be downloaded as the accepted task evidence delivery record.'],
+        markdownReport: '# PatchPilot Task Evidence Finalization Gate',
+        generatedAt: '2026-06-28T06:30:00Z'
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const finalization = await getTaskEvidencePackageFinalization();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/tasks/evidence-packages/finalization');
+  expect(finalization.status).toBe('READY');
+  expect(finalization.latestDeliveryReceiptId).toBe('task-evidence-delivery-receipt-1');
+});
+
+test('downloads task evidence receipt and finalization reports through backend API', async () => {
+  const receiptBlob = new Blob(['# PatchPilot Task Evidence Delivery Receipt'], {
+    type: 'text/markdown;charset=UTF-8'
+  });
+  const finalizationBlob = new Blob(['# PatchPilot Task Evidence Finalization Gate'], {
+    type: 'text/markdown;charset=UTF-8'
+  });
+  const fetchMock = vi.fn(async (path: string) => ({
+    ok: true,
+    status: 200,
+    blob: async () => path.includes('share-delivery-receipts') ? receiptBlob : finalizationBlob
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const receiptReport = await downloadTaskEvidencePackageShareDeliveryReceiptReport('task evidence receipt 1');
+  const finalizationReport = await downloadTaskEvidencePackageFinalizationReport();
+
+  expect(fetchMock).toHaveBeenNthCalledWith(
+    1,
+    '/api/tasks/evidence-packages/share-delivery-receipts/task%20evidence%20receipt%201/report/download'
+  );
+  expect(fetchMock).toHaveBeenNthCalledWith(2, '/api/tasks/evidence-packages/finalization/report/download');
+  expect(receiptReport).toBe(receiptBlob);
+  expect(finalizationReport).toBe(finalizationBlob);
 });
 
 test('shows actionable backend guidance when API response is empty', async () => {

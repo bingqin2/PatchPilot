@@ -145,10 +145,68 @@ export interface FixTaskEvidencePackageArchiveShareCenter {
   latestArchivedAt: string | null;
   shareableArchiveId: string | null;
   shareableTaskId: string | null;
+  shareableRepositoryOwner: string | null;
+  shareableRepositoryName: string | null;
+  shareableIssueNumber: number | null;
   shareablePullRequestUrl: string | null;
   downloadActions: string[];
   evidenceNotes: string[];
   sideEffectContract: string;
+  markdownReport: string;
+  generatedAt: string;
+}
+
+export interface FixTaskEvidencePackageShareDeliveryReceipt {
+  id: string;
+  status: 'READY' | 'NEEDS_ATTENTION' | 'BLOCKED';
+  taskEvidenceArchiveId: string;
+  taskId: string;
+  repositoryOwner: string;
+  repositoryName: string;
+  issueNumber: number;
+  pullRequestUrl: string;
+  deliveryChannel: string;
+  deliveryTarget: string;
+  operator: string;
+  notes: string;
+  messageSubject: string;
+  deliveredAt: string;
+  createdAt: string;
+  markdownReport: string;
+}
+
+export interface FixTaskEvidencePackageShareDeliveryReceiptInput {
+  deliveryChannel: string;
+  deliveryTarget: string;
+  operator: string;
+  notes: string;
+  deliveredAt?: string;
+}
+
+export interface FixTaskEvidencePackageFinalizationCheck {
+  name: string;
+  status: 'READY' | 'NEEDS_ATTENTION' | 'BLOCKED';
+  summary: string;
+  nextAction: string;
+}
+
+export interface FixTaskEvidencePackageFinalization {
+  status: 'READY' | 'NEEDS_ATTENTION' | 'BLOCKED';
+  finalized: boolean;
+  summary: string;
+  nextAction: string;
+  latestArchiveId: string | null;
+  latestTaskId: string | null;
+  latestPullRequestUrl: string | null;
+  latestDeliveryReceiptId: string | null;
+  latestDeliveryTarget: string | null;
+  latestDeliveryChannel: string | null;
+  latestDeliveredAt: string | null;
+  deliveryReceiptFreshness: 'FRESH' | 'MISSING' | 'STALE';
+  deliveryReceiptFresh: boolean;
+  deliveryReceiptFreshnessSummary: string;
+  checks: FixTaskEvidencePackageFinalizationCheck[];
+  evidenceNotes: string[];
   markdownReport: string;
   generatedAt: string;
 }

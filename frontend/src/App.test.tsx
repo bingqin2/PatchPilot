@@ -372,6 +372,9 @@ const taskEvidencePackageShareCenter = {
   latestArchivedAt: '2026-06-20T01:05:00Z',
   shareableArchiveId: 'task-evidence-archive-1',
   shareableTaskId: 'task-1',
+  shareableRepositoryOwner: 'bingqin2',
+  shareableRepositoryName: 'PatchPilot',
+  shareableIssueNumber: 1,
   shareablePullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
   downloadActions: [
     'Download archived task evidence task-evidence-archive-1.',
@@ -384,6 +387,62 @@ const taskEvidencePackageShareCenter = {
     'Task evidence share center is read-only; it does not create tasks, mutate Git, push, open Pull Requests, or write GitHub comments.',
   markdownReport: '# PatchPilot Task Evidence Share Center',
   generatedAt: '2026-06-20T01:12:00Z'
+};
+
+const taskEvidencePackageDeliveryReceipt = {
+  id: 'task-evidence-delivery-receipt-1',
+  status: 'READY',
+  taskEvidenceArchiveId: 'task-evidence-archive-1',
+  taskId: 'task-1',
+  repositoryOwner: 'bingqin2',
+  repositoryName: 'PatchPilot',
+  issueNumber: 1,
+  pullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+  deliveryChannel: 'email',
+  deliveryTarget: 'reviewer@example.com',
+  operator: 'local-operator',
+  notes: 'Sent task evidence after PR review.',
+  messageSubject: 'PatchPilot task evidence: task-1',
+  deliveredAt: '2026-06-28T06:05:00Z',
+  createdAt: '2026-06-28T06:10:00Z',
+  markdownReport: '# PatchPilot Task Evidence Delivery Receipt'
+};
+
+const taskEvidencePackageFinalization = {
+  status: 'READY',
+  finalized: true,
+  summary: 'Task evidence is finalized with a fresh delivery receipt for the current shareable archive.',
+  nextAction: 'Use the finalization report as the accepted task evidence delivery record.',
+  latestArchiveId: 'task-evidence-archive-1',
+  latestTaskId: 'task-1',
+  latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+  latestDeliveryReceiptId: 'task-evidence-delivery-receipt-1',
+  latestDeliveryTarget: 'reviewer@example.com',
+  latestDeliveryChannel: 'email',
+  latestDeliveredAt: '2026-06-28T06:05:00Z',
+  deliveryReceiptFreshness: 'FRESH',
+  deliveryReceiptFresh: true,
+  deliveryReceiptFreshnessSummary: 'Latest delivery receipt matches the current task evidence archive and task.',
+  checks: [
+    {
+      name: 'Task evidence share readiness',
+      status: 'READY',
+      summary: 'A shareable completed task evidence package is available for external review.',
+      nextAction: 'No action needed.'
+    },
+    {
+      name: 'Delivery receipt freshness',
+      status: 'READY',
+      summary: 'Latest delivery receipt matches the current task evidence archive and task.',
+      nextAction: 'No action needed.'
+    }
+  ],
+  evidenceNotes: [
+    'Latest delivery receipt task-evidence-delivery-receipt-1 is fresh for task-evidence-archive-1/task-1.',
+    'Finalization report can be downloaded as the accepted task evidence delivery record.'
+  ],
+  markdownReport: '# PatchPilot Task Evidence Finalization Gate',
+  generatedAt: '2026-06-28T06:30:00Z'
 };
 
 const detail = {
@@ -2819,6 +2878,20 @@ beforeEach(() => {
     if (url === '/api/tasks/evidence-packages/share-center?limit=20') {
       return jsonResponse(taskEvidencePackageShareCenter);
     }
+    if (url === '/api/tasks/evidence-packages/finalization') {
+      return jsonResponse(taskEvidencePackageFinalization);
+    }
+    if (url === '/api/tasks/evidence-packages/share-delivery-receipts' && init?.method === 'POST') {
+      return jsonResponse({
+        ...taskEvidencePackageDeliveryReceipt,
+        id: 'task-evidence-delivery-receipt-2',
+        deliveryTarget: 'ops@example.com',
+        notes: 'Shared after review.'
+      }, true, null, 201);
+    }
+    if (url === '/api/tasks/evidence-packages/share-delivery-receipts') {
+      return jsonResponse([taskEvidencePackageDeliveryReceipt]);
+    }
     if (url === '/api/tasks/manual-task-1/detail') {
       return jsonResponse(manualTaskDetail);
     }
@@ -2863,6 +2936,24 @@ beforeEach(() => {
         ok: true,
         status: 200,
         blob: async () => new Blob(['# PatchPilot Task Evidence Share Center'], {
+          type: 'text/markdown;charset=UTF-8'
+        })
+      } as Response);
+    }
+    if (url === '/api/tasks/evidence-packages/finalization/report/download') {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        blob: async () => new Blob(['# PatchPilot Task Evidence Finalization Gate'], {
+          type: 'text/markdown;charset=UTF-8'
+        })
+      } as Response);
+    }
+    if (url === '/api/tasks/evidence-packages/share-delivery-receipts/task-evidence-delivery-receipt-1/report/download') {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        blob: async () => new Blob(['# PatchPilot Task Evidence Delivery Receipt'], {
           type: 'text/markdown;charset=UTF-8'
         })
       } as Response);
@@ -3881,6 +3972,55 @@ test('downloads and archives selected task evidence package from backend APIs', 
   expect(click).toHaveBeenCalledTimes(2);
   expect(revokeObjectURL).toHaveBeenCalledWith('blob:task-evidence-package');
   expect(screen.getByText('Archived evidence task-evidence-archive-1 downloaded')).toBeInTheDocument();
+});
+
+test('records task evidence delivery receipt and downloads finalization reports from dashboard', async () => {
+  const user = userEvent.setup();
+  const fetchMock = vi.mocked(fetch);
+  const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+  const createObjectURL = vi.fn(() => 'blob:task-evidence-delivery');
+  const revokeObjectURL = vi.fn();
+  vi.stubGlobal('URL', blobUrlConstructor(createObjectURL, revokeObjectURL));
+
+  render(<App />);
+
+  const reviewPanel = await screen.findByRole('region', { name: 'Task evidence archive review' });
+  expect(within(reviewPanel).getByLabelText('Task evidence finalization')).toBeInTheDocument();
+  expect(within(reviewPanel).getByText('Task evidence is finalized with a fresh delivery receipt for the current shareable archive.')).toBeInTheDocument();
+  expect(within(reviewPanel).getByText(/reviewer@example.com.*email.*delivered/)).toBeInTheDocument();
+
+  await user.click(within(reviewPanel).getByRole('button', { name: 'Download task evidence finalization report' }));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks/evidence-packages/finalization/report/download'));
+  expect(click).toHaveBeenCalledTimes(1);
+
+  await user.clear(within(reviewPanel).getByLabelText('Task evidence delivery target'));
+  await user.type(within(reviewPanel).getByLabelText('Task evidence delivery target'), 'ops@example.com');
+  await user.type(within(reviewPanel).getByLabelText('Task evidence delivery notes'), 'Shared after review.');
+  await user.click(within(reviewPanel).getByRole('button', { name: 'Record task evidence delivery receipt' }));
+
+  await waitFor(() =>
+    expect(fetchMock).toHaveBeenCalledWith('/api/tasks/evidence-packages/share-delivery-receipts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        deliveryChannel: 'email',
+        deliveryTarget: 'ops@example.com',
+        operator: 'local-operator',
+        notes: 'Shared after review.'
+      })
+    })
+  );
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks/evidence-packages/share-delivery-receipts'));
+  expect(within(reviewPanel).getByText('Task evidence delivery receipt task-evidence-delivery-receipt-2 recorded')).toBeInTheDocument();
+
+  await user.click(within(reviewPanel).getByRole('button', {
+    name: 'Download task evidence delivery receipt task-evidence-delivery-receipt-1'
+  }));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
+    '/api/tasks/evidence-packages/share-delivery-receipts/task-evidence-delivery-receipt-1/report/download'
+  ));
+  expect(click).toHaveBeenCalledTimes(2);
+  expect(revokeObjectURL).toHaveBeenCalledWith('blob:task-evidence-delivery');
 });
 
 test('copies demo runbook from backend API', async () => {
@@ -6002,6 +6142,20 @@ function defaultAppResponse(input: RequestInfo | URL, init?: RequestInit) {
   if (url === '/api/tasks/evidence-packages/share-center?limit=20') {
     return jsonResponse(taskEvidencePackageShareCenter);
   }
+  if (url === '/api/tasks/evidence-packages/finalization') {
+    return jsonResponse(taskEvidencePackageFinalization);
+  }
+  if (url === '/api/tasks/evidence-packages/share-delivery-receipts' && init?.method === 'POST') {
+    return jsonResponse({
+      ...taskEvidencePackageDeliveryReceipt,
+      id: 'task-evidence-delivery-receipt-2',
+      deliveryTarget: 'ops@example.com',
+      notes: 'Shared after review.'
+    }, true, null, 201);
+  }
+  if (url === '/api/tasks/evidence-packages/share-delivery-receipts') {
+    return jsonResponse([taskEvidencePackageDeliveryReceipt]);
+  }
   if (url === '/api/tasks/task-1/retry-preflight') {
     return jsonResponse({
       taskId: 'task-1',
@@ -6038,6 +6192,24 @@ function defaultAppResponse(input: RequestInfo | URL, init?: RequestInit) {
       ok: true,
       status: 200,
       blob: async () => new Blob(['# PatchPilot Task Evidence Share Center'], {
+        type: 'text/markdown;charset=UTF-8'
+      })
+    } as Response);
+  }
+  if (url === '/api/tasks/evidence-packages/finalization/report/download') {
+    return Promise.resolve({
+      ok: true,
+      status: 200,
+      blob: async () => new Blob(['# PatchPilot Task Evidence Finalization Gate'], {
+        type: 'text/markdown;charset=UTF-8'
+      })
+    } as Response);
+  }
+  if (url === '/api/tasks/evidence-packages/share-delivery-receipts/task-evidence-delivery-receipt-1/report/download') {
+    return Promise.resolve({
+      ok: true,
+      status: 200,
+      blob: async () => new Blob(['# PatchPilot Task Evidence Delivery Receipt'], {
         type: 'text/markdown;charset=UTF-8'
       })
     } as Response);

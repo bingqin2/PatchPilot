@@ -5330,3 +5330,24 @@ Validation so far:
 - `npm test -- --reporter=basic`: passed, 29 test files and 376 tests.
 - `npm run build`: passed.
 - `git diff --check`: passed.
+
+## 2026-06-28 - 266 Task evidence share delivery finalization
+
+- Started `266-task-evidence-share-delivery-finalization` to make task evidence sharing auditable after the share-center stage.
+- Planned a complete feature slice: backend local delivery receipts, persistent storage, finalization gate, report downloads, dashboard receipt form/list, finalization panel, API/types integration, README updates, and regression tests.
+- RED controller test added first for recording a task evidence delivery receipt and observing the finalization gate move from missing receipt to ready.
+- Implemented persistent task evidence delivery receipts with in-memory and MyBatis repositories plus Flyway migration `V42__create_fix_task_evidence_share_delivery_receipt.sql`.
+- Added `POST /api/tasks/evidence-packages/share-delivery-receipts`, receipt listing, receipt report download, `GET /api/tasks/evidence-packages/finalization`, and finalization report download.
+- Added finalization checks for share readiness, delivery receipt freshness, and acceptance status. Finalization is `READY` only when the latest receipt matches the current shareable archive and task.
+- Updated the `Task evidence archive review` dashboard panel with finalization status, check/evidence notes, recent receipts, a local receipt form, and Markdown download actions.
+- Updated README and added this plan document.
+
+Validation so far:
+
+- `mvn -pl PatchPilot -Dtest=TaskControllerTests#should_record_task_evidence_delivery_receipt_and_finalize_current_shareable_archive test`: first failed because `/api/tasks/evidence-packages/finalization` returned 404; passed after backend implementation.
+- `npm test -- src/api.test.ts src/dashboard/components/TaskEvidenceArchiveReviewPanel.test.tsx src/App.test.tsx`: first failed because the new frontend API/helpers and dashboard UI were missing; then failed on fragile local-time/count assertions; passed after implementation and stable assertions, 222 tests run.
+- `mvn -pl PatchPilot -Dtest=TaskControllerTests#should_record_task_evidence_delivery_receipt_and_finalize_current_shareable_archive,FixTaskEvidencePackageShareDeliveryReceiptServiceTests,FixTaskEvidencePackageFinalizationServiceTests,FixTaskEvidencePackageShareDeliveryReceiptConvertTests,InMemoryFixTaskEvidencePackageShareDeliveryReceiptRepositoryTests,MyBatisFixTaskEvidencePackageShareDeliveryReceiptRepositoryTests,FixTaskEvidencePackageShareDeliveryReceiptMigrationTests test`: passed, 12 tests run, 0 failures.
+- `mvn -q -pl PatchPilot test`: passed.
+- `npm test -- --reporter=basic`: passed, 29 test files and 382 tests.
+- `npm run build`: passed.
+- `git diff --check`: passed.

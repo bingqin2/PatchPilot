@@ -2,8 +2,10 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type {
   FixTaskEvidencePackageArchive,
+  FixTaskEvidencePackageFinalization,
   FixTaskEvidencePackageArchiveShareCenter,
-  FixTaskEvidencePackageArchiveSummary
+  FixTaskEvidencePackageArchiveSummary,
+  FixTaskEvidencePackageShareDeliveryReceipt
 } from '../../types';
 import { TaskEvidenceArchiveReviewPanel } from './TaskEvidenceArchiveReviewPanel';
 
@@ -69,6 +71,9 @@ const shareCenter: FixTaskEvidencePackageArchiveShareCenter = {
   latestArchivedAt: '2026-06-20T01:10:00Z',
   shareableArchiveId: 'task-evidence-archive-1',
   shareableTaskId: 'task-1',
+  shareableRepositoryOwner: 'bingqin2',
+  shareableRepositoryName: 'PatchPilot',
+  shareableIssueNumber: 1,
   shareablePullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
   downloadActions: [
     'Download archived task evidence task-evidence-archive-1.',
@@ -84,16 +89,79 @@ const shareCenter: FixTaskEvidencePackageArchiveShareCenter = {
   generatedAt: '2026-06-20T01:12:00Z'
 };
 
+const finalization: FixTaskEvidencePackageFinalization = {
+  status: 'READY',
+  finalized: true,
+  summary: 'Task evidence is finalized with a fresh delivery receipt for the current shareable archive.',
+  nextAction: 'Use the finalization report as the accepted task evidence delivery record.',
+  latestArchiveId: 'task-evidence-archive-1',
+  latestTaskId: 'task-1',
+  latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+  latestDeliveryReceiptId: 'task-evidence-delivery-receipt-1',
+  latestDeliveryTarget: 'reviewer@example.com',
+  latestDeliveryChannel: 'email',
+  latestDeliveredAt: '2026-06-28T06:05:00Z',
+  deliveryReceiptFreshness: 'FRESH',
+  deliveryReceiptFresh: true,
+  deliveryReceiptFreshnessSummary: 'Latest delivery receipt matches the current task evidence archive and task.',
+  checks: [
+    {
+      name: 'Task evidence share readiness',
+      status: 'READY',
+      summary: 'A shareable completed task evidence package is available for external review.',
+      nextAction: 'No action needed.'
+    },
+    {
+      name: 'Delivery receipt freshness',
+      status: 'READY',
+      summary: 'Latest delivery receipt matches the current task evidence archive and task.',
+      nextAction: 'No action needed.'
+    }
+  ],
+  evidenceNotes: [
+    'Latest delivery receipt task-evidence-delivery-receipt-1 is fresh for task-evidence-archive-1/task-1.',
+    'Finalization report can be downloaded as the accepted task evidence delivery record.'
+  ],
+  markdownReport: '# PatchPilot Task Evidence Finalization Gate',
+  generatedAt: '2026-06-28T06:30:00Z'
+};
+
+const deliveryReceipt: FixTaskEvidencePackageShareDeliveryReceipt = {
+  id: 'task-evidence-delivery-receipt-1',
+  status: 'READY',
+  taskEvidenceArchiveId: 'task-evidence-archive-1',
+  taskId: 'task-1',
+  repositoryOwner: 'bingqin2',
+  repositoryName: 'PatchPilot',
+  issueNumber: 1,
+  pullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+  deliveryChannel: 'email',
+  deliveryTarget: 'reviewer@example.com',
+  operator: 'local-operator',
+  notes: 'Sent task evidence after PR review.',
+  messageSubject: 'PatchPilot task evidence: task-1',
+  deliveredAt: '2026-06-28T06:05:00Z',
+  createdAt: '2026-06-28T06:10:00Z',
+  markdownReport: '# PatchPilot Task Evidence Delivery Receipt'
+};
+
 test('shows global task evidence archive summary and recent archives', () => {
   render(
     <TaskEvidenceArchiveReviewPanel
       summary={summary}
       shareCenter={shareCenter}
+      finalization={finalization}
+      deliveryReceipts={[deliveryReceipt]}
       archives={archives}
       error={null}
       shareCenterError={null}
+      finalizationError={null}
+      deliveryReceiptError={null}
       onDownloadArchiveReport={vi.fn()}
       onDownloadShareCenterReport={vi.fn()}
+      onDownloadFinalizationReport={vi.fn()}
+      onCreateDeliveryReceipt={vi.fn()}
+      onDownloadDeliveryReceiptReport={vi.fn()}
       onSelectTask={vi.fn()}
     />
   );
@@ -105,11 +173,19 @@ test('shows global task evidence archive summary and recent archives', () => {
   expect(within(sharePanel).getByText(shareCenter.summary)).toBeInTheDocument();
   expect(within(sharePanel).getByText('task-evidence-archive-1')).toBeInTheDocument();
   expect(within(sharePanel).getByText('https://github.com/bingqin2/PatchPilot/pull/8')).toBeInTheDocument();
+  const finalizationPanel = screen.getByLabelText('Task evidence finalization');
+  expect(within(finalizationPanel).getByText('Task evidence finalization')).toBeInTheDocument();
+  expect(within(finalizationPanel).getByText('Task evidence is finalized with a fresh delivery receipt for the current shareable archive.')).toBeInTheDocument();
+  expect(within(finalizationPanel).getByText('task-evidence-delivery-receipt-1')).toBeInTheDocument();
+  const receiptPanel = screen.getByLabelText('Task evidence delivery receipts');
+  expect(within(receiptPanel).getByText('task-evidence-delivery-receipt-1')).toBeInTheDocument();
+  expect(within(receiptPanel).getByText(/reviewer@example.com.*email.*delivered/)).toBeInTheDocument();
   expect(within(panel).getByText('Task evidence archive review')).toBeInTheDocument();
   expect(within(panel).getByText('2 archived reports')).toBeInTheDocument();
   expect(within(panel).getByText('Completed')).toBeInTheDocument();
   expect(within(panel).getByText('Failed')).toBeInTheDocument();
-  expect(within(panel).getAllByText('1')).toHaveLength(2);
+  expect(within(panel).getByText('completed')).toBeInTheDocument();
+  expect(within(panel).getByText('failed')).toBeInTheDocument();
   expect(within(panel).getByText('Latest task')).toBeInTheDocument();
   expect(within(panel).getByText('bingqin2/PatchPilot #2')).toBeInTheDocument();
   expect(within(panel).getAllByText('task-evidence-archive-2').length).toBeGreaterThanOrEqual(2);
@@ -130,11 +206,18 @@ test('downloads archived evidence and opens related task from review panel', asy
     <TaskEvidenceArchiveReviewPanel
       summary={summary}
       shareCenter={shareCenter}
+      finalization={finalization}
+      deliveryReceipts={[deliveryReceipt]}
       archives={archives}
       error={null}
       shareCenterError={null}
+      finalizationError={null}
+      deliveryReceiptError={null}
       onDownloadArchiveReport={download}
       onDownloadShareCenterReport={vi.fn()}
+      onDownloadFinalizationReport={vi.fn()}
+      onCreateDeliveryReceipt={vi.fn()}
+      onDownloadDeliveryReceiptReport={vi.fn()}
       onSelectTask={selectTask}
     />
   );
@@ -162,11 +245,18 @@ test('downloads task evidence share center report from review panel', async () =
     <TaskEvidenceArchiveReviewPanel
       summary={summary}
       shareCenter={shareCenter}
+      finalization={finalization}
+      deliveryReceipts={[deliveryReceipt]}
       archives={archives}
       error={null}
       shareCenterError={null}
+      finalizationError={null}
+      deliveryReceiptError={null}
       onDownloadArchiveReport={vi.fn()}
       onDownloadShareCenterReport={downloadShareCenterReport}
+      onDownloadFinalizationReport={vi.fn()}
+      onCreateDeliveryReceipt={vi.fn()}
+      onDownloadDeliveryReceiptReport={vi.fn()}
       onSelectTask={vi.fn()}
     />
   );
@@ -176,4 +266,67 @@ test('downloads task evidence share center report from review panel', async () =
   expect(downloadShareCenterReport).toHaveBeenCalled();
   expect(anchorClick).toHaveBeenCalled();
   expect(screen.getByText('Task evidence share center report downloaded')).toBeInTheDocument();
+});
+
+test('records delivery receipt and downloads finalization evidence from review panel', async () => {
+  const user = userEvent.setup();
+  const createReceipt = vi.fn(async () => ({
+    ...deliveryReceipt,
+    id: 'task-evidence-delivery-receipt-2',
+    deliveryTarget: 'ops@example.com',
+    notes: 'Shared after review.'
+  }));
+  const downloadFinalizationReport = vi.fn(async () => new Blob(['# Finalization'], {
+    type: 'text/markdown;charset=UTF-8'
+  }));
+  const downloadReceiptReport = vi.fn(async () => new Blob(['# Receipt'], {
+    type: 'text/markdown;charset=UTF-8'
+  }));
+  const createObjectURL = vi.fn(() => 'blob:task-evidence-finalization');
+  const revokeObjectURL = vi.fn();
+  const anchorClick = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
+  vi.stubGlobal('URL', { createObjectURL, revokeObjectURL });
+
+  render(
+    <TaskEvidenceArchiveReviewPanel
+      summary={summary}
+      shareCenter={shareCenter}
+      finalization={finalization}
+      deliveryReceipts={[deliveryReceipt]}
+      archives={archives}
+      error={null}
+      shareCenterError={null}
+      finalizationError={null}
+      deliveryReceiptError={null}
+      onDownloadArchiveReport={vi.fn()}
+      onDownloadShareCenterReport={vi.fn()}
+      onDownloadFinalizationReport={downloadFinalizationReport}
+      onCreateDeliveryReceipt={createReceipt}
+      onDownloadDeliveryReceiptReport={downloadReceiptReport}
+      onSelectTask={vi.fn()}
+    />
+  );
+
+  await user.click(screen.getByRole('button', { name: 'Download task evidence finalization report' }));
+  expect(downloadFinalizationReport).toHaveBeenCalled();
+  expect(anchorClick).toHaveBeenCalled();
+  expect(screen.getByText('Task evidence finalization report downloaded')).toBeInTheDocument();
+
+  await user.clear(screen.getByLabelText('Task evidence delivery target'));
+  await user.type(screen.getByLabelText('Task evidence delivery target'), 'ops@example.com');
+  await user.type(screen.getByLabelText('Task evidence delivery notes'), 'Shared after review.');
+  await user.click(screen.getByRole('button', { name: 'Record task evidence delivery receipt' }));
+
+  expect(createReceipt).toHaveBeenCalledWith({
+    deliveryChannel: 'email',
+    deliveryTarget: 'ops@example.com',
+    operator: 'local-operator',
+    notes: 'Shared after review.'
+  });
+  expect(screen.getByText('Task evidence delivery receipt task-evidence-delivery-receipt-2 recorded')).toBeInTheDocument();
+
+  await user.click(screen.getByRole('button', {
+    name: 'Download task evidence delivery receipt task-evidence-delivery-receipt-1'
+  }));
+  expect(downloadReceiptReport).toHaveBeenCalledWith('task-evidence-delivery-receipt-1');
 });

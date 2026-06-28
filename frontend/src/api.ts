@@ -53,8 +53,11 @@ import type {
   EvaluationRunSnapshotArchive,
   FixTask,
   FixTaskEvidencePackageArchive,
+  FixTaskEvidencePackageFinalization,
   FixTaskEvidencePackageArchiveShareCenter,
   FixTaskEvidencePackageArchiveSummary,
+  FixTaskEvidencePackageShareDeliveryReceipt,
+  FixTaskEvidencePackageShareDeliveryReceiptInput,
   FixTaskFailureCauseSummary,
   FixTaskLatencySummary,
   FixTaskPage,
@@ -731,6 +734,35 @@ export async function downloadTaskEvidencePackageReport(archiveId: string): Prom
 
 export async function downloadTaskEvidencePackageShareCenterReport(): Promise<Blob> {
   return getBlobApi('/api/tasks/evidence-packages/share-center/report/download');
+}
+
+export async function createTaskEvidencePackageShareDeliveryReceipt(
+  input: FixTaskEvidencePackageShareDeliveryReceiptInput
+): Promise<FixTaskEvidencePackageShareDeliveryReceipt> {
+  return postApi<FixTaskEvidencePackageShareDeliveryReceipt>(
+    '/api/tasks/evidence-packages/share-delivery-receipts',
+    input
+  );
+}
+
+export async function listTaskEvidencePackageShareDeliveryReceipts(): Promise<FixTaskEvidencePackageShareDeliveryReceipt[]> {
+  return getApi<FixTaskEvidencePackageShareDeliveryReceipt[]>(
+    '/api/tasks/evidence-packages/share-delivery-receipts'
+  );
+}
+
+export async function downloadTaskEvidencePackageShareDeliveryReceiptReport(receiptId: string): Promise<Blob> {
+  return getBlobApi(
+    `/api/tasks/evidence-packages/share-delivery-receipts/${encodeURIComponent(receiptId)}/report/download`
+  );
+}
+
+export async function getTaskEvidencePackageFinalization(): Promise<FixTaskEvidencePackageFinalization> {
+  return getApi<FixTaskEvidencePackageFinalization>('/api/tasks/evidence-packages/finalization');
+}
+
+export async function downloadTaskEvidencePackageFinalizationReport(): Promise<Blob> {
+  return getBlobApi('/api/tasks/evidence-packages/finalization/report/download');
 }
 
 export async function getTimeline(taskId: string): Promise<FixTaskTimelineEvent[]> {
