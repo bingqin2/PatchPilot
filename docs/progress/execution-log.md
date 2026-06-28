@@ -4,6 +4,25 @@ This file records dated implementation progress, validation commands, and import
 
 ## 2026-06-28
 
+Implemented launch certificate evidence bundle from `docs/plans/261-launch-certificate-evidence-bundle.md`.
+
+Changes:
+
+- Added a structured launch acceptance certificate evidence read model to the top-level demo evidence bundle.
+- Made the evidence bundle read the latest certificate archive directly from the archive repository and require a certified READY certificate archive before reporting the full bundle as `READY`.
+- Added certificate archive status, certified flag, linked closeout archive, linked launch evidence archive, delivery receipt, Pull Request, next action, and download actions to the copied demo runbook.
+- Added a dashboard evidence card for the latest launch acceptance certificate archive, including its Pull Request link, and updated frontend typed contracts.
+- Updated README, product spec, frontend design notes, and this execution log.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=DemoEvidenceBundleServiceTests,DemoRunbookServiceTests test`: first failed because a legacy evidence bundle constructor still accepted closeout evidence without a certificate evidence value; passed after adding a compatibility constructor and certificate evidence defaults, 6 tests run, 0 failures.
+- `npm test -- --run src/dashboard/components/DemoEvidenceBundlePanel.test.tsx --reporter=basic`: first failed because the linked closeout archive id now appears in both closeout and certificate evidence cards; passed after updating the assertion to allow repeated evidence identifiers and adding legacy bundle fallback coverage, 4 tests run, 0 failures.
+- `npm test -- --reporter=basic --silent`: first failed because older dashboard evidence bundle fixtures omitted the new certificate evidence field; passed after adding a dashboard compatibility fallback and fixture coverage, 28 test files and 360 tests run, 0 failures.
+- `npm run build`: first failed because `DemoSessionSnapshotPanel.test.tsx` had a typed evidence bundle fixture without `launchAcceptanceCertificateEvidence`; passed after updating the fixture.
+- `mvn -pl PatchPilot test`: passed after full backend regression verification, 935 tests run, 0 failures.
+- `git diff --check`: passed.
+
 Implemented launch acceptance certificate archive from `docs/plans/260-launch-acceptance-certificate-archive.md`.
 
 Changes:

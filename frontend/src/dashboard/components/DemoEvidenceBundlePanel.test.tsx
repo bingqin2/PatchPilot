@@ -217,6 +217,24 @@ const bundle: DemoEvidenceBundle = {
       'Download linked launch evidence archive launch-evidence-archive-1.'
     ]
   },
+  launchAcceptanceCertificateEvidence: {
+    status: 'READY',
+    archived: true,
+    certified: true,
+    summary: 'Latest launch acceptance certificate archive is certified and ready.',
+    nextAction: 'Use the archived launch acceptance certificate as the external-review launch record.',
+    archiveCount: 1,
+    latestArchiveId: 'launch-certificate-archive-1',
+    latestCloseoutArchiveId: 'launch-closeout-archive-1',
+    latestEvidenceArchiveId: 'launch-evidence-archive-1',
+    latestDeliveryReceiptId: 'launch-delivery-receipt-1',
+    latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+    latestArchivedAt: '2026-06-24T08:30:00Z',
+    downloadActions: [
+      'Download launch acceptance certificate archive launch-certificate-archive-1.',
+      'Download linked launch acceptance closeout archive launch-closeout-archive-1.'
+    ]
+  },
   handoffShareDeliveryReceiptRecorded: true,
   handoffShareLatestDeliveryReceiptId: 'delivery-receipt-1',
   handoffShareLatestDeliveryTarget: 'maintainer@example.com',
@@ -296,12 +314,29 @@ test('summarizes demo evidence bundle for operators', () => {
     within(panel).getByText('Use the archived launch acceptance closeout as the final launch evidence record.')
   ).toBeInTheDocument();
   expect(within(panel).getByText('1 closeout archives')).toBeInTheDocument();
-  expect(within(panel).getByText('launch-closeout-archive-1')).toBeInTheDocument();
+  expect(within(panel).getAllByText('launch-closeout-archive-1').length).toBeGreaterThanOrEqual(1);
   expect(within(panel).getAllByText('launch-evidence-archive-1').length).toBeGreaterThanOrEqual(2);
   expect(
     within(panel).getByText('Download launch acceptance closeout archive launch-closeout-archive-1.')
   ).toBeInTheDocument();
   expect(within(panel).getByText('Download linked launch evidence archive launch-evidence-archive-1.')).toBeInTheDocument();
+  expect(within(panel).getByText('Launch acceptance certificate')).toBeInTheDocument();
+  expect(within(panel).getByText('Certified archive')).toBeInTheDocument();
+  expect(within(panel).getByText('Latest launch acceptance certificate archive is certified and ready.')).toBeInTheDocument();
+  expect(
+    within(panel).getByText('Use the archived launch acceptance certificate as the external-review launch record.')
+  ).toBeInTheDocument();
+  expect(within(panel).getByText('1 certificate archives')).toBeInTheDocument();
+  expect(within(panel).getByText('launch-certificate-archive-1')).toBeInTheDocument();
+  expect(within(panel).getAllByText('launch-closeout-archive-1').length).toBeGreaterThanOrEqual(2);
+  expect(within(panel).getByRole('link', { name: 'Open certificate Pull Request' })).toHaveAttribute(
+    'href',
+    'https://github.com/bingqin2/PatchPilot/pull/42'
+  );
+  expect(
+    within(panel).getByText('Download launch acceptance certificate archive launch-certificate-archive-1.')
+  ).toBeInTheDocument();
+  expect(within(panel).getByText('Download linked launch acceptance closeout archive launch-closeout-archive-1.')).toBeInTheDocument();
   expect(within(panel).getByText('Handoff share delivery')).toBeInTheDocument();
   expect(within(panel).getAllByText('Fresh').length).toBeGreaterThanOrEqual(2);
   expect(within(panel).getByText('Handoff finalization')).toBeInTheDocument();
@@ -335,6 +370,20 @@ test('shows loading and API errors without hiding existing bundle data', () => {
   expect(screen.getByText('Demo evidence bundle unavailable')).toBeInTheDocument();
   expect(screen.getByText('Backend request failed')).toBeInTheDocument();
   expect(screen.getByText('Demo evidence bundle needs attention.')).toBeInTheDocument();
+});
+
+test('renders missing certificate evidence for legacy bundle responses', () => {
+  const legacyBundle = { ...bundle, launchAcceptanceCertificateEvidence: undefined } as unknown as DemoEvidenceBundle;
+
+  render(<DemoEvidenceBundlePanel bundle={legacyBundle} error={null} onCopyRunbook={vi.fn()} />);
+
+  expect(screen.getByText('Launch acceptance certificate')).toBeInTheDocument();
+  expect(screen.getAllByText('Needs attention').length).toBeGreaterThanOrEqual(2);
+  expect(screen.getByText('No launch acceptance certificate archive is available.')).toBeInTheDocument();
+  expect(
+    screen.getByText('Archive the final launch acceptance certificate after the launch acceptance closeout is certified.')
+  ).toBeInTheDocument();
+  expect(screen.getByText('No certificate Pull Request')).toBeInTheDocument();
 });
 
 test('copies demo runbook markdown', async () => {

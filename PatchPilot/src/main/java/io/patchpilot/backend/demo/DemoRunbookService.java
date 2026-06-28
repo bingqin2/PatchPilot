@@ -141,6 +141,35 @@ public class DemoRunbookService {
                         .append("- Launch acceptance closeout download: ")
                         .append(action)
                         .append("\n"));
+
+        runbook.append("- Launch acceptance certificate: `")
+                .append(bundle.launchAcceptanceCertificateEvidence().status())
+                .append("` - ")
+                .append(bundle.launchAcceptanceCertificateEvidence().summary())
+                .append("\n")
+                .append("- Launch acceptance certificate archive: ")
+                .append(valueOrNoneBackticked(bundle.launchAcceptanceCertificateEvidence().latestArchiveId()))
+                .append("\n")
+                .append("- Launch acceptance certificate closeout archive: ")
+                .append(valueOrNoneBackticked(bundle.launchAcceptanceCertificateEvidence().latestCloseoutArchiveId()))
+                .append("\n")
+                .append("- Launch acceptance certificate evidence archive: ")
+                .append(valueOrNoneBackticked(bundle.launchAcceptanceCertificateEvidence().latestEvidenceArchiveId()))
+                .append("\n")
+                .append("- Launch acceptance certificate receipt: ")
+                .append(valueOrNoneBackticked(bundle.launchAcceptanceCertificateEvidence().latestDeliveryReceiptId()))
+                .append("\n")
+                .append("- Launch acceptance certificate Pull Request: ")
+                .append(valueOrNone(bundle.launchAcceptanceCertificateEvidence().latestPullRequestUrl()))
+                .append("\n")
+                .append("- Launch acceptance certificate next action: ")
+                .append(bundle.launchAcceptanceCertificateEvidence().nextAction())
+                .append("\n");
+        bundle.launchAcceptanceCertificateEvidence().downloadActions()
+                .forEach(action -> runbook
+                        .append("- Launch acceptance certificate download: ")
+                        .append(action)
+                        .append("\n"));
     }
 
     private static void appendEvaluationRunReadiness(
