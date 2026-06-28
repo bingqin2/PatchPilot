@@ -10,6 +10,7 @@ import type {
   FixTaskPreExecutionSafetySnapshot,
   FixTaskAdapterExecutionEvidence,
   FixTaskFailureDiagnosis,
+  FixTaskEvidencePackageArchive,
   FixTaskRetryPreflight,
   FixTaskTriggerIntentAudit,
   IssueContext,
@@ -30,6 +31,7 @@ export interface TaskDetailState {
   patchReview: FixTaskPatchReview | null;
   issueContext: IssueContext | null;
   failureDiagnosis: FixTaskFailureDiagnosis | null;
+  evidencePackageArchives: FixTaskEvidencePackageArchive[];
   retryPreflight: FixTaskRetryPreflight | null;
   adapterExecutionEvidence: FixTaskAdapterExecutionEvidence | null;
   repositorySupportGuidance: RepositorySupportGuidance | null;
@@ -49,6 +51,7 @@ export const emptyDetail: TaskDetailState = {
   patchReview: null,
   issueContext: null,
   failureDiagnosis: null,
+  evidencePackageArchives: [],
   retryPreflight: null,
   adapterExecutionEvidence: null,
   repositorySupportGuidance: null

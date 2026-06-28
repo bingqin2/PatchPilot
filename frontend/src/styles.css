@@ -3540,6 +3540,61 @@ h3 {
   padding: 16px;
 }
 
+.evidence-package-section {
+  display: grid;
+  gap: 12px;
+}
+
+.evidence-package-header {
+  align-items: start;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.evidence-package-header p {
+  color: #637181;
+  font-size: 13px;
+  margin-top: 3px;
+}
+
+.evidence-package-list {
+  display: grid;
+  gap: 10px;
+}
+
+.evidence-package-item {
+  align-items: center;
+  background: #f8fafc;
+  border: 1px solid #dfe6ec;
+  border-radius: 6px;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding: 10px 12px;
+}
+
+.evidence-package-item strong {
+  color: #1d2733;
+  display: block;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.evidence-package-item p {
+  color: #52606e;
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+.evidence-package-item span {
+  color: #637181;
+  display: block;
+  font-size: 12px;
+  margin-top: 5px;
+}
+
 .generated-diff-section {
   display: grid;
   gap: 12px;

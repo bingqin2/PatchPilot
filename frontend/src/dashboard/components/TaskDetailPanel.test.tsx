@@ -2,7 +2,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { TaskDetailState } from '../types';
 import { TaskDetailPanel, taskLinkFor } from './TaskDetailPanel';
-import type { FixTask, FixTaskAuditSummary } from '../../types';
+import type { FixTask, FixTaskAuditSummary, FixTaskEvidencePackageArchive } from '../../types';
 
 const task: FixTask = {
   id: 'task-1',
@@ -114,6 +114,7 @@ const baseDetail: TaskDetailState = {
     ]
   },
   failureDiagnosis: null,
+  evidencePackageArchives: [],
   retryPreflight: null,
   repositorySupportGuidance: null,
   adapterExecutionEvidence: {
@@ -128,6 +129,19 @@ const baseDetail: TaskDetailState = {
   }
 };
 
+const evidenceArchive: FixTaskEvidencePackageArchive = {
+  id: 'task-evidence-archive-1',
+  taskId: 'task-1',
+  repositoryOwner: 'bingqin2',
+  repositoryName: 'PatchPilot',
+  issueNumber: 1,
+  status: 'COMPLETED',
+  pullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+  archivedAt: '2026-06-20T01:05:00Z',
+  summary: 'Task COMPLETED for bingqin2/PatchPilot#1 archived as evidence.',
+  report: '# PatchPilot Task Report\n\n- Task: `task-1`'
+};
+
 test('shows execution evidence summary for selected task', () => {
   render(
     <TaskDetailPanel
@@ -140,6 +154,9 @@ test('shows execution evidence summary for selected task', () => {
       onRetryTask={vi.fn()}
       onApproveReview={vi.fn()}
       onCopyReport={vi.fn()}
+      onDownloadReport={vi.fn()}
+      onArchiveEvidencePackage={vi.fn()}
+      onDownloadEvidencePackageReport={vi.fn()}
     />
   );
 
@@ -168,6 +185,9 @@ test('shows structured adapter execution evidence for selected task', () => {
       onRetryTask={vi.fn()}
       onApproveReview={vi.fn()}
       onCopyReport={vi.fn()}
+      onDownloadReport={vi.fn()}
+      onArchiveEvidencePackage={vi.fn()}
+      onDownloadEvidencePackageReport={vi.fn()}
     />
   );
 
@@ -208,6 +228,9 @@ test('shows pending adapter execution evidence before preflight records metadata
       onRetryTask={vi.fn()}
       onApproveReview={vi.fn()}
       onCopyReport={vi.fn()}
+      onDownloadReport={vi.fn()}
+      onArchiveEvidencePackage={vi.fn()}
+      onDownloadEvidencePackageReport={vi.fn()}
     />
   );
 
@@ -253,6 +276,9 @@ test('shows unsupported adapter execution evidence with supported adapter option
       onRetryTask={vi.fn()}
       onApproveReview={vi.fn()}
       onCopyReport={vi.fn()}
+      onDownloadReport={vi.fn()}
+      onArchiveEvidencePackage={vi.fn()}
+      onDownloadEvidencePackageReport={vi.fn()}
     />
   );
 
@@ -1010,4 +1036,58 @@ test('copies the selected task report', async () => {
   expect(onCopyReport).toHaveBeenCalledWith('task-1');
   expect(writeText).toHaveBeenCalledWith('# PatchPilot Task Report\n\n- Task: `task-1`');
   expect(screen.getByText('Task report copied')).toBeInTheDocument();
+});
+
+test('downloads archives and re-downloads selected task evidence packages', async () => {
+  const user = userEvent.setup();
+  const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+  const createObjectURL = vi.fn(() => 'blob:task-evidence-package');
+  const revokeObjectURL = vi.fn();
+  vi.stubGlobal('URL', { createObjectURL, revokeObjectURL });
+  const onDownloadReport = vi.fn(async () => new Blob(['current report'], { type: 'text/markdown' }));
+  const onArchiveEvidencePackage = vi.fn(async () => evidenceArchive);
+  const onDownloadEvidencePackageReport = vi.fn(async () => new Blob(['archived report'], { type: 'text/markdown' }));
+
+  render(
+    <TaskDetailPanel
+      task={task}
+      detail={{
+        ...baseDetail,
+        evidencePackageArchives: [evidenceArchive]
+      }}
+      loading={false}
+      actionInFlight={false}
+      reviewApprovalAllowedOperators={["release-captain"]}
+      onCancelTask={vi.fn()}
+      onRetryTask={vi.fn()}
+      onApproveReview={vi.fn()}
+      onCopyReport={vi.fn()}
+      onDownloadReport={onDownloadReport}
+      onArchiveEvidencePackage={onArchiveEvidencePackage}
+      onDownloadEvidencePackageReport={onDownloadEvidencePackageReport}
+    />
+  );
+
+  await user.click(screen.getByRole('button', { name: 'Download report' }));
+  expect(onDownloadReport).toHaveBeenCalledWith('task-1');
+  expect(createObjectURL).toHaveBeenCalledWith(expect.any(Blob));
+  expect(click).toHaveBeenCalledTimes(1);
+  expect(screen.getByText('Task report downloaded')).toBeInTheDocument();
+
+  await user.click(screen.getByRole('button', { name: 'Archive evidence' }));
+  expect(onArchiveEvidencePackage).toHaveBeenCalledWith('task-1');
+  expect(screen.getByText('Evidence archived task-evidence-archive-1')).toBeInTheDocument();
+
+  const archiveRegion = screen.getByLabelText('Task evidence packages');
+  expect(within(archiveRegion).getByText('Task evidence packages')).toBeInTheDocument();
+  expect(within(archiveRegion).getByText('task-evidence-archive-1')).toBeInTheDocument();
+  expect(within(archiveRegion).getByText('Task COMPLETED for bingqin2/PatchPilot#1 archived as evidence.'))
+    .toBeInTheDocument();
+  await user.click(within(archiveRegion).getByRole('button', {
+    name: 'Download archived evidence task-evidence-archive-1'
+  }));
+  expect(onDownloadEvidencePackageReport).toHaveBeenCalledWith('task-evidence-archive-1');
+  expect(click).toHaveBeenCalledTimes(2);
+  expect(revokeObjectURL).toHaveBeenCalledWith('blob:task-evidence-package');
+  expect(screen.getByText('Archived evidence task-evidence-archive-1 downloaded')).toBeInTheDocument();
 });

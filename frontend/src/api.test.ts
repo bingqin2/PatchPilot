@@ -109,6 +109,10 @@ import {
   getDemoReadinessSnapshotTrend,
   listDemoReadinessSnapshots,
   getTaskReport,
+  downloadTaskReport,
+  archiveTaskEvidencePackage,
+  listTaskEvidencePackageArchives,
+  downloadTaskEvidencePackageReport,
   getTaskDetail,
   getTaskRetryPreflight,
   getTaskStatusCounts,
@@ -4641,6 +4645,103 @@ test('loads markdown task report from backend API', async () => {
   expect(fetchMock).toHaveBeenCalledWith('/api/tasks/task-1/report');
   expect(report).toContain('# PatchPilot Task Report');
   expect(report).toContain('`task-1`');
+});
+
+test('downloads markdown task report from backend API', async () => {
+  const reportBlob = new Blob(['# PatchPilot Task Report'], { type: 'text/markdown;charset=UTF-8' });
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    blob: async () => reportBlob
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const report = await downloadTaskReport('task 1');
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/tasks/task%201/report/download');
+  expect(report).toBe(reportBlob);
+});
+
+test('archives task evidence package through backend API', async () => {
+  const archive = {
+    id: 'task-evidence-archive-1',
+    taskId: 'task-1',
+    repositoryOwner: 'bingqin2',
+    repositoryName: 'PatchPilot',
+    issueNumber: 1,
+    status: 'COMPLETED',
+    pullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+    archivedAt: '2026-06-20T01:05:00Z',
+    summary: 'Task COMPLETED for bingqin2/PatchPilot#1 archived as evidence.',
+    report: '# PatchPilot Task Report\n\n- Task: `task-1`'
+  };
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: archive,
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const result = await archiveTaskEvidencePackage('task 1');
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/tasks/task%201/evidence-packages', {
+    method: 'POST'
+  });
+  expect(result.id).toBe('task-evidence-archive-1');
+  expect(result.report).toContain('PatchPilot Task Report');
+});
+
+test('lists task evidence package archives through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: [
+        {
+          id: 'task-evidence-archive-1',
+          taskId: 'task-1',
+          repositoryOwner: 'bingqin2',
+          repositoryName: 'PatchPilot',
+          issueNumber: 1,
+          status: 'COMPLETED',
+          pullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+          archivedAt: '2026-06-20T01:05:00Z',
+          summary: 'Task COMPLETED for bingqin2/PatchPilot#1 archived as evidence.',
+          report: '# PatchPilot Task Report\n\n- Task: `task-1`'
+        }
+      ],
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const archives = await listTaskEvidencePackageArchives('task 1');
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/tasks/task%201/evidence-packages');
+  expect(archives).toHaveLength(1);
+  expect(archives[0].taskId).toBe('task-1');
+});
+
+test('downloads archived task evidence package report through backend API', async () => {
+  const reportBlob = new Blob(['# Archived PatchPilot Task Report'], {
+    type: 'text/markdown;charset=UTF-8'
+  });
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    blob: async () => reportBlob
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const report = await downloadTaskEvidencePackageReport('archive 1');
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/tasks/evidence-packages/archive%201/report/download');
+  expect(report).toBe(reportBlob);
 });
 
 test('shows actionable backend guidance when API response is empty', async () => {

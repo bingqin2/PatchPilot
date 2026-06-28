@@ -5212,6 +5212,21 @@ Validation:
 - `npm run build`: passed after production frontend build verification.
 - `git diff --check`: passed.
 
+Implemented task evidence package archive from `docs/plans/263-task-evidence-package-archive.md`.
+
+Changes:
+
+- Added task evidence package archive storage with in-memory and MySQL-backed repositories plus Flyway migration `V41__create_fix_task_evidence_package_archive.sql`.
+- Added task report download, task evidence archive creation/listing, and archived report download APIs.
+- Recorded protected admin audit evidence when an operator archives a task evidence package.
+- Added dashboard task detail controls to download the current task report, archive a point-in-time evidence package, list archived snapshots, and download archived Markdown reports.
+- Added typed frontend API helpers, task detail state support, and evidence package styling.
+
+Validation so far:
+
+- `mvn -pl PatchPilot -Dtest=TaskControllerTests test`: first failed with missing task evidence package endpoints; then passed after backend implementation, 76 tests run, 0 failures.
+- `npm test -- --run src/dashboard/components/TaskDetailPanel.test.tsx src/App.test.tsx`: first failed because the dashboard did not expose task evidence package controls; then failed once because the App test mock was missing the new archive endpoints; then passed after frontend/API mock integration, 108 tests run, 0 failures.
+
 Implemented handoff share checklist export from `docs/plans/237-handoff-share-checklist-export.md`.
 
 Changes:

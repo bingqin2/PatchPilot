@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react
 import {
   ADMIN_TOKEN_STORAGE_KEY,
   approveTaskReview,
+  archiveTaskEvidencePackage,
   archiveDemoLaunchAcceptanceCertificate,
   archiveDemoLaunchAcceptanceCloseout,
   archiveDemoLaunchEvidencePackage,
@@ -42,6 +43,8 @@ import {
   downloadDemoHandoffShareDeliveryReceiptReport,
   downloadDemoHandoffShareInstructionsReport,
   downloadDemoHandoffShareChecklistReport,
+  downloadTaskEvidencePackageReport,
+  downloadTaskReport,
   evaluateTrigger,
   evaluateWebhookPayloadDiagnostic,
   getBackendHealth,
@@ -117,6 +120,7 @@ import {
   listTriggerQuarantines,
   listWebhookDeliveries,
   listTasks,
+  listTaskEvidencePackageArchives,
   preflightRepository,
   retryRejectedTrigger,
   releaseTriggerQuarantine,
@@ -1235,11 +1239,16 @@ export default function App() {
     const retryPreflightRequest = selectedTask.status === 'FAILED' || selectedTask.status === 'CANCELLED'
       ? getTaskRetryPreflight(selectedTask.id)
       : Promise.resolve(null);
-    Promise.all([getTaskDetail(selectedTask.id), retryPreflightRequest])
-      .then(([taskDetail, retryPreflight]) => {
+    Promise.all([
+      getTaskDetail(selectedTask.id),
+      retryPreflightRequest,
+      listTaskEvidencePackageArchives(selectedTask.id).catch(() => [])
+    ])
+      .then(([taskDetail, retryPreflight, evidencePackageArchives]) => {
         if (!cancelled) {
           setDetail({
             ...taskDetail,
+            evidencePackageArchives,
             retryPreflight
           });
         }
@@ -1316,6 +1325,21 @@ export default function App() {
   }, [refresh]);
 
   const handleCopyReport = useCallback((taskId: string) => getTaskReport(taskId), []);
+  const handleDownloadTaskReport = useCallback((taskId: string) => downloadTaskReport(taskId), []);
+  const handleArchiveTaskEvidencePackage = useCallback(async (taskId: string) => {
+    const archive = await archiveTaskEvidencePackage(taskId);
+    setDetail((current) => ({
+      ...current,
+      evidencePackageArchives: [
+        archive,
+        ...(current.evidencePackageArchives ?? []).filter((item) => item.id !== archive.id)
+      ]
+    }));
+    return archive;
+  }, []);
+  const handleDownloadTaskEvidencePackageReport = useCallback((archiveId: string) => (
+    downloadTaskEvidencePackageReport(archiveId)
+  ), []);
   const handleCopyDemoRunbook = useCallback(() => getDemoRunbook(), []);
   const handleCopyDemoSessionReport = useCallback((input: DemoSessionReportInput) => getDemoSessionReport(input), []);
   const handleDownloadDemoSessionReport = useCallback((input: DemoSessionReportInput) => (
@@ -2150,6 +2174,9 @@ export default function App() {
           onRetryTask={handleRetryTask}
           onApproveReview={handleApproveReview}
           onCopyReport={handleCopyReport}
+          onDownloadReport={handleDownloadTaskReport}
+          onArchiveEvidencePackage={handleArchiveTaskEvidencePackage}
+          onDownloadEvidencePackageReport={handleDownloadTaskEvidencePackageReport}
         />
       </section>
 
