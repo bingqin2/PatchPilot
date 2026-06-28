@@ -118,6 +118,29 @@ public class DemoRunbookService {
                 .append("- Launch evidence finalization next action: ")
                 .append(bundle.launchEvidenceFinalizationNextAction())
                 .append("\n");
+
+        runbook.append("- Launch acceptance closeout: `")
+                .append(bundle.launchAcceptanceCloseoutEvidence().status())
+                .append("` - ")
+                .append(bundle.launchAcceptanceCloseoutEvidence().summary())
+                .append("\n")
+                .append("- Launch acceptance closeout archive: ")
+                .append(valueOrNoneBackticked(bundle.launchAcceptanceCloseoutEvidence().latestArchiveId()))
+                .append("\n")
+                .append("- Launch acceptance closeout evidence archive: ")
+                .append(valueOrNoneBackticked(bundle.launchAcceptanceCloseoutEvidence().latestEvidenceArchiveId()))
+                .append("\n")
+                .append("- Launch acceptance closeout receipt: ")
+                .append(valueOrNoneBackticked(bundle.launchAcceptanceCloseoutEvidence().latestDeliveryReceiptId()))
+                .append("\n")
+                .append("- Launch acceptance closeout next action: ")
+                .append(bundle.launchAcceptanceCloseoutEvidence().nextAction())
+                .append("\n");
+        bundle.launchAcceptanceCloseoutEvidence().downloadActions()
+                .forEach(action -> runbook
+                        .append("- Launch acceptance closeout download: ")
+                        .append(action)
+                        .append("\n"));
     }
 
     private static void appendEvaluationRunReadiness(

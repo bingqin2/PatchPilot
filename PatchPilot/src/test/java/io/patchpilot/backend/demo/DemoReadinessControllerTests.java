@@ -25,6 +25,7 @@ import io.patchpilot.backend.demo.domain.DemoHandoffFinalizationCheckVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchAcceptanceCloseoutCheckVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchAcceptanceCloseoutArchiveVo;
+import io.patchpilot.backend.demo.domain.DemoLaunchAcceptanceCloseoutEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchAcceptanceCloseoutVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchEvidencePackageArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchEvidenceFinalizationCheckVo;
@@ -908,6 +909,36 @@ class DemoReadinessControllerTests {
                         "Download handoff package archive summary.",
                         "Download handoff share checklist."
                 ),
+                "NO_ARCHIVE",
+                false,
+                "No archived launch evidence package is available for sharing.",
+                "Archive a final demo launch evidence package after a completed live run before sharing launch evidence.",
+                0,
+                null,
+                null,
+                null,
+                List.of(),
+                DemoReadinessStatus.NEEDS_ATTENTION,
+                false,
+                "Demo launch evidence package is not finalized for accepted delivery evidence.",
+                "Archive launch evidence, share it, record a delivery receipt, then download the finalization report.",
+                "MISSING",
+                false,
+                null,
+                new DemoLaunchAcceptanceCloseoutEvidenceVo(
+                        DemoReadinessStatus.NEEDS_ATTENTION,
+                        false,
+                        false,
+                        "No launch acceptance closeout archive is available.",
+                        "Archive the final launch acceptance closeout after launch evidence is accepted.",
+                        0,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        List.of("Archive the final launch acceptance closeout before using the evidence bundle as the launch record.")
+                ),
                 false,
                 null,
                 null,
@@ -964,6 +995,13 @@ class DemoReadinessControllerTests {
                         .value("Send the current handoff package, record a delivery receipt, then download the finalization report."))
                 .andExpect(jsonPath("$.data.handoffFinalizationDeliveryReceiptFreshness").value("MISSING"))
                 .andExpect(jsonPath("$.data.handoffFinalizationDeliveryReceiptFresh").value(false))
+                .andExpect(jsonPath("$.data.launchAcceptanceCloseoutEvidence.status").value("NEEDS_ATTENTION"))
+                .andExpect(jsonPath("$.data.launchAcceptanceCloseoutEvidence.archived").value(false))
+                .andExpect(jsonPath("$.data.launchAcceptanceCloseoutEvidence.accepted").value(false))
+                .andExpect(jsonPath("$.data.launchAcceptanceCloseoutEvidence.summary")
+                        .value("No launch acceptance closeout archive is available."))
+                .andExpect(jsonPath("$.data.launchAcceptanceCloseoutEvidence.nextAction")
+                        .value("Archive the final launch acceptance closeout after launch evidence is accepted."))
                 .andExpect(jsonPath("$.data.nextActions[0]").value("Run one controlled issue-to-PR smoke task before a live demo."));
     }
 

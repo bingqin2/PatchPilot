@@ -141,6 +141,26 @@ export function DemoEvidenceBundlePanel({ bundle, error, onCopyRunbook }: DemoEv
               <small>{bundle.launchEvidenceFinalizationLatestDeliveryReceiptId ?? 'No accepted launch receipt'}</small>
             </div>
             <div>
+              <span>Launch acceptance closeout</span>
+              <strong>
+                {bundle.launchAcceptanceCloseoutEvidence.accepted
+                  ? 'Accepted archive'
+                  : statusLabel(bundle.launchAcceptanceCloseoutEvidence.status)}
+              </strong>
+              <small>{bundle.launchAcceptanceCloseoutEvidence.summary}</small>
+              <small>{bundle.launchAcceptanceCloseoutEvidence.nextAction}</small>
+              <small>{bundle.launchAcceptanceCloseoutEvidence.archiveCount} closeout archives</small>
+              <small>{bundle.launchAcceptanceCloseoutEvidence.latestArchiveId ?? 'No closeout archive'}</small>
+              <small>{bundle.launchAcceptanceCloseoutEvidence.latestEvidenceArchiveId ?? 'No linked launch evidence archive'}</small>
+              <small>{bundle.launchAcceptanceCloseoutEvidence.latestDeliveryReceiptId ?? 'No accepted launch receipt'}</small>
+              {bundle.launchAcceptanceCloseoutEvidence.latestArchivedAt ? (
+                <small>Archived {compactDateTime(bundle.launchAcceptanceCloseoutEvidence.latestArchivedAt)}</small>
+              ) : null}
+              {bundle.launchAcceptanceCloseoutEvidence.downloadActions.slice(0, 2).map((action) => (
+                <small key={action}>{action}</small>
+              ))}
+            </div>
+            <div>
               <span>Handoff share delivery</span>
               <strong>{deliveryFreshnessLabel(bundle.handoffShareDeliveryReceiptFreshness)}</strong>
               <small>{bundle.handoffShareDeliveryReceiptFreshnessSummary}</small>
