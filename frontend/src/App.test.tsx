@@ -2468,6 +2468,34 @@ const demoFinalAcceptanceSharePackage = {
   generatedAt: '2026-06-28T15:00:00Z'
 };
 
+const demoFinalAcceptanceSharePackageArchive = {
+  id: 'final-acceptance-share-package-archive-1',
+  status: 'READY',
+  sendReady: true,
+  summary: 'PatchPilot final demo acceptance package is ready to send.',
+  nextAction: 'Send the prepared final acceptance message with all required attachments.',
+  launchCertificateArchiveId: 'launch-certificate-archive-1',
+  taskCertificateArchiveId: 'task-evidence-certificate-archive-1',
+  latestTaskId: 'task-1',
+  latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+  recommendedRecipients: ['Repository owner or maintainer', 'Demo reviewer'],
+  requiredAttachments: [
+    'Final demo acceptance summary report',
+    'Launch acceptance certificate archive launch-certificate-archive-1',
+    'Task evidence acceptance certificate archive task-evidence-certificate-archive-1',
+    'Pull Request https://github.com/bingqin2/PatchPilot/pull/8'
+  ],
+  preSendChecks: ['Confirm final demo acceptance status is READY and accepted.'],
+  messageSubject: 'PatchPilot final demo acceptance: task-1',
+  messageBody: 'PatchPilot final demo acceptance is ready for external review.',
+  evidenceNotes: ['Final acceptance status is READY.'],
+  sideEffectContract:
+    'POST /api/demo/final-acceptance-share-package/archives archives a read-only snapshot and does not create tasks, call the model, run tests, mutate Git, send messages, or write to GitHub.',
+  report: '# PatchPilot Final Demo Acceptance Share Package',
+  generatedAt: '2026-06-29T01:30:00Z',
+  archivedAt: '2026-06-29T02:00:00Z'
+};
+
 const demoLaunchEvidenceDeliveryReceipt = {
   id: 'launch-delivery-receipt-1',
   status: 'READY',
@@ -2686,6 +2714,21 @@ beforeEach(() => {
     }
     if (url === '/api/demo/final-acceptance-share-package') {
       return jsonResponse(demoFinalAcceptanceSharePackage);
+    }
+    if (url === '/api/demo/final-acceptance-share-package/archives' && init?.method === 'POST') {
+      return jsonResponse(demoFinalAcceptanceSharePackageArchive);
+    }
+    if (url === '/api/demo/final-acceptance-share-package/archives') {
+      return jsonResponse([demoFinalAcceptanceSharePackageArchive]);
+    }
+    if (url === '/api/demo/final-acceptance-share-package/archives/final-acceptance-share-package-archive-1/report/download') {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        blob: async () => new Blob(['# PatchPilot Final Demo Acceptance Share Package'], {
+          type: 'text/markdown;charset=UTF-8'
+        })
+      } as Response);
     }
     if (url === '/api/demo/readiness-snapshots' && init?.method === 'POST') {
       return jsonResponse(demoReadinessSnapshotArchive);
@@ -3761,6 +3804,7 @@ test('renders operational task dashboard from backend APIs', async () => {
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/readiness'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/acceptance-summary'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-acceptance-share-package'));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-acceptance-share-package/archives'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/github/credential-readiness'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/github/webhook-setup-readiness'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/github/repository-access-readiness?owner=bingqin2&repository=PatchPilot'));
@@ -3778,7 +3822,9 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(within(acceptancePanel).getAllByText('PatchPilot final demo acceptance is ready for external review.')).not.toHaveLength(0);
   expect(within(acceptancePanel).getByRole('heading', { name: 'Final acceptance share package' })).toBeInTheDocument();
   expect(within(acceptancePanel).getByText('PatchPilot final demo acceptance package is ready to send.')).toBeInTheDocument();
-  expect(within(acceptancePanel).getByText('PatchPilot final demo acceptance: task-1')).toBeInTheDocument();
+  expect(within(acceptancePanel).getAllByText('PatchPilot final demo acceptance: task-1')).not.toHaveLength(0);
+  expect(within(acceptancePanel).getByRole('heading', { name: 'Archived final acceptance packages' })).toBeInTheDocument();
+  expect(within(acceptancePanel).getByText('final-acceptance-share-package-archive-1')).toBeInTheDocument();
   expect(within(acceptancePanel).getAllByText('task-evidence-certificate-archive-1')).not.toHaveLength(0);
   expect(screen.getByLabelText('Webhook setup readiness')).toHaveTextContent('# PatchPilot Webhook Setup Readiness');
   expect(screen.getAllByText('demo-session-20260624T003000Z').length).toBeGreaterThanOrEqual(4);
@@ -4287,6 +4333,37 @@ test('downloads and archives selected task evidence package from backend APIs', 
   expect(click).toHaveBeenCalledTimes(2);
   expect(revokeObjectURL).toHaveBeenCalledWith('blob:task-evidence-package');
   expect(screen.getByText('Archived evidence task-evidence-archive-1 downloaded')).toBeInTheDocument();
+});
+
+test('archives and downloads final acceptance share package from dashboard', async () => {
+  const user = userEvent.setup();
+  const fetchMock = vi.mocked(fetch);
+  const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+  const createObjectURL = vi.fn(() => 'blob:final-acceptance-share-package-archive');
+  const revokeObjectURL = vi.fn();
+  vi.stubGlobal('URL', blobUrlConstructor(createObjectURL, revokeObjectURL));
+
+  render(<App />);
+
+  const acceptancePanel = await screen.findByRole('region', { name: 'Final demo acceptance' });
+  await user.click(within(acceptancePanel).getByRole('button', { name: 'Archive final acceptance share package' }));
+
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-acceptance-share-package/archives', {
+    method: 'POST'
+  }));
+  expect(await within(acceptancePanel).findByText('Final acceptance share package archived')).toBeInTheDocument();
+  expect(within(acceptancePanel).getByText('final-acceptance-share-package-archive-1')).toBeInTheDocument();
+
+  await user.click(within(acceptancePanel).getByRole('button', {
+    name: 'Download archived final acceptance package final-acceptance-share-package-archive-1'
+  }));
+
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
+    '/api/demo/final-acceptance-share-package/archives/final-acceptance-share-package-archive-1/report/download'
+  ));
+  await waitFor(() => expect(click).toHaveBeenCalled());
+  await waitFor(() => expect(revokeObjectURL).toHaveBeenCalledWith('blob:final-acceptance-share-package-archive'));
+  expect(await within(acceptancePanel).findByText('Archived final acceptance package downloaded')).toBeInTheDocument();
 });
 
 test('records task evidence delivery receipt and downloads finalization reports from dashboard', async () => {
@@ -6306,6 +6383,21 @@ function defaultAppResponse(input: RequestInfo | URL, init?: RequestInit) {
   }
   if (url === '/api/demo/final-acceptance-share-package') {
     return jsonResponse(demoFinalAcceptanceSharePackage);
+  }
+  if (url === '/api/demo/final-acceptance-share-package/archives' && init?.method === 'POST') {
+    return jsonResponse(demoFinalAcceptanceSharePackageArchive);
+  }
+  if (url === '/api/demo/final-acceptance-share-package/archives') {
+    return jsonResponse([demoFinalAcceptanceSharePackageArchive]);
+  }
+  if (url === '/api/demo/final-acceptance-share-package/archives/final-acceptance-share-package-archive-1/report/download') {
+    return Promise.resolve({
+      ok: true,
+      status: 200,
+      blob: async () => new Blob(['# PatchPilot Final Demo Acceptance Share Package'], {
+        type: 'text/markdown;charset=UTF-8'
+      })
+    } as Response);
   }
   if (url === '/api/demo/launch-preflight' && init?.method === 'POST') {
     return jsonResponse(demoLaunchPreflight);

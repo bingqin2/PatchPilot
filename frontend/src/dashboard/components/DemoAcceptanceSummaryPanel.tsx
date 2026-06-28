@@ -1,28 +1,43 @@
-import { Copy, Download, ExternalLink } from 'lucide-react';
+import { Archive, Copy, Download, ExternalLink } from 'lucide-react';
 import { useState } from 'react';
-import type { DemoAcceptanceSummary, DemoFinalAcceptanceSharePackage, DemoReadinessStatus } from '../../types';
+import type {
+  DemoAcceptanceSummary,
+  DemoFinalAcceptanceSharePackage,
+  DemoFinalAcceptanceSharePackageArchive,
+  DemoReadinessStatus
+} from '../../types';
 import { compactDateTime } from '../format';
 
 interface DemoAcceptanceSummaryPanelProps {
   summary: DemoAcceptanceSummary | null;
   sharePackage: DemoFinalAcceptanceSharePackage | null;
+  sharePackageArchives: DemoFinalAcceptanceSharePackageArchive[];
   error: string | null;
   sharePackageError: string | null;
+  sharePackageArchiveError: string | null;
   onDownloadReport: () => Promise<Blob>;
   onDownloadSharePackageReport: () => Promise<Blob>;
+  onArchiveSharePackage: () => Promise<DemoFinalAcceptanceSharePackageArchive>;
+  onDownloadSharePackageArchiveReport: (archiveId: string) => Promise<Blob>;
 }
 
 export function DemoAcceptanceSummaryPanel({
   summary,
   sharePackage,
+  sharePackageArchives,
   error,
   sharePackageError,
+  sharePackageArchiveError,
   onDownloadReport,
-  onDownloadSharePackageReport
+  onDownloadSharePackageReport,
+  onArchiveSharePackage,
+  onDownloadSharePackageArchiveReport
 }: DemoAcceptanceSummaryPanelProps) {
   const [downloadStatus, setDownloadStatus] = useState<string | null>(null);
   const [sharePackageCopyStatus, setSharePackageCopyStatus] = useState<string | null>(null);
   const [sharePackageDownloadStatus, setSharePackageDownloadStatus] = useState<string | null>(null);
+  const [sharePackageArchiveStatus, setSharePackageArchiveStatus] = useState<string | null>(null);
+  const [sharePackageArchiveDownloadStatus, setSharePackageArchiveDownloadStatus] = useState<string | null>(null);
 
   async function downloadReport() {
     try {
@@ -53,6 +68,25 @@ export function DemoAcceptanceSummaryPanel({
       setSharePackageDownloadStatus('Final acceptance share package downloaded');
     } catch {
       setSharePackageDownloadStatus('Download failed');
+    }
+  }
+
+  async function archiveSharePackage() {
+    try {
+      await onArchiveSharePackage();
+      setSharePackageArchiveStatus('Final acceptance share package archived');
+    } catch {
+      setSharePackageArchiveStatus('Archive failed');
+    }
+  }
+
+  async function downloadSharePackageArchive(archive: DemoFinalAcceptanceSharePackageArchive) {
+    try {
+      const report = await onDownloadSharePackageArchiveReport(archive.id);
+      downloadMarkdown(report, `patchpilot-final-demo-acceptance-share-package-${archive.id}.md`);
+      setSharePackageArchiveDownloadStatus('Archived final acceptance package downloaded');
+    } catch {
+      setSharePackageArchiveDownloadStatus('Archive download failed');
     }
   }
 
@@ -192,11 +226,17 @@ export function DemoAcceptanceSummaryPanel({
 
           <FinalAcceptanceSharePackage
             sharePackage={sharePackage}
+            archives={sharePackageArchives}
             error={sharePackageError}
+            archiveError={sharePackageArchiveError}
             copyStatus={sharePackageCopyStatus}
             downloadStatus={sharePackageDownloadStatus}
+            archiveStatus={sharePackageArchiveStatus}
+            archiveDownloadStatus={sharePackageArchiveDownloadStatus}
             onCopy={() => void copySharePackage()}
             onDownload={() => void downloadSharePackage()}
+            onArchive={() => void archiveSharePackage()}
+            onDownloadArchive={(archive) => void downloadSharePackageArchive(archive)}
           />
         </>
       ) : (
@@ -208,20 +248,32 @@ export function DemoAcceptanceSummaryPanel({
 
 interface FinalAcceptanceSharePackageProps {
   sharePackage: DemoFinalAcceptanceSharePackage | null;
+  archives: DemoFinalAcceptanceSharePackageArchive[];
   error: string | null;
+  archiveError: string | null;
   copyStatus: string | null;
   downloadStatus: string | null;
+  archiveStatus: string | null;
+  archiveDownloadStatus: string | null;
   onCopy: () => void;
   onDownload: () => void;
+  onArchive: () => void;
+  onDownloadArchive: (archive: DemoFinalAcceptanceSharePackageArchive) => void;
 }
 
 function FinalAcceptanceSharePackage({
   sharePackage,
+  archives,
   error,
+  archiveError,
   copyStatus,
   downloadStatus,
+  archiveStatus,
+  archiveDownloadStatus,
   onCopy,
-  onDownload
+  onDownload,
+  onArchive,
+  onDownloadArchive
 }: FinalAcceptanceSharePackageProps) {
   return (
     <div className="demo-session-archives">
@@ -247,8 +299,20 @@ function FinalAcceptanceSharePackage({
             <Download size={14} />
             Download package
           </button>
+          <button
+            className="secondary-button"
+            type="button"
+            onClick={() => onArchive()}
+            aria-label="Archive final acceptance share package"
+            disabled={!sharePackage}
+          >
+            <Archive size={14} />
+            Archive package
+          </button>
           {copyStatus ? <span className="copy-status">{copyStatus}</span> : null}
           {downloadStatus ? <span className="copy-status">{downloadStatus}</span> : null}
+          {archiveStatus ? <span className="copy-status">{archiveStatus}</span> : null}
+          {archiveDownloadStatus ? <span className="copy-status">{archiveDownloadStatus}</span> : null}
         </div>
       </div>
 
@@ -299,6 +363,45 @@ function FinalAcceptanceSharePackage({
             <h3>Message template</h3>
             <p>{sharePackage.messageBody}</p>
             <small>{sharePackage.sideEffectContract}</small>
+          </div>
+          <div className="demo-session-handoff-checks">
+            <div className="demo-session-archive-title-row">
+              <h3>Archived final acceptance packages</h3>
+              <span>{archives.length} archives</span>
+            </div>
+            {archiveError ? (
+              <div className="adapter-api-error">
+                <strong>Final acceptance package archives unavailable</strong>
+                <span>{archiveError}</span>
+              </div>
+            ) : null}
+            {archives.length > 0 ? (
+              <ul>
+                {archives.map((archive) => (
+                  <li key={archive.id}>
+                    <div className="demo-webhook-delivery-main">
+                      <strong>{archive.id}</strong>
+                      <span>{archive.sendReady ? 'Send-ready' : statusLabel(archive.status)}</span>
+                    </div>
+                    <p>{archive.messageSubject}</p>
+                    <small>Archived {compactDateTime(archive.archivedAt)}</small>
+                    <div className="demo-session-archive-actions">
+                      <button
+                        className="secondary-button"
+                        type="button"
+                        onClick={() => onDownloadArchive(archive)}
+                        aria-label={`Download archived final acceptance package ${archive.id}`}
+                      >
+                        <Download size={14} />
+                        Download archived package
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="empty-state">No archived final acceptance packages yet.</p>
+            )}
           </div>
         </>
       ) : (

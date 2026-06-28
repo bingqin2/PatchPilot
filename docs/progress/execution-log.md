@@ -5605,3 +5605,23 @@ Validation:
 - `npm test -- --reporter=basic`: passed, 29 test files and 398 tests.
 - `npm run build`: passed with the existing Vite large-chunk warning.
 - `git diff --check`: passed.
+
+## 2026-06-29 - 279 Final acceptance share package archives
+
+- Started `279-final-acceptance-share-package-archive` to preserve the final reviewer-facing acceptance package as a durable PatchPilot-local handoff record after the live read model changes.
+- Planned a complete feature slice: backend archive VO/entity/converter/mapper/repositories/service/controller endpoints, Flyway migration, operator audit event, dashboard archive/list/download controls, README/product/frontend docs, and regression tests.
+- RED backend tests were added first for archiving the current final acceptance share package, trimming recent archives, converting list fields, MyBatis repository behavior, migration text, controller archive/list/download endpoints, missing archive downloads, and operator audit recording.
+- RED frontend tests were added first for final acceptance archive API helpers, dashboard archive controls, archived Markdown download behavior, and full App data loading.
+- Implemented `DemoFinalAcceptanceSharePackageArchiveService` with in-memory and MyBatis-backed repositories, persisted share-package metadata, Markdown report content, generated timestamp, and archived timestamp.
+- Added `POST /api/demo/final-acceptance-share-package/archives`, `GET /api/demo/final-acceptance-share-package/archives`, and `GET /api/demo/final-acceptance-share-package/archives/{archiveId}/report/download`.
+- Updated the final demo acceptance dashboard panel with an archive action, recent package archive list, archived report download buttons, and archive-load error handling.
+- Updated README, product spec, frontend design doc, and added this plan document.
+
+Validation so far:
+
+- `mvn -q -pl PatchPilot -Dtest=DemoFinalAcceptanceSharePackageArchiveServiceTests,DemoFinalAcceptanceSharePackageArchiveConvertTests,InMemoryDemoFinalAcceptanceSharePackageArchiveRepositoryTests,MyBatisDemoFinalAcceptanceSharePackageArchiveRepositoryTests,DemoFinalAcceptanceSharePackageArchiveMigrationTests,DemoReadinessControllerTests test`: passed.
+- `npm test -- src/api.test.ts src/dashboard/components/DemoAcceptanceSummaryPanel.test.tsx src/App.test.tsx -- --reporter=basic`: first failed because the final acceptance message subject is intentionally rendered in both the live package and recent archive list, and because the archived report download assertion did not wait for the async browser download path; passed after updating the assertions and mock download response, 3 test files and 241 tests.
+- `mvn -q -pl PatchPilot test`: passed.
+- `npm test -- --reporter=basic`: passed, 30 test files and 410 tests.
+- `npm run build`: passed with the existing Vite large-chunk warning.
+- `git diff --check`: passed.

@@ -1,0 +1,23 @@
+CREATE TABLE IF NOT EXISTS demo_final_acceptance_share_package_archive (
+    id VARCHAR(64) PRIMARY KEY,
+    status VARCHAR(32) NOT NULL,
+    send_ready BOOLEAN NOT NULL,
+    summary VARCHAR(512) NOT NULL,
+    next_action VARCHAR(1024) NOT NULL,
+    launch_certificate_archive_id VARCHAR(64),
+    task_certificate_archive_id VARCHAR(64),
+    latest_task_id VARCHAR(64),
+    latest_pull_request_url VARCHAR(512),
+    recommended_recipients_json JSON NOT NULL,
+    required_attachments_json JSON NOT NULL,
+    pre_send_checks_json JSON NOT NULL,
+    message_subject VARCHAR(512) NOT NULL,
+    message_body MEDIUMTEXT NOT NULL,
+    evidence_notes_json JSON NOT NULL,
+    side_effect_contract VARCHAR(1024) NOT NULL,
+    report MEDIUMTEXT NOT NULL,
+    generated_at TIMESTAMP(6) NOT NULL,
+    archived_at TIMESTAMP(6) NOT NULL,
+    INDEX idx_final_acceptance_share_package_archive_archived_at (archived_at),
+    INDEX idx_final_acceptance_share_package_archive_status (status)
+);

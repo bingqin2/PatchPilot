@@ -9,6 +9,7 @@ import {
   archiveDemoLaunchAcceptanceCertificate,
   archiveDemoLaunchAcceptanceCloseout,
   archiveDemoLaunchEvidencePackage,
+  archiveDemoFinalAcceptanceSharePackage,
   archiveDemoFinalHandoffReportPackage,
   archiveDemoHandoffPackage,
   archiveDemoReadinessSnapshot,
@@ -39,6 +40,7 @@ import {
   downloadDemoLaunchAcceptanceCertificateArchiveReport,
   downloadDemoLaunchAcceptanceCertificateReport,
   downloadDemoAcceptanceSummaryReport,
+  downloadDemoFinalAcceptanceSharePackageArchiveReport,
   downloadDemoFinalAcceptanceSharePackageReport,
   downloadDemoLaunchAcceptanceCloseoutReport,
   downloadDemoLaunchEvidenceFinalizationReport,
@@ -89,6 +91,7 @@ import {
   getDemoReadinessSnapshotTrend,
   getDemoSmokeChecklist,
   listDemoFinalHandoffReportPackageArchives,
+  listDemoFinalAcceptanceSharePackageArchives,
   listDemoLaunchEvidenceShareDeliveryReceipts,
   getEvaluationCaseReadiness,
   getEvaluationFixtureBaselineRunRegressionSummary,
@@ -198,6 +201,7 @@ import type {
   CreateTriggerQuarantineInput,
   DemoReadiness,
   DemoAcceptanceSummary,
+  DemoFinalAcceptanceSharePackageArchive,
   DemoFinalAcceptanceSharePackage,
   DemoReadinessSnapshotArchive,
   DemoReadinessSnapshotTrend,
@@ -342,6 +346,10 @@ export default function App() {
   const [demoFinalAcceptanceSharePackage, setDemoFinalAcceptanceSharePackage] =
     useState<DemoFinalAcceptanceSharePackage | null>(null);
   const [demoFinalAcceptanceSharePackageError, setDemoFinalAcceptanceSharePackageError] = useState<string | null>(null);
+  const [demoFinalAcceptanceSharePackageArchives, setDemoFinalAcceptanceSharePackageArchives] =
+    useState<DemoFinalAcceptanceSharePackageArchive[]>([]);
+  const [demoFinalAcceptanceSharePackageArchiveError, setDemoFinalAcceptanceSharePackageArchiveError] =
+    useState<string | null>(null);
   const [demoReadinessSnapshots, setDemoReadinessSnapshots] = useState<DemoReadinessSnapshotArchive[]>([]);
   const [demoReadinessSnapshotError, setDemoReadinessSnapshotError] = useState<string | null>(null);
   const [demoReadinessSnapshotTrend, setDemoReadinessSnapshotTrend] = useState<DemoReadinessSnapshotTrend | null>(null);
@@ -794,6 +802,7 @@ export default function App() {
         demoReadinessResult,
         demoAcceptanceSummaryResult,
         demoFinalAcceptanceSharePackageResult,
+        demoFinalAcceptanceSharePackageArchiveResult,
         demoReadinessSnapshotResult,
         demoReadinessSnapshotTrendResult,
         demoSmokeChecklistResult,
@@ -966,6 +975,10 @@ export default function App() {
         getDemoFinalAcceptanceSharePackage().then(
           (sharePackage) => ({ sharePackage, error: null as string | null }),
           (caught) => ({ sharePackage: null, error: errorMessage(caught) })
+        ),
+        listDemoFinalAcceptanceSharePackageArchives().then(
+          (archives) => ({ archives, error: null as string | null }),
+          (caught) => ({ archives: null, error: errorMessage(caught) })
         ),
         listDemoReadinessSnapshots().then(
           (snapshots) => ({ snapshots, error: null as string | null }),
@@ -1231,6 +1244,10 @@ export default function App() {
         setDemoFinalAcceptanceSharePackage(demoFinalAcceptanceSharePackageResult.sharePackage);
       }
       setDemoFinalAcceptanceSharePackageError(demoFinalAcceptanceSharePackageResult.error);
+      if (demoFinalAcceptanceSharePackageArchiveResult.archives) {
+        setDemoFinalAcceptanceSharePackageArchives(demoFinalAcceptanceSharePackageArchiveResult.archives);
+      }
+      setDemoFinalAcceptanceSharePackageArchiveError(demoFinalAcceptanceSharePackageArchiveResult.error);
       if (demoReadinessSnapshotResult.snapshots) {
         setDemoReadinessSnapshots(demoReadinessSnapshotResult.snapshots);
       }
@@ -1751,6 +1768,25 @@ export default function App() {
   ), []);
   const handleDownloadDemoFinalAcceptanceSharePackageReport = useCallback(() => (
     downloadDemoFinalAcceptanceSharePackageReport()
+  ), []);
+  const handleArchiveDemoFinalAcceptanceSharePackage = useCallback(async () => {
+    const archive = await archiveDemoFinalAcceptanceSharePackage();
+    setDemoFinalAcceptanceSharePackageArchives((current) => [
+      archive,
+      ...current.filter((item) => item.id !== archive.id)
+    ].slice(0, 20));
+    setDemoFinalAcceptanceSharePackageArchiveError(null);
+    try {
+      const sharePackage = await getDemoFinalAcceptanceSharePackage();
+      setDemoFinalAcceptanceSharePackage(sharePackage);
+      setDemoFinalAcceptanceSharePackageError(null);
+    } catch (caught) {
+      setDemoFinalAcceptanceSharePackageError(errorMessage(caught));
+    }
+    return archive;
+  }, []);
+  const handleDownloadDemoFinalAcceptanceSharePackageArchiveReport = useCallback((archiveId: string) => (
+    downloadDemoFinalAcceptanceSharePackageArchiveReport(archiveId)
   ), []);
   const handleCreateDemoLaunchEvidenceDeliveryReceipt = useCallback(async (
     input: DemoLaunchEvidenceShareDeliveryReceiptInput
@@ -2345,10 +2381,14 @@ export default function App() {
       <DemoAcceptanceSummaryPanel
         summary={demoAcceptanceSummary}
         sharePackage={demoFinalAcceptanceSharePackage}
+        sharePackageArchives={demoFinalAcceptanceSharePackageArchives}
         error={demoAcceptanceSummaryError}
         sharePackageError={demoFinalAcceptanceSharePackageError}
+        sharePackageArchiveError={demoFinalAcceptanceSharePackageArchiveError}
         onDownloadReport={handleDownloadDemoAcceptanceSummaryReport}
         onDownloadSharePackageReport={handleDownloadDemoFinalAcceptanceSharePackageReport}
+        onArchiveSharePackage={handleArchiveDemoFinalAcceptanceSharePackage}
+        onDownloadSharePackageArchiveReport={handleDownloadDemoFinalAcceptanceSharePackageArchiveReport}
       />
 
       <DemoSessionSnapshotPanel

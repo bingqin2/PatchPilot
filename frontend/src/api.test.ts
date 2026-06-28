@@ -51,6 +51,9 @@ import {
   downloadDemoAcceptanceSummaryReport,
   getDemoFinalAcceptanceSharePackage,
   downloadDemoFinalAcceptanceSharePackageReport,
+  archiveDemoFinalAcceptanceSharePackage,
+  listDemoFinalAcceptanceSharePackageArchives,
+  downloadDemoFinalAcceptanceSharePackageArchiveReport,
   archiveDemoLaunchAcceptanceCertificate,
   listDemoLaunchAcceptanceCertificateArchives,
   downloadDemoLaunchAcceptanceCertificateArchiveReport,
@@ -1011,6 +1014,105 @@ test('downloads final demo acceptance share package report through backend API',
   const downloadedReport = await downloadDemoFinalAcceptanceSharePackageReport();
 
   expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-acceptance-share-package/report/download');
+  expect(downloadedReport).toBe(reportBlob);
+});
+
+test('archives final demo acceptance share package through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        id: 'final-acceptance-share-package-archive-1',
+        status: 'READY',
+        sendReady: true,
+        summary: 'PatchPilot final demo acceptance package is ready to send.',
+        nextAction: 'Send the prepared final acceptance message with all required attachments.',
+        launchCertificateArchiveId: 'launch-certificate-archive-1',
+        taskCertificateArchiveId: 'task-evidence-certificate-archive-1',
+        latestTaskId: 'task-1',
+        latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+        recommendedRecipients: ['Repository owner or maintainer', 'Demo reviewer'],
+        requiredAttachments: ['Final demo acceptance summary report'],
+        preSendChecks: ['Confirm final demo acceptance status is READY and accepted.'],
+        messageSubject: 'PatchPilot final demo acceptance: task-1',
+        messageBody: 'PatchPilot final demo acceptance is ready for external review.',
+        evidenceNotes: ['Final acceptance status is READY.'],
+        sideEffectContract:
+          'POST /api/demo/final-acceptance-share-package/archives archives a read-only snapshot and does not create tasks, call the model, run tests, mutate Git, send messages, or write to GitHub.',
+        report: '# PatchPilot Final Demo Acceptance Share Package',
+        generatedAt: '2026-06-29T01:30:00Z',
+        archivedAt: '2026-06-29T02:00:00Z'
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const archive = await archiveDemoFinalAcceptanceSharePackage();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-acceptance-share-package/archives', { method: 'POST' });
+  expect(archive.id).toBe('final-acceptance-share-package-archive-1');
+  expect(archive.sendReady).toBe(true);
+});
+
+test('lists final demo acceptance share package archives through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: [
+        {
+          id: 'final-acceptance-share-package-archive-1',
+          status: 'READY',
+          sendReady: true,
+          summary: 'PatchPilot final demo acceptance package is ready to send.',
+          nextAction: 'Send the prepared final acceptance message with all required attachments.',
+          launchCertificateArchiveId: 'launch-certificate-archive-1',
+          taskCertificateArchiveId: 'task-evidence-certificate-archive-1',
+          latestTaskId: 'task-1',
+          latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+          recommendedRecipients: ['Repository owner or maintainer', 'Demo reviewer'],
+          requiredAttachments: ['Final demo acceptance summary report'],
+          preSendChecks: ['Confirm final demo acceptance status is READY and accepted.'],
+          messageSubject: 'PatchPilot final demo acceptance: task-1',
+          messageBody: 'PatchPilot final demo acceptance is ready for external review.',
+          evidenceNotes: ['Final acceptance status is READY.'],
+          sideEffectContract:
+            'POST /api/demo/final-acceptance-share-package/archives archives a read-only snapshot and does not create tasks, call the model, run tests, mutate Git, send messages, or write to GitHub.',
+          report: '# PatchPilot Final Demo Acceptance Share Package',
+          generatedAt: '2026-06-29T01:30:00Z',
+          archivedAt: '2026-06-29T02:00:00Z'
+        }
+      ],
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const archives = await listDemoFinalAcceptanceSharePackageArchives();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-acceptance-share-package/archives');
+  expect(archives).toHaveLength(1);
+  expect(archives[0].id).toBe('final-acceptance-share-package-archive-1');
+});
+
+test('downloads final demo acceptance share package archive report through backend API', async () => {
+  const reportBlob = new Blob(['# PatchPilot Final Demo Acceptance Share Package'], {
+    type: 'text/markdown;charset=UTF-8'
+  });
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    blob: async () => reportBlob
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const downloadedReport = await downloadDemoFinalAcceptanceSharePackageArchiveReport('archive/1');
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-acceptance-share-package/archives/archive%2F1/report/download');
   expect(downloadedReport).toBe(reportBlob);
 });
 

@@ -9,6 +9,7 @@ import type {
   DashboardBootstrap,
   DemoEvidenceBundle,
   DemoAcceptanceSummary,
+  DemoFinalAcceptanceSharePackageArchive,
   DemoFinalAcceptanceSharePackage,
   DemoFinalHandoffReportPackage,
   DemoFinalHandoffReportPackageArchive,
@@ -274,6 +275,18 @@ export async function getDemoFinalAcceptanceSharePackage(): Promise<DemoFinalAcc
 
 export async function downloadDemoFinalAcceptanceSharePackageReport(): Promise<Blob> {
   return getBlobApi('/api/demo/final-acceptance-share-package/report/download');
+}
+
+export async function archiveDemoFinalAcceptanceSharePackage(): Promise<DemoFinalAcceptanceSharePackageArchive> {
+  return postApi<DemoFinalAcceptanceSharePackageArchive>('/api/demo/final-acceptance-share-package/archives');
+}
+
+export async function listDemoFinalAcceptanceSharePackageArchives(): Promise<DemoFinalAcceptanceSharePackageArchive[]> {
+  return getApi<DemoFinalAcceptanceSharePackageArchive[]>('/api/demo/final-acceptance-share-package/archives');
+}
+
+export async function downloadDemoFinalAcceptanceSharePackageArchiveReport(archiveId: string): Promise<Blob> {
+  return getBlobApi(`/api/demo/final-acceptance-share-package/archives/${encodeURIComponent(archiveId)}/report/download`);
 }
 
 export async function getDemoSelfHostedLaunchReadiness(): Promise<DemoSelfHostedLaunchReadiness> {
