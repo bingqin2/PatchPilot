@@ -3,6 +3,8 @@ package io.patchpilot.backend.demo;
 import io.patchpilot.backend.common.response.ApiResponse;
 import io.patchpilot.backend.demo.domain.DemoAcceptanceSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
+import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceShareDeliveryReceiptVo;
+import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceShareFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceSharePackageArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceSharePackageVo;
 import io.patchpilot.backend.demo.domain.DemoFinalHandoffReportPackageArchiveVo;
@@ -88,6 +90,8 @@ public class DemoReadinessController {
     private final DemoAcceptanceSummaryService demoAcceptanceSummaryService;
     private final DemoFinalAcceptanceSharePackageService demoFinalAcceptanceSharePackageService;
     private final DemoFinalAcceptanceSharePackageArchiveService demoFinalAcceptanceSharePackageArchiveService;
+    private final DemoFinalAcceptanceShareDeliveryReceiptService demoFinalAcceptanceShareDeliveryReceiptService;
+    private final DemoFinalAcceptanceShareFinalizationService demoFinalAcceptanceShareFinalizationService;
     private final DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
     private final DemoReadinessSnapshotTrendService demoReadinessSnapshotTrendService;
     private final DemoLaunchPreflightService demoLaunchPreflightService;
@@ -365,6 +369,11 @@ public class DemoReadinessController {
         return ApiResponse.ok(demoFinalAcceptanceSharePackageArchiveService.listRecentArchives());
     }
 
+    @GetMapping("/final-acceptance-share-finalization")
+    public ApiResponse<DemoFinalAcceptanceShareFinalizationVo> getFinalAcceptanceShareFinalization() {
+        return ApiResponse.ok(demoFinalAcceptanceShareFinalizationService.getFinalizationGate());
+    }
+
     @GetMapping(value = "/handoff-share-center/report/download", produces = "text/markdown;charset=UTF-8")
     public ResponseEntity<String> downloadHandoffShareCenterReport() {
         return markdownAttachment(
@@ -479,6 +488,14 @@ public class DemoReadinessController {
                         archive.report()
                 ))
                 .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @GetMapping(value = "/final-acceptance-share-finalization/report/download", produces = "text/markdown;charset=UTF-8")
+    public ResponseEntity<String> downloadFinalAcceptanceShareFinalizationReport() {
+        return markdownAttachment(
+                "patchpilot-final-demo-acceptance-share-finalization.md",
+                demoFinalAcceptanceShareFinalizationService.getFinalizationGate().markdownReport()
+        );
     }
 
     @PostMapping("/launch-acceptance-certificate/archives")
@@ -605,6 +622,45 @@ public class DemoReadinessController {
         return demoLaunchEvidenceShareDeliveryReceiptService.findReceipt(receiptId)
                 .map(receipt -> markdownAttachment(
                         "patchpilot-demo-launch-evidence-delivery-receipt-" + safeFilenamePart(receipt.id()) + ".md",
+                        receipt.markdownReport()
+                ))
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/final-acceptance-share-delivery-receipts")
+    public ResponseEntity<ApiResponse<DemoFinalAcceptanceShareDeliveryReceiptVo>> recordFinalAcceptanceShareDeliveryReceipt(
+            @RequestBody DemoFinalAcceptanceShareDeliveryReceiptRequestDto request
+    ) {
+        try {
+            DemoFinalAcceptanceShareDeliveryReceiptVo receipt =
+                    demoFinalAcceptanceShareDeliveryReceiptService.recordDeliveryReceipt(request);
+            operatorSafetyAuditService.recordSafetyAudit(new RecordOperatorSafetyAuditCommand(
+                    "DEMO_FINAL_ACCEPTANCE_SHARE_DELIVERY_RECEIPT_RECORDED",
+                    "DEMO_FINAL_ACCEPTANCE_SHARE_DELIVERY_RECEIPT",
+                    receipt.id(),
+                    TriggerQuarantineScope.REPOSITORY,
+                    "patchpilot/local-demo",
+                    receipt.operator(),
+                    "Recorded final acceptance share delivery receipt for "
+                            + receipt.finalAcceptanceSharePackageArchiveId()
+            ));
+            return ResponseEntity.ok(ApiResponse.ok(receipt));
+        } catch (IllegalArgumentException | IllegalStateException exception) {
+            return ResponseEntity.badRequest().body(ApiResponse.fail(exception.getMessage()));
+        }
+    }
+
+    @GetMapping("/final-acceptance-share-delivery-receipts")
+    public ApiResponse<List<DemoFinalAcceptanceShareDeliveryReceiptVo>> listFinalAcceptanceShareDeliveryReceipts() {
+        return ApiResponse.ok(demoFinalAcceptanceShareDeliveryReceiptService.listRecentReceipts());
+    }
+
+    @GetMapping(value = "/final-acceptance-share-delivery-receipts/{receiptId}/report/download", produces = "text/markdown;charset=UTF-8")
+    public ResponseEntity<String> downloadFinalAcceptanceShareDeliveryReceiptReport(@PathVariable String receiptId) {
+        return demoFinalAcceptanceShareDeliveryReceiptService.findReceipt(receiptId)
+                .map(receipt -> markdownAttachment(
+                        "patchpilot-final-demo-acceptance-share-delivery-receipt-"
+                                + safeFilenamePart(receipt.id()) + ".md",
                         receipt.markdownReport()
                 ))
                 .orElseGet(() -> ResponseEntity.notFound().build());

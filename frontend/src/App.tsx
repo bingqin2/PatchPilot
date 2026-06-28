@@ -18,6 +18,7 @@ import {
   archiveEvaluationRunSnapshot,
   cancelTask,
   composeDemoLaunchCommand,
+  createDemoFinalAcceptanceShareDeliveryReceipt,
   createDemoHandoffShareDeliveryReceipt,
   createDemoLaunchEvidenceShareDeliveryReceipt,
   createTaskEvidencePackageShareDeliveryReceipt,
@@ -40,6 +41,8 @@ import {
   downloadDemoLaunchAcceptanceCertificateArchiveReport,
   downloadDemoLaunchAcceptanceCertificateReport,
   downloadDemoAcceptanceSummaryReport,
+  downloadDemoFinalAcceptanceShareDeliveryReceiptReport,
+  downloadDemoFinalAcceptanceShareFinalizationReport,
   downloadDemoFinalAcceptanceSharePackageArchiveReport,
   downloadDemoFinalAcceptanceSharePackageReport,
   downloadDemoLaunchAcceptanceCloseoutReport,
@@ -87,10 +90,12 @@ import {
   getDemoRunbook,
   getDemoReadiness,
   getDemoAcceptanceSummary,
+  getDemoFinalAcceptanceShareFinalization,
   getDemoFinalAcceptanceSharePackage,
   getDemoReadinessSnapshotTrend,
   getDemoSmokeChecklist,
   listDemoFinalHandoffReportPackageArchives,
+  listDemoFinalAcceptanceShareDeliveryReceipts,
   listDemoFinalAcceptanceSharePackageArchives,
   listDemoLaunchEvidenceShareDeliveryReceipts,
   getEvaluationCaseReadiness,
@@ -201,6 +206,9 @@ import type {
   CreateTriggerQuarantineInput,
   DemoReadiness,
   DemoAcceptanceSummary,
+  DemoFinalAcceptanceShareDeliveryReceipt,
+  DemoFinalAcceptanceShareDeliveryReceiptInput,
+  DemoFinalAcceptanceShareFinalization,
   DemoFinalAcceptanceSharePackageArchive,
   DemoFinalAcceptanceSharePackage,
   DemoReadinessSnapshotArchive,
@@ -349,6 +357,14 @@ export default function App() {
   const [demoFinalAcceptanceSharePackageArchives, setDemoFinalAcceptanceSharePackageArchives] =
     useState<DemoFinalAcceptanceSharePackageArchive[]>([]);
   const [demoFinalAcceptanceSharePackageArchiveError, setDemoFinalAcceptanceSharePackageArchiveError] =
+    useState<string | null>(null);
+  const [demoFinalAcceptanceShareDeliveryReceipts, setDemoFinalAcceptanceShareDeliveryReceipts] =
+    useState<DemoFinalAcceptanceShareDeliveryReceipt[]>([]);
+  const [demoFinalAcceptanceShareDeliveryReceiptError, setDemoFinalAcceptanceShareDeliveryReceiptError] =
+    useState<string | null>(null);
+  const [demoFinalAcceptanceShareFinalization, setDemoFinalAcceptanceShareFinalization] =
+    useState<DemoFinalAcceptanceShareFinalization | null>(null);
+  const [demoFinalAcceptanceShareFinalizationError, setDemoFinalAcceptanceShareFinalizationError] =
     useState<string | null>(null);
   const [demoReadinessSnapshots, setDemoReadinessSnapshots] = useState<DemoReadinessSnapshotArchive[]>([]);
   const [demoReadinessSnapshotError, setDemoReadinessSnapshotError] = useState<string | null>(null);
@@ -803,6 +819,8 @@ export default function App() {
         demoAcceptanceSummaryResult,
         demoFinalAcceptanceSharePackageResult,
         demoFinalAcceptanceSharePackageArchiveResult,
+        demoFinalAcceptanceShareDeliveryReceiptResult,
+        demoFinalAcceptanceShareFinalizationResult,
         demoReadinessSnapshotResult,
         demoReadinessSnapshotTrendResult,
         demoSmokeChecklistResult,
@@ -979,6 +997,14 @@ export default function App() {
         listDemoFinalAcceptanceSharePackageArchives().then(
           (archives) => ({ archives, error: null as string | null }),
           (caught) => ({ archives: null, error: errorMessage(caught) })
+        ),
+        listDemoFinalAcceptanceShareDeliveryReceipts().then(
+          (receipts) => ({ receipts, error: null as string | null }),
+          (caught) => ({ receipts: null, error: errorMessage(caught) })
+        ),
+        getDemoFinalAcceptanceShareFinalization().then(
+          (finalization) => ({ finalization, error: null as string | null }),
+          (caught) => ({ finalization: null, error: errorMessage(caught) })
         ),
         listDemoReadinessSnapshots().then(
           (snapshots) => ({ snapshots, error: null as string | null }),
@@ -1248,6 +1274,14 @@ export default function App() {
         setDemoFinalAcceptanceSharePackageArchives(demoFinalAcceptanceSharePackageArchiveResult.archives);
       }
       setDemoFinalAcceptanceSharePackageArchiveError(demoFinalAcceptanceSharePackageArchiveResult.error);
+      if (demoFinalAcceptanceShareDeliveryReceiptResult.receipts) {
+        setDemoFinalAcceptanceShareDeliveryReceipts(demoFinalAcceptanceShareDeliveryReceiptResult.receipts);
+      }
+      setDemoFinalAcceptanceShareDeliveryReceiptError(demoFinalAcceptanceShareDeliveryReceiptResult.error);
+      if (demoFinalAcceptanceShareFinalizationResult.finalization) {
+        setDemoFinalAcceptanceShareFinalization(demoFinalAcceptanceShareFinalizationResult.finalization);
+      }
+      setDemoFinalAcceptanceShareFinalizationError(demoFinalAcceptanceShareFinalizationResult.error);
       if (demoReadinessSnapshotResult.snapshots) {
         setDemoReadinessSnapshots(demoReadinessSnapshotResult.snapshots);
       }
@@ -1787,6 +1821,37 @@ export default function App() {
   }, []);
   const handleDownloadDemoFinalAcceptanceSharePackageArchiveReport = useCallback((archiveId: string) => (
     downloadDemoFinalAcceptanceSharePackageArchiveReport(archiveId)
+  ), []);
+  const handleDownloadDemoFinalAcceptanceShareFinalizationReport = useCallback(() => (
+    downloadDemoFinalAcceptanceShareFinalizationReport()
+  ), []);
+  const handleCreateDemoFinalAcceptanceShareDeliveryReceipt = useCallback(async (
+    input: DemoFinalAcceptanceShareDeliveryReceiptInput
+  ) => {
+    const receipt = await createDemoFinalAcceptanceShareDeliveryReceipt(input);
+    setDemoFinalAcceptanceShareDeliveryReceipts((current) => [
+      receipt,
+      ...current.filter((item) => item.id !== receipt.id)
+    ].slice(0, 20));
+    setDemoFinalAcceptanceShareDeliveryReceiptError(null);
+    try {
+      const receipts = await listDemoFinalAcceptanceShareDeliveryReceipts();
+      setDemoFinalAcceptanceShareDeliveryReceipts(receipts);
+      setDemoFinalAcceptanceShareDeliveryReceiptError(null);
+    } catch (caught) {
+      setDemoFinalAcceptanceShareDeliveryReceiptError(errorMessage(caught));
+    }
+    try {
+      const finalization = await getDemoFinalAcceptanceShareFinalization();
+      setDemoFinalAcceptanceShareFinalization(finalization);
+      setDemoFinalAcceptanceShareFinalizationError(null);
+    } catch (caught) {
+      setDemoFinalAcceptanceShareFinalizationError(errorMessage(caught));
+    }
+    return receipt;
+  }, []);
+  const handleDownloadDemoFinalAcceptanceShareDeliveryReceiptReport = useCallback((receiptId: string) => (
+    downloadDemoFinalAcceptanceShareDeliveryReceiptReport(receiptId)
   ), []);
   const handleCreateDemoLaunchEvidenceDeliveryReceipt = useCallback(async (
     input: DemoLaunchEvidenceShareDeliveryReceiptInput
@@ -2382,13 +2447,20 @@ export default function App() {
         summary={demoAcceptanceSummary}
         sharePackage={demoFinalAcceptanceSharePackage}
         sharePackageArchives={demoFinalAcceptanceSharePackageArchives}
+        shareDeliveryReceipts={demoFinalAcceptanceShareDeliveryReceipts}
+        shareFinalization={demoFinalAcceptanceShareFinalization}
         error={demoAcceptanceSummaryError}
         sharePackageError={demoFinalAcceptanceSharePackageError}
         sharePackageArchiveError={demoFinalAcceptanceSharePackageArchiveError}
+        shareDeliveryReceiptError={demoFinalAcceptanceShareDeliveryReceiptError}
+        shareFinalizationError={demoFinalAcceptanceShareFinalizationError}
         onDownloadReport={handleDownloadDemoAcceptanceSummaryReport}
         onDownloadSharePackageReport={handleDownloadDemoFinalAcceptanceSharePackageReport}
         onArchiveSharePackage={handleArchiveDemoFinalAcceptanceSharePackage}
         onDownloadSharePackageArchiveReport={handleDownloadDemoFinalAcceptanceSharePackageArchiveReport}
+        onCreateShareDeliveryReceipt={handleCreateDemoFinalAcceptanceShareDeliveryReceipt}
+        onDownloadShareDeliveryReceiptReport={handleDownloadDemoFinalAcceptanceShareDeliveryReceiptReport}
+        onDownloadShareFinalizationReport={handleDownloadDemoFinalAcceptanceShareFinalizationReport}
       />
 
       <DemoSessionSnapshotPanel

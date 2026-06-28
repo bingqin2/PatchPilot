@@ -846,6 +846,56 @@ export interface DemoFinalAcceptanceSharePackageArchive {
   archivedAt: string;
 }
 
+export interface DemoFinalAcceptanceShareDeliveryReceipt {
+  id: string;
+  status: DemoReadinessStatus;
+  finalAcceptanceSharePackageArchiveId: string;
+  latestTaskId: string;
+  deliveryChannel: string;
+  deliveryTarget: string;
+  operator: string;
+  notes: string;
+  messageSubject: string;
+  deliveredAt: string;
+  createdAt: string;
+  markdownReport: string;
+}
+
+export interface DemoFinalAcceptanceShareDeliveryReceiptInput {
+  deliveryChannel: string;
+  deliveryTarget: string;
+  operator: string;
+  notes: string;
+  deliveredAt?: string;
+}
+
+export interface DemoFinalAcceptanceShareFinalizationCheck {
+  name: string;
+  status: DemoReadinessStatus;
+  summary: string;
+  nextAction: string;
+}
+
+export interface DemoFinalAcceptanceShareFinalization {
+  status: DemoReadinessStatus;
+  finalized: boolean;
+  summary: string;
+  nextAction: string;
+  latestArchiveId: string | null;
+  latestTaskId: string | null;
+  latestDeliveryReceiptId: string | null;
+  latestDeliveryTarget: string | null;
+  latestDeliveryChannel: string | null;
+  latestDeliveredAt: string | null;
+  deliveryReceiptFreshness: string;
+  deliveryReceiptFresh: boolean;
+  deliveryReceiptFreshnessSummary: string;
+  checks: DemoFinalAcceptanceShareFinalizationCheck[];
+  evidenceNotes: string[];
+  markdownReport: string;
+  generatedAt: string;
+}
+
 export interface DemoLaunchEvidenceShareDeliveryReceipt {
   id: string;
   status: string;

@@ -8,6 +8,8 @@ import io.patchpilot.backend.demo.domain.DemoEvidenceBundleSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
 import io.patchpilot.backend.demo.domain.DemoEvaluationRunReadinessEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceSharePackageArchiveVo;
+import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceShareDeliveryReceiptVo;
+import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceShareFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceSharePackageVo;
 import io.patchpilot.backend.demo.domain.DemoFinalHandoffReportPackageArchiveEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoFinalHandoffReportPackageArchiveVo;
@@ -63,6 +65,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -175,6 +178,12 @@ class DemoReadinessControllerTests {
 
     @MockitoBean
     private DemoFinalAcceptanceSharePackageArchiveService demoFinalAcceptanceSharePackageArchiveService;
+
+    @MockitoBean
+    private DemoFinalAcceptanceShareDeliveryReceiptService demoFinalAcceptanceShareDeliveryReceiptService;
+
+    @MockitoBean
+    private DemoFinalAcceptanceShareFinalizationService demoFinalAcceptanceShareFinalizationService;
 
     @MockitoBean
     private DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
@@ -721,6 +730,128 @@ class DemoReadinessControllerTests {
 
         mockMvc.perform(get("/api/demo/final-acceptance-share-package/archives/missing/report/download"))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void should_record_final_demo_acceptance_share_delivery_receipt_and_record_audit() throws Exception {
+        when(demoFinalAcceptanceShareDeliveryReceiptService.recordDeliveryReceipt(argThat(request ->
+                request.deliveryChannel().equals("email")
+                        && request.deliveryTarget().equals("reviewer@example.com")
+                        && request.operator().equals("local-operator")
+                        && request.notes().equals("Sent final acceptance share package to the reviewer.")
+                        && request.deliveredAt().equals(Instant.parse("2026-06-29T03:05:00Z"))
+        ))).thenReturn(finalAcceptanceShareDeliveryReceipt());
+
+        mockMvc.perform(post("/api/demo/final-acceptance-share-delivery-receipts")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "deliveryChannel": "email",
+                                  "deliveryTarget": "reviewer@example.com",
+                                  "operator": "local-operator",
+                                  "notes": "Sent final acceptance share package to the reviewer.",
+                                  "deliveredAt": "2026-06-29T03:05:00Z"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value("final-acceptance-delivery-receipt-1"))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.finalAcceptanceSharePackageArchiveId").value("final-acceptance-share-package-archive-1"))
+                .andExpect(jsonPath("$.data.deliveryChannel").value("email"))
+                .andExpect(jsonPath("$.data.deliveryTarget").value("reviewer@example.com"))
+                .andExpect(jsonPath("$.data.messageSubject").value("PatchPilot final demo acceptance: task-1"))
+                .andExpect(jsonPath("$.data.markdownReport").value(containsString("# PatchPilot Final Demo Acceptance Share Delivery Receipt")));
+
+        verify(operatorSafetyAuditService).recordSafetyAudit(argThat(command ->
+                command.action().equals("DEMO_FINAL_ACCEPTANCE_SHARE_DELIVERY_RECEIPT_RECORDED")
+                        && command.resourceType().equals("DEMO_FINAL_ACCEPTANCE_SHARE_DELIVERY_RECEIPT")
+                        && command.resourceId().equals("final-acceptance-delivery-receipt-1")
+                        && command.operator().equals("local-operator")
+                        && command.reason().contains("final-acceptance-share-package-archive-1")
+        ));
+    }
+
+    @Test
+    void should_reject_final_demo_acceptance_share_delivery_receipt_when_package_is_not_share_ready() throws Exception {
+        when(demoFinalAcceptanceShareDeliveryReceiptService.recordDeliveryReceipt(any(DemoFinalAcceptanceShareDeliveryReceiptRequestDto.class)))
+                .thenThrow(new IllegalStateException("final acceptance share package archive is not send-ready"));
+
+        mockMvc.perform(post("/api/demo/final-acceptance-share-delivery-receipts")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "deliveryChannel": "email",
+                                  "deliveryTarget": "reviewer@example.com",
+                                  "operator": "local-operator"
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("final acceptance share package archive is not send-ready"));
+    }
+
+    @Test
+    void should_list_final_demo_acceptance_share_delivery_receipts() throws Exception {
+        when(demoFinalAcceptanceShareDeliveryReceiptService.listRecentReceipts())
+                .thenReturn(List.of(finalAcceptanceShareDeliveryReceipt()));
+
+        mockMvc.perform(get("/api/demo/final-acceptance-share-delivery-receipts"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].id").value("final-acceptance-delivery-receipt-1"))
+                .andExpect(jsonPath("$.data[0].finalAcceptanceSharePackageArchiveId").value("final-acceptance-share-package-archive-1"));
+    }
+
+    @Test
+    void should_download_final_demo_acceptance_share_delivery_receipt_report() throws Exception {
+        when(demoFinalAcceptanceShareDeliveryReceiptService.findReceipt("final-acceptance-delivery-receipt-1"))
+                .thenReturn(Optional.of(finalAcceptanceShareDeliveryReceipt()));
+
+        mockMvc.perform(get("/api/demo/final-acceptance-share-delivery-receipts/final-acceptance-delivery-receipt-1/report/download"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("patchpilot-final-demo-acceptance-share-delivery-receipt-final-acceptance-delivery-receipt-1.md")))
+                .andExpect(content().contentType("text/markdown;charset=UTF-8"))
+                .andExpect(content().string(containsString("# PatchPilot Final Demo Acceptance Share Delivery Receipt")))
+                .andExpect(content().string(containsString("reviewer@example.com")));
+    }
+
+    @Test
+    void should_return_not_found_when_final_demo_acceptance_share_delivery_receipt_is_missing() throws Exception {
+        when(demoFinalAcceptanceShareDeliveryReceiptService.findReceipt("missing-receipt")).thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/api/demo/final-acceptance-share-delivery-receipts/missing-receipt/report/download"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void should_return_final_demo_acceptance_share_finalization() throws Exception {
+        when(demoFinalAcceptanceShareFinalizationService.getFinalizationGate())
+                .thenReturn(finalAcceptanceShareFinalization());
+
+        mockMvc.perform(get("/api/demo/final-acceptance-share-finalization"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.finalized").value(true))
+                .andExpect(jsonPath("$.data.latestArchiveId").value("final-acceptance-share-package-archive-1"))
+                .andExpect(jsonPath("$.data.latestDeliveryReceiptId").value("final-acceptance-delivery-receipt-1"))
+                .andExpect(jsonPath("$.data.deliveryReceiptFreshness").value("FRESH"))
+                .andExpect(jsonPath("$.data.markdownReport").value(containsString("# PatchPilot Final Demo Acceptance Share Finalization Gate")));
+    }
+
+    @Test
+    void should_download_final_demo_acceptance_share_finalization_report() throws Exception {
+        when(demoFinalAcceptanceShareFinalizationService.getFinalizationGate())
+                .thenReturn(finalAcceptanceShareFinalization());
+
+        mockMvc.perform(get("/api/demo/final-acceptance-share-finalization/report/download"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("patchpilot-final-demo-acceptance-share-finalization.md")))
+                .andExpect(content().contentType("text/markdown;charset=UTF-8"))
+                .andExpect(content().string(containsString("# PatchPilot Final Demo Acceptance Share Finalization Gate")))
+                .andExpect(content().string(containsString("final-acceptance-delivery-receipt-1")));
     }
 
     @Test
@@ -3234,6 +3365,67 @@ class DemoReadinessControllerTests {
                 "# PatchPilot Final Demo Acceptance Share Package\n\nSubject: PatchPilot final demo acceptance: task-1\n",
                 Instant.parse("2026-06-29T01:30:00Z"),
                 Instant.parse("2026-06-29T02:00:00Z")
+        );
+    }
+
+    private static DemoFinalAcceptanceShareDeliveryReceiptVo finalAcceptanceShareDeliveryReceipt() {
+        return new DemoFinalAcceptanceShareDeliveryReceiptVo(
+                "final-acceptance-delivery-receipt-1",
+                DemoReadinessStatus.READY,
+                "final-acceptance-share-package-archive-1",
+                "task-1",
+                "email",
+                "reviewer@example.com",
+                "local-operator",
+                "Sent final acceptance share package to the reviewer.",
+                "PatchPilot final demo acceptance: task-1",
+                Instant.parse("2026-06-29T03:05:00Z"),
+                Instant.parse("2026-06-29T03:10:00Z"),
+                "# PatchPilot Final Demo Acceptance Share Delivery Receipt\n\n- Delivery target: `reviewer@example.com`"
+        );
+    }
+
+    private static DemoFinalAcceptanceShareFinalizationVo finalAcceptanceShareFinalization() {
+        return new DemoFinalAcceptanceShareFinalizationVo(
+                DemoReadinessStatus.READY,
+                true,
+                "Final demo acceptance share package is finalized with a fresh delivery receipt.",
+                "Use the finalization report as the external-review acceptance delivery record.",
+                "final-acceptance-share-package-archive-1",
+                "task-1",
+                "final-acceptance-delivery-receipt-1",
+                "reviewer@example.com",
+                "email",
+                "2026-06-29T03:05:00Z",
+                "FRESH",
+                true,
+                "Latest delivery receipt matches the current final acceptance share package archive.",
+                List.of(
+                        new DemoFinalAcceptanceShareFinalizationVo.Check(
+                                "Final acceptance package archive",
+                                DemoReadinessStatus.READY,
+                                "Latest final acceptance share package archive is send-ready.",
+                                "No action needed."
+                        ),
+                        new DemoFinalAcceptanceShareFinalizationVo.Check(
+                                "Delivery receipt freshness",
+                                DemoReadinessStatus.READY,
+                                "Latest delivery receipt matches the current final acceptance share package archive.",
+                                "No action needed."
+                        ),
+                        new DemoFinalAcceptanceShareFinalizationVo.Check(
+                                "Final acceptance delivery evidence",
+                                DemoReadinessStatus.READY,
+                                "Finalization report is ready as the external-review acceptance record.",
+                                "Download the finalization report."
+                        )
+                ),
+                List.of(
+                        "Latest final acceptance archive final-acceptance-share-package-archive-1 is send-ready.",
+                        "Latest delivery receipt final-acceptance-delivery-receipt-1 is fresh for final-acceptance-share-package-archive-1."
+                ),
+                "# PatchPilot Final Demo Acceptance Share Finalization Gate\n\n- Latest delivery receipt: `final-acceptance-delivery-receipt-1`",
+                Instant.parse("2026-06-29T03:30:00Z")
         );
     }
 }

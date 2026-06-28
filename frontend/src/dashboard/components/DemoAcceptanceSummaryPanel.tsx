@@ -2,6 +2,9 @@ import { Archive, Copy, Download, ExternalLink } from 'lucide-react';
 import { useState } from 'react';
 import type {
   DemoAcceptanceSummary,
+  DemoFinalAcceptanceShareDeliveryReceipt,
+  DemoFinalAcceptanceShareDeliveryReceiptInput,
+  DemoFinalAcceptanceShareFinalization,
   DemoFinalAcceptanceSharePackage,
   DemoFinalAcceptanceSharePackageArchive,
   DemoReadinessStatus
@@ -12,32 +15,54 @@ interface DemoAcceptanceSummaryPanelProps {
   summary: DemoAcceptanceSummary | null;
   sharePackage: DemoFinalAcceptanceSharePackage | null;
   sharePackageArchives: DemoFinalAcceptanceSharePackageArchive[];
+  shareDeliveryReceipts: DemoFinalAcceptanceShareDeliveryReceipt[];
+  shareFinalization: DemoFinalAcceptanceShareFinalization | null;
   error: string | null;
   sharePackageError: string | null;
   sharePackageArchiveError: string | null;
+  shareDeliveryReceiptError: string | null;
+  shareFinalizationError: string | null;
   onDownloadReport: () => Promise<Blob>;
   onDownloadSharePackageReport: () => Promise<Blob>;
   onArchiveSharePackage: () => Promise<DemoFinalAcceptanceSharePackageArchive>;
   onDownloadSharePackageArchiveReport: (archiveId: string) => Promise<Blob>;
+  onCreateShareDeliveryReceipt: (
+    input: DemoFinalAcceptanceShareDeliveryReceiptInput
+  ) => Promise<DemoFinalAcceptanceShareDeliveryReceipt>;
+  onDownloadShareDeliveryReceiptReport: (receiptId: string) => Promise<Blob>;
+  onDownloadShareFinalizationReport: () => Promise<Blob>;
 }
 
 export function DemoAcceptanceSummaryPanel({
   summary,
   sharePackage,
   sharePackageArchives,
+  shareDeliveryReceipts,
+  shareFinalization,
   error,
   sharePackageError,
   sharePackageArchiveError,
+  shareDeliveryReceiptError,
+  shareFinalizationError,
   onDownloadReport,
   onDownloadSharePackageReport,
   onArchiveSharePackage,
-  onDownloadSharePackageArchiveReport
+  onDownloadSharePackageArchiveReport,
+  onCreateShareDeliveryReceipt,
+  onDownloadShareDeliveryReceiptReport,
+  onDownloadShareFinalizationReport
 }: DemoAcceptanceSummaryPanelProps) {
   const [downloadStatus, setDownloadStatus] = useState<string | null>(null);
   const [sharePackageCopyStatus, setSharePackageCopyStatus] = useState<string | null>(null);
   const [sharePackageDownloadStatus, setSharePackageDownloadStatus] = useState<string | null>(null);
   const [sharePackageArchiveStatus, setSharePackageArchiveStatus] = useState<string | null>(null);
   const [sharePackageArchiveDownloadStatus, setSharePackageArchiveDownloadStatus] = useState<string | null>(null);
+  const [shareDeliveryReceiptStatus, setShareDeliveryReceiptStatus] = useState<string | null>(null);
+  const [shareFinalizationDownloadStatus, setShareFinalizationDownloadStatus] = useState<string | null>(null);
+  const [deliveryChannel, setDeliveryChannel] = useState('email');
+  const [deliveryTarget, setDeliveryTarget] = useState('');
+  const [operator, setOperator] = useState('');
+  const [deliveryNotes, setDeliveryNotes] = useState('');
 
   async function downloadReport() {
     try {
@@ -87,6 +112,40 @@ export function DemoAcceptanceSummaryPanel({
       setSharePackageArchiveDownloadStatus('Archived final acceptance package downloaded');
     } catch {
       setSharePackageArchiveDownloadStatus('Archive download failed');
+    }
+  }
+
+  async function createShareDeliveryReceipt() {
+    try {
+      await onCreateShareDeliveryReceipt({
+        deliveryChannel,
+        deliveryTarget: deliveryTarget.trim(),
+        operator: operator.trim(),
+        notes: deliveryNotes.trim()
+      });
+      setShareDeliveryReceiptStatus('Final acceptance delivery receipt recorded');
+    } catch {
+      setShareDeliveryReceiptStatus('Delivery receipt failed');
+    }
+  }
+
+  async function downloadShareFinalization() {
+    try {
+      const report = await onDownloadShareFinalizationReport();
+      downloadMarkdown(report, 'patchpilot-final-demo-acceptance-share-finalization.md');
+      setShareFinalizationDownloadStatus('Final acceptance finalization report downloaded');
+    } catch {
+      setShareFinalizationDownloadStatus('Finalization download failed');
+    }
+  }
+
+  async function downloadShareDeliveryReceipt(receipt: DemoFinalAcceptanceShareDeliveryReceipt) {
+    try {
+      const report = await onDownloadShareDeliveryReceiptReport(receipt.id);
+      downloadMarkdown(report, `patchpilot-final-demo-acceptance-share-delivery-receipt-${receipt.id}.md`);
+      setShareDeliveryReceiptStatus(`Final acceptance delivery receipt ${receipt.id} downloaded`);
+    } catch {
+      setShareDeliveryReceiptStatus('Delivery receipt download failed');
     }
   }
 
@@ -227,16 +286,33 @@ export function DemoAcceptanceSummaryPanel({
           <FinalAcceptanceSharePackage
             sharePackage={sharePackage}
             archives={sharePackageArchives}
+            deliveryReceipts={shareDeliveryReceipts}
+            finalization={shareFinalization}
             error={sharePackageError}
             archiveError={sharePackageArchiveError}
+            deliveryReceiptError={shareDeliveryReceiptError}
+            finalizationError={shareFinalizationError}
             copyStatus={sharePackageCopyStatus}
             downloadStatus={sharePackageDownloadStatus}
             archiveStatus={sharePackageArchiveStatus}
             archiveDownloadStatus={sharePackageArchiveDownloadStatus}
+            deliveryReceiptStatus={shareDeliveryReceiptStatus}
+            finalizationDownloadStatus={shareFinalizationDownloadStatus}
+            deliveryChannel={deliveryChannel}
+            deliveryTarget={deliveryTarget}
+            operator={operator}
+            deliveryNotes={deliveryNotes}
             onCopy={() => void copySharePackage()}
             onDownload={() => void downloadSharePackage()}
             onArchive={() => void archiveSharePackage()}
             onDownloadArchive={(archive) => void downloadSharePackageArchive(archive)}
+            onDeliveryChannelChange={setDeliveryChannel}
+            onDeliveryTargetChange={setDeliveryTarget}
+            onOperatorChange={setOperator}
+            onDeliveryNotesChange={setDeliveryNotes}
+            onCreateDeliveryReceipt={() => void createShareDeliveryReceipt()}
+            onDownloadDeliveryReceipt={(receipt) => void downloadShareDeliveryReceipt(receipt)}
+            onDownloadFinalization={() => void downloadShareFinalization()}
           />
         </>
       ) : (
@@ -249,31 +325,65 @@ export function DemoAcceptanceSummaryPanel({
 interface FinalAcceptanceSharePackageProps {
   sharePackage: DemoFinalAcceptanceSharePackage | null;
   archives: DemoFinalAcceptanceSharePackageArchive[];
+  deliveryReceipts: DemoFinalAcceptanceShareDeliveryReceipt[];
+  finalization: DemoFinalAcceptanceShareFinalization | null;
   error: string | null;
   archiveError: string | null;
+  deliveryReceiptError: string | null;
+  finalizationError: string | null;
   copyStatus: string | null;
   downloadStatus: string | null;
   archiveStatus: string | null;
   archiveDownloadStatus: string | null;
+  deliveryReceiptStatus: string | null;
+  finalizationDownloadStatus: string | null;
+  deliveryChannel: string;
+  deliveryTarget: string;
+  operator: string;
+  deliveryNotes: string;
   onCopy: () => void;
   onDownload: () => void;
   onArchive: () => void;
   onDownloadArchive: (archive: DemoFinalAcceptanceSharePackageArchive) => void;
+  onDeliveryChannelChange: (value: string) => void;
+  onDeliveryTargetChange: (value: string) => void;
+  onOperatorChange: (value: string) => void;
+  onDeliveryNotesChange: (value: string) => void;
+  onCreateDeliveryReceipt: () => void;
+  onDownloadDeliveryReceipt: (receipt: DemoFinalAcceptanceShareDeliveryReceipt) => void;
+  onDownloadFinalization: () => void;
 }
 
 function FinalAcceptanceSharePackage({
   sharePackage,
   archives,
+  deliveryReceipts,
+  finalization,
   error,
   archiveError,
+  deliveryReceiptError,
+  finalizationError,
   copyStatus,
   downloadStatus,
   archiveStatus,
   archiveDownloadStatus,
+  deliveryReceiptStatus,
+  finalizationDownloadStatus,
+  deliveryChannel,
+  deliveryTarget,
+  operator,
+  deliveryNotes,
   onCopy,
   onDownload,
   onArchive,
-  onDownloadArchive
+  onDownloadArchive,
+  onDeliveryChannelChange,
+  onDeliveryTargetChange,
+  onOperatorChange,
+  onDeliveryNotesChange,
+  onCreateDeliveryReceipt,
+  onDownloadDeliveryReceipt,
+  onDownloadFinalization
 }: FinalAcceptanceSharePackageProps) {
   return (
     <div className="demo-session-archives">
@@ -401,6 +511,151 @@ function FinalAcceptanceSharePackage({
               </ul>
             ) : (
               <p className="empty-state">No archived final acceptance packages yet.</p>
+            )}
+          </div>
+
+          <div className="demo-session-handoff-checks">
+            <div className="demo-session-archive-title-row">
+              <h3>Final acceptance delivery finalization</h3>
+              <div className="demo-session-archive-actions">
+                <button
+                  className="secondary-button"
+                  type="button"
+                  onClick={() => onDownloadFinalization()}
+                  aria-label="Download final acceptance finalization report"
+                >
+                  <Download size={14} />
+                  Download final acceptance finalization report
+                </button>
+                {finalizationDownloadStatus ? <span className="copy-status">{finalizationDownloadStatus}</span> : null}
+              </div>
+            </div>
+            {finalizationError ? (
+              <div className="adapter-api-error">
+                <strong>Final acceptance finalization unavailable</strong>
+                <span>{finalizationError}</span>
+              </div>
+            ) : null}
+            {finalization ? (
+              <>
+                <div className="demo-session-summary">
+                  <div>
+                    <span>Finalization</span>
+                    <strong>{finalization.finalized ? 'Finalized' : statusLabel(finalization.status)}</strong>
+                    <small>{finalization.summary}</small>
+                  </div>
+                  <div>
+                    <span>Freshness</span>
+                    <strong>{finalization.deliveryReceiptFreshness}</strong>
+                    <small>{finalization.deliveryReceiptFreshnessSummary}</small>
+                  </div>
+                  <div>
+                    <span>Latest receipt</span>
+                    <strong>{finalization.latestDeliveryReceiptId ?? 'No receipt'}</strong>
+                    <small>{finalization.nextAction}</small>
+                  </div>
+                </div>
+                <ul>
+                  {finalization.checks.map((check) => (
+                    <li key={check.name}>
+                      <div className="demo-webhook-delivery-main">
+                        <strong>{check.name}</strong>
+                        <span>{statusLabel(check.status)}</span>
+                      </div>
+                      <p>{check.summary}</p>
+                      <small>{check.nextAction}</small>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            ) : (
+              <p className="empty-state">Final acceptance delivery finalization has not loaded yet.</p>
+            )}
+          </div>
+
+          <div className="demo-session-handoff-checks">
+            <div className="demo-session-archive-title-row">
+              <h3>Record final acceptance delivery receipt</h3>
+              {deliveryReceiptStatus ? <span className="copy-status">{deliveryReceiptStatus}</span> : null}
+            </div>
+            {deliveryReceiptError ? (
+              <div className="adapter-api-error">
+                <strong>Final acceptance delivery receipts unavailable</strong>
+                <span>{deliveryReceiptError}</span>
+              </div>
+            ) : null}
+            <div className="manual-task-grid compact-manual-task-grid">
+              <label>
+                Delivery channel
+                <select value={deliveryChannel} onChange={(event) => onDeliveryChannelChange(event.target.value)}>
+                  <option value="email">email</option>
+                  <option value="slack">slack</option>
+                  <option value="github-comment">github-comment</option>
+                  <option value="manual">manual</option>
+                </select>
+              </label>
+              <label>
+                Delivery target
+                <input
+                  value={deliveryTarget}
+                  onChange={(event) => onDeliveryTargetChange(event.target.value)}
+                  placeholder="reviewer@example.com"
+                />
+              </label>
+              <label>
+                Operator
+                <input
+                  value={operator}
+                  onChange={(event) => onOperatorChange(event.target.value)}
+                  placeholder="local-operator"
+                />
+              </label>
+              <label>
+                Delivery notes
+                <textarea
+                  value={deliveryNotes}
+                  onChange={(event) => onDeliveryNotesChange(event.target.value)}
+                  placeholder="Sent final acceptance share package to the reviewer."
+                />
+              </label>
+            </div>
+            <button className="primary-button" type="button" onClick={() => onCreateDeliveryReceipt()}>
+              Record final acceptance delivery receipt
+            </button>
+          </div>
+
+          <div className="demo-session-handoff-checks">
+            <div className="demo-session-archive-title-row">
+              <h3>Final acceptance delivery receipts</h3>
+              <span>{deliveryReceipts.length} receipts</span>
+            </div>
+            {deliveryReceipts.length > 0 ? (
+              <ul>
+                {deliveryReceipts.map((receipt) => (
+                  <li key={receipt.id}>
+                    <div className="demo-webhook-delivery-main">
+                      <strong>{receipt.id}</strong>
+                      <span>{receipt.deliveryChannel}</span>
+                    </div>
+                    <p>{receipt.messageSubject}</p>
+                    <small>{receipt.deliveryTarget}</small>
+                    <small>Delivered {compactDateTime(receipt.deliveredAt)}</small>
+                    <div className="demo-session-archive-actions">
+                      <button
+                        className="secondary-button"
+                        type="button"
+                        onClick={() => onDownloadDeliveryReceipt(receipt)}
+                        aria-label={`Download final acceptance delivery receipt ${receipt.id}`}
+                      >
+                        <Download size={14} />
+                        Download final acceptance delivery receipt {receipt.id}
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="empty-state">No final acceptance delivery receipts recorded.</p>
             )}
           </div>
         </>

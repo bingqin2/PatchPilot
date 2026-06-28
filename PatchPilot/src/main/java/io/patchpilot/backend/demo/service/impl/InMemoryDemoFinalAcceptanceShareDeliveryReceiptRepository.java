@@ -1,0 +1,47 @@
+package io.patchpilot.backend.demo.service.impl;
+
+import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceShareDeliveryReceiptVo;
+import io.patchpilot.backend.demo.service.DemoFinalAcceptanceShareDeliveryReceiptRepository;
+import org.springframework.context.annotation.Profile;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.CopyOnWriteArrayList;
+
+@Repository
+@Profile("default")
+public class InMemoryDemoFinalAcceptanceShareDeliveryReceiptRepository
+        implements DemoFinalAcceptanceShareDeliveryReceiptRepository {
+
+    private static final int MAX_RECEIPTS = 20;
+
+    private final List<DemoFinalAcceptanceShareDeliveryReceiptVo> receipts = new CopyOnWriteArrayList<>();
+
+    @Override
+    public DemoFinalAcceptanceShareDeliveryReceiptVo save(DemoFinalAcceptanceShareDeliveryReceiptVo receipt) {
+        receipts.add(0, receipt);
+        trimReceipts();
+        return receipt;
+    }
+
+    @Override
+    public List<DemoFinalAcceptanceShareDeliveryReceiptVo> listRecentReceipts(int limit) {
+        return receipts.stream()
+                .limit(limit)
+                .toList();
+    }
+
+    @Override
+    public Optional<DemoFinalAcceptanceShareDeliveryReceiptVo> findById(String receiptId) {
+        return receipts.stream()
+                .filter(receipt -> receipt.id().equals(receiptId))
+                .findFirst();
+    }
+
+    private void trimReceipts() {
+        while (receipts.size() > MAX_RECEIPTS) {
+            receipts.remove(receipts.size() - 1);
+        }
+    }
+}

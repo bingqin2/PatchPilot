@@ -5625,3 +5625,23 @@ Validation so far:
 - `npm test -- --reporter=basic`: passed, 30 test files and 410 tests.
 - `npm run build`: passed with the existing Vite large-chunk warning.
 - `git diff --check`: passed.
+
+## 2026-06-29 - 280 Final acceptance share delivery finalization
+
+- Started `280-final-acceptance-share-delivery-finalization` to close the reviewer-facing acceptance loop after the final share package has been archived.
+- Planned a complete feature slice: delivery receipt DTO/VO/entity/converter/mapper/repositories/service, finalization gate service, Flyway migration, controller receipt/finalization endpoints, protected audit event, dashboard receipt form/history/finalization downloads, README/product/frontend docs, and regression tests.
+- RED backend tests were added first for recording a receipt against the latest send-ready package archive, rejecting missing or not-send-ready archives, receipt repository trimming, MyBatis behavior, migration text, controller routes, report downloads, missing receipt download, and operator audit recording.
+- RED frontend tests were added first for final acceptance delivery receipt API helpers, finalization API helpers, dashboard finalization display, receipt form submission, receipt history downloads, and finalization report download.
+- Implemented `DemoFinalAcceptanceShareDeliveryReceiptService` and `DemoFinalAcceptanceShareFinalizationService` so a final package is only finalized when the latest archived package is send-ready and the latest receipt is fresh for that archive/task.
+- Added `POST /api/demo/final-acceptance-share-delivery-receipts`, `GET /api/demo/final-acceptance-share-delivery-receipts`, `GET /api/demo/final-acceptance-share-delivery-receipts/{receiptId}/report/download`, `GET /api/demo/final-acceptance-share-finalization`, and `GET /api/demo/final-acceptance-share-finalization/report/download`.
+- Updated the final demo acceptance dashboard panel with delivery channel/target/operator/notes inputs, recent delivery receipt rows, receipt report downloads, finalization checks, receipt freshness, and finalization report download controls.
+- Updated README, product spec, frontend design doc, and added this plan document.
+
+Validation:
+
+- `mvn -q -pl PatchPilot -Dtest=DemoFinalAcceptanceShareDeliveryReceiptServiceTests,DemoFinalAcceptanceShareFinalizationServiceTests,DemoFinalAcceptanceShareDeliveryReceiptConvertTests,InMemoryDemoFinalAcceptanceShareDeliveryReceiptRepositoryTests,MyBatisDemoFinalAcceptanceShareDeliveryReceiptRepositoryTests,DemoFinalAcceptanceShareDeliveryReceiptMigrationTests,DemoReadinessControllerTests test`: first failed because the new receipt/finalization classes did not exist, then failed because the controller test missed the `MediaType` import; passed after backend implementation and test import fix.
+- `npm test -- src/api.test.ts src/dashboard/components/DemoAcceptanceSummaryPanel.test.tsx -- --reporter=basic`: first failed because the final delivery receipt id is intentionally visible in both finalization evidence and receipt history; passed after changing the assertion to accept repeated evidence, 2 test files and 163 tests.
+- `mvn -q -pl PatchPilot test`: passed.
+- `npm test -- --reporter=basic`: passed, 30 test files and 416 tests.
+- `npm run build`: passed with the existing Vite large-chunk warning.
+- `git diff --check`: passed.
