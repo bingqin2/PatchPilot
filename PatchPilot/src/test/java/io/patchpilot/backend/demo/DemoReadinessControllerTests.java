@@ -6,6 +6,7 @@ import io.patchpilot.backend.demo.domain.DemoReadinessVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
 import io.patchpilot.backend.demo.domain.DemoEvaluationRunReadinessEvidenceVo;
+import io.patchpilot.backend.demo.domain.DemoFinalHandoffReportPackageArchiveEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoFinalHandoffReportPackageArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoFinalHandoffReportPackageVo;
 import io.patchpilot.backend.demo.domain.DemoAdapterFixtureEvidenceVo;
@@ -1088,6 +1089,22 @@ class DemoReadinessControllerTests {
                         null,
                         List.of("Archive a task evidence acceptance certificate before using the evidence bundle as task-level review proof.")
                 ),
+                new DemoFinalHandoffReportPackageArchiveEvidenceVo(
+                        DemoReadinessStatus.NEEDS_ATTENTION,
+                        false,
+                        false,
+                        "No final handoff report package archive is available.",
+                        "Archive the final handoff report package after the post-demo handoff package is finalized.",
+                        0,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        false,
+                        null,
+                        List.of("Archive the final handoff report package before using the evidence bundle as post-demo closeout proof.")
+                ),
                 false,
                 null,
                 null,
@@ -1158,6 +1175,13 @@ class DemoReadinessControllerTests {
                         .value("No task evidence acceptance certificate archive is available."))
                 .andExpect(jsonPath("$.data.taskEvidenceAcceptanceCertificateEvidence.nextAction")
                         .value("Archive a certified task evidence acceptance certificate after final task evidence closeout."))
+                .andExpect(jsonPath("$.data.finalHandoffReportPackageArchiveEvidence.status").value("NEEDS_ATTENTION"))
+                .andExpect(jsonPath("$.data.finalHandoffReportPackageArchiveEvidence.archived").value(false))
+                .andExpect(jsonPath("$.data.finalHandoffReportPackageArchiveEvidence.downloadReady").value(false))
+                .andExpect(jsonPath("$.data.finalHandoffReportPackageArchiveEvidence.summary")
+                        .value("No final handoff report package archive is available."))
+                .andExpect(jsonPath("$.data.finalHandoffReportPackageArchiveEvidence.nextAction")
+                        .value("Archive the final handoff report package after the post-demo handoff package is finalized."))
                 .andExpect(jsonPath("$.data.nextActions[0]").value("Run one controlled issue-to-PR smoke task before a live demo."));
     }
 

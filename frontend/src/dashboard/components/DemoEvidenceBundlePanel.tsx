@@ -46,6 +46,24 @@ export function DemoEvidenceBundlePanel({ bundle, error, onCopyRunbook }: DemoEv
       'Archive a task evidence acceptance certificate before using the evidence bundle as task-level review proof.'
     ]
   };
+  const finalPackageArchiveEvidence = bundle?.finalHandoffReportPackageArchiveEvidence ?? {
+    status: 'NEEDS_ATTENTION' as DemoReadinessStatus,
+    archived: false,
+    downloadReady: false,
+    summary: 'No final handoff report package archive is available.',
+    nextAction: 'Archive the final handoff report package after the post-demo handoff package is finalized.',
+    archiveCount: 0,
+    latestArchiveId: null,
+    latestHandoffArchiveId: null,
+    latestSessionId: null,
+    latestDeliveryReceiptId: null,
+    taskCertificateArchiveId: null,
+    taskCertificateReady: false,
+    latestArchivedAt: null,
+    downloadActions: [
+      'Archive the final handoff report package before using the evidence bundle as post-demo closeout proof.'
+    ]
+  };
 
   async function copyRunbook() {
     try {
@@ -245,6 +263,28 @@ export function DemoEvidenceBundlePanel({ bundle, error, onCopyRunbook }: DemoEv
                 <small>Certified {compactDateTime(taskCertificateEvidence.latestArchivedAt)}</small>
               ) : null}
               {taskCertificateEvidence.downloadActions.slice(0, 2).map((action) => (
+                <small key={action}>{action}</small>
+              ))}
+            </div>
+            <div>
+              <span>Final handoff report package archive</span>
+              <strong>
+                {finalPackageArchiveEvidence.downloadReady
+                  ? 'Download-ready archive'
+                  : statusLabel(finalPackageArchiveEvidence.status)}
+              </strong>
+              <small>{finalPackageArchiveEvidence.summary}</small>
+              <small>{finalPackageArchiveEvidence.nextAction}</small>
+              <small>{finalPackageArchiveEvidence.archiveCount} final package archives</small>
+              <small>{finalPackageArchiveEvidence.latestArchiveId ?? 'No final package archive'}</small>
+              <small>{finalPackageArchiveEvidence.latestHandoffArchiveId ?? 'No linked handoff archive'}</small>
+              <small>{finalPackageArchiveEvidence.latestSessionId ?? 'No linked session'}</small>
+              <small>{finalPackageArchiveEvidence.latestDeliveryReceiptId ?? 'No linked delivery receipt'}</small>
+              <small>{finalPackageArchiveEvidence.taskCertificateArchiveId ?? 'No linked task certificate'}</small>
+              {finalPackageArchiveEvidence.latestArchivedAt ? (
+                <small>Archived {compactDateTime(finalPackageArchiveEvidence.latestArchivedAt)}</small>
+              ) : null}
+              {finalPackageArchiveEvidence.downloadActions.slice(0, 2).map((action) => (
                 <small key={action}>{action}</small>
               ))}
             </div>
