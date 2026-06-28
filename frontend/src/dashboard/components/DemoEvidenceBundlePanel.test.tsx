@@ -254,6 +254,25 @@ const bundle: DemoEvidenceBundle = {
       'Download linked task evidence acceptance closeout archive task-evidence-closeout-archive-1.'
     ]
   },
+  finalHandoffReportPackageArchiveEvidence: {
+    status: 'READY',
+    archived: true,
+    downloadReady: true,
+    summary: 'Latest final handoff report package archive is download-ready and ready.',
+    nextAction: 'Use the archived final handoff report package as the post-demo closeout proof.',
+    archiveCount: 1,
+    latestArchiveId: 'final-handoff-package-archive-1',
+    latestHandoffArchiveId: 'handoff-archive-1',
+    latestSessionId: 'demo-session-20260624T003000Z',
+    latestDeliveryReceiptId: 'delivery-receipt-1',
+    taskCertificateArchiveId: 'task-evidence-certificate-archive-1',
+    taskCertificateReady: true,
+    latestArchivedAt: '2026-06-24T11:30:00Z',
+    downloadActions: [
+      'Download final handoff report package archive final-handoff-package-archive-1.',
+      'Download linked handoff package archive handoff-archive-1.'
+    ]
+  },
   handoffShareDeliveryReceiptRecorded: true,
   handoffShareLatestDeliveryReceiptId: 'delivery-receipt-1',
   handoffShareLatestDeliveryTarget: 'maintainer@example.com',
@@ -317,7 +336,7 @@ test('summarizes demo evidence bundle for operators', () => {
     within(panel).getByText('Download the archived launch evidence package and share it with reviewers.')
   ).toBeInTheDocument();
   expect(within(panel).getAllByText('launch-evidence-archive-1').length).toBeGreaterThanOrEqual(2);
-  expect(within(panel).getByText('demo-session-20260624T003000Z')).toBeInTheDocument();
+  expect(within(panel).getAllByText('demo-session-20260624T003000Z').length).toBeGreaterThanOrEqual(1);
   expect(within(panel).getByText('Download launch evidence package archive launch-evidence-archive-1.')).toBeInTheDocument();
   expect(within(panel).getByText('Download launch evidence share center report.')).toBeInTheDocument();
   expect(within(panel).getByText('Launch evidence finalization')).toBeInTheDocument();
@@ -361,7 +380,7 @@ test('summarizes demo evidence bundle for operators', () => {
     within(panel).getByText('Use the archived task evidence acceptance certificate as task-level review proof.')
   ).toBeInTheDocument();
   expect(within(panel).getAllByText('1 certificate archives').length).toBeGreaterThanOrEqual(2);
-  expect(within(panel).getByText('task-evidence-certificate-archive-1')).toBeInTheDocument();
+  expect(within(panel).getAllByText('task-evidence-certificate-archive-1').length).toBeGreaterThanOrEqual(1);
   expect(within(panel).getByText('task-evidence-closeout-archive-1')).toBeInTheDocument();
   expect(within(panel).getByText('task-evidence-archive-1')).toBeInTheDocument();
   expect(within(panel).getByText('task-evidence-receipt-1')).toBeInTheDocument();
@@ -376,6 +395,23 @@ test('summarizes demo evidence bundle for operators', () => {
   expect(
     within(panel).getByText('Download linked task evidence acceptance closeout archive task-evidence-closeout-archive-1.')
   ).toBeInTheDocument();
+  expect(within(panel).getByText('Final handoff report package archive')).toBeInTheDocument();
+  expect(within(panel).getByText('Download-ready archive')).toBeInTheDocument();
+  expect(
+    within(panel).getByText('Latest final handoff report package archive is download-ready and ready.')
+  ).toBeInTheDocument();
+  expect(
+    within(panel).getByText('Use the archived final handoff report package as the post-demo closeout proof.')
+  ).toBeInTheDocument();
+  expect(within(panel).getByText('1 final package archives')).toBeInTheDocument();
+  expect(within(panel).getByText('final-handoff-package-archive-1')).toBeInTheDocument();
+  expect(within(panel).getAllByText('handoff-archive-1').length).toBeGreaterThanOrEqual(1);
+  expect(within(panel).getAllByText('delivery-receipt-1').length).toBeGreaterThanOrEqual(3);
+  expect(within(panel).getAllByText('task-evidence-certificate-archive-1').length).toBeGreaterThanOrEqual(2);
+  expect(
+    within(panel).getByText('Download final handoff report package archive final-handoff-package-archive-1.')
+  ).toBeInTheDocument();
+  expect(within(panel).getByText('Download linked handoff package archive handoff-archive-1.')).toBeInTheDocument();
   expect(within(panel).getByText('Handoff share delivery')).toBeInTheDocument();
   expect(within(panel).getAllByText('Fresh').length).toBeGreaterThanOrEqual(2);
   expect(within(panel).getByText('Handoff finalization')).toBeInTheDocument();
@@ -415,7 +451,8 @@ test('renders missing certificate evidence for legacy bundle responses', () => {
   const legacyBundle = {
     ...bundle,
     launchAcceptanceCertificateEvidence: undefined,
-    taskEvidenceAcceptanceCertificateEvidence: undefined
+    taskEvidenceAcceptanceCertificateEvidence: undefined,
+    finalHandoffReportPackageArchiveEvidence: undefined
   } as unknown as DemoEvidenceBundle;
 
   render(<DemoEvidenceBundlePanel bundle={legacyBundle} error={null} onCopyRunbook={vi.fn()} />);
@@ -433,6 +470,11 @@ test('renders missing certificate evidence for legacy bundle responses', () => {
     screen.getByText('Archive a certified task evidence acceptance certificate after final task evidence closeout.')
   ).toBeInTheDocument();
   expect(screen.getByText('No task certificate Pull Request')).toBeInTheDocument();
+  expect(screen.getByText('Final handoff report package archive')).toBeInTheDocument();
+  expect(screen.getByText('No final handoff report package archive is available.')).toBeInTheDocument();
+  expect(
+    screen.getByText('Archive the final handoff report package after the post-demo handoff package is finalized.')
+  ).toBeInTheDocument();
 });
 
 test('copies demo runbook markdown', async () => {

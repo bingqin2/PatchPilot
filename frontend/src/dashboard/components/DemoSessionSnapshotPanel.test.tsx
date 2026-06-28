@@ -133,6 +133,25 @@ const snapshot: DemoSessionSnapshot = {
         'Download linked task evidence acceptance closeout archive task-evidence-closeout-archive-1.'
       ]
     },
+    finalHandoffReportPackageArchiveEvidence: {
+      status: 'READY',
+      archived: true,
+      downloadReady: true,
+      summary: 'Latest final handoff report package archive is download-ready and ready.',
+      nextAction: 'Use the archived final handoff report package as the post-demo closeout proof.',
+      archiveCount: 1,
+      latestArchiveId: 'final-handoff-report-package-archive-1',
+      latestHandoffArchiveId: 'handoff-archive-1',
+      latestSessionId: 'demo-session-20260624T003000Z',
+      latestDeliveryReceiptId: 'delivery-receipt-1',
+      taskCertificateArchiveId: 'task-evidence-certificate-archive-1',
+      taskCertificateReady: true,
+      latestArchivedAt: '2026-06-24T10:00:00Z',
+      downloadActions: [
+        'Download final handoff report package archive final-handoff-report-package-archive-1.',
+        'Download linked handoff package archive handoff-archive-1.'
+      ]
+    },
     handoffShareDeliveryReceiptRecorded: true,
     handoffShareLatestDeliveryReceiptId: 'delivery-receipt-1',
     handoffShareLatestDeliveryTarget: 'maintainer@example.com',

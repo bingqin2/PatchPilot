@@ -2,6 +2,7 @@ package io.patchpilot.backend.demo;
 
 import io.patchpilot.backend.configuration.ConfigurationSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
+import io.patchpilot.backend.demo.domain.DemoFinalHandoffReportPackageArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffFinalizationCheckVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffPackageArchiveSummaryVo;
@@ -68,7 +69,8 @@ class DemoEvidenceBundleServiceTests {
                 DemoEvidenceBundleServiceTests::launchEvidenceFinalizationReady,
                 () -> List.of(launchAcceptanceCloseoutArchive(DemoReadinessStatus.READY, true)),
                 () -> List.of(launchAcceptanceCertificateArchive(DemoReadinessStatus.READY, true)),
-                () -> List.of(taskEvidenceAcceptanceCertificateArchive("READY", true))
+                () -> List.of(taskEvidenceAcceptanceCertificateArchive("READY", true)),
+                () -> List.of(finalHandoffReportPackageArchive(DemoReadinessStatus.READY, true))
         );
 
         DemoEvidenceBundleVo bundle = service.getEvidenceBundle();
@@ -219,6 +221,31 @@ class DemoEvidenceBundleServiceTests {
                 "Download linked task evidence acceptance closeout archive task-evidence-closeout-archive-1.",
                 "Download task evidence delivery receipt task-evidence-receipt-1."
         );
+        assertThat(bundle.finalHandoffReportPackageArchiveEvidence().status()).isEqualTo(DemoReadinessStatus.READY);
+        assertThat(bundle.finalHandoffReportPackageArchiveEvidence().archived()).isTrue();
+        assertThat(bundle.finalHandoffReportPackageArchiveEvidence().downloadReady()).isTrue();
+        assertThat(bundle.finalHandoffReportPackageArchiveEvidence().summary())
+                .isEqualTo("Latest final handoff report package archive is download-ready and ready.");
+        assertThat(bundle.finalHandoffReportPackageArchiveEvidence().nextAction())
+                .isEqualTo("Use the archived final handoff report package as the post-demo closeout proof.");
+        assertThat(bundle.finalHandoffReportPackageArchiveEvidence().archiveCount()).isEqualTo(1);
+        assertThat(bundle.finalHandoffReportPackageArchiveEvidence().latestArchiveId())
+                .isEqualTo("final-handoff-package-archive-1");
+        assertThat(bundle.finalHandoffReportPackageArchiveEvidence().latestHandoffArchiveId())
+                .isEqualTo("handoff-archive-1");
+        assertThat(bundle.finalHandoffReportPackageArchiveEvidence().latestSessionId())
+                .isEqualTo("demo-session-20260624T003000Z");
+        assertThat(bundle.finalHandoffReportPackageArchiveEvidence().latestDeliveryReceiptId())
+                .isEqualTo("delivery-receipt-1");
+        assertThat(bundle.finalHandoffReportPackageArchiveEvidence().taskCertificateArchiveId())
+                .isEqualTo("task-evidence-certificate-archive-1");
+        assertThat(bundle.finalHandoffReportPackageArchiveEvidence().taskCertificateReady()).isTrue();
+        assertThat(bundle.finalHandoffReportPackageArchiveEvidence().downloadActions()).containsExactly(
+                "Download final handoff report package archive final-handoff-package-archive-1.",
+                "Download linked handoff package archive handoff-archive-1.",
+                "Download handoff share delivery receipt delivery-receipt-1.",
+                "Download task evidence acceptance certificate archive task-evidence-certificate-archive-1."
+        );
         assertThat(bundle.handoffShareDeliveryReceiptRecorded()).isFalse();
         assertThat(bundle.handoffShareLatestDeliveryReceiptId()).isNull();
         assertThat(bundle.handoffShareLatestDeliveryTarget()).isNull();
@@ -265,7 +292,8 @@ class DemoEvidenceBundleServiceTests {
                 DemoEvidenceBundleServiceTests::launchEvidenceFinalizationReady,
                 () -> List.of(launchAcceptanceCloseoutArchive(DemoReadinessStatus.READY, true)),
                 () -> List.of(launchAcceptanceCertificateArchive(DemoReadinessStatus.READY, true)),
-                () -> List.of(taskEvidenceAcceptanceCertificateArchive("READY", true))
+                () -> List.of(taskEvidenceAcceptanceCertificateArchive("READY", true)),
+                () -> List.of(finalHandoffReportPackageArchive(DemoReadinessStatus.READY, true))
         );
 
         DemoEvidenceBundleVo bundle = service.getEvidenceBundle();
@@ -304,6 +332,7 @@ class DemoEvidenceBundleServiceTests {
         assertThat(bundle.launchAcceptanceCloseoutEvidence().accepted()).isTrue();
         assertThat(bundle.launchAcceptanceCertificateEvidence().certified()).isTrue();
         assertThat(bundle.taskEvidenceAcceptanceCertificateEvidence().certified()).isTrue();
+        assertThat(bundle.finalHandoffReportPackageArchiveEvidence().downloadReady()).isTrue();
         assertThat(bundle.nextActions()).containsExactly("Use this evidence bundle as the live demo baseline.");
     }
 
@@ -328,7 +357,8 @@ class DemoEvidenceBundleServiceTests {
                 DemoEvidenceBundleServiceTests::launchEvidenceFinalizationReady,
                 List::of,
                 () -> List.of(launchAcceptanceCertificateArchive(DemoReadinessStatus.READY, true)),
-                () -> List.of(taskEvidenceAcceptanceCertificateArchive("READY", true))
+                () -> List.of(taskEvidenceAcceptanceCertificateArchive("READY", true)),
+                () -> List.of(finalHandoffReportPackageArchive(DemoReadinessStatus.READY, true))
         );
 
         DemoEvidenceBundleVo bundle = service.getEvidenceBundle();
@@ -368,7 +398,8 @@ class DemoEvidenceBundleServiceTests {
                 DemoEvidenceBundleServiceTests::launchEvidenceFinalizationReady,
                 () -> List.of(launchAcceptanceCloseoutArchive(DemoReadinessStatus.READY, true)),
                 List::of,
-                () -> List.of(taskEvidenceAcceptanceCertificateArchive("READY", true))
+                () -> List.of(taskEvidenceAcceptanceCertificateArchive("READY", true)),
+                () -> List.of(finalHandoffReportPackageArchive(DemoReadinessStatus.READY, true))
         );
 
         DemoEvidenceBundleVo bundle = service.getEvidenceBundle();
@@ -409,7 +440,8 @@ class DemoEvidenceBundleServiceTests {
                 DemoEvidenceBundleServiceTests::launchEvidenceFinalizationReady,
                 () -> List.of(launchAcceptanceCloseoutArchive(DemoReadinessStatus.READY, true)),
                 () -> List.of(launchAcceptanceCertificateArchive(DemoReadinessStatus.READY, true)),
-                List::of
+                List::of,
+                () -> List.of(finalHandoffReportPackageArchive(DemoReadinessStatus.READY, true))
         );
 
         DemoEvidenceBundleVo bundle = service.getEvidenceBundle();
@@ -425,6 +457,50 @@ class DemoEvidenceBundleServiceTests {
                 .isEqualTo("Archive a certified task evidence acceptance certificate after final task evidence closeout.");
         assertThat(bundle.nextActions()).containsExactly(
                 "Archive a certified task evidence acceptance certificate after final task evidence closeout."
+        );
+    }
+
+    @Test
+    void should_require_final_handoff_report_package_archive_before_reporting_bundle_ready() {
+        DemoEvidenceBundleService service = new DemoEvidenceBundleService(
+                () -> readiness(DemoReadinessStatus.READY, List.of()),
+                () -> smokeChecklist(DemoSmokeChecklistStatus.READY, List.of()),
+                DemoEvidenceBundleServiceTests::configuration,
+                () -> List.of(fixture("java-maven", "PASS")),
+                FixTaskQueueSummaryVo::empty,
+                () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/42")),
+                () -> List.of(webhookDelivery("delivery-1", WebhookDeliveryDiagnosticStatus.TASK_CREATED, "task-1")),
+                DemoEvidenceBundleServiceTests::webhookSetupReadiness,
+                () -> rejectedTriggerSummary(0),
+                List::of,
+                DemoEvidenceBundleServiceTests::evaluationRunReadiness,
+                DemoEvidenceBundleServiceTests::handoffPackageArchiveSummary,
+                DemoEvidenceBundleServiceTests::deliveredHandoffShareCenter,
+                DemoEvidenceBundleServiceTests::handoffFinalizationReady,
+                DemoEvidenceBundleServiceTests::launchEvidenceShareCenter,
+                DemoEvidenceBundleServiceTests::launchEvidenceFinalizationReady,
+                () -> List.of(launchAcceptanceCloseoutArchive(DemoReadinessStatus.READY, true)),
+                () -> List.of(launchAcceptanceCertificateArchive(DemoReadinessStatus.READY, true)),
+                () -> List.of(taskEvidenceAcceptanceCertificateArchive("READY", true)),
+                List::of
+        );
+
+        DemoEvidenceBundleVo bundle = service.getEvidenceBundle();
+
+        assertThat(bundle.status()).isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
+        assertThat(bundle.summary()).isEqualTo("Demo evidence bundle needs attention.");
+        assertThat(bundle.finalHandoffReportPackageArchiveEvidence().status()).isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
+        assertThat(bundle.finalHandoffReportPackageArchiveEvidence().archived()).isFalse();
+        assertThat(bundle.finalHandoffReportPackageArchiveEvidence().downloadReady()).isFalse();
+        assertThat(bundle.finalHandoffReportPackageArchiveEvidence().summary())
+                .isEqualTo("No final handoff report package archive is available.");
+        assertThat(bundle.finalHandoffReportPackageArchiveEvidence().nextAction())
+                .isEqualTo("Archive the final handoff report package after the post-demo handoff package is finalized.");
+        assertThat(bundle.finalHandoffReportPackageArchiveEvidence().downloadActions()).containsExactly(
+                "Archive the final handoff report package before using the evidence bundle as post-demo closeout proof."
+        );
+        assertThat(bundle.nextActions()).containsExactly(
+                "Archive the final handoff report package after the post-demo handoff package is finalized."
         );
     }
 
@@ -962,6 +1038,32 @@ class DemoEvidenceBundleServiceTests {
                         "Download linked task evidence acceptance closeout archive task-evidence-closeout-archive-1."
                 ),
                 "# PatchPilot Task Evidence Acceptance Certificate Archive"
+        );
+    }
+
+    private static DemoFinalHandoffReportPackageArchiveVo finalHandoffReportPackageArchive(
+            DemoReadinessStatus status,
+            boolean downloadReady
+    ) {
+        return new DemoFinalHandoffReportPackageArchiveVo(
+                "final-handoff-package-archive-1",
+                status,
+                downloadReady,
+                "Final demo handoff report package is ready to deliver.",
+                "Download this final handoff report package and attach the listed evidence files.",
+                "handoff-archive-1",
+                "demo-session-20260624T003000Z",
+                "delivery-receipt-1",
+                "task-evidence-certificate-archive-1",
+                true,
+                List.of("Finalization: READY"),
+                List.of("Finalization report"),
+                List.of("Confirm no handoff share checklist warnings remain."),
+                List.of("Latest delivery receipt delivery-receipt-1 is fresh."),
+                List.of("Handoff finalization"),
+                "# PatchPilot Final Demo Handoff Report Package",
+                Instant.parse("2026-06-24T11:00:00Z"),
+                Instant.parse("2026-06-24T11:30:00Z")
         );
     }
 }

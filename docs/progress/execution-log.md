@@ -5498,3 +5498,23 @@ Validation so far:
 - `npm test -- --reporter=basic`: passed, 29 test files and 398 tests.
 - `npm run build`: passed with the existing Vite large-chunk warning.
 - `git diff --check`: passed.
+
+## 2026-06-28 - 274 Final handoff package evidence bundle
+
+- Started `274-final-handoff-package-evidence-bundle` to make the latest archived final handoff report package visible from the first evidence bundle readout and copied runbook.
+- Planned a complete feature slice: backend evidence VO, repository-backed evidence aggregation, bundle status/next-action gating, runbook Markdown evidence, dashboard evidence-bundle card, README docs, plan doc, and regression tests.
+- RED backend tests were added first for ready archive evidence, missing archive guidance, copied runbook Markdown, and REST serialization.
+- RED frontend tests were added first for rendering final package archive proof and missing-archive guidance in `DemoEvidenceBundlePanel`.
+- Implemented `DemoFinalHandoffReportPackageArchiveEvidenceVo` and wired `DemoEvidenceBundleService` to read recent final package archives, summarize latest archive readiness, linked handoff archive, session, delivery receipt, task certificate, archived time, and download actions.
+- Updated aggregate bundle status and next actions so the top-level evidence bundle is not `READY` until the final handoff report package archive is download-ready.
+- Updated the copied demo runbook and dashboard evidence bundle panel so operators can prove post-demo closeout archive readiness without opening the session snapshot panel first.
+- Updated README and added this plan document.
+
+Validation:
+
+- `mvn -q -pl PatchPilot -Dtest=DemoEvidenceBundleServiceTests,DemoRunbookServiceTests,DemoReadinessControllerTests#should_return_demo_evidence_bundle test`: first failed because `DemoFinalHandoffReportPackageArchiveEvidenceVo` did not exist; passed after backend implementation.
+- `npm test -- src/dashboard/components/DemoEvidenceBundlePanel.test.tsx src/App.test.tsx -- --reporter=basic`: first failed because the dashboard did not render `Final handoff report package archive`; passed after frontend type, fixture, and panel updates, 2 test files and 87 tests.
+- `mvn -q -pl PatchPilot test`: passed.
+- `npm test -- --reporter=basic`: passed, 29 test files and 398 tests.
+- `npm run build`: first failed because `DemoSessionSnapshotPanel.test.tsx` still used the old `DemoEvidenceBundle` fixture shape; passed after adding `finalHandoffReportPackageArchiveEvidence` to that fixture, with the existing Vite large-chunk warning.
+- `git diff --check`: passed.

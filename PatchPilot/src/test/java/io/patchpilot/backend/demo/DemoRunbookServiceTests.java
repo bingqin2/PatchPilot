@@ -4,6 +4,7 @@ import io.patchpilot.backend.demo.domain.DemoAdapterFixtureEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoEvaluationRunReadinessEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
+import io.patchpilot.backend.demo.domain.DemoFinalHandoffReportPackageArchiveEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchAcceptanceCertificateEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchAcceptanceCloseoutEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessCheckVo;
@@ -82,6 +83,14 @@ class DemoRunbookServiceTests {
                 .contains("- Task evidence acceptance certificate Pull Request: https://github.com/bingqin2/PatchPilot/pull/42")
                 .contains("- Task evidence acceptance certificate next action: Use the archived task evidence acceptance certificate as task-level review proof.")
                 .contains("- Task evidence acceptance certificate download: Download task evidence acceptance certificate archive task-evidence-certificate-archive-1.")
+                .contains("- Final handoff report package archive: `READY` - Latest final handoff report package archive is download-ready and ready.")
+                .contains("- Final handoff report package archive id: `final-handoff-package-archive-1`")
+                .contains("- Final handoff report package linked handoff archive: `handoff-archive-1`")
+                .contains("- Final handoff report package session: `demo-session-20260624T003000Z`")
+                .contains("- Final handoff report package receipt: `delivery-receipt-1`")
+                .contains("- Final handoff report package task certificate: `task-evidence-certificate-archive-1`")
+                .contains("- Final handoff report package next action: Use the archived final handoff report package as the post-demo closeout proof.")
+                .contains("- Final handoff report package download: Download final handoff report package archive final-handoff-package-archive-1.")
                 .contains("## Readiness")
                 .contains("- `Credentials`: `READY` - Required credentials are configured.")
                 .contains("## Smoke Checklist")
@@ -252,6 +261,25 @@ class DemoRunbookServiceTests {
                         List.of(
                                 "Download task evidence acceptance certificate archive task-evidence-certificate-archive-1.",
                                 "Download linked task evidence acceptance closeout archive task-evidence-closeout-archive-1."
+                        )
+                ),
+                new DemoFinalHandoffReportPackageArchiveEvidenceVo(
+                        DemoReadinessStatus.READY,
+                        true,
+                        true,
+                        "Latest final handoff report package archive is download-ready and ready.",
+                        "Use the archived final handoff report package as the post-demo closeout proof.",
+                        1,
+                        "final-handoff-package-archive-1",
+                        "handoff-archive-1",
+                        "demo-session-20260624T003000Z",
+                        "delivery-receipt-1",
+                        "task-evidence-certificate-archive-1",
+                        true,
+                        Instant.parse("2026-06-24T11:30:00Z"),
+                        List.of(
+                                "Download final handoff report package archive final-handoff-package-archive-1.",
+                                "Download linked handoff package archive handoff-archive-1."
                         )
                 ),
                 true,

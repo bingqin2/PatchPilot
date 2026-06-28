@@ -1794,6 +1794,62 @@ const demoEvidenceBundle = {
       'Download linked launch evidence archive launch-evidence-archive-1.'
     ]
   },
+  launchAcceptanceCertificateEvidence: {
+    status: 'READY',
+    archived: true,
+    certified: true,
+    summary: 'Latest launch acceptance certificate archive is certified and ready.',
+    nextAction: 'Use the archived launch acceptance certificate as the external-review launch record.',
+    archiveCount: 1,
+    latestArchiveId: 'launch-certificate-archive-1',
+    latestCloseoutArchiveId: 'launch-closeout-archive-1',
+    latestEvidenceArchiveId: 'launch-evidence-archive-1',
+    latestDeliveryReceiptId: 'launch-delivery-receipt-1',
+    latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+    latestArchivedAt: '2026-06-24T08:30:00Z',
+    downloadActions: [
+      'Download launch acceptance certificate archive launch-certificate-archive-1.',
+      'Download linked launch acceptance closeout archive launch-closeout-archive-1.'
+    ]
+  },
+  taskEvidenceAcceptanceCertificateEvidence: {
+    status: 'READY',
+    archived: true,
+    certified: true,
+    summary: 'Latest task evidence acceptance certificate archive is certified and ready.',
+    nextAction: 'Use the archived task evidence acceptance certificate as task-level review proof.',
+    archiveCount: 1,
+    latestArchiveId: 'task-evidence-certificate-archive-1',
+    latestCloseoutArchiveId: 'task-evidence-closeout-archive-1',
+    latestEvidenceArchiveId: 'task-evidence-archive-1',
+    latestDeliveryReceiptId: 'task-evidence-receipt-1',
+    latestTaskId: 'task-2',
+    latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+    latestArchivedAt: '2026-06-24T09:30:00Z',
+    downloadActions: [
+      'Download task evidence acceptance certificate archive task-evidence-certificate-archive-1.',
+      'Download linked task evidence acceptance closeout archive task-evidence-closeout-archive-1.'
+    ]
+  },
+  finalHandoffReportPackageArchiveEvidence: {
+    status: 'READY',
+    archived: true,
+    downloadReady: true,
+    summary: 'Latest final handoff report package archive is download-ready and ready.',
+    nextAction: 'Use the archived final handoff report package as the post-demo closeout proof.',
+    archiveCount: 1,
+    latestArchiveId: 'final-handoff-package-archive-1',
+    latestHandoffArchiveId: 'handoff-archive-1',
+    latestSessionId: 'demo-session-20260624T003000Z',
+    latestDeliveryReceiptId: 'delivery-receipt-1',
+    taskCertificateArchiveId: 'task-evidence-certificate-archive-1',
+    taskCertificateReady: true,
+    latestArchivedAt: '2026-06-24T11:30:00Z',
+    downloadActions: [
+      'Download final handoff report package archive final-handoff-package-archive-1.',
+      'Download linked handoff package archive handoff-archive-1.'
+    ]
+  },
   handoffShareDeliveryReceiptRecorded: true,
   handoffShareLatestDeliveryReceiptId: 'delivery-receipt-1',
   handoffShareLatestDeliveryTarget: 'maintainer@example.com',

@@ -202,6 +202,35 @@ public class DemoRunbookService {
                         .append("- Task evidence acceptance certificate download: ")
                         .append(action)
                         .append("\n"));
+
+        runbook.append("- Final handoff report package archive: `")
+                .append(bundle.finalHandoffReportPackageArchiveEvidence().status())
+                .append("` - ")
+                .append(bundle.finalHandoffReportPackageArchiveEvidence().summary())
+                .append("\n")
+                .append("- Final handoff report package archive id: ")
+                .append(valueOrNoneBackticked(bundle.finalHandoffReportPackageArchiveEvidence().latestArchiveId()))
+                .append("\n")
+                .append("- Final handoff report package linked handoff archive: ")
+                .append(valueOrNoneBackticked(bundle.finalHandoffReportPackageArchiveEvidence().latestHandoffArchiveId()))
+                .append("\n")
+                .append("- Final handoff report package session: ")
+                .append(valueOrNoneBackticked(bundle.finalHandoffReportPackageArchiveEvidence().latestSessionId()))
+                .append("\n")
+                .append("- Final handoff report package receipt: ")
+                .append(valueOrNoneBackticked(bundle.finalHandoffReportPackageArchiveEvidence().latestDeliveryReceiptId()))
+                .append("\n")
+                .append("- Final handoff report package task certificate: ")
+                .append(valueOrNoneBackticked(bundle.finalHandoffReportPackageArchiveEvidence().taskCertificateArchiveId()))
+                .append("\n")
+                .append("- Final handoff report package next action: ")
+                .append(bundle.finalHandoffReportPackageArchiveEvidence().nextAction())
+                .append("\n");
+        bundle.finalHandoffReportPackageArchiveEvidence().downloadActions()
+                .forEach(action -> runbook
+                        .append("- Final handoff report package download: ")
+                        .append(action)
+                        .append("\n"));
     }
 
     private static void appendEvaluationRunReadiness(
