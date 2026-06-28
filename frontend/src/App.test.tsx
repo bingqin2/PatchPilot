@@ -461,6 +461,36 @@ const taskEvidencePackageAcceptanceCloseoutArchive = {
   report: '# PatchPilot Task Evidence Acceptance Closeout Archive'
 };
 
+const taskEvidencePackageAcceptanceCertificate = {
+  status: 'READY',
+  certified: true,
+  summary: 'Task evidence acceptance is certified from the latest accepted closeout archive.',
+  nextAction: 'Share the certificate and archived closeout report with reviewers.',
+  archiveCount: 1,
+  latestCloseoutArchiveId: 'task-evidence-closeout-archive-1',
+  latestEvidenceArchiveId: 'task-evidence-archive-1',
+  latestDeliveryReceiptId: 'task-evidence-delivery-receipt-1',
+  latestTaskId: 'task-1',
+  latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+  latestDeliveryTarget: 'reviewer@example.com',
+  latestDeliveryChannel: 'email',
+  deliveryReceiptFreshness: 'FRESH',
+  latestArchivedAt: '2026-06-28T07:00:00Z',
+  generatedAt: '2026-06-28T07:30:00Z',
+  downloadActions: [
+    'Download task evidence acceptance certificate.',
+    'Download task evidence acceptance closeout archive task-evidence-closeout-archive-1.'
+  ],
+  markdownReport: '# PatchPilot Task Evidence Acceptance Certificate'
+};
+
+const taskEvidencePackageAcceptanceCertificateArchive = {
+  id: 'task-evidence-certificate-archive-1',
+  ...taskEvidencePackageAcceptanceCertificate,
+  archivedAt: '2026-06-28T07:35:00Z',
+  report: '# PatchPilot Task Evidence Acceptance Certificate'
+};
+
 const detail = {
   summary,
   queueItem: {
@@ -2917,6 +2947,36 @@ beforeEach(() => {
     if (url === '/api/tasks/evidence-packages/acceptance-closeout/archives') {
       return jsonResponse([taskEvidencePackageAcceptanceCloseoutArchive]);
     }
+    if (url === '/api/tasks/evidence-packages/acceptance-certificate') {
+      return jsonResponse(taskEvidencePackageAcceptanceCertificate);
+    }
+    if (url === '/api/tasks/evidence-packages/acceptance-certificate/archives' && init?.method === 'POST') {
+      return jsonResponse({
+        ...taskEvidencePackageAcceptanceCertificateArchive,
+        id: 'task-evidence-certificate-archive-2'
+      });
+    }
+    if (url === '/api/tasks/evidence-packages/acceptance-certificate/archives') {
+      return jsonResponse([taskEvidencePackageAcceptanceCertificateArchive]);
+    }
+    if (url === '/api/tasks/evidence-packages/acceptance-certificate/report/download') {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        blob: async () => new Blob(['# PatchPilot Task Evidence Acceptance Certificate'], {
+          type: 'text/markdown;charset=UTF-8'
+        })
+      } as Response);
+    }
+    if (url === '/api/tasks/evidence-packages/acceptance-certificate/archives/task-evidence-certificate-archive-1/report/download') {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        blob: async () => new Blob(['# PatchPilot Task Evidence Acceptance Certificate'], {
+          type: 'text/markdown;charset=UTF-8'
+        })
+      } as Response);
+    }
     if (url === '/api/tasks/manual-task-1/detail') {
       return jsonResponse(manualTaskDetail);
     }
@@ -4086,6 +4146,42 @@ test('archives task evidence acceptance closeout from dashboard', async () => {
   ));
   expect(click).toHaveBeenCalledTimes(1);
   expect(revokeObjectURL).toHaveBeenCalledWith('blob:task-evidence-closeout');
+});
+
+test('archives task evidence acceptance certificate from dashboard', async () => {
+  const user = userEvent.setup();
+  const fetchMock = vi.mocked(fetch);
+  const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+  const createObjectURL = vi.fn(() => 'blob:task-evidence-certificate');
+  const revokeObjectURL = vi.fn();
+  vi.stubGlobal('URL', blobUrlConstructor(createObjectURL, revokeObjectURL));
+
+  render(<App />);
+
+  const reviewPanel = await screen.findByRole('region', { name: 'Task evidence archive review' });
+  const certificatePanel = within(reviewPanel).getByLabelText('Task evidence acceptance certificate');
+  expect(within(certificatePanel).getByText('task-evidence-certificate-archive-1')).toBeInTheDocument();
+
+  await user.click(within(certificatePanel).getByRole('button', { name: 'Download task evidence acceptance certificate' }));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
+    '/api/tasks/evidence-packages/acceptance-certificate/report/download'
+  ));
+
+  await user.click(within(certificatePanel).getByRole('button', { name: 'Archive task evidence acceptance certificate' }));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
+    '/api/tasks/evidence-packages/acceptance-certificate/archives',
+    { method: 'POST' }
+  ));
+  expect(screen.getByText('Task evidence acceptance certificate task-evidence-certificate-archive-2 archived')).toBeInTheDocument();
+
+  await user.click(within(certificatePanel).getByRole('button', {
+    name: 'Download task evidence acceptance certificate archive task-evidence-certificate-archive-1'
+  }));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
+    '/api/tasks/evidence-packages/acceptance-certificate/archives/task-evidence-certificate-archive-1/report/download'
+  ));
+  expect(click).toHaveBeenCalledTimes(2);
+  expect(revokeObjectURL).toHaveBeenCalledWith('blob:task-evidence-certificate');
 });
 
 test('copies demo runbook from backend API', async () => {
@@ -6229,6 +6325,36 @@ function defaultAppResponse(input: RequestInfo | URL, init?: RequestInit) {
   }
   if (url === '/api/tasks/evidence-packages/acceptance-closeout/archives') {
     return jsonResponse([taskEvidencePackageAcceptanceCloseoutArchive]);
+  }
+  if (url === '/api/tasks/evidence-packages/acceptance-certificate') {
+    return jsonResponse(taskEvidencePackageAcceptanceCertificate);
+  }
+  if (url === '/api/tasks/evidence-packages/acceptance-certificate/archives' && init?.method === 'POST') {
+    return jsonResponse({
+      ...taskEvidencePackageAcceptanceCertificateArchive,
+      id: 'task-evidence-certificate-archive-2'
+    });
+  }
+  if (url === '/api/tasks/evidence-packages/acceptance-certificate/archives') {
+    return jsonResponse([taskEvidencePackageAcceptanceCertificateArchive]);
+  }
+  if (url === '/api/tasks/evidence-packages/acceptance-certificate/report/download') {
+    return Promise.resolve({
+      ok: true,
+      status: 200,
+      blob: async () => new Blob(['# PatchPilot Task Evidence Acceptance Certificate'], {
+        type: 'text/markdown;charset=UTF-8'
+      })
+    } as Response);
+  }
+  if (url === '/api/tasks/evidence-packages/acceptance-certificate/archives/task-evidence-certificate-archive-1/report/download') {
+    return Promise.resolve({
+      ok: true,
+      status: 200,
+      blob: async () => new Blob(['# PatchPilot Task Evidence Acceptance Certificate'], {
+        type: 'text/markdown;charset=UTF-8'
+      })
+    } as Response);
   }
   if (url === '/api/tasks/task-1/retry-preflight') {
     return jsonResponse({

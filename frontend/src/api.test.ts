@@ -112,14 +112,19 @@ import {
   downloadTaskReport,
   archiveTaskEvidencePackage,
   archiveTaskEvidencePackageAcceptanceCloseout,
+  archiveTaskEvidencePackageAcceptanceCertificate,
   createTaskEvidencePackageShareDeliveryReceipt,
+  downloadTaskEvidencePackageAcceptanceCertificateArchiveReport,
+  downloadTaskEvidencePackageAcceptanceCertificateReport,
   downloadTaskEvidencePackageFinalizationReport,
   downloadTaskEvidencePackageAcceptanceCloseoutArchiveReport,
+  getTaskEvidencePackageAcceptanceCertificate,
   getTaskEvidencePackageArchiveSummary,
   getTaskEvidencePackageFinalization,
   getTaskEvidencePackageShareCenter,
   listTaskEvidencePackageArchives,
   listTaskEvidencePackageAcceptanceCloseoutArchives,
+  listTaskEvidencePackageAcceptanceCertificateArchives,
   listTaskEvidencePackageShareDeliveryReceipts,
   listRecentTaskEvidencePackageArchives,
   downloadTaskEvidencePackageReport,
@@ -5130,6 +5135,112 @@ test('lists and downloads task evidence acceptance closeout archives through bac
   expect(archives).toHaveLength(1);
   expect(archives[0].latestArchiveId).toBe('task-evidence-archive-1');
   expect(report).toBe(reportBlob);
+});
+
+test('gets task evidence acceptance certificate through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        status: 'READY',
+        certified: true,
+        summary: 'Task evidence acceptance is certified from the latest accepted closeout archive.',
+        nextAction: 'Share the certificate and archived closeout report with reviewers.',
+        archiveCount: 1,
+        latestCloseoutArchiveId: 'task-evidence-closeout-archive-1',
+        latestEvidenceArchiveId: 'task-evidence-archive-1',
+        latestDeliveryReceiptId: 'task-evidence-delivery-receipt-1',
+        latestTaskId: 'task-1',
+        latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+        latestDeliveryTarget: 'reviewer@example.com',
+        latestDeliveryChannel: 'email',
+        deliveryReceiptFreshness: 'FRESH',
+        latestArchivedAt: '2026-06-28T07:00:00Z',
+        generatedAt: '2026-06-28T07:30:00Z',
+        downloadActions: [
+          'Download task evidence acceptance certificate.',
+          'Download task evidence acceptance closeout archive task-evidence-closeout-archive-1.'
+        ],
+        markdownReport: '# PatchPilot Task Evidence Acceptance Certificate'
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const certificate = await getTaskEvidencePackageAcceptanceCertificate();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/tasks/evidence-packages/acceptance-certificate');
+  expect(certificate.certified).toBe(true);
+  expect(certificate.latestCloseoutArchiveId).toBe('task-evidence-closeout-archive-1');
+  expect(certificate.latestDeliveryReceiptId).toBe('task-evidence-delivery-receipt-1');
+});
+
+test('archives lists and downloads task evidence acceptance certificates through backend API', async () => {
+  const reportBlob = new Blob(['# PatchPilot Task Evidence Acceptance Certificate'], {
+    type: 'text/markdown;charset=UTF-8'
+  });
+  const fetchMock = vi.fn(async (path: string, init?: RequestInit) => {
+    if (path.includes('/report/download')) {
+      return {
+        ok: true,
+        status: 200,
+        blob: async () => reportBlob
+      } as Response;
+    }
+    const archive = {
+      id: 'task-evidence-certificate-archive-1',
+      status: 'READY',
+      certified: true,
+      summary: 'Task evidence acceptance is certified from the latest accepted closeout archive.',
+      nextAction: 'Share the certificate and archived closeout report with reviewers.',
+      archiveCount: 1,
+      latestCloseoutArchiveId: 'task-evidence-closeout-archive-1',
+      latestEvidenceArchiveId: 'task-evidence-archive-1',
+      latestDeliveryReceiptId: 'task-evidence-delivery-receipt-1',
+      latestTaskId: 'task-1',
+      latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+      latestDeliveryTarget: 'reviewer@example.com',
+      latestDeliveryChannel: 'email',
+      deliveryReceiptFreshness: 'FRESH',
+      latestArchivedAt: '2026-06-28T07:00:00Z',
+      generatedAt: '2026-06-28T07:30:00Z',
+      archivedAt: '2026-06-28T07:35:00Z',
+      downloadActions: ['Download task evidence acceptance certificate.'],
+      report: '# PatchPilot Task Evidence Acceptance Certificate'
+    };
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({
+        success: true,
+        data: init?.method === 'POST' ? archive : [archive],
+        message: null
+      })
+    } as Response;
+  });
+  vi.stubGlobal('fetch', fetchMock);
+
+  const archive = await archiveTaskEvidencePackageAcceptanceCertificate();
+  const archives = await listTaskEvidencePackageAcceptanceCertificateArchives();
+  const report = await downloadTaskEvidencePackageAcceptanceCertificateArchiveReport('task evidence certificate 1');
+  const currentReport = await downloadTaskEvidencePackageAcceptanceCertificateReport();
+
+  expect(fetchMock).toHaveBeenNthCalledWith(1, '/api/tasks/evidence-packages/acceptance-certificate/archives', {
+    method: 'POST'
+  });
+  expect(fetchMock).toHaveBeenNthCalledWith(2, '/api/tasks/evidence-packages/acceptance-certificate/archives');
+  expect(fetchMock).toHaveBeenNthCalledWith(
+    3,
+    '/api/tasks/evidence-packages/acceptance-certificate/archives/task%20evidence%20certificate%201/report/download'
+  );
+  expect(fetchMock).toHaveBeenNthCalledWith(4, '/api/tasks/evidence-packages/acceptance-certificate/report/download');
+  expect(archive.id).toBe('task-evidence-certificate-archive-1');
+  expect(archives[0].latestCloseoutArchiveId).toBe('task-evidence-closeout-archive-1');
+  expect(report).toBe(reportBlob);
+  expect(currentReport).toBe(reportBlob);
 });
 
 test('shows actionable backend guidance when API response is empty', async () => {

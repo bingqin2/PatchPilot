@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react
 import {
   ADMIN_TOKEN_STORAGE_KEY,
   approveTaskReview,
+  archiveTaskEvidencePackageAcceptanceCertificate,
   archiveTaskEvidencePackageAcceptanceCloseout,
   archiveTaskEvidencePackage,
   archiveDemoLaunchAcceptanceCertificate,
@@ -46,6 +47,8 @@ import {
   downloadDemoHandoffShareInstructionsReport,
   downloadDemoHandoffShareChecklistReport,
   downloadTaskEvidencePackageReport,
+  downloadTaskEvidencePackageAcceptanceCertificateArchiveReport,
+  downloadTaskEvidencePackageAcceptanceCertificateReport,
   downloadTaskEvidencePackageAcceptanceCloseoutArchiveReport,
   downloadTaskEvidencePackageFinalizationReport,
   downloadTaskEvidencePackageShareDeliveryReceiptReport,
@@ -100,6 +103,7 @@ import {
   getModelUsageSummary,
   getQueueSummary,
   getTaskDetail,
+  getTaskEvidencePackageAcceptanceCertificate,
   getTaskEvidencePackageArchiveSummary,
   getTaskEvidencePackageFinalization,
   getTaskEvidencePackageShareCenter,
@@ -129,6 +133,7 @@ import {
   listTriggerQuarantines,
   listWebhookDeliveries,
   listTasks,
+  listTaskEvidencePackageAcceptanceCertificateArchives,
   listTaskEvidencePackageArchives,
   listTaskEvidencePackageAcceptanceCloseoutArchives,
   listTaskEvidencePackageShareDeliveryReceipts,
@@ -226,6 +231,8 @@ import type {
   EvaluationRunPreview,
   EvaluationRunSnapshotArchive,
   FixTask,
+  FixTaskEvidencePackageAcceptanceCertificate,
+  FixTaskEvidencePackageAcceptanceCertificateArchive,
   FixTaskEvidencePackageAcceptanceCloseoutArchive,
   FixTaskEvidencePackageArchive,
   FixTaskEvidencePackageFinalization,
@@ -442,11 +449,19 @@ export default function App() {
     useState<FixTaskEvidencePackageShareDeliveryReceipt[]>([]);
   const [taskEvidenceCloseoutArchives, setTaskEvidenceCloseoutArchives] =
     useState<FixTaskEvidencePackageAcceptanceCloseoutArchive[]>([]);
+  const [taskEvidenceAcceptanceCertificate, setTaskEvidenceAcceptanceCertificate] =
+    useState<FixTaskEvidencePackageAcceptanceCertificate | null>(null);
+  const [taskEvidenceAcceptanceCertificateArchives, setTaskEvidenceAcceptanceCertificateArchives] =
+    useState<FixTaskEvidencePackageAcceptanceCertificateArchive[]>([]);
   const [taskEvidenceArchiveError, setTaskEvidenceArchiveError] = useState<string | null>(null);
   const [taskEvidenceShareCenterError, setTaskEvidenceShareCenterError] = useState<string | null>(null);
   const [taskEvidenceFinalizationError, setTaskEvidenceFinalizationError] = useState<string | null>(null);
   const [taskEvidenceDeliveryReceiptError, setTaskEvidenceDeliveryReceiptError] = useState<string | null>(null);
   const [taskEvidenceCloseoutArchiveError, setTaskEvidenceCloseoutArchiveError] = useState<string | null>(null);
+  const [taskEvidenceAcceptanceCertificateError, setTaskEvidenceAcceptanceCertificateError] =
+    useState<string | null>(null);
+  const [taskEvidenceAcceptanceCertificateArchiveError, setTaskEvidenceAcceptanceCertificateArchiveError] =
+    useState<string | null>(null);
   const [webhookDeliveries, setWebhookDeliveries] = useState<WebhookDeliveryDiagnostic[]>([]);
   const [webhookDeliveryError, setWebhookDeliveryError] = useState<string | null>(null);
   const [webhookPayloadDiagnostic, setWebhookPayloadDiagnostic] = useState<WebhookPayloadDiagnosticResult | null>(null);
@@ -773,6 +788,8 @@ export default function App() {
         taskEvidenceFinalizationResult,
         taskEvidenceDeliveryReceiptResult,
         taskEvidenceCloseoutArchiveResult,
+        taskEvidenceAcceptanceCertificateResult,
+        taskEvidenceAcceptanceCertificateArchiveResult,
         webhookDeliveryResult,
         acceptedTriggerDecisionResult,
         rejectedTriggerResult,
@@ -988,6 +1005,14 @@ export default function App() {
           (caught) => ({ receipts: null, error: errorMessage(caught) })
         ),
         listTaskEvidencePackageAcceptanceCloseoutArchives().then(
+          (archives) => ({ archives, error: null as string | null }),
+          (caught) => ({ archives: null, error: errorMessage(caught) })
+        ),
+        getTaskEvidencePackageAcceptanceCertificate().then(
+          (certificate) => ({ certificate, error: null as string | null }),
+          (caught) => ({ certificate: null, error: errorMessage(caught) })
+        ),
+        listTaskEvidencePackageAcceptanceCertificateArchives().then(
           (archives) => ({ archives, error: null as string | null }),
           (caught) => ({ archives: null, error: errorMessage(caught) })
         ),
@@ -1232,6 +1257,14 @@ export default function App() {
         setTaskEvidenceCloseoutArchives(taskEvidenceCloseoutArchiveResult.archives);
       }
       setTaskEvidenceCloseoutArchiveError(taskEvidenceCloseoutArchiveResult.error);
+      if (taskEvidenceAcceptanceCertificateResult.certificate) {
+        setTaskEvidenceAcceptanceCertificate(taskEvidenceAcceptanceCertificateResult.certificate);
+      }
+      setTaskEvidenceAcceptanceCertificateError(taskEvidenceAcceptanceCertificateResult.error);
+      if (taskEvidenceAcceptanceCertificateArchiveResult.archives) {
+        setTaskEvidenceAcceptanceCertificateArchives(taskEvidenceAcceptanceCertificateArchiveResult.archives);
+      }
+      setTaskEvidenceAcceptanceCertificateArchiveError(taskEvidenceAcceptanceCertificateArchiveResult.error);
       if (webhookDeliveryResult.deliveries) {
         setWebhookDeliveries(webhookDeliveryResult.deliveries);
       }
@@ -1494,10 +1527,37 @@ export default function App() {
     const archive = await archiveTaskEvidencePackageAcceptanceCloseout();
     setTaskEvidenceCloseoutArchives((current) => [archive, ...current.filter((item) => item.id !== archive.id)].slice(0, 20));
     setTaskEvidenceCloseoutArchiveError(null);
+    try {
+      setTaskEvidenceAcceptanceCertificate(await getTaskEvidencePackageAcceptanceCertificate());
+      setTaskEvidenceAcceptanceCertificateError(null);
+    } catch (caught) {
+      setTaskEvidenceAcceptanceCertificateError(errorMessage(caught));
+    }
     return archive;
   }, []);
   const handleDownloadTaskEvidencePackageAcceptanceCloseoutArchiveReport = useCallback((archiveId: string) => (
     downloadTaskEvidencePackageAcceptanceCloseoutArchiveReport(archiveId)
+  ), []);
+  const handleDownloadTaskEvidencePackageAcceptanceCertificateReport = useCallback(() => (
+    downloadTaskEvidencePackageAcceptanceCertificateReport()
+  ), []);
+  const handleArchiveTaskEvidencePackageAcceptanceCertificate = useCallback(async () => {
+    const archive = await archiveTaskEvidencePackageAcceptanceCertificate();
+    setTaskEvidenceAcceptanceCertificateArchives((current) => [
+      archive,
+      ...current.filter((item) => item.id !== archive.id)
+    ].slice(0, 20));
+    setTaskEvidenceAcceptanceCertificateArchiveError(null);
+    try {
+      setTaskEvidenceAcceptanceCertificate(await getTaskEvidencePackageAcceptanceCertificate());
+      setTaskEvidenceAcceptanceCertificateError(null);
+    } catch (caught) {
+      setTaskEvidenceAcceptanceCertificateError(errorMessage(caught));
+    }
+    return archive;
+  }, []);
+  const handleDownloadTaskEvidencePackageAcceptanceCertificateArchiveReport = useCallback((archiveId: string) => (
+    downloadTaskEvidencePackageAcceptanceCertificateArchiveReport(archiveId)
   ), []);
   const handleCopyDemoRunbook = useCallback(() => getDemoRunbook(), []);
   const handleCopyDemoSessionReport = useCallback((input: DemoSessionReportInput) => getDemoSessionReport(input), []);
@@ -2345,12 +2405,16 @@ export default function App() {
         finalization={taskEvidenceFinalization}
         deliveryReceipts={taskEvidenceDeliveryReceipts}
         closeoutArchives={taskEvidenceCloseoutArchives}
+        certificate={taskEvidenceAcceptanceCertificate}
+        certificateArchives={taskEvidenceAcceptanceCertificateArchives}
         archives={taskEvidenceArchives}
         error={taskEvidenceArchiveError}
         shareCenterError={taskEvidenceShareCenterError}
         finalizationError={taskEvidenceFinalizationError}
         deliveryReceiptError={taskEvidenceDeliveryReceiptError}
         closeoutArchiveError={taskEvidenceCloseoutArchiveError}
+        certificateError={taskEvidenceAcceptanceCertificateError}
+        certificateArchiveError={taskEvidenceAcceptanceCertificateArchiveError}
         onDownloadArchiveReport={handleDownloadTaskEvidencePackageReport}
         onDownloadShareCenterReport={handleDownloadTaskEvidencePackageShareCenterReport}
         onDownloadFinalizationReport={handleDownloadTaskEvidencePackageFinalizationReport}
@@ -2358,6 +2422,9 @@ export default function App() {
         onDownloadDeliveryReceiptReport={handleDownloadTaskEvidencePackageShareDeliveryReceiptReport}
         onArchiveAcceptanceCloseout={handleArchiveTaskEvidencePackageAcceptanceCloseout}
         onDownloadAcceptanceCloseoutArchiveReport={handleDownloadTaskEvidencePackageAcceptanceCloseoutArchiveReport}
+        onDownloadAcceptanceCertificateReport={handleDownloadTaskEvidencePackageAcceptanceCertificateReport}
+        onArchiveAcceptanceCertificate={handleArchiveTaskEvidencePackageAcceptanceCertificate}
+        onDownloadAcceptanceCertificateArchiveReport={handleDownloadTaskEvidencePackageAcceptanceCertificateArchiveReport}
         onSelectTask={selectTask}
       />
 

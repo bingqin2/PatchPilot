@@ -2,6 +2,8 @@ import { Download, ExternalLink, FileText, Send } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import type {
   FixTaskEvidencePackageArchive,
+  FixTaskEvidencePackageAcceptanceCertificate,
+  FixTaskEvidencePackageAcceptanceCertificateArchive,
   FixTaskEvidencePackageAcceptanceCloseoutArchive,
   FixTaskEvidencePackageFinalization,
   FixTaskEvidencePackageArchiveShareCenter,
@@ -17,12 +19,16 @@ interface TaskEvidenceArchiveReviewPanelProps {
   finalization: FixTaskEvidencePackageFinalization | null;
   deliveryReceipts: FixTaskEvidencePackageShareDeliveryReceipt[];
   closeoutArchives: FixTaskEvidencePackageAcceptanceCloseoutArchive[];
+  certificate: FixTaskEvidencePackageAcceptanceCertificate | null;
+  certificateArchives: FixTaskEvidencePackageAcceptanceCertificateArchive[];
   archives: FixTaskEvidencePackageArchive[];
   error: string | null;
   shareCenterError: string | null;
   finalizationError: string | null;
   deliveryReceiptError: string | null;
   closeoutArchiveError: string | null;
+  certificateError: string | null;
+  certificateArchiveError: string | null;
   onDownloadArchiveReport: (archiveId: string) => Promise<Blob>;
   onDownloadShareCenterReport: () => Promise<Blob>;
   onDownloadFinalizationReport: () => Promise<Blob>;
@@ -30,6 +36,9 @@ interface TaskEvidenceArchiveReviewPanelProps {
   onDownloadDeliveryReceiptReport: (receiptId: string) => Promise<Blob>;
   onArchiveAcceptanceCloseout: () => Promise<FixTaskEvidencePackageAcceptanceCloseoutArchive>;
   onDownloadAcceptanceCloseoutArchiveReport: (archiveId: string) => Promise<Blob>;
+  onDownloadAcceptanceCertificateReport: () => Promise<Blob>;
+  onArchiveAcceptanceCertificate: () => Promise<FixTaskEvidencePackageAcceptanceCertificateArchive>;
+  onDownloadAcceptanceCertificateArchiveReport: (archiveId: string) => Promise<Blob>;
   onSelectTask: (taskId: string) => void;
 }
 
@@ -39,12 +48,16 @@ export function TaskEvidenceArchiveReviewPanel({
   finalization,
   deliveryReceipts,
   closeoutArchives,
+  certificate,
+  certificateArchives,
   archives,
   error,
   shareCenterError,
   finalizationError,
   deliveryReceiptError,
   closeoutArchiveError,
+  certificateError,
+  certificateArchiveError,
   onDownloadArchiveReport,
   onDownloadShareCenterReport,
   onDownloadFinalizationReport,
@@ -52,6 +65,9 @@ export function TaskEvidenceArchiveReviewPanel({
   onDownloadDeliveryReceiptReport,
   onArchiveAcceptanceCloseout,
   onDownloadAcceptanceCloseoutArchiveReport,
+  onDownloadAcceptanceCertificateReport,
+  onArchiveAcceptanceCertificate,
+  onDownloadAcceptanceCertificateArchiveReport,
   onSelectTask
 }: TaskEvidenceArchiveReviewPanelProps) {
   const [downloadStatus, setDownloadStatus] = useState<string | null>(null);
@@ -61,6 +77,7 @@ export function TaskEvidenceArchiveReviewPanel({
   const [deliveryNotes, setDeliveryNotes] = useState('');
   const [receiptStatus, setReceiptStatus] = useState<string | null>(null);
   const [closeoutStatus, setCloseoutStatus] = useState<string | null>(null);
+  const [certificateStatus, setCertificateStatus] = useState<string | null>(null);
 
   async function downloadArchive(archive: FixTaskEvidencePackageArchive) {
     try {
@@ -140,6 +157,37 @@ export function TaskEvidenceArchiveReviewPanel({
     }
   }
 
+  async function downloadAcceptanceCertificateReport() {
+    try {
+      const report = await onDownloadAcceptanceCertificateReport();
+      downloadMarkdown(report, 'patchpilot-task-evidence-acceptance-certificate.md');
+      setDownloadStatus('Task evidence acceptance certificate downloaded');
+    } catch {
+      setDownloadStatus('Download failed');
+    }
+  }
+
+  async function archiveAcceptanceCertificate() {
+    try {
+      const archive = await onArchiveAcceptanceCertificate();
+      setCertificateStatus(`Task evidence acceptance certificate ${archive.id} archived`);
+    } catch {
+      setCertificateStatus('Task evidence acceptance certificate archive failed');
+    }
+  }
+
+  async function downloadAcceptanceCertificateArchive(
+    archive: FixTaskEvidencePackageAcceptanceCertificateArchive
+  ) {
+    try {
+      const report = await onDownloadAcceptanceCertificateArchiveReport(archive.id);
+      downloadMarkdown(report, `patchpilot-task-evidence-acceptance-certificate-${safeFilenamePart(archive.id)}.md`);
+      setDownloadStatus(`Task evidence acceptance certificate ${archive.id} downloaded`);
+    } catch {
+      setDownloadStatus('Download failed');
+    }
+  }
+
   return (
     <section className="panel task-evidence-archive-review-panel" aria-label="Task evidence archive review">
       <div className="panel-header">
@@ -155,6 +203,8 @@ export function TaskEvidenceArchiveReviewPanel({
       {finalizationError ? <p className="panel-error">{finalizationError}</p> : null}
       {deliveryReceiptError ? <p className="panel-error">{deliveryReceiptError}</p> : null}
       {closeoutArchiveError ? <p className="panel-error">{closeoutArchiveError}</p> : null}
+      {certificateError ? <p className="panel-error">{certificateError}</p> : null}
+      {certificateArchiveError ? <p className="panel-error">{certificateArchiveError}</p> : null}
 
       {shareCenter ? (
         <section
@@ -321,6 +371,107 @@ export function TaskEvidenceArchiveReviewPanel({
                   >
                     <Download size={14} />
                     Download closeout
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section
+        className={`task-evidence-share-center task-evidence-share-center-${(certificate?.status ?? 'NEEDS_ATTENTION').toLowerCase().replace('_', '-')}`}
+        aria-label="Task evidence acceptance certificate"
+      >
+        <div className="task-evidence-share-center-heading">
+          <div>
+            <span>Task evidence acceptance certificate</span>
+            <strong>{certificate?.certified ? 'Certified' : formatFinalizationStatus(certificate?.status ?? 'NEEDS_ATTENTION')}</strong>
+            <p>{certificate?.summary ?? 'No task evidence acceptance certificate is available yet.'}</p>
+          </div>
+          <div className="task-evidence-archive-actions">
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={() => void downloadAcceptanceCertificateReport()}
+              aria-label="Download task evidence acceptance certificate"
+              disabled={!certificate}
+            >
+              <FileText size={14} />
+              Download certificate
+            </button>
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={() => void archiveAcceptanceCertificate()}
+              aria-label="Archive task evidence acceptance certificate"
+              disabled={!certificate?.certified}
+            >
+              <FileText size={14} />
+              Archive certificate
+            </button>
+          </div>
+        </div>
+        {certificateStatus ? <span className="copy-status">{certificateStatus}</span> : null}
+        {certificate ? (
+          <>
+            <div className="task-evidence-share-center-grid">
+              <div>
+                <span>Certificate source</span>
+                <strong>{certificate.latestCloseoutArchiveId ?? 'None'}</strong>
+                <p>{certificate.nextAction}</p>
+              </div>
+              <div>
+                <span>Task evidence</span>
+                <strong>{certificate.latestEvidenceArchiveId ?? 'None'}</strong>
+                <p>{certificate.latestTaskId ? `Task ${certificate.latestTaskId}` : 'No task evidence archive'}</p>
+              </div>
+              <div>
+                <span>Delivery receipt</span>
+                <strong>{certificate.latestDeliveryReceiptId ?? 'Missing'}</strong>
+                <p>{certificate.deliveryReceiptFreshness}</p>
+              </div>
+            </div>
+            <div className="task-evidence-share-center-notes">
+              <div>
+                <span>Download actions</span>
+                <ul>
+                  {certificate.downloadActions.map((action) => (
+                    <li key={action}>{action}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </>
+        ) : (
+          <p className="empty-state compact-empty-state">Archive an accepted closeout before generating the certificate.</p>
+        )}
+        {certificateArchives.length === 0 ? (
+          <p className="empty-state compact-empty-state">No task evidence acceptance certificates archived.</p>
+        ) : (
+          <div className="task-evidence-archive-list">
+            {certificateArchives.map((archive) => (
+              <article className="task-evidence-archive-row" key={archive.id}>
+                <div>
+                  <strong>{archive.id}</strong>
+                  <p>
+                    {archive.certified ? 'certified' : formatFinalizationStatus(archive.status)}
+                    {' '}· {archive.latestCloseoutArchiveId ?? 'no closeout'} · {archive.latestDeliveryReceiptId ?? 'no receipt'}
+                  </p>
+                  <span>
+                    {archive.latestTaskId ?? 'No task'} · {archive.deliveryReceiptFreshness} · archived{' '}
+                    {compactTime(archive.archivedAt)}
+                  </span>
+                </div>
+                <div className="task-evidence-archive-actions">
+                  <button
+                    className="secondary-button"
+                    type="button"
+                    onClick={() => void downloadAcceptanceCertificateArchive(archive)}
+                    aria-label={`Download task evidence acceptance certificate archive ${archive.id}`}
+                  >
+                    <Download size={14} />
+                    Download certificate
                   </button>
                 </div>
               </article>
