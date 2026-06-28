@@ -52,6 +52,7 @@ public record DemoEvidenceBundleVo(
         String launchEvidenceFinalizationLatestDeliveryReceiptId,
         DemoLaunchAcceptanceCloseoutEvidenceVo launchAcceptanceCloseoutEvidence,
         DemoLaunchAcceptanceCertificateEvidenceVo launchAcceptanceCertificateEvidence,
+        DemoTaskEvidenceAcceptanceCertificateEvidenceVo taskEvidenceAcceptanceCertificateEvidence,
         boolean handoffShareDeliveryReceiptRecorded,
         String handoffShareLatestDeliveryReceiptId,
         String handoffShareLatestDeliveryTarget,
@@ -171,6 +172,7 @@ public record DemoEvidenceBundleVo(
                 launchEvidenceFinalizationLatestDeliveryReceiptId,
                 launchAcceptanceCloseoutEvidence,
                 DemoEvidenceBundleDefaults.missingLaunchAcceptanceCertificateEvidence(),
+                DemoEvidenceBundleDefaults.missingTaskEvidenceAcceptanceCertificateEvidence(),
                 handoffShareDeliveryReceiptRecorded,
                 handoffShareLatestDeliveryReceiptId,
                 handoffShareLatestDeliveryTarget,
@@ -291,6 +293,7 @@ public record DemoEvidenceBundleVo(
                 launchEvidenceFinalizationLatestDeliveryReceiptId,
                 DemoEvidenceBundleDefaults.missingLaunchAcceptanceCloseoutEvidence(),
                 DemoEvidenceBundleDefaults.missingLaunchAcceptanceCertificateEvidence(),
+                DemoEvidenceBundleDefaults.missingTaskEvidenceAcceptanceCertificateEvidence(),
                 handoffShareDeliveryReceiptRecorded,
                 handoffShareLatestDeliveryReceiptId,
                 handoffShareLatestDeliveryTarget,
@@ -379,6 +382,7 @@ public record DemoEvidenceBundleVo(
                 null,
                 DemoEvidenceBundleDefaults.missingLaunchAcceptanceCloseoutEvidence(),
                 DemoEvidenceBundleDefaults.missingLaunchAcceptanceCertificateEvidence(),
+                DemoEvidenceBundleDefaults.missingTaskEvidenceAcceptanceCertificateEvidence(),
                 false,
                 null,
                 null,
@@ -483,6 +487,7 @@ public record DemoEvidenceBundleVo(
                 null,
                 DemoEvidenceBundleDefaults.missingLaunchAcceptanceCloseoutEvidence(),
                 DemoEvidenceBundleDefaults.missingLaunchAcceptanceCertificateEvidence(),
+                DemoEvidenceBundleDefaults.missingTaskEvidenceAcceptanceCertificateEvidence(),
                 handoffShareDeliveryReceiptRecorded,
                 handoffShareLatestDeliveryReceiptId,
                 handoffShareLatestDeliveryTarget,
@@ -577,6 +582,7 @@ public record DemoEvidenceBundleVo(
                 null,
                 DemoEvidenceBundleDefaults.missingLaunchAcceptanceCloseoutEvidence(),
                 DemoEvidenceBundleDefaults.missingLaunchAcceptanceCertificateEvidence(),
+                DemoEvidenceBundleDefaults.missingTaskEvidenceAcceptanceCertificateEvidence(),
                 handoffShareDeliveryReceiptRecorded,
                 handoffShareLatestDeliveryReceiptId,
                 handoffShareLatestDeliveryTarget,
@@ -676,6 +682,7 @@ public record DemoEvidenceBundleVo(
                 null,
                 DemoEvidenceBundleDefaults.missingLaunchAcceptanceCloseoutEvidence(),
                 DemoEvidenceBundleDefaults.missingLaunchAcceptanceCertificateEvidence(),
+                DemoEvidenceBundleDefaults.missingTaskEvidenceAcceptanceCertificateEvidence(),
                 handoffShareDeliveryReceiptRecorded,
                 handoffShareLatestDeliveryReceiptId,
                 handoffShareLatestDeliveryTarget,
@@ -785,6 +792,7 @@ public record DemoEvidenceBundleVo(
                 null,
                 DemoEvidenceBundleDefaults.missingLaunchAcceptanceCloseoutEvidence(),
                 DemoEvidenceBundleDefaults.missingLaunchAcceptanceCertificateEvidence(),
+                DemoEvidenceBundleDefaults.missingTaskEvidenceAcceptanceCertificateEvidence(),
                 handoffShareDeliveryReceiptRecorded,
                 handoffShareLatestDeliveryReceiptId,
                 handoffShareLatestDeliveryTarget,
@@ -867,6 +875,25 @@ public record DemoEvidenceBundleVo(
                     null,
                     null,
                     List.of("Archive the final launch acceptance certificate before using the evidence bundle as the external-review launch record.")
+            );
+        }
+
+        private static DemoTaskEvidenceAcceptanceCertificateEvidenceVo missingTaskEvidenceAcceptanceCertificateEvidence() {
+            return new DemoTaskEvidenceAcceptanceCertificateEvidenceVo(
+                    DemoReadinessStatus.NEEDS_ATTENTION,
+                    false,
+                    false,
+                    "No task evidence acceptance certificate archive is available.",
+                    "Archive a certified task evidence acceptance certificate after final task evidence closeout.",
+                    0,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    List.of("Archive a task evidence acceptance certificate before using the evidence bundle as task-level review proof.")
             );
         }
     }

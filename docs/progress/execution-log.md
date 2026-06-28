@@ -5393,3 +5393,22 @@ Validation so far:
 - `npm test -- --reporter=basic`: passed, 29 test files and 386 tests.
 - `npm run build`: passed.
 - `git diff --check`: passed.
+
+## 2026-06-28 - 269 Task certificate evidence bundle
+
+- Started `269-task-certificate-evidence-bundle` to make the latest task evidence acceptance certificate visible from the top-level demo evidence bundle.
+- Planned a complete feature slice: backend evidence read model, bundle readiness aggregation, copied runbook output, REST serialization coverage, dashboard evidence card, README docs, and regression tests.
+- RED backend tests were added first for ready and missing task certificate archive evidence in `DemoEvidenceBundleService`, copied runbook Markdown, and REST JSON serialization.
+- RED frontend tests were added first for rendering certified task certificate archive proof and missing-certificate guidance in the demo evidence bundle panel.
+- Implemented `DemoTaskEvidenceAcceptanceCertificateEvidenceVo` and wired `DemoEvidenceBundleService` to read recent task evidence acceptance certificate archives.
+- Updated bundle status and next actions so the demo evidence bundle is not `READY` until the latest task evidence acceptance certificate archive is `READY` and certified.
+- Updated the copied demo runbook with task certificate archive id, linked closeout/evidence/receipt ids, task id, Pull Request, next action, and download actions.
+- Updated the dashboard evidence bundle panel with a task evidence acceptance certificate card and safe missing-evidence fallback.
+- Updated README and added this plan document.
+
+Validation so far:
+
+- `mvn -q -pl PatchPilot -Dtest=DemoEvidenceBundleServiceTests,DemoRunbookServiceTests test`: first failed at test compile because `DemoTaskEvidenceAcceptanceCertificateEvidenceVo` did not exist; passed after backend implementation.
+- `npm test -- src/dashboard/components/DemoEvidenceBundlePanel.test.tsx -- --reporter=basic`: first failed because the task certificate evidence card did not render; then failed on old single-card assertions for repeated `Certified archive` and `1 certificate archives`; passed after implementing the card and updating assertions for two certificate evidence cards, 4 tests run.
+- `mvn -q -pl PatchPilot -Dtest=DemoEvidenceBundleServiceTests,DemoRunbookServiceTests,DemoReadinessControllerTests#should_return_demo_evidence_bundle test`: passed after REST serialization assertions were added.
+- `npm run build`: passed after adding the new evidence field to the session snapshot fixture.

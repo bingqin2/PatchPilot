@@ -12,6 +12,7 @@ import io.patchpilot.backend.demo.domain.DemoReadinessVo;
 import io.patchpilot.backend.demo.domain.DemoSmokeChecklistStatus;
 import io.patchpilot.backend.demo.domain.DemoSmokeChecklistStepVo;
 import io.patchpilot.backend.demo.domain.DemoSmokeChecklistVo;
+import io.patchpilot.backend.demo.domain.DemoTaskEvidenceAcceptanceCertificateEvidenceVo;
 import io.patchpilot.backend.github.webhook.domain.WebhookDeliveryDiagnosticStatus;
 import io.patchpilot.backend.github.webhook.domain.WebhookDeliveryDiagnosticVo;
 import io.patchpilot.backend.safety.domain.RejectedTriggerAuditSummaryVo;
@@ -72,6 +73,15 @@ class DemoRunbookServiceTests {
                 .contains("- Launch acceptance certificate Pull Request: https://github.com/bingqin2/PatchPilot/pull/42")
                 .contains("- Launch acceptance certificate next action: Use the archived launch acceptance certificate as the external-review launch record.")
                 .contains("- Launch acceptance certificate download: Download launch acceptance certificate archive launch-certificate-archive-1.")
+                .contains("- Task evidence acceptance certificate: `READY` - Latest task evidence acceptance certificate archive is certified and ready.")
+                .contains("- Task evidence acceptance certificate archive: `task-evidence-certificate-archive-1`")
+                .contains("- Task evidence acceptance certificate closeout archive: `task-evidence-closeout-archive-1`")
+                .contains("- Task evidence acceptance certificate evidence archive: `task-evidence-archive-1`")
+                .contains("- Task evidence acceptance certificate receipt: `task-evidence-receipt-1`")
+                .contains("- Task evidence acceptance certificate task: `task-2`")
+                .contains("- Task evidence acceptance certificate Pull Request: https://github.com/bingqin2/PatchPilot/pull/42")
+                .contains("- Task evidence acceptance certificate next action: Use the archived task evidence acceptance certificate as task-level review proof.")
+                .contains("- Task evidence acceptance certificate download: Download task evidence acceptance certificate archive task-evidence-certificate-archive-1.")
                 .contains("## Readiness")
                 .contains("- `Credentials`: `READY` - Required credentials are configured.")
                 .contains("## Smoke Checklist")
@@ -223,6 +233,25 @@ class DemoRunbookServiceTests {
                         List.of(
                                 "Download launch acceptance certificate archive launch-certificate-archive-1.",
                                 "Download linked launch acceptance closeout archive launch-closeout-archive-1."
+                        )
+                ),
+                new DemoTaskEvidenceAcceptanceCertificateEvidenceVo(
+                        DemoReadinessStatus.READY,
+                        true,
+                        true,
+                        "Latest task evidence acceptance certificate archive is certified and ready.",
+                        "Use the archived task evidence acceptance certificate as task-level review proof.",
+                        1,
+                        "task-evidence-certificate-archive-1",
+                        "task-evidence-closeout-archive-1",
+                        "task-evidence-archive-1",
+                        "task-evidence-receipt-1",
+                        "task-2",
+                        "https://github.com/bingqin2/PatchPilot/pull/42",
+                        Instant.parse("2026-06-24T09:30:00Z"),
+                        List.of(
+                                "Download task evidence acceptance certificate archive task-evidence-certificate-archive-1.",
+                                "Download linked task evidence acceptance closeout archive task-evidence-closeout-archive-1."
                         )
                 ),
                 true,

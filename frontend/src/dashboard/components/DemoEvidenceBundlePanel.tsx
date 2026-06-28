@@ -28,6 +28,24 @@ export function DemoEvidenceBundlePanel({ bundle, error, onCopyRunbook }: DemoEv
       'Archive the final launch acceptance certificate before using the evidence bundle as the external-review launch record.'
     ]
   };
+  const taskCertificateEvidence = bundle?.taskEvidenceAcceptanceCertificateEvidence ?? {
+    status: 'NEEDS_ATTENTION' as DemoReadinessStatus,
+    archived: false,
+    certified: false,
+    summary: 'No task evidence acceptance certificate archive is available.',
+    nextAction: 'Archive a certified task evidence acceptance certificate after final task evidence closeout.',
+    archiveCount: 0,
+    latestArchiveId: null,
+    latestCloseoutArchiveId: null,
+    latestEvidenceArchiveId: null,
+    latestDeliveryReceiptId: null,
+    latestTaskId: null,
+    latestPullRequestUrl: null,
+    latestArchivedAt: null,
+    downloadActions: [
+      'Archive a task evidence acceptance certificate before using the evidence bundle as task-level review proof.'
+    ]
+  };
 
   async function copyRunbook() {
     try {
@@ -200,6 +218,33 @@ export function DemoEvidenceBundlePanel({ bundle, error, onCopyRunbook }: DemoEv
                 <small>Certified {compactDateTime(certificateEvidence.latestArchivedAt)}</small>
               ) : null}
               {certificateEvidence.downloadActions.slice(0, 2).map((action) => (
+                <small key={action}>{action}</small>
+              ))}
+            </div>
+            <div>
+              <span>Task evidence acceptance certificate</span>
+              <strong>
+                {taskCertificateEvidence.certified
+                  ? 'Certified archive'
+                  : statusLabel(taskCertificateEvidence.status)}
+              </strong>
+              <small>{taskCertificateEvidence.summary}</small>
+              <small>{taskCertificateEvidence.nextAction}</small>
+              <small>{taskCertificateEvidence.archiveCount} certificate archives</small>
+              <small>{taskCertificateEvidence.latestArchiveId ?? 'No task certificate archive'}</small>
+              <small>{taskCertificateEvidence.latestCloseoutArchiveId ?? 'No linked task closeout archive'}</small>
+              <small>{taskCertificateEvidence.latestEvidenceArchiveId ?? 'No linked task evidence archive'}</small>
+              <small>{taskCertificateEvidence.latestDeliveryReceiptId ?? 'No accepted task evidence receipt'}</small>
+              <small>{taskCertificateEvidence.latestTaskId ? `Task ${taskCertificateEvidence.latestTaskId}` : 'No certified task'}</small>
+              {taskCertificateEvidence.latestPullRequestUrl ? (
+                <a href={taskCertificateEvidence.latestPullRequestUrl}>Open task certificate Pull Request</a>
+              ) : (
+                <small>No task certificate Pull Request</small>
+              )}
+              {taskCertificateEvidence.latestArchivedAt ? (
+                <small>Certified {compactDateTime(taskCertificateEvidence.latestArchivedAt)}</small>
+              ) : null}
+              {taskCertificateEvidence.downloadActions.slice(0, 2).map((action) => (
                 <small key={action}>{action}</small>
               ))}
             </div>

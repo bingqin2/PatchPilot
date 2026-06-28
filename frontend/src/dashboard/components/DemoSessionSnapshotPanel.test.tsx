@@ -112,6 +112,25 @@ const snapshot: DemoSessionSnapshot = {
         'Download linked launch acceptance closeout archive launch-closeout-archive-1.'
       ]
     },
+    taskEvidenceAcceptanceCertificateEvidence: {
+      status: 'READY',
+      archived: true,
+      certified: true,
+      summary: 'Latest task evidence acceptance certificate archive is certified and ready.',
+      nextAction: 'Use the archived task evidence acceptance certificate as task-level review proof.',
+      archiveCount: 1,
+      latestArchiveId: 'task-evidence-certificate-archive-1',
+      latestCloseoutArchiveId: 'task-evidence-closeout-archive-1',
+      latestEvidenceArchiveId: 'task-evidence-archive-1',
+      latestDeliveryReceiptId: 'task-evidence-receipt-1',
+      latestTaskId: 'task-2',
+      latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+      latestArchivedAt: '2026-06-24T09:30:00Z',
+      downloadActions: [
+        'Download task evidence acceptance certificate archive task-evidence-certificate-archive-1.',
+        'Download linked task evidence acceptance closeout archive task-evidence-closeout-archive-1.'
+      ]
+    },
     handoffShareDeliveryReceiptRecorded: true,
     handoffShareLatestDeliveryReceiptId: 'delivery-receipt-1',
     handoffShareLatestDeliveryTarget: 'maintainer@example.com',
