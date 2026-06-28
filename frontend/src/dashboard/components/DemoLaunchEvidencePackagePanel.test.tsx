@@ -2,6 +2,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type {
   DemoLaunchAcceptanceCertificate,
+  DemoLaunchAcceptanceCertificateArchive,
   DemoLaunchAcceptanceCloseout,
   DemoLaunchAcceptanceCloseoutArchive,
   DemoLaunchEvidenceFinalization,
@@ -223,6 +224,31 @@ const launchAcceptanceCertificate: DemoLaunchAcceptanceCertificate = {
   markdownReport: '# PatchPilot Launch Acceptance Certificate'
 };
 
+const launchAcceptanceCertificateArchive: DemoLaunchAcceptanceCertificateArchive = {
+  id: 'launch-certificate-archive-1',
+  status: 'READY',
+  certified: true,
+  summary: 'PatchPilot launch acceptance is certified from the latest accepted closeout archive.',
+  nextAction: 'Share the certificate and archived closeout report with reviewers.',
+  archiveCount: 1,
+  latestCloseoutArchiveId: 'launch-closeout-archive-1',
+  latestLaunchEvidenceArchiveId: 'launch-evidence-archive-1',
+  latestDeliveryReceiptId: 'launch-delivery-receipt-1',
+  latestSessionId: 'demo-session-20260624T003000Z',
+  latestTaskId: 'task-1',
+  latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+  latestWebhookDeliveryId: 'delivery-1',
+  evaluationRunId: 'evaluation-run-2',
+  latestDeliveryTarget: 'reviewer@example.com',
+  latestDeliveryChannel: 'email',
+  deliveryReceiptFreshness: 'FRESH',
+  latestArchivedAt: '2026-06-28T08:30:00Z',
+  generatedAt: '2026-06-28T09:00:00Z',
+  archivedAt: '2026-06-28T10:30:00Z',
+  downloadActions: ['Download launch acceptance certificate.'],
+  report: '# PatchPilot Launch Acceptance Certificate'
+};
+
 const launchEvidenceDeliveryReceipt: DemoLaunchEvidenceShareDeliveryReceipt = {
   id: 'launch-delivery-receipt-1',
   status: 'READY',
@@ -257,6 +283,8 @@ function renderPanel(overrides: PanelOverrides = {}) {
       closeoutArchiveError={null}
       certificate={launchAcceptanceCertificate}
       certificateError={null}
+      certificateArchives={[launchAcceptanceCertificateArchive]}
+      certificateArchiveError={null}
       deliveryReceipts={[launchEvidenceDeliveryReceipt]}
       deliveryReceiptError={null}
       onArchivePackage={async () => launchEvidenceArchive}
@@ -268,6 +296,8 @@ function renderPanel(overrides: PanelOverrides = {}) {
       onArchiveCloseout={async () => launchAcceptanceCloseoutArchive}
       onDownloadCloseoutArchiveReport={async () => new Blob(['closeout archive report'], { type: 'text/markdown' })}
       onDownloadCertificateReport={async () => new Blob(['certificate report'], { type: 'text/markdown' })}
+      onArchiveCertificate={async () => launchAcceptanceCertificateArchive}
+      onDownloadCertificateArchiveReport={async () => new Blob(['certificate archive report'], { type: 'text/markdown' })}
       onCreateDeliveryReceipt={async () => launchEvidenceDeliveryReceipt}
       onDownloadDeliveryReceiptReport={async () => new Blob(['receipt report'], { type: 'text/markdown' })}
       {...overrides}
@@ -315,6 +345,8 @@ test('renders demo launch evidence package proof and readiness status', () => {
   expect(within(panel).getByText('Certified')).toBeInTheDocument();
   expect(within(panel).getByText('Share the certificate and archived closeout report with reviewers.')).toBeInTheDocument();
   expect(within(panel).getByText('Download launch acceptance certificate.')).toBeInTheDocument();
+  expect(within(panel).getByRole('heading', { name: 'Recent launch acceptance certificates' })).toBeInTheDocument();
+  expect(within(panel).getAllByText(/launch-certificate-archive-1/).length).toBeGreaterThanOrEqual(1);
   expect(within(panel).getAllByText('launch-delivery-receipt-1').length).toBeGreaterThanOrEqual(2);
   expect(within(panel).getByText('Latest delivery receipt matches the current launch evidence archive and session.')).toBeInTheDocument();
   expect(within(panel).getByRole('heading', { name: 'Launch evidence delivery receipts' })).toBeInTheDocument();
@@ -342,6 +374,31 @@ test('downloads launch acceptance certificate markdown report', async () => {
   expect(click).toHaveBeenCalled();
   expect(revokeObjectURL).toHaveBeenCalledWith('blob:launch-acceptance-certificate');
   expect(screen.getByText('Launch acceptance certificate downloaded')).toBeInTheDocument();
+
+  vi.unstubAllGlobals();
+  click.mockRestore();
+});
+
+test('archives launch acceptance certificate and downloads archived report', async () => {
+  const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+  const createObjectURL = vi.fn(() => 'blob:launch-acceptance-certificate-archive');
+  const revokeObjectURL = vi.fn();
+  vi.stubGlobal('URL', { createObjectURL, revokeObjectURL });
+  const onArchiveCertificate = vi.fn(async () => launchAcceptanceCertificateArchive);
+  const onDownloadCertificateArchiveReport = vi.fn(async () => new Blob(['certificate archive report'], { type: 'text/markdown' }));
+
+  renderPanel({ onArchiveCertificate, onDownloadCertificateArchiveReport });
+
+  await userEvent.click(screen.getByRole('button', { name: 'Archive launch acceptance certificate' }));
+  expect(onArchiveCertificate).toHaveBeenCalledTimes(1);
+  expect(screen.getByText('Launch acceptance certificate archived launch-certificate-archive-1')).toBeInTheDocument();
+
+  await userEvent.click(screen.getByRole('button', { name: 'Download launch acceptance certificate archive launch-certificate-archive-1' }));
+  expect(onDownloadCertificateArchiveReport).toHaveBeenCalledWith('launch-certificate-archive-1');
+  expect(createObjectURL).toHaveBeenCalled();
+  expect(click).toHaveBeenCalled();
+  expect(revokeObjectURL).toHaveBeenCalledWith('blob:launch-acceptance-certificate-archive');
+  expect(screen.getByText('Launch acceptance certificate archive downloaded')).toBeInTheDocument();
 
   vi.unstubAllGlobals();
   click.mockRestore();
