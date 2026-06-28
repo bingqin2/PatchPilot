@@ -34,6 +34,7 @@ PatchPilot is not a chatbot and does not auto-merge code. The current target is 
 - Human approval flow for generated-diff risk rejections: `PENDING_REVIEW` tasks expose the generated diff for inspection, then can be cancelled or explicitly approved to resume from the already-generated workspace and continue verification, commit, push, and Pull Request creation.
 - Unsupported repository preflight that fails before patch generation, test execution, Git mutation, or Pull Request creation.
 - Issue-facing unsupported repository feedback that states no model patch generation, tests, commits, pushes, or Pull Request creation were attempted and lists the supported adapter shapes.
+- Structured adapter execution evidence in task detail, copied Markdown reports, and the dashboard, covering supported, pending, and unsupported repository states with selected adapter, allowlisted verification command, detection reason, next action, and safe-command boundary.
 - OpenAI-compatible model client and plan-driven patch workflow.
 - Admin-protected model provider health probe that verifies the configured OpenAI-compatible provider responds without exposing secrets or recording task model-call audits.
 - Admin-protected GitHub credential readiness probe that verifies the configured token is accepted by GitHub without exposing the token or mutating GitHub state.

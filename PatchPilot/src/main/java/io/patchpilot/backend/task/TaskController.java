@@ -21,6 +21,7 @@ import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.enums.FixTaskSort;
 import io.patchpilot.backend.task.domain.enums.TriggerEvaluationSource;
 import io.patchpilot.backend.task.domain.vo.FixTaskFailureCauseSummaryVo;
+import io.patchpilot.backend.task.domain.vo.FixTaskAdapterExecutionEvidenceVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskAuditSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskFailureDiagnosisVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskGeneratedDiffVo;
@@ -43,6 +44,7 @@ import io.patchpilot.backend.task.domain.vo.FixTaskTriggerIntentAuditVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskVo;
 import io.patchpilot.backend.task.domain.vo.IssueContextCommentVo;
 import io.patchpilot.backend.task.domain.vo.IssueContextVo;
+import io.patchpilot.backend.task.domain.vo.RepositorySupportGuidanceVo;
 import io.patchpilot.backend.task.service.FixTaskAuditSummaryService;
 import io.patchpilot.backend.task.service.FixTaskControlService;
 import io.patchpilot.backend.task.service.FixTaskMetricsService;
@@ -643,6 +645,8 @@ public class TaskController {
         List<FixTaskQueueItemVo> queueItems = fixTaskQueueQueryService.listByTaskId(taskId);
         List<FixTaskToolCallVo> toolCalls = fixTaskToolCallService.listToolCalls(taskId);
         List<FixTaskTimelineEventVo> timeline = fixTaskTimelineService.listEvents(taskId);
+        RepositorySupportGuidanceVo repositorySupportGuidance =
+                repositorySupportGuidanceService.guidanceFor(summary.task()).orElse(null);
         return new FixTaskDetailVo(
                 summary,
                 timeline,
@@ -657,7 +661,48 @@ public class TaskController {
                 failureDiagnosis(summary.task()),
                 queueItems.stream().findFirst().orElse(null),
                 queueItems,
-                repositorySupportGuidanceService.guidanceFor(summary.task()).orElse(null)
+                adapterExecutionEvidence(summary.task(), repositorySupportGuidance),
+                repositorySupportGuidance
+        );
+    }
+
+    private static FixTaskAdapterExecutionEvidenceVo adapterExecutionEvidence(
+            FixTaskVo task,
+            RepositorySupportGuidanceVo repositorySupportGuidance
+    ) {
+        if (repositorySupportGuidance != null && "UNSUPPORTED".equals(repositorySupportGuidance.status())) {
+            return new FixTaskAdapterExecutionEvidenceVo(
+                    "UNSUPPORTED",
+                    null,
+                    null,
+                    null,
+                    repositorySupportGuidance.reason(),
+                    repositorySupportGuidance.operatorAction(),
+                    "PatchPilot stopped before model patch generation, verification, commit, push, or Pull Request creation.",
+                    repositorySupportGuidance.supportedAdapters()
+            );
+        }
+        if (hasText(task.language()) || hasText(task.buildSystem()) || hasText(task.verificationCommand())) {
+            return new FixTaskAdapterExecutionEvidenceVo(
+                    "SUPPORTED",
+                    task.language(),
+                    task.buildSystem(),
+                    task.verificationCommand(),
+                    task.adapterDetectionReason(),
+                    "Review verification output and Pull Request evidence for this selected adapter.",
+                    "Verification command came from a registered language adapter, not from the issue comment.",
+                    List.of()
+            );
+        }
+        return new FixTaskAdapterExecutionEvidenceVo(
+                "PENDING",
+                null,
+                null,
+                null,
+                null,
+                "Wait for workspace preflight to record adapter evidence before trusting verification status.",
+                "No adapter-selected verification command has been recorded for this task yet.",
+                List.of()
         );
     }
 
@@ -879,6 +924,10 @@ public class TaskController {
             return null;
         }
         return value.trim();
+    }
+
+    private static boolean hasText(String value) {
+        return value != null && !value.isBlank();
     }
 
     private static RetryTaskCommand retryTaskCommand(RetryTaskDto request) {

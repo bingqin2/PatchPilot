@@ -1,6 +1,7 @@
 package io.patchpilot.backend.task.service;
 
 import io.patchpilot.backend.task.domain.vo.FixTaskDetailVo;
+import io.patchpilot.backend.task.domain.vo.FixTaskAdapterExecutionEvidenceVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskModelCallVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskPatchReviewVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskTestRunVo;
@@ -44,6 +45,7 @@ public class FixTaskReportFormatter {
         }
 
         appendAdapter(report, task);
+        appendAdapterExecutionEvidence(report, detail.adapterExecutionEvidence());
         appendTriggerIntentAudit(report, detail);
         appendPreExecutionSafetySnapshot(report, detail);
         appendRetryLineage(report, task);
@@ -161,6 +163,47 @@ public class FixTaskReportFormatter {
         }
         if (task.adapterDetectionReason() != null) {
             report.append("- Detection reason: ").append(task.adapterDetectionReason()).append("\n");
+        }
+    }
+
+    private static void appendAdapterExecutionEvidence(
+            StringBuilder report,
+            FixTaskAdapterExecutionEvidenceVo evidence
+    ) {
+        if (evidence == null) {
+            return;
+        }
+
+        report.append("\n## Adapter Execution Evidence\n\n")
+                .append("- Status: `").append(evidence.status()).append("`\n");
+        if (evidence.language() != null || evidence.buildSystem() != null) {
+            report.append("- Selected adapter: `")
+                    .append(valueOrUnknown(evidence.language()))
+                    .append("/")
+                    .append(valueOrUnknown(evidence.buildSystem()))
+                    .append("`\n");
+        }
+        if (evidence.verificationCommand() != null) {
+            report.append("- Allowlisted verification command: `")
+                    .append(evidence.verificationCommand())
+                    .append("`\n");
+        }
+        if (evidence.detectionReason() != null) {
+            report.append("- Detection reason: ").append(evidence.detectionReason()).append("\n");
+        }
+        report.append("- Action: ").append(evidence.operatorAction()).append("\n")
+                .append("- Safety: ").append(evidence.safetyNote()).append("\n");
+        if (!evidence.supportedAdapters().isEmpty()) {
+            report.append("- Supported adapters:\n");
+            evidence.supportedAdapters().forEach(adapter -> report.append("  - `")
+                    .append(adapter.language())
+                    .append("/")
+                    .append(adapter.buildSystem())
+                    .append("`: verify `")
+                    .append(String.join(" ", adapter.verificationCommand()))
+                    .append("`, signals ")
+                    .append(formatSignals(adapter.detectionSignals()))
+                    .append("\n"));
         }
     }
 

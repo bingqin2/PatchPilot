@@ -4495,6 +4495,16 @@ test('loads aggregate task detail from backend API', async () => {
         },
         failureDiagnosis: null,
         retryPreflight: null,
+        adapterExecutionEvidence: {
+          status: 'SUPPORTED',
+          language: 'java',
+          buildSystem: 'maven',
+          verificationCommand: './mvnw test',
+          detectionReason: 'pom.xml detected with mvnw wrapper',
+          operatorAction: 'Review verification output and Pull Request evidence for this selected adapter.',
+          safetyNote: 'Verification command came from a registered language adapter, not from the issue comment.',
+          supportedAdapters: []
+        },
         repositorySupportGuidance: null
       },
       message: null

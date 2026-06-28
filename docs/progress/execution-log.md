@@ -4,6 +4,28 @@ This file records dated implementation progress, validation commands, and import
 
 ## 2026-06-28
 
+Implemented task adapter execution evidence from `docs/plans/262-task-adapter-execution-evidence.md`.
+
+Changes:
+
+- Added a structured adapter execution evidence read model to task detail responses.
+- Derived `SUPPORTED`, `PENDING`, and `UNSUPPORTED` evidence from persisted adapter metadata and repository support guidance.
+- Added adapter execution evidence to copied Markdown task reports, including the selected adapter, allowlisted verification command, detection reason, next action, and safe-command boundary.
+- Rendered adapter execution evidence in the dashboard task detail panel, including supported adapter options when repository execution stopped before model generation, verification, Git mutation, push, or Pull Request creation.
+- Updated README, product spec, architecture notes, frontend design notes, API contracts, dashboard fixtures, and this execution log.
+
+Validation so far:
+
+- `mvn -pl PatchPilot -Dtest=TaskControllerTests#should_include_adapter_execution_evidence_in_task_detail test`: first failed because task detail did not expose `adapterExecutionEvidence.status`; passed after adding the backend detail read model.
+- `npm test -- --run src/dashboard/components/TaskDetailPanel.test.tsx --reporter=basic --silent`: first failed because the dashboard did not render `Adapter execution evidence`; passed after adding the task detail section.
+- `mvn -pl PatchPilot -Dtest=TaskControllerTests#should_include_adapter_execution_evidence_in_task_detail+should_report_pending_adapter_execution_evidence_before_preflight_records_metadata+should_report_unsupported_adapter_execution_evidence_for_unsupported_repository_failures+should_get_task_report_by_task_id+should_include_repository_support_guidance_in_task_report test`: passed, 5 tests run, 0 failures.
+- `npm test -- --run src/dashboard/components/TaskDetailPanel.test.tsx --reporter=basic --silent`: passed, 27 tests run, 0 failures.
+- `mvn -pl PatchPilot -Dtest=TaskControllerTests test`: first failed because the new adapter evidence test reused the default `octocat/hello-world` repository and polluted an adapter metrics scope; passed after isolating the test repository, 74 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed after full backend regression verification, 938 tests run, 0 failures.
+- `npm test -- --reporter=basic --silent`: passed after full frontend regression verification, 28 test files and 363 tests run, 0 failures.
+- `npm run build`: first failed because a task detail test fixture used a `supported` field that is not part of `SupportedLanguageAdapter`; passed after aligning the fixture with the typed API contract.
+- `git diff --check`: passed.
+
 Implemented launch certificate evidence bundle from `docs/plans/261-launch-certificate-evidence-bundle.md`.
 
 Changes:

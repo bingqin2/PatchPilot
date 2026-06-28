@@ -115,7 +115,17 @@ const baseDetail: TaskDetailState = {
   },
   failureDiagnosis: null,
   retryPreflight: null,
-  repositorySupportGuidance: null
+  repositorySupportGuidance: null,
+  adapterExecutionEvidence: {
+    status: 'SUPPORTED',
+    language: 'python',
+    buildSystem: 'pytest',
+    verificationCommand: 'python3 -m pytest',
+    detectionReason: 'pyproject.toml declares pytest as the verification command',
+    operatorAction: 'Review verification output and Pull Request evidence for this selected adapter.',
+    safetyNote: 'Verification command came from a registered language adapter, not from the issue comment.',
+    supportedAdapters: []
+  }
 };
 
 test('shows execution evidence summary for selected task', () => {
@@ -144,6 +154,115 @@ test('shows execution evidence summary for selected task', () => {
     screen.getByText('Detection pyproject.toml declares pytest as the verification command')
   ).toBeInTheDocument();
   expect(screen.getByText('Verify python3 -m pytest')).toBeInTheDocument();
+});
+
+test('shows structured adapter execution evidence for selected task', () => {
+  render(
+    <TaskDetailPanel
+      task={task}
+      detail={baseDetail}
+      loading={false}
+      actionInFlight={false}
+      reviewApprovalAllowedOperators={['release-captain']}
+      onCancelTask={vi.fn()}
+      onRetryTask={vi.fn()}
+      onApproveReview={vi.fn()}
+      onCopyReport={vi.fn()}
+    />
+  );
+
+  const evidence = screen.getByLabelText('Adapter execution evidence');
+  expect(within(evidence).getByText('Adapter execution evidence')).toBeInTheDocument();
+  expect(within(evidence).getByText('SUPPORTED')).toBeInTheDocument();
+  expect(within(evidence).getByText('python / pytest')).toBeInTheDocument();
+  expect(within(evidence).getByText('python3 -m pytest')).toBeInTheDocument();
+  expect(
+    within(evidence).getByText('pyproject.toml declares pytest as the verification command')
+  ).toBeInTheDocument();
+  expect(
+    within(evidence).getByText('Verification command came from a registered language adapter, not from the issue comment.')
+  ).toBeInTheDocument();
+});
+
+test('shows pending adapter execution evidence before preflight records metadata', () => {
+  render(
+    <TaskDetailPanel
+      task={{ ...task, language: null, buildSystem: null, verificationCommand: null, adapterDetectionReason: null }}
+      detail={{
+        ...baseDetail,
+        adapterExecutionEvidence: {
+          status: 'PENDING',
+          language: null,
+          buildSystem: null,
+          verificationCommand: null,
+          detectionReason: null,
+          operatorAction: 'Wait for workspace preflight to record adapter evidence before trusting verification status.',
+          safetyNote: 'No adapter-selected verification command has been recorded for this task yet.',
+          supportedAdapters: []
+        }
+      }}
+      loading={false}
+      actionInFlight={false}
+      reviewApprovalAllowedOperators={['release-captain']}
+      onCancelTask={vi.fn()}
+      onRetryTask={vi.fn()}
+      onApproveReview={vi.fn()}
+      onCopyReport={vi.fn()}
+    />
+  );
+
+  const evidence = screen.getByLabelText('Adapter execution evidence');
+  expect(within(evidence).getByText('PENDING')).toBeInTheDocument();
+  expect(within(evidence).getByText('Not selected yet')).toBeInTheDocument();
+  expect(within(evidence).getByText('No adapter-selected command')).toBeInTheDocument();
+  expect(within(evidence).getByText('No detection evidence recorded')).toBeInTheDocument();
+});
+
+test('shows unsupported adapter execution evidence with supported adapter options', () => {
+  render(
+    <TaskDetailPanel
+      task={{ ...task, status: 'FAILED', language: null, buildSystem: null, verificationCommand: null, adapterDetectionReason: null }}
+      detail={{
+        ...baseDetail,
+        adapterExecutionEvidence: {
+          status: 'UNSUPPORTED',
+          language: null,
+          buildSystem: null,
+          verificationCommand: null,
+          detectionReason: 'Unsupported repository: no supported language adapter detected',
+          operatorAction:
+            'Add one supported project marker and deterministic test command, then trigger /agent fix again. PatchPilot will not run arbitrary commands for unsupported repositories.',
+          safetyNote:
+            'PatchPilot stopped before model patch generation, verification, commit, push, or Pull Request creation.',
+          supportedAdapters: [
+            {
+              language: 'java',
+              buildSystem: 'maven',
+              verificationCommand: ['mvn', 'test'],
+              detectionSignals: ['pom.xml', 'mvnw'],
+              demoFixturePath: 'docs/demo-repositories/java-maven',
+              status: 'SUPPORTED'
+            }
+          ]
+        }
+      }}
+      loading={false}
+      actionInFlight={false}
+      reviewApprovalAllowedOperators={['release-captain']}
+      onCancelTask={vi.fn()}
+      onRetryTask={vi.fn()}
+      onApproveReview={vi.fn()}
+      onCopyReport={vi.fn()}
+    />
+  );
+
+  const evidence = screen.getByLabelText('Adapter execution evidence');
+  expect(within(evidence).getByText('UNSUPPORTED')).toBeInTheDocument();
+  expect(
+    within(evidence).getByText('PatchPilot stopped before model patch generation, verification, commit, push, or Pull Request creation.')
+  ).toBeInTheDocument();
+  expect(within(evidence).getByText('java / maven')).toBeInTheDocument();
+  expect(within(evidence).getByText('mvn test')).toBeInTheDocument();
 });
 
 test('shows trigger intent audit for accepted tasks', () => {

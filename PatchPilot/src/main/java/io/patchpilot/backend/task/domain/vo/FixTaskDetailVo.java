@@ -16,6 +16,7 @@ public record FixTaskDetailVo(
         FixTaskFailureDiagnosisVo failureDiagnosis,
         FixTaskQueueItemVo queueItem,
         List<FixTaskQueueItemVo> queueItems,
+        FixTaskAdapterExecutionEvidenceVo adapterExecutionEvidence,
         RepositorySupportGuidanceVo repositorySupportGuidance
 ) {
 }

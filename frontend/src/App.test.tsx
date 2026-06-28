@@ -203,6 +203,39 @@ const manuallyCreatedTask = {
   retriedAt: null
 };
 
+const javaAdapterExecutionEvidence = {
+  status: 'SUPPORTED',
+  language: 'java',
+  buildSystem: 'maven',
+  verificationCommand: './mvnw test',
+  detectionReason: 'pom.xml detected with mvnw wrapper',
+  operatorAction: 'Review verification output and Pull Request evidence for this selected adapter.',
+  safetyNote: 'Verification command came from a registered language adapter, not from the issue comment.',
+  supportedAdapters: []
+};
+
+const nodeAdapterExecutionEvidence = {
+  status: 'SUPPORTED',
+  language: 'node',
+  buildSystem: 'npm',
+  verificationCommand: 'npm test',
+  detectionReason: 'package.json contains a non-empty scripts.test',
+  operatorAction: 'Review verification output and Pull Request evidence for this selected adapter.',
+  safetyNote: 'Verification command came from a registered language adapter, not from the issue comment.',
+  supportedAdapters: []
+};
+
+const pendingAdapterExecutionEvidence = {
+  status: 'PENDING',
+  language: null,
+  buildSystem: null,
+  verificationCommand: null,
+  detectionReason: null,
+  operatorAction: 'Wait for workspace preflight to record adapter evidence before trusting verification status.',
+  safetyNote: 'No adapter-selected verification command has been recorded for this task yet.',
+  supportedAdapters: []
+};
+
 const summary = {
   task: completedTask,
   timelineEventCount: 5,
@@ -361,6 +394,7 @@ const detail = {
   },
   failureDiagnosis: null,
   retryPreflight: null,
+  adapterExecutionEvidence: javaAdapterExecutionEvidence,
   repositorySupportGuidance: null
 };
 
@@ -403,6 +437,7 @@ const manualTaskDetail = {
   issueContext: null,
   failureDiagnosis: null,
   retryPreflight: null,
+  adapterExecutionEvidence: pendingAdapterExecutionEvidence,
   repositorySupportGuidance: null
 };
 
@@ -2764,6 +2799,7 @@ beforeEach(() => {
         issueContext: null,
         failureDiagnosis: null,
         retryPreflight: null,
+        adapterExecutionEvidence: nodeAdapterExecutionEvidence,
         repositorySupportGuidance: null
       });
     }
@@ -2835,6 +2871,7 @@ beforeEach(() => {
         issueContext: null,
         failureDiagnosis: null,
         retryPreflight: null,
+        adapterExecutionEvidence: pendingAdapterExecutionEvidence,
         repositorySupportGuidance: null
       });
     }
@@ -5350,6 +5387,7 @@ test('loads the next backend task page with offset pagination', async () => {
         issueContext: null,
         failureDiagnosis: null,
         retryPreflight: null,
+        adapterExecutionEvidence: pendingAdapterExecutionEvidence,
         repositorySupportGuidance: null
       });
     }

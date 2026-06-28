@@ -1540,7 +1540,19 @@ export interface FixTaskDetail {
   issueContext: IssueContext | null;
   failureDiagnosis: FixTaskFailureDiagnosis | null;
   retryPreflight: FixTaskRetryPreflight | null;
+  adapterExecutionEvidence: FixTaskAdapterExecutionEvidence | null;
   repositorySupportGuidance: RepositorySupportGuidance | null;
+}
+
+export interface FixTaskAdapterExecutionEvidence {
+  status: string;
+  language: string | null;
+  buildSystem: string | null;
+  verificationCommand: string | null;
+  detectionReason: string | null;
+  operatorAction: string;
+  safetyNote: string;
+  supportedAdapters: SupportedLanguageAdapter[];
 }
 
 export interface FixTaskTriggerIntentAudit {
