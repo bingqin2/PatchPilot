@@ -4,6 +4,21 @@ This file records dated implementation progress, validation commands, and import
 
 ## 2026-06-28
 
+Implemented launch acceptance certificate from `docs/plans/259-launch-acceptance-certificate.md`.
+
+Changes:
+
+- Added a backend launch acceptance certificate read model and service derived from the latest launch acceptance closeout archive.
+- Added `GET /api/demo/launch-acceptance-certificate` and `GET /api/demo/launch-acceptance-certificate/report/download`.
+- Required the latest closeout archive to be `READY` and accepted before the certificate reports certified.
+- Added certificate API helpers, typed contracts, App refresh wiring, dashboard rendering, and a certificate Markdown download action.
+- Updated README, product spec, frontend design notes, and this execution log.
+
+Validation so far:
+
+- `mvn -pl PatchPilot -Dtest=DemoLaunchAcceptanceCertificateServiceTests,DemoReadinessControllerTests test`: first failed because the certificate VO and service did not exist; then failed once because Java 17 does not support `List#getFirst`; passed after certificate service and controller implementation, 78 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts src/dashboard/components/DemoLaunchEvidencePackagePanel.test.tsx src/App.test.tsx --reporter=basic`: first failed because certificate API helpers and dashboard UI did not exist; then failed once because the closeout archive id now appears in both archive history and certificate evidence; passed after API, App, panel, fixture, and assertion updates, 3 test files and 208 tests run, 0 failures.
+
 Implemented launch acceptance evidence bundle from `docs/plans/258-launch-acceptance-evidence-bundle.md`.
 
 Changes:

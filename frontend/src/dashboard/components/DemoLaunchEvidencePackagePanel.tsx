@@ -1,6 +1,7 @@
 import { Archive, Copy, Download, Send } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import type {
+  DemoLaunchAcceptanceCertificate,
   DemoLaunchAcceptanceCloseout,
   DemoLaunchAcceptanceCloseoutArchive,
   DemoLaunchEvidenceFinalization,
@@ -26,6 +27,8 @@ interface DemoLaunchEvidencePackagePanelProps {
   closeoutError: string | null;
   closeoutArchives: DemoLaunchAcceptanceCloseoutArchive[];
   closeoutArchiveError: string | null;
+  certificate: DemoLaunchAcceptanceCertificate | null;
+  certificateError: string | null;
   deliveryReceipts: DemoLaunchEvidenceShareDeliveryReceipt[];
   deliveryReceiptError: string | null;
   onArchivePackage: () => Promise<DemoLaunchEvidencePackageArchive>;
@@ -36,6 +39,7 @@ interface DemoLaunchEvidencePackagePanelProps {
   onDownloadCloseoutReport: () => Promise<Blob>;
   onArchiveCloseout: () => Promise<DemoLaunchAcceptanceCloseoutArchive>;
   onDownloadCloseoutArchiveReport: (archiveId: string) => Promise<Blob>;
+  onDownloadCertificateReport: () => Promise<Blob>;
   onCreateDeliveryReceipt: (input: DemoLaunchEvidenceShareDeliveryReceiptInput) => Promise<DemoLaunchEvidenceShareDeliveryReceipt>;
   onDownloadDeliveryReceiptReport: (receiptId: string) => Promise<Blob>;
 }
@@ -53,6 +57,8 @@ export function DemoLaunchEvidencePackagePanel({
   closeoutError,
   closeoutArchives,
   closeoutArchiveError,
+  certificate,
+  certificateError,
   deliveryReceipts,
   deliveryReceiptError,
   onArchivePackage,
@@ -63,6 +69,7 @@ export function DemoLaunchEvidencePackagePanel({
   onDownloadCloseoutReport,
   onArchiveCloseout,
   onDownloadCloseoutArchiveReport,
+  onDownloadCertificateReport,
   onCreateDeliveryReceipt,
   onDownloadDeliveryReceiptReport
 }: DemoLaunchEvidencePackagePanelProps) {
@@ -162,6 +169,16 @@ export function DemoLaunchEvidencePackagePanel({
       setArchiveStatus(`Archived closeout ${archive.id} downloaded`);
     } catch {
       setArchiveStatus('Archived launch closeout download failed');
+    }
+  }
+
+  async function downloadCertificateReport() {
+    try {
+      const report = await onDownloadCertificateReport();
+      downloadMarkdown(report, 'patchpilot-launch-acceptance-certificate.md');
+      setDownloadStatus('Launch acceptance certificate downloaded');
+    } catch {
+      setDownloadStatus('Launch acceptance certificate download failed');
     }
   }
 
@@ -282,6 +299,13 @@ export function DemoLaunchEvidencePackagePanel({
         </div>
       ) : null}
 
+      {certificateError ? (
+        <div className="adapter-api-error">
+          <strong>Launch acceptance certificate unavailable</strong>
+          <span>{certificateError}</span>
+        </div>
+      ) : null}
+
       {closeoutError ? (
         <div className="adapter-api-error">
           <strong>Launch acceptance closeout unavailable</strong>
@@ -362,6 +386,10 @@ export function DemoLaunchEvidencePackagePanel({
             onArchiveCloseout={() => void archiveCloseout()}
             archives={closeoutArchives}
             onDownloadCloseoutArchiveReport={(archive) => void downloadCloseoutArchiveReport(archive)}
+          />
+          <LaunchAcceptanceCertificatePanel
+            certificate={certificate}
+            onDownloadCertificateReport={() => void downloadCertificateReport()}
           />
           <LaunchEvidenceDeliveryReceiptPanel
             deliveryReceipts={deliveryReceipts}
@@ -515,6 +543,78 @@ function LaunchAcceptanceCloseoutArchiveList({
             </li>
           ))}
         </ul>
+      )}
+    </div>
+  );
+}
+
+function LaunchAcceptanceCertificatePanel({
+  certificate,
+  onDownloadCertificateReport
+}: {
+  certificate: DemoLaunchAcceptanceCertificate | null;
+  onDownloadCertificateReport: () => void;
+}) {
+  return (
+    <div className="demo-evidence-actions">
+      <div className="demo-evidence-list-header">
+        <div>
+          <h3>Launch acceptance certificate</h3>
+          <p>{certificate?.summary ?? 'Launch acceptance certificate has not loaded yet.'}</p>
+        </div>
+        <button
+          className="secondary-button"
+          type="button"
+          onClick={onDownloadCertificateReport}
+          aria-label="Download launch acceptance certificate"
+          disabled={!certificate}
+        >
+          <Download size={14} />
+          Download certificate
+        </button>
+      </div>
+      {certificate ? (
+        <>
+          <div className="demo-evidence-records">
+            <div>
+              <span>Status</span>
+              <strong>{certificate.certified ? 'Certified' : statusLabel(certificate.status)}</strong>
+              <small>{certificate.certified ? 'Accepted launch certificate' : 'Not certified'}</small>
+            </div>
+            <div>
+              <span>Closeout archive</span>
+              <strong>{certificate.latestCloseoutArchiveId ?? 'Missing'}</strong>
+              <small>{certificate.archiveCount} closeout archives</small>
+            </div>
+            <div>
+              <span>Launch evidence</span>
+              <strong>{certificate.latestLaunchEvidenceArchiveId ?? 'Missing'}</strong>
+              <small>{certificate.latestSessionId ?? 'No session'}</small>
+            </div>
+            <div>
+              <span>Receipt</span>
+              <strong>{certificate.latestDeliveryReceiptId ?? 'Missing'}</strong>
+              <small>{certificate.deliveryReceiptFreshness}</small>
+            </div>
+            <div>
+              <span>Next action</span>
+              <strong>{certificate.nextAction}</strong>
+            </div>
+            <div>
+              <span>Generated</span>
+              <strong>{compactDateTime(certificate.generatedAt)}</strong>
+              <small>{certificate.latestArchivedAt ? `archive ${compactDateTime(certificate.latestArchivedAt)}` : 'No archive'}</small>
+            </div>
+          </div>
+          {certificate.latestPullRequestUrl ? (
+            <a href={certificate.latestPullRequestUrl} target="_blank" rel="noreferrer">
+              Open certificate Pull Request
+            </a>
+          ) : null}
+          <EvidenceList title="Certificate downloads" items={certificate.downloadActions} />
+        </>
+      ) : (
+        <p>No launch acceptance certificate loaded.</p>
       )}
     </div>
   );

@@ -2028,6 +2028,33 @@ const demoLaunchAcceptanceCloseoutArchive = {
   report: '# PatchPilot Launch Acceptance Closeout\n\n- Status: `READY`'
 };
 
+const demoLaunchAcceptanceCertificate = {
+  status: 'READY',
+  certified: true,
+  summary: 'PatchPilot launch acceptance is certified from the latest accepted closeout archive.',
+  nextAction: 'Share the certificate and archived closeout report with reviewers.',
+  archiveCount: 1,
+  latestCloseoutArchiveId: 'launch-closeout-archive-1',
+  latestLaunchEvidenceArchiveId: 'launch-evidence-archive-1',
+  latestDeliveryReceiptId: 'launch-delivery-receipt-1',
+  latestSessionId: 'demo-session-20260624T003000Z',
+  latestTaskId: 'task-1',
+  latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+  latestWebhookDeliveryId: 'delivery-created-status-comment',
+  evaluationRunId: 'evaluation-run-2',
+  latestDeliveryTarget: 'reviewer@example.com',
+  latestDeliveryChannel: 'email',
+  deliveryReceiptFreshness: 'FRESH',
+  latestArchivedAt: '2026-06-24T07:20:00Z',
+  generatedAt: '2026-06-24T07:25:00Z',
+  downloadActions: [
+    'Download launch acceptance certificate.',
+    'Download launch acceptance closeout archive launch-closeout-archive-1.',
+    'Open Pull Request https://github.com/bingqin2/PatchPilot/pull/8 for review.'
+  ],
+  markdownReport: '# PatchPilot Launch Acceptance Certificate\n\n- Certified: `true`'
+};
+
 const demoLaunchEvidenceDeliveryReceipt = {
   id: 'launch-delivery-receipt-1',
   status: 'READY',
@@ -2334,6 +2361,9 @@ beforeEach(() => {
     if (url === '/api/demo/launch-acceptance-closeout/archives') {
       return jsonResponse([demoLaunchAcceptanceCloseoutArchive]);
     }
+    if (url === '/api/demo/launch-acceptance-certificate') {
+      return jsonResponse(demoLaunchAcceptanceCertificate);
+    }
     if (url === '/api/demo/launch-evidence-share-delivery-receipts' && init?.method === 'POST') {
       return jsonResponse(demoLaunchEvidenceDeliveryReceipt);
     }
@@ -2444,6 +2474,15 @@ beforeEach(() => {
         ok: true,
         status: 200,
         blob: async () => new Blob(['# PatchPilot Launch Acceptance Closeout'], {
+          type: 'text/markdown;charset=UTF-8'
+        })
+      } as Response);
+    }
+    if (url === '/api/demo/launch-acceptance-certificate/report/download') {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        blob: async () => new Blob(['# PatchPilot Launch Acceptance Certificate'], {
           type: 'text/markdown;charset=UTF-8'
         })
       } as Response);
@@ -2932,7 +2971,9 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(within(launchEvidencePanel).getByText('PatchPilot launch acceptance closeout is complete.')).toBeInTheDocument();
   expect(within(launchEvidencePanel).getByText('Download launch acceptance closeout report.')).toBeInTheDocument();
   expect(within(launchEvidencePanel).getByRole('heading', { name: 'Recent launch acceptance closeouts' })).toBeInTheDocument();
-  expect(within(launchEvidencePanel).getByText(/launch-closeout-archive-1/)).toBeInTheDocument();
+  expect(within(launchEvidencePanel).getAllByText(/launch-closeout-archive-1/).length).toBeGreaterThanOrEqual(2);
+  expect(within(launchEvidencePanel).getByRole('heading', { name: 'Launch acceptance certificate' })).toBeInTheDocument();
+  expect(within(launchEvidencePanel).getByText('PatchPilot launch acceptance is certified from the latest accepted closeout archive.')).toBeInTheDocument();
   await user.click(within(launchEvidencePanel).getByRole('button', { name: 'Archive launch acceptance closeout' }));
   await waitFor(() =>
     expect(fetchMock).toHaveBeenCalledWith('/api/demo/launch-acceptance-closeout/archives', { method: 'POST' })
