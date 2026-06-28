@@ -9,6 +9,7 @@ import type {
   DashboardBootstrap,
   DemoEvidenceBundle,
   DemoFinalHandoffReportPackage,
+  DemoFinalHandoffReportPackageArchive,
   DemoHandoffFinalization,
   DemoHandoffReadiness,
   DemoHandoffPackageArchive,
@@ -459,6 +460,14 @@ export async function getDemoFinalHandoffReportPackage(): Promise<DemoFinalHando
   return getApi<DemoFinalHandoffReportPackage>('/api/demo/final-handoff-report-package');
 }
 
+export async function archiveDemoFinalHandoffReportPackage(): Promise<DemoFinalHandoffReportPackageArchive> {
+  return postApi<DemoFinalHandoffReportPackageArchive>('/api/demo/final-handoff-report-package/archives');
+}
+
+export async function listDemoFinalHandoffReportPackageArchives(): Promise<DemoFinalHandoffReportPackageArchive[]> {
+  return getApi<DemoFinalHandoffReportPackageArchive[]>('/api/demo/final-handoff-report-package/archives');
+}
+
 export async function getDemoHandoffShareInstructions(): Promise<DemoHandoffShareInstructions> {
   return getApi<DemoHandoffShareInstructions>('/api/demo/handoff-share-instructions');
 }
@@ -483,6 +492,10 @@ export async function downloadDemoHandoffFinalizationReport(): Promise<Blob> {
 
 export async function downloadDemoFinalHandoffReportPackage(): Promise<Blob> {
   return getBlobApi('/api/demo/final-handoff-report-package/report/download');
+}
+
+export async function downloadDemoFinalHandoffReportPackageArchiveReport(archiveId: string): Promise<Blob> {
+  return getBlobApi(`/api/demo/final-handoff-report-package/archives/${encodeURIComponent(archiveId)}/report/download`);
 }
 
 export async function downloadDemoHandoffShareInstructionsReport(): Promise<Blob> {

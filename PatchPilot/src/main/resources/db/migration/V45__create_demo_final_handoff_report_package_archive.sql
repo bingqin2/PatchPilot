@@ -1,0 +1,22 @@
+CREATE TABLE IF NOT EXISTS demo_final_handoff_report_package_archive (
+    id VARCHAR(64) PRIMARY KEY,
+    status VARCHAR(32) NOT NULL,
+    download_ready BOOLEAN NOT NULL,
+    summary VARCHAR(512) NOT NULL,
+    next_action VARCHAR(1024) NOT NULL,
+    latest_archive_id VARCHAR(64),
+    latest_session_id VARCHAR(128),
+    latest_delivery_receipt_id VARCHAR(64),
+    task_certificate_archive_id VARCHAR(64),
+    task_certificate_ready BOOLEAN NOT NULL,
+    readiness_checks_json JSON NOT NULL,
+    required_attachments_json JSON NOT NULL,
+    pre_send_checks_json JSON NOT NULL,
+    evidence_notes_json JSON NOT NULL,
+    source_reports_json JSON NOT NULL,
+    report MEDIUMTEXT NOT NULL,
+    generated_at TIMESTAMP(6) NOT NULL,
+    archived_at TIMESTAMP(6) NOT NULL,
+    INDEX idx_final_handoff_report_package_archive_archived_at (archived_at),
+    INDEX idx_final_handoff_report_package_archive_status (status)
+);

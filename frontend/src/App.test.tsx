@@ -2018,6 +2018,32 @@ const demoHandoffFinalization = {
   generatedAt: '2026-06-24T06:00:00Z'
 };
 
+const demoFinalHandoffReportPackage = {
+  status: 'READY',
+  downloadReady: true,
+  summary: 'Final demo handoff report package is ready to deliver.',
+  nextAction: 'Download this final handoff report package and attach the listed evidence files.',
+  latestArchiveId: 'handoff-archive-1',
+  latestSessionId: 'demo-session-20260624T003000Z',
+  latestDeliveryReceiptId: 'delivery-receipt-1',
+  taskCertificateArchiveId: 'task-evidence-certificate-archive-1',
+  taskCertificateReady: true,
+  readinessChecks: ['Finalization: READY'],
+  requiredAttachments: ['Finalization report'],
+  preSendChecks: ['Confirm no handoff share checklist warnings remain.'],
+  evidenceNotes: ['Latest delivery receipt delivery-receipt-1 is fresh.'],
+  sourceReports: ['Handoff finalization'],
+  markdownReport: '# PatchPilot Final Demo Handoff Report Package\n\n- Status: `READY`',
+  generatedAt: '2026-06-24T07:00:00Z'
+};
+
+const demoFinalHandoffReportPackageArchive = {
+  ...demoFinalHandoffReportPackage,
+  id: 'final-handoff-package-archive-1',
+  report: demoFinalHandoffReportPackage.markdownReport,
+  archivedAt: '2026-06-24T07:30:00Z'
+};
+
 const demoSelfHostedLaunchReadiness = {
   status: 'READY',
   readyToLaunch: true,
@@ -2561,6 +2587,15 @@ beforeEach(() => {
     if (url === '/api/demo/handoff-finalization') {
       return jsonResponse(demoHandoffFinalization);
     }
+    if (url === '/api/demo/final-handoff-report-package') {
+      return jsonResponse(demoFinalHandoffReportPackage);
+    }
+    if (url === '/api/demo/final-handoff-report-package/archives' && init?.method === 'POST') {
+      return jsonResponse(demoFinalHandoffReportPackageArchive);
+    }
+    if (url === '/api/demo/final-handoff-report-package/archives') {
+      return jsonResponse([demoFinalHandoffReportPackageArchive]);
+    }
     if (url === '/api/demo/self-hosted-launch-readiness') {
       return jsonResponse(demoSelfHostedLaunchReadiness);
     }
@@ -2650,6 +2685,24 @@ beforeEach(() => {
         ok: true,
         status: 200,
         blob: async () => new Blob(['# PatchPilot Demo Handoff Finalization Gate'], {
+          type: 'text/markdown;charset=UTF-8'
+        })
+      } as Response);
+    }
+    if (url === '/api/demo/final-handoff-report-package/report/download') {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        blob: async () => new Blob(['# PatchPilot Final Demo Handoff Report Package'], {
+          type: 'text/markdown;charset=UTF-8'
+        })
+      } as Response);
+    }
+    if (url === '/api/demo/final-handoff-report-package/archives/final-handoff-package-archive-1/report/download') {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        blob: async () => new Blob(['# PatchPilot Final Demo Handoff Report Package'], {
           type: 'text/markdown;charset=UTF-8'
         })
       } as Response);
@@ -6113,6 +6166,15 @@ function defaultAppResponse(input: RequestInfo | URL, init?: RequestInit) {
   if (url === '/api/demo/handoff-finalization') {
     return jsonResponse(demoHandoffFinalization);
   }
+  if (url === '/api/demo/final-handoff-report-package') {
+    return jsonResponse(demoFinalHandoffReportPackage);
+  }
+  if (url === '/api/demo/final-handoff-report-package/archives' && init?.method === 'POST') {
+    return jsonResponse(demoFinalHandoffReportPackageArchive);
+  }
+  if (url === '/api/demo/final-handoff-report-package/archives') {
+    return jsonResponse([demoFinalHandoffReportPackageArchive]);
+  }
   if (url === '/api/demo/self-hosted-launch-readiness') {
     return jsonResponse(demoSelfHostedLaunchReadiness);
   }
@@ -6166,6 +6228,15 @@ function defaultAppResponse(input: RequestInfo | URL, init?: RequestInit) {
       ok: true,
       status: 200,
       blob: async () => new Blob(['# PatchPilot Launch Acceptance Certificate'], {
+        type: 'text/markdown;charset=UTF-8'
+      })
+    } as Response);
+  }
+  if (url === '/api/demo/final-handoff-report-package/archives/final-handoff-package-archive-1/report/download') {
+    return Promise.resolve({
+      ok: true,
+      status: 200,
+      blob: async () => new Blob(['# PatchPilot Final Demo Handoff Report Package'], {
         type: 'text/markdown;charset=UTF-8'
       })
     } as Response);

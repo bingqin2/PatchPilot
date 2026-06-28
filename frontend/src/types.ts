@@ -1188,6 +1188,27 @@ export interface DemoFinalHandoffReportPackage {
   generatedAt: string;
 }
 
+export interface DemoFinalHandoffReportPackageArchive {
+  id: string;
+  status: DemoReadinessStatus;
+  downloadReady: boolean;
+  summary: string;
+  nextAction: string;
+  latestArchiveId: string | null;
+  latestSessionId: string | null;
+  latestDeliveryReceiptId: string | null;
+  taskCertificateArchiveId: string | null;
+  taskCertificateReady: boolean;
+  readinessChecks: string[];
+  requiredAttachments: string[];
+  preSendChecks: string[];
+  evidenceNotes: string[];
+  sourceReports: string[];
+  report: string;
+  generatedAt: string;
+  archivedAt: string;
+}
+
 export interface DemoHandoffShareInstructions {
   status: DemoReadinessStatus;
   sendReady: boolean;

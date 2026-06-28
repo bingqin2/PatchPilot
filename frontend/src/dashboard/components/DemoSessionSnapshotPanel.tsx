@@ -5,6 +5,7 @@ import type {
   DemoHandoffReadiness,
   DemoHandoffReadinessCheck,
   DemoFinalHandoffReportPackage,
+  DemoFinalHandoffReportPackageArchive,
   DemoHandoffFinalization,
   DemoHandoffPackageArchive,
   DemoHandoffPackageArchiveSummary,
@@ -54,6 +55,7 @@ interface DemoSessionSnapshotPanelProps {
   handoffShareCenter?: DemoHandoffShareCenter | null;
   handoffFinalization?: DemoHandoffFinalization | null;
   finalHandoffReportPackage?: DemoFinalHandoffReportPackage | null;
+  finalHandoffReportPackageArchives?: DemoFinalHandoffReportPackageArchive[];
   handoffShareInstructions?: DemoHandoffShareInstructions | null;
   handoffShareDeliveryReceipts?: DemoHandoffShareDeliveryReceipt[];
   error: string | null;
@@ -65,6 +67,7 @@ interface DemoSessionSnapshotPanelProps {
   handoffShareCenterError?: string | null;
   handoffFinalizationError?: string | null;
   finalHandoffReportPackageError?: string | null;
+  finalHandoffReportPackageArchiveError?: string | null;
   handoffShareInstructionsError?: string | null;
   handoffShareDeliveryReceiptError?: string | null;
   onCopyReport: (input: DemoSessionReportInput) => Promise<string>;
@@ -79,6 +82,8 @@ interface DemoSessionSnapshotPanelProps {
   onDownloadHandoffShareCenterReport: () => Promise<Blob>;
   onDownloadHandoffFinalizationReport?: () => Promise<Blob>;
   onDownloadFinalHandoffReportPackage?: () => Promise<Blob>;
+  onArchiveFinalHandoffReportPackage?: () => Promise<DemoFinalHandoffReportPackageArchive>;
+  onDownloadFinalHandoffReportPackageArchiveReport?: (archiveId: string) => Promise<Blob>;
   onDownloadHandoffShareInstructionsReport: () => Promise<Blob>;
   onCreateHandoffShareDeliveryReceipt?: (
     input: DemoHandoffShareDeliveryReceiptInput
@@ -99,6 +104,7 @@ export function DemoSessionSnapshotPanel({
   handoffShareCenter = null,
   handoffFinalization = null,
   finalHandoffReportPackage = null,
+  finalHandoffReportPackageArchives = [],
   handoffShareInstructions = null,
   handoffShareDeliveryReceipts = [],
   error,
@@ -110,6 +116,7 @@ export function DemoSessionSnapshotPanel({
   handoffShareCenterError = null,
   handoffFinalizationError = null,
   finalHandoffReportPackageError = null,
+  finalHandoffReportPackageArchiveError = null,
   handoffShareInstructionsError = null,
   handoffShareDeliveryReceiptError = null,
   onCopyReport,
@@ -127,6 +134,12 @@ export function DemoSessionSnapshotPanel({
   },
   onDownloadFinalHandoffReportPackage = async () => {
     throw new Error('Final handoff report package download is unavailable.');
+  },
+  onArchiveFinalHandoffReportPackage = async () => {
+    throw new Error('Final handoff report package archive is unavailable.');
+  },
+  onDownloadFinalHandoffReportPackageArchiveReport = async () => {
+    throw new Error('Final handoff report package archive download is unavailable.');
   },
   onDownloadHandoffShareInstructionsReport,
   onCreateHandoffShareDeliveryReceipt = async () => {
@@ -310,6 +323,25 @@ export function DemoSessionSnapshotPanel({
     }
   }
 
+  async function archiveFinalHandoffReportPackage() {
+    try {
+      await onArchiveFinalHandoffReportPackage();
+      setArchiveStatus('Final handoff report package archived');
+    } catch {
+      setArchiveStatus('Archive failed');
+    }
+  }
+
+  async function downloadArchivedFinalHandoffReportPackage(archive: DemoFinalHandoffReportPackageArchive) {
+    try {
+      const report = await onDownloadFinalHandoffReportPackageArchiveReport(archive.id);
+      downloadMarkdown(report, `patchpilot-demo-final-handoff-report-package-${archive.id}.md`);
+      setDownloadStatus('Archived final handoff report package downloaded');
+    } catch {
+      setDownloadStatus('Download failed');
+    }
+  }
+
   async function copyHandoffShareInstructions() {
     if (!handoffShareInstructions) {
       return;
@@ -465,6 +497,13 @@ export function DemoSessionSnapshotPanel({
         <div className="adapter-api-error">
           <strong>Demo final handoff report package unavailable</strong>
           <span>{finalHandoffReportPackageError}</span>
+        </div>
+      ) : null}
+
+      {finalHandoffReportPackageArchiveError ? (
+        <div className="adapter-api-error">
+          <strong>Demo final handoff report package archives unavailable</strong>
+          <span>{finalHandoffReportPackageArchiveError}</span>
         </div>
       ) : null}
 
@@ -631,6 +670,9 @@ export function DemoSessionSnapshotPanel({
           <FinalHandoffReportPackagePanel
             reportPackage={finalHandoffReportPackage}
             onDownloadPackage={downloadFinalHandoffReportPackage}
+            onArchivePackage={archiveFinalHandoffReportPackage}
+            archives={finalHandoffReportPackageArchives}
+            onDownloadArchive={downloadArchivedFinalHandoffReportPackage}
           />
 
           <HandoffShareInstructionsPanel
@@ -894,10 +936,16 @@ function HandoffFinalizationPanel({
 
 function FinalHandoffReportPackagePanel({
   reportPackage,
-  onDownloadPackage
+  onDownloadPackage,
+  onArchivePackage,
+  archives,
+  onDownloadArchive
 }: {
   reportPackage: DemoFinalHandoffReportPackage | null;
   onDownloadPackage: () => void;
+  onArchivePackage: () => void;
+  archives: DemoFinalHandoffReportPackageArchive[];
+  onDownloadArchive: (archive: DemoFinalHandoffReportPackageArchive) => void;
 }) {
   if (!reportPackage) {
     return null;
@@ -916,6 +964,15 @@ function FinalHandoffReportPackagePanel({
           >
             <Download size={14} />
             Download package
+          </button>
+          <button
+            className="secondary-button"
+            type="button"
+            onClick={() => onArchivePackage()}
+            aria-label="Archive final handoff report package"
+          >
+            <Archive size={14} />
+            Archive package
           </button>
         </div>
       </div>
@@ -972,6 +1029,39 @@ function FinalHandoffReportPackagePanel({
           items={reportPackage.sourceReports}
           emptyText="No source reports available."
         />
+      </div>
+      <div className="demo-session-archives">
+        <h3>Recent final handoff report package archives</h3>
+        {archives.length ? (
+          <ul>
+            {archives.map((archive) => (
+              <li key={archive.id}>
+                <div>
+                  <strong>{archive.id}</strong>
+                  <span>{archive.latestSessionId ?? 'No session'}</span>
+                  <small>{archive.downloadReady ? 'Download-ready' : statusLabel(archive.status)}</small>
+                  <small>{archive.summary}</small>
+                  <small>{archive.latestArchiveId ?? 'No handoff archive'}</small>
+                  <small>{archive.latestDeliveryReceiptId ?? 'No delivery receipt'}</small>
+                </div>
+                <div className="demo-session-archive-actions">
+                  <time dateTime={archive.archivedAt}>{compactDateTime(archive.archivedAt)}</time>
+                  <button
+                    className="secondary-button"
+                    type="button"
+                    onClick={() => onDownloadArchive(archive)}
+                    aria-label={`Download archived final handoff report package ${archive.id}`}
+                  >
+                    <Download size={14} />
+                    Download archive
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="empty-state">No final handoff report package archives recorded.</p>
+        )}
       </div>
     </div>
   );
