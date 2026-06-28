@@ -39,6 +39,7 @@ import {
   downloadDemoLaunchAcceptanceCertificateArchiveReport,
   downloadDemoLaunchAcceptanceCertificateReport,
   downloadDemoAcceptanceSummaryReport,
+  downloadDemoFinalAcceptanceSharePackageReport,
   downloadDemoLaunchAcceptanceCloseoutReport,
   downloadDemoLaunchEvidenceFinalizationReport,
   downloadDemoLaunchEvidenceShareDeliveryReceiptReport,
@@ -84,6 +85,7 @@ import {
   getDemoRunbook,
   getDemoReadiness,
   getDemoAcceptanceSummary,
+  getDemoFinalAcceptanceSharePackage,
   getDemoReadinessSnapshotTrend,
   getDemoSmokeChecklist,
   listDemoFinalHandoffReportPackageArchives,
@@ -196,6 +198,7 @@ import type {
   CreateTriggerQuarantineInput,
   DemoReadiness,
   DemoAcceptanceSummary,
+  DemoFinalAcceptanceSharePackage,
   DemoReadinessSnapshotArchive,
   DemoReadinessSnapshotTrend,
   DemoEvidenceBundle,
@@ -336,6 +339,9 @@ export default function App() {
   const [demoReadinessError, setDemoReadinessError] = useState<string | null>(null);
   const [demoAcceptanceSummary, setDemoAcceptanceSummary] = useState<DemoAcceptanceSummary | null>(null);
   const [demoAcceptanceSummaryError, setDemoAcceptanceSummaryError] = useState<string | null>(null);
+  const [demoFinalAcceptanceSharePackage, setDemoFinalAcceptanceSharePackage] =
+    useState<DemoFinalAcceptanceSharePackage | null>(null);
+  const [demoFinalAcceptanceSharePackageError, setDemoFinalAcceptanceSharePackageError] = useState<string | null>(null);
   const [demoReadinessSnapshots, setDemoReadinessSnapshots] = useState<DemoReadinessSnapshotArchive[]>([]);
   const [demoReadinessSnapshotError, setDemoReadinessSnapshotError] = useState<string | null>(null);
   const [demoReadinessSnapshotTrend, setDemoReadinessSnapshotTrend] = useState<DemoReadinessSnapshotTrend | null>(null);
@@ -787,6 +793,7 @@ export default function App() {
         demoScriptResult,
         demoReadinessResult,
         demoAcceptanceSummaryResult,
+        demoFinalAcceptanceSharePackageResult,
         demoReadinessSnapshotResult,
         demoReadinessSnapshotTrendResult,
         demoSmokeChecklistResult,
@@ -955,6 +962,10 @@ export default function App() {
         getDemoAcceptanceSummary().then(
           (summary) => ({ summary, error: null as string | null }),
           (caught) => ({ summary: null, error: errorMessage(caught) })
+        ),
+        getDemoFinalAcceptanceSharePackage().then(
+          (sharePackage) => ({ sharePackage, error: null as string | null }),
+          (caught) => ({ sharePackage: null, error: errorMessage(caught) })
         ),
         listDemoReadinessSnapshots().then(
           (snapshots) => ({ snapshots, error: null as string | null }),
@@ -1216,6 +1227,10 @@ export default function App() {
         setDemoAcceptanceSummary(demoAcceptanceSummaryResult.summary);
       }
       setDemoAcceptanceSummaryError(demoAcceptanceSummaryResult.error);
+      if (demoFinalAcceptanceSharePackageResult.sharePackage) {
+        setDemoFinalAcceptanceSharePackage(demoFinalAcceptanceSharePackageResult.sharePackage);
+      }
+      setDemoFinalAcceptanceSharePackageError(demoFinalAcceptanceSharePackageResult.error);
       if (demoReadinessSnapshotResult.snapshots) {
         setDemoReadinessSnapshots(demoReadinessSnapshotResult.snapshots);
       }
@@ -1733,6 +1748,9 @@ export default function App() {
   ), []);
   const handleDownloadDemoAcceptanceSummaryReport = useCallback(() => (
     downloadDemoAcceptanceSummaryReport()
+  ), []);
+  const handleDownloadDemoFinalAcceptanceSharePackageReport = useCallback(() => (
+    downloadDemoFinalAcceptanceSharePackageReport()
   ), []);
   const handleCreateDemoLaunchEvidenceDeliveryReceipt = useCallback(async (
     input: DemoLaunchEvidenceShareDeliveryReceiptInput
@@ -2326,8 +2344,11 @@ export default function App() {
 
       <DemoAcceptanceSummaryPanel
         summary={demoAcceptanceSummary}
+        sharePackage={demoFinalAcceptanceSharePackage}
         error={demoAcceptanceSummaryError}
+        sharePackageError={demoFinalAcceptanceSharePackageError}
         onDownloadReport={handleDownloadDemoAcceptanceSummaryReport}
+        onDownloadSharePackageReport={handleDownloadDemoFinalAcceptanceSharePackageReport}
       />
 
       <DemoSessionSnapshotPanel

@@ -804,6 +804,26 @@ export interface DemoAcceptanceSummary {
   markdownReport: string;
 }
 
+export interface DemoFinalAcceptanceSharePackage {
+  status: DemoReadinessStatus;
+  sendReady: boolean;
+  summary: string;
+  nextAction: string;
+  launchCertificateArchiveId: string | null;
+  taskCertificateArchiveId: string | null;
+  latestTaskId: string | null;
+  latestPullRequestUrl: string | null;
+  recommendedRecipients: string[];
+  requiredAttachments: string[];
+  preSendChecks: string[];
+  messageSubject: string;
+  messageBody: string;
+  evidenceNotes: string[];
+  sideEffectContract: string;
+  markdownReport: string;
+  generatedAt: string;
+}
+
 export interface DemoLaunchEvidenceShareDeliveryReceipt {
   id: string;
   status: string;
