@@ -24,6 +24,7 @@ import io.patchpilot.backend.demo.domain.DemoHandoffShareInstructionsVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffFinalizationCheckVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchAcceptanceCloseoutCheckVo;
+import io.patchpilot.backend.demo.domain.DemoLaunchAcceptanceCertificateArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchAcceptanceCertificateVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchAcceptanceCloseoutArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchAcceptanceCloseoutEvidenceVo;
@@ -147,6 +148,9 @@ class DemoReadinessControllerTests {
 
     @MockitoBean
     private DemoLaunchAcceptanceCertificateService demoLaunchAcceptanceCertificateService;
+
+    @MockitoBean
+    private DemoLaunchAcceptanceCertificateArchiveService demoLaunchAcceptanceCertificateArchiveService;
 
     @MockitoBean
     private DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
@@ -491,6 +495,73 @@ class DemoReadinessControllerTests {
                 .andExpect(content().contentTypeCompatibleWith("text/markdown"))
                 .andExpect(content().string(containsString("# PatchPilot Launch Acceptance Certificate")))
                 .andExpect(content().string(containsString("launch-closeout-archive-1")));
+    }
+
+    @Test
+    void should_archive_demo_launch_acceptance_certificate() throws Exception {
+        when(demoLaunchAcceptanceCertificateArchiveService.archiveCurrentCertificate())
+                .thenReturn(launchAcceptanceCertificateArchive());
+
+        mockMvc.perform(post("/api/demo/launch-acceptance-certificate/archives"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value("launch-certificate-archive-1"))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.certified").value(true))
+                .andExpect(jsonPath("$.data.latestCloseoutArchiveId").value("launch-closeout-archive-1"))
+                .andExpect(jsonPath("$.data.latestLaunchEvidenceArchiveId").value("launch-evidence-archive-1"))
+                .andExpect(jsonPath("$.data.latestDeliveryReceiptId").value("launch-delivery-receipt-1"))
+                .andExpect(jsonPath("$.data.latestPullRequestUrl").value("https://github.com/bingqin2/PatchPilot/pull/42"))
+                .andExpect(jsonPath("$.data.report").value(containsString("# PatchPilot Launch Acceptance Certificate")));
+
+        verify(operatorSafetyAuditService).recordSafetyAudit(argThat(this::isLaunchAcceptanceCertificateArchiveAudit));
+    }
+
+    private boolean isLaunchAcceptanceCertificateArchiveAudit(RecordOperatorSafetyAuditCommand command) {
+        return command != null
+                && "DEMO_LAUNCH_ACCEPTANCE_CERTIFICATE_ARCHIVED".equals(command.action())
+                && "DEMO_LAUNCH_ACCEPTANCE_CERTIFICATE_ARCHIVE".equals(command.resourceType())
+                && "launch-certificate-archive-1".equals(command.resourceId())
+                && command.scope() == TriggerQuarantineScope.REPOSITORY
+                && "patchpilot/local-demo".equals(command.scopeKey())
+                && "admin-api".equals(command.operator())
+                && "Archived demo launch acceptance certificate READY".equals(command.reason());
+    }
+
+    @Test
+    void should_return_recent_demo_launch_acceptance_certificate_archives() throws Exception {
+        when(demoLaunchAcceptanceCertificateArchiveService.listRecentArchives())
+                .thenReturn(List.of(launchAcceptanceCertificateArchive()));
+
+        mockMvc.perform(get("/api/demo/launch-acceptance-certificate/archives"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].id").value("launch-certificate-archive-1"))
+                .andExpect(jsonPath("$.data[0].status").value("READY"))
+                .andExpect(jsonPath("$.data[0].certified").value(true))
+                .andExpect(jsonPath("$.data[0].latestCloseoutArchiveId").value("launch-closeout-archive-1"));
+    }
+
+    @Test
+    void should_download_archived_demo_launch_acceptance_certificate_report_as_markdown_attachment() throws Exception {
+        when(demoLaunchAcceptanceCertificateArchiveService.findArchive("launch-certificate-archive-1"))
+                .thenReturn(Optional.of(launchAcceptanceCertificateArchive()));
+
+        mockMvc.perform(get("/api/demo/launch-acceptance-certificate/archives/launch-certificate-archive-1/report/download"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("attachment;")))
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("patchpilot-launch-acceptance-certificate-launch-certificate-archive-1.md")))
+                .andExpect(content().contentTypeCompatibleWith("text/markdown"))
+                .andExpect(content().string(containsString("# PatchPilot Launch Acceptance Certificate")))
+                .andExpect(content().string(containsString("launch-closeout-archive-1")));
+    }
+
+    @Test
+    void should_return_not_found_when_archived_demo_launch_acceptance_certificate_report_is_missing() throws Exception {
+        when(demoLaunchAcceptanceCertificateArchiveService.findArchive("missing-archive")).thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/api/demo/launch-acceptance-certificate/archives/missing-archive/report/download"))
+                .andExpect(status().isNotFound());
     }
 
     @Test
@@ -2587,6 +2658,36 @@ class DemoReadinessControllerTests {
                 "FRESH",
                 Instant.parse("2026-06-28T08:30:00Z"),
                 Instant.parse("2026-06-28T09:00:00Z"),
+                List.of(
+                        "Download launch acceptance certificate.",
+                        "Download launch acceptance closeout archive launch-closeout-archive-1."
+                ),
+                "# PatchPilot Launch Acceptance Certificate\n\n- Closeout archive: `launch-closeout-archive-1`\n"
+        );
+    }
+
+    private static DemoLaunchAcceptanceCertificateArchiveVo launchAcceptanceCertificateArchive() {
+        return new DemoLaunchAcceptanceCertificateArchiveVo(
+                "launch-certificate-archive-1",
+                DemoReadinessStatus.READY,
+                true,
+                "PatchPilot launch acceptance is certified from the latest accepted closeout archive.",
+                "Share the certificate and archived closeout report with reviewers.",
+                1,
+                "launch-closeout-archive-1",
+                "launch-evidence-archive-1",
+                "launch-delivery-receipt-1",
+                "demo-session-20260624T003000Z",
+                "task-1",
+                "https://github.com/bingqin2/PatchPilot/pull/42",
+                "delivery-1",
+                "evaluation-run-2",
+                "reviewer@example.com",
+                "email",
+                "FRESH",
+                Instant.parse("2026-06-28T08:30:00Z"),
+                Instant.parse("2026-06-28T09:00:00Z"),
+                Instant.parse("2026-06-28T10:30:00Z"),
                 List.of(
                         "Download launch acceptance certificate.",
                         "Download launch acceptance closeout archive launch-closeout-archive-1."

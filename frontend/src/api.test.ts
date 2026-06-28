@@ -45,6 +45,9 @@ import {
   downloadDemoLaunchEvidenceFinalizationReport,
   downloadDemoLaunchAcceptanceCloseoutReport,
   downloadDemoLaunchAcceptanceCertificateReport,
+  archiveDemoLaunchAcceptanceCertificate,
+  listDemoLaunchAcceptanceCertificateArchives,
+  downloadDemoLaunchAcceptanceCertificateArchiveReport,
   archiveDemoLaunchAcceptanceCloseout,
   listDemoLaunchAcceptanceCloseoutArchives,
   downloadDemoLaunchAcceptanceCloseoutArchiveReport,
@@ -835,6 +838,113 @@ test('downloads demo launch acceptance certificate markdown from backend API', a
   const downloadedReport = await downloadDemoLaunchAcceptanceCertificateReport();
 
   expect(fetchMock).toHaveBeenCalledWith('/api/demo/launch-acceptance-certificate/report/download');
+  expect(downloadedReport).toBe(reportBlob);
+});
+
+test('archives demo launch acceptance certificate through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        id: 'launch-certificate-archive-1',
+        status: 'READY',
+        certified: true,
+        summary: 'PatchPilot launch acceptance is certified from the latest accepted closeout archive.',
+        nextAction: 'Share the certificate and archived closeout report with reviewers.',
+        archiveCount: 1,
+        latestCloseoutArchiveId: 'launch-closeout-archive-1',
+        latestLaunchEvidenceArchiveId: 'launch-evidence-archive-1',
+        latestDeliveryReceiptId: 'launch-delivery-receipt-1',
+        latestSessionId: 'demo-session-20260624T003000Z',
+        latestTaskId: 'task-1',
+        latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+        latestWebhookDeliveryId: 'delivery-1',
+        evaluationRunId: 'evaluation-run-2',
+        latestDeliveryTarget: 'reviewer@example.com',
+        latestDeliveryChannel: 'email',
+        deliveryReceiptFreshness: 'FRESH',
+        latestArchivedAt: '2026-06-28T08:30:00Z',
+        generatedAt: '2026-06-28T09:00:00Z',
+        archivedAt: '2026-06-28T10:30:00Z',
+        downloadActions: ['Download launch acceptance certificate.'],
+        report: '# PatchPilot Launch Acceptance Certificate'
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const archive = await archiveDemoLaunchAcceptanceCertificate();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/launch-acceptance-certificate/archives', { method: 'POST' });
+  expect(archive.id).toBe('launch-certificate-archive-1');
+  expect(archive.certified).toBe(true);
+  expect(archive.latestCloseoutArchiveId).toBe('launch-closeout-archive-1');
+});
+
+test('lists demo launch acceptance certificate archives from backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: [
+        {
+          id: 'launch-certificate-archive-1',
+          status: 'READY',
+          certified: true,
+          summary: 'PatchPilot launch acceptance is certified from the latest accepted closeout archive.',
+          nextAction: 'Share the certificate and archived closeout report with reviewers.',
+          archiveCount: 1,
+          latestCloseoutArchiveId: 'launch-closeout-archive-1',
+          latestLaunchEvidenceArchiveId: 'launch-evidence-archive-1',
+          latestDeliveryReceiptId: 'launch-delivery-receipt-1',
+          latestSessionId: 'demo-session-20260624T003000Z',
+          latestTaskId: 'task-1',
+          latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+          latestWebhookDeliveryId: 'delivery-1',
+          evaluationRunId: 'evaluation-run-2',
+          latestDeliveryTarget: 'reviewer@example.com',
+          latestDeliveryChannel: 'email',
+          deliveryReceiptFreshness: 'FRESH',
+          latestArchivedAt: '2026-06-28T08:30:00Z',
+          generatedAt: '2026-06-28T09:00:00Z',
+          archivedAt: '2026-06-28T10:30:00Z',
+          downloadActions: ['Download launch acceptance certificate.'],
+          report: '# PatchPilot Launch Acceptance Certificate'
+        }
+      ],
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const archives = await listDemoLaunchAcceptanceCertificateArchives();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/launch-acceptance-certificate/archives');
+  expect(archives).toHaveLength(1);
+  expect(archives[0].id).toBe('launch-certificate-archive-1');
+  expect(archives[0].archivedAt).toBe('2026-06-28T10:30:00Z');
+});
+
+test('downloads archived demo launch acceptance certificate markdown from backend API', async () => {
+  const reportBlob = new Blob(['# PatchPilot Launch Acceptance Certificate\n\n- Archive: `launch-certificate-archive-1`'], {
+    type: 'text/markdown;charset=UTF-8'
+  });
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    blob: async () => reportBlob
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const downloadedReport = await downloadDemoLaunchAcceptanceCertificateArchiveReport('launch-certificate-archive-1');
+
+  expect(fetchMock).toHaveBeenCalledWith(
+    '/api/demo/launch-acceptance-certificate/archives/launch-certificate-archive-1/report/download'
+  );
   expect(downloadedReport).toBe(reportBlob);
 });
 

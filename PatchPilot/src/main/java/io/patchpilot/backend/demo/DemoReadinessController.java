@@ -11,6 +11,7 @@ import io.patchpilot.backend.demo.domain.DemoHandoffShareChecklistVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffShareDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffShareInstructionsVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchAcceptanceCloseoutArchiveVo;
+import io.patchpilot.backend.demo.domain.DemoLaunchAcceptanceCertificateArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchAcceptanceCertificateVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchAcceptanceCloseoutVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchCommandVo;
@@ -76,6 +77,7 @@ public class DemoReadinessController {
     private final DemoLaunchAcceptanceCloseoutService demoLaunchAcceptanceCloseoutService;
     private final DemoLaunchAcceptanceCloseoutArchiveService demoLaunchAcceptanceCloseoutArchiveService;
     private final DemoLaunchAcceptanceCertificateService demoLaunchAcceptanceCertificateService;
+    private final DemoLaunchAcceptanceCertificateArchiveService demoLaunchAcceptanceCertificateArchiveService;
     private final DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
     private final DemoReadinessSnapshotTrendService demoReadinessSnapshotTrendService;
     private final DemoLaunchPreflightService demoLaunchPreflightService;
@@ -366,6 +368,37 @@ public class DemoReadinessController {
                 "patchpilot-launch-acceptance-certificate.md",
                 demoLaunchAcceptanceCertificateService.getCertificate().markdownReport()
         );
+    }
+
+    @PostMapping("/launch-acceptance-certificate/archives")
+    public ApiResponse<DemoLaunchAcceptanceCertificateArchiveVo> archiveLaunchAcceptanceCertificate() {
+        DemoLaunchAcceptanceCertificateArchiveVo archive =
+                demoLaunchAcceptanceCertificateArchiveService.archiveCurrentCertificate();
+        operatorSafetyAuditService.recordSafetyAudit(new RecordOperatorSafetyAuditCommand(
+                "DEMO_LAUNCH_ACCEPTANCE_CERTIFICATE_ARCHIVED",
+                "DEMO_LAUNCH_ACCEPTANCE_CERTIFICATE_ARCHIVE",
+                archive.id(),
+                TriggerQuarantineScope.REPOSITORY,
+                "patchpilot/local-demo",
+                "admin-api",
+                "Archived demo launch acceptance certificate " + archive.status()
+        ));
+        return ApiResponse.ok(archive);
+    }
+
+    @GetMapping("/launch-acceptance-certificate/archives")
+    public ApiResponse<List<DemoLaunchAcceptanceCertificateArchiveVo>> listLaunchAcceptanceCertificateArchives() {
+        return ApiResponse.ok(demoLaunchAcceptanceCertificateArchiveService.listRecentArchives());
+    }
+
+    @GetMapping(value = "/launch-acceptance-certificate/archives/{archiveId}/report/download", produces = "text/markdown;charset=UTF-8")
+    public ResponseEntity<String> downloadArchivedLaunchAcceptanceCertificateReport(@PathVariable String archiveId) {
+        return demoLaunchAcceptanceCertificateArchiveService.findArchive(archiveId)
+                .map(archive -> markdownAttachment(
+                        "patchpilot-launch-acceptance-certificate-" + safeFilenamePart(archive.id()) + ".md",
+                        archive.report()
+                ))
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @PostMapping("/launch-evidence-package/archives")

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react
 import {
   ADMIN_TOKEN_STORAGE_KEY,
   approveTaskReview,
+  archiveDemoLaunchAcceptanceCertificate,
   archiveDemoLaunchAcceptanceCloseout,
   archiveDemoLaunchEvidencePackage,
   archiveDemoHandoffPackage,
@@ -30,6 +31,7 @@ import {
   downloadDemoLaunchEvidencePackageArchiveReport,
   downloadDemoLaunchEvidencePackageReport,
   downloadDemoLaunchAcceptanceCloseoutArchiveReport,
+  downloadDemoLaunchAcceptanceCertificateArchiveReport,
   downloadDemoLaunchAcceptanceCertificateReport,
   downloadDemoLaunchAcceptanceCloseoutReport,
   downloadDemoLaunchEvidenceFinalizationReport,
@@ -104,6 +106,7 @@ import {
   listLanguageAdapters,
   listDemoHandoffPackageArchives,
   listDemoHandoffShareDeliveryReceipts,
+  listDemoLaunchAcceptanceCertificateArchives,
   listDemoLaunchAcceptanceCloseoutArchives,
   listDemoLaunchEvidencePackageArchives,
   listDemoSelfHostedLaunchReadinessArchives,
@@ -175,6 +178,7 @@ import type {
   DemoHandoffShareInstructions,
   DemoHandoffShareChecklist,
   DemoLaunchAcceptanceCertificate,
+  DemoLaunchAcceptanceCertificateArchive,
   DemoLaunchAcceptanceCloseout,
   DemoLaunchAcceptanceCloseoutArchive,
   DemoLaunchCommand,
@@ -341,6 +345,10 @@ export default function App() {
   const [demoLaunchAcceptanceCertificate, setDemoLaunchAcceptanceCertificate] =
     useState<DemoLaunchAcceptanceCertificate | null>(null);
   const [demoLaunchAcceptanceCertificateError, setDemoLaunchAcceptanceCertificateError] =
+    useState<string | null>(null);
+  const [demoLaunchAcceptanceCertificateArchives, setDemoLaunchAcceptanceCertificateArchives] =
+    useState<DemoLaunchAcceptanceCertificateArchive[]>([]);
+  const [demoLaunchAcceptanceCertificateArchiveError, setDemoLaunchAcceptanceCertificateArchiveError] =
     useState<string | null>(null);
   const [demoLaunchEvidenceDeliveryReceipts, setDemoLaunchEvidenceDeliveryReceipts] =
     useState<DemoLaunchEvidenceShareDeliveryReceipt[]>([]);
@@ -695,6 +703,7 @@ export default function App() {
         demoLaunchAcceptanceCloseoutResult,
         demoLaunchAcceptanceCloseoutArchiveResult,
         demoLaunchAcceptanceCertificateResult,
+        demoLaunchAcceptanceCertificateArchiveResult,
         demoLaunchEvidenceDeliveryReceiptResult,
         demoHandoffShareInstructionsResult,
         demoHandoffShareDeliveryReceiptResult,
@@ -824,6 +833,10 @@ export default function App() {
         getDemoLaunchAcceptanceCertificate().then(
           (certificate) => ({ certificate, error: null as string | null }),
           (caught) => ({ certificate: null, error: errorMessage(caught) })
+        ),
+        listDemoLaunchAcceptanceCertificateArchives().then(
+          (archives) => ({ archives, error: null as string | null }),
+          (caught) => ({ archives: null, error: errorMessage(caught) })
         ),
         listDemoLaunchEvidenceShareDeliveryReceipts().then(
           (receipts) => ({ receipts, error: null as string | null }),
@@ -1037,6 +1050,10 @@ export default function App() {
         setDemoLaunchAcceptanceCertificate(demoLaunchAcceptanceCertificateResult.certificate);
       }
       setDemoLaunchAcceptanceCertificateError(demoLaunchAcceptanceCertificateResult.error);
+      if (demoLaunchAcceptanceCertificateArchiveResult.archives) {
+        setDemoLaunchAcceptanceCertificateArchives(demoLaunchAcceptanceCertificateArchiveResult.archives);
+      }
+      setDemoLaunchAcceptanceCertificateArchiveError(demoLaunchAcceptanceCertificateArchiveResult.error);
       if (demoLaunchEvidenceDeliveryReceiptResult.receipts) {
         setDemoLaunchEvidenceDeliveryReceipts(demoLaunchEvidenceDeliveryReceiptResult.receipts);
       }
@@ -1377,6 +1394,12 @@ export default function App() {
   const handleDownloadDemoLaunchAcceptanceCertificateReport = useCallback(() => (
     downloadDemoLaunchAcceptanceCertificateReport()
   ), []);
+  const handleArchiveDemoLaunchAcceptanceCertificate = useCallback(async () => {
+    const archive = await archiveDemoLaunchAcceptanceCertificate();
+    setDemoLaunchAcceptanceCertificateArchives((current) => [archive, ...current.filter((item) => item.id !== archive.id)].slice(0, 20));
+    setDemoLaunchAcceptanceCertificateArchiveError(null);
+    return archive;
+  }, []);
   const handleArchiveDemoLaunchAcceptanceCloseout = useCallback(async () => {
     const archive = await archiveDemoLaunchAcceptanceCloseout();
     setDemoLaunchAcceptanceCloseoutArchives((current) => [archive, ...current.filter((item) => item.id !== archive.id)].slice(0, 20));
@@ -1392,6 +1415,9 @@ export default function App() {
   }, []);
   const handleDownloadDemoLaunchAcceptanceCloseoutArchiveReport = useCallback((archiveId: string) => (
     downloadDemoLaunchAcceptanceCloseoutArchiveReport(archiveId)
+  ), []);
+  const handleDownloadDemoLaunchAcceptanceCertificateArchiveReport = useCallback((archiveId: string) => (
+    downloadDemoLaunchAcceptanceCertificateArchiveReport(archiveId)
   ), []);
   const handleCreateDemoLaunchEvidenceDeliveryReceipt = useCallback(async (
     input: DemoLaunchEvidenceShareDeliveryReceiptInput
@@ -1944,6 +1970,8 @@ export default function App() {
         closeoutArchiveError={demoLaunchAcceptanceCloseoutArchiveError}
         certificate={demoLaunchAcceptanceCertificate}
         certificateError={demoLaunchAcceptanceCertificateError}
+        certificateArchives={demoLaunchAcceptanceCertificateArchives}
+        certificateArchiveError={demoLaunchAcceptanceCertificateArchiveError}
         deliveryReceipts={demoLaunchEvidenceDeliveryReceipts}
         deliveryReceiptError={demoLaunchEvidenceDeliveryReceiptError}
         onArchivePackage={handleArchiveDemoLaunchEvidencePackage}
@@ -1955,6 +1983,8 @@ export default function App() {
         onArchiveCloseout={handleArchiveDemoLaunchAcceptanceCloseout}
         onDownloadCloseoutArchiveReport={handleDownloadDemoLaunchAcceptanceCloseoutArchiveReport}
         onDownloadCertificateReport={handleDownloadDemoLaunchAcceptanceCertificateReport}
+        onArchiveCertificate={handleArchiveDemoLaunchAcceptanceCertificate}
+        onDownloadCertificateArchiveReport={handleDownloadDemoLaunchAcceptanceCertificateArchiveReport}
         onCreateDeliveryReceipt={handleCreateDemoLaunchEvidenceDeliveryReceipt}
         onDownloadDeliveryReceiptReport={handleDownloadDemoLaunchEvidenceDeliveryReceiptReport}
       />

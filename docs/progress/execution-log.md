@@ -4,6 +4,26 @@ This file records dated implementation progress, validation commands, and import
 
 ## 2026-06-28
 
+Implemented launch acceptance certificate archive from `docs/plans/260-launch-acceptance-certificate-archive.md`.
+
+Changes:
+
+- Added backend launch acceptance certificate archive VO/entity/mapper/converter/repository/service layers with in-memory and MyBatis-backed storage.
+- Added Flyway migration `V40__create_demo_launch_acceptance_certificate_archive.sql`.
+- Added `POST /api/demo/launch-acceptance-certificate/archives`, `GET /api/demo/launch-acceptance-certificate/archives`, and `GET /api/demo/launch-acceptance-certificate/archives/{archiveId}/report/download`.
+- Recorded protected admin audit evidence when an operator archives the current launch acceptance certificate.
+- Added frontend API helpers, typed contracts, App refresh/state wiring, dashboard archive action, recent certificate archive history, and archived Markdown report download.
+- Updated README, product spec, frontend design notes, and this execution log.
+
+Validation so far:
+
+- `mvn -pl PatchPilot -Dtest=DemoLaunchAcceptanceCertificateArchiveServiceTests,MyBatisDemoLaunchAcceptanceCertificateArchiveRepositoryTests,DemoLaunchAcceptanceCertificateArchiveMigrationTests,DemoReadinessControllerTests test`: first failed because the archive VO, service, mapper, repositories, migration, and controller endpoints did not exist; passed after backend implementation, 85 tests run, 0 failures.
+- `npm test -- --run src/api.test.ts src/dashboard/components/DemoLaunchEvidencePackagePanel.test.tsx src/App.test.tsx --reporter=basic`: first failed because certificate archive API helpers and dashboard history did not exist; then failed once because the success message includes the archived certificate id; passed after API, App, panel, mock, and assertion updates, 3 test files and 212 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed after full backend regression verification, 934 tests run, 0 failures.
+- `npm test -- --reporter=basic`: passed after full frontend regression verification, 28 test files and 359 tests run, 0 failures.
+- `npm run build`: passed after production frontend build verification.
+- `git diff --check`: passed.
+
 Implemented launch acceptance certificate from `docs/plans/259-launch-acceptance-certificate.md`.
 
 Changes:

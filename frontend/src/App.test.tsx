@@ -2055,6 +2055,35 @@ const demoLaunchAcceptanceCertificate = {
   markdownReport: '# PatchPilot Launch Acceptance Certificate\n\n- Certified: `true`'
 };
 
+const demoLaunchAcceptanceCertificateArchive = {
+  id: 'launch-certificate-archive-1',
+  status: 'READY',
+  certified: true,
+  summary: 'PatchPilot launch acceptance is certified from the latest accepted closeout archive.',
+  nextAction: 'Share the certificate and archived closeout report with reviewers.',
+  archiveCount: 1,
+  latestCloseoutArchiveId: 'launch-closeout-archive-1',
+  latestLaunchEvidenceArchiveId: 'launch-evidence-archive-1',
+  latestDeliveryReceiptId: 'launch-delivery-receipt-1',
+  latestSessionId: 'demo-session-20260624T003000Z',
+  latestTaskId: 'task-1',
+  latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+  latestWebhookDeliveryId: 'delivery-created-status-comment',
+  evaluationRunId: 'evaluation-run-2',
+  latestDeliveryTarget: 'reviewer@example.com',
+  latestDeliveryChannel: 'email',
+  deliveryReceiptFreshness: 'FRESH',
+  latestArchivedAt: '2026-06-24T07:20:00Z',
+  generatedAt: '2026-06-24T07:25:00Z',
+  archivedAt: '2026-06-24T07:30:00Z',
+  downloadActions: [
+    'Download launch acceptance certificate.',
+    'Download launch acceptance closeout archive launch-closeout-archive-1.',
+    'Open Pull Request https://github.com/bingqin2/PatchPilot/pull/8 for review.'
+  ],
+  report: '# PatchPilot Launch Acceptance Certificate\n\n- Certified: `true`'
+};
+
 const demoLaunchEvidenceDeliveryReceipt = {
   id: 'launch-delivery-receipt-1',
   status: 'READY',
@@ -2364,6 +2393,12 @@ beforeEach(() => {
     if (url === '/api/demo/launch-acceptance-certificate') {
       return jsonResponse(demoLaunchAcceptanceCertificate);
     }
+    if (url === '/api/demo/launch-acceptance-certificate/archives' && init?.method === 'POST') {
+      return jsonResponse(demoLaunchAcceptanceCertificateArchive);
+    }
+    if (url === '/api/demo/launch-acceptance-certificate/archives') {
+      return jsonResponse([demoLaunchAcceptanceCertificateArchive]);
+    }
     if (url === '/api/demo/launch-evidence-share-delivery-receipts' && init?.method === 'POST') {
       return jsonResponse(demoLaunchEvidenceDeliveryReceipt);
     }
@@ -2479,6 +2514,15 @@ beforeEach(() => {
       } as Response);
     }
     if (url === '/api/demo/launch-acceptance-certificate/report/download') {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        blob: async () => new Blob(['# PatchPilot Launch Acceptance Certificate'], {
+          type: 'text/markdown;charset=UTF-8'
+        })
+      } as Response);
+    }
+    if (url === '/api/demo/launch-acceptance-certificate/archives/launch-certificate-archive-1/report/download') {
       return Promise.resolve({
         ok: true,
         status: 200,
@@ -5594,6 +5638,15 @@ function defaultAppResponse(input: RequestInfo | URL, init?: RequestInit) {
   if (url === '/api/demo/launch-evidence-package/archives') {
     return jsonResponse([demoLaunchEvidencePackageArchive]);
   }
+  if (url === '/api/demo/launch-acceptance-certificate') {
+    return jsonResponse(demoLaunchAcceptanceCertificate);
+  }
+  if (url === '/api/demo/launch-acceptance-certificate/archives' && init?.method === 'POST') {
+    return jsonResponse(demoLaunchAcceptanceCertificateArchive);
+  }
+  if (url === '/api/demo/launch-acceptance-certificate/archives') {
+    return jsonResponse([demoLaunchAcceptanceCertificateArchive]);
+  }
   if (url === '/api/demo/handoff-share-instructions') {
     return jsonResponse(demoHandoffShareInstructions);
   }
@@ -5614,6 +5667,15 @@ function defaultAppResponse(input: RequestInfo | URL, init?: RequestInit) {
       ok: true,
       status: 200,
       blob: async () => new Blob(['# PatchPilot Demo Launch Evidence Package'], {
+        type: 'text/markdown;charset=UTF-8'
+      })
+    } as Response);
+  }
+  if (url === '/api/demo/launch-acceptance-certificate/archives/launch-certificate-archive-1/report/download') {
+    return Promise.resolve({
+      ok: true,
+      status: 200,
+      blob: async () => new Blob(['# PatchPilot Launch Acceptance Certificate'], {
         type: 'text/markdown;charset=UTF-8'
       })
     } as Response);
