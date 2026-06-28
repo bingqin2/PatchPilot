@@ -768,6 +768,42 @@ export interface DemoLaunchAcceptanceCertificateArchive {
   report: string;
 }
 
+export interface DemoAcceptanceSummaryCheck {
+  name: string;
+  status: DemoReadinessStatus;
+  summary: string;
+  nextAction: string;
+}
+
+export interface DemoAcceptanceSummary {
+  status: DemoReadinessStatus;
+  accepted: boolean;
+  summary: string;
+  nextAction: string;
+  launchCertificateStatus: DemoReadinessStatus;
+  launchCertificateArchived: boolean;
+  launchCertificateCertified: boolean;
+  launchCertificateArchiveId: string | null;
+  launchCloseoutArchiveId: string | null;
+  launchEvidenceArchiveId: string | null;
+  launchDeliveryReceiptId: string | null;
+  taskCertificateStatus: DemoReadinessStatus;
+  taskCertificateArchived: boolean;
+  taskCertificateCertified: boolean;
+  taskCertificateArchiveId: string | null;
+  taskCloseoutArchiveId: string | null;
+  taskEvidenceArchiveId: string | null;
+  taskDeliveryReceiptId: string | null;
+  latestTaskId: string | null;
+  latestPullRequestUrl: string | null;
+  generatedAt: string;
+  checks: DemoAcceptanceSummaryCheck[];
+  evidenceNotes: string[];
+  downloadActions: string[];
+  sideEffectContract: string;
+  markdownReport: string;
+}
+
 export interface DemoLaunchEvidenceShareDeliveryReceipt {
   id: string;
   status: string;

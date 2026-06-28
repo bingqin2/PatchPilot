@@ -2384,6 +2384,56 @@ const demoLaunchAcceptanceCertificateArchive = {
   report: '# PatchPilot Launch Acceptance Certificate\n\n- Certified: `true`'
 };
 
+const demoAcceptanceSummary = {
+  status: 'READY',
+  accepted: true,
+  summary: 'PatchPilot final demo acceptance is ready for external review.',
+  nextAction: 'Share the launch and task evidence certificates with reviewers.',
+  launchCertificateStatus: 'READY',
+  launchCertificateArchived: true,
+  launchCertificateCertified: true,
+  launchCertificateArchiveId: 'launch-certificate-archive-1',
+  launchCloseoutArchiveId: 'launch-closeout-archive-1',
+  launchEvidenceArchiveId: 'launch-evidence-archive-1',
+  launchDeliveryReceiptId: 'launch-delivery-receipt-1',
+  taskCertificateStatus: 'READY',
+  taskCertificateArchived: true,
+  taskCertificateCertified: true,
+  taskCertificateArchiveId: 'task-evidence-certificate-archive-1',
+  taskCloseoutArchiveId: 'task-evidence-closeout-archive-1',
+  taskEvidenceArchiveId: 'task-evidence-archive-1',
+  taskDeliveryReceiptId: 'task-evidence-delivery-receipt-1',
+  latestTaskId: 'task-1',
+  latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+  generatedAt: '2026-06-28T09:20:00Z',
+  checks: [
+    {
+      name: 'Launch acceptance certificate',
+      status: 'READY',
+      summary: 'Latest launch acceptance certificate archive is certified.',
+      nextAction: 'No action needed.'
+    },
+    {
+      name: 'Task evidence acceptance certificate',
+      status: 'READY',
+      summary: 'Latest task evidence acceptance certificate archive is certified.',
+      nextAction: 'No action needed.'
+    }
+  ],
+  evidenceNotes: [
+    'Launch acceptance certificate archive launch-certificate-archive-1 is certified.',
+    'Task evidence acceptance certificate archive task-evidence-certificate-archive-1 is certified.'
+  ],
+  downloadActions: [
+    'Download final demo acceptance summary.',
+    'Download launch acceptance certificate archive launch-certificate-archive-1.',
+    'Download task evidence acceptance certificate archive task-evidence-certificate-archive-1.'
+  ],
+  sideEffectContract:
+    'GET /api/demo/acceptance-summary is read-only: it does not create tasks, call the model, run tests, archive records, mutate Git, send messages, record receipts, or write to GitHub.',
+  markdownReport: '# PatchPilot Final Demo Acceptance Summary'
+};
+
 const demoLaunchEvidenceDeliveryReceipt = {
   id: 'launch-delivery-receipt-1',
   status: 'READY',
@@ -2596,6 +2646,9 @@ beforeEach(() => {
     }
     if (url === '/api/demo/readiness') {
       return jsonResponse(demoReadiness);
+    }
+    if (url === '/api/demo/acceptance-summary') {
+      return jsonResponse(demoAcceptanceSummary);
     }
     if (url === '/api/demo/readiness-snapshots' && init?.method === 'POST') {
       return jsonResponse(demoReadinessSnapshotArchive);
@@ -3669,6 +3722,7 @@ test('renders operational task dashboard from backend APIs', async () => {
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/handoff-share-delivery-receipts'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/script'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/readiness'));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/acceptance-summary'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/github/credential-readiness'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/github/webhook-setup-readiness'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/github/repository-access-readiness?owner=bingqin2&repository=PatchPilot'));
@@ -3682,6 +3736,9 @@ test('renders operational task dashboard from backend APIs', async () => {
   const evidencePanel = screen.getByRole('region', { name: 'Demo evidence bundle' });
   expect(within(evidencePanel).getByText('Webhook setup is ready for GitHub deliveries.')).toBeInTheDocument();
   expect(within(evidencePanel).getByText('https://demo.trycloudflare.com/api/github/webhook')).toBeInTheDocument();
+  const acceptancePanel = screen.getByRole('region', { name: 'Final demo acceptance' });
+  expect(within(acceptancePanel).getByText('PatchPilot final demo acceptance is ready for external review.')).toBeInTheDocument();
+  expect(within(acceptancePanel).getAllByText('task-evidence-certificate-archive-1')).not.toHaveLength(0);
   expect(screen.getByLabelText('Webhook setup readiness')).toHaveTextContent('# PatchPilot Webhook Setup Readiness');
   expect(screen.getAllByText('demo-session-20260624T003000Z').length).toBeGreaterThanOrEqual(4);
   expect(screen.getAllByText('Status READY; recent task task-1; recent PR https://github.com/bingqin2/PatchPilot/pull/8.')).toHaveLength(3);
@@ -6202,6 +6259,9 @@ function defaultAppResponse(input: RequestInfo | URL, init?: RequestInit) {
   }
   if (url === '/api/demo/readiness') {
     return jsonResponse(demoReadiness);
+  }
+  if (url === '/api/demo/acceptance-summary') {
+    return jsonResponse(demoAcceptanceSummary);
   }
   if (url === '/api/demo/launch-preflight' && init?.method === 'POST') {
     return jsonResponse(demoLaunchPreflight);

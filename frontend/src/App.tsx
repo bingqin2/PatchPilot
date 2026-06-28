@@ -38,6 +38,7 @@ import {
   downloadDemoLaunchAcceptanceCloseoutArchiveReport,
   downloadDemoLaunchAcceptanceCertificateArchiveReport,
   downloadDemoLaunchAcceptanceCertificateReport,
+  downloadDemoAcceptanceSummaryReport,
   downloadDemoLaunchAcceptanceCloseoutReport,
   downloadDemoLaunchEvidenceFinalizationReport,
   downloadDemoLaunchEvidenceShareDeliveryReceiptReport,
@@ -82,6 +83,7 @@ import {
   getDemoScript,
   getDemoRunbook,
   getDemoReadiness,
+  getDemoAcceptanceSummary,
   getDemoReadinessSnapshotTrend,
   getDemoSmokeChecklist,
   listDemoFinalHandoffReportPackageArchives,
@@ -157,6 +159,7 @@ import { DemoLaunchCommandPanel } from './dashboard/components/DemoLaunchCommand
 import { DemoLaunchPreflightPanel } from './dashboard/components/DemoLaunchPreflightPanel';
 import { DemoLaunchTrackerPanel } from './dashboard/components/DemoLaunchTrackerPanel';
 import { DemoLaunchEvidencePackagePanel } from './dashboard/components/DemoLaunchEvidencePackagePanel';
+import { DemoAcceptanceSummaryPanel } from './dashboard/components/DemoAcceptanceSummaryPanel';
 import { DemoSessionSnapshotPanel } from './dashboard/components/DemoSessionSnapshotPanel';
 import { DemoScriptPanel } from './dashboard/components/DemoScriptPanel';
 import { DemoSmokeChecklistPanel } from './dashboard/components/DemoSmokeChecklistPanel';
@@ -192,6 +195,7 @@ import type {
   CreateTaskInput,
   CreateTriggerQuarantineInput,
   DemoReadiness,
+  DemoAcceptanceSummary,
   DemoReadinessSnapshotArchive,
   DemoReadinessSnapshotTrend,
   DemoEvidenceBundle,
@@ -330,6 +334,8 @@ export default function App() {
   const [backendHealth, setBackendHealth] = useState<BackendHealth | null>(null);
   const [demoReadiness, setDemoReadiness] = useState<DemoReadiness | null>(null);
   const [demoReadinessError, setDemoReadinessError] = useState<string | null>(null);
+  const [demoAcceptanceSummary, setDemoAcceptanceSummary] = useState<DemoAcceptanceSummary | null>(null);
+  const [demoAcceptanceSummaryError, setDemoAcceptanceSummaryError] = useState<string | null>(null);
   const [demoReadinessSnapshots, setDemoReadinessSnapshots] = useState<DemoReadinessSnapshotArchive[]>([]);
   const [demoReadinessSnapshotError, setDemoReadinessSnapshotError] = useState<string | null>(null);
   const [demoReadinessSnapshotTrend, setDemoReadinessSnapshotTrend] = useState<DemoReadinessSnapshotTrend | null>(null);
@@ -780,6 +786,7 @@ export default function App() {
         demoHandoffShareDeliveryReceiptResult,
         demoScriptResult,
         demoReadinessResult,
+        demoAcceptanceSummaryResult,
         demoReadinessSnapshotResult,
         demoReadinessSnapshotTrendResult,
         demoSmokeChecklistResult,
@@ -944,6 +951,10 @@ export default function App() {
         getDemoReadiness().then(
           (readiness) => ({ readiness, error: null as string | null }),
           (caught) => ({ readiness: null, error: errorMessage(caught) })
+        ),
+        getDemoAcceptanceSummary().then(
+          (summary) => ({ summary, error: null as string | null }),
+          (caught) => ({ summary: null, error: errorMessage(caught) })
         ),
         listDemoReadinessSnapshots().then(
           (snapshots) => ({ snapshots, error: null as string | null }),
@@ -1201,6 +1212,10 @@ export default function App() {
         setDemoReadiness(demoReadinessResult.readiness);
       }
       setDemoReadinessError(demoReadinessResult.error);
+      if (demoAcceptanceSummaryResult.summary) {
+        setDemoAcceptanceSummary(demoAcceptanceSummaryResult.summary);
+      }
+      setDemoAcceptanceSummaryError(demoAcceptanceSummaryResult.error);
       if (demoReadinessSnapshotResult.snapshots) {
         setDemoReadinessSnapshots(demoReadinessSnapshotResult.snapshots);
       }
@@ -1715,6 +1730,9 @@ export default function App() {
   ), []);
   const handleDownloadDemoLaunchAcceptanceCertificateArchiveReport = useCallback((archiveId: string) => (
     downloadDemoLaunchAcceptanceCertificateArchiveReport(archiveId)
+  ), []);
+  const handleDownloadDemoAcceptanceSummaryReport = useCallback(() => (
+    downloadDemoAcceptanceSummaryReport()
   ), []);
   const handleCreateDemoLaunchEvidenceDeliveryReceipt = useCallback(async (
     input: DemoLaunchEvidenceShareDeliveryReceiptInput
@@ -2304,6 +2322,12 @@ export default function App() {
         bundle={demoEvidenceBundle}
         error={demoEvidenceBundleError}
         onCopyRunbook={handleCopyDemoRunbook}
+      />
+
+      <DemoAcceptanceSummaryPanel
+        summary={demoAcceptanceSummary}
+        error={demoAcceptanceSummaryError}
+        onDownloadReport={handleDownloadDemoAcceptanceSummaryReport}
       />
 
       <DemoSessionSnapshotPanel

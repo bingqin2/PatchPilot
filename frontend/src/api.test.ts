@@ -48,6 +48,7 @@ import {
   downloadDemoLaunchEvidenceFinalizationReport,
   downloadDemoLaunchAcceptanceCloseoutReport,
   downloadDemoLaunchAcceptanceCertificateReport,
+  downloadDemoAcceptanceSummaryReport,
   archiveDemoLaunchAcceptanceCertificate,
   listDemoLaunchAcceptanceCertificateArchives,
   downloadDemoLaunchAcceptanceCertificateArchiveReport,
@@ -109,6 +110,7 @@ import {
   retryRejectedTrigger,
   evaluateWebhookPayloadDiagnostic,
   getDemoReadiness,
+  getDemoAcceptanceSummary,
   archiveDemoReadinessSnapshot,
   downloadDemoReadinessSnapshotReport,
   getDemoReadinessSnapshotTrend,
@@ -879,6 +881,78 @@ test('downloads demo launch acceptance certificate markdown from backend API', a
   const downloadedReport = await downloadDemoLaunchAcceptanceCertificateReport();
 
   expect(fetchMock).toHaveBeenCalledWith('/api/demo/launch-acceptance-certificate/report/download');
+  expect(downloadedReport).toBe(reportBlob);
+});
+
+test('loads final demo acceptance summary through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        status: 'READY',
+        accepted: true,
+        summary: 'PatchPilot final demo acceptance is ready for external review.',
+        nextAction: 'Share the launch and task evidence certificates with reviewers.',
+        launchCertificateStatus: 'READY',
+        launchCertificateArchived: true,
+        launchCertificateCertified: true,
+        launchCertificateArchiveId: 'launch-certificate-archive-1',
+        launchCloseoutArchiveId: 'launch-closeout-archive-1',
+        launchEvidenceArchiveId: 'launch-evidence-archive-1',
+        launchDeliveryReceiptId: 'launch-delivery-receipt-1',
+        taskCertificateStatus: 'READY',
+        taskCertificateArchived: true,
+        taskCertificateCertified: true,
+        taskCertificateArchiveId: 'task-evidence-certificate-archive-1',
+        taskCloseoutArchiveId: 'task-evidence-closeout-archive-1',
+        taskEvidenceArchiveId: 'task-evidence-archive-1',
+        taskDeliveryReceiptId: 'task-evidence-delivery-receipt-1',
+        latestTaskId: 'task-1',
+        latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+        generatedAt: '2026-06-28T09:20:00Z',
+        checks: [
+          {
+            name: 'Launch acceptance certificate',
+            status: 'READY',
+            summary: 'Latest launch acceptance certificate archive is certified.',
+            nextAction: 'No action needed.'
+          }
+        ],
+        evidenceNotes: ['Launch acceptance certificate archive launch-certificate-archive-1 is certified.'],
+        downloadActions: ['Download final demo acceptance summary.'],
+        sideEffectContract:
+          'GET /api/demo/acceptance-summary is read-only: it does not create tasks, call the model, run tests, archive records, mutate Git, send messages, record receipts, or write to GitHub.',
+        markdownReport: '# PatchPilot Final Demo Acceptance Summary'
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const summary = await getDemoAcceptanceSummary();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/acceptance-summary');
+  expect(summary.accepted).toBe(true);
+  expect(summary.launchCertificateArchiveId).toBe('launch-certificate-archive-1');
+  expect(summary.taskCertificateArchiveId).toBe('task-evidence-certificate-archive-1');
+});
+
+test('downloads final demo acceptance summary report through backend API', async () => {
+  const reportBlob = new Blob(['# PatchPilot Final Demo Acceptance Summary'], {
+    type: 'text/markdown;charset=UTF-8'
+  });
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    blob: async () => reportBlob
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const downloadedReport = await downloadDemoAcceptanceSummaryReport();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/acceptance-summary/report/download');
   expect(downloadedReport).toBe(reportBlob);
 });
 
