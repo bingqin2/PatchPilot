@@ -8,6 +8,7 @@ import type {
   CreateTaskInput,
   DashboardBootstrap,
   DemoEvidenceBundle,
+  DemoFinalHandoffReportPackage,
   DemoHandoffFinalization,
   DemoHandoffReadiness,
   DemoHandoffPackageArchive,
@@ -454,6 +455,10 @@ export async function getDemoHandoffFinalization(): Promise<DemoHandoffFinalizat
   return getApi<DemoHandoffFinalization>('/api/demo/handoff-finalization');
 }
 
+export async function getDemoFinalHandoffReportPackage(): Promise<DemoFinalHandoffReportPackage> {
+  return getApi<DemoFinalHandoffReportPackage>('/api/demo/final-handoff-report-package');
+}
+
 export async function getDemoHandoffShareInstructions(): Promise<DemoHandoffShareInstructions> {
   return getApi<DemoHandoffShareInstructions>('/api/demo/handoff-share-instructions');
 }
@@ -474,6 +479,10 @@ export async function downloadDemoHandoffShareCenterReport(): Promise<Blob> {
 
 export async function downloadDemoHandoffFinalizationReport(): Promise<Blob> {
   return getBlobApi('/api/demo/handoff-finalization/report/download');
+}
+
+export async function downloadDemoFinalHandoffReportPackage(): Promise<Blob> {
+  return getBlobApi('/api/demo/final-handoff-report-package/report/download');
 }
 
 export async function downloadDemoHandoffShareInstructionsReport(): Promise<Blob> {

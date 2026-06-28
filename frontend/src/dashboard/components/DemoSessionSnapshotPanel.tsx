@@ -4,6 +4,7 @@ import type {
   DemoArchivedLaunchOutcome,
   DemoHandoffReadiness,
   DemoHandoffReadinessCheck,
+  DemoFinalHandoffReportPackage,
   DemoHandoffFinalization,
   DemoHandoffPackageArchive,
   DemoHandoffPackageArchiveSummary,
@@ -52,6 +53,7 @@ interface DemoSessionSnapshotPanelProps {
   handoffShareChecklist?: DemoHandoffShareChecklist | null;
   handoffShareCenter?: DemoHandoffShareCenter | null;
   handoffFinalization?: DemoHandoffFinalization | null;
+  finalHandoffReportPackage?: DemoFinalHandoffReportPackage | null;
   handoffShareInstructions?: DemoHandoffShareInstructions | null;
   handoffShareDeliveryReceipts?: DemoHandoffShareDeliveryReceipt[];
   error: string | null;
@@ -62,6 +64,7 @@ interface DemoSessionSnapshotPanelProps {
   handoffShareChecklistError?: string | null;
   handoffShareCenterError?: string | null;
   handoffFinalizationError?: string | null;
+  finalHandoffReportPackageError?: string | null;
   handoffShareInstructionsError?: string | null;
   handoffShareDeliveryReceiptError?: string | null;
   onCopyReport: (input: DemoSessionReportInput) => Promise<string>;
@@ -75,6 +78,7 @@ interface DemoSessionSnapshotPanelProps {
   onDownloadHandoffPackageArchiveSummaryReport: () => Promise<Blob>;
   onDownloadHandoffShareCenterReport: () => Promise<Blob>;
   onDownloadHandoffFinalizationReport?: () => Promise<Blob>;
+  onDownloadFinalHandoffReportPackage?: () => Promise<Blob>;
   onDownloadHandoffShareInstructionsReport: () => Promise<Blob>;
   onCreateHandoffShareDeliveryReceipt?: (
     input: DemoHandoffShareDeliveryReceiptInput
@@ -94,6 +98,7 @@ export function DemoSessionSnapshotPanel({
   handoffShareChecklist = null,
   handoffShareCenter = null,
   handoffFinalization = null,
+  finalHandoffReportPackage = null,
   handoffShareInstructions = null,
   handoffShareDeliveryReceipts = [],
   error,
@@ -104,6 +109,7 @@ export function DemoSessionSnapshotPanel({
   handoffShareChecklistError = null,
   handoffShareCenterError = null,
   handoffFinalizationError = null,
+  finalHandoffReportPackageError = null,
   handoffShareInstructionsError = null,
   handoffShareDeliveryReceiptError = null,
   onCopyReport,
@@ -118,6 +124,9 @@ export function DemoSessionSnapshotPanel({
   onDownloadHandoffShareCenterReport,
   onDownloadHandoffFinalizationReport = async () => {
     throw new Error('Handoff finalization download is unavailable.');
+  },
+  onDownloadFinalHandoffReportPackage = async () => {
+    throw new Error('Final handoff report package download is unavailable.');
   },
   onDownloadHandoffShareInstructionsReport,
   onCreateHandoffShareDeliveryReceipt = async () => {
@@ -291,6 +300,16 @@ export function DemoSessionSnapshotPanel({
     }
   }
 
+  async function downloadFinalHandoffReportPackage() {
+    try {
+      const report = await onDownloadFinalHandoffReportPackage();
+      downloadMarkdown(report, 'patchpilot-demo-final-handoff-report-package.md');
+      setDownloadStatus('Final handoff report package downloaded');
+    } catch {
+      setDownloadStatus('Download failed');
+    }
+  }
+
   async function copyHandoffShareInstructions() {
     if (!handoffShareInstructions) {
       return;
@@ -439,6 +458,13 @@ export function DemoSessionSnapshotPanel({
         <div className="adapter-api-error">
           <strong>Demo handoff finalization unavailable</strong>
           <span>{handoffFinalizationError}</span>
+        </div>
+      ) : null}
+
+      {finalHandoffReportPackageError ? (
+        <div className="adapter-api-error">
+          <strong>Demo final handoff report package unavailable</strong>
+          <span>{finalHandoffReportPackageError}</span>
         </div>
       ) : null}
 
@@ -600,6 +626,11 @@ export function DemoSessionSnapshotPanel({
           <HandoffFinalizationPanel
             finalization={handoffFinalization}
             onDownloadFinalization={downloadHandoffFinalization}
+          />
+
+          <FinalHandoffReportPackagePanel
+            reportPackage={finalHandoffReportPackage}
+            onDownloadPackage={downloadFinalHandoffReportPackage}
           />
 
           <HandoffShareInstructionsPanel
@@ -855,6 +886,91 @@ function HandoffFinalizationPanel({
           title="Finalization evidence"
           items={finalization.evidenceNotes}
           emptyText="No finalization evidence available."
+        />
+      </div>
+    </div>
+  );
+}
+
+function FinalHandoffReportPackagePanel({
+  reportPackage,
+  onDownloadPackage
+}: {
+  reportPackage: DemoFinalHandoffReportPackage | null;
+  onDownloadPackage: () => void;
+}) {
+  if (!reportPackage) {
+    return null;
+  }
+
+  return (
+    <div className="demo-session-archives">
+      <div className="demo-session-archive-title-row">
+        <h3>Final handoff report package</h3>
+        <div className="demo-session-archive-actions">
+          <button
+            className="secondary-button"
+            type="button"
+            onClick={() => onDownloadPackage()}
+            aria-label="Download final handoff report package"
+          >
+            <Download size={14} />
+            Download package
+          </button>
+        </div>
+      </div>
+      <div className="demo-session-summary">
+        <div>
+          <span>Package status</span>
+          <strong>{reportPackage.downloadReady ? 'Download-ready' : statusLabel(reportPackage.status)}</strong>
+          <small>{reportPackage.summary}</small>
+        </div>
+        <div>
+          <span>Handoff archive</span>
+          <strong>{reportPackage.latestArchiveId ?? 'No archive'}</strong>
+          <small>{reportPackage.latestSessionId ?? 'Archive a handoff package first'}</small>
+        </div>
+        <div>
+          <span>Task certificate</span>
+          <strong>{reportPackage.taskCertificateReady ? 'Certificate-ready' : 'Certificate missing'}</strong>
+          <small>{reportPackage.taskCertificateArchiveId ?? 'No certificate archive'}</small>
+        </div>
+        <div>
+          <span>Delivery receipt</span>
+          <strong>{reportPackage.latestDeliveryReceiptId ?? 'No receipt'}</strong>
+          <small>Generated {compactDateTime(reportPackage.generatedAt)}</small>
+        </div>
+        <div>
+          <span>Next action</span>
+          <strong>{reportPackage.nextAction}</strong>
+          <small>Use this as the final operator-facing handoff bundle.</small>
+        </div>
+      </div>
+      <div className="demo-session-lists compact-demo-session-lists">
+        <SnapshotList
+          title="Final package checks"
+          items={reportPackage.readinessChecks}
+          emptyText="No final package checks available."
+        />
+        <SnapshotList
+          title="Final package attachments"
+          items={reportPackage.requiredAttachments}
+          emptyText="No final package attachments available."
+        />
+        <SnapshotList
+          title="Final package pre-send checks"
+          items={reportPackage.preSendChecks}
+          emptyText="No final package pre-send checks available."
+        />
+        <SnapshotList
+          title="Final package evidence"
+          items={reportPackage.evidenceNotes}
+          emptyText="No final package evidence available."
+        />
+        <SnapshotList
+          title="Final package source reports"
+          items={reportPackage.sourceReports}
+          emptyText="No source reports available."
         />
       </div>
     </div>

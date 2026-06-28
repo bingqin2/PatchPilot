@@ -2,6 +2,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type {
   DemoArchivedLaunchOutcome,
+  DemoFinalHandoffReportPackage,
   DemoHandoffFinalization,
   DemoHandoffReadiness,
   DemoHandoffPackageArchive,
@@ -429,6 +430,35 @@ const handoffShareInstructions: DemoHandoffShareInstructions = {
   generatedAt: '2026-06-24T05:45:00Z'
 };
 
+const finalHandoffReportPackage: DemoFinalHandoffReportPackage = {
+  status: 'READY',
+  downloadReady: true,
+  summary: 'Final demo handoff report package is ready to deliver.',
+  nextAction: 'Download this final handoff report package and attach the listed evidence files.',
+  latestArchiveId: 'handoff-archive-1',
+  latestSessionId: 'demo-session-20260624T003000Z',
+  latestDeliveryReceiptId: 'delivery-receipt-1',
+  taskCertificateArchiveId: 'task-evidence-certificate-archive-1',
+  taskCertificateReady: true,
+  readinessChecks: [
+    'Archive summary: READY',
+    'Share checklist: READY',
+    'Share center: READY',
+    'Task evidence certificate: READY',
+    'Finalization: READY'
+  ],
+  requiredAttachments: [
+    'Handoff package archive handoff-archive-1',
+    'Task evidence acceptance certificate archive task-evidence-certificate-archive-1',
+    'Finalization report'
+  ],
+  preSendChecks: ['Confirm task evidence acceptance certificate task-evidence-certificate-archive-1 is attached.'],
+  evidenceNotes: ['Latest delivery receipt delivery-receipt-1 is fresh for handoff-archive-1/demo-session-20260624T003000Z.'],
+  sourceReports: ['Handoff package archive summary', 'Handoff share center', 'Handoff finalization'],
+  markdownReport: '# PatchPilot Final Demo Handoff Report Package\n\n- Status: `READY`',
+  generatedAt: '2026-06-24T07:00:00Z'
+};
+
 const handoffShareDeliveryReceipts: DemoHandoffShareDeliveryReceipt[] = [
   {
     id: 'delivery-receipt-1',
@@ -568,6 +598,7 @@ test('renders demo session snapshot summary, evidence, checklist, contract, and 
       handoffShareCenter={handoffShareCenter}
       handoffFinalization={handoffFinalization}
       handoffShareInstructions={handoffShareInstructions}
+      finalHandoffReportPackage={finalHandoffReportPackage}
       handoffShareDeliveryReceipts={handoffShareDeliveryReceipts}
       error={null}
       archiveError={null}
@@ -586,6 +617,7 @@ test('renders demo session snapshot summary, evidence, checklist, contract, and 
       onCreateHandoffShareDeliveryReceipt={vi.fn()}
       onDownloadHandoffShareDeliveryReceiptReport={vi.fn()}
       onDownloadHandoffShareChecklistReport={vi.fn()}
+      onDownloadFinalHandoffReportPackage={vi.fn()}
     />
   );
 
@@ -633,7 +665,7 @@ test('renders demo session snapshot summary, evidence, checklist, contract, and 
   expect(within(panel).getByRole('heading', { name: 'Handoff share center' })).toBeInTheDocument();
   expect(within(panel).getByText('Post-demo handoff package is ready to share.')).toBeInTheDocument();
   expect(within(panel).getByText('Task certificate gate')).toBeInTheDocument();
-  expect(within(panel).getByText('Certificate-ready')).toBeInTheDocument();
+  expect(within(panel).getAllByText('Certificate-ready').length).toBeGreaterThanOrEqual(1);
   expect(within(panel).getAllByText('task-evidence-certificate-archive-1').length).toBeGreaterThanOrEqual(2);
   expect(within(panel).getAllByText('Task task-2').length).toBeGreaterThanOrEqual(2);
   expect(within(panel).getByText('Download handoff package archive handoff-archive-1.')).toBeInTheDocument();
@@ -660,12 +692,22 @@ test('renders demo session snapshot summary, evidence, checklist, contract, and 
   expect(within(panel).getByText('Task evidence certificate task-evidence-certificate-archive-1 is ready for task task-2.')).toBeInTheDocument();
   expect(within(panel).getByText('Finalization report can be downloaded as the acceptance record.')).toBeInTheDocument();
   expect(within(panel).getByRole('button', { name: 'Download handoff finalization' })).toBeInTheDocument();
+  expect(within(panel).getByRole('heading', { name: 'Final handoff report package' })).toBeInTheDocument();
+  expect(within(panel).getByText('Download-ready')).toBeInTheDocument();
+  expect(within(panel).getByText('Final demo handoff report package is ready to deliver.')).toBeInTheDocument();
+  expect(within(panel).getByText('Task evidence certificate: READY')).toBeInTheDocument();
+  expect(within(panel).getAllByText('Task evidence acceptance certificate archive task-evidence-certificate-archive-1').length)
+    .toBeGreaterThanOrEqual(2);
+  expect(within(panel).getByText('Handoff finalization')).toBeInTheDocument();
+  expect(within(panel).getByRole('button', { name: 'Download final handoff report package' })).toBeInTheDocument();
   expect(within(panel).getByRole('heading', { name: 'Handoff share instructions' })).toBeInTheDocument();
   expect(within(panel).getByText('Share the current handoff package with repository maintainers and demo reviewers.')).toBeInTheDocument();
   expect(within(panel).getByText('Repository owner or maintainer')).toBeInTheDocument();
   expect(within(panel).getByText('Handoff share center report')).toBeInTheDocument();
-  expect(within(panel).getByText('Task evidence acceptance certificate archive task-evidence-certificate-archive-1')).toBeInTheDocument();
-  expect(within(panel).getByText('Confirm task evidence acceptance certificate task-evidence-certificate-archive-1 is attached.')).toBeInTheDocument();
+  expect(within(panel).getAllByText('Task evidence acceptance certificate archive task-evidence-certificate-archive-1').length)
+    .toBeGreaterThanOrEqual(2);
+  expect(within(panel).getAllByText('Confirm task evidence acceptance certificate task-evidence-certificate-archive-1 is attached.').length)
+    .toBeGreaterThanOrEqual(2);
   expect(within(panel).getAllByText('PatchPilot demo handoff: demo-session-20260624T003000Z').length).toBeGreaterThanOrEqual(2);
   expect(within(panel).getByRole('button', { name: 'Copy handoff share instructions' })).toBeInTheDocument();
   expect(within(panel).getByRole('button', { name: 'Download handoff share instructions' })).toBeInTheDocument();
@@ -1260,6 +1302,62 @@ test('downloads demo handoff share instructions markdown', async () => {
   expect(click).toHaveBeenCalledTimes(1);
   expect(revokeObjectURL).toHaveBeenCalledWith('blob:demo-handoff-share-instructions');
   expect(screen.getByText('Handoff share instructions downloaded')).toBeInTheDocument();
+});
+
+test('downloads final handoff report package markdown', async () => {
+  const reportBlob = new Blob(['# PatchPilot Final Demo Handoff Report Package'], {
+    type: 'text/markdown;charset=UTF-8'
+  });
+  const onDownloadFinalHandoffReportPackage = vi.fn().mockResolvedValue(reportBlob);
+  const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+  const createObjectURL = vi.fn(() => 'blob:demo-final-handoff-report-package');
+  const revokeObjectURL = vi.fn();
+  vi.stubGlobal('URL', {
+    ...globalThis.URL,
+    createObjectURL,
+    revokeObjectURL
+  });
+
+  render(
+    <DemoSessionSnapshotPanel
+      snapshot={snapshot}
+      preparedLaunchCommands={preparedLaunchCommands}
+      archivedLaunchOutcomes={archivedLaunchOutcomes}
+      handoffReadiness={handoffReadiness}
+      archives={[]}
+      handoffPackageArchives={handoffPackageArchives}
+      handoffPackageArchiveSummary={handoffPackageArchiveSummary}
+      handoffShareChecklist={handoffShareChecklist}
+      handoffShareCenter={handoffShareCenter}
+      handoffFinalization={handoffFinalization}
+      handoffShareInstructions={handoffShareInstructions}
+      finalHandoffReportPackage={finalHandoffReportPackage}
+      error={null}
+      archiveError={null}
+      handoffPackageArchiveError={null}
+      onCopyReport={vi.fn()}
+      onDownloadReport={vi.fn()}
+      onArchiveSession={vi.fn()}
+      onCopyHandoffPackage={vi.fn()}
+      onDownloadHandoffPackage={vi.fn()}
+      onArchiveHandoffPackage={vi.fn()}
+      onDownloadArchiveReport={vi.fn()}
+      onDownloadHandoffPackageArchiveReport={vi.fn()}
+      onDownloadHandoffPackageArchiveSummaryReport={vi.fn()}
+      onDownloadHandoffShareCenterReport={vi.fn()}
+      onDownloadHandoffShareInstructionsReport={vi.fn()}
+      onDownloadHandoffShareChecklistReport={vi.fn()}
+      onDownloadFinalHandoffReportPackage={onDownloadFinalHandoffReportPackage}
+    />
+  );
+
+  await userEvent.click(screen.getByRole('button', { name: 'Download final handoff report package' }));
+
+  expect(onDownloadFinalHandoffReportPackage).toHaveBeenCalledTimes(1);
+  expect(createObjectURL).toHaveBeenCalledWith(reportBlob);
+  expect(click).toHaveBeenCalledTimes(1);
+  expect(revokeObjectURL).toHaveBeenCalledWith('blob:demo-final-handoff-report-package');
+  expect(screen.getByText('Final handoff report package downloaded')).toBeInTheDocument();
 });
 
 test('records demo handoff share delivery receipt', async () => {
