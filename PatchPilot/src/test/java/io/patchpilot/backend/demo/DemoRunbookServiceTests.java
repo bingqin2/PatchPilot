@@ -4,6 +4,7 @@ import io.patchpilot.backend.demo.domain.DemoAdapterFixtureEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoEvaluationRunReadinessEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
+import io.patchpilot.backend.demo.domain.DemoLaunchAcceptanceCloseoutEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessCheckVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessStatus;
 import io.patchpilot.backend.demo.domain.DemoReadinessVo;
@@ -56,6 +57,12 @@ class DemoRunbookServiceTests {
                 .contains("- Launch evidence accepted receipt: `launch-delivery-receipt-1`")
                 .contains("- Launch evidence receipt freshness: `FRESH`")
                 .contains("- Launch evidence finalization next action: Use the finalization report as the launch evidence delivery acceptance record.")
+                .contains("- Launch acceptance closeout: `READY` - Latest launch acceptance closeout archive is accepted and ready.")
+                .contains("- Launch acceptance closeout archive: `launch-closeout-archive-1`")
+                .contains("- Launch acceptance closeout evidence archive: `launch-evidence-archive-1`")
+                .contains("- Launch acceptance closeout receipt: `launch-delivery-receipt-1`")
+                .contains("- Launch acceptance closeout next action: Use the archived launch acceptance closeout as the final launch evidence record.")
+                .contains("- Launch acceptance closeout download: Download launch acceptance closeout archive launch-closeout-archive-1.")
                 .contains("## Readiness")
                 .contains("- `Credentials`: `READY` - Required credentials are configured.")
                 .contains("## Smoke Checklist")
@@ -174,6 +181,23 @@ class DemoRunbookServiceTests {
                 "FRESH",
                 true,
                 "launch-delivery-receipt-1",
+                new DemoLaunchAcceptanceCloseoutEvidenceVo(
+                        DemoReadinessStatus.READY,
+                        true,
+                        true,
+                        "Latest launch acceptance closeout archive is accepted and ready.",
+                        "Use the archived launch acceptance closeout as the final launch evidence record.",
+                        1,
+                        "launch-closeout-archive-1",
+                        "launch-evidence-archive-1",
+                        "launch-delivery-receipt-1",
+                        "https://github.com/bingqin2/PatchPilot/pull/42",
+                        Instant.parse("2026-06-24T08:00:00Z"),
+                        List.of(
+                                "Download launch acceptance closeout archive launch-closeout-archive-1.",
+                                "Download linked launch evidence archive launch-evidence-archive-1."
+                        )
+                ),
                 true,
                 "delivery-receipt-1",
                 "Demo reviewer",

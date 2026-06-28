@@ -200,6 +200,23 @@ const bundle: DemoEvidenceBundle = {
   launchEvidenceFinalizationDeliveryReceiptFreshness: 'FRESH',
   launchEvidenceFinalizationDeliveryReceiptFresh: true,
   launchEvidenceFinalizationLatestDeliveryReceiptId: 'launch-delivery-receipt-1',
+  launchAcceptanceCloseoutEvidence: {
+    status: 'READY',
+    archived: true,
+    accepted: true,
+    summary: 'Latest launch acceptance closeout archive is accepted and ready.',
+    nextAction: 'Use the archived launch acceptance closeout as the final launch evidence record.',
+    archiveCount: 1,
+    latestArchiveId: 'launch-closeout-archive-1',
+    latestEvidenceArchiveId: 'launch-evidence-archive-1',
+    latestDeliveryReceiptId: 'launch-delivery-receipt-1',
+    latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+    latestArchivedAt: '2026-06-24T08:00:00Z',
+    downloadActions: [
+      'Download launch acceptance closeout archive launch-closeout-archive-1.',
+      'Download linked launch evidence archive launch-evidence-archive-1.'
+    ]
+  },
   handoffShareDeliveryReceiptRecorded: true,
   handoffShareLatestDeliveryReceiptId: 'delivery-receipt-1',
   handoffShareLatestDeliveryTarget: 'maintainer@example.com',
@@ -262,7 +279,7 @@ test('summarizes demo evidence bundle for operators', () => {
   expect(
     within(panel).getByText('Download the archived launch evidence package and share it with reviewers.')
   ).toBeInTheDocument();
-  expect(within(panel).getByText('launch-evidence-archive-1')).toBeInTheDocument();
+  expect(within(panel).getAllByText('launch-evidence-archive-1').length).toBeGreaterThanOrEqual(2);
   expect(within(panel).getByText('demo-session-20260624T003000Z')).toBeInTheDocument();
   expect(within(panel).getByText('Download launch evidence package archive launch-evidence-archive-1.')).toBeInTheDocument();
   expect(within(panel).getByText('Download launch evidence share center report.')).toBeInTheDocument();
@@ -271,7 +288,20 @@ test('summarizes demo evidence bundle for operators', () => {
   expect(
     within(panel).getByText('Use the finalization report as the launch evidence delivery acceptance record.')
   ).toBeInTheDocument();
-  expect(within(panel).getByText('launch-delivery-receipt-1')).toBeInTheDocument();
+  expect(within(panel).getAllByText('launch-delivery-receipt-1').length).toBeGreaterThanOrEqual(2);
+  expect(within(panel).getByText('Launch acceptance closeout')).toBeInTheDocument();
+  expect(within(panel).getByText('Accepted archive')).toBeInTheDocument();
+  expect(within(panel).getByText('Latest launch acceptance closeout archive is accepted and ready.')).toBeInTheDocument();
+  expect(
+    within(panel).getByText('Use the archived launch acceptance closeout as the final launch evidence record.')
+  ).toBeInTheDocument();
+  expect(within(panel).getByText('1 closeout archives')).toBeInTheDocument();
+  expect(within(panel).getByText('launch-closeout-archive-1')).toBeInTheDocument();
+  expect(within(panel).getAllByText('launch-evidence-archive-1').length).toBeGreaterThanOrEqual(2);
+  expect(
+    within(panel).getByText('Download launch acceptance closeout archive launch-closeout-archive-1.')
+  ).toBeInTheDocument();
+  expect(within(panel).getByText('Download linked launch evidence archive launch-evidence-archive-1.')).toBeInTheDocument();
   expect(within(panel).getByText('Handoff share delivery')).toBeInTheDocument();
   expect(within(panel).getAllByText('Fresh').length).toBeGreaterThanOrEqual(2);
   expect(within(panel).getByText('Handoff finalization')).toBeInTheDocument();

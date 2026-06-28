@@ -4,6 +4,26 @@ This file records dated implementation progress, validation commands, and import
 
 ## 2026-06-28
 
+Implemented launch acceptance evidence bundle from `docs/plans/258-launch-acceptance-evidence-bundle.md`.
+
+Changes:
+
+- Added a structured launch acceptance closeout evidence read model to the top-level demo evidence bundle.
+- Made the evidence bundle read the latest closeout archive directly from the archive repository to avoid a service dependency cycle.
+- Required accepted launch acceptance closeout archive evidence before the evidence bundle reports `READY`.
+- Added closeout archive status, accepted flag, linked launch evidence archive, delivery receipt, next action, and download actions to the copied demo runbook.
+- Added a dashboard evidence card for the latest launch acceptance closeout archive and updated typed fixtures.
+- Updated README, product spec, frontend design notes, and this execution log.
+
+Validation so far:
+
+- `mvn -pl PatchPilot -Dtest=DemoEvidenceBundleServiceTests,DemoRunbookServiceTests,DemoReadinessControllerTests test`: first failed because the bundle VO had not been migrated through all constructor paths; passed after backend bundle, runbook, and controller contract updates, 78 tests run, 0 failures.
+- `npm test -- --run src/dashboard/components/DemoEvidenceBundlePanel.test.tsx src/dashboard/components/DemoSessionSnapshotPanel.test.tsx src/App.test.tsx --reporter=basic`: first failed because the dashboard did not render launch acceptance closeout evidence and later because shared archive/receipt identifiers made old singular text assertions ambiguous; passed after UI and assertion updates, 3 test files and 102 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed after full backend regression verification, 919 tests run, 0 failures.
+- `npm test -- --reporter=basic`: passed after full frontend regression verification, 28 test files and 352 tests run, 0 failures.
+- `npm run build`: passed after production frontend build verification.
+- `git diff --check`: passed.
+
 Implemented launch acceptance closeout archive from `docs/plans/257-launch-acceptance-closeout-archive.md`.
 
 Changes:

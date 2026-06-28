@@ -1573,6 +1573,23 @@ const demoEvidenceBundle = {
   launchEvidenceFinalizationDeliveryReceiptFreshness: 'FRESH',
   launchEvidenceFinalizationDeliveryReceiptFresh: true,
   launchEvidenceFinalizationLatestDeliveryReceiptId: 'launch-delivery-receipt-1',
+  launchAcceptanceCloseoutEvidence: {
+    status: 'READY',
+    archived: true,
+    accepted: true,
+    summary: 'Latest launch acceptance closeout archive is accepted and ready.',
+    nextAction: 'Use the archived launch acceptance closeout as the final launch evidence record.',
+    archiveCount: 1,
+    latestArchiveId: 'launch-closeout-archive-1',
+    latestEvidenceArchiveId: 'launch-evidence-archive-1',
+    latestDeliveryReceiptId: 'launch-delivery-receipt-1',
+    latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+    latestArchivedAt: '2026-06-24T08:00:00Z',
+    downloadActions: [
+      'Download launch acceptance closeout archive launch-closeout-archive-1.',
+      'Download linked launch evidence archive launch-evidence-archive-1.'
+    ]
+  },
   handoffShareDeliveryReceiptRecorded: true,
   handoffShareLatestDeliveryReceiptId: 'delivery-receipt-1',
   handoffShareLatestDeliveryTarget: 'maintainer@example.com',

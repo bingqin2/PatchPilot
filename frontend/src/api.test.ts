@@ -1341,6 +1341,20 @@ test('gets demo evidence bundle through backend API', async () => {
           repositoryCounts: []
         },
         activeQuarantineCount: 0,
+        launchAcceptanceCloseoutEvidence: {
+          status: 'READY',
+          archived: true,
+          accepted: true,
+          summary: 'Latest launch acceptance closeout archive is accepted and ready.',
+          nextAction: 'Use the archived launch acceptance closeout as the final launch evidence record.',
+          archiveCount: 1,
+          latestArchiveId: 'launch-closeout-archive-1',
+          latestEvidenceArchiveId: 'launch-evidence-archive-1',
+          latestDeliveryReceiptId: 'launch-delivery-receipt-1',
+          latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+          latestArchivedAt: '2026-06-24T08:00:00Z',
+          downloadActions: ['Download launch acceptance closeout archive launch-closeout-archive-1.']
+        },
         generatedAt: '2026-06-24T00:10:00Z',
         nextActions: ['Use this evidence bundle as the live demo baseline.']
       },
@@ -1356,6 +1370,8 @@ test('gets demo evidence bundle through backend API', async () => {
   expect(bundle.summaryCounts.adapterFixtureCount).toBe(12);
   expect(bundle.evaluationRunReadiness.latestRunId).toBe('evaluation-run-2');
   expect(bundle.evaluationRunReadiness.coveredLanguages).toEqual(['java', 'python']);
+  expect(bundle.launchAcceptanceCloseoutEvidence.accepted).toBe(true);
+  expect(bundle.launchAcceptanceCloseoutEvidence.latestArchiveId).toBe('launch-closeout-archive-1');
   expect(bundle.recentPullRequestUrl).toBe('https://github.com/bingqin2/PatchPilot/pull/42');
 });
 

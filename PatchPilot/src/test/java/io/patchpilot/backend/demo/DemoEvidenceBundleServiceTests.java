@@ -6,6 +6,7 @@ import io.patchpilot.backend.demo.domain.DemoHandoffFinalizationCheckVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffPackageArchiveSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffShareCenterVo;
+import io.patchpilot.backend.demo.domain.DemoLaunchAcceptanceCloseoutArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchEvidenceFinalizationCheckVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchEvidenceFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchEvidenceShareCenterVo;
@@ -62,7 +63,8 @@ class DemoEvidenceBundleServiceTests {
                 DemoEvidenceBundleServiceTests::handoffShareCenter,
                 DemoEvidenceBundleServiceTests::handoffFinalizationMissingReceipt,
                 DemoEvidenceBundleServiceTests::launchEvidenceShareCenter,
-                DemoEvidenceBundleServiceTests::launchEvidenceFinalizationReady
+                DemoEvidenceBundleServiceTests::launchEvidenceFinalizationReady,
+                () -> List.of(launchAcceptanceCloseoutArchive(DemoReadinessStatus.READY, true))
         );
 
         DemoEvidenceBundleVo bundle = service.getEvidenceBundle();
@@ -145,6 +147,27 @@ class DemoEvidenceBundleServiceTests {
         assertThat(bundle.launchEvidenceFinalizationDeliveryReceiptFreshness()).isEqualTo("FRESH");
         assertThat(bundle.launchEvidenceFinalizationDeliveryReceiptFresh()).isTrue();
         assertThat(bundle.launchEvidenceFinalizationLatestDeliveryReceiptId()).isEqualTo("launch-delivery-receipt-1");
+        assertThat(bundle.launchAcceptanceCloseoutEvidence().status()).isEqualTo(DemoReadinessStatus.READY);
+        assertThat(bundle.launchAcceptanceCloseoutEvidence().archived()).isTrue();
+        assertThat(bundle.launchAcceptanceCloseoutEvidence().accepted()).isTrue();
+        assertThat(bundle.launchAcceptanceCloseoutEvidence().summary())
+                .isEqualTo("Latest launch acceptance closeout archive is accepted and ready.");
+        assertThat(bundle.launchAcceptanceCloseoutEvidence().nextAction())
+                .isEqualTo("Use the archived launch acceptance closeout as the final launch evidence record.");
+        assertThat(bundle.launchAcceptanceCloseoutEvidence().archiveCount()).isEqualTo(1);
+        assertThat(bundle.launchAcceptanceCloseoutEvidence().latestArchiveId())
+                .isEqualTo("launch-closeout-archive-1");
+        assertThat(bundle.launchAcceptanceCloseoutEvidence().latestEvidenceArchiveId())
+                .isEqualTo("launch-evidence-archive-1");
+        assertThat(bundle.launchAcceptanceCloseoutEvidence().latestDeliveryReceiptId())
+                .isEqualTo("launch-delivery-receipt-1");
+        assertThat(bundle.launchAcceptanceCloseoutEvidence().latestPullRequestUrl())
+                .isEqualTo("https://github.com/bingqin2/PatchPilot/pull/42");
+        assertThat(bundle.launchAcceptanceCloseoutEvidence().downloadActions()).containsExactly(
+                "Download launch acceptance closeout archive launch-closeout-archive-1.",
+                "Download linked launch evidence archive launch-evidence-archive-1.",
+                "Download launch evidence delivery receipt launch-delivery-receipt-1."
+        );
         assertThat(bundle.handoffShareDeliveryReceiptRecorded()).isFalse();
         assertThat(bundle.handoffShareLatestDeliveryReceiptId()).isNull();
         assertThat(bundle.handoffShareLatestDeliveryTarget()).isNull();
@@ -188,7 +211,8 @@ class DemoEvidenceBundleServiceTests {
                 DemoEvidenceBundleServiceTests::deliveredHandoffShareCenter,
                 DemoEvidenceBundleServiceTests::handoffFinalizationReady,
                 DemoEvidenceBundleServiceTests::launchEvidenceShareCenter,
-                DemoEvidenceBundleServiceTests::launchEvidenceFinalizationReady
+                DemoEvidenceBundleServiceTests::launchEvidenceFinalizationReady,
+                () -> List.of(launchAcceptanceCloseoutArchive(DemoReadinessStatus.READY, true))
         );
 
         DemoEvidenceBundleVo bundle = service.getEvidenceBundle();
@@ -224,11 +248,12 @@ class DemoEvidenceBundleServiceTests {
         assertThat(bundle.launchEvidenceFinalizationStatus()).isEqualTo(DemoReadinessStatus.READY);
         assertThat(bundle.launchEvidenceFinalized()).isTrue();
         assertThat(bundle.launchEvidenceFinalizationLatestDeliveryReceiptId()).isEqualTo("launch-delivery-receipt-1");
+        assertThat(bundle.launchAcceptanceCloseoutEvidence().accepted()).isTrue();
         assertThat(bundle.nextActions()).containsExactly("Use this evidence bundle as the live demo baseline.");
     }
 
     @Test
-    void should_require_fresh_handoff_finalization_before_reporting_bundle_ready() {
+    void should_require_final_acceptance_closeout_archive_before_reporting_bundle_ready() {
         DemoEvidenceBundleService service = new DemoEvidenceBundleService(
                 () -> readiness(DemoReadinessStatus.READY, List.of()),
                 () -> smokeChecklist(DemoSmokeChecklistStatus.READY, List.of()),
@@ -240,31 +265,28 @@ class DemoEvidenceBundleServiceTests {
                 DemoEvidenceBundleServiceTests::webhookSetupReadiness,
                 () -> rejectedTriggerSummary(0),
                 List::of,
-                DemoEvidenceBundleServiceTests::evaluationRunMissingReadiness,
+                DemoEvidenceBundleServiceTests::evaluationRunReadiness,
                 DemoEvidenceBundleServiceTests::handoffPackageArchiveSummary,
-                DemoEvidenceBundleServiceTests::handoffShareCenter,
-                DemoEvidenceBundleServiceTests::handoffFinalizationMissingReceipt,
+                DemoEvidenceBundleServiceTests::deliveredHandoffShareCenter,
+                DemoEvidenceBundleServiceTests::handoffFinalizationReady,
                 DemoEvidenceBundleServiceTests::launchEvidenceShareCenter,
-                DemoEvidenceBundleServiceTests::launchEvidenceFinalizationMissingReceipt
+                DemoEvidenceBundleServiceTests::launchEvidenceFinalizationReady,
+                List::of
         );
 
         DemoEvidenceBundleVo bundle = service.getEvidenceBundle();
 
         assertThat(bundle.status()).isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
         assertThat(bundle.summary()).isEqualTo("Demo evidence bundle needs attention.");
-        assertThat(bundle.evaluationRunReadiness().status()).isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
-        assertThat(bundle.evaluationRunReadiness().nextAction())
-                .isEqualTo("Run and archive a full evaluation before using it as demo readiness evidence.");
-        assertThat(bundle.handoffFinalizationStatus()).isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
-        assertThat(bundle.handoffFinalized()).isFalse();
-        assertThat(bundle.launchEvidenceFinalizationStatus()).isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
-        assertThat(bundle.launchEvidenceFinalized()).isFalse();
-        assertThat(bundle.launchEvidenceFinalizationNextAction())
-                .isEqualTo("Share the current launch evidence package, record a delivery receipt, then download the finalization report.");
+        assertThat(bundle.launchAcceptanceCloseoutEvidence().status()).isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
+        assertThat(bundle.launchAcceptanceCloseoutEvidence().archived()).isFalse();
+        assertThat(bundle.launchAcceptanceCloseoutEvidence().accepted()).isFalse();
+        assertThat(bundle.launchAcceptanceCloseoutEvidence().summary())
+                .isEqualTo("No launch acceptance closeout archive is available.");
+        assertThat(bundle.launchAcceptanceCloseoutEvidence().nextAction())
+                .isEqualTo("Archive the final launch acceptance closeout after launch evidence is accepted.");
         assertThat(bundle.nextActions()).containsExactly(
-                "Run and archive a full evaluation before using it as demo readiness evidence.",
-                "Send the current handoff package, record a delivery receipt, then download the finalization report.",
-                "Share the current launch evidence package, record a delivery receipt, then download the finalization report."
+                "Archive the final launch acceptance closeout after launch evidence is accepted."
         );
     }
 
@@ -715,6 +737,30 @@ class DemoEvidenceBundleServiceTests {
                 List.of("Finalization report can be downloaded as the launch delivery acceptance record."),
                 "# PatchPilot Demo Launch Evidence Finalization Gate",
                 Instant.parse("2026-06-24T07:20:00Z")
+        );
+    }
+
+    private static DemoLaunchAcceptanceCloseoutArchiveVo launchAcceptanceCloseoutArchive(
+            DemoReadinessStatus status,
+            boolean accepted
+    ) {
+        return new DemoLaunchAcceptanceCloseoutArchiveVo(
+                "launch-closeout-archive-1",
+                status,
+                accepted,
+                "PatchPilot launch acceptance closeout is ready.",
+                "demo-session-20260624T003000Z",
+                "task-2",
+                "https://github.com/bingqin2/PatchPilot/pull/42",
+                "delivery-1",
+                "evaluation-run-2",
+                "launch-evidence-archive-1",
+                "launch-delivery-receipt-1",
+                "Demo reviewer",
+                "email",
+                "FRESH",
+                Instant.parse("2026-06-24T08:00:00Z"),
+                "# PatchPilot Launch Acceptance Closeout Archive"
         );
     }
 }
