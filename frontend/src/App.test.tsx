@@ -1903,17 +1903,108 @@ const demoLaunchEvidenceShareCenter = {
   latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
   latestWebhookDeliveryId: 'delivery-created-status-comment',
   evaluationRunId: 'evaluation-run-2',
+  latestDeliveryReceiptId: 'launch-delivery-receipt-1',
+  latestDeliveryTarget: 'reviewer@example.com',
+  latestDeliveryChannel: 'email',
+  latestDeliveredAt: '2026-06-24T07:00:00Z',
+  deliveryReceiptRecorded: true,
+  deliveryReceiptFreshness: 'FRESH',
+  deliveryReceiptFresh: true,
+  deliveryReceiptFreshnessSummary: 'Latest delivery receipt matches the current launch evidence archive and session.',
   downloadActions: [
     'Download launch evidence package archive launch-evidence-archive-1.',
     'Download launch evidence share center report.',
-    'Open Pull Request https://github.com/bingqin2/PatchPilot/pull/8 for review.'
+    'Open Pull Request https://github.com/bingqin2/PatchPilot/pull/8 for review.',
+    'Download launch evidence delivery receipt launch-delivery-receipt-1.'
   ],
   evidenceNotes: [
     'Latest launch evidence archive status is READY.',
+    'Latest delivery receipt launch-delivery-receipt-1 was recorded for reviewer@example.com via email.',
     'Latest Pull Request https://github.com/bingqin2/PatchPilot/pull/8 is ready for review.'
   ],
   markdownReport: '# PatchPilot Demo Launch Evidence Share Center\n\n- Status: `READY`',
   generatedAt: '2026-06-24T06:35:00Z'
+};
+
+const demoLaunchEvidenceFinalization = {
+  status: 'READY',
+  finalized: true,
+  summary: 'Demo launch evidence is finalized with a fresh delivery receipt for the current archive.',
+  nextAction: 'Use the finalization report as the launch evidence delivery acceptance record.',
+  latestArchiveId: 'launch-evidence-archive-1',
+  latestSessionId: 'demo-session-20260624T003000Z',
+  latestDeliveryReceiptId: 'launch-delivery-receipt-1',
+  latestDeliveryTarget: 'reviewer@example.com',
+  latestDeliveryChannel: 'email',
+  latestDeliveredAt: '2026-06-24T07:00:00Z',
+  deliveryReceiptFreshness: 'FRESH',
+  deliveryReceiptFresh: true,
+  deliveryReceiptFreshnessSummary: 'Latest delivery receipt matches the current launch evidence archive and session.',
+  checks: [
+    {
+      name: 'Launch evidence share readiness',
+      status: 'READY',
+      summary: 'Share center is ready.',
+      nextAction: 'No action needed.'
+    }
+  ],
+  evidenceNotes: ['Finalization report can be downloaded as the launch delivery acceptance record.'],
+  markdownReport: '# PatchPilot Demo Launch Evidence Finalization Gate\n\n- Status: `READY`',
+  generatedAt: '2026-06-24T07:05:00Z'
+};
+
+const demoLaunchAcceptanceCloseout = {
+  status: 'READY',
+  accepted: true,
+  summary: 'PatchPilot launch acceptance closeout is complete.',
+  nextAction: 'Use this closeout report as the final self-hosted launch acceptance record.',
+  sessionId: 'demo-session-20260624T003000Z',
+  latestTaskId: 'task-1',
+  latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+  latestWebhookDeliveryId: 'delivery-created-status-comment',
+  evaluationRunId: 'evaluation-run-2',
+  latestArchiveId: 'launch-evidence-archive-1',
+  latestDeliveryReceiptId: 'launch-delivery-receipt-1',
+  latestDeliveryTarget: 'reviewer@example.com',
+  latestDeliveryChannel: 'email',
+  latestDeliveredAt: '2026-06-24T07:00:00Z',
+  deliveryReceiptFreshness: 'FRESH',
+  generatedAt: '2026-06-24T07:10:00Z',
+  checks: [
+    {
+      name: 'Self-hosted launch readiness',
+      status: 'READY',
+      summary: 'Self-hosted PatchPilot is ready for a controlled issue-to-PR launch.',
+      nextAction: 'No action needed.'
+    }
+  ],
+  evidenceNotes: [
+    'Launch readiness status is READY.',
+    'Delivery receipt launch-delivery-receipt-1 is fresh for demo-session-20260624T003000Z.'
+  ],
+  downloadActions: [
+    'Download self-hosted launch readiness report.',
+    'Download launch evidence package report.',
+    'Download launch evidence share center report.',
+    'Download launch evidence finalization report.',
+    'Download launch acceptance closeout report.'
+  ],
+  markdownReport: '# PatchPilot Launch Acceptance Closeout\n\n- Status: `READY`'
+};
+
+const demoLaunchEvidenceDeliveryReceipt = {
+  id: 'launch-delivery-receipt-1',
+  status: 'READY',
+  launchEvidenceArchiveId: 'launch-evidence-archive-1',
+  sessionId: 'demo-session-20260624T003000Z',
+  deliveryChannel: 'email',
+  deliveryTarget: 'reviewer@example.com',
+  operator: 'local-operator',
+  notes: 'Sent final launch evidence after the smoke demo.',
+  messageSubject: 'PatchPilot demo launch evidence: demo-session-20260624T003000Z',
+  deliveredAt: '2026-06-24T07:00:00Z',
+  createdAt: '2026-06-24T07:05:00Z',
+  markdownReport: '# PatchPilot Demo Launch Evidence Delivery Receipt\n\n- Status: `READY`'
 };
 
 const demoHandoffShareInstructions = {
@@ -2195,6 +2286,18 @@ beforeEach(() => {
     if (url === '/api/demo/launch-evidence-share-center') {
       return jsonResponse(demoLaunchEvidenceShareCenter);
     }
+    if (url === '/api/demo/launch-evidence-finalization') {
+      return jsonResponse(demoLaunchEvidenceFinalization);
+    }
+    if (url === '/api/demo/launch-acceptance-closeout') {
+      return jsonResponse(demoLaunchAcceptanceCloseout);
+    }
+    if (url === '/api/demo/launch-evidence-share-delivery-receipts' && init?.method === 'POST') {
+      return jsonResponse(demoLaunchEvidenceDeliveryReceipt);
+    }
+    if (url === '/api/demo/launch-evidence-share-delivery-receipts') {
+      return jsonResponse([demoLaunchEvidenceDeliveryReceipt]);
+    }
     if (url === '/api/demo/handoff-share-instructions') {
       return jsonResponse(demoHandoffShareInstructions);
     }
@@ -2272,6 +2375,42 @@ beforeEach(() => {
         ok: true,
         status: 200,
         blob: async () => new Blob(['# PatchPilot Demo Launch Evidence Package'], {
+          type: 'text/markdown;charset=UTF-8'
+        })
+      } as Response);
+    }
+    if (url === '/api/demo/launch-evidence-share-center/report/download') {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        blob: async () => new Blob(['# PatchPilot Demo Launch Evidence Share Center'], {
+          type: 'text/markdown;charset=UTF-8'
+        })
+      } as Response);
+    }
+    if (url === '/api/demo/launch-evidence-finalization/report/download') {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        blob: async () => new Blob(['# PatchPilot Demo Launch Evidence Finalization Gate'], {
+          type: 'text/markdown;charset=UTF-8'
+        })
+      } as Response);
+    }
+    if (url === '/api/demo/launch-acceptance-closeout/report/download') {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        blob: async () => new Blob(['# PatchPilot Launch Acceptance Closeout'], {
+          type: 'text/markdown;charset=UTF-8'
+        })
+      } as Response);
+    }
+    if (url === '/api/demo/launch-evidence-share-delivery-receipts/launch-delivery-receipt-1/report/download') {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        blob: async () => new Blob(['# PatchPilot Demo Launch Evidence Delivery Receipt'], {
           type: 'text/markdown;charset=UTF-8'
         })
       } as Response);
@@ -2746,7 +2885,10 @@ test('renders operational task dashboard from backend APIs', async () => {
   );
   expect(within(launchEvidencePanel).getByRole('heading', { name: 'Launch evidence share center' })).toBeInTheDocument();
   expect(within(launchEvidencePanel).getByText('Latest archived launch evidence package is READY and can be shared.')).toBeInTheDocument();
-  expect(within(launchEvidencePanel).getByText('Download launch evidence share center report.')).toBeInTheDocument();
+  expect(within(launchEvidencePanel).getAllByText('Download launch evidence share center report.').length).toBeGreaterThanOrEqual(1);
+  expect(within(launchEvidencePanel).getByRole('heading', { name: 'Launch acceptance closeout' })).toBeInTheDocument();
+  expect(within(launchEvidencePanel).getByText('PatchPilot launch acceptance closeout is complete.')).toBeInTheDocument();
+  expect(within(launchEvidencePanel).getByText('Download launch acceptance closeout report.')).toBeInTheDocument();
   expect(within(launchEvidencePanel).getByText(/does not create tasks, call the model, run tests, archive records/)).toBeInTheDocument();
   const demoScriptPanel = screen.getByRole('region', { name: 'Demo script' });
   expect(within(demoScriptPanel).getByRole('heading', { name: 'Demo script' })).toBeInTheDocument();

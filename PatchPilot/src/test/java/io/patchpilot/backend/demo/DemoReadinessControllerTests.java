@@ -23,6 +23,8 @@ import io.patchpilot.backend.demo.domain.DemoHandoffShareDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffShareInstructionsVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffFinalizationCheckVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffFinalizationVo;
+import io.patchpilot.backend.demo.domain.DemoLaunchAcceptanceCloseoutCheckVo;
+import io.patchpilot.backend.demo.domain.DemoLaunchAcceptanceCloseoutVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchEvidencePackageArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchEvidenceFinalizationCheckVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchEvidenceFinalizationVo;
@@ -133,6 +135,9 @@ class DemoReadinessControllerTests {
 
     @MockitoBean
     private DemoLaunchEvidenceFinalizationService demoLaunchEvidenceFinalizationService;
+
+    @MockitoBean
+    private DemoLaunchAcceptanceCloseoutService demoLaunchAcceptanceCloseoutService;
 
     @MockitoBean
     private DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
@@ -346,6 +351,38 @@ class DemoReadinessControllerTests {
                 .andExpect(content().contentTypeCompatibleWith("text/markdown"))
                 .andExpect(content().string(containsString("# PatchPilot Demo Launch Evidence Finalization Gate")))
                 .andExpect(content().string(containsString("`READY`")));
+    }
+
+    @Test
+    void should_return_demo_launch_acceptance_closeout() throws Exception {
+        when(demoLaunchAcceptanceCloseoutService.getCloseout()).thenReturn(launchAcceptanceCloseout());
+
+        mockMvc.perform(get("/api/demo/launch-acceptance-closeout"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.accepted").value(true))
+                .andExpect(jsonPath("$.data.sessionId").value("demo-session-20260624T003000Z"))
+                .andExpect(jsonPath("$.data.latestPullRequestUrl").value("https://github.com/bingqin2/PatchPilot/pull/42"))
+                .andExpect(jsonPath("$.data.latestArchiveId").value("launch-evidence-archive-1"))
+                .andExpect(jsonPath("$.data.latestDeliveryReceiptId").value("launch-delivery-receipt-1"))
+                .andExpect(jsonPath("$.data.deliveryReceiptFreshness").value("FRESH"))
+                .andExpect(jsonPath("$.data.checks[0].name").value("Self-hosted launch readiness"))
+                .andExpect(jsonPath("$.data.downloadActions[4]").value("Download launch acceptance closeout report."))
+                .andExpect(jsonPath("$.data.markdownReport").value(containsString("# PatchPilot Launch Acceptance Closeout")));
+    }
+
+    @Test
+    void should_download_demo_launch_acceptance_closeout_report() throws Exception {
+        when(demoLaunchAcceptanceCloseoutService.getCloseout()).thenReturn(launchAcceptanceCloseout());
+
+        mockMvc.perform(get("/api/demo/launch-acceptance-closeout/report/download"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("attachment;")))
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("patchpilot-launch-acceptance-closeout.md")))
+                .andExpect(content().contentTypeCompatibleWith("text/markdown"))
+                .andExpect(content().string(containsString("# PatchPilot Launch Acceptance Closeout")))
+                .andExpect(content().string(containsString("launch-delivery-receipt-1")));
     }
 
     @Test
@@ -2323,6 +2360,44 @@ class DemoReadinessControllerTests {
                 List.of("Latest delivery receipt launch-delivery-receipt-1 is fresh."),
                 "# PatchPilot Demo Launch Evidence Finalization Gate\n\n- Status: `READY`",
                 Instant.parse("2026-06-28T06:30:00Z")
+        );
+    }
+
+    private static DemoLaunchAcceptanceCloseoutVo launchAcceptanceCloseout() {
+        return new DemoLaunchAcceptanceCloseoutVo(
+                DemoReadinessStatus.READY,
+                true,
+                "PatchPilot launch acceptance closeout is complete.",
+                "Use this closeout report as the final self-hosted launch acceptance record.",
+                "demo-session-20260624T003000Z",
+                "task-1",
+                "https://github.com/bingqin2/PatchPilot/pull/42",
+                "delivery-1",
+                "evaluation-run-2",
+                "launch-evidence-archive-1",
+                "launch-delivery-receipt-1",
+                "reviewer@example.com",
+                "email",
+                "2026-06-28T06:05:00Z",
+                "FRESH",
+                Instant.parse("2026-06-28T07:15:00Z"),
+                List.of(
+                        new DemoLaunchAcceptanceCloseoutCheckVo(
+                                "Self-hosted launch readiness",
+                                DemoReadinessStatus.READY,
+                                "Self-hosted PatchPilot is ready for a controlled issue-to-PR launch.",
+                                "No action needed."
+                        )
+                ),
+                List.of("Delivery receipt launch-delivery-receipt-1 is fresh for demo-session-20260624T003000Z."),
+                List.of(
+                        "Download self-hosted launch readiness report.",
+                        "Download launch evidence package report.",
+                        "Download launch evidence share center report.",
+                        "Download launch evidence finalization report.",
+                        "Download launch acceptance closeout report."
+                ),
+                "# PatchPilot Launch Acceptance Closeout\n\n- Receipt: `launch-delivery-receipt-1`"
         );
     }
 }
