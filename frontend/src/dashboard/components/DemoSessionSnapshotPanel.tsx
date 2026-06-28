@@ -22,6 +22,25 @@ import type {
 } from '../../types';
 import { compactDateTime } from '../format';
 
+const missingTaskEvidenceAcceptanceCertificateEvidence: DemoSessionSnapshot['evidenceBundle']['taskEvidenceAcceptanceCertificateEvidence'] = {
+  status: 'NEEDS_ATTENTION',
+  archived: false,
+  certified: false,
+  summary: 'No task evidence acceptance certificate archive is available.',
+  nextAction: 'Archive a certified task evidence acceptance certificate after final task evidence closeout.',
+  archiveCount: 0,
+  latestArchiveId: null,
+  latestCloseoutArchiveId: null,
+  latestEvidenceArchiveId: null,
+  latestDeliveryReceiptId: null,
+  latestTaskId: null,
+  latestPullRequestUrl: null,
+  latestArchivedAt: null,
+  downloadActions: [
+    'Archive a task evidence acceptance certificate before using the session handoff as task-level review proof.'
+  ]
+};
+
 interface DemoSessionSnapshotPanelProps {
   snapshot: DemoSessionSnapshot | null;
   preparedLaunchCommands: DemoPreparedLaunchCommand[];
@@ -465,6 +484,25 @@ export function DemoSessionSnapshotPanel({
               label="Recent Pull Request"
               value={snapshot.evidenceBundle.recentPullRequestUrl ?? 'Missing'}
               detail={snapshot.evidenceBundle.recentPullRequestUrl ? 'PR evidence available' : 'Run smoke task'}
+            />
+            <SnapshotFact
+              label="Task evidence certificate"
+              value={
+                taskEvidenceCertificateEvidence(snapshot).certified
+                  ? 'Certified task evidence archive'
+                  : statusLabel(taskEvidenceCertificateEvidence(snapshot).status)
+              }
+              detail={taskEvidenceCertificateEvidence(snapshot).nextAction}
+            />
+            <SnapshotFact
+              label="Task certificate archive"
+              value={taskEvidenceCertificateEvidence(snapshot).latestArchiveId ?? 'Missing'}
+              detail={taskEvidenceCertificateLinkDetail(snapshot)}
+            />
+            <SnapshotFact
+              label="Task certificate target"
+              value={taskEvidenceCertificateTaskLabel(snapshot)}
+              detail={taskEvidenceCertificateEvidence(snapshot).latestPullRequestUrl ?? 'No Pull Request linked'}
             />
             <SnapshotFact
               label="Script"
@@ -1304,6 +1342,23 @@ function trendDelta(snapshotTrend: DemoSessionSnapshot['readinessSnapshotTrend']
 
 function handoffEvidenceLabel(commandCount: number, outcomeCount: number) {
   return `${commandCount} ${plural(commandCount, 'command')} / ${outcomeCount} ${plural(outcomeCount, 'outcome')}`;
+}
+
+function taskEvidenceCertificateEvidence(snapshot: DemoSessionSnapshot) {
+  return (
+    snapshot.evidenceBundle.taskEvidenceAcceptanceCertificateEvidence ??
+    missingTaskEvidenceAcceptanceCertificateEvidence
+  );
+}
+
+function taskEvidenceCertificateTaskLabel(snapshot: DemoSessionSnapshot) {
+  const evidence = taskEvidenceCertificateEvidence(snapshot);
+  return evidence.latestTaskId ? `Task ${evidence.latestTaskId}` : 'No task linked';
+}
+
+function taskEvidenceCertificateLinkDetail(snapshot: DemoSessionSnapshot) {
+  const evidence = taskEvidenceCertificateEvidence(snapshot);
+  return evidence.latestCloseoutArchiveId ?? evidence.summary;
 }
 
 function plural(count: number, noun: string) {

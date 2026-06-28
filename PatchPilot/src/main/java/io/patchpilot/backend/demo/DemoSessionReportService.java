@@ -7,6 +7,7 @@ import io.patchpilot.backend.demo.domain.DemoHandoffReadinessCheckVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffReadinessVo;
 import io.patchpilot.backend.demo.domain.DemoScriptStepVo;
 import io.patchpilot.backend.demo.domain.DemoSessionSnapshotVo;
+import io.patchpilot.backend.demo.domain.DemoTaskEvidenceAcceptanceCertificateEvidenceVo;
 import io.patchpilot.backend.github.credential.domain.GitHubWebhookSetupReadinessVo;
 import io.patchpilot.backend.github.webhook.domain.WebhookDeliveryDiagnosticStatus;
 import io.patchpilot.backend.github.webhook.domain.WebhookDeliveryDiagnosticVo;
@@ -66,6 +67,7 @@ public class DemoSessionReportService {
                 .append("- Recent Pull Request: ").append(valueOrNone(snapshot.evidenceBundle().recentPullRequestUrl())).append("\n");
 
         appendRecentTask(report, snapshot.evidenceBundle().recentTask());
+        appendTaskEvidenceAcceptanceCertificate(report, snapshot.evidenceBundle().taskEvidenceAcceptanceCertificateEvidence());
         appendWebhookSetupReadiness(report, snapshot.evidenceBundle().webhookSetupReadiness());
         appendRecentWebhookDeliveries(report, snapshot.evidenceBundle().recentWebhookDeliveries());
         appendReadinessSnapshotTrend(report, snapshot.readinessSnapshotTrend());
@@ -141,6 +143,7 @@ public class DemoSessionReportService {
                 recentPullRequestCheck(snapshot.evidenceBundle().recentPullRequestUrl()),
                 preparedCommandCheck(request.preparedLaunchCommands()),
                 archivedOutcomeCheck(request.archivedLaunchOutcomes()),
+                taskEvidenceCertificateCheck(snapshot.evidenceBundle().taskEvidenceAcceptanceCertificateEvidence()),
                 readinessTrendCheck(snapshot.readinessSnapshotTrend())
         );
         DemoReadinessStatus overallStatus = overallHandoffStatus(checks);
@@ -292,6 +295,25 @@ public class DemoSessionReportService {
         );
     }
 
+    private static DemoHandoffReadinessCheckVo taskEvidenceCertificateCheck(
+            DemoTaskEvidenceAcceptanceCertificateEvidenceVo certificate
+    ) {
+        if (certificate == null) {
+            return new DemoHandoffReadinessCheckVo(
+                    "Task evidence certificate",
+                    DemoReadinessStatus.NEEDS_ATTENTION,
+                    "No task evidence acceptance certificate archive is available.",
+                    "Archive a certified task evidence acceptance certificate after final task evidence closeout."
+            );
+        }
+        return new DemoHandoffReadinessCheckVo(
+                "Task evidence certificate",
+                certificate.status(),
+                certificate.summary(),
+                certificate.nextAction()
+        );
+    }
+
     private static DemoHandoffReadinessCheckVo readinessTrendCheck(DemoReadinessSnapshotTrendVo trend) {
         if (trend.status() == DemoReadinessSnapshotTrendStatus.REGRESSING) {
             return new DemoHandoffReadinessCheckVo(
@@ -421,6 +443,30 @@ public class DemoSessionReportService {
                 .append("` (`")
                 .append(task.status())
                 .append("`)\n");
+    }
+
+    private static void appendTaskEvidenceAcceptanceCertificate(
+            StringBuilder report,
+            DemoTaskEvidenceAcceptanceCertificateEvidenceVo certificate
+    ) {
+        report.append("\n## Task Evidence Acceptance Certificate\n\n");
+        if (certificate == null) {
+            report.append("- Status: `NEEDS_ATTENTION`\n")
+                    .append("- Summary: No task evidence acceptance certificate archive is available.\n")
+                    .append("- Next action: Archive a certified task evidence acceptance certificate after final task evidence closeout.\n");
+            return;
+        }
+
+        report.append("- Status: `").append(certificate.status()).append("`\n")
+                .append("- Summary: ").append(certificate.summary()).append("\n")
+                .append("- Archive: `").append(valueOrNone(certificate.latestArchiveId())).append("`\n")
+                .append("- Closeout archive: `").append(valueOrNone(certificate.latestCloseoutArchiveId())).append("`\n")
+                .append("- Evidence archive: `").append(valueOrNone(certificate.latestEvidenceArchiveId())).append("`\n")
+                .append("- Delivery receipt: `").append(valueOrNone(certificate.latestDeliveryReceiptId())).append("`\n")
+                .append("- Task: `").append(valueOrNone(certificate.latestTaskId())).append("`\n")
+                .append("- Pull Request: ").append(valueOrNone(certificate.latestPullRequestUrl())).append("\n")
+                .append("- Next action: ").append(certificate.nextAction()).append("\n");
+        certificate.downloadActions().forEach(action -> report.append("- ").append(action).append("\n"));
     }
 
     private static void appendPreparedLaunchCommands(
