@@ -2,6 +2,7 @@ package io.patchpilot.backend.demo;
 
 import io.patchpilot.backend.configuration.ConfigurationSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
+import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceShareFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoFinalHandoffReportPackageArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffFinalizationCheckVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffFinalizationVo;
@@ -67,6 +68,7 @@ class DemoEvidenceBundleServiceTests {
                 DemoEvidenceBundleServiceTests::handoffFinalizationMissingReceipt,
                 DemoEvidenceBundleServiceTests::launchEvidenceShareCenter,
                 DemoEvidenceBundleServiceTests::launchEvidenceFinalizationReady,
+                DemoEvidenceBundleServiceTests::finalAcceptanceShareFinalizationReady,
                 () -> List.of(launchAcceptanceCloseoutArchive(DemoReadinessStatus.READY, true)),
                 () -> List.of(launchAcceptanceCertificateArchive(DemoReadinessStatus.READY, true)),
                 () -> List.of(taskEvidenceAcceptanceCertificateArchive("READY", true)),
@@ -246,6 +248,22 @@ class DemoEvidenceBundleServiceTests {
                 "Download handoff share delivery receipt delivery-receipt-1.",
                 "Download task evidence acceptance certificate archive task-evidence-certificate-archive-1."
         );
+        assertThat(bundle.finalAcceptanceShareFinalization().status()).isEqualTo(DemoReadinessStatus.READY);
+        assertThat(bundle.finalAcceptanceShareFinalization().finalized()).isTrue();
+        assertThat(bundle.finalAcceptanceShareFinalization().summary())
+                .isEqualTo("Final demo acceptance share package is finalized with a fresh delivery receipt.");
+        assertThat(bundle.finalAcceptanceShareFinalization().nextAction())
+                .isEqualTo("Use the finalization report as the external-review acceptance delivery record.");
+        assertThat(bundle.finalAcceptanceShareFinalization().latestArchiveId())
+                .isEqualTo("final-acceptance-share-package-archive-1");
+        assertThat(bundle.finalAcceptanceShareFinalization().latestTaskId()).isEqualTo("task-2");
+        assertThat(bundle.finalAcceptanceShareFinalization().latestDeliveryReceiptId())
+                .isEqualTo("final-acceptance-delivery-receipt-1");
+        assertThat(bundle.finalAcceptanceShareFinalization().latestDeliveryTarget())
+                .isEqualTo("reviewer@example.com");
+        assertThat(bundle.finalAcceptanceShareFinalization().latestDeliveryChannel()).isEqualTo("email");
+        assertThat(bundle.finalAcceptanceShareFinalization().deliveryReceiptFreshness()).isEqualTo("FRESH");
+        assertThat(bundle.finalAcceptanceShareFinalization().deliveryReceiptFresh()).isTrue();
         assertThat(bundle.handoffShareDeliveryReceiptRecorded()).isFalse();
         assertThat(bundle.handoffShareLatestDeliveryReceiptId()).isNull();
         assertThat(bundle.handoffShareLatestDeliveryTarget()).isNull();
@@ -290,6 +308,7 @@ class DemoEvidenceBundleServiceTests {
                 DemoEvidenceBundleServiceTests::handoffFinalizationReady,
                 DemoEvidenceBundleServiceTests::launchEvidenceShareCenter,
                 DemoEvidenceBundleServiceTests::launchEvidenceFinalizationReady,
+                DemoEvidenceBundleServiceTests::finalAcceptanceShareFinalizationReady,
                 () -> List.of(launchAcceptanceCloseoutArchive(DemoReadinessStatus.READY, true)),
                 () -> List.of(launchAcceptanceCertificateArchive(DemoReadinessStatus.READY, true)),
                 () -> List.of(taskEvidenceAcceptanceCertificateArchive("READY", true)),
@@ -333,7 +352,48 @@ class DemoEvidenceBundleServiceTests {
         assertThat(bundle.launchAcceptanceCertificateEvidence().certified()).isTrue();
         assertThat(bundle.taskEvidenceAcceptanceCertificateEvidence().certified()).isTrue();
         assertThat(bundle.finalHandoffReportPackageArchiveEvidence().downloadReady()).isTrue();
+        assertThat(bundle.finalAcceptanceShareFinalization().finalized()).isTrue();
+        assertThat(bundle.finalAcceptanceShareFinalization().deliveryReceiptFresh()).isTrue();
         assertThat(bundle.nextActions()).containsExactly("Use this evidence bundle as the live demo baseline.");
+    }
+
+    @Test
+    void should_require_final_acceptance_share_finalization_before_reporting_bundle_ready() {
+        DemoEvidenceBundleService service = new DemoEvidenceBundleService(
+                () -> readiness(DemoReadinessStatus.READY, List.of()),
+                () -> smokeChecklist(DemoSmokeChecklistStatus.READY, List.of()),
+                DemoEvidenceBundleServiceTests::configuration,
+                () -> List.of(fixture("java-maven", "PASS")),
+                FixTaskQueueSummaryVo::empty,
+                () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/42")),
+                () -> List.of(webhookDelivery("delivery-1", WebhookDeliveryDiagnosticStatus.TASK_CREATED, "task-1")),
+                DemoEvidenceBundleServiceTests::webhookSetupReadiness,
+                () -> rejectedTriggerSummary(0),
+                List::of,
+                DemoEvidenceBundleServiceTests::evaluationRunReadiness,
+                DemoEvidenceBundleServiceTests::handoffPackageArchiveSummary,
+                DemoEvidenceBundleServiceTests::deliveredHandoffShareCenter,
+                DemoEvidenceBundleServiceTests::handoffFinalizationReady,
+                DemoEvidenceBundleServiceTests::launchEvidenceShareCenter,
+                DemoEvidenceBundleServiceTests::launchEvidenceFinalizationReady,
+                DemoEvidenceBundleServiceTests::finalAcceptanceShareFinalizationMissingReceipt,
+                () -> List.of(launchAcceptanceCloseoutArchive(DemoReadinessStatus.READY, true)),
+                () -> List.of(launchAcceptanceCertificateArchive(DemoReadinessStatus.READY, true)),
+                () -> List.of(taskEvidenceAcceptanceCertificateArchive("READY", true)),
+                () -> List.of(finalHandoffReportPackageArchive(DemoReadinessStatus.READY, true))
+        );
+
+        DemoEvidenceBundleVo bundle = service.getEvidenceBundle();
+
+        assertThat(bundle.status()).isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
+        assertThat(bundle.summary()).isEqualTo("Demo evidence bundle needs attention.");
+        assertThat(bundle.finalAcceptanceShareFinalization().status()).isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
+        assertThat(bundle.finalAcceptanceShareFinalization().finalized()).isFalse();
+        assertThat(bundle.finalAcceptanceShareFinalization().deliveryReceiptFreshness()).isEqualTo("MISSING");
+        assertThat(bundle.finalAcceptanceShareFinalization().latestDeliveryReceiptId()).isNull();
+        assertThat(bundle.nextActions()).containsExactly(
+                "Send the final acceptance share package, record a delivery receipt, then download the finalization report."
+        );
     }
 
     @Test
@@ -355,6 +415,7 @@ class DemoEvidenceBundleServiceTests {
                 DemoEvidenceBundleServiceTests::handoffFinalizationReady,
                 DemoEvidenceBundleServiceTests::launchEvidenceShareCenter,
                 DemoEvidenceBundleServiceTests::launchEvidenceFinalizationReady,
+                DemoEvidenceBundleServiceTests::finalAcceptanceShareFinalizationReady,
                 List::of,
                 () -> List.of(launchAcceptanceCertificateArchive(DemoReadinessStatus.READY, true)),
                 () -> List.of(taskEvidenceAcceptanceCertificateArchive("READY", true)),
@@ -396,6 +457,7 @@ class DemoEvidenceBundleServiceTests {
                 DemoEvidenceBundleServiceTests::handoffFinalizationReady,
                 DemoEvidenceBundleServiceTests::launchEvidenceShareCenter,
                 DemoEvidenceBundleServiceTests::launchEvidenceFinalizationReady,
+                DemoEvidenceBundleServiceTests::finalAcceptanceShareFinalizationReady,
                 () -> List.of(launchAcceptanceCloseoutArchive(DemoReadinessStatus.READY, true)),
                 List::of,
                 () -> List.of(taskEvidenceAcceptanceCertificateArchive("READY", true)),
@@ -438,6 +500,7 @@ class DemoEvidenceBundleServiceTests {
                 DemoEvidenceBundleServiceTests::handoffFinalizationReady,
                 DemoEvidenceBundleServiceTests::launchEvidenceShareCenter,
                 DemoEvidenceBundleServiceTests::launchEvidenceFinalizationReady,
+                DemoEvidenceBundleServiceTests::finalAcceptanceShareFinalizationReady,
                 () -> List.of(launchAcceptanceCloseoutArchive(DemoReadinessStatus.READY, true)),
                 () -> List.of(launchAcceptanceCertificateArchive(DemoReadinessStatus.READY, true)),
                 List::of,
@@ -479,6 +542,7 @@ class DemoEvidenceBundleServiceTests {
                 DemoEvidenceBundleServiceTests::handoffFinalizationReady,
                 DemoEvidenceBundleServiceTests::launchEvidenceShareCenter,
                 DemoEvidenceBundleServiceTests::launchEvidenceFinalizationReady,
+                DemoEvidenceBundleServiceTests::finalAcceptanceShareFinalizationReady,
                 () -> List.of(launchAcceptanceCloseoutArchive(DemoReadinessStatus.READY, true)),
                 () -> List.of(launchAcceptanceCertificateArchive(DemoReadinessStatus.READY, true)),
                 () -> List.of(taskEvidenceAcceptanceCertificateArchive("READY", true)),
@@ -954,6 +1018,60 @@ class DemoEvidenceBundleServiceTests {
                 List.of("Finalization report can be downloaded as the launch delivery acceptance record."),
                 "# PatchPilot Demo Launch Evidence Finalization Gate",
                 Instant.parse("2026-06-24T07:20:00Z")
+        );
+    }
+
+    private static DemoFinalAcceptanceShareFinalizationVo finalAcceptanceShareFinalizationReady() {
+        return new DemoFinalAcceptanceShareFinalizationVo(
+                DemoReadinessStatus.READY,
+                true,
+                "Final demo acceptance share package is finalized with a fresh delivery receipt.",
+                "Use the finalization report as the external-review acceptance delivery record.",
+                "final-acceptance-share-package-archive-1",
+                "task-2",
+                "final-acceptance-delivery-receipt-1",
+                "reviewer@example.com",
+                "email",
+                "2026-06-29T03:05:00Z",
+                "FRESH",
+                true,
+                "Latest delivery receipt matches the current final acceptance share package archive.",
+                List.of(new DemoFinalAcceptanceShareFinalizationVo.Check(
+                        "Final acceptance delivery evidence",
+                        DemoReadinessStatus.READY,
+                        "Finalization report is ready as the external-review acceptance record.",
+                        "Download the finalization report."
+                )),
+                List.of("Latest delivery receipt final-acceptance-delivery-receipt-1 is fresh for final-acceptance-share-package-archive-1."),
+                "# PatchPilot Final Demo Acceptance Share Finalization Gate",
+                Instant.parse("2026-06-29T03:30:00Z")
+        );
+    }
+
+    private static DemoFinalAcceptanceShareFinalizationVo finalAcceptanceShareFinalizationMissingReceipt() {
+        return new DemoFinalAcceptanceShareFinalizationVo(
+                DemoReadinessStatus.NEEDS_ATTENTION,
+                false,
+                "Final demo acceptance share package is send-ready but final delivery evidence is not current.",
+                "Send the final acceptance share package, record a delivery receipt, then download the finalization report.",
+                "final-acceptance-share-package-archive-1",
+                "task-2",
+                null,
+                null,
+                null,
+                null,
+                "MISSING",
+                false,
+                "No delivery receipt has been recorded for the current final acceptance share package.",
+                List.of(new DemoFinalAcceptanceShareFinalizationVo.Check(
+                        "Delivery receipt freshness",
+                        DemoReadinessStatus.NEEDS_ATTENTION,
+                        "No fresh final acceptance delivery receipt is available.",
+                        "Record a final acceptance delivery receipt."
+                )),
+                List.of("No fresh delivery receipt is available for final-acceptance-share-package-archive-1."),
+                "# PatchPilot Final Demo Acceptance Share Finalization Gate",
+                Instant.parse("2026-06-29T03:30:00Z")
         );
     }
 

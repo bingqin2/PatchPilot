@@ -1850,6 +1850,34 @@ const demoEvidenceBundle = {
       'Download linked handoff package archive handoff-archive-1.'
     ]
   },
+  finalAcceptanceShareFinalization: {
+    status: 'READY',
+    finalized: true,
+    summary: 'Final demo acceptance share package is finalized with a fresh delivery receipt.',
+    nextAction: 'Use the finalization report as the external-review acceptance delivery record.',
+    latestArchiveId: 'final-acceptance-share-package-archive-1',
+    latestTaskId: 'task-2',
+    latestDeliveryReceiptId: 'final-acceptance-delivery-receipt-1',
+    latestDeliveryTarget: 'reviewer@example.com',
+    latestDeliveryChannel: 'email',
+    latestDeliveredAt: '2026-06-29T03:05:00Z',
+    deliveryReceiptFreshness: 'FRESH',
+    deliveryReceiptFresh: true,
+    deliveryReceiptFreshnessSummary: 'Latest delivery receipt matches the current final acceptance share package archive.',
+    checks: [
+      {
+        name: 'Final acceptance delivery evidence',
+        status: 'READY',
+        summary: 'Finalization report is ready as the external-review acceptance record.',
+        nextAction: 'Download the finalization report.'
+      }
+    ],
+    evidenceNotes: [
+      'Latest delivery receipt final-acceptance-delivery-receipt-1 is fresh for final-acceptance-share-package-archive-1.'
+    ],
+    markdownReport: '# PatchPilot Final Demo Acceptance Share Finalization Gate',
+    generatedAt: '2026-06-29T03:30:00Z'
+  },
   handoffShareDeliveryReceiptRecorded: true,
   handoffShareLatestDeliveryReceiptId: 'delivery-receipt-1',
   handoffShareLatestDeliveryTarget: 'maintainer@example.com',

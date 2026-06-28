@@ -273,6 +273,34 @@ const bundle: DemoEvidenceBundle = {
       'Download linked handoff package archive handoff-archive-1.'
     ]
   },
+  finalAcceptanceShareFinalization: {
+    status: 'READY',
+    finalized: true,
+    summary: 'Final demo acceptance share package is finalized with a fresh delivery receipt.',
+    nextAction: 'Use the finalization report as the external-review acceptance delivery record.',
+    latestArchiveId: 'final-acceptance-share-package-archive-1',
+    latestTaskId: 'task-2',
+    latestDeliveryReceiptId: 'final-acceptance-delivery-receipt-1',
+    latestDeliveryTarget: 'reviewer@example.com',
+    latestDeliveryChannel: 'email',
+    latestDeliveredAt: '2026-06-29T03:05:00Z',
+    deliveryReceiptFreshness: 'FRESH',
+    deliveryReceiptFresh: true,
+    deliveryReceiptFreshnessSummary: 'Latest delivery receipt matches the current final acceptance share package archive.',
+    checks: [
+      {
+        name: 'Final acceptance delivery evidence',
+        status: 'READY',
+        summary: 'Finalization report is ready as the external-review acceptance record.',
+        nextAction: 'Download the finalization report.'
+      }
+    ],
+    evidenceNotes: [
+      'Latest delivery receipt final-acceptance-delivery-receipt-1 is fresh for final-acceptance-share-package-archive-1.'
+    ],
+    markdownReport: '# PatchPilot Final Demo Acceptance Share Finalization Gate',
+    generatedAt: '2026-06-29T03:30:00Z'
+  },
   handoffShareDeliveryReceiptRecorded: true,
   handoffShareLatestDeliveryReceiptId: 'delivery-receipt-1',
   handoffShareLatestDeliveryTarget: 'maintainer@example.com',
@@ -384,7 +412,7 @@ test('summarizes demo evidence bundle for operators', () => {
   expect(within(panel).getByText('task-evidence-closeout-archive-1')).toBeInTheDocument();
   expect(within(panel).getByText('task-evidence-archive-1')).toBeInTheDocument();
   expect(within(panel).getByText('task-evidence-receipt-1')).toBeInTheDocument();
-  expect(within(panel).getByText('Task task-2')).toBeInTheDocument();
+  expect(within(panel).getAllByText('Task task-2').length).toBeGreaterThanOrEqual(2);
   expect(within(panel).getByRole('link', { name: 'Open task certificate Pull Request' })).toHaveAttribute(
     'href',
     'https://github.com/bingqin2/PatchPilot/pull/42'
@@ -412,10 +440,19 @@ test('summarizes demo evidence bundle for operators', () => {
     within(panel).getByText('Download final handoff report package archive final-handoff-package-archive-1.')
   ).toBeInTheDocument();
   expect(within(panel).getByText('Download linked handoff package archive handoff-archive-1.')).toBeInTheDocument();
+  expect(within(panel).getByText('Final acceptance delivery')).toBeInTheDocument();
+  expect(within(panel).getByText('Final demo acceptance share package is finalized with a fresh delivery receipt.')).toBeInTheDocument();
+  expect(
+    within(panel).getByText('Use the finalization report as the external-review acceptance delivery record.')
+  ).toBeInTheDocument();
+  expect(within(panel).getByText('final-acceptance-share-package-archive-1')).toBeInTheDocument();
+  expect(within(panel).getByText('final-acceptance-delivery-receipt-1')).toBeInTheDocument();
+  expect(within(panel).getAllByText('Task task-2').length).toBeGreaterThanOrEqual(2);
+  expect(within(panel).getByText('email - reviewer@example.com')).toBeInTheDocument();
   expect(within(panel).getByText('Handoff share delivery')).toBeInTheDocument();
   expect(within(panel).getAllByText('Fresh').length).toBeGreaterThanOrEqual(2);
   expect(within(panel).getByText('Handoff finalization')).toBeInTheDocument();
-  expect(within(panel).getAllByText('Finalized')).toHaveLength(2);
+  expect(within(panel).getAllByText('Finalized').length).toBeGreaterThanOrEqual(3);
   expect(
     within(panel).getByText('Use the finalization report as the post-demo delivery acceptance record.')
   ).toBeInTheDocument();
@@ -452,7 +489,8 @@ test('renders missing certificate evidence for legacy bundle responses', () => {
     ...bundle,
     launchAcceptanceCertificateEvidence: undefined,
     taskEvidenceAcceptanceCertificateEvidence: undefined,
-    finalHandoffReportPackageArchiveEvidence: undefined
+    finalHandoffReportPackageArchiveEvidence: undefined,
+    finalAcceptanceShareFinalization: undefined
   } as unknown as DemoEvidenceBundle;
 
   render(<DemoEvidenceBundlePanel bundle={legacyBundle} error={null} onCopyRunbook={vi.fn()} />);
@@ -474,6 +512,11 @@ test('renders missing certificate evidence for legacy bundle responses', () => {
   expect(screen.getByText('No final handoff report package archive is available.')).toBeInTheDocument();
   expect(
     screen.getByText('Archive the final handoff report package after the post-demo handoff package is finalized.')
+  ).toBeInTheDocument();
+  expect(screen.getByText('Final acceptance delivery')).toBeInTheDocument();
+  expect(screen.getByText('Final acceptance share package is not finalized.')).toBeInTheDocument();
+  expect(
+    screen.getByText('Archive and deliver the final acceptance share package before using the evidence bundle as external-review proof.')
   ).toBeInTheDocument();
 });
 

@@ -64,6 +64,25 @@ export function DemoEvidenceBundlePanel({ bundle, error, onCopyRunbook }: DemoEv
       'Archive the final handoff report package before using the evidence bundle as post-demo closeout proof.'
     ]
   };
+  const finalAcceptanceShareFinalization = bundle?.finalAcceptanceShareFinalization ?? {
+    status: 'NEEDS_ATTENTION' as DemoReadinessStatus,
+    finalized: false,
+    summary: 'Final acceptance share package is not finalized.',
+    nextAction: 'Archive and deliver the final acceptance share package before using the evidence bundle as external-review proof.',
+    latestArchiveId: null,
+    latestTaskId: null,
+    latestDeliveryReceiptId: null,
+    latestDeliveryTarget: null,
+    latestDeliveryChannel: null,
+    latestDeliveredAt: null,
+    deliveryReceiptFreshness: 'MISSING',
+    deliveryReceiptFresh: false,
+    deliveryReceiptFreshnessSummary: 'No delivery receipt has been recorded for the current final acceptance share package.',
+    checks: [],
+    evidenceNotes: [],
+    markdownReport: '',
+    generatedAt: ''
+  };
 
   async function copyRunbook() {
     try {
@@ -287,6 +306,33 @@ export function DemoEvidenceBundlePanel({ bundle, error, onCopyRunbook }: DemoEv
               {finalPackageArchiveEvidence.downloadActions.slice(0, 2).map((action) => (
                 <small key={action}>{action}</small>
               ))}
+            </div>
+            <div>
+              <span>Final acceptance delivery</span>
+              <strong>
+                {finalAcceptanceShareFinalization.finalized
+                  ? 'Finalized'
+                  : statusLabel(finalAcceptanceShareFinalization.status)}
+              </strong>
+              <small>{finalAcceptanceShareFinalization.summary}</small>
+              <small>{finalAcceptanceShareFinalization.nextAction}</small>
+              <small>{finalAcceptanceShareFinalization.latestArchiveId ?? 'No final acceptance archive'}</small>
+              <small>
+                {finalAcceptanceShareFinalization.latestTaskId
+                  ? `Task ${finalAcceptanceShareFinalization.latestTaskId}`
+                  : 'No final acceptance task'}
+              </small>
+              <small>{finalAcceptanceShareFinalization.latestDeliveryReceiptId ?? 'No final acceptance delivery receipt'}</small>
+              <small>{deliveryFreshnessLabel(finalAcceptanceShareFinalization.deliveryReceiptFreshness)}</small>
+              <small>{finalAcceptanceShareFinalization.deliveryReceiptFreshnessSummary}</small>
+              <small>
+                {finalAcceptanceShareFinalization.latestDeliveryTarget
+                  ? `${finalAcceptanceShareFinalization.latestDeliveryChannel ?? 'delivery'} - ${finalAcceptanceShareFinalization.latestDeliveryTarget}`
+                  : 'Record a final acceptance delivery receipt after sending the package.'}
+              </small>
+              {finalAcceptanceShareFinalization.latestDeliveredAt ? (
+                <small>Delivered {compactDateTime(finalAcceptanceShareFinalization.latestDeliveredAt)}</small>
+              ) : null}
             </div>
             <div>
               <span>Handoff share delivery</span>

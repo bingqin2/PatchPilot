@@ -231,6 +231,30 @@ public class DemoRunbookService {
                         .append("- Final handoff report package download: ")
                         .append(action)
                         .append("\n"));
+
+        runbook.append("- Final acceptance share finalization: `")
+                .append(bundle.finalAcceptanceShareFinalization().status())
+                .append("` - ")
+                .append(bundle.finalAcceptanceShareFinalization().summary())
+                .append("\n")
+                .append("- Final acceptance share archive: ")
+                .append(valueOrNoneBackticked(bundle.finalAcceptanceShareFinalization().latestArchiveId()))
+                .append("\n")
+                .append("- Final acceptance share task: ")
+                .append(valueOrNoneBackticked(bundle.finalAcceptanceShareFinalization().latestTaskId()))
+                .append("\n")
+                .append("- Final acceptance delivery receipt: ")
+                .append(valueOrNoneBackticked(bundle.finalAcceptanceShareFinalization().latestDeliveryReceiptId()))
+                .append("\n")
+                .append("- Final acceptance delivery target: ")
+                .append(finalAcceptanceDeliveryTarget(bundle))
+                .append("\n")
+                .append("- Final acceptance receipt freshness: `")
+                .append(bundle.finalAcceptanceShareFinalization().deliveryReceiptFreshness())
+                .append("`\n")
+                .append("- Final acceptance finalization next action: ")
+                .append(bundle.finalAcceptanceShareFinalization().nextAction())
+                .append("\n");
     }
 
     private static void appendEvaluationRunReadiness(
@@ -306,6 +330,18 @@ public class DemoRunbookService {
 
     private static String valueOrNoneBackticked(String value) {
         return value == null || value.isBlank() ? "none" : "`" + value + "`";
+    }
+
+    private static String finalAcceptanceDeliveryTarget(DemoEvidenceBundleVo bundle) {
+        String target = bundle.finalAcceptanceShareFinalization().latestDeliveryTarget();
+        String channel = bundle.finalAcceptanceShareFinalization().latestDeliveryChannel();
+        if (target == null || target.isBlank()) {
+            return "none";
+        }
+        if (channel == null || channel.isBlank()) {
+            return target;
+        }
+        return target + " via " + channel;
     }
 
     private static String signed(int value) {
