@@ -106,9 +106,12 @@ public class DemoHandoffFinalizationService {
         DemoReadinessStatus receiptStatus = center.deliveryReceiptFresh()
                 ? DemoReadinessStatus.READY
                 : DemoReadinessStatus.NEEDS_ATTENTION;
+        DemoReadinessStatus taskCertificateStatus = center.taskCertificateReady()
+                ? DemoReadinessStatus.READY
+                : center.taskCertificateStatus();
         DemoReadinessStatus acceptanceStatus = finalizationStatus == DemoReadinessStatus.BLOCKED
                 ? DemoReadinessStatus.BLOCKED
-                : receiptStatus;
+                : worst(receiptStatus, taskCertificateStatus);
         return List.of(
                 new DemoHandoffFinalizationCheckVo(
                         "Handoff package share readiness",
@@ -121,6 +124,16 @@ public class DemoHandoffFinalizationService {
                         receiptStatus,
                         center.deliveryReceiptFreshnessSummary(),
                         center.deliveryReceiptFresh() ? "No action needed." : receiptNextAction(center)
+                ),
+                new DemoHandoffFinalizationCheckVo(
+                        "Task evidence certificate",
+                        taskCertificateStatus,
+                        taskCertificateStatus == DemoReadinessStatus.READY
+                                ? "Task evidence acceptance certificate is attached to the final handoff package."
+                                : center.taskCertificateSummary(),
+                        taskCertificateStatus == DemoReadinessStatus.READY
+                                ? "No action needed."
+                                : center.taskCertificateNextAction()
                 ),
                 new DemoHandoffFinalizationCheckVo(
                         "Final acceptance evidence",
@@ -145,6 +158,12 @@ public class DemoHandoffFinalizationService {
     private static List<String> evidenceNotes(DemoHandoffShareCenterVo center, boolean finalized) {
         List<String> notes = new ArrayList<>();
         notes.add("Share center status is " + center.status().name() + ".");
+        if (center.taskCertificateReady()) {
+            notes.add("Task evidence certificate " + valueOrNone(center.taskCertificateArchiveId())
+                    + " is ready for task " + valueOrNone(center.taskCertificateTaskId()) + ".");
+        } else {
+            notes.add("Task evidence certificate is not ready: " + center.taskCertificateSummary());
+        }
         if (finalized) {
             notes.add("Latest delivery receipt " + center.latestDeliveryReceiptId() + " is fresh for "
                     + valueOrNone(center.latestArchiveId()) + "/" + valueOrNone(center.latestSessionId()) + ".");
@@ -156,6 +175,16 @@ public class DemoHandoffFinalizationService {
         }
         notes.add("Share center next action: " + center.nextAction());
         return List.copyOf(notes);
+    }
+
+    private static DemoReadinessStatus worst(DemoReadinessStatus first, DemoReadinessStatus second) {
+        if (first == DemoReadinessStatus.BLOCKED || second == DemoReadinessStatus.BLOCKED) {
+            return DemoReadinessStatus.BLOCKED;
+        }
+        if (first == DemoReadinessStatus.NEEDS_ATTENTION || second == DemoReadinessStatus.NEEDS_ATTENTION) {
+            return DemoReadinessStatus.NEEDS_ATTENTION;
+        }
+        return DemoReadinessStatus.READY;
     }
 
     private static String formatMarkdown(

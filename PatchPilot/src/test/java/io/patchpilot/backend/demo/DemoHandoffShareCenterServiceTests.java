@@ -6,6 +6,7 @@ import io.patchpilot.backend.demo.domain.DemoHandoffShareChecklistItemVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffShareChecklistVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffShareDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessStatus;
+import io.patchpilot.backend.demo.domain.DemoTaskEvidenceAcceptanceCertificateEvidenceVo;
 import io.patchpilot.backend.demo.service.DemoHandoffShareDeliveryReceiptRepository;
 import org.junit.jupiter.api.Test;
 
@@ -24,10 +25,13 @@ class DemoHandoffShareCenterServiceTests {
 
     private final DemoHandoffPackageArchiveSummaryService archiveSummaryService = mock(DemoHandoffPackageArchiveSummaryService.class);
     private final DemoHandoffShareChecklistService shareChecklistService = mock(DemoHandoffShareChecklistService.class);
+    private final DemoTaskEvidenceAcceptanceCertificateEvidenceService taskCertificateEvidenceService =
+            mock(DemoTaskEvidenceAcceptanceCertificateEvidenceService.class);
     private final DemoHandoffShareDeliveryReceiptRepository receiptRepository = mock(DemoHandoffShareDeliveryReceiptRepository.class);
     private final DemoHandoffShareCenterService service = new DemoHandoffShareCenterService(
             archiveSummaryService,
             shareChecklistService,
+            taskCertificateEvidenceService,
             receiptRepository,
             CLOCK
     );
@@ -36,6 +40,7 @@ class DemoHandoffShareCenterServiceTests {
     void should_build_share_ready_center_from_archive_summary_and_checklist() {
         when(archiveSummaryService.getArchiveSummary()).thenReturn(readyArchiveSummary());
         when(shareChecklistService.getShareChecklist()).thenReturn(readyChecklist());
+        when(taskCertificateEvidenceService.getEvidence()).thenReturn(readyTaskCertificate());
         when(receiptRepository.listRecentReceipts(1)).thenReturn(List.of(deliveryReceipt()));
 
         DemoHandoffShareCenterVo center = service.getShareCenter();
@@ -57,17 +62,24 @@ class DemoHandoffShareCenterServiceTests {
         assertThat(center.deliveryReceiptFresh()).isTrue();
         assertThat(center.deliveryReceiptFreshnessSummary())
                 .isEqualTo("Latest delivery receipt matches the current handoff archive and session.");
+        assertThat(center.taskCertificateStatus()).isEqualTo(DemoReadinessStatus.READY);
+        assertThat(center.taskCertificateReady()).isTrue();
+        assertThat(center.taskCertificateArchiveId()).isEqualTo("task-evidence-certificate-archive-1");
+        assertThat(center.taskCertificateTaskId()).isEqualTo("task-2");
+        assertThat(center.taskCertificatePullRequestUrl()).isEqualTo("https://github.com/bingqin2/PatchPilot/pull/42");
         assertThat(center.generatedAt()).isEqualTo(Instant.parse("2026-06-24T05:30:00Z"));
         assertThat(center.downloadActions()).containsExactly(
                 "Download handoff package archive handoff-archive-1.",
                 "Download handoff package archive summary.",
                 "Download handoff share checklist.",
+                "Download task evidence acceptance certificate archive task-evidence-certificate-archive-1.",
                 "Download handoff share delivery receipt receipt-1."
         );
         assertThat(center.evidenceNotes())
                 .contains(
                         "Latest package archive status is READY.",
                         "Share checklist has 2 checks.",
+                        "Task evidence acceptance certificate task-evidence-certificate-archive-1 is READY for task task-2.",
                         "Latest delivery receipt receipt-1 was recorded for Demo reviewer via email.",
                         "Archive summary: Latest handoff package archive is ready to share.",
                         "Checklist summary: Latest handoff archive is ready to share."
@@ -80,6 +92,10 @@ class DemoHandoffShareCenterServiceTests {
                 .contains("- Delivery receipt freshness: `FRESH`")
                 .contains("- Latest delivery receipt: `receipt-1`")
                 .contains("- Delivery target: `Demo reviewer`")
+                .contains("- Task certificate status: `READY`")
+                .contains("- Task certificate archive: `task-evidence-certificate-archive-1`")
+                .contains("- Task certificate task: `task-2`")
+                .contains("- Task certificate Pull Request: https://github.com/bingqin2/PatchPilot/pull/42")
                 .contains("## Embedded Archive Summary")
                 .contains("# Archive Summary")
                 .contains("## Embedded Share Checklist")
@@ -91,6 +107,7 @@ class DemoHandoffShareCenterServiceTests {
     void should_block_sharing_when_no_archive_is_available_and_checklist_needs_attention() {
         when(archiveSummaryService.getArchiveSummary()).thenReturn(emptyArchiveSummary());
         when(shareChecklistService.getShareChecklist()).thenReturn(checklistNeedingAttention());
+        when(taskCertificateEvidenceService.getEvidence()).thenReturn(missingTaskCertificate());
         when(receiptRepository.listRecentReceipts(1)).thenReturn(List.of());
 
         DemoHandoffShareCenterVo center = service.getShareCenter();
@@ -113,6 +130,7 @@ class DemoHandoffShareCenterServiceTests {
                 "Archive a demo handoff package before downloading final handoff evidence.",
                 "Download handoff package archive summary.",
                 "Download handoff share checklist.",
+                "Archive a task evidence acceptance certificate before sending final handoff evidence.",
                 "Record a handoff share delivery receipt after sending the package.",
                 "Resolve checklist warnings before sending the package."
         );
@@ -129,6 +147,7 @@ class DemoHandoffShareCenterServiceTests {
     void should_request_delivery_receipt_when_share_center_is_ready_but_not_delivered() {
         when(archiveSummaryService.getArchiveSummary()).thenReturn(readyArchiveSummary());
         when(shareChecklistService.getShareChecklist()).thenReturn(readyChecklist());
+        when(taskCertificateEvidenceService.getEvidence()).thenReturn(readyTaskCertificate());
         when(receiptRepository.listRecentReceipts(1)).thenReturn(List.of());
 
         DemoHandoffShareCenterVo center = service.getShareCenter();
@@ -151,6 +170,7 @@ class DemoHandoffShareCenterServiceTests {
     void should_mark_latest_delivery_receipt_stale_when_archive_or_session_no_longer_matches() {
         when(archiveSummaryService.getArchiveSummary()).thenReturn(readyArchiveSummary());
         when(shareChecklistService.getShareChecklist()).thenReturn(readyChecklist());
+        when(taskCertificateEvidenceService.getEvidence()).thenReturn(readyTaskCertificate());
         when(receiptRepository.listRecentReceipts(1)).thenReturn(List.of(staleDeliveryReceipt()));
 
         DemoHandoffShareCenterVo center = service.getShareCenter();
@@ -169,6 +189,7 @@ class DemoHandoffShareCenterServiceTests {
                 "Download handoff package archive handoff-archive-1.",
                 "Download handoff package archive summary.",
                 "Download handoff share checklist.",
+                "Download task evidence acceptance certificate archive task-evidence-certificate-archive-1.",
                 "Record a new handoff share delivery receipt for archive handoff-archive-1."
         );
         assertThat(center.evidenceNotes()).contains(
@@ -183,6 +204,7 @@ class DemoHandoffShareCenterServiceTests {
     void should_build_share_instructions_from_share_ready_center() {
         when(archiveSummaryService.getArchiveSummary()).thenReturn(readyArchiveSummary());
         when(shareChecklistService.getShareChecklist()).thenReturn(readyChecklist());
+        when(taskCertificateEvidenceService.getEvidence()).thenReturn(readyTaskCertificate());
         when(receiptRepository.listRecentReceipts(1)).thenReturn(List.of(deliveryReceipt()));
 
         var instructions = service.getShareInstructions();
@@ -197,11 +219,13 @@ class DemoHandoffShareCenterServiceTests {
                 "Handoff package archive handoff-archive-1",
                 "Handoff package archive summary",
                 "Handoff share checklist",
-                "Handoff share center report"
+                "Handoff share center report",
+                "Task evidence acceptance certificate archive task-evidence-certificate-archive-1"
         );
         assertThat(instructions.preSendChecks()).containsExactly(
                 "Confirm the Pull Request link in the handoff package opens correctly.",
                 "Confirm the archived package, archive summary, checklist, and share-center report were downloaded.",
+                "Confirm task evidence acceptance certificate task-evidence-certificate-archive-1 is attached.",
                 "Confirm no handoff share checklist warnings remain."
         );
         assertThat(instructions.messageSubject()).isEqualTo("PatchPilot demo handoff: demo-session-20260624T003000Z");
@@ -220,6 +244,7 @@ class DemoHandoffShareCenterServiceTests {
     void should_block_share_instructions_when_share_center_is_not_ready() {
         when(archiveSummaryService.getArchiveSummary()).thenReturn(emptyArchiveSummary());
         when(shareChecklistService.getShareChecklist()).thenReturn(checklistNeedingAttention());
+        when(taskCertificateEvidenceService.getEvidence()).thenReturn(missingTaskCertificate());
         when(receiptRepository.listRecentReceipts(1)).thenReturn(List.of());
 
         var instructions = service.getShareInstructions();
@@ -236,6 +261,34 @@ class DemoHandoffShareCenterServiceTests {
         assertThat(instructions.messageBody())
                 .contains("The PatchPilot demo handoff package is not ready to send yet.")
                 .contains("Archive a demo handoff package before sharing handoff evidence.");
+    }
+
+    @Test
+    void should_block_share_center_when_task_certificate_is_missing() {
+        when(archiveSummaryService.getArchiveSummary()).thenReturn(readyArchiveSummary());
+        when(shareChecklistService.getShareChecklist()).thenReturn(readyChecklist());
+        when(taskCertificateEvidenceService.getEvidence()).thenReturn(missingTaskCertificate());
+        when(receiptRepository.listRecentReceipts(1)).thenReturn(List.of(deliveryReceipt()));
+
+        DemoHandoffShareCenterVo center = service.getShareCenter();
+
+        assertThat(center.status()).isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
+        assertThat(center.shareReady()).isFalse();
+        assertThat(center.taskCertificateStatus()).isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
+        assertThat(center.taskCertificateReady()).isFalse();
+        assertThat(center.summary()).isEqualTo("Task evidence acceptance certificate is not ready for handoff sharing.");
+        assertThat(center.nextAction())
+                .isEqualTo("Archive a certified task evidence acceptance certificate after final task evidence closeout.");
+        assertThat(center.downloadActions()).contains(
+                "Archive a task evidence acceptance certificate before sending final handoff evidence."
+        );
+        assertThat(center.evidenceNotes()).contains(
+                "Task evidence acceptance certificate is not ready: No task evidence acceptance certificate archive is available."
+        );
+        assertThat(center.markdownReport())
+                .contains("- Task certificate status: `NEEDS_ATTENTION`")
+                .contains("- Task certificate ready: `false`")
+                .contains("- Task certificate archive: `none`");
     }
 
     private static DemoHandoffPackageArchiveSummaryVo readyArchiveSummary() {
@@ -329,6 +382,44 @@ class DemoHandoffShareCenterServiceTests {
                 Instant.parse("2026-06-24T05:20:00Z"),
                 Instant.parse("2026-06-24T05:21:00Z"),
                 "# PatchPilot Demo Handoff Share Delivery Receipt"
+        );
+    }
+
+    private static DemoTaskEvidenceAcceptanceCertificateEvidenceVo readyTaskCertificate() {
+        return new DemoTaskEvidenceAcceptanceCertificateEvidenceVo(
+                DemoReadinessStatus.READY,
+                true,
+                true,
+                "Latest task evidence acceptance certificate archive is certified and ready.",
+                "Use the archived task evidence acceptance certificate as task-level review proof.",
+                1,
+                "task-evidence-certificate-archive-1",
+                "task-evidence-closeout-archive-1",
+                "task-evidence-archive-1",
+                "task-evidence-receipt-1",
+                "task-2",
+                "https://github.com/bingqin2/PatchPilot/pull/42",
+                Instant.parse("2026-06-24T04:30:00Z"),
+                List.of("Download task evidence acceptance certificate archive task-evidence-certificate-archive-1.")
+        );
+    }
+
+    private static DemoTaskEvidenceAcceptanceCertificateEvidenceVo missingTaskCertificate() {
+        return new DemoTaskEvidenceAcceptanceCertificateEvidenceVo(
+                DemoReadinessStatus.NEEDS_ATTENTION,
+                false,
+                false,
+                "No task evidence acceptance certificate archive is available.",
+                "Archive a certified task evidence acceptance certificate after final task evidence closeout.",
+                0,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                List.of("Archive a task evidence acceptance certificate before using the evidence bundle as task-level review proof.")
         );
     }
 }

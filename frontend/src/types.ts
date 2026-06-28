@@ -1129,6 +1129,13 @@ export interface DemoHandoffShareCenter {
   deliveryReceiptFreshness: string;
   deliveryReceiptFresh: boolean;
   deliveryReceiptFreshnessSummary: string;
+  taskCertificateStatus?: DemoReadinessStatus;
+  taskCertificateReady?: boolean;
+  taskCertificateSummary?: string;
+  taskCertificateNextAction?: string;
+  taskCertificateArchiveId?: string | null;
+  taskCertificateTaskId?: string | null;
+  taskCertificatePullRequestUrl?: string | null;
   downloadActions: string[];
   evidenceNotes: string[];
   markdownReport: string;

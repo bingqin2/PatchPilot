@@ -342,15 +342,24 @@ const handoffShareCenter: DemoHandoffShareCenter = {
   deliveryReceiptFreshness: 'FRESH',
   deliveryReceiptFresh: true,
   deliveryReceiptFreshnessSummary: 'Latest delivery receipt matches the current handoff archive and session.',
+  taskCertificateStatus: 'READY',
+  taskCertificateReady: true,
+  taskCertificateSummary: 'Latest task evidence acceptance certificate archive is certified and ready.',
+  taskCertificateNextAction: 'Use the archived task evidence acceptance certificate as task-level review proof.',
+  taskCertificateArchiveId: 'task-evidence-certificate-archive-1',
+  taskCertificateTaskId: 'task-2',
+  taskCertificatePullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
   downloadActions: [
     'Download handoff package archive handoff-archive-1.',
     'Download handoff package archive summary.',
     'Download handoff share checklist.',
+    'Download task evidence acceptance certificate archive task-evidence-certificate-archive-1.',
     'Download handoff share delivery receipt delivery-receipt-1.'
   ],
   evidenceNotes: [
     'Latest package archive is READY.',
     'Share checklist has 2 checks.',
+    'Task evidence acceptance certificate task-evidence-certificate-archive-1 is READY for task task-2.',
     'Latest delivery receipt delivery-receipt-1 was recorded for maintainer@example.com via email.'
   ],
   markdownReport: '# PatchPilot Demo Handoff Share Center\n\n- Status: `READY`',
@@ -373,6 +382,12 @@ const handoffFinalization: DemoHandoffFinalization = {
   deliveryReceiptFreshnessSummary: 'Latest delivery receipt matches the current handoff archive and session.',
   checks: [
     {
+      name: 'Task evidence certificate',
+      status: 'READY',
+      summary: 'Task evidence acceptance certificate is attached to the final handoff package.',
+      nextAction: 'No action needed.'
+    },
+    {
       name: 'Final acceptance evidence',
       status: 'READY',
       summary: 'Finalization report is ready as the acceptance record.',
@@ -380,6 +395,7 @@ const handoffFinalization: DemoHandoffFinalization = {
     }
   ],
   evidenceNotes: [
+    'Task evidence certificate task-evidence-certificate-archive-1 is ready for task task-2.',
     'Latest delivery receipt delivery-receipt-1 is fresh for handoff-archive-1/demo-session-20260624T003000Z.',
     'Finalization report can be downloaded as the acceptance record.'
   ],
@@ -399,10 +415,12 @@ const handoffShareInstructions: DemoHandoffShareInstructions = {
     'Handoff package archive handoff-archive-1',
     'Handoff package archive summary',
     'Handoff share checklist',
-    'Handoff share center report'
+    'Handoff share center report',
+    'Task evidence acceptance certificate archive task-evidence-certificate-archive-1'
   ],
   preSendChecks: [
     'Confirm the Pull Request link in the handoff package opens correctly.',
+    'Confirm task evidence acceptance certificate task-evidence-certificate-archive-1 is attached.',
     'Confirm no handoff share checklist warnings remain.'
   ],
   messageSubject: 'PatchPilot demo handoff: demo-session-20260624T003000Z',
@@ -581,10 +599,10 @@ test('renders demo session snapshot summary, evidence, checklist, contract, and 
   ).toHaveLength(3);
   expect(within(panel).getAllByText('https://github.com/bingqin2/PatchPilot/pull/42').length).toBeGreaterThanOrEqual(3);
   expect(within(panel).getByText('task-1')).toBeInTheDocument();
-  expect(within(panel).getByText('Task evidence certificate')).toBeInTheDocument();
+  expect(within(panel).getAllByText('Task evidence certificate').length).toBeGreaterThanOrEqual(1);
   expect(within(panel).getByText('Certified task evidence archive')).toBeInTheDocument();
-  expect(within(panel).getByText('task-evidence-certificate-archive-1')).toBeInTheDocument();
-  expect(within(panel).getByText('Task task-2')).toBeInTheDocument();
+  expect(within(panel).getAllByText('task-evidence-certificate-archive-1').length).toBeGreaterThanOrEqual(1);
+  expect(within(panel).getAllByText('Task task-2').length).toBeGreaterThanOrEqual(1);
   expect(
     within(panel).getByText('Use the archived task evidence acceptance certificate as task-level review proof.')
   ).toBeInTheDocument();
@@ -614,9 +632,19 @@ test('renders demo session snapshot summary, evidence, checklist, contract, and 
   expect(within(panel).getByRole('heading', { name: 'Handoff package archive summary' })).toBeInTheDocument();
   expect(within(panel).getByRole('heading', { name: 'Handoff share center' })).toBeInTheDocument();
   expect(within(panel).getByText('Post-demo handoff package is ready to share.')).toBeInTheDocument();
+  expect(within(panel).getByText('Task certificate gate')).toBeInTheDocument();
+  expect(within(panel).getByText('Certificate-ready')).toBeInTheDocument();
+  expect(within(panel).getAllByText('task-evidence-certificate-archive-1').length).toBeGreaterThanOrEqual(2);
+  expect(within(panel).getAllByText('Task task-2').length).toBeGreaterThanOrEqual(2);
   expect(within(panel).getByText('Download handoff package archive handoff-archive-1.')).toBeInTheDocument();
+  expect(
+    within(panel).getAllByText('Download task evidence acceptance certificate archive task-evidence-certificate-archive-1.').length
+  ).toBeGreaterThanOrEqual(1);
   expect(within(panel).getAllByText('Download handoff share delivery receipt delivery-receipt-1.').length).toBeGreaterThanOrEqual(1);
   expect(within(panel).getByText('Latest package archive is READY.')).toBeInTheDocument();
+  expect(
+    within(panel).getAllByText('Task evidence acceptance certificate task-evidence-certificate-archive-1 is READY for task task-2.').length
+  ).toBeGreaterThanOrEqual(1);
   expect(within(panel).getByText('Latest delivery')).toBeInTheDocument();
   expect(within(panel).getAllByText('Fresh').length).toBeGreaterThanOrEqual(2);
   expect(
@@ -627,12 +655,17 @@ test('renders demo session snapshot summary, evidence, checklist, contract, and 
   expect(within(panel).getByRole('button', { name: 'Download handoff share center' })).toBeInTheDocument();
   expect(within(panel).getByRole('heading', { name: 'Handoff finalization gate' })).toBeInTheDocument();
   expect(within(panel).getByText('Finalized')).toBeInTheDocument();
+  expect(within(panel).getAllByText('Task evidence certificate').length).toBeGreaterThanOrEqual(2);
+  expect(within(panel).getByText('Task evidence acceptance certificate is attached to the final handoff package.')).toBeInTheDocument();
+  expect(within(panel).getByText('Task evidence certificate task-evidence-certificate-archive-1 is ready for task task-2.')).toBeInTheDocument();
   expect(within(panel).getByText('Finalization report can be downloaded as the acceptance record.')).toBeInTheDocument();
   expect(within(panel).getByRole('button', { name: 'Download handoff finalization' })).toBeInTheDocument();
   expect(within(panel).getByRole('heading', { name: 'Handoff share instructions' })).toBeInTheDocument();
   expect(within(panel).getByText('Share the current handoff package with repository maintainers and demo reviewers.')).toBeInTheDocument();
   expect(within(panel).getByText('Repository owner or maintainer')).toBeInTheDocument();
   expect(within(panel).getByText('Handoff share center report')).toBeInTheDocument();
+  expect(within(panel).getByText('Task evidence acceptance certificate archive task-evidence-certificate-archive-1')).toBeInTheDocument();
+  expect(within(panel).getByText('Confirm task evidence acceptance certificate task-evidence-certificate-archive-1 is attached.')).toBeInTheDocument();
   expect(within(panel).getAllByText('PatchPilot demo handoff: demo-session-20260624T003000Z').length).toBeGreaterThanOrEqual(2);
   expect(within(panel).getByRole('button', { name: 'Copy handoff share instructions' })).toBeInTheDocument();
   expect(within(panel).getByRole('button', { name: 'Download handoff share instructions' })).toBeInTheDocument();

@@ -47,10 +47,12 @@ class DemoHandoffFinalizationServiceTests {
                 .containsExactly(
                         "Handoff package share readiness:READY",
                         "Delivery receipt freshness:READY",
+                        "Task evidence certificate:READY",
                         "Final acceptance evidence:READY"
                 );
         assertThat(finalization.evidenceNotes()).contains(
                 "Share center status is READY.",
+                "Task evidence certificate task-evidence-certificate-archive-1 is ready for task task-2.",
                 "Latest delivery receipt receipt-1 is fresh for handoff-archive-1/demo-session-20260624T003000Z.",
                 "Finalization report can be downloaded as the acceptance record."
         );
@@ -60,6 +62,7 @@ class DemoHandoffFinalizationServiceTests {
                 .contains("- Finalized: `true`")
                 .contains("- Latest archive: `handoff-archive-1`")
                 .contains("- Latest delivery receipt: `receipt-1`")
+                .contains("Task evidence certificate: `READY` - Task evidence acceptance certificate is attached to the final handoff package.")
                 .contains("GET /api/demo/handoff-finalization is read-only");
     }
 
@@ -81,6 +84,7 @@ class DemoHandoffFinalizationServiceTests {
                 .containsExactly(
                         "Handoff package share readiness:READY",
                         "Delivery receipt freshness:NEEDS_ATTENTION",
+                        "Task evidence certificate:READY",
                         "Final acceptance evidence:NEEDS_ATTENTION"
                 );
         assertThat(finalization.evidenceNotes()).contains(
@@ -108,6 +112,7 @@ class DemoHandoffFinalizationServiceTests {
                 .containsExactly(
                         "Handoff package share readiness:READY",
                         "Delivery receipt freshness:NEEDS_ATTENTION",
+                        "Task evidence certificate:READY",
                         "Final acceptance evidence:NEEDS_ATTENTION"
                 );
         assertThat(finalization.markdownReport())
@@ -132,6 +137,7 @@ class DemoHandoffFinalizationServiceTests {
                 .containsExactly(
                         "Handoff package share readiness:BLOCKED",
                         "Delivery receipt freshness:NEEDS_ATTENTION",
+                        "Task evidence certificate:READY",
                         "Final acceptance evidence:BLOCKED"
                 );
         assertThat(finalization.markdownReport())
