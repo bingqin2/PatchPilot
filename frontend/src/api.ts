@@ -18,6 +18,7 @@ import type {
   DemoHandoffShareInstructions,
   DemoHandoffShareChecklist,
   DemoLaunchCommand,
+  DemoLaunchAcceptanceCloseout,
   DemoLaunchEvidencePackageArchive,
   DemoLaunchEvidenceFinalization,
   DemoLaunchEvidencePackage,
@@ -297,6 +298,14 @@ export async function getDemoLaunchEvidenceFinalization(): Promise<DemoLaunchEvi
 
 export async function downloadDemoLaunchEvidenceFinalizationReport(): Promise<Blob> {
   return getBlobApi('/api/demo/launch-evidence-finalization/report/download');
+}
+
+export async function getDemoLaunchAcceptanceCloseout(): Promise<DemoLaunchAcceptanceCloseout> {
+  return getApi<DemoLaunchAcceptanceCloseout>('/api/demo/launch-acceptance-closeout');
+}
+
+export async function downloadDemoLaunchAcceptanceCloseoutReport(): Promise<Blob> {
+  return getBlobApi('/api/demo/launch-acceptance-closeout/report/download');
 }
 
 export async function createDemoLaunchEvidenceShareDeliveryReceipt(

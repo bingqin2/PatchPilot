@@ -37,10 +37,12 @@ import {
   getDemoLaunchEvidencePackage,
   getDemoLaunchEvidenceShareCenter,
   getDemoLaunchEvidenceFinalization,
+  getDemoLaunchAcceptanceCloseout,
   createDemoLaunchEvidenceShareDeliveryReceipt,
   listDemoLaunchEvidenceShareDeliveryReceipts,
   downloadDemoLaunchEvidenceShareDeliveryReceiptReport,
   downloadDemoLaunchEvidenceFinalizationReport,
+  downloadDemoLaunchAcceptanceCloseoutReport,
   archiveDemoLaunchEvidencePackage,
   listDemoLaunchEvidencePackageArchives,
   downloadDemoLaunchEvidencePackageArchiveReport,
@@ -588,6 +590,56 @@ test('loads demo launch evidence finalization from backend API', async () => {
   expect(finalization.markdownReport).toContain('# PatchPilot Demo Launch Evidence Finalization Gate');
 });
 
+test('loads demo launch acceptance closeout from backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        status: 'READY',
+        accepted: true,
+        summary: 'PatchPilot launch acceptance closeout is complete.',
+        nextAction: 'Use this closeout report as the final self-hosted launch acceptance record.',
+        sessionId: 'demo-session-20260624T003000Z',
+        latestTaskId: 'task-1',
+        latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+        latestWebhookDeliveryId: 'delivery-1',
+        evaluationRunId: 'evaluation-run-2',
+        latestArchiveId: 'launch-evidence-archive-1',
+        latestDeliveryReceiptId: 'launch-delivery-receipt-1',
+        latestDeliveryTarget: 'reviewer@example.com',
+        latestDeliveryChannel: 'email',
+        latestDeliveredAt: '2026-06-28T06:05:00Z',
+        deliveryReceiptFreshness: 'FRESH',
+        generatedAt: '2026-06-28T07:15:00Z',
+        checks: [
+          {
+            name: 'Self-hosted launch readiness',
+            status: 'READY',
+            summary: 'Self-hosted PatchPilot is ready.',
+            nextAction: 'No action needed.'
+          }
+        ],
+        evidenceNotes: ['Delivery receipt launch-delivery-receipt-1 is fresh for demo-session-20260624T003000Z.'],
+        downloadActions: ['Download launch acceptance closeout report.'],
+        markdownReport: '# PatchPilot Launch Acceptance Closeout\n\n- Status: `READY`'
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const closeout = await getDemoLaunchAcceptanceCloseout();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/launch-acceptance-closeout');
+  expect(closeout.status).toBe('READY');
+  expect(closeout.accepted).toBe(true);
+  expect(closeout.latestDeliveryReceiptId).toBe('launch-delivery-receipt-1');
+  expect(closeout.checks[0].name).toBe('Self-hosted launch readiness');
+  expect(closeout.markdownReport).toContain('# PatchPilot Launch Acceptance Closeout');
+});
+
 test('creates demo launch evidence share delivery receipt through backend API', async () => {
   const fetchMock = vi.fn(async () => ({
     ok: true,
@@ -703,6 +755,23 @@ test('downloads demo launch evidence finalization markdown from backend API', as
   const downloadedReport = await downloadDemoLaunchEvidenceFinalizationReport();
 
   expect(fetchMock).toHaveBeenCalledWith('/api/demo/launch-evidence-finalization/report/download');
+  expect(downloadedReport).toBe(reportBlob);
+});
+
+test('downloads demo launch acceptance closeout markdown from backend API', async () => {
+  const reportBlob = new Blob(['# PatchPilot Launch Acceptance Closeout\n\n- Status: `READY`'], {
+    type: 'text/markdown;charset=UTF-8'
+  });
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    blob: async () => reportBlob
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const downloadedReport = await downloadDemoLaunchAcceptanceCloseoutReport();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/launch-acceptance-closeout/report/download');
   expect(downloadedReport).toBe(reportBlob);
 });
 

@@ -10,6 +10,7 @@ import io.patchpilot.backend.demo.domain.DemoHandoffShareCenterVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffShareChecklistVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffShareDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffShareInstructionsVo;
+import io.patchpilot.backend.demo.domain.DemoLaunchAcceptanceCloseoutVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchCommandVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchEvidenceFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchEvidencePackageArchiveVo;
@@ -70,6 +71,7 @@ public class DemoReadinessController {
     private final DemoLaunchEvidenceShareCenterService demoLaunchEvidenceShareCenterService;
     private final DemoLaunchEvidenceShareDeliveryReceiptService demoLaunchEvidenceShareDeliveryReceiptService;
     private final DemoLaunchEvidenceFinalizationService demoLaunchEvidenceFinalizationService;
+    private final DemoLaunchAcceptanceCloseoutService demoLaunchAcceptanceCloseoutService;
     private final DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
     private final DemoReadinessSnapshotTrendService demoReadinessSnapshotTrendService;
     private final DemoLaunchPreflightService demoLaunchPreflightService;
@@ -280,6 +282,11 @@ public class DemoReadinessController {
         return ApiResponse.ok(demoLaunchEvidenceFinalizationService.getFinalizationGate());
     }
 
+    @GetMapping("/launch-acceptance-closeout")
+    public ApiResponse<DemoLaunchAcceptanceCloseoutVo> getLaunchAcceptanceCloseout() {
+        return ApiResponse.ok(demoLaunchAcceptanceCloseoutService.getCloseout());
+    }
+
     @GetMapping(value = "/handoff-share-center/report/download", produces = "text/markdown;charset=UTF-8")
     public ResponseEntity<String> downloadHandoffShareCenterReport() {
         return markdownAttachment(
@@ -333,6 +340,14 @@ public class DemoReadinessController {
         return markdownAttachment(
                 "patchpilot-demo-launch-evidence-finalization.md",
                 demoLaunchEvidenceFinalizationService.getFinalizationGate().markdownReport()
+        );
+    }
+
+    @GetMapping(value = "/launch-acceptance-closeout/report/download", produces = "text/markdown;charset=UTF-8")
+    public ResponseEntity<String> downloadLaunchAcceptanceCloseoutReport() {
+        return markdownAttachment(
+                "patchpilot-launch-acceptance-closeout.md",
+                demoLaunchAcceptanceCloseoutService.getCloseout().markdownReport()
         );
     }
 

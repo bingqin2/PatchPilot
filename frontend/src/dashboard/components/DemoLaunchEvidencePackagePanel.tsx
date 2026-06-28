@@ -1,6 +1,7 @@
 import { Archive, Copy, Download, Send } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import type {
+  DemoLaunchAcceptanceCloseout,
   DemoLaunchEvidenceFinalization,
   DemoLaunchEvidencePackage,
   DemoLaunchEvidencePackageArchive,
@@ -20,6 +21,8 @@ interface DemoLaunchEvidencePackagePanelProps {
   shareCenterError: string | null;
   finalization: DemoLaunchEvidenceFinalization | null;
   finalizationError: string | null;
+  closeout: DemoLaunchAcceptanceCloseout | null;
+  closeoutError: string | null;
   deliveryReceipts: DemoLaunchEvidenceShareDeliveryReceipt[];
   deliveryReceiptError: string | null;
   onArchivePackage: () => Promise<DemoLaunchEvidencePackageArchive>;
@@ -27,6 +30,7 @@ interface DemoLaunchEvidencePackagePanelProps {
   onDownloadArchiveReport: (archiveId: string) => Promise<Blob>;
   onDownloadShareCenterReport: () => Promise<Blob>;
   onDownloadFinalizationReport: () => Promise<Blob>;
+  onDownloadCloseoutReport: () => Promise<Blob>;
   onCreateDeliveryReceipt: (input: DemoLaunchEvidenceShareDeliveryReceiptInput) => Promise<DemoLaunchEvidenceShareDeliveryReceipt>;
   onDownloadDeliveryReceiptReport: (receiptId: string) => Promise<Blob>;
 }
@@ -40,6 +44,8 @@ export function DemoLaunchEvidencePackagePanel({
   shareCenterError,
   finalization,
   finalizationError,
+  closeout,
+  closeoutError,
   deliveryReceipts,
   deliveryReceiptError,
   onArchivePackage,
@@ -47,6 +53,7 @@ export function DemoLaunchEvidencePackagePanel({
   onDownloadArchiveReport,
   onDownloadShareCenterReport,
   onDownloadFinalizationReport,
+  onDownloadCloseoutReport,
   onCreateDeliveryReceipt,
   onDownloadDeliveryReceiptReport
 }: DemoLaunchEvidencePackagePanelProps) {
@@ -117,6 +124,16 @@ export function DemoLaunchEvidencePackagePanel({
       setDownloadStatus('Launch evidence finalization downloaded');
     } catch {
       setDownloadStatus('Launch evidence finalization download failed');
+    }
+  }
+
+  async function downloadCloseoutReport() {
+    try {
+      const report = await onDownloadCloseoutReport();
+      downloadMarkdown(report, 'patchpilot-launch-acceptance-closeout.md');
+      setDownloadStatus('Launch acceptance closeout downloaded');
+    } catch {
+      setDownloadStatus('Launch acceptance closeout download failed');
     }
   }
 
@@ -237,6 +254,13 @@ export function DemoLaunchEvidencePackagePanel({
         </div>
       ) : null}
 
+      {closeoutError ? (
+        <div className="adapter-api-error">
+          <strong>Launch acceptance closeout unavailable</strong>
+          <span>{closeoutError}</span>
+        </div>
+      ) : null}
+
       {evidencePackage ? (
         <>
           <div className="demo-evidence-grid">
@@ -297,6 +321,10 @@ export function DemoLaunchEvidencePackagePanel({
             finalization={finalization}
             onDownloadFinalizationReport={() => void downloadFinalizationReport()}
           />
+          <LaunchAcceptanceCloseoutPanel
+            closeout={closeout}
+            onDownloadCloseoutReport={() => void downloadCloseoutReport()}
+          />
           <LaunchEvidenceDeliveryReceiptPanel
             deliveryReceipts={deliveryReceipts}
             deliveryChannel={deliveryChannel}
@@ -316,6 +344,78 @@ export function DemoLaunchEvidencePackagePanel({
         <div className="empty-state">Demo launch evidence package has not loaded yet.</div>
       )}
     </section>
+  );
+}
+
+function LaunchAcceptanceCloseoutPanel({
+  closeout,
+  onDownloadCloseoutReport
+}: {
+  closeout: DemoLaunchAcceptanceCloseout | null;
+  onDownloadCloseoutReport: () => void;
+}) {
+  return (
+    <div className="demo-evidence-actions">
+      <div className="demo-evidence-list-header">
+        <div>
+          <h3>Launch acceptance closeout</h3>
+          <p>{closeout?.summary ?? 'Launch acceptance closeout has not loaded yet.'}</p>
+        </div>
+        <button
+          className="secondary-button"
+          type="button"
+          onClick={onDownloadCloseoutReport}
+          aria-label="Download launch acceptance closeout"
+          disabled={!closeout}
+        >
+          <Download size={14} />
+          Download closeout
+        </button>
+      </div>
+      {closeout ? (
+        <>
+          <div className="demo-evidence-records">
+            <div>
+              <span>Status</span>
+              <strong>{statusLabel(closeout.status)}</strong>
+              <small>{closeout.accepted ? 'Accepted' : 'Not accepted'}</small>
+            </div>
+            <div>
+              <span>Receipt</span>
+              <strong>{closeout.latestDeliveryReceiptId ?? 'Missing'}</strong>
+              <small>{closeout.deliveryReceiptFreshness}</small>
+            </div>
+            <div>
+              <span>Archive</span>
+              <strong>{closeout.latestArchiveId ?? 'Missing'}</strong>
+              <small>{closeout.sessionId}</small>
+            </div>
+            <div>
+              <span>Next action</span>
+              <strong>{closeout.nextAction}</strong>
+            </div>
+            <div>
+              <span>Delivery target</span>
+              <strong>{closeout.latestDeliveryTarget ?? 'Missing'}</strong>
+              <small>{closeout.latestDeliveryChannel ?? 'No channel'} {closeout.latestDeliveredAt ? `at ${compactDateTime(closeout.latestDeliveredAt)}` : ''}</small>
+            </div>
+          </div>
+          {closeout.latestPullRequestUrl ? (
+            <a href={closeout.latestPullRequestUrl} target="_blank" rel="noreferrer">
+              Open closeout Pull Request
+            </a>
+          ) : null}
+          <EvidenceList
+            title="Closeout checks"
+            items={closeout.checks.map((check) => `${check.name}: ${statusLabel(check.status)} - ${check.summary}`)}
+          />
+          <EvidenceList title="Closeout evidence" items={closeout.evidenceNotes} />
+          <EvidenceList title="Closeout downloads" items={closeout.downloadActions} />
+        </>
+      ) : (
+        <p>No launch acceptance closeout loaded.</p>
+      )}
+    </div>
   );
 }
 

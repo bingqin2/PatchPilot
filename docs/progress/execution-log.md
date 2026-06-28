@@ -4,6 +4,26 @@ This file records dated implementation progress, validation commands, and import
 
 ## 2026-06-28
 
+Implemented launch acceptance closeout from `docs/plans/256-launch-acceptance-closeout.md`.
+
+Changes:
+
+- Added a read-only launch acceptance closeout service and API that compose self-hosted launch readiness, the current launch evidence package, launch evidence share center, and launch evidence finalization.
+- Added `GET /api/demo/launch-acceptance-closeout` and `GET /api/demo/launch-acceptance-closeout/report/download` with accepted/not-accepted state, key evidence identifiers, check outcomes, evidence notes, download actions, and Markdown report output.
+- Added a `Launch acceptance closeout` section to the dashboard launch evidence package panel with receipt freshness, archive/session/task/Pull Request/webhook/evaluation evidence, final accepted status, and report download action.
+- Refreshed closeout state after launch package archive and launch delivery receipt actions so the final readout tracks the latest share/finalization evidence.
+- Updated README, product spec, frontend design notes, and this execution log.
+
+Validation so far:
+
+- `mvn -pl PatchPilot -Dtest=DemoLaunchAcceptanceCloseoutServiceTests,DemoReadinessControllerTests test`: first failed because the closeout service, VO, and endpoints did not exist; then failed once because a share-ready package without a fresh receipt was still reported as a ready share-center check; passed after requiring fresh receipt evidence in the closeout check, 72 tests run, 0 failures.
+- `npm test -- --run src/dashboard/components/DemoLaunchEvidencePackagePanel.test.tsx --reporter=basic`: first failed because the launch evidence package panel did not render or download launch acceptance closeout evidence.
+- `npm test -- --run src/api.test.ts src/dashboard/components/DemoLaunchEvidencePackagePanel.test.tsx src/App.test.tsx --reporter=basic`: passed after API, App, panel, and assertion updates, 3 test files and 201 tests run, 0 failures.
+- `mvn -pl PatchPilot test`: passed after full backend regression verification, 908 tests run, 0 failures.
+- `npm test -- --reporter=basic`: passed after full frontend regression verification, 28 test files and 348 tests run, 0 failures.
+- `npm run build`: passed after production frontend build verification.
+- `git diff --check`: passed.
+
 Implemented launch finalization evidence bundle from `docs/plans/255-launch-finalization-evidence-bundle.md`.
 
 Changes:
