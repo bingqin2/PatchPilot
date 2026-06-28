@@ -112,9 +112,11 @@ import {
   downloadTaskReport,
   archiveTaskEvidencePackage,
   getTaskEvidencePackageArchiveSummary,
+  getTaskEvidencePackageShareCenter,
   listTaskEvidencePackageArchives,
   listRecentTaskEvidencePackageArchives,
   downloadTaskEvidencePackageReport,
+  downloadTaskEvidencePackageShareCenterReport,
   getTaskDetail,
   getTaskRetryPreflight,
   getTaskStatusCounts,
@@ -4794,6 +4796,49 @@ test('gets task evidence package archive summary through backend API', async () 
   expect(summary.latestArchiveId).toBe('task-evidence-archive-2');
 });
 
+test('gets task evidence package share center through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        status: 'READY',
+        shareReady: true,
+        summary: 'A shareable completed task evidence package is available for external review.',
+        nextAction: 'Download archived task evidence task-evidence-archive-1 before sharing.',
+        archiveCount: 2,
+        completedArchiveCount: 1,
+        failedArchiveCount: 1,
+        pendingReviewArchiveCount: 0,
+        cancelledArchiveCount: 0,
+        latestArchiveId: 'task-evidence-archive-2',
+        latestTaskId: 'task-2',
+        latestRepositoryOwner: 'bingqin2',
+        latestRepositoryName: 'PatchPilot',
+        latestIssueNumber: 2,
+        latestArchivedAt: '2026-06-20T01:10:00Z',
+        shareableArchiveId: 'task-evidence-archive-1',
+        shareableTaskId: 'task-1',
+        shareablePullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+        downloadActions: ['Download archived task evidence task-evidence-archive-1.'],
+        evidenceNotes: ['Latest archive task-evidence-archive-2 is FAILED.'],
+        sideEffectContract: 'Read-only share center.',
+        markdownReport: '# PatchPilot Task Evidence Share Center',
+        generatedAt: '2026-06-20T01:12:00Z'
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const shareCenter = await getTaskEvidencePackageShareCenter(15);
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/tasks/evidence-packages/share-center?limit=15');
+  expect(shareCenter.status).toBe('READY');
+  expect(shareCenter.shareableArchiveId).toBe('task-evidence-archive-1');
+});
+
 test('downloads archived task evidence package report through backend API', async () => {
   const reportBlob = new Blob(['# Archived PatchPilot Task Report'], {
     type: 'text/markdown;charset=UTF-8'
@@ -4808,6 +4853,23 @@ test('downloads archived task evidence package report through backend API', asyn
   const report = await downloadTaskEvidencePackageReport('archive 1');
 
   expect(fetchMock).toHaveBeenCalledWith('/api/tasks/evidence-packages/archive%201/report/download');
+  expect(report).toBe(reportBlob);
+});
+
+test('downloads task evidence package share center report through backend API', async () => {
+  const reportBlob = new Blob(['# PatchPilot Task Evidence Share Center'], {
+    type: 'text/markdown;charset=UTF-8'
+  });
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    blob: async () => reportBlob
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const report = await downloadTaskEvidencePackageShareCenterReport();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/tasks/evidence-packages/share-center/report/download');
   expect(report).toBe(reportBlob);
 });
 

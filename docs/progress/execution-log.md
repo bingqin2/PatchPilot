@@ -5311,3 +5311,22 @@ Validation:
 - `npm run build`: passed.
 - `mvn -pl PatchPilot test`: passed, 941 tests run, 0 failures.
 - `git diff --check`: passed.
+
+## 2026-06-28 - 265 Task evidence share readiness center
+
+- Started `265-task-evidence-share-readiness-center` to turn archived task evidence packages into a final share/no-share readout for operator review.
+- Planned a larger complete slice: backend share-center API, downloadable Markdown report, dashboard share-center panel, API/types integration, README docs, and regression tests.
+- RED tests added first for `GET /api/tasks/evidence-packages/share-center`, `GET /api/tasks/evidence-packages/share-center/report/download`, frontend API helpers, dashboard rendering, and share-center report download.
+- Implemented a read-only share-center calculation that selects the newest `COMPLETED` archive with a Pull Request URL as the shareable evidence package.
+- Added `READY`, `NEEDS_ATTENTION`, and `BLOCKED` status output with archive counts, latest archive evidence, shareable archive evidence, download actions, evidence notes, side-effect contract, generated time, and Markdown report.
+- Updated the `Task evidence archive review` dashboard panel so operators can inspect the share center, see the selected shareable archive and Pull Request, and download `patchpilot-task-evidence-share-center.md`.
+- Updated README operator docs for the new task evidence share-center endpoints and read-only contract.
+
+Validation so far:
+
+- `mvn -pl PatchPilot -Dtest=TaskControllerTests#should_return_task_evidence_share_center_and_markdown_report test`: first failed with `/api/tasks/evidence-packages/share-center` returning 404; passed after backend implementation, 1 test run, 0 failures.
+- `npm test -- src/api.test.ts src/dashboard/components/TaskEvidenceArchiveReviewPanel.test.tsx src/App.test.tsx`: first failed because the API helpers and share-center panel did not exist; then failed on ambiguous repeated archive ids after implementation; passed after scoped assertions, 216 tests run, 0 failures.
+- `mvn -q -pl PatchPilot test`: passed, 942 tests run, 0 failures, 0 errors.
+- `npm test -- --reporter=basic`: passed, 29 test files and 376 tests.
+- `npm run build`: passed.
+- `git diff --check`: passed.

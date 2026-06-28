@@ -25,6 +25,7 @@ import io.patchpilot.backend.task.domain.vo.FixTaskAdapterExecutionEvidenceVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskAuditSummaryVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskEvidencePackageArchiveVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskEvidencePackageArchiveSummaryVo;
+import io.patchpilot.backend.task.domain.vo.FixTaskEvidencePackageShareCenterVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskFailureDiagnosisVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskGeneratedDiffVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskLatencySummaryVo;
@@ -360,6 +361,23 @@ public class TaskController {
             @RequestParam(defaultValue = "50") int limit
     ) {
         return ResponseEntity.ok(ApiResponse.ok(fixTaskEvidencePackageArchiveService.summary(limit)));
+    }
+
+    @GetMapping("/evidence-packages/share-center")
+    public ResponseEntity<ApiResponse<FixTaskEvidencePackageShareCenterVo>> getTaskEvidencePackageShareCenter(
+            @RequestParam(defaultValue = "20") int limit
+    ) {
+        return ResponseEntity.ok(ApiResponse.ok(fixTaskEvidencePackageArchiveService.shareCenter(limit)));
+    }
+
+    @GetMapping(value = "/evidence-packages/share-center/report/download", produces = "text/markdown;charset=UTF-8")
+    public ResponseEntity<String> downloadTaskEvidencePackageShareCenterReport(
+            @RequestParam(defaultValue = "20") int limit
+    ) {
+        return markdownAttachment(
+                "patchpilot-task-evidence-share-center.md",
+                fixTaskEvidencePackageArchiveService.shareCenterReport(limit)
+        );
     }
 
     @GetMapping(value = "/evidence-packages/{archiveId}/report/download", produces = "text/markdown;charset=UTF-8")
