@@ -5457,3 +5457,24 @@ Validation so far:
 - `npm test -- --reporter=basic`: passed, 29 test files and 390 tests.
 - `npm run build`: first failed because the task certificate fields were added to the launch evidence share-center TypeScript interface instead of `DemoHandoffShareCenter`; passed after moving those fields to the correct interface.
 - `git diff --check`: passed.
+
+## 2026-06-28 - 272 Demo final handoff report package
+
+- Started `272-demo-final-handoff-report-package` to make the post-demo handoff closeout downloadable as one final operator-facing artifact.
+- Planned a complete feature slice: backend aggregate read model, read-only JSON and Markdown download endpoints, dashboard session-panel rendering, API/types integration, README docs, plan doc, and regression tests.
+- RED backend tests were added first for building a READY final package from current archive/share/finalization/task-certificate evidence and for downgrading to `NEEDS_ATTENTION` when finalization evidence is missing.
+- RED frontend tests were added first for API helpers, panel rendering, required attachments, source reports, and Markdown download behavior.
+- Implemented `DemoFinalHandoffReportPackageService` to aggregate the handoff package archive summary, share checklist, share center, share instructions, finalization gate, delivery receipt, and task evidence certificate proof into one read-only package.
+- Added `GET /api/demo/final-handoff-report-package` and `GET /api/demo/final-handoff-report-package/report/download`.
+- Updated the demo session dashboard panel with final package status, latest archive/session/receipt/certificate evidence, readiness checks, required attachments, pre-send checks, evidence notes, source reports, and a Markdown download action.
+- Updated README and added this plan document.
+
+Validation so far:
+
+- `mvn -q -pl PatchPilot -Dtest=DemoFinalHandoffReportPackageServiceTests,DemoReadinessControllerTests test`: first failed because the final package implementation did not include the missing-receipt action in the generated Markdown; passed after carrying finalization check actions into final pre-send checks.
+- `npm test -- src/dashboard/components/DemoSessionSnapshotPanel.test.tsx src/api.test.ts -- --reporter=basic`: first failed because the new final package panel created legitimate repeated status/attachment text; passed after stabilizing assertions, 2 test files and 164 tests.
+- `npm test -- src/App.test.tsx src/api.test.ts src/dashboard/components/DemoSessionSnapshotPanel.test.tsx -- --reporter=basic`: passed, 3 test files and 247 tests.
+- `mvn -q -pl PatchPilot test`: passed.
+- `npm test -- --reporter=basic`: passed, 29 test files and 393 tests.
+- `npm run build`: passed with the existing Vite large-chunk warning.
+- `git diff --check`: passed.

@@ -6,6 +6,7 @@ import io.patchpilot.backend.demo.domain.DemoReadinessVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
 import io.patchpilot.backend.demo.domain.DemoEvaluationRunReadinessEvidenceVo;
+import io.patchpilot.backend.demo.domain.DemoFinalHandoffReportPackageVo;
 import io.patchpilot.backend.demo.domain.DemoAdapterFixtureEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoSmokeChecklistStatus;
 import io.patchpilot.backend.demo.domain.DemoSmokeChecklistStepVo;
@@ -120,6 +121,9 @@ class DemoReadinessControllerTests {
 
     @MockitoBean
     private DemoHandoffFinalizationService demoHandoffFinalizationService;
+
+    @MockitoBean
+    private DemoFinalHandoffReportPackageService demoFinalHandoffReportPackageService;
 
     @MockitoBean
     private SelfHostedLaunchReadinessService selfHostedLaunchReadinessService;
@@ -2124,6 +2128,85 @@ class DemoReadinessControllerTests {
                 .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("patchpilot-demo-handoff-finalization.md")))
                 .andExpect(content().contentTypeCompatibleWith("text/markdown"))
                 .andExpect(content().string(containsString("# PatchPilot Demo Handoff Finalization Gate")))
+                .andExpect(content().string(containsString("`READY`")));
+    }
+
+    @Test
+    void should_return_demo_final_handoff_report_package() throws Exception {
+        when(demoFinalHandoffReportPackageService.getReportPackage()).thenReturn(new DemoFinalHandoffReportPackageVo(
+                DemoReadinessStatus.READY,
+                true,
+                "Final demo handoff report package is ready to deliver.",
+                "Download this final handoff report package and attach the listed evidence files.",
+                "handoff-archive-1",
+                "demo-session-20260624T003000Z",
+                "receipt-1",
+                "task-certificate-archive-1",
+                true,
+                List.of(
+                        "Archive summary: READY",
+                        "Share checklist: READY",
+                        "Share center: READY",
+                        "Task evidence certificate: READY",
+                        "Finalization: READY"
+                ),
+                List.of(
+                        "Handoff package archive handoff-archive-1",
+                        "Task evidence acceptance certificate archive task-certificate-archive-1",
+                        "Finalization report"
+                ),
+                List.of("Confirm task evidence acceptance certificate task-certificate-archive-1 is attached."),
+                List.of("Latest delivery receipt receipt-1 is fresh for handoff-archive-1/demo-session-20260624T003000Z."),
+                List.of("Handoff package archive summary", "Handoff share center", "Handoff finalization"),
+                "# PatchPilot Final Demo Handoff Report Package\n\n- Status: `READY`",
+                Instant.parse("2026-06-24T07:00:00Z")
+        ));
+
+        mockMvc.perform(get("/api/demo/final-handoff-report-package"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.downloadReady").value(true))
+                .andExpect(jsonPath("$.data.summary").value("Final demo handoff report package is ready to deliver."))
+                .andExpect(jsonPath("$.data.latestArchiveId").value("handoff-archive-1"))
+                .andExpect(jsonPath("$.data.latestDeliveryReceiptId").value("receipt-1"))
+                .andExpect(jsonPath("$.data.taskCertificateArchiveId").value("task-certificate-archive-1"))
+                .andExpect(jsonPath("$.data.taskCertificateReady").value(true))
+                .andExpect(jsonPath("$.data.readinessChecks[4]").value("Finalization: READY"))
+                .andExpect(jsonPath("$.data.requiredAttachments[1]")
+                        .value("Task evidence acceptance certificate archive task-certificate-archive-1"))
+                .andExpect(jsonPath("$.data.sourceReports[2]").value("Handoff finalization"))
+                .andExpect(jsonPath("$.data.markdownReport")
+                        .value(containsString("# PatchPilot Final Demo Handoff Report Package")));
+    }
+
+    @Test
+    void should_download_demo_final_handoff_report_package_as_markdown_attachment() throws Exception {
+        when(demoFinalHandoffReportPackageService.getReportPackage()).thenReturn(new DemoFinalHandoffReportPackageVo(
+                DemoReadinessStatus.READY,
+                true,
+                "Final demo handoff report package is ready to deliver.",
+                "Download this final handoff report package and attach the listed evidence files.",
+                "handoff-archive-1",
+                "demo-session-20260624T003000Z",
+                "receipt-1",
+                "task-certificate-archive-1",
+                true,
+                List.of("Finalization: READY"),
+                List.of("Finalization report"),
+                List.of("Confirm no handoff share checklist warnings remain."),
+                List.of("Finalization report can be downloaded as the acceptance record."),
+                List.of("Handoff finalization"),
+                "# PatchPilot Final Demo Handoff Report Package\n\n- Status: `READY`",
+                Instant.parse("2026-06-24T07:00:00Z")
+        ));
+
+        mockMvc.perform(get("/api/demo/final-handoff-report-package/report/download"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("attachment;")))
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("patchpilot-demo-final-handoff-report-package.md")))
+                .andExpect(content().contentTypeCompatibleWith("text/markdown"))
+                .andExpect(content().string(containsString("# PatchPilot Final Demo Handoff Report Package")))
                 .andExpect(content().string(containsString("`READY`")));
     }
 
