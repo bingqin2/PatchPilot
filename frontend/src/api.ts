@@ -8,6 +8,7 @@ import type {
   CreateTaskInput,
   DashboardBootstrap,
   DemoEvidenceBundle,
+  DemoAcceptanceSummary,
   DemoFinalHandoffReportPackage,
   DemoFinalHandoffReportPackageArchive,
   DemoHandoffFinalization,
@@ -256,6 +257,14 @@ export async function getGitHubRepositoryAccessReadiness(
 
 export async function getDemoReadiness(): Promise<DemoReadiness> {
   return getApi<DemoReadiness>('/api/demo/readiness');
+}
+
+export async function getDemoAcceptanceSummary(): Promise<DemoAcceptanceSummary> {
+  return getApi<DemoAcceptanceSummary>('/api/demo/acceptance-summary');
+}
+
+export async function downloadDemoAcceptanceSummaryReport(): Promise<Blob> {
+  return getBlobApi('/api/demo/acceptance-summary/report/download');
 }
 
 export async function getDemoSelfHostedLaunchReadiness(): Promise<DemoSelfHostedLaunchReadiness> {

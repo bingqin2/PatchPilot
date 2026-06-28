@@ -3,6 +3,7 @@ package io.patchpilot.backend.demo;
 import io.patchpilot.backend.demo.domain.DemoReadinessCheckVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessStatus;
 import io.patchpilot.backend.demo.domain.DemoReadinessVo;
+import io.patchpilot.backend.demo.domain.DemoAcceptanceSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
 import io.patchpilot.backend.demo.domain.DemoEvaluationRunReadinessEvidenceVo;
@@ -163,6 +164,9 @@ class DemoReadinessControllerTests {
 
     @MockitoBean
     private DemoLaunchAcceptanceCertificateArchiveService demoLaunchAcceptanceCertificateArchiveService;
+
+    @MockitoBean
+    private DemoAcceptanceSummaryService demoAcceptanceSummaryService;
 
     @MockitoBean
     private DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
@@ -590,6 +594,38 @@ class DemoReadinessControllerTests {
 
         mockMvc.perform(get("/api/demo/launch-acceptance-certificate/archives/missing-archive/report/download"))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void should_return_final_demo_acceptance_summary() throws Exception {
+        when(demoAcceptanceSummaryService.getSummary()).thenReturn(acceptanceSummary());
+
+        mockMvc.perform(get("/api/demo/acceptance-summary"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.accepted").value(true))
+                .andExpect(jsonPath("$.data.summary").value("PatchPilot final demo acceptance is ready for external review."))
+                .andExpect(jsonPath("$.data.launchCertificateArchiveId").value("launch-certificate-archive-1"))
+                .andExpect(jsonPath("$.data.taskCertificateArchiveId").value("task-evidence-certificate-archive-1"))
+                .andExpect(jsonPath("$.data.latestPullRequestUrl").value("https://github.com/bingqin2/PatchPilot/pull/42"))
+                .andExpect(jsonPath("$.data.checks.length()").value(2))
+                .andExpect(jsonPath("$.data.checks[0].name").value("Launch acceptance certificate"))
+                .andExpect(jsonPath("$.data.checks[1].name").value("Task evidence acceptance certificate"))
+                .andExpect(jsonPath("$.data.downloadActions[0]").value("Download launch acceptance certificate archive launch-certificate-archive-1."))
+                .andExpect(jsonPath("$.data.markdownReport").value(containsString("# PatchPilot Final Demo Acceptance Summary")));
+    }
+
+    @Test
+    void should_download_final_demo_acceptance_summary_report() throws Exception {
+        when(demoAcceptanceSummaryService.getSummary()).thenReturn(acceptanceSummary());
+
+        mockMvc.perform(get("/api/demo/acceptance-summary/report/download"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("patchpilot-final-demo-acceptance-summary.md")))
+                .andExpect(content().contentType("text/markdown;charset=UTF-8"))
+                .andExpect(content().string(containsString("# PatchPilot Final Demo Acceptance Summary")))
+                .andExpect(content().string(containsString("Accepted: `true`")));
     }
 
     @Test
@@ -2992,6 +3028,56 @@ class DemoReadinessControllerTests {
                 "# PatchPilot Final Demo Handoff Report Package\n\n- Latest archive: `handoff-archive-1`\n",
                 Instant.parse("2026-06-28T11:00:00Z"),
                 Instant.parse("2026-06-28T11:30:00Z")
+        );
+    }
+
+    private static DemoAcceptanceSummaryVo acceptanceSummary() {
+        return new DemoAcceptanceSummaryVo(
+                DemoReadinessStatus.READY,
+                true,
+                "PatchPilot final demo acceptance is ready for external review.",
+                "Share the launch and task evidence certificates with reviewers.",
+                DemoReadinessStatus.READY,
+                true,
+                true,
+                "launch-certificate-archive-1",
+                "launch-closeout-archive-1",
+                "launch-evidence-archive-1",
+                "launch-delivery-receipt-1",
+                DemoReadinessStatus.READY,
+                true,
+                true,
+                "task-evidence-certificate-archive-1",
+                "task-evidence-closeout-archive-1",
+                "task-evidence-archive-1",
+                "task-evidence-receipt-1",
+                "task-1",
+                "https://github.com/bingqin2/PatchPilot/pull/42",
+                Instant.parse("2026-06-28T14:00:00Z"),
+                List.of(
+                        new DemoAcceptanceSummaryVo.Check(
+                                "Launch acceptance certificate",
+                                DemoReadinessStatus.READY,
+                                "Latest launch acceptance certificate archive is certified.",
+                                "Use the archived launch acceptance certificate for launch-level review proof."
+                        ),
+                        new DemoAcceptanceSummaryVo.Check(
+                                "Task evidence acceptance certificate",
+                                DemoReadinessStatus.READY,
+                                "Latest task evidence acceptance certificate archive is certified.",
+                                "Use the archived task evidence acceptance certificate for task-level review proof."
+                        )
+                ),
+                List.of(
+                        "Launch certificate archive launch-certificate-archive-1 is certified.",
+                        "Task evidence certificate archive task-evidence-certificate-archive-1 is certified."
+                ),
+                List.of(
+                        "Download launch acceptance certificate archive launch-certificate-archive-1.",
+                        "Download task evidence acceptance certificate archive task-evidence-certificate-archive-1."
+                ),
+                "GET /api/demo/acceptance-summary is read-only: it does not create tasks, call the model, run tests, archive records, mutate Git, send messages, record receipts, or write to GitHub.",
+                "# PatchPilot Final Demo Acceptance Summary\n\n- Accepted: `true`\n"
         );
     }
 }

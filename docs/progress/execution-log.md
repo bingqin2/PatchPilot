@@ -5479,6 +5479,29 @@ Validation so far:
 - `npm run build`: passed with the existing Vite large-chunk warning.
 - `git diff --check`: passed.
 
+## 2026-06-28 - 277 Demo acceptance summary
+
+- Started `277-demo-acceptance-summary` to give operators one final accepted/not-accepted readout across launch-level and task-level evidence.
+- Planned a complete feature slice: backend aggregate read model, read-only JSON and Markdown download endpoints, dashboard panel, frontend API/types/App wiring, README/product/frontend docs, plan doc, and regression tests.
+- RED backend tests were added first for READY, missing-certificate, and BLOCKED final acceptance states.
+- RED controller tests were added first for `GET /api/demo/acceptance-summary` and `GET /api/demo/acceptance-summary/report/download`.
+- RED frontend tests were added first for API helpers and the `Final demo acceptance` dashboard panel.
+- Implemented `DemoAcceptanceSummaryService` to aggregate the latest launch acceptance certificate archive and latest task evidence acceptance certificate archive without creating new records or side effects.
+- Added `DemoAcceptanceSummaryVo`, controller endpoints, Markdown report generation, frontend types, API helpers, App refresh integration, and a downloadable final acceptance dashboard panel.
+- Updated README, product spec, frontend design doc, and this plan document.
+
+Validation:
+
+- `mvn -q -pl PatchPilot -Dtest=DemoAcceptanceSummaryServiceTests test`: first failed because `DemoAcceptanceSummaryVo` did not exist; passed after service and VO implementation.
+- `mvn -q -pl PatchPilot -Dtest=DemoReadinessControllerTests#should_return_final_demo_acceptance_summary+should_download_final_demo_acceptance_summary_report test`: first failed with `404` because the endpoints did not exist; passed after controller implementation.
+- `npm test -- src/api.test.ts src/dashboard/components/DemoAcceptanceSummaryPanel.test.tsx -- --reporter=basic`: first failed because the API helpers and panel component did not exist; passed after frontend implementation, 2 test files and 150 tests.
+- `npm test -- src/App.test.tsx src/api.test.ts src/dashboard/components/DemoAcceptanceSummaryPanel.test.tsx -- --reporter=basic`: passed, 3 test files and 233 tests.
+- `mvn -q -pl PatchPilot -Dtest=DemoAcceptanceSummaryServiceTests,DemoReadinessControllerTests test`: passed.
+- `mvn -pl PatchPilot -q test`: passed with the existing Mockito dynamic-agent warning on the local JDK.
+- `npm test -- --reporter=basic`: passed, 30 test files and 402 tests.
+- `npm run build`: passed with the existing Vite large-chunk warning.
+- `git diff --check`: passed.
+
 ## 2026-06-28 - 273 Demo final handoff report package archives
 
 - Started `273-demo-final-handoff-report-archives` to preserve the exact final handoff report package as a durable closeout artifact after the live read model changes.

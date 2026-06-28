@@ -1,6 +1,7 @@
 package io.patchpilot.backend.demo;
 
 import io.patchpilot.backend.common.response.ApiResponse;
+import io.patchpilot.backend.demo.domain.DemoAcceptanceSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
 import io.patchpilot.backend.demo.domain.DemoFinalHandoffReportPackageArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoFinalHandoffReportPackageVo;
@@ -82,6 +83,7 @@ public class DemoReadinessController {
     private final DemoLaunchAcceptanceCloseoutArchiveService demoLaunchAcceptanceCloseoutArchiveService;
     private final DemoLaunchAcceptanceCertificateService demoLaunchAcceptanceCertificateService;
     private final DemoLaunchAcceptanceCertificateArchiveService demoLaunchAcceptanceCertificateArchiveService;
+    private final DemoAcceptanceSummaryService demoAcceptanceSummaryService;
     private final DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
     private final DemoReadinessSnapshotTrendService demoReadinessSnapshotTrendService;
     private final DemoLaunchPreflightService demoLaunchPreflightService;
@@ -328,6 +330,11 @@ public class DemoReadinessController {
         return ApiResponse.ok(demoLaunchAcceptanceCertificateService.getCertificate());
     }
 
+    @GetMapping("/acceptance-summary")
+    public ApiResponse<DemoAcceptanceSummaryVo> getAcceptanceSummary() {
+        return ApiResponse.ok(demoAcceptanceSummaryService.getSummary());
+    }
+
     @GetMapping(value = "/handoff-share-center/report/download", produces = "text/markdown;charset=UTF-8")
     public ResponseEntity<String> downloadHandoffShareCenterReport() {
         return markdownAttachment(
@@ -415,6 +422,14 @@ public class DemoReadinessController {
         return markdownAttachment(
                 "patchpilot-launch-acceptance-certificate.md",
                 demoLaunchAcceptanceCertificateService.getCertificate().markdownReport()
+        );
+    }
+
+    @GetMapping(value = "/acceptance-summary/report/download", produces = "text/markdown;charset=UTF-8")
+    public ResponseEntity<String> downloadAcceptanceSummaryReport() {
+        return markdownAttachment(
+                "patchpilot-final-demo-acceptance-summary.md",
+                demoAcceptanceSummaryService.getSummary().markdownReport()
         );
     }
 
