@@ -38,7 +38,7 @@ class DemoHandoffPackageArchiveServiceTests {
         assertThat(archive.handoffReadinessSummary())
                 .isEqualTo("Handoff package has current webhook delivery, PR, command, outcome, and readiness trend evidence.");
         assertThat(archive.handoffReadinessNextAction()).isEqualTo("No missing handoff evidence.");
-        assertThat(archive.handoffReadyCheckCount()).isEqualTo(7);
+        assertThat(archive.handoffReadyCheckCount()).isEqualTo(8);
         assertThat(archive.handoffNeedsAttentionCheckCount()).isZero();
         assertThat(archive.handoffBlockedCheckCount()).isZero();
         assertThat(archive.shareSummary()).contains("task-1");
@@ -47,6 +47,7 @@ class DemoHandoffPackageArchiveServiceTests {
         assertThat(archive.report())
                 .contains("# PatchPilot Demo Handoff Package")
                 .contains("## Handoff Readiness")
+                .contains("- Task evidence certificate: `READY` - Latest task evidence acceptance certificate archive is certified and ready.")
                 .contains("## Embedded Session Report");
         assertThat(service.listRecentArchives()).containsExactly(archive);
         assertThat(service.findArchive("handoff-archive-1")).contains(archive);

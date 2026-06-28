@@ -3,8 +3,11 @@ package io.patchpilot.backend.demo;
 import io.patchpilot.backend.demo.domain.DemoAdapterFixtureEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
+import io.patchpilot.backend.demo.domain.DemoEvaluationRunReadinessEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffReadinessCheckVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffReadinessVo;
+import io.patchpilot.backend.demo.domain.DemoLaunchAcceptanceCertificateEvidenceVo;
+import io.patchpilot.backend.demo.domain.DemoLaunchAcceptanceCloseoutEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessCheckVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessSnapshotTrendStatus;
 import io.patchpilot.backend.demo.domain.DemoReadinessSnapshotTrendVo;
@@ -15,6 +18,7 @@ import io.patchpilot.backend.demo.domain.DemoScriptVo;
 import io.patchpilot.backend.demo.domain.DemoSessionSnapshotVo;
 import io.patchpilot.backend.demo.domain.DemoSmokeChecklistStatus;
 import io.patchpilot.backend.demo.domain.DemoSmokeChecklistVo;
+import io.patchpilot.backend.demo.domain.DemoTaskEvidenceAcceptanceCertificateEvidenceVo;
 import io.patchpilot.backend.github.credential.domain.GitHubWebhookSetupReadinessVo;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.vo.FixTaskQueueSummaryVo;
@@ -43,6 +47,17 @@ class DemoSessionReportServiceTests {
                 .contains("- Share summary: Status READY; recent task task-1; recent PR https://github.com/bingqin2/PatchPilot/pull/42.")
                 .contains("- Recent Pull Request: https://github.com/bingqin2/PatchPilot/pull/42")
                 .contains("- Recent task: `task-1` (`COMPLETED`)")
+                .contains("## Task Evidence Acceptance Certificate")
+                .contains("- Status: `READY`")
+                .contains("- Summary: Latest task evidence acceptance certificate archive is certified and ready.")
+                .contains("- Archive: `task-evidence-certificate-archive-1`")
+                .contains("- Closeout archive: `task-evidence-closeout-archive-1`")
+                .contains("- Evidence archive: `task-evidence-archive-1`")
+                .contains("- Delivery receipt: `task-evidence-delivery-receipt-1`")
+                .contains("- Task: `task-1`")
+                .contains("- Pull Request: https://github.com/bingqin2/PatchPilot/pull/42")
+                .contains("- Next action: Use the archived task evidence acceptance certificate as task-level review proof.")
+                .contains("- Download task evidence acceptance certificate archive task-evidence-certificate-archive-1.")
                 .contains("## Webhook Setup Readiness")
                 .contains("- Status: `READY`")
                 .contains("- Secret configured: `true`")
@@ -195,6 +210,7 @@ class DemoSessionReportServiceTests {
                 .contains("- Recent Pull Request evidence: `READY` - https://github.com/bingqin2/PatchPilot/pull/42")
                 .contains("- Prepared command context: `READY` - 1 prepared command recorded.")
                 .contains("- Archived launch outcome context: `READY` - 1 archived outcome has completed task or Pull Request evidence.")
+                .contains("- Task evidence certificate: `READY` - Latest task evidence acceptance certificate archive is certified and ready.")
                 .contains("- Readiness trend baseline: `READY` - IMPROVING; latest readiness READY.")
                 .contains("## Readiness Snapshot Trend")
                 .contains("- Delta: `+4 ready / -2 warning / -2 blocked`")
@@ -231,6 +247,12 @@ class DemoSessionReportServiceTests {
                         tuple("Recent Pull Request evidence", DemoReadinessStatus.READY, "https://github.com/bingqin2/PatchPilot/pull/42", "No action needed."),
                         tuple("Prepared command context", DemoReadinessStatus.READY, "1 prepared command recorded.", "No action needed."),
                         tuple("Archived launch outcome context", DemoReadinessStatus.READY, "1 archived outcome has completed task or Pull Request evidence.", "No action needed."),
+                        tuple(
+                                "Task evidence certificate",
+                                DemoReadinessStatus.READY,
+                                "Latest task evidence acceptance certificate archive is certified and ready.",
+                                "Use the archived task evidence acceptance certificate as task-level review proof."
+                        ),
                         tuple("Readiness trend baseline", DemoReadinessStatus.READY, "IMPROVING; latest readiness READY.", "No action needed.")
                 );
     }
@@ -279,6 +301,8 @@ class DemoSessionReportServiceTests {
                 .contains("  - Next action: Use the dashboard launch command composer before handoff.")
                 .contains("- Archived launch outcome context: `NEEDS_ATTENTION` - No archived launch outcome with completed task or Pull Request evidence was captured.")
                 .contains("  - Next action: Archive the launch outcome after the task completes or a Pull Request appears.")
+                .contains("- Task evidence certificate: `NEEDS_ATTENTION` - No task evidence acceptance certificate archive is available.")
+                .contains("  - Next action: Archive a certified task evidence acceptance certificate after final task evidence closeout.")
                 .contains("- Readiness trend baseline: `READY` - IMPROVING; latest readiness READY.");
     }
 
@@ -459,6 +483,7 @@ class DemoSessionReportServiceTests {
                 new DemoSmokeChecklistVo(DemoSmokeChecklistStatus.READY, "Live demo smoke checklist is ready.", List.of(), List.of()),
                 null,
                 new DemoAdapterFixtureEvidenceVo(12, 0),
+                evaluationRunReadiness(),
                 new FixTaskQueueSummaryVo(2, 0, 0, 0, 0, 2, 0, 0),
                 task(),
                 "https://github.com/bingqin2/PatchPilot/pull/42",
@@ -478,13 +503,112 @@ class DemoSessionReportServiceTests {
                         "Download handoff package archive summary.",
                         "Download handoff share checklist."
                 ),
+                "READY",
+                true,
+                "Launch evidence is share-ready.",
+                "Use launch evidence during handoff.",
+                1,
+                "launch-evidence-archive-1",
+                "demo-session-20260624T003000Z",
+                "https://github.com/bingqin2/PatchPilot/pull/42",
+                List.of("Download launch evidence archive launch-evidence-archive-1."),
+                DemoReadinessStatus.READY,
+                true,
+                "Launch evidence finalization is ready.",
+                "Use launch evidence finalization as accepted delivery proof.",
+                "FRESH",
+                true,
+                "launch-delivery-receipt-1",
+                launchAcceptanceCloseoutEvidence(),
+                launchAcceptanceCertificateEvidence(),
+                taskEvidenceAcceptanceCertificateEvidence(),
                 false,
                 null,
                 null,
                 null,
                 null,
+                "MISSING",
+                false,
+                "No delivery receipt has been recorded for the current handoff package.",
+                DemoReadinessStatus.NEEDS_ATTENTION,
+                false,
+                "Demo handoff package is send-ready but final delivery evidence is not current.",
+                "Send the current handoff package, record a delivery receipt, then download the finalization report.",
+                "MISSING",
+                false,
+                null,
                 Instant.parse("2026-06-24T00:00:00Z"),
                 List.of()
+        );
+    }
+
+    private static DemoEvaluationRunReadinessEvidenceVo evaluationRunReadiness() {
+        return new DemoEvaluationRunReadinessEvidenceVo(
+                DemoReadinessStatus.READY,
+                "evaluation-run-latest",
+                "evaluation-run-previous",
+                1,
+                1,
+                0,
+                List.of("java"),
+                List.of("maven"),
+                List.of("unsafe-trigger"),
+                "Evaluation run readiness is read-only.",
+                "No action needed."
+        );
+    }
+
+    private static DemoLaunchAcceptanceCloseoutEvidenceVo launchAcceptanceCloseoutEvidence() {
+        return new DemoLaunchAcceptanceCloseoutEvidenceVo(
+                DemoReadinessStatus.READY,
+                true,
+                true,
+                "Latest launch acceptance closeout archive is ready.",
+                "Use archived launch acceptance closeout as launch proof.",
+                1,
+                "launch-closeout-archive-1",
+                "launch-evidence-archive-1",
+                "launch-delivery-receipt-1",
+                "https://github.com/bingqin2/PatchPilot/pull/42",
+                Instant.parse("2026-06-24T00:07:00Z"),
+                List.of("Download launch acceptance closeout archive launch-closeout-archive-1.")
+        );
+    }
+
+    private static DemoLaunchAcceptanceCertificateEvidenceVo launchAcceptanceCertificateEvidence() {
+        return new DemoLaunchAcceptanceCertificateEvidenceVo(
+                DemoReadinessStatus.READY,
+                true,
+                true,
+                "Latest launch acceptance certificate archive is certified and ready.",
+                "Use the archived launch acceptance certificate as launch review proof.",
+                1,
+                "launch-certificate-archive-1",
+                "launch-closeout-archive-1",
+                "launch-evidence-archive-1",
+                "launch-delivery-receipt-1",
+                "https://github.com/bingqin2/PatchPilot/pull/42",
+                Instant.parse("2026-06-24T00:08:00Z"),
+                List.of("Download launch acceptance certificate archive launch-certificate-archive-1.")
+        );
+    }
+
+    private static DemoTaskEvidenceAcceptanceCertificateEvidenceVo taskEvidenceAcceptanceCertificateEvidence() {
+        return new DemoTaskEvidenceAcceptanceCertificateEvidenceVo(
+                DemoReadinessStatus.READY,
+                true,
+                true,
+                "Latest task evidence acceptance certificate archive is certified and ready.",
+                "Use the archived task evidence acceptance certificate as task-level review proof.",
+                1,
+                "task-evidence-certificate-archive-1",
+                "task-evidence-closeout-archive-1",
+                "task-evidence-archive-1",
+                "task-evidence-delivery-receipt-1",
+                "task-1",
+                "https://github.com/bingqin2/PatchPilot/pull/42",
+                Instant.parse("2026-06-24T00:08:00Z"),
+                List.of("Download task evidence acceptance certificate archive task-evidence-certificate-archive-1.")
         );
     }
 

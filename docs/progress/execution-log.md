@@ -5412,3 +5412,23 @@ Validation so far:
 - `npm test -- src/dashboard/components/DemoEvidenceBundlePanel.test.tsx -- --reporter=basic`: first failed because the task certificate evidence card did not render; then failed on old single-card assertions for repeated `Certified archive` and `1 certificate archives`; passed after implementing the card and updating assertions for two certificate evidence cards, 4 tests run.
 - `mvn -q -pl PatchPilot -Dtest=DemoEvidenceBundleServiceTests,DemoRunbookServiceTests,DemoReadinessControllerTests#should_return_demo_evidence_bundle test`: passed after REST serialization assertions were added.
 - `npm run build`: passed after adding the new evidence field to the session snapshot fixture.
+
+## 2026-06-28 - 270 Task certificate session handoff
+
+- Started `270-task-certificate-session-handoff` to carry task evidence acceptance certificate proof from the top-level evidence bundle into session handoff artifacts.
+- Planned a complete feature slice: session report Markdown, handoff package Markdown, structured handoff readiness, dashboard session panel rendering, README docs, plan doc, and regression tests.
+- RED backend tests were added first for missing task evidence certificate Markdown and handoff readiness checks.
+- RED frontend test was added first for missing task evidence certificate facts in the demo session snapshot panel.
+- Implemented task evidence certificate output in `DemoSessionReportService`, including archive id, closeout archive id, evidence archive id, delivery receipt id, task id, Pull Request, next action, and download actions.
+- Added `Task evidence certificate` as a structured handoff readiness check so missing or non-ready task certificate evidence can block final handoff readiness.
+- Updated the dashboard demo session panel with task certificate status, archive id, target task, Pull Request, and next action.
+- Updated README and added this plan document.
+
+Validation so far:
+
+- `mvn -q -pl PatchPilot -Dtest=DemoSessionReportServiceTests test`: first failed because the task certificate Markdown section and handoff readiness check did not exist; passed after backend implementation.
+- `npm test -- src/dashboard/components/DemoSessionSnapshotPanel.test.tsx -- --reporter=basic`: first failed because the session panel did not render task evidence certificate facts; then failed on old Pull Request count and fixture task id assumptions; passed after rendering the card and stabilizing assertions, 20 tests run.
+- `mvn -q -pl PatchPilot test`: first failed because `DemoHandoffPackageArchiveServiceTests` still expected 7 handoff readiness checks after the new certificate check; passed after updating the archive contract to 8 checks and asserting the certificate row.
+- `npm test -- --reporter=basic`: passed, 29 test files and 390 tests.
+- `npm run build`: passed.
+- `git diff --check`: passed.

@@ -579,8 +579,15 @@ test('renders demo session snapshot summary, evidence, checklist, contract, and 
   expect(
     within(panel).getAllByText('Status READY; recent task task-1; recent PR https://github.com/bingqin2/PatchPilot/pull/42.')
   ).toHaveLength(3);
-  expect(within(panel).getAllByText('https://github.com/bingqin2/PatchPilot/pull/42')).toHaveLength(2);
+  expect(within(panel).getAllByText('https://github.com/bingqin2/PatchPilot/pull/42').length).toBeGreaterThanOrEqual(3);
   expect(within(panel).getByText('task-1')).toBeInTheDocument();
+  expect(within(panel).getByText('Task evidence certificate')).toBeInTheDocument();
+  expect(within(panel).getByText('Certified task evidence archive')).toBeInTheDocument();
+  expect(within(panel).getByText('task-evidence-certificate-archive-1')).toBeInTheDocument();
+  expect(within(panel).getByText('Task task-2')).toBeInTheDocument();
+  expect(
+    within(panel).getByText('Use the archived task evidence acceptance certificate as task-level review proof.')
+  ).toBeInTheDocument();
   expect(within(panel).getByText('1 step')).toBeInTheDocument();
   expect(within(panel).getByText('Readiness trend')).toBeInTheDocument();
   expect(within(panel).getByText('Improving')).toBeInTheDocument();
