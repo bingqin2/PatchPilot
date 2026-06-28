@@ -1,21 +1,31 @@
-import { Download, ExternalLink } from 'lucide-react';
+import { Download, ExternalLink, FileText } from 'lucide-react';
 import { useState } from 'react';
-import type { FixTaskEvidencePackageArchive, FixTaskEvidencePackageArchiveSummary } from '../../types';
+import type {
+  FixTaskEvidencePackageArchive,
+  FixTaskEvidencePackageArchiveShareCenter,
+  FixTaskEvidencePackageArchiveSummary
+} from '../../types';
 import { compactTime } from '../format';
 
 interface TaskEvidenceArchiveReviewPanelProps {
   summary: FixTaskEvidencePackageArchiveSummary | null;
+  shareCenter: FixTaskEvidencePackageArchiveShareCenter | null;
   archives: FixTaskEvidencePackageArchive[];
   error: string | null;
+  shareCenterError: string | null;
   onDownloadArchiveReport: (archiveId: string) => Promise<Blob>;
+  onDownloadShareCenterReport: () => Promise<Blob>;
   onSelectTask: (taskId: string) => void;
 }
 
 export function TaskEvidenceArchiveReviewPanel({
   summary,
+  shareCenter,
   archives,
   error,
+  shareCenterError,
   onDownloadArchiveReport,
+  onDownloadShareCenterReport,
   onSelectTask
 }: TaskEvidenceArchiveReviewPanelProps) {
   const [downloadStatus, setDownloadStatus] = useState<string | null>(null);
@@ -33,6 +43,16 @@ export function TaskEvidenceArchiveReviewPanel({
     }
   }
 
+  async function downloadShareCenterReport() {
+    try {
+      const report = await onDownloadShareCenterReport();
+      downloadMarkdown(report, 'patchpilot-task-evidence-share-center.md');
+      setDownloadStatus('Task evidence share center report downloaded');
+    } catch {
+      setDownloadStatus('Download failed');
+    }
+  }
+
   return (
     <section className="panel task-evidence-archive-review-panel" aria-label="Task evidence archive review">
       <div className="panel-header">
@@ -44,6 +64,68 @@ export function TaskEvidenceArchiveReviewPanel({
       </div>
 
       {error ? <p className="panel-error">{error}</p> : null}
+      {shareCenterError ? <p className="panel-error">{shareCenterError}</p> : null}
+
+      {shareCenter ? (
+        <section
+          className={`task-evidence-share-center task-evidence-share-center-${shareCenter.status.toLowerCase().replace('_', '-')}`}
+          aria-label="Task evidence share center"
+        >
+          <div className="task-evidence-share-center-heading">
+            <div>
+              <span>Task evidence share center</span>
+              <strong>{formatShareCenterStatus(shareCenter.status)}</strong>
+              <p>{shareCenter.summary}</p>
+            </div>
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={() => void downloadShareCenterReport()}
+              aria-label="Download task evidence share center report"
+            >
+              <FileText size={14} />
+              Download share center report
+            </button>
+          </div>
+          <div className="task-evidence-share-center-grid">
+            <div>
+              <span>Shareable archive</span>
+              <strong>{shareCenter.shareableArchiveId ?? 'None'}</strong>
+              <p>{shareCenter.shareableTaskId ? `Task ${shareCenter.shareableTaskId}` : 'Archive a completed PR task'}</p>
+            </div>
+            <div>
+              <span>Pull Request</span>
+              <strong>{shareCenter.shareablePullRequestUrl ?? 'None'}</strong>
+              <p>{shareCenter.shareReady ? 'Ready to share' : 'Missing completed PR evidence'}</p>
+            </div>
+            <div>
+              <span>Latest archive</span>
+              <strong>{shareCenter.latestArchiveId ?? 'None'}</strong>
+              <p>{shareCenter.latestArchivedAt ? `archived ${compactTime(shareCenter.latestArchivedAt)}` : 'No archive yet'}</p>
+            </div>
+          </div>
+          <div className="task-evidence-share-center-notes">
+            <div>
+              <span>Download actions</span>
+              <ul>
+                {shareCenter.downloadActions.map((action) => (
+                  <li key={action}>{action}</li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <span>Evidence notes</span>
+              <ul>
+                {shareCenter.evidenceNotes.map((note) => (
+                  <li key={note}>{note}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+          <p className="task-evidence-share-center-contract">{shareCenter.sideEffectContract}</p>
+          <strong>{shareCenter.nextAction}</strong>
+        </section>
+      ) : null}
 
       <div className="task-evidence-archive-summary">
         <div>
@@ -126,6 +208,13 @@ function latestTaskLabel(summary: FixTaskEvidencePackageArchiveSummary | null) {
 
 function countStatus(archives: FixTaskEvidencePackageArchive[], status: string) {
   return archives.filter((archive) => archive.status === status).length;
+}
+
+function formatShareCenterStatus(status: FixTaskEvidencePackageArchiveShareCenter['status']) {
+  return status
+    .split('_')
+    .map((part) => part.charAt(0) + part.slice(1).toLowerCase())
+    .join(' ');
 }
 
 function downloadMarkdown(blob: Blob, filename: string) {

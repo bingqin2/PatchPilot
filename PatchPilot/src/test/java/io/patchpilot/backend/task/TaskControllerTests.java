@@ -1581,6 +1581,53 @@ class TaskControllerTests {
     }
 
     @Test
+    void should_return_task_evidence_share_center_and_markdown_report() throws Exception {
+        FixTaskVo completedTask = createTask("delivery-task-evidence-share-completed");
+        FixTaskVo failedTask = createTask("delivery-task-evidence-share-failed");
+        fixTaskService.markCompleted(completedTask.id(), "https://github.com/octocat/hello-world/pull/12");
+        fixTaskService.markFailed(failedTask.id(), "verification failed after patch");
+
+        MvcResult completedArchiveResult = mockMvc.perform(post("/api/tasks/{id}/evidence-packages", completedTask.id()))
+                .andExpect(status().isOk())
+                .andReturn();
+        String completedArchiveId = JsonPath.read(completedArchiveResult.getResponse().getContentAsString(), "$.data.id");
+
+        MvcResult failedArchiveResult = mockMvc.perform(post("/api/tasks/{id}/evidence-packages", failedTask.id()))
+                .andExpect(status().isOk())
+                .andReturn();
+        String failedArchiveId = JsonPath.read(failedArchiveResult.getResponse().getContentAsString(), "$.data.id");
+
+        mockMvc.perform(get("/api/tasks/evidence-packages/share-center").param("limit", "20"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.shareReady").value(true))
+                .andExpect(jsonPath("$.data.summary").value(org.hamcrest.Matchers.containsString("shareable completed task evidence")))
+                .andExpect(jsonPath("$.data.archiveCount").value(greaterThanOrEqualTo(2)))
+                .andExpect(jsonPath("$.data.completedArchiveCount").value(greaterThanOrEqualTo(1)))
+                .andExpect(jsonPath("$.data.failedArchiveCount").value(greaterThanOrEqualTo(1)))
+                .andExpect(jsonPath("$.data.latestArchiveId").value(failedArchiveId))
+                .andExpect(jsonPath("$.data.latestTaskId").value(failedTask.id()))
+                .andExpect(jsonPath("$.data.shareableArchiveId").value(completedArchiveId))
+                .andExpect(jsonPath("$.data.shareableTaskId").value(completedTask.id()))
+                .andExpect(jsonPath("$.data.shareablePullRequestUrl").value("https://github.com/octocat/hello-world/pull/12"))
+                .andExpect(jsonPath("$.data.downloadActions[0]").value(org.hamcrest.Matchers.containsString(completedArchiveId)))
+                .andExpect(jsonPath("$.data.evidenceNotes").value(org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers.containsString("Latest archive"))))
+                .andExpect(jsonPath("$.data.sideEffectContract").value(org.hamcrest.Matchers.containsString("read-only")))
+                .andExpect(jsonPath("$.data.nextAction").value(org.hamcrest.Matchers.containsString("Download")))
+                .andExpect(jsonPath("$.data.markdownReport").value(org.hamcrest.Matchers.containsString("# PatchPilot Task Evidence Share Center")));
+
+        mockMvc.perform(get("/api/tasks/evidence-packages/share-center/report/download"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString("patchpilot-task-evidence-share-center.md")))
+                .andExpect(content().contentType("text/markdown;charset=UTF-8"))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("# PatchPilot Task Evidence Share Center")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("- Status: `READY`")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("- Shareable archive: `" + completedArchiveId + "`")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("https://github.com/octocat/hello-world/pull/12")));
+    }
+
+    @Test
     void should_prefer_persisted_pre_execution_decision_in_task_report() throws Exception {
         FixTaskVo task = createTask("delivery-persisted-report");
         fixTaskTimelineService.recordEvent(

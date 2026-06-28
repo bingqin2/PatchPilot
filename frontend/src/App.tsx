@@ -44,6 +44,7 @@ import {
   downloadDemoHandoffShareInstructionsReport,
   downloadDemoHandoffShareChecklistReport,
   downloadTaskEvidencePackageReport,
+  downloadTaskEvidencePackageShareCenterReport,
   downloadTaskReport,
   evaluateTrigger,
   evaluateWebhookPayloadDiagnostic,
@@ -95,6 +96,7 @@ import {
   getQueueSummary,
   getTaskDetail,
   getTaskEvidencePackageArchiveSummary,
+  getTaskEvidencePackageShareCenter,
   getTaskRetryPreflight,
   getTaskReport,
   getTaskStatusCounts,
@@ -217,6 +219,7 @@ import type {
   EvaluationRunSnapshotArchive,
   FixTask,
   FixTaskEvidencePackageArchive,
+  FixTaskEvidencePackageArchiveShareCenter,
   FixTaskEvidencePackageArchiveSummary,
   FixTaskFailureCauseSummary,
   FixTaskLatencySummary,
@@ -419,7 +422,10 @@ export default function App() {
   const [taskEvidenceArchives, setTaskEvidenceArchives] = useState<FixTaskEvidencePackageArchive[]>([]);
   const [taskEvidenceArchiveSummary, setTaskEvidenceArchiveSummary] =
     useState<FixTaskEvidencePackageArchiveSummary | null>(null);
+  const [taskEvidenceShareCenter, setTaskEvidenceShareCenter] =
+    useState<FixTaskEvidencePackageArchiveShareCenter | null>(null);
   const [taskEvidenceArchiveError, setTaskEvidenceArchiveError] = useState<string | null>(null);
+  const [taskEvidenceShareCenterError, setTaskEvidenceShareCenterError] = useState<string | null>(null);
   const [webhookDeliveries, setWebhookDeliveries] = useState<WebhookDeliveryDiagnostic[]>([]);
   const [webhookDeliveryError, setWebhookDeliveryError] = useState<string | null>(null);
   const [webhookPayloadDiagnostic, setWebhookPayloadDiagnostic] = useState<WebhookPayloadDiagnosticResult | null>(null);
@@ -742,6 +748,7 @@ export default function App() {
         workerHealthData,
         taskEvidenceArchiveResult,
         taskEvidenceArchiveSummaryResult,
+        taskEvidenceShareCenterResult,
         webhookDeliveryResult,
         acceptedTriggerDecisionResult,
         rejectedTriggerResult,
@@ -943,6 +950,10 @@ export default function App() {
         getTaskEvidencePackageArchiveSummary(50).then(
           (summary) => ({ summary, error: null as string | null }),
           (caught) => ({ summary: null, error: errorMessage(caught) })
+        ),
+        getTaskEvidencePackageShareCenter(20).then(
+          (shareCenter) => ({ shareCenter, error: null as string | null }),
+          (caught) => ({ shareCenter: null, error: errorMessage(caught) })
         ),
         listWebhookDeliveries(10).then(
           (deliveries) => ({ deliveries, error: null as string | null }),
@@ -1169,6 +1180,10 @@ export default function App() {
         setTaskEvidenceArchiveSummary(taskEvidenceArchiveSummaryResult.summary);
       }
       setTaskEvidenceArchiveError(taskEvidenceArchiveResult.error ?? taskEvidenceArchiveSummaryResult.error);
+      if (taskEvidenceShareCenterResult.shareCenter) {
+        setTaskEvidenceShareCenter(taskEvidenceShareCenterResult.shareCenter);
+      }
+      setTaskEvidenceShareCenterError(taskEvidenceShareCenterResult.error);
       if (webhookDeliveryResult.deliveries) {
         setWebhookDeliveries(webhookDeliveryResult.deliveries);
       }
@@ -1380,9 +1395,18 @@ export default function App() {
         }
       : current
     );
+    try {
+      setTaskEvidenceShareCenter(await getTaskEvidencePackageShareCenter(20));
+      setTaskEvidenceShareCenterError(null);
+    } catch (caught) {
+      setTaskEvidenceShareCenterError(errorMessage(caught));
+    }
     setTaskEvidenceArchiveError(null);
     return archive;
   }, []);
+  const handleDownloadTaskEvidencePackageShareCenterReport = useCallback(() => (
+    downloadTaskEvidencePackageShareCenterReport()
+  ), []);
   const handleDownloadTaskEvidencePackageReport = useCallback((archiveId: string) => (
     downloadTaskEvidencePackageReport(archiveId)
   ), []);
@@ -2228,9 +2252,12 @@ export default function App() {
 
       <TaskEvidenceArchiveReviewPanel
         summary={taskEvidenceArchiveSummary}
+        shareCenter={taskEvidenceShareCenter}
         archives={taskEvidenceArchives}
         error={taskEvidenceArchiveError}
+        shareCenterError={taskEvidenceShareCenterError}
         onDownloadArchiveReport={handleDownloadTaskEvidencePackageReport}
+        onDownloadShareCenterReport={handleDownloadTaskEvidencePackageShareCenterReport}
         onSelectTask={selectTask}
       />
 

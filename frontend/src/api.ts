@@ -53,6 +53,7 @@ import type {
   EvaluationRunSnapshotArchive,
   FixTask,
   FixTaskEvidencePackageArchive,
+  FixTaskEvidencePackageArchiveShareCenter,
   FixTaskEvidencePackageArchiveSummary,
   FixTaskFailureCauseSummary,
   FixTaskLatencySummary,
@@ -718,8 +719,18 @@ export async function getTaskEvidencePackageArchiveSummary(limit = 50): Promise<
   );
 }
 
+export async function getTaskEvidencePackageShareCenter(limit = 20): Promise<FixTaskEvidencePackageArchiveShareCenter> {
+  return getApi<FixTaskEvidencePackageArchiveShareCenter>(
+    `/api/tasks/evidence-packages/share-center?limit=${encodeURIComponent(limit)}`
+  );
+}
+
 export async function downloadTaskEvidencePackageReport(archiveId: string): Promise<Blob> {
   return getBlobApi(`/api/tasks/evidence-packages/${encodeURIComponent(archiveId)}/report/download`);
+}
+
+export async function downloadTaskEvidencePackageShareCenterReport(): Promise<Blob> {
+  return getBlobApi('/api/tasks/evidence-packages/share-center/report/download');
 }
 
 export async function getTimeline(taskId: string): Promise<FixTaskTimelineEvent[]> {

@@ -354,6 +354,38 @@ const taskEvidencePackageArchiveSummary = {
   nextAction: 'Download archived task evidence task-evidence-archive-1 or open task task-1 before sharing review notes.'
 };
 
+const taskEvidencePackageShareCenter = {
+  status: 'READY',
+  shareReady: true,
+  summary: 'A shareable completed task evidence package is available for external review.',
+  nextAction: 'Download archived task evidence task-evidence-archive-1 before sharing.',
+  archiveCount: 1,
+  completedArchiveCount: 1,
+  failedArchiveCount: 0,
+  pendingReviewArchiveCount: 0,
+  cancelledArchiveCount: 0,
+  latestArchiveId: 'task-evidence-archive-1',
+  latestTaskId: 'task-1',
+  latestRepositoryOwner: 'bingqin2',
+  latestRepositoryName: 'PatchPilot',
+  latestIssueNumber: 1,
+  latestArchivedAt: '2026-06-20T01:05:00Z',
+  shareableArchiveId: 'task-evidence-archive-1',
+  shareableTaskId: 'task-1',
+  shareablePullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+  downloadActions: [
+    'Download archived task evidence task-evidence-archive-1.',
+    'Open Pull Request https://github.com/bingqin2/PatchPilot/pull/8.'
+  ],
+  evidenceNotes: [
+    'Shareable archive task-evidence-archive-1 completed with a Pull Request.'
+  ],
+  sideEffectContract:
+    'Task evidence share center is read-only; it does not create tasks, mutate Git, push, open Pull Requests, or write GitHub comments.',
+  markdownReport: '# PatchPilot Task Evidence Share Center',
+  generatedAt: '2026-06-20T01:12:00Z'
+};
+
 const detail = {
   summary,
   queueItem: {
@@ -2784,6 +2816,9 @@ beforeEach(() => {
     if (url === '/api/tasks/evidence-packages/summary?limit=50') {
       return jsonResponse(taskEvidencePackageArchiveSummary);
     }
+    if (url === '/api/tasks/evidence-packages/share-center?limit=20') {
+      return jsonResponse(taskEvidencePackageShareCenter);
+    }
     if (url === '/api/tasks/manual-task-1/detail') {
       return jsonResponse(manualTaskDetail);
     }
@@ -2819,6 +2854,15 @@ beforeEach(() => {
         ok: true,
         status: 200,
         blob: async () => new Blob(['# PatchPilot Task Report'], {
+          type: 'text/markdown;charset=UTF-8'
+        })
+      } as Response);
+    }
+    if (url === '/api/tasks/evidence-packages/share-center/report/download') {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        blob: async () => new Blob(['# PatchPilot Task Evidence Share Center'], {
           type: 'text/markdown;charset=UTF-8'
         })
       } as Response);
@@ -3037,8 +3081,12 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(screen.getByText('7.0s test avg')).toBeInTheDocument();
   const taskEvidenceReview = screen.getByLabelText('Task evidence archive review');
   expect(within(taskEvidenceReview).getByText('Task evidence archive review')).toBeInTheDocument();
+  const taskEvidenceShareCenter = screen.getByLabelText('Task evidence share center');
+  expect(within(taskEvidenceShareCenter).getByText('Task evidence share center')).toBeInTheDocument();
+  expect(within(taskEvidenceShareCenter).getByText('Ready')).toBeInTheDocument();
+  expect(within(taskEvidenceShareCenter).getAllByText('task-evidence-archive-1').length).toBeGreaterThanOrEqual(2);
   expect(within(taskEvidenceReview).getByText('1 archived reports')).toBeInTheDocument();
-  expect(within(taskEvidenceReview).getByText('task-evidence-archive-1')).toBeInTheDocument();
+  expect(within(taskEvidenceReview).getAllByText('task-evidence-archive-1').length).toBeGreaterThanOrEqual(3);
   expect(within(taskEvidenceReview).getByText(taskEvidencePackageArchiveSummary.sideEffectContract)).toBeInTheDocument();
   expect(screen.getByText('Configuration')).toBeInTheDocument();
   expect(screen.getByText('openai-compatible')).toBeInTheDocument();
@@ -5951,6 +5999,9 @@ function defaultAppResponse(input: RequestInfo | URL, init?: RequestInit) {
   if (url === '/api/tasks/evidence-packages/summary?limit=50') {
     return jsonResponse(taskEvidencePackageArchiveSummary);
   }
+  if (url === '/api/tasks/evidence-packages/share-center?limit=20') {
+    return jsonResponse(taskEvidencePackageShareCenter);
+  }
   if (url === '/api/tasks/task-1/retry-preflight') {
     return jsonResponse({
       taskId: 'task-1',
@@ -5978,6 +6029,15 @@ function defaultAppResponse(input: RequestInfo | URL, init?: RequestInit) {
       ok: true,
       status: 200,
       blob: async () => new Blob(['# PatchPilot Task Report'], {
+        type: 'text/markdown;charset=UTF-8'
+      })
+    } as Response);
+  }
+  if (url === '/api/tasks/evidence-packages/share-center/report/download') {
+    return Promise.resolve({
+      ok: true,
+      status: 200,
+      blob: async () => new Blob(['# PatchPilot Task Evidence Share Center'], {
         type: 'text/markdown;charset=UTF-8'
       })
     } as Response);

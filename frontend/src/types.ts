@@ -127,6 +127,32 @@ export interface FixTaskEvidencePackageArchiveSummary {
   nextAction: string;
 }
 
+export interface FixTaskEvidencePackageArchiveShareCenter {
+  status: 'READY' | 'NEEDS_ATTENTION' | 'BLOCKED';
+  shareReady: boolean;
+  summary: string;
+  nextAction: string;
+  archiveCount: number;
+  completedArchiveCount: number;
+  failedArchiveCount: number;
+  pendingReviewArchiveCount: number;
+  cancelledArchiveCount: number;
+  latestArchiveId: string | null;
+  latestTaskId: string | null;
+  latestRepositoryOwner: string | null;
+  latestRepositoryName: string | null;
+  latestIssueNumber: number | null;
+  latestArchivedAt: string | null;
+  shareableArchiveId: string | null;
+  shareableTaskId: string | null;
+  shareablePullRequestUrl: string | null;
+  downloadActions: string[];
+  evidenceNotes: string[];
+  sideEffectContract: string;
+  markdownReport: string;
+  generatedAt: string;
+}
+
 export interface FixTaskRetryPreflight {
   taskId: string;
   status: TaskStatus;
