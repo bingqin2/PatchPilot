@@ -6,6 +6,7 @@ import {
   archiveDemoFinalAcceptanceCompletionCloseout,
   archiveDemoFinalExternalReviewEvidencePackage,
   archiveDemoFinalExternalReviewEvidencePackageDeliveryFinalization,
+  archiveDemoFinalExternalReviewDeliveryCertificate,
   approveTaskReview,
   archiveTaskEvidencePackageAcceptanceCertificate,
   archiveTaskEvidencePackageAcceptanceCloseout,
@@ -55,6 +56,7 @@ import {
   downloadDemoFinalAcceptanceCompletionEvidenceDeliveryReceiptReport,
   downloadDemoFinalExternalReviewEvidencePackageDeliveryFinalizationReport,
   downloadDemoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveReport,
+  downloadDemoFinalExternalReviewDeliveryCertificateArchiveReport,
   downloadDemoFinalExternalReviewDeliveryCertificateReport,
   downloadDemoFinalExternalReviewEvidencePackageDeliveryReceiptReport,
   downloadDemoFinalExternalReviewEvidencePackageArchiveReport,
@@ -125,6 +127,7 @@ import {
   listDemoFinalExternalReviewEvidencePackageArchives,
   listDemoFinalExternalReviewEvidencePackageDeliveryFinalizationArchives,
   listDemoFinalExternalReviewEvidencePackageDeliveryReceipts,
+  listDemoFinalExternalReviewDeliveryCertificateArchives,
   listDemoFinalAcceptanceShareDeliveryReceipts,
   listDemoFinalAcceptanceSharePackageArchives,
   listDemoLaunchEvidenceShareDeliveryReceipts,
@@ -248,6 +251,7 @@ import type {
   DemoFinalExternalReviewEvidencePackageDeliveryFinalization,
   DemoFinalExternalReviewEvidencePackageDeliveryReceipt,
   DemoFinalExternalReviewEvidencePackageDeliveryReceiptInput,
+  DemoFinalExternalReviewDeliveryCertificateArchive,
   DemoFinalExternalReviewDeliveryCertificate,
   DemoFinalExternalReviewEvidencePackage,
   DemoFinalAcceptanceShareDeliveryReceipt,
@@ -481,8 +485,16 @@ export default function App() {
     setDemoFinalExternalReviewDeliveryCertificate
   ] = useState<DemoFinalExternalReviewDeliveryCertificate | null>(null);
   const [
+    demoFinalExternalReviewDeliveryCertificateArchives,
+    setDemoFinalExternalReviewDeliveryCertificateArchives
+  ] = useState<DemoFinalExternalReviewDeliveryCertificateArchive[]>([]);
+  const [
     demoFinalExternalReviewDeliveryCertificateError,
     setDemoFinalExternalReviewDeliveryCertificateError
+  ] = useState<string | null>(null);
+  const [
+    demoFinalExternalReviewDeliveryCertificateArchiveError,
+    setDemoFinalExternalReviewDeliveryCertificateArchiveError
   ] = useState<string | null>(null);
   const [demoReadinessSnapshots, setDemoReadinessSnapshots] = useState<DemoReadinessSnapshotArchive[]>([]);
   const [demoReadinessSnapshotError, setDemoReadinessSnapshotError] = useState<string | null>(null);
@@ -951,6 +963,7 @@ export default function App() {
         demoFinalExternalReviewEvidencePackageDeliveryFinalizationResult,
         demoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveResult,
         demoFinalExternalReviewDeliveryCertificateResult,
+        demoFinalExternalReviewDeliveryCertificateArchiveResult,
         demoReadinessSnapshotResult,
         demoReadinessSnapshotTrendResult,
         demoSmokeChecklistResult,
@@ -1183,6 +1196,10 @@ export default function App() {
         getDemoFinalExternalReviewDeliveryCertificate().then(
           (certificate) => ({ certificate, error: null as string | null }),
           (caught) => ({ certificate: null, error: errorMessage(caught) })
+        ),
+        listDemoFinalExternalReviewDeliveryCertificateArchives().then(
+          (archives) => ({ archives, error: null as string | null }),
+          (caught) => ({ archives: null, error: errorMessage(caught) })
         ),
         listDemoReadinessSnapshots().then(
           (snapshots) => ({ snapshots, error: null as string | null }),
@@ -1533,6 +1550,14 @@ export default function App() {
       }
       setDemoFinalExternalReviewDeliveryCertificateError(
         demoFinalExternalReviewDeliveryCertificateResult.error
+      );
+      if (demoFinalExternalReviewDeliveryCertificateArchiveResult.archives) {
+        setDemoFinalExternalReviewDeliveryCertificateArchives(
+          demoFinalExternalReviewDeliveryCertificateArchiveResult.archives
+        );
+      }
+      setDemoFinalExternalReviewDeliveryCertificateArchiveError(
+        demoFinalExternalReviewDeliveryCertificateArchiveResult.error
       );
       if (demoReadinessSnapshotResult.snapshots) {
         setDemoReadinessSnapshots(demoReadinessSnapshotResult.snapshots);
@@ -2251,6 +2276,34 @@ export default function App() {
   ), []);
   const handleDownloadDemoFinalExternalReviewDeliveryCertificateReport = useCallback(() => (
     downloadDemoFinalExternalReviewDeliveryCertificateReport()
+  ), []);
+  const handleArchiveDemoFinalExternalReviewDeliveryCertificate = useCallback(async () => {
+    const archive = await archiveDemoFinalExternalReviewDeliveryCertificate();
+    setDemoFinalExternalReviewDeliveryCertificateArchives((current) => [
+      archive,
+      ...current.filter((item) => item.id !== archive.id)
+    ].slice(0, 20));
+    setDemoFinalExternalReviewDeliveryCertificateArchiveError(null);
+    try {
+      const archives = await listDemoFinalExternalReviewDeliveryCertificateArchives();
+      setDemoFinalExternalReviewDeliveryCertificateArchives(archives);
+      setDemoFinalExternalReviewDeliveryCertificateArchiveError(null);
+    } catch (caught) {
+      setDemoFinalExternalReviewDeliveryCertificateArchiveError(errorMessage(caught));
+    }
+    try {
+      const certificate = await getDemoFinalExternalReviewDeliveryCertificate();
+      setDemoFinalExternalReviewDeliveryCertificate(certificate);
+      setDemoFinalExternalReviewDeliveryCertificateError(null);
+    } catch (caught) {
+      setDemoFinalExternalReviewDeliveryCertificateError(errorMessage(caught));
+    }
+    return archive;
+  }, []);
+  const handleDownloadDemoFinalExternalReviewDeliveryCertificateArchiveReport = useCallback((
+    archiveId: string
+  ) => (
+    downloadDemoFinalExternalReviewDeliveryCertificateArchiveReport(archiveId)
   ), []);
   const handleArchiveDemoFinalExternalReviewEvidencePackage = useCallback(async () => {
     const archive = await archiveDemoFinalExternalReviewEvidencePackage();
@@ -2976,6 +3029,9 @@ export default function App() {
           demoFinalExternalReviewEvidencePackageDeliveryFinalizationArchives
         }
         finalExternalReviewDeliveryCertificate={demoFinalExternalReviewDeliveryCertificate}
+        finalExternalReviewDeliveryCertificateArchives={
+          demoFinalExternalReviewDeliveryCertificateArchives
+        }
         error={demoAcceptanceSummaryError}
         sharePackageError={demoFinalAcceptanceSharePackageError}
         sharePackageArchiveError={demoFinalAcceptanceSharePackageArchiveError}
@@ -2999,6 +3055,9 @@ export default function App() {
           demoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveError
         }
         finalExternalReviewDeliveryCertificateError={demoFinalExternalReviewDeliveryCertificateError}
+        finalExternalReviewDeliveryCertificateArchiveError={
+          demoFinalExternalReviewDeliveryCertificateArchiveError
+        }
         onDownloadReport={handleDownloadDemoAcceptanceSummaryReport}
         onDownloadSharePackageReport={handleDownloadDemoFinalAcceptanceSharePackageReport}
         onArchiveSharePackage={handleArchiveDemoFinalAcceptanceSharePackage}
@@ -3045,6 +3104,12 @@ export default function App() {
         }
         onDownloadFinalExternalReviewDeliveryCertificateReport={
           handleDownloadDemoFinalExternalReviewDeliveryCertificateReport
+        }
+        onArchiveFinalExternalReviewDeliveryCertificate={
+          handleArchiveDemoFinalExternalReviewDeliveryCertificate
+        }
+        onDownloadFinalExternalReviewDeliveryCertificateArchiveReport={
+          handleDownloadDemoFinalExternalReviewDeliveryCertificateArchiveReport
         }
       />
 

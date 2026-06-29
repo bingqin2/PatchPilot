@@ -22,6 +22,7 @@ import type {
   DemoFinalExternalReviewEvidencePackageDeliveryFinalization,
   DemoFinalExternalReviewEvidencePackageDeliveryReceipt,
   DemoFinalExternalReviewEvidencePackageDeliveryReceiptInput,
+  DemoFinalExternalReviewDeliveryCertificateArchive,
   DemoFinalExternalReviewDeliveryCertificate,
   DemoFinalAcceptanceShareDeliveryReceipt,
   DemoFinalAcceptanceShareDeliveryReceiptInput,
@@ -451,6 +452,30 @@ export async function getDemoFinalExternalReviewDeliveryCertificate(): Promise<
 
 export async function downloadDemoFinalExternalReviewDeliveryCertificateReport(): Promise<Blob> {
   return getBlobApi('/api/demo/final-external-review-delivery-certificate/report/download');
+}
+
+export async function archiveDemoFinalExternalReviewDeliveryCertificate(): Promise<
+  DemoFinalExternalReviewDeliveryCertificateArchive
+> {
+  return postApi<DemoFinalExternalReviewDeliveryCertificateArchive>(
+    '/api/demo/final-external-review-delivery-certificate/archives'
+  );
+}
+
+export async function listDemoFinalExternalReviewDeliveryCertificateArchives(): Promise<
+  DemoFinalExternalReviewDeliveryCertificateArchive[]
+> {
+  return getApi<DemoFinalExternalReviewDeliveryCertificateArchive[]>(
+    '/api/demo/final-external-review-delivery-certificate/archives'
+  );
+}
+
+export async function downloadDemoFinalExternalReviewDeliveryCertificateArchiveReport(
+  archiveId: string
+): Promise<Blob> {
+  return getBlobApi(
+    `/api/demo/final-external-review-delivery-certificate/archives/${encodeURIComponent(archiveId)}/report/download`
+  );
 }
 
 export async function archiveDemoFinalAcceptanceCompletionCloseout(): Promise<DemoFinalAcceptanceCompletionCloseoutArchive> {

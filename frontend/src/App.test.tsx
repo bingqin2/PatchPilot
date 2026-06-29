@@ -2956,6 +2956,13 @@ const demoFinalExternalReviewDeliveryCertificate = {
   generatedAt: '2026-06-29T10:10:00Z'
 };
 
+const demoFinalExternalReviewDeliveryCertificateArchive = {
+  ...demoFinalExternalReviewDeliveryCertificate,
+  id: 'final-external-review-delivery-certificate-archive-1',
+  report: '# PatchPilot Final External Review Delivery Certificate',
+  archivedAt: '2026-06-29T10:20:00Z'
+};
+
 const demoLaunchEvidenceDeliveryReceipt = {
   id: 'launch-delivery-receipt-1',
   status: 'READY',
@@ -3311,6 +3318,24 @@ beforeEach(() => {
     }
     if (url === '/api/demo/final-external-review-delivery-certificate') {
       return jsonResponse(demoFinalExternalReviewDeliveryCertificate);
+    }
+    if (url === '/api/demo/final-external-review-delivery-certificate/archives' && init?.method === 'POST') {
+      return jsonResponse(demoFinalExternalReviewDeliveryCertificateArchive);
+    }
+    if (url === '/api/demo/final-external-review-delivery-certificate/archives') {
+      return jsonResponse([demoFinalExternalReviewDeliveryCertificateArchive]);
+    }
+    if (
+      url ===
+      '/api/demo/final-external-review-delivery-certificate/archives/final-external-review-delivery-certificate-archive-1/report/download'
+    ) {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        blob: async () => new Blob(['# PatchPilot Final External Review Delivery Certificate'], {
+          type: 'text/markdown;charset=UTF-8'
+        })
+      } as Response);
     }
     if (url === '/api/demo/final-external-review-delivery-certificate/report/download') {
       return Promise.resolve({
@@ -4448,6 +4473,9 @@ test('renders operational task dashboard from backend APIs', async () => {
     expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-external-review-delivery-certificate')
   );
   await waitFor(() =>
+    expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-external-review-delivery-certificate/archives')
+  );
+  await waitFor(() =>
     expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-acceptance-completion-evidence-delivery-receipts')
   );
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/github/credential-readiness'));
@@ -4483,15 +4511,20 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(within(acceptancePanel).getByRole('heading', {
     name: 'Final external-review evidence package'
   })).toBeInTheDocument();
+  expect(within(acceptancePanel).getByRole('heading', {
+    name: 'Archived final external-review delivery certificates'
+  })).toBeInTheDocument();
+  expect(within(acceptancePanel).getAllByText('final-external-review-delivery-certificate-archive-1').length)
+    .toBeGreaterThan(0);
   expect(within(acceptancePanel).getAllByText(
     'PatchPilot final external-review evidence package is ready.'
   )).not.toHaveLength(0);
   expect(within(acceptancePanel).getByRole('heading', {
     name: 'Final external-review delivery certificate'
   })).toBeInTheDocument();
-  expect(within(acceptancePanel).getByText(
+  expect(within(acceptancePanel).getAllByText(
     'Final external-review delivery is certified from the latest finalized archive.'
-  )).toBeInTheDocument();
+  )).not.toHaveLength(0);
   expect(within(acceptancePanel).getByRole('heading', {
     name: 'Archived final external-review packages'
   })).toBeInTheDocument();
@@ -7261,6 +7294,24 @@ function defaultAppResponse(input: RequestInfo | URL, init?: RequestInit) {
   }
   if (url === '/api/demo/final-external-review-delivery-certificate') {
     return jsonResponse(demoFinalExternalReviewDeliveryCertificate);
+  }
+  if (url === '/api/demo/final-external-review-delivery-certificate/archives' && init?.method === 'POST') {
+    return jsonResponse(demoFinalExternalReviewDeliveryCertificateArchive);
+  }
+  if (url === '/api/demo/final-external-review-delivery-certificate/archives') {
+    return jsonResponse([demoFinalExternalReviewDeliveryCertificateArchive]);
+  }
+  if (
+    url ===
+    '/api/demo/final-external-review-delivery-certificate/archives/final-external-review-delivery-certificate-archive-1/report/download'
+  ) {
+    return Promise.resolve({
+      ok: true,
+      status: 200,
+      blob: async () => new Blob(['# PatchPilot Final External Review Delivery Certificate'], {
+        type: 'text/markdown;charset=UTF-8'
+      })
+    } as Response);
   }
   if (
     url ===
