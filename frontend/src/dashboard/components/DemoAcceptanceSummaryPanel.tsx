@@ -4,6 +4,7 @@ import type {
   DemoAcceptanceSummary,
   DemoFinalAcceptanceCompletionArchive,
   DemoFinalAcceptanceCompletionEvidenceBundle,
+  DemoFinalAcceptanceCompletionEvidenceDeliveryFinalization,
   DemoFinalAcceptanceCompletionEvidenceDeliveryReceipt,
   DemoFinalAcceptanceCompletionEvidenceDeliveryReceiptInput,
   DemoFinalAcceptanceShareDeliveryReceipt,
@@ -24,6 +25,7 @@ interface DemoAcceptanceSummaryPanelProps {
   completionEvidenceBundle: DemoFinalAcceptanceCompletionEvidenceBundle | null;
   completionArchives: DemoFinalAcceptanceCompletionArchive[];
   completionEvidenceDeliveryReceipts: DemoFinalAcceptanceCompletionEvidenceDeliveryReceipt[];
+  completionEvidenceDeliveryFinalization?: DemoFinalAcceptanceCompletionEvidenceDeliveryFinalization | null;
   error: string | null;
   sharePackageError: string | null;
   sharePackageArchiveError: string | null;
@@ -32,6 +34,7 @@ interface DemoAcceptanceSummaryPanelProps {
   completionEvidenceBundleError: string | null;
   completionArchiveError: string | null;
   completionEvidenceDeliveryReceiptError: string | null;
+  completionEvidenceDeliveryFinalizationError?: string | null;
   onDownloadReport: () => Promise<Blob>;
   onDownloadSharePackageReport: () => Promise<Blob>;
   onArchiveSharePackage: () => Promise<DemoFinalAcceptanceSharePackageArchive>;
@@ -48,6 +51,7 @@ interface DemoAcceptanceSummaryPanelProps {
     input: DemoFinalAcceptanceCompletionEvidenceDeliveryReceiptInput
   ) => Promise<DemoFinalAcceptanceCompletionEvidenceDeliveryReceipt>;
   onDownloadCompletionEvidenceDeliveryReceiptReport: (receiptId: string) => Promise<Blob>;
+  onDownloadCompletionEvidenceDeliveryFinalizationReport?: () => Promise<Blob>;
 }
 
 export function DemoAcceptanceSummaryPanel({
@@ -59,6 +63,7 @@ export function DemoAcceptanceSummaryPanel({
   completionEvidenceBundle,
   completionArchives,
   completionEvidenceDeliveryReceipts,
+  completionEvidenceDeliveryFinalization = null,
   error,
   sharePackageError,
   sharePackageArchiveError,
@@ -67,6 +72,7 @@ export function DemoAcceptanceSummaryPanel({
   completionEvidenceBundleError,
   completionArchiveError,
   completionEvidenceDeliveryReceiptError,
+  completionEvidenceDeliveryFinalizationError = null,
   onDownloadReport,
   onDownloadSharePackageReport,
   onArchiveSharePackage,
@@ -78,7 +84,8 @@ export function DemoAcceptanceSummaryPanel({
   onArchiveCompletion,
   onDownloadCompletionArchiveReport,
   onCreateCompletionEvidenceDeliveryReceipt,
-  onDownloadCompletionEvidenceDeliveryReceiptReport
+  onDownloadCompletionEvidenceDeliveryReceiptReport,
+  onDownloadCompletionEvidenceDeliveryFinalizationReport
 }: DemoAcceptanceSummaryPanelProps) {
   const [downloadStatus, setDownloadStatus] = useState<string | null>(null);
   const [sharePackageCopyStatus, setSharePackageCopyStatus] = useState<string | null>(null);
@@ -91,6 +98,10 @@ export function DemoAcceptanceSummaryPanel({
   const [completionArchiveStatus, setCompletionArchiveStatus] = useState<string | null>(null);
   const [completionArchiveDownloadStatus, setCompletionArchiveDownloadStatus] = useState<string | null>(null);
   const [completionEvidenceDeliveryReceiptStatus, setCompletionEvidenceDeliveryReceiptStatus] = useState<string | null>(null);
+  const [
+    completionEvidenceDeliveryFinalizationDownloadStatus,
+    setCompletionEvidenceDeliveryFinalizationDownloadStatus
+  ] = useState<string | null>(null);
   const [deliveryChannel, setDeliveryChannel] = useState('email');
   const [deliveryTarget, setDeliveryTarget] = useState('');
   const [operator, setOperator] = useState('');
@@ -182,6 +193,23 @@ export function DemoAcceptanceSummaryPanel({
       setCompletionEvidenceBundleDownloadStatus('Final acceptance completion evidence bundle downloaded');
     } catch {
       setCompletionEvidenceBundleDownloadStatus('Final acceptance completion evidence bundle download failed');
+    }
+  }
+
+  async function downloadCompletionEvidenceDeliveryFinalization() {
+    if (!onDownloadCompletionEvidenceDeliveryFinalizationReport) {
+      return;
+    }
+    try {
+      const report = await onDownloadCompletionEvidenceDeliveryFinalizationReport();
+      downloadMarkdown(report, 'patchpilot-final-acceptance-completion-evidence-delivery-finalization.md');
+      setCompletionEvidenceDeliveryFinalizationDownloadStatus(
+        'Final acceptance completion delivery finalization report downloaded'
+      );
+    } catch {
+      setCompletionEvidenceDeliveryFinalizationDownloadStatus(
+        'Final acceptance completion delivery finalization report download failed'
+      );
     }
   }
 
@@ -385,12 +413,14 @@ export function DemoAcceptanceSummaryPanel({
             deliveryReceipts={shareDeliveryReceipts}
             finalization={shareFinalization}
             completionEvidenceBundle={completionEvidenceBundle}
+            completionEvidenceDeliveryFinalization={completionEvidenceDeliveryFinalization}
             completionEvidenceDeliveryReceipts={completionEvidenceDeliveryReceipts}
             error={sharePackageError}
             archiveError={sharePackageArchiveError}
             deliveryReceiptError={shareDeliveryReceiptError}
             finalizationError={shareFinalizationError}
             completionEvidenceBundleError={completionEvidenceBundleError}
+            completionEvidenceDeliveryFinalizationError={completionEvidenceDeliveryFinalizationError}
             copyStatus={sharePackageCopyStatus}
             downloadStatus={sharePackageDownloadStatus}
             archiveStatus={sharePackageArchiveStatus}
@@ -398,6 +428,9 @@ export function DemoAcceptanceSummaryPanel({
             deliveryReceiptStatus={shareDeliveryReceiptStatus}
             finalizationDownloadStatus={shareFinalizationDownloadStatus}
             completionEvidenceBundleDownloadStatus={completionEvidenceBundleDownloadStatus}
+            completionEvidenceDeliveryFinalizationDownloadStatus={
+              completionEvidenceDeliveryFinalizationDownloadStatus
+            }
             completionArchives={completionArchives}
             completionArchiveError={completionArchiveError}
             completionEvidenceDeliveryReceiptError={completionEvidenceDeliveryReceiptError}
@@ -428,6 +461,7 @@ export function DemoAcceptanceSummaryPanel({
             onDownloadDeliveryReceipt={(receipt) => void downloadShareDeliveryReceipt(receipt)}
             onDownloadFinalization={() => void downloadShareFinalization()}
             onDownloadCompletionEvidenceBundle={() => void downloadCompletionEvidenceBundle()}
+            onDownloadCompletionEvidenceDeliveryFinalization={() => void downloadCompletionEvidenceDeliveryFinalization()}
             onArchiveCompletion={() => void archiveCompletion()}
             onDownloadCompletionArchive={(archive) => void downloadCompletionArchive(archive)}
             onCreateCompletionEvidenceDeliveryReceipt={() => void createCompletionEvidenceDeliveryReceipt()}
@@ -447,6 +481,7 @@ interface FinalAcceptanceSharePackageProps {
   deliveryReceipts: DemoFinalAcceptanceShareDeliveryReceipt[];
   finalization: DemoFinalAcceptanceShareFinalization | null;
   completionEvidenceBundle: DemoFinalAcceptanceCompletionEvidenceBundle | null;
+  completionEvidenceDeliveryFinalization: DemoFinalAcceptanceCompletionEvidenceDeliveryFinalization | null;
   completionEvidenceDeliveryReceipts: DemoFinalAcceptanceCompletionEvidenceDeliveryReceipt[];
   completionArchives: DemoFinalAcceptanceCompletionArchive[];
   error: string | null;
@@ -454,6 +489,7 @@ interface FinalAcceptanceSharePackageProps {
   deliveryReceiptError: string | null;
   finalizationError: string | null;
   completionEvidenceBundleError: string | null;
+  completionEvidenceDeliveryFinalizationError: string | null;
   completionArchiveError: string | null;
   completionEvidenceDeliveryReceiptError: string | null;
   copyStatus: string | null;
@@ -463,6 +499,7 @@ interface FinalAcceptanceSharePackageProps {
   deliveryReceiptStatus: string | null;
   finalizationDownloadStatus: string | null;
   completionEvidenceBundleDownloadStatus: string | null;
+  completionEvidenceDeliveryFinalizationDownloadStatus: string | null;
   completionArchiveStatus: string | null;
   completionArchiveDownloadStatus: string | null;
   completionEvidenceDeliveryReceiptStatus: string | null;
@@ -490,6 +527,7 @@ interface FinalAcceptanceSharePackageProps {
   onDownloadDeliveryReceipt: (receipt: DemoFinalAcceptanceShareDeliveryReceipt) => void;
   onDownloadFinalization: () => void;
   onDownloadCompletionEvidenceBundle: () => void;
+  onDownloadCompletionEvidenceDeliveryFinalization: () => void;
   onArchiveCompletion: () => void;
   onDownloadCompletionArchive: (archive: DemoFinalAcceptanceCompletionArchive) => void;
   onCreateCompletionEvidenceDeliveryReceipt: () => void;
@@ -504,6 +542,7 @@ function FinalAcceptanceSharePackage({
   deliveryReceipts,
   finalization,
   completionEvidenceBundle,
+  completionEvidenceDeliveryFinalization,
   completionEvidenceDeliveryReceipts,
   completionArchives,
   error,
@@ -511,6 +550,7 @@ function FinalAcceptanceSharePackage({
   deliveryReceiptError,
   finalizationError,
   completionEvidenceBundleError,
+  completionEvidenceDeliveryFinalizationError,
   completionArchiveError,
   completionEvidenceDeliveryReceiptError,
   copyStatus,
@@ -520,6 +560,7 @@ function FinalAcceptanceSharePackage({
   deliveryReceiptStatus,
   finalizationDownloadStatus,
   completionEvidenceBundleDownloadStatus,
+  completionEvidenceDeliveryFinalizationDownloadStatus,
   completionArchiveStatus,
   completionArchiveDownloadStatus,
   completionEvidenceDeliveryReceiptStatus,
@@ -547,6 +588,7 @@ function FinalAcceptanceSharePackage({
   onDownloadDeliveryReceipt,
   onDownloadFinalization,
   onDownloadCompletionEvidenceBundle,
+  onDownloadCompletionEvidenceDeliveryFinalization,
   onArchiveCompletion,
   onDownloadCompletionArchive,
   onCreateCompletionEvidenceDeliveryReceipt,
@@ -944,6 +986,93 @@ function FinalAcceptanceSharePackage({
               </>
             ) : (
               <p className="empty-state">Final acceptance completion evidence bundle has not loaded yet.</p>
+            )}
+          </div>
+
+          <div className="demo-session-handoff-checks">
+            <div className="demo-session-archive-title-row">
+              <h3>Final acceptance completion delivery finalization</h3>
+              <div className="demo-session-archive-actions">
+                {completionEvidenceDeliveryFinalization ? (
+                  <span className={`demo-readiness-status demo-readiness-status-${statusClass(completionEvidenceDeliveryFinalization.status)}`}>
+                    {statusLabel(completionEvidenceDeliveryFinalization.status)}
+                  </span>
+                ) : null}
+                <button
+                  className="secondary-button"
+                  type="button"
+                  onClick={() => onDownloadCompletionEvidenceDeliveryFinalization()}
+                  aria-label="Download final acceptance completion delivery finalization report"
+                >
+                  <Download size={14} />
+                  Download completion delivery finalization
+                </button>
+                {completionEvidenceDeliveryFinalizationDownloadStatus ? (
+                  <span className="copy-status">{completionEvidenceDeliveryFinalizationDownloadStatus}</span>
+                ) : null}
+              </div>
+            </div>
+            {completionEvidenceDeliveryFinalizationError ? (
+              <div className="adapter-api-error">
+                <strong>Final acceptance completion delivery finalization unavailable</strong>
+                <span>{completionEvidenceDeliveryFinalizationError}</span>
+              </div>
+            ) : null}
+            {completionEvidenceDeliveryFinalization ? (
+              <>
+                <div className="demo-session-summary">
+                  <div>
+                    <span>Finalization</span>
+                    <strong>
+                      {completionEvidenceDeliveryFinalization.finalized ? 'Finalized' : statusLabel(completionEvidenceDeliveryFinalization.status)}
+                    </strong>
+                    <small>{completionEvidenceDeliveryFinalization.summary}</small>
+                  </div>
+                  <div>
+                    <span>Receipt freshness</span>
+                    <strong>{completionEvidenceDeliveryFinalization.deliveryReceiptFreshness}</strong>
+                    <small>{completionEvidenceDeliveryFinalization.deliveryReceiptFreshnessSummary}</small>
+                  </div>
+                  <div>
+                    <span>Completion receipt</span>
+                    <strong>
+                      {completionEvidenceDeliveryFinalization.latestCompletionEvidenceDeliveryReceiptId ?? 'No receipt'}
+                    </strong>
+                    <small>
+                      {completionEvidenceDeliveryFinalization.latestDeliveryTarget ?? 'No delivery target'}
+                    </small>
+                  </div>
+                </div>
+                <div className="demo-readiness-check-list compact-readiness-list">
+                  {completionEvidenceDeliveryFinalization.checks.map((check) => (
+                    <div key={check.name} className="demo-readiness-check">
+                      <div>
+                        <strong>{check.name}</strong>
+                        <p>{check.summary}</p>
+                        <p className="demo-readiness-check-action">{check.nextAction}</p>
+                      </div>
+                      <span className={`demo-readiness-status demo-readiness-status-${statusClass(check.status)}`}>
+                        {statusLabel(check.status)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <div className="demo-session-lists compact-demo-session-lists">
+                  <CompactList
+                    title="Completion finalization evidence"
+                    items={completionEvidenceDeliveryFinalization.evidenceNotes}
+                    emptyText="No completion delivery finalization evidence available."
+                  />
+                  <CompactList
+                    title="Completion finalization downloads"
+                    items={completionEvidenceDeliveryFinalization.downloadActions}
+                    emptyText="No completion delivery finalization downloads available."
+                  />
+                </div>
+                <small>{completionEvidenceDeliveryFinalization.sideEffectContract}</small>
+              </>
+            ) : (
+              <p className="empty-state">Final acceptance completion delivery finalization has not loaded yet.</p>
             )}
           </div>
 

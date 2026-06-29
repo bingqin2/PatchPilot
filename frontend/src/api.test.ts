@@ -64,6 +64,8 @@ import {
   downloadDemoFinalAcceptanceCompletionArchiveReport,
   getDemoFinalAcceptanceCompletionEvidenceBundle,
   downloadDemoFinalAcceptanceCompletionEvidenceBundleReport,
+  getDemoFinalAcceptanceCompletionEvidenceDeliveryFinalization,
+  downloadDemoFinalAcceptanceCompletionEvidenceDeliveryFinalizationReport,
   createDemoFinalAcceptanceCompletionEvidenceDeliveryReceipt,
   listDemoFinalAcceptanceCompletionEvidenceDeliveryReceipts,
   downloadDemoFinalAcceptanceCompletionEvidenceDeliveryReceiptReport,
@@ -1429,6 +1431,79 @@ test('downloads final acceptance completion evidence bundle report through backe
   const downloadedReport = await downloadDemoFinalAcceptanceCompletionEvidenceBundleReport();
 
   expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-acceptance-completion-evidence-bundle/report/download');
+  expect(downloadedReport).toBe(reportBlob);
+});
+
+test('fetches final acceptance completion evidence delivery finalization through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        status: 'READY',
+        finalized: true,
+        summary: 'Final acceptance completion evidence delivery is finalized with a fresh delivery receipt.',
+        nextAction: 'Use the finalization report as the reviewer-facing completion delivery record.',
+        latestCompletionArchiveId: 'final-acceptance-completion-archive-1',
+        latestSharePackageArchiveId: 'final-acceptance-share-package-archive-1',
+        latestDeliveryReceiptId: 'final-acceptance-delivery-receipt-1',
+        latestTaskId: 'task-1',
+        latestCompletionEvidenceDeliveryReceiptId: 'final-acceptance-completion-evidence-delivery-receipt-1',
+        latestDeliveryTarget: 'reviewer@example.com',
+        latestDeliveryChannel: 'email',
+        latestDeliveredAt: '2026-06-29T04:25:00Z',
+        deliveryReceiptFreshness: 'FRESH',
+        deliveryReceiptFresh: true,
+        deliveryReceiptFreshnessSummary:
+          'Latest completion evidence delivery receipt matches the current completion evidence bundle.',
+        checks: [
+          {
+            name: 'Completion evidence bundle',
+            status: 'READY',
+            summary: 'Completion evidence bundle is ready to share.',
+            nextAction: 'No action needed.'
+          }
+        ],
+        evidenceNotes: [
+          'Completion evidence delivery receipt final-acceptance-completion-evidence-delivery-receipt-1 is fresh.'
+        ],
+        downloadActions: ['Download final acceptance completion evidence delivery finalization report.'],
+        sideEffectContract:
+          'GET /api/demo/final-acceptance-completion-evidence-delivery-finalization is read-only.',
+        markdownReport: '# PatchPilot Final Acceptance Completion Evidence Delivery Finalization',
+        generatedAt: '2026-06-29T05:00:00Z'
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const finalization = await getDemoFinalAcceptanceCompletionEvidenceDeliveryFinalization();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-acceptance-completion-evidence-delivery-finalization');
+  expect(finalization.finalized).toBe(true);
+  expect(finalization.deliveryReceiptFreshness).toBe('FRESH');
+  expect(finalization.latestCompletionEvidenceDeliveryReceiptId)
+    .toBe('final-acceptance-completion-evidence-delivery-receipt-1');
+});
+
+test('downloads final acceptance completion evidence delivery finalization report through backend API', async () => {
+  const reportBlob = new Blob(['# PatchPilot Final Acceptance Completion Evidence Delivery Finalization'], {
+    type: 'text/markdown;charset=UTF-8'
+  });
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    blob: async () => reportBlob
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const downloadedReport = await downloadDemoFinalAcceptanceCompletionEvidenceDeliveryFinalizationReport();
+
+  expect(fetchMock).toHaveBeenCalledWith(
+    '/api/demo/final-acceptance-completion-evidence-delivery-finalization/report/download'
+  );
   expect(downloadedReport).toBe(reportBlob);
 });
 
