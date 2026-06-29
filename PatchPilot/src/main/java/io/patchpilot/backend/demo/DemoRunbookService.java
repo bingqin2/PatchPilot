@@ -449,6 +449,46 @@ public class DemoRunbookService {
                         .append("- Final external-review package delivery finalization download: ")
                         .append(action)
                         .append("\n"));
+
+        runbook.append("- Final external-review package delivery finalization archive: `")
+                .append(bundle.finalExternalReviewEvidencePackageDeliveryFinalizationArchiveEvidence().status())
+                .append("` - ")
+                .append(bundle.finalExternalReviewEvidencePackageDeliveryFinalizationArchiveEvidence().summary())
+                .append("\n")
+                .append("- Final external-review package delivery finalization archive id: ")
+                .append(valueOrNoneBackticked(bundle.finalExternalReviewEvidencePackageDeliveryFinalizationArchiveEvidence()
+                        .latestArchiveId()))
+                .append("\n")
+                .append("- Final external-review archived finalization package: ")
+                .append(valueOrNoneBackticked(bundle.finalExternalReviewEvidencePackageDeliveryFinalizationArchiveEvidence()
+                        .latestPackageArchiveId()))
+                .append("\n")
+                .append("- Final external-review archived finalization receipt: ")
+                .append(valueOrNoneBackticked(bundle.finalExternalReviewEvidencePackageDeliveryFinalizationArchiveEvidence()
+                        .latestDeliveryReceiptId()))
+                .append("\n")
+                .append("- Final external-review archived finalization task: ")
+                .append(valueOrNoneBackticked(bundle.finalExternalReviewEvidencePackageDeliveryFinalizationArchiveEvidence()
+                        .latestTaskId()))
+                .append("\n")
+                .append("- Final external-review package delivery finalization archive Pull Request: ")
+                .append(valueOrNone(bundle.finalExternalReviewEvidencePackageDeliveryFinalizationArchiveEvidence()
+                        .latestPullRequestUrl()))
+                .append("\n")
+                .append("- Final external-review package delivery finalization archived at: ")
+                .append(bundle.finalExternalReviewEvidencePackageDeliveryFinalizationArchiveEvidence().latestArchivedAt() == null
+                        ? "none"
+                        : "`" + bundle.finalExternalReviewEvidencePackageDeliveryFinalizationArchiveEvidence()
+                                .latestArchivedAt() + "`")
+                .append("\n")
+                .append("- Final external-review package delivery finalization archive next action: ")
+                .append(bundle.finalExternalReviewEvidencePackageDeliveryFinalizationArchiveEvidence().nextAction())
+                .append("\n");
+        bundle.finalExternalReviewEvidencePackageDeliveryFinalizationArchiveEvidence().downloadActions()
+                .forEach(action -> runbook
+                        .append("- Final external-review package delivery finalization archive download: ")
+                        .append(action)
+                        .append("\n"));
     }
 
     private static void appendEvaluationRunReadiness(

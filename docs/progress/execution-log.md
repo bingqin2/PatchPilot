@@ -5944,3 +5944,23 @@ Validation so far:
 - `npm test -- --reporter=dot`: passed, 30 test files and 453 tests.
 - `npm run build`: passed with the existing Vite large-chunk warning.
 - `git diff --check`: passed.
+
+## 2026-06-30 - 295 Final external review delivery finalization archives
+
+- Started `295-final-external-review-delivery-finalization-archives` to freeze the READY final external-review package delivery finalization as durable local evidence after the frozen reviewer-facing package has a fresh delivery receipt.
+- Planned a complete feature slice: backend archive persistence, READY-only archive guard, in-memory/MyBatis repositories, Flyway migration, create/list/download API endpoints, evidence-bundle aggregation, copied runbook export, final acceptance dashboard archive controls/history/downloads, top-level evidence rendering, README/product/frontend docs, plan doc, and regression tests.
+- Added backend coverage for archive service guard behavior, in-memory repository ordering, converter mapping, MyBatis migration/repository behavior, controller create/list/download endpoints, evidence-bundle latest archive evidence, and runbook archive export.
+- Implemented `DemoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveService` with in-memory and MyBatis-backed repositories, `V56__create_demo_final_external_review_evidence_package_delivery_finalization_archive.sql`, and archive conversion for package archive ids, delivery receipt ids, completion evidence ids, task/Pull Request evidence, receipt freshness, checks, notes, generated time, archived time, and Markdown report text.
+- Added `POST /api/demo/final-external-review-evidence-package/delivery-finalization/archives`, `GET /api/demo/final-external-review-evidence-package/delivery-finalization/archives`, and `GET /api/demo/final-external-review-evidence-package/delivery-finalization/archives/{archiveId}/report/download`.
+- Updated `DemoEvidenceBundleService` and `DemoRunbookService` so the latest final external-review package delivery finalization archive appears in the first demo evidence readout and copied runbook.
+- Updated the final demo acceptance dashboard with a delivery-finalization archive action, recent archive history, archived report downloads, load errors, App refresh wiring, and top-level evidence-bundle archive proof.
+- Updated README, product spec, frontend design doc, and added this plan document.
+
+Validation so far:
+
+- `mvn -pl PatchPilot -Dtest=DemoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveServiceTests,InMemoryDemoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveRepositoryTests,DemoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveConvertTests,DemoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveMigrationTests,MyBatisDemoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveRepositoryTests,DemoReadinessControllerTests,DemoEvidenceBundleServiceTests,DemoRunbookServiceTests test`: passed, 164 tests.
+- `npm test -- --run src/api.test.ts src/dashboard/components/DemoAcceptanceSummaryPanel.test.tsx src/dashboard/components/DemoEvidenceBundlePanel.test.tsx --reporter=basic`: first exposed duplicate expected evidence after the archive card was added and a too-specific download-action text assertion; passed after count-based evidence assertions and button-role download assertion, 3 test files and 206 tests.
+- `npm run build`: passed with the existing Vite large-chunk warning.
+- `git diff --check`: passed.
+- `mvn -pl PatchPilot test`: passed, 1169 tests.
+- `npm test -- --reporter=dot`: passed, 30 test files and 457 tests.

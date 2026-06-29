@@ -213,6 +213,22 @@ export function DemoEvidenceBundlePanel({ bundle, error, onCopyRunbook }: DemoEv
       markdownReport: '',
       generatedAt: ''
     };
+  const finalExternalReviewEvidencePackageDeliveryFinalizationArchiveEvidence =
+    bundle?.finalExternalReviewEvidencePackageDeliveryFinalizationArchiveEvidence ?? {
+      status: 'NEEDS_ATTENTION' as DemoReadinessStatus,
+      archived: false,
+      finalized: false,
+      summary: 'No final external-review package delivery finalization archive is available.',
+      nextAction: 'Archive the READY final external-review package delivery finalization.',
+      archiveCount: 0,
+      latestArchiveId: null,
+      latestPackageArchiveId: finalExternalReviewEvidencePackageDeliveryFinalization.latestArchiveId,
+      latestDeliveryReceiptId: finalExternalReviewEvidencePackageDeliveryFinalization.latestDeliveryReceiptId,
+      latestTaskId: finalExternalReviewEvidencePackageDeliveryFinalization.latestTaskId,
+      latestPullRequestUrl: finalExternalReviewEvidencePackageDeliveryFinalization.latestPullRequestUrl,
+      latestArchivedAt: null,
+      downloadActions: ['Archive the READY final external-review package delivery finalization.']
+    };
 
   async function copyRunbook() {
     try {
@@ -718,6 +734,45 @@ export function DemoEvidenceBundlePanel({ bundle, error, onCopyRunbook }: DemoEv
               {finalExternalReviewEvidencePackageDeliveryFinalization.downloadActions.slice(0, 2).map((action) => (
                 <small key={action}>{action}</small>
               ))}
+            </div>
+            <div>
+              <span>Archived final external-review package delivery finalization</span>
+              <strong>
+                {finalExternalReviewEvidencePackageDeliveryFinalizationArchiveEvidence.finalized
+                  ? 'Finalized archive'
+                  : statusLabel(finalExternalReviewEvidencePackageDeliveryFinalizationArchiveEvidence.status)}
+              </strong>
+              <small>{finalExternalReviewEvidencePackageDeliveryFinalizationArchiveEvidence.summary}</small>
+              <small>{finalExternalReviewEvidencePackageDeliveryFinalizationArchiveEvidence.nextAction}</small>
+              <small>
+                {finalExternalReviewEvidencePackageDeliveryFinalizationArchiveEvidence.latestArchiveId
+                  ?? 'No finalization archive'}
+              </small>
+              <small>
+                {finalExternalReviewEvidencePackageDeliveryFinalizationArchiveEvidence.latestPackageArchiveId
+                  ?? 'No linked final external-review package archive'}
+              </small>
+              <small>
+                {finalExternalReviewEvidencePackageDeliveryFinalizationArchiveEvidence.latestDeliveryReceiptId
+                  ?? 'No linked final external-review package delivery receipt'}
+              </small>
+              <small>
+                {finalExternalReviewEvidencePackageDeliveryFinalizationArchiveEvidence.latestArchivedAt
+                  ? `Archived ${compactDateTime(finalExternalReviewEvidencePackageDeliveryFinalizationArchiveEvidence.latestArchivedAt)}`
+                  : `${finalExternalReviewEvidencePackageDeliveryFinalizationArchiveEvidence.archiveCount} archives`}
+              </small>
+              {finalExternalReviewEvidencePackageDeliveryFinalizationArchiveEvidence.latestPullRequestUrl ? (
+                <a href={finalExternalReviewEvidencePackageDeliveryFinalizationArchiveEvidence.latestPullRequestUrl}>
+                  Open archived final external-review Pull Request
+                </a>
+              ) : (
+                <small>No archived final external-review Pull Request</small>
+              )}
+              {finalExternalReviewEvidencePackageDeliveryFinalizationArchiveEvidence.downloadActions
+                .slice(0, 2)
+                .map((action) => (
+                  <small key={action}>{action}</small>
+                ))}
             </div>
             <div>
               <span>Handoff share delivery</span>

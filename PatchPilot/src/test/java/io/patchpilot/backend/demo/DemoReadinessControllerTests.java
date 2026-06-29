@@ -13,6 +13,7 @@ import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionCloseoutVo
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionEvidenceDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionEvidenceDeliveryFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageArchiveVo;
+import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageDeliveryFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageVo;
@@ -225,6 +226,10 @@ class DemoReadinessControllerTests {
     @MockitoBean
     private DemoFinalExternalReviewEvidencePackageDeliveryFinalizationService
             demoFinalExternalReviewEvidencePackageDeliveryFinalizationService;
+
+    @MockitoBean
+    private DemoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveService
+            demoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveService;
 
     @MockitoBean
     private DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
@@ -1152,6 +1157,98 @@ class DemoReadinessControllerTests {
                 .thenReturn(Optional.empty());
 
         mockMvc.perform(get("/api/demo/final-external-review-evidence-package/archives/missing/report/download"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void should_archive_final_external_review_package_delivery_finalization_and_record_audit() throws Exception {
+        when(demoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveService.archiveCurrentFinalization())
+                .thenReturn(finalExternalReviewEvidencePackageDeliveryFinalizationArchive());
+
+        mockMvc.perform(post("/api/demo/final-external-review-evidence-package/delivery-finalization/archives"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id")
+                        .value("final-external-review-package-delivery-finalization-archive-1"))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.finalized").value(true))
+                .andExpect(jsonPath("$.data.latestArchiveId").value("final-external-review-package-archive-1"))
+                .andExpect(jsonPath("$.data.latestDeliveryReceiptId")
+                        .value("final-external-review-package-delivery-receipt-1"))
+                .andExpect(jsonPath("$.data.deliveryReceiptFreshness").value("FRESH"))
+                .andExpect(jsonPath("$.data.report").value(containsString(
+                        "# PatchPilot Final External Review Package Delivery Finalization"
+                )));
+
+        verify(operatorSafetyAuditService).recordSafetyAudit(argThat(command ->
+                command.action().equals("DEMO_FINAL_EXTERNAL_REVIEW_PACKAGE_DELIVERY_FINALIZATION_ARCHIVED")
+                        && command.resourceType()
+                        .equals("DEMO_FINAL_EXTERNAL_REVIEW_PACKAGE_DELIVERY_FINALIZATION_ARCHIVE")
+                        && command.resourceId()
+                        .equals("final-external-review-package-delivery-finalization-archive-1")
+                        && command.reason().contains("final-external-review-package-delivery-receipt-1")
+        ));
+    }
+
+    @Test
+    void should_reject_final_external_review_package_delivery_finalization_archive_when_not_ready()
+            throws Exception {
+        when(demoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveService.archiveCurrentFinalization())
+                .thenThrow(new IllegalStateException(
+                        "final external-review package delivery finalization is not ready"
+                ));
+
+        mockMvc.perform(post("/api/demo/final-external-review-evidence-package/delivery-finalization/archives"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message")
+                        .value("final external-review package delivery finalization is not ready"));
+    }
+
+    @Test
+    void should_list_final_external_review_package_delivery_finalization_archives() throws Exception {
+        when(demoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveService.listRecentArchives())
+                .thenReturn(List.of(finalExternalReviewEvidencePackageDeliveryFinalizationArchive()));
+
+        mockMvc.perform(get("/api/demo/final-external-review-evidence-package/delivery-finalization/archives"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].id")
+                        .value("final-external-review-package-delivery-finalization-archive-1"))
+                .andExpect(jsonPath("$.data[0].latestDeliveryReceiptId")
+                        .value("final-external-review-package-delivery-receipt-1"))
+                .andExpect(jsonPath("$.data[0].archivedAt").value("2026-06-29T10:30:00Z"));
+    }
+
+    @Test
+    void should_download_archived_final_external_review_package_delivery_finalization_report()
+            throws Exception {
+        when(demoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveService.findArchive(
+                "final-external-review-package-delivery-finalization-archive-1"
+        )).thenReturn(Optional.of(finalExternalReviewEvidencePackageDeliveryFinalizationArchive()));
+
+        mockMvc.perform(get("/api/demo/final-external-review-evidence-package/delivery-finalization/archives/final-external-review-package-delivery-finalization-archive-1/report/download"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString(
+                        "patchpilot-final-external-review-package-delivery-finalization-final-external-review-package-delivery-finalization-archive-1.md"
+                )))
+                .andExpect(content().contentType("text/markdown;charset=UTF-8"))
+                .andExpect(content().string(containsString(
+                        "# PatchPilot Final External Review Package Delivery Finalization"
+                )))
+                .andExpect(content().string(containsString(
+                        "final-external-review-package-delivery-receipt-1"
+                )));
+    }
+
+    @Test
+    void should_return_not_found_when_final_external_review_package_delivery_finalization_archive_is_missing()
+            throws Exception {
+        when(demoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveService.findArchive("missing"))
+                .thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/api/demo/final-external-review-evidence-package/delivery-finalization/archives/missing/report/download"))
                 .andExpect(status().isNotFound());
     }
 
@@ -4432,6 +4529,43 @@ class DemoReadinessControllerTests {
                 "GET /api/demo/final-external-review-evidence-package/delivery-finalization is read-only.",
                 "# PatchPilot Final External Review Package Delivery Finalization",
                 Instant.parse("2026-06-29T10:00:00Z")
+        );
+    }
+
+    private static DemoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveVo
+    finalExternalReviewEvidencePackageDeliveryFinalizationArchive() {
+        return new DemoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveVo(
+                "final-external-review-package-delivery-finalization-archive-1",
+                DemoReadinessStatus.READY,
+                true,
+                "Final external-review package delivery is finalized with a fresh package delivery receipt.",
+                "Use the finalization report as proof that the frozen external-review package was delivered.",
+                "final-external-review-package-archive-1",
+                "final-external-review-package-delivery-receipt-1",
+                "final-acceptance-completion-closeout-archive-1",
+                "final-acceptance-completion-archive-1",
+                "final-acceptance-completion-evidence-delivery-receipt-1",
+                "task-1",
+                "https://github.com/bingqin2/PatchPilot/pull/8",
+                "reviewer@example.com",
+                "email",
+                "2026-06-29T09:25:00Z",
+                "FRESH",
+                true,
+                "Latest package delivery receipt matches the current frozen final external-review package.",
+                List.of(new DemoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveVo.Check(
+                        "Frozen final external-review package",
+                        DemoReadinessStatus.READY,
+                        "Frozen final external-review package is ready.",
+                        "No action needed."
+                )),
+                List.of("Frozen final external-review package final-external-review-package-archive-1 is ready."),
+                List.of("Download final external-review package delivery finalization report."),
+                "GET /api/demo/final-external-review-evidence-package/delivery-finalization is read-only.",
+                "# PatchPilot Final External Review Package Delivery Finalization\n\n"
+                        + "- Latest package delivery receipt: `final-external-review-package-delivery-receipt-1`\n",
+                Instant.parse("2026-06-29T10:00:00Z"),
+                Instant.parse("2026-06-29T10:30:00Z")
         );
     }
 }

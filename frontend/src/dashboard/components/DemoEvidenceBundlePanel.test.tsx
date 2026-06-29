@@ -468,6 +468,24 @@ const bundle: DemoEvidenceBundle = {
     markdownReport: '# PatchPilot Final External Review Package Delivery Finalization',
     generatedAt: '2026-06-29T05:10:00Z'
   },
+  finalExternalReviewEvidencePackageDeliveryFinalizationArchiveEvidence: {
+    status: 'READY',
+    archived: true,
+    finalized: true,
+    summary: 'Latest final external-review package delivery finalization archive is finalized and ready.',
+    nextAction:
+      'Use the archived final external-review package delivery finalization as the delivery closure record.',
+    archiveCount: 1,
+    latestArchiveId: 'final-external-review-package-delivery-finalization-archive-1',
+    latestPackageArchiveId: 'final-external-review-package-archive-1',
+    latestDeliveryReceiptId: 'final-external-review-package-delivery-receipt-1',
+    latestTaskId: 'task-2',
+    latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+    latestArchivedAt: '2026-06-29T05:15:00Z',
+    downloadActions: [
+      'Download final external-review package delivery finalization archive final-external-review-package-delivery-finalization-archive-1.'
+    ]
+  },
   handoffShareDeliveryReceiptRecorded: true,
   handoffShareLatestDeliveryReceiptId: 'delivery-receipt-1',
   handoffShareLatestDeliveryTarget: 'maintainer@example.com',
@@ -684,7 +702,9 @@ test('summarizes demo evidence bundle for operators', () => {
   expect(within(panel).getByText('1 final external-review package archives')).toBeInTheDocument();
   expect(within(panel).getAllByText('final-external-review-package-archive-1').length)
     .toBeGreaterThanOrEqual(2);
-  expect(within(panel).getByRole('link', { name: 'Open archived final external-review Pull Request' })).toHaveAttribute(
+  expect(within(panel).getAllByRole('link', {
+    name: 'Open archived final external-review Pull Request'
+  })[0]).toHaveAttribute(
     'href',
     'https://github.com/bingqin2/PatchPilot/pull/42'
   );
@@ -720,6 +740,28 @@ test('summarizes demo evidence bundle for operators', () => {
   ).toBeGreaterThanOrEqual(2);
   expect(
     within(panel).getByText('Download final external-review package delivery finalization report.')
+  ).toBeInTheDocument();
+  expect(
+    within(panel).getByText('Archived final external-review package delivery finalization')
+  ).toBeInTheDocument();
+  expect(within(panel).getByText('Finalized archive')).toBeInTheDocument();
+  expect(
+    within(panel).getByText(
+      'Latest final external-review package delivery finalization archive is finalized and ready.'
+    )
+  ).toBeInTheDocument();
+  expect(
+    within(panel).getByText(
+      'Use the archived final external-review package delivery finalization as the delivery closure record.'
+    )
+  ).toBeInTheDocument();
+  expect(
+    within(panel).getAllByText('final-external-review-package-delivery-finalization-archive-1').length
+  ).toBeGreaterThanOrEqual(1);
+  expect(
+    within(panel).getByText(
+      'Download final external-review package delivery finalization archive final-external-review-package-delivery-finalization-archive-1.'
+    )
   ).toBeInTheDocument();
   expect(within(panel).getByText('Handoff share delivery')).toBeInTheDocument();
   expect(within(panel).getAllByText('Fresh').length).toBeGreaterThanOrEqual(2);

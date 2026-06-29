@@ -10,6 +10,7 @@ import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionEvidenceDe
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionEvidenceDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionEvidenceBundleVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageArchiveVo;
+import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageDeliveryFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageVo;
@@ -114,6 +115,8 @@ public class DemoReadinessController {
             demoFinalExternalReviewEvidencePackageDeliveryReceiptService;
     private final DemoFinalExternalReviewEvidencePackageDeliveryFinalizationService
             demoFinalExternalReviewEvidencePackageDeliveryFinalizationService;
+    private final DemoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveService
+            demoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveService;
     private final DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
     private final DemoReadinessSnapshotTrendService demoReadinessSnapshotTrendService;
     private final DemoLaunchPreflightService demoLaunchPreflightService;
@@ -505,6 +508,39 @@ public class DemoReadinessController {
         return ApiResponse.ok(demoFinalExternalReviewEvidencePackageDeliveryFinalizationService.getFinalizationGate());
     }
 
+    @PostMapping("/final-external-review-evidence-package/delivery-finalization/archives")
+    public ResponseEntity<ApiResponse<DemoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveVo>>
+    archiveFinalExternalReviewPackageDeliveryFinalization() {
+        try {
+            DemoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveVo archive =
+                    demoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveService
+                            .archiveCurrentFinalization();
+            operatorSafetyAuditService.recordSafetyAudit(new RecordOperatorSafetyAuditCommand(
+                    "DEMO_FINAL_EXTERNAL_REVIEW_PACKAGE_DELIVERY_FINALIZATION_ARCHIVED",
+                    "DEMO_FINAL_EXTERNAL_REVIEW_PACKAGE_DELIVERY_FINALIZATION_ARCHIVE",
+                    archive.id(),
+                    TriggerQuarantineScope.REPOSITORY,
+                    "patchpilot/local-demo",
+                    "admin-api",
+                    "Archived final external-review package delivery finalization "
+                            + archive.status()
+                            + " with receipt "
+                            + archive.latestDeliveryReceiptId()
+            ));
+            return ResponseEntity.ok(ApiResponse.ok(archive));
+        } catch (IllegalStateException exception) {
+            return ResponseEntity.badRequest().body(ApiResponse.fail(exception.getMessage()));
+        }
+    }
+
+    @GetMapping("/final-external-review-evidence-package/delivery-finalization/archives")
+    public ApiResponse<List<DemoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveVo>>
+    listFinalExternalReviewPackageDeliveryFinalizationArchives() {
+        return ApiResponse.ok(
+                demoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveService.listRecentArchives()
+        );
+    }
+
     @GetMapping(value = "/handoff-share-center/report/download", produces = "text/markdown;charset=UTF-8")
     public ResponseEntity<String> downloadHandoffShareCenterReport() {
         return markdownAttachment(
@@ -694,6 +730,19 @@ public class DemoReadinessController {
                         .getFinalizationGate()
                         .markdownReport()
         );
+    }
+
+    @GetMapping(value = "/final-external-review-evidence-package/delivery-finalization/archives/{archiveId}/report/download", produces = "text/markdown;charset=UTF-8")
+    public ResponseEntity<String> downloadArchivedFinalExternalReviewPackageDeliveryFinalizationReport(
+            @PathVariable String archiveId
+    ) {
+        return demoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveService.findArchive(archiveId)
+                .map(archive -> markdownAttachment(
+                        "patchpilot-final-external-review-package-delivery-finalization-"
+                                + safeFilenamePart(archive.id()) + ".md",
+                        archive.report()
+                ))
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @GetMapping(value = "/final-acceptance-completion-closeout/archives/{archiveId}/report/download", produces = "text/markdown;charset=UTF-8")
