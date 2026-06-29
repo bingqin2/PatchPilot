@@ -68,6 +68,9 @@ import {
   downloadDemoFinalAcceptanceCompletionEvidenceDeliveryFinalizationReport,
   getDemoFinalAcceptanceCompletionCloseout,
   downloadDemoFinalAcceptanceCompletionCloseoutReport,
+  archiveDemoFinalAcceptanceCompletionCloseout,
+  listDemoFinalAcceptanceCompletionCloseoutArchives,
+  downloadDemoFinalAcceptanceCompletionCloseoutArchiveReport,
   createDemoFinalAcceptanceCompletionEvidenceDeliveryReceipt,
   listDemoFinalAcceptanceCompletionEvidenceDeliveryReceipts,
   downloadDemoFinalAcceptanceCompletionEvidenceDeliveryReceiptReport,
@@ -1571,6 +1574,113 @@ test('downloads final acceptance completion closeout report through backend API'
   const downloadedReport = await downloadDemoFinalAcceptanceCompletionCloseoutReport();
 
   expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-acceptance-completion-closeout/report/download');
+  expect(downloadedReport).toBe(reportBlob);
+});
+
+test('archives final acceptance completion closeout through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        id: 'final-acceptance-completion-closeout-archive-1',
+        status: 'READY',
+        closed: true,
+        summary:
+          'PatchPilot final acceptance completion is closed with accepted certificates, finalized sharing, and fresh completion delivery proof.',
+        nextAction: 'Use this closeout report as the final external-review completion record.',
+        latestTaskId: 'task-1',
+        latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+        latestSharePackageArchiveId: 'final-acceptance-share-package-archive-1',
+        latestCompletionArchiveId: 'final-acceptance-completion-archive-1',
+        latestCompletionEvidenceDeliveryReceiptId: 'final-acceptance-completion-evidence-delivery-receipt-1',
+        latestDeliveryTarget: 'reviewer@example.com',
+        latestDeliveryChannel: 'email',
+        latestDeliveredAt: '2026-06-29T04:25:00Z',
+        deliveryReceiptFreshness: 'FRESH',
+        evidenceNotes: ['Final demo acceptance summary is accepted.'],
+        downloadActions: ['Download final acceptance completion closeout report.'],
+        sideEffectContract: 'GET /api/demo/final-acceptance-completion-closeout is read-only.',
+        report: '# PatchPilot Final Acceptance Completion Closeout',
+        generatedAt: '2026-06-29T06:00:00Z',
+        archivedAt: '2026-06-29T06:30:00Z'
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const archive = await archiveDemoFinalAcceptanceCompletionCloseout();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-acceptance-completion-closeout/archives', {
+    method: 'POST'
+  });
+  expect(archive.closed).toBe(true);
+  expect(archive.latestCompletionEvidenceDeliveryReceiptId)
+    .toBe('final-acceptance-completion-evidence-delivery-receipt-1');
+});
+
+test('lists final acceptance completion closeout archives through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: [
+        {
+          id: 'final-acceptance-completion-closeout-archive-1',
+          status: 'READY',
+          closed: true,
+          summary:
+            'PatchPilot final acceptance completion is closed with accepted certificates, finalized sharing, and fresh completion delivery proof.',
+          nextAction: 'Use this closeout report as the final external-review completion record.',
+          latestTaskId: 'task-1',
+          latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+          latestSharePackageArchiveId: 'final-acceptance-share-package-archive-1',
+          latestCompletionArchiveId: 'final-acceptance-completion-archive-1',
+          latestCompletionEvidenceDeliveryReceiptId: 'final-acceptance-completion-evidence-delivery-receipt-1',
+          latestDeliveryTarget: 'reviewer@example.com',
+          latestDeliveryChannel: 'email',
+          latestDeliveredAt: '2026-06-29T04:25:00Z',
+          deliveryReceiptFreshness: 'FRESH',
+          evidenceNotes: ['Final demo acceptance summary is accepted.'],
+          downloadActions: ['Download final acceptance completion closeout report.'],
+          sideEffectContract: 'GET /api/demo/final-acceptance-completion-closeout is read-only.',
+          report: '# PatchPilot Final Acceptance Completion Closeout',
+          generatedAt: '2026-06-29T06:00:00Z',
+          archivedAt: '2026-06-29T06:30:00Z'
+        }
+      ],
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const archives = await listDemoFinalAcceptanceCompletionCloseoutArchives();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-acceptance-completion-closeout/archives');
+  expect(archives).toHaveLength(1);
+  expect(archives[0].id).toBe('final-acceptance-completion-closeout-archive-1');
+});
+
+test('downloads final acceptance completion closeout archive report through backend API', async () => {
+  const reportBlob = new Blob(['# PatchPilot Final Acceptance Completion Closeout'], {
+    type: 'text/markdown;charset=UTF-8'
+  });
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    blob: async () => reportBlob
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const downloadedReport =
+    await downloadDemoFinalAcceptanceCompletionCloseoutArchiveReport('closeout/archive 1');
+
+  expect(fetchMock).toHaveBeenCalledWith(
+    '/api/demo/final-acceptance-completion-closeout/archives/closeout%2Farchive%201/report/download'
+  );
   expect(downloadedReport).toBe(reportBlob);
 });
 

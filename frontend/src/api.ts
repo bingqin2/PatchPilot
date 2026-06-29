@@ -10,6 +10,7 @@ import type {
   DemoEvidenceBundle,
   DemoAcceptanceSummary,
   DemoFinalAcceptanceCompletionArchive,
+  DemoFinalAcceptanceCompletionCloseoutArchive,
   DemoFinalAcceptanceCompletionCloseout,
   DemoFinalAcceptanceCompletionEvidenceBundle,
   DemoFinalAcceptanceCompletionEvidenceDeliveryFinalization,
@@ -344,6 +345,24 @@ export async function getDemoFinalAcceptanceCompletionCloseout(): Promise<DemoFi
 
 export async function downloadDemoFinalAcceptanceCompletionCloseoutReport(): Promise<Blob> {
   return getBlobApi('/api/demo/final-acceptance-completion-closeout/report/download');
+}
+
+export async function archiveDemoFinalAcceptanceCompletionCloseout(): Promise<DemoFinalAcceptanceCompletionCloseoutArchive> {
+  return postApi<DemoFinalAcceptanceCompletionCloseoutArchive>(
+    '/api/demo/final-acceptance-completion-closeout/archives'
+  );
+}
+
+export async function listDemoFinalAcceptanceCompletionCloseoutArchives(): Promise<DemoFinalAcceptanceCompletionCloseoutArchive[]> {
+  return getApi<DemoFinalAcceptanceCompletionCloseoutArchive[]>(
+    '/api/demo/final-acceptance-completion-closeout/archives'
+  );
+}
+
+export async function downloadDemoFinalAcceptanceCompletionCloseoutArchiveReport(archiveId: string): Promise<Blob> {
+  return getBlobApi(
+    `/api/demo/final-acceptance-completion-closeout/archives/${encodeURIComponent(archiveId)}/report/download`
+  );
 }
 
 export async function createDemoFinalAcceptanceCompletionEvidenceDeliveryReceipt(

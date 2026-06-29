@@ -4,6 +4,7 @@ import io.patchpilot.backend.common.response.ApiResponse;
 import io.patchpilot.backend.demo.domain.DemoAcceptanceSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionArchiveVo;
+import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionCloseoutArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionCloseoutVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionEvidenceDeliveryFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionEvidenceDeliveryReceiptVo;
@@ -102,6 +103,7 @@ public class DemoReadinessController {
     private final DemoFinalAcceptanceCompletionEvidenceDeliveryReceiptService demoFinalAcceptanceCompletionEvidenceDeliveryReceiptService;
     private final DemoFinalAcceptanceCompletionEvidenceDeliveryFinalizationService demoFinalAcceptanceCompletionEvidenceDeliveryFinalizationService;
     private final DemoFinalAcceptanceCompletionCloseoutService demoFinalAcceptanceCompletionCloseoutService;
+    private final DemoFinalAcceptanceCompletionCloseoutArchiveService demoFinalAcceptanceCompletionCloseoutArchiveService;
     private final DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
     private final DemoReadinessSnapshotTrendService demoReadinessSnapshotTrendService;
     private final DemoLaunchPreflightService demoLaunchPreflightService;
@@ -601,6 +603,18 @@ public class DemoReadinessController {
         );
     }
 
+    @GetMapping(value = "/final-acceptance-completion-closeout/archives/{archiveId}/report/download", produces = "text/markdown;charset=UTF-8")
+    public ResponseEntity<String> downloadArchivedFinalAcceptanceCompletionCloseoutReport(
+            @PathVariable String archiveId
+    ) {
+        return demoFinalAcceptanceCompletionCloseoutArchiveService.findArchive(archiveId)
+                .map(archive -> markdownAttachment(
+                        "patchpilot-final-acceptance-completion-closeout-" + safeFilenamePart(archive.id()) + ".md",
+                        archive.report()
+                ))
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
     @GetMapping(value = "/final-acceptance-completion-archives/{archiveId}/report/download", produces = "text/markdown;charset=UTF-8")
     public ResponseEntity<String> downloadArchivedFinalAcceptanceCompletionReport(@PathVariable String archiveId) {
         return demoFinalAcceptanceCompletionArchiveService.findArchive(archiveId)
@@ -714,6 +728,32 @@ public class DemoReadinessController {
                         archive.report()
                 ))
                 .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/final-acceptance-completion-closeout/archives")
+    public ResponseEntity<ApiResponse<DemoFinalAcceptanceCompletionCloseoutArchiveVo>> archiveFinalAcceptanceCompletionCloseout() {
+        try {
+            DemoFinalAcceptanceCompletionCloseoutArchiveVo archive =
+                    demoFinalAcceptanceCompletionCloseoutArchiveService.archiveCurrentCloseout();
+            operatorSafetyAuditService.recordSafetyAudit(new RecordOperatorSafetyAuditCommand(
+                    "DEMO_FINAL_ACCEPTANCE_COMPLETION_CLOSEOUT_ARCHIVED",
+                    "DEMO_FINAL_ACCEPTANCE_COMPLETION_CLOSEOUT_ARCHIVE",
+                    archive.id(),
+                    TriggerQuarantineScope.REPOSITORY,
+                    "patchpilot/local-demo",
+                    "admin-api",
+                    "Archived final acceptance completion closeout "
+                            + archive.latestCompletionEvidenceDeliveryReceiptId()
+            ));
+            return ResponseEntity.ok(ApiResponse.ok(archive));
+        } catch (IllegalStateException exception) {
+            return ResponseEntity.badRequest().body(ApiResponse.fail(exception.getMessage()));
+        }
+    }
+
+    @GetMapping("/final-acceptance-completion-closeout/archives")
+    public ApiResponse<List<DemoFinalAcceptanceCompletionCloseoutArchiveVo>> listFinalAcceptanceCompletionCloseoutArchives() {
+        return ApiResponse.ok(demoFinalAcceptanceCompletionCloseoutArchiveService.listRecentArchives());
     }
 
     @PostMapping("/launch-evidence-share-delivery-receipts")

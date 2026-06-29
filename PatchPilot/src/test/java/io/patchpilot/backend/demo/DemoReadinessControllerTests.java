@@ -8,6 +8,7 @@ import io.patchpilot.backend.demo.domain.DemoEvidenceBundleSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
 import io.patchpilot.backend.demo.domain.DemoEvaluationRunReadinessEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionArchiveVo;
+import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionCloseoutArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionCloseoutVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionEvidenceDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionEvidenceDeliveryFinalizationVo;
@@ -204,6 +205,9 @@ class DemoReadinessControllerTests {
 
     @MockitoBean
     private DemoFinalAcceptanceCompletionCloseoutService demoFinalAcceptanceCompletionCloseoutService;
+
+    @MockitoBean
+    private DemoFinalAcceptanceCompletionCloseoutArchiveService demoFinalAcceptanceCompletionCloseoutArchiveService;
 
     @MockitoBean
     private DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
@@ -994,6 +998,88 @@ class DemoReadinessControllerTests {
                 .andExpect(content().string(containsString(
                         "final-acceptance-completion-evidence-delivery-receipt-1"
                 )));
+    }
+
+    @Test
+    void should_archive_final_acceptance_completion_closeout_and_record_audit() throws Exception {
+        when(demoFinalAcceptanceCompletionCloseoutArchiveService.archiveCurrentCloseout())
+                .thenReturn(finalAcceptanceCompletionCloseoutArchive());
+
+        mockMvc.perform(post("/api/demo/final-acceptance-completion-closeout/archives"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value("final-acceptance-completion-closeout-archive-1"))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.closed").value(true))
+                .andExpect(jsonPath("$.data.latestTaskId").value("task-1"))
+                .andExpect(jsonPath("$.data.latestPullRequestUrl").value("https://github.com/bingqin2/PatchPilot/pull/8"))
+                .andExpect(jsonPath("$.data.latestCompletionArchiveId").value("final-acceptance-completion-archive-1"))
+                .andExpect(jsonPath("$.data.latestCompletionEvidenceDeliveryReceiptId")
+                        .value("final-acceptance-completion-evidence-delivery-receipt-1"))
+                .andExpect(jsonPath("$.data.deliveryReceiptFreshness").value("FRESH"))
+                .andExpect(jsonPath("$.data.report").value(containsString(
+                        "# PatchPilot Final Acceptance Completion Closeout"
+                )));
+
+        verify(operatorSafetyAuditService).recordSafetyAudit(argThat(command ->
+                command.action().equals("DEMO_FINAL_ACCEPTANCE_COMPLETION_CLOSEOUT_ARCHIVED")
+                        && command.resourceType().equals("DEMO_FINAL_ACCEPTANCE_COMPLETION_CLOSEOUT_ARCHIVE")
+                        && command.resourceId().equals("final-acceptance-completion-closeout-archive-1")
+                        && command.reason().contains("final-acceptance-completion-evidence-delivery-receipt-1")
+        ));
+    }
+
+    @Test
+    void should_reject_final_acceptance_completion_closeout_archive_when_closeout_is_not_ready() throws Exception {
+        when(demoFinalAcceptanceCompletionCloseoutArchiveService.archiveCurrentCloseout())
+                .thenThrow(new IllegalStateException("final acceptance completion closeout is not ready"));
+
+        mockMvc.perform(post("/api/demo/final-acceptance-completion-closeout/archives"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("final acceptance completion closeout is not ready"));
+    }
+
+    @Test
+    void should_list_final_acceptance_completion_closeout_archives() throws Exception {
+        when(demoFinalAcceptanceCompletionCloseoutArchiveService.listRecentArchives())
+                .thenReturn(List.of(finalAcceptanceCompletionCloseoutArchive()));
+
+        mockMvc.perform(get("/api/demo/final-acceptance-completion-closeout/archives"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].id").value("final-acceptance-completion-closeout-archive-1"))
+                .andExpect(jsonPath("$.data[0].archivedAt").value("2026-06-29T06:30:00Z"));
+    }
+
+    @Test
+    void should_download_archived_final_acceptance_completion_closeout_report() throws Exception {
+        when(demoFinalAcceptanceCompletionCloseoutArchiveService.findArchive(
+                "final-acceptance-completion-closeout-archive-1"
+        )).thenReturn(Optional.of(finalAcceptanceCompletionCloseoutArchive()));
+
+        mockMvc.perform(get("/api/demo/final-acceptance-completion-closeout/archives/final-acceptance-completion-closeout-archive-1/report/download"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString(
+                        "patchpilot-final-acceptance-completion-closeout-final-acceptance-completion-closeout-archive-1.md"
+                )))
+                .andExpect(content().contentType("text/markdown;charset=UTF-8"))
+                .andExpect(content().string(containsString(
+                        "# PatchPilot Final Acceptance Completion Closeout"
+                )))
+                .andExpect(content().string(containsString(
+                        "final-acceptance-completion-evidence-delivery-receipt-1"
+                )));
+    }
+
+    @Test
+    void should_return_not_found_when_final_acceptance_completion_closeout_archive_is_missing() throws Exception {
+        when(demoFinalAcceptanceCompletionCloseoutArchiveService.findArchive("missing"))
+                .thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/api/demo/final-acceptance-completion-closeout/archives/missing/report/download"))
+                .andExpect(status().isNotFound());
     }
 
     @Test
@@ -3891,6 +3977,32 @@ class DemoReadinessControllerTests {
                 "# PatchPilot Final Acceptance Completion Closeout\n\n"
                         + "- Latest completion evidence delivery receipt: `final-acceptance-completion-evidence-delivery-receipt-1`\n",
                 Instant.parse("2026-06-29T06:00:00Z")
+        );
+    }
+
+    private static DemoFinalAcceptanceCompletionCloseoutArchiveVo finalAcceptanceCompletionCloseoutArchive() {
+        return new DemoFinalAcceptanceCompletionCloseoutArchiveVo(
+                "final-acceptance-completion-closeout-archive-1",
+                DemoReadinessStatus.READY,
+                true,
+                "PatchPilot final acceptance completion is closed with accepted certificates, finalized sharing, and fresh completion delivery proof.",
+                "Use this closeout report as the final external-review completion record.",
+                "task-1",
+                "https://github.com/bingqin2/PatchPilot/pull/8",
+                "final-acceptance-share-package-archive-1",
+                "final-acceptance-completion-archive-1",
+                "final-acceptance-completion-evidence-delivery-receipt-1",
+                "reviewer@example.com",
+                "email",
+                "2026-06-29T04:25:00Z",
+                "FRESH",
+                List.of("Final demo acceptance summary is accepted."),
+                List.of("Download final acceptance completion closeout report."),
+                "GET /api/demo/final-acceptance-completion-closeout is read-only.",
+                "# PatchPilot Final Acceptance Completion Closeout\n\n"
+                        + "- Latest completion evidence delivery receipt: `final-acceptance-completion-evidence-delivery-receipt-1`\n",
+                Instant.parse("2026-06-29T06:00:00Z"),
+                Instant.parse("2026-06-29T06:30:00Z")
         );
     }
 }
