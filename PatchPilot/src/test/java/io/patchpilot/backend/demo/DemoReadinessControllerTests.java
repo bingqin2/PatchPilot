@@ -12,6 +12,7 @@ import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionCloseoutAr
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionCloseoutVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionEvidenceDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionEvidenceDeliveryFinalizationVo;
+import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewDeliveryCertificateVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageDeliveryFinalizationVo;
@@ -230,6 +231,9 @@ class DemoReadinessControllerTests {
     @MockitoBean
     private DemoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveService
             demoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveService;
+
+    @MockitoBean
+    private DemoFinalExternalReviewDeliveryCertificateService demoFinalExternalReviewDeliveryCertificateService;
 
     @MockitoBean
     private DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
@@ -1250,6 +1254,50 @@ class DemoReadinessControllerTests {
 
         mockMvc.perform(get("/api/demo/final-external-review-evidence-package/delivery-finalization/archives/missing/report/download"))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void should_return_final_external_review_delivery_certificate() throws Exception {
+        when(demoFinalExternalReviewDeliveryCertificateService.getCertificate())
+                .thenReturn(finalExternalReviewDeliveryCertificate());
+
+        mockMvc.perform(get("/api/demo/final-external-review-delivery-certificate"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.certified").value(true))
+                .andExpect(jsonPath("$.data.summary")
+                        .value("Final external-review delivery is certified from the latest finalized archive."))
+                .andExpect(jsonPath("$.data.latestDeliveryFinalizationArchiveId")
+                        .value("final-external-review-package-delivery-finalization-archive-1"))
+                .andExpect(jsonPath("$.data.latestDeliveryReceiptId")
+                        .value("final-external-review-package-delivery-receipt-1"))
+                .andExpect(jsonPath("$.data.deliveryReceiptFreshness").value("FRESH"))
+                .andExpect(jsonPath("$.data.downloadActions").value(hasItem(
+                        "Download final external-review delivery certificate report."
+                )))
+                .andExpect(jsonPath("$.data.markdownReport").value(containsString(
+                        "# PatchPilot Final External Review Delivery Certificate"
+                )));
+    }
+
+    @Test
+    void should_download_final_external_review_delivery_certificate_report() throws Exception {
+        when(demoFinalExternalReviewDeliveryCertificateService.getCertificate())
+                .thenReturn(finalExternalReviewDeliveryCertificate());
+
+        mockMvc.perform(get("/api/demo/final-external-review-delivery-certificate/report/download"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString(
+                        "patchpilot-final-external-review-delivery-certificate.md"
+                )))
+                .andExpect(content().contentType("text/markdown;charset=UTF-8"))
+                .andExpect(content().string(containsString(
+                        "# PatchPilot Final External Review Delivery Certificate"
+                )))
+                .andExpect(content().string(containsString(
+                        "final-external-review-package-delivery-receipt-1"
+                )));
     }
 
     @Test
@@ -4566,6 +4614,44 @@ class DemoReadinessControllerTests {
                         + "- Latest package delivery receipt: `final-external-review-package-delivery-receipt-1`\n",
                 Instant.parse("2026-06-29T10:00:00Z"),
                 Instant.parse("2026-06-29T10:30:00Z")
+        );
+    }
+
+    private static DemoFinalExternalReviewDeliveryCertificateVo finalExternalReviewDeliveryCertificate() {
+        return new DemoFinalExternalReviewDeliveryCertificateVo(
+                DemoReadinessStatus.READY,
+                true,
+                "Final external-review delivery is certified from the latest finalized archive.",
+                "Share the certificate report with reviewers as the final external-review delivery proof.",
+                "final-external-review-package-delivery-finalization-archive-1",
+                "final-external-review-package-archive-1",
+                "final-external-review-package-delivery-receipt-1",
+                "task-1",
+                "https://github.com/bingqin2/PatchPilot/pull/8",
+                "reviewer@example.com",
+                "email",
+                "2026-06-29T09:25:00Z",
+                Instant.parse("2026-06-29T10:30:00Z"),
+                "FRESH",
+                true,
+                List.of(new DemoFinalExternalReviewDeliveryCertificateVo.Check(
+                        "Final external-review delivery finalization archive",
+                        DemoReadinessStatus.READY,
+                        "Latest final external-review delivery finalization archive is finalized.",
+                        "No action needed."
+                )),
+                List.of(
+                        "Final external-review delivery finalization archive final-external-review-package-delivery-finalization-archive-1 is finalized.",
+                        "Fresh delivery receipt final-external-review-package-delivery-receipt-1 proves the frozen package was delivered."
+                ),
+                List.of(
+                        "Download final external-review delivery certificate report.",
+                        "Download final external-review package delivery finalization archive final-external-review-package-delivery-finalization-archive-1."
+                ),
+                "GET /api/demo/final-external-review-delivery-certificate is read-only.",
+                "# PatchPilot Final External Review Delivery Certificate\n\n"
+                        + "- Delivery receipt: `final-external-review-package-delivery-receipt-1`\n",
+                Instant.parse("2026-06-29T11:00:00Z")
         );
     }
 }

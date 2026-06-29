@@ -2922,6 +2922,40 @@ const demoFinalExternalReviewEvidencePackageDeliveryReceipt = {
   markdownReport: '# PatchPilot Final External Review Package Delivery Receipt'
 };
 
+const demoFinalExternalReviewDeliveryCertificate = {
+  status: 'READY',
+  certified: true,
+  summary: 'Final external-review delivery is certified from the latest finalized archive.',
+  nextAction: 'Use this certificate as the final external-review delivery proof.',
+  latestDeliveryFinalizationArchiveId: 'final-external-review-package-delivery-finalization-archive-1',
+  latestPackageArchiveId: 'final-external-review-package-archive-1',
+  latestDeliveryReceiptId: 'final-external-review-package-delivery-receipt-1',
+  latestTaskId: 'task-1',
+  latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+  latestDeliveryTarget: 'reviewer@example.com',
+  latestDeliveryChannel: 'email',
+  latestDeliveredAt: '2026-06-29T07:20:00Z',
+  latestArchivedAt: '2026-06-29T10:05:00Z',
+  deliveryReceiptFreshness: 'FRESH',
+  deliveryReceiptFresh: true,
+  checks: [
+    {
+      name: 'Finalized external-review delivery archive',
+      status: 'READY',
+      summary: 'Latest external-review delivery finalization archive is READY and finalized.',
+      nextAction: 'No action needed.'
+    }
+  ],
+  evidenceNotes: [
+    'Final external-review delivery archive final-external-review-package-delivery-finalization-archive-1 is certified.'
+  ],
+  downloadActions: ['Download final external-review delivery certificate report.'],
+  sideEffectContract:
+    'GET /api/demo/final-external-review-delivery-certificate is read-only: it does not create tasks, call the model, run tests, archive records, record receipts, mutate Git, send messages, or write to GitHub.',
+  markdownReport: '# PatchPilot Final External Review Delivery Certificate',
+  generatedAt: '2026-06-29T10:10:00Z'
+};
+
 const demoLaunchEvidenceDeliveryReceipt = {
   id: 'launch-delivery-receipt-1',
   status: 'READY',
@@ -3271,6 +3305,18 @@ beforeEach(() => {
         ok: true,
         status: 200,
         blob: async () => new Blob(['# PatchPilot Final External Review Evidence Package'], {
+          type: 'text/markdown;charset=UTF-8'
+        })
+      } as Response);
+    }
+    if (url === '/api/demo/final-external-review-delivery-certificate') {
+      return jsonResponse(demoFinalExternalReviewDeliveryCertificate);
+    }
+    if (url === '/api/demo/final-external-review-delivery-certificate/report/download') {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        blob: async () => new Blob(['# PatchPilot Final External Review Delivery Certificate'], {
           type: 'text/markdown;charset=UTF-8'
         })
       } as Response);
@@ -4399,6 +4445,9 @@ test('renders operational task dashboard from backend APIs', async () => {
     expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-external-review-evidence-package/delivery-receipts')
   );
   await waitFor(() =>
+    expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-external-review-delivery-certificate')
+  );
+  await waitFor(() =>
     expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-acceptance-completion-evidence-delivery-receipts')
   );
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/github/credential-readiness'));
@@ -4438,15 +4487,21 @@ test('renders operational task dashboard from backend APIs', async () => {
     'PatchPilot final external-review evidence package is ready.'
   )).not.toHaveLength(0);
   expect(within(acceptancePanel).getByRole('heading', {
+    name: 'Final external-review delivery certificate'
+  })).toBeInTheDocument();
+  expect(within(acceptancePanel).getByText(
+    'Final external-review delivery is certified from the latest finalized archive.'
+  )).toBeInTheDocument();
+  expect(within(acceptancePanel).getByRole('heading', {
     name: 'Archived final external-review packages'
   })).toBeInTheDocument();
   expect(within(acceptancePanel).getByText('final-external-review-package-archive-1')).toBeInTheDocument();
   expect(within(acceptancePanel).getByRole('heading', {
     name: 'Final external-review package delivery receipts'
   })).toBeInTheDocument();
-  expect(within(acceptancePanel).getByText(
+  expect(within(acceptancePanel).getAllByText(
     'final-external-review-package-delivery-receipt-1'
-  )).toBeInTheDocument();
+  ).length).toBeGreaterThan(0);
   expect(within(acceptancePanel).getAllByText(
     'Frozen closeout archive final-acceptance-completion-closeout-archive-1 is READY and closed.'
   )).not.toHaveLength(0);
@@ -7203,6 +7258,9 @@ function defaultAppResponse(input: RequestInfo | URL, init?: RequestInit) {
   }
   if (url === '/api/demo/final-external-review-evidence-package/delivery-receipts') {
     return jsonResponse([demoFinalExternalReviewEvidencePackageDeliveryReceipt]);
+  }
+  if (url === '/api/demo/final-external-review-delivery-certificate') {
+    return jsonResponse(demoFinalExternalReviewDeliveryCertificate);
   }
   if (
     url ===

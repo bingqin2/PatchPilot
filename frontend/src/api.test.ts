@@ -77,7 +77,9 @@ import {
   listDemoFinalExternalReviewEvidencePackageDeliveryReceipts,
   downloadDemoFinalExternalReviewEvidencePackageDeliveryReceiptReport,
   getDemoFinalExternalReviewEvidencePackageDeliveryFinalization,
+  getDemoFinalExternalReviewDeliveryCertificate,
   downloadDemoFinalExternalReviewEvidencePackageDeliveryFinalizationReport,
+  downloadDemoFinalExternalReviewDeliveryCertificateReport,
   archiveDemoFinalExternalReviewEvidencePackageDeliveryFinalization,
   listDemoFinalExternalReviewEvidencePackageDeliveryFinalizationArchives,
   downloadDemoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveReport,
@@ -2089,6 +2091,75 @@ test('downloads final external-review package delivery finalization archive repo
 
   expect(fetchMock).toHaveBeenCalledWith(
     '/api/demo/final-external-review-evidence-package/delivery-finalization/archives/finalization%2Farchive%201/report/download'
+  );
+  expect(downloadedReport).toBe(reportBlob);
+});
+
+test('fetches final external-review delivery certificate through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        status: 'READY',
+        certified: true,
+        summary: 'Final external-review delivery is certified from the latest finalized archive.',
+        nextAction: 'Use this certificate as the final external-review delivery proof.',
+        latestDeliveryFinalizationArchiveId: 'final-external-review-package-delivery-finalization-archive-1',
+        latestPackageArchiveId: 'final-external-review-package-archive-1',
+        latestDeliveryReceiptId: 'final-external-review-package-delivery-receipt-1',
+        latestTaskId: 'task-8',
+        latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+        latestDeliveryTarget: 'reviewer@example.com',
+        latestDeliveryChannel: 'email',
+        latestDeliveredAt: '2026-06-29T07:20:00Z',
+        latestArchivedAt: '2026-06-29T10:05:00Z',
+        deliveryReceiptFreshness: 'FRESH',
+        deliveryReceiptFresh: true,
+        checks: [
+          {
+            name: 'Finalized external-review delivery archive',
+            status: 'READY',
+            summary: 'Latest external-review delivery finalization archive is READY and finalized.',
+            nextAction: 'No action needed.'
+          }
+        ],
+        evidenceNotes: ['Final external-review delivery archive final-external-review-package-delivery-finalization-archive-1 is certified.'],
+        downloadActions: ['Download final external-review delivery certificate report.'],
+        sideEffectContract:
+          'GET /api/demo/final-external-review-delivery-certificate is read-only.',
+        markdownReport: '# PatchPilot Final External Review Delivery Certificate',
+        generatedAt: '2026-06-29T10:10:00Z'
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const certificate = await getDemoFinalExternalReviewDeliveryCertificate();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-external-review-delivery-certificate');
+  expect(certificate.certified).toBe(true);
+  expect(certificate.latestDeliveryFinalizationArchiveId)
+    .toBe('final-external-review-package-delivery-finalization-archive-1');
+});
+
+test('downloads final external-review delivery certificate report through backend API', async () => {
+  const reportBlob = new Blob(['# PatchPilot Final External Review Delivery Certificate'], {
+    type: 'text/markdown;charset=UTF-8'
+  });
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    blob: async () => reportBlob
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const downloadedReport = await downloadDemoFinalExternalReviewDeliveryCertificateReport();
+
+  expect(fetchMock).toHaveBeenCalledWith(
+    '/api/demo/final-external-review-delivery-certificate/report/download'
   );
   expect(downloadedReport).toBe(reportBlob);
 });
