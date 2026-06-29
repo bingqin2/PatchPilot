@@ -10,6 +10,7 @@ import type {
   DemoFinalAcceptanceCompletionEvidenceDeliveryReceipt,
   DemoFinalAcceptanceCompletionEvidenceDeliveryReceiptInput,
   DemoFinalExternalReviewEvidencePackageArchive,
+  DemoFinalExternalReviewEvidencePackageDeliveryFinalizationArchive,
   DemoFinalExternalReviewEvidencePackageDeliveryFinalization,
   DemoFinalExternalReviewEvidencePackageDeliveryReceipt,
   DemoFinalExternalReviewEvidencePackageDeliveryReceiptInput,
@@ -40,6 +41,8 @@ interface DemoAcceptanceSummaryPanelProps {
   finalExternalReviewEvidencePackageDeliveryReceipts?: DemoFinalExternalReviewEvidencePackageDeliveryReceipt[];
   finalExternalReviewEvidencePackageDeliveryFinalization?:
     DemoFinalExternalReviewEvidencePackageDeliveryFinalization | null;
+  finalExternalReviewEvidencePackageDeliveryFinalizationArchives?:
+    DemoFinalExternalReviewEvidencePackageDeliveryFinalizationArchive[];
   error: string | null;
   sharePackageError: string | null;
   sharePackageArchiveError: string | null;
@@ -55,6 +58,7 @@ interface DemoAcceptanceSummaryPanelProps {
   finalExternalReviewEvidencePackageArchiveError?: string | null;
   finalExternalReviewEvidencePackageDeliveryReceiptError?: string | null;
   finalExternalReviewEvidencePackageDeliveryFinalizationError?: string | null;
+  finalExternalReviewEvidencePackageDeliveryFinalizationArchiveError?: string | null;
   onDownloadReport: () => Promise<Blob>;
   onDownloadSharePackageReport: () => Promise<Blob>;
   onArchiveSharePackage: () => Promise<DemoFinalAcceptanceSharePackageArchive>;
@@ -83,6 +87,12 @@ interface DemoAcceptanceSummaryPanelProps {
   ) => Promise<DemoFinalExternalReviewEvidencePackageDeliveryReceipt>;
   onDownloadFinalExternalReviewEvidencePackageDeliveryReceiptReport?: (receiptId: string) => Promise<Blob>;
   onDownloadFinalExternalReviewEvidencePackageDeliveryFinalizationReport?: () => Promise<Blob>;
+  onArchiveFinalExternalReviewEvidencePackageDeliveryFinalization?: () => Promise<
+    DemoFinalExternalReviewEvidencePackageDeliveryFinalizationArchive
+  >;
+  onDownloadFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveReport?: (
+    archiveId: string
+  ) => Promise<Blob>;
 }
 
 export function DemoAcceptanceSummaryPanel({
@@ -101,6 +111,7 @@ export function DemoAcceptanceSummaryPanel({
   finalExternalReviewEvidencePackageArchives = [],
   finalExternalReviewEvidencePackageDeliveryReceipts = [],
   finalExternalReviewEvidencePackageDeliveryFinalization = null,
+  finalExternalReviewEvidencePackageDeliveryFinalizationArchives = [],
   error,
   sharePackageError,
   sharePackageArchiveError,
@@ -116,6 +127,7 @@ export function DemoAcceptanceSummaryPanel({
   finalExternalReviewEvidencePackageArchiveError = null,
   finalExternalReviewEvidencePackageDeliveryReceiptError = null,
   finalExternalReviewEvidencePackageDeliveryFinalizationError = null,
+  finalExternalReviewEvidencePackageDeliveryFinalizationArchiveError = null,
   onDownloadReport,
   onDownloadSharePackageReport,
   onArchiveSharePackage,
@@ -137,7 +149,9 @@ export function DemoAcceptanceSummaryPanel({
   onDownloadFinalExternalReviewEvidencePackageArchiveReport,
   onCreateFinalExternalReviewEvidencePackageDeliveryReceipt,
   onDownloadFinalExternalReviewEvidencePackageDeliveryReceiptReport,
-  onDownloadFinalExternalReviewEvidencePackageDeliveryFinalizationReport
+  onDownloadFinalExternalReviewEvidencePackageDeliveryFinalizationReport,
+  onArchiveFinalExternalReviewEvidencePackageDeliveryFinalization,
+  onDownloadFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveReport
 }: DemoAcceptanceSummaryPanelProps) {
   const [downloadStatus, setDownloadStatus] = useState<string | null>(null);
   const [sharePackageCopyStatus, setSharePackageCopyStatus] = useState<string | null>(null);
@@ -183,6 +197,14 @@ export function DemoAcceptanceSummaryPanel({
   const [
     finalExternalReviewEvidencePackageDeliveryFinalizationDownloadStatus,
     setFinalExternalReviewEvidencePackageDeliveryFinalizationDownloadStatus
+  ] = useState<string | null>(null);
+  const [
+    finalExternalReviewEvidencePackageDeliveryFinalizationArchiveStatus,
+    setFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveStatus
+  ] = useState<string | null>(null);
+  const [
+    finalExternalReviewEvidencePackageDeliveryFinalizationArchiveDownloadStatus,
+    setFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveDownloadStatus
   ] = useState<string | null>(null);
   const [deliveryChannel, setDeliveryChannel] = useState('email');
   const [deliveryTarget, setDeliveryTarget] = useState('');
@@ -409,6 +431,44 @@ export function DemoAcceptanceSummaryPanel({
     } catch {
       setFinalExternalReviewEvidencePackageDeliveryFinalizationDownloadStatus(
         'Final external-review package delivery finalization report download failed'
+      );
+    }
+  }
+
+  async function archiveFinalExternalReviewEvidencePackageDeliveryFinalization() {
+    if (!onArchiveFinalExternalReviewEvidencePackageDeliveryFinalization) {
+      return;
+    }
+    try {
+      await onArchiveFinalExternalReviewEvidencePackageDeliveryFinalization();
+      setFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveStatus(
+        'Final external-review package delivery finalization archived'
+      );
+    } catch {
+      setFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveStatus(
+        'Final external-review package delivery finalization archive failed'
+      );
+    }
+  }
+
+  async function downloadFinalExternalReviewEvidencePackageDeliveryFinalizationArchive(
+    archive: DemoFinalExternalReviewEvidencePackageDeliveryFinalizationArchive
+  ) {
+    if (!onDownloadFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveReport) {
+      return;
+    }
+    try {
+      const report = await onDownloadFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveReport(archive.id);
+      downloadMarkdown(
+        report,
+        `patchpilot-final-external-review-package-delivery-finalization-${archive.id}.md`
+      );
+      setFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveDownloadStatus(
+        'Final external-review package delivery finalization archive downloaded'
+      );
+    } catch {
+      setFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveDownloadStatus(
+        'Final external-review package delivery finalization archive download failed'
       );
     }
   }
@@ -708,16 +768,22 @@ export function DemoAcceptanceSummaryPanel({
             archives={finalExternalReviewEvidencePackageArchives}
             deliveryReceipts={finalExternalReviewEvidencePackageDeliveryReceipts}
             deliveryFinalization={finalExternalReviewEvidencePackageDeliveryFinalization}
+            deliveryFinalizationArchives={finalExternalReviewEvidencePackageDeliveryFinalizationArchives}
             error={finalExternalReviewEvidencePackageError}
             archiveError={finalExternalReviewEvidencePackageArchiveError}
             deliveryReceiptError={finalExternalReviewEvidencePackageDeliveryReceiptError}
             deliveryFinalizationError={finalExternalReviewEvidencePackageDeliveryFinalizationError}
+            deliveryFinalizationArchiveError={finalExternalReviewEvidencePackageDeliveryFinalizationArchiveError}
             downloadStatus={finalExternalReviewEvidencePackageDownloadStatus}
             archiveStatus={finalExternalReviewEvidencePackageArchiveStatus}
             archiveDownloadStatus={finalExternalReviewEvidencePackageArchiveDownloadStatus}
             deliveryReceiptStatus={finalExternalReviewEvidencePackageDeliveryReceiptStatus}
             deliveryReceiptDownloadStatus={finalExternalReviewEvidencePackageDeliveryReceiptDownloadStatus}
             deliveryFinalizationDownloadStatus={finalExternalReviewEvidencePackageDeliveryFinalizationDownloadStatus}
+            deliveryFinalizationArchiveStatus={finalExternalReviewEvidencePackageDeliveryFinalizationArchiveStatus}
+            deliveryFinalizationArchiveDownloadStatus={
+              finalExternalReviewEvidencePackageDeliveryFinalizationArchiveDownloadStatus
+            }
             deliveryChannel={finalExternalReviewPackageDeliveryChannel}
             deliveryTarget={finalExternalReviewPackageDeliveryTarget}
             operator={finalExternalReviewPackageDeliveryOperator}
@@ -732,6 +798,10 @@ export function DemoAcceptanceSummaryPanel({
             onCreateDeliveryReceipt={() => void createFinalExternalReviewEvidencePackageDeliveryReceipt()}
             onDownloadDeliveryReceipt={(receipt) => void downloadFinalExternalReviewEvidencePackageDeliveryReceipt(receipt)}
             onDownloadDeliveryFinalization={() => void downloadFinalExternalReviewEvidencePackageDeliveryFinalization()}
+            onArchiveDeliveryFinalization={() => void archiveFinalExternalReviewEvidencePackageDeliveryFinalization()}
+            onDownloadDeliveryFinalizationArchive={(archive) => (
+              void downloadFinalExternalReviewEvidencePackageDeliveryFinalizationArchive(archive)
+            )}
           />
         </>
       ) : (
@@ -746,16 +816,20 @@ interface FinalExternalReviewEvidencePackageProps {
   archives: DemoFinalExternalReviewEvidencePackageArchive[];
   deliveryReceipts: DemoFinalExternalReviewEvidencePackageDeliveryReceipt[];
   deliveryFinalization: DemoFinalExternalReviewEvidencePackageDeliveryFinalization | null;
+  deliveryFinalizationArchives: DemoFinalExternalReviewEvidencePackageDeliveryFinalizationArchive[];
   error: string | null;
   archiveError: string | null;
   deliveryReceiptError: string | null;
   deliveryFinalizationError: string | null;
+  deliveryFinalizationArchiveError: string | null;
   downloadStatus: string | null;
   archiveStatus: string | null;
   archiveDownloadStatus: string | null;
   deliveryReceiptStatus: string | null;
   deliveryReceiptDownloadStatus: string | null;
   deliveryFinalizationDownloadStatus: string | null;
+  deliveryFinalizationArchiveStatus: string | null;
+  deliveryFinalizationArchiveDownloadStatus: string | null;
   deliveryChannel: string;
   deliveryTarget: string;
   operator: string;
@@ -770,6 +844,10 @@ interface FinalExternalReviewEvidencePackageProps {
   onCreateDeliveryReceipt: () => void;
   onDownloadDeliveryReceipt: (receipt: DemoFinalExternalReviewEvidencePackageDeliveryReceipt) => void;
   onDownloadDeliveryFinalization: () => void;
+  onArchiveDeliveryFinalization: () => void;
+  onDownloadDeliveryFinalizationArchive: (
+    archive: DemoFinalExternalReviewEvidencePackageDeliveryFinalizationArchive
+  ) => void;
 }
 
 function FinalExternalReviewEvidencePackage({
@@ -777,16 +855,20 @@ function FinalExternalReviewEvidencePackage({
   archives,
   deliveryReceipts,
   deliveryFinalization,
+  deliveryFinalizationArchives,
   error,
   archiveError,
   deliveryReceiptError,
   deliveryFinalizationError,
+  deliveryFinalizationArchiveError,
   downloadStatus,
   archiveStatus,
   archiveDownloadStatus,
   deliveryReceiptStatus,
   deliveryReceiptDownloadStatus,
   deliveryFinalizationDownloadStatus,
+  deliveryFinalizationArchiveStatus,
+  deliveryFinalizationArchiveDownloadStatus,
   deliveryChannel,
   deliveryTarget,
   operator,
@@ -800,7 +882,9 @@ function FinalExternalReviewEvidencePackage({
   onDeliveryNotesChange,
   onCreateDeliveryReceipt,
   onDownloadDeliveryReceipt,
-  onDownloadDeliveryFinalization
+  onDownloadDeliveryFinalization,
+  onArchiveDeliveryFinalization,
+  onDownloadDeliveryFinalizationArchive
 }: FinalExternalReviewEvidencePackageProps) {
   return (
     <div className="demo-session-handoff-checks">
@@ -854,6 +938,12 @@ function FinalExternalReviewEvidencePackage({
         <div className="adapter-api-error">
           <strong>Final external-review package delivery finalization unavailable</strong>
           <span>{deliveryFinalizationError}</span>
+        </div>
+      ) : null}
+      {deliveryFinalizationArchiveError ? (
+        <div className="adapter-api-error">
+          <strong>Final external-review package delivery finalization archives unavailable</strong>
+          <span>{deliveryFinalizationArchiveError}</span>
         </div>
       ) : null}
       {evidencePackage ? (
@@ -917,8 +1007,24 @@ function FinalExternalReviewEvidencePackage({
                   <Download size={14} />
                   Download final external-review package delivery finalization
                 </button>
+                <button
+                  className="secondary-button"
+                  type="button"
+                  onClick={() => onArchiveDeliveryFinalization()}
+                  aria-label="Archive final external-review package delivery finalization"
+                  disabled={!deliveryFinalization}
+                >
+                  <Archive size={14} />
+                  Archive final external-review package delivery finalization
+                </button>
                 {deliveryFinalizationDownloadStatus ? (
                   <span className="copy-status">{deliveryFinalizationDownloadStatus}</span>
+                ) : null}
+                {deliveryFinalizationArchiveStatus ? (
+                  <span className="copy-status">{deliveryFinalizationArchiveStatus}</span>
+                ) : null}
+                {deliveryFinalizationArchiveDownloadStatus ? (
+                  <span className="copy-status">{deliveryFinalizationArchiveDownloadStatus}</span>
                 ) : null}
               </div>
             </div>
@@ -973,6 +1079,42 @@ function FinalExternalReviewEvidencePackage({
             ) : (
               <p className="empty-state">Final external-review package delivery finalization has not loaded yet.</p>
             )}
+            <div className="demo-session-handoff-checks">
+              <div className="demo-session-archive-title-row">
+                <h3>Archived final external-review delivery finalizations</h3>
+                <span>{deliveryFinalizationArchives.length} archives</span>
+              </div>
+              {deliveryFinalizationArchives.length > 0 ? (
+                <ul>
+                  {deliveryFinalizationArchives.map((archive) => (
+                    <li key={archive.id}>
+                      <div className="demo-webhook-delivery-main">
+                        <strong>{archive.id}</strong>
+                        <span>{archive.finalized ? 'Finalized' : statusLabel(archive.status)}</span>
+                      </div>
+                      <p>{archive.summary}</p>
+                      <small>Package archive {archive.latestArchiveId ?? 'missing'}</small>
+                      <small>Delivery receipt {archive.latestDeliveryReceiptId ?? 'missing'}</small>
+                      <small>Completion receipt {archive.latestCompletionEvidenceDeliveryReceiptId ?? 'missing'}</small>
+                      <small>Archived {compactDateTime(archive.archivedAt)}</small>
+                      <div className="demo-session-archive-actions">
+                        <button
+                          className="secondary-button"
+                          type="button"
+                          onClick={() => onDownloadDeliveryFinalizationArchive(archive)}
+                          aria-label={`Download final external-review package delivery finalization archive ${archive.id}`}
+                        >
+                          <Download size={14} />
+                          Download final external-review package delivery finalization archive {archive.id}
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="empty-state">No final external-review package delivery finalization archives yet.</p>
+              )}
+            </div>
           </div>
           <div className="demo-evidence-receipt-form">
             <div className="demo-session-archive-title-row">

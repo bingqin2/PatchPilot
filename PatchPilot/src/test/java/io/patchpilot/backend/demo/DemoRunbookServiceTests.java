@@ -8,6 +8,7 @@ import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionCloseoutAr
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionCloseoutVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceShareFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageArchiveEvidenceVo;
+import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageDeliveryFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageDeliveryReceiptEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageVo;
@@ -158,6 +159,15 @@ class DemoRunbookServiceTests {
                 .contains("- Final external-review finalization receipt freshness: `FRESH`")
                 .contains("- Final external-review package delivery finalization next action: Use the finalization report as proof that the frozen external-review package was delivered.")
                 .contains("- Final external-review package delivery finalization download: Download final external-review package delivery finalization report.")
+                .contains("- Final external-review package delivery finalization archive: `READY` - Latest final external-review package delivery finalization archive is finalized and ready.")
+                .contains("- Final external-review package delivery finalization archive id: `final-external-review-package-delivery-finalization-archive-1`")
+                .contains("- Final external-review archived finalization package: `final-external-review-package-archive-1`")
+                .contains("- Final external-review archived finalization receipt: `final-external-review-package-delivery-receipt-1`")
+                .contains("- Final external-review archived finalization task: `task-2`")
+                .contains("- Final external-review package delivery finalization archive Pull Request: https://github.com/bingqin2/PatchPilot/pull/42")
+                .contains("- Final external-review package delivery finalization archived at: `2026-06-29T05:15:00Z`")
+                .contains("- Final external-review package delivery finalization archive next action: Use the archived final external-review package delivery finalization as the delivery closure record.")
+                .contains("- Final external-review package delivery finalization archive download: Download final external-review package delivery finalization archive final-external-review-package-delivery-finalization-archive-1.")
                 .contains("## Readiness")
                 .contains("- `Credentials`: `READY` - Required credentials are configured.")
                 .contains("## Smoke Checklist")
@@ -356,6 +366,7 @@ class DemoRunbookServiceTests {
                 finalExternalReviewEvidencePackageArchiveEvidence(),
                 finalExternalReviewEvidencePackageDeliveryReceiptEvidence(),
                 finalExternalReviewEvidencePackageDeliveryFinalization(),
+                finalExternalReviewEvidencePackageDeliveryFinalizationArchiveEvidence(),
                 true,
                 "delivery-receipt-1",
                 "Demo reviewer",
@@ -637,6 +648,29 @@ class DemoRunbookServiceTests {
                 "GET /api/demo/final-external-review-evidence-package/delivery-finalization is read-only.",
                 "# PatchPilot Final External Review Package Delivery Finalization",
                 Instant.parse("2026-06-29T05:10:00Z")
+        );
+    }
+
+    private static DemoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveEvidenceVo
+    finalExternalReviewEvidencePackageDeliveryFinalizationArchiveEvidence() {
+        return new DemoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveEvidenceVo(
+                DemoReadinessStatus.READY,
+                true,
+                true,
+                "Latest final external-review package delivery finalization archive is finalized and ready.",
+                "Use the archived final external-review package delivery finalization as the delivery closure record.",
+                1,
+                "final-external-review-package-delivery-finalization-archive-1",
+                "final-external-review-package-archive-1",
+                "final-external-review-package-delivery-receipt-1",
+                "task-2",
+                "https://github.com/bingqin2/PatchPilot/pull/42",
+                Instant.parse("2026-06-29T05:15:00Z"),
+                List.of(
+                        "Download final external-review package delivery finalization archive final-external-review-package-delivery-finalization-archive-1.",
+                        "Download final external-review package archive final-external-review-package-archive-1.",
+                        "Download final external-review package delivery receipt final-external-review-package-delivery-receipt-1."
+                )
         );
     }
 }

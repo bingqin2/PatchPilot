@@ -78,6 +78,9 @@ import {
   downloadDemoFinalExternalReviewEvidencePackageDeliveryReceiptReport,
   getDemoFinalExternalReviewEvidencePackageDeliveryFinalization,
   downloadDemoFinalExternalReviewEvidencePackageDeliveryFinalizationReport,
+  archiveDemoFinalExternalReviewEvidencePackageDeliveryFinalization,
+  listDemoFinalExternalReviewEvidencePackageDeliveryFinalizationArchives,
+  downloadDemoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveReport,
   archiveDemoFinalAcceptanceCompletionCloseout,
   listDemoFinalAcceptanceCompletionCloseoutArchives,
   downloadDemoFinalAcceptanceCompletionCloseoutArchiveReport,
@@ -1951,6 +1954,141 @@ test('downloads final external-review package delivery finalization report throu
 
   expect(fetchMock).toHaveBeenCalledWith(
     '/api/demo/final-external-review-evidence-package/delivery-finalization/report/download'
+  );
+  expect(downloadedReport).toBe(reportBlob);
+});
+
+test('archives final external-review package delivery finalization through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        id: 'final-external-review-package-delivery-finalization-archive-1',
+        status: 'READY',
+        finalized: true,
+        summary: 'Final external-review package delivery finalization archive is ready.',
+        nextAction: 'Use this archive as the frozen external-review package delivery closure record.',
+        latestArchiveId: 'final-external-review-package-archive-1',
+        latestDeliveryReceiptId: 'final-external-review-package-delivery-receipt-1',
+        latestCloseoutArchiveId: 'final-acceptance-completion-closeout-archive-1',
+        latestCompletionArchiveId: 'final-acceptance-completion-archive-1',
+        latestCompletionEvidenceDeliveryReceiptId:
+          'final-acceptance-completion-evidence-delivery-receipt-1',
+        latestTaskId: 'task-8',
+        latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+        latestDeliveryTarget: 'reviewer@example.com',
+        latestDeliveryChannel: 'email',
+        latestDeliveredAt: '2026-06-29T07:20:00Z',
+        deliveryReceiptFreshness: 'FRESH',
+        deliveryReceiptFresh: true,
+        deliveryReceiptFreshnessSummary:
+          'Latest package delivery receipt matches the current frozen final external-review package.',
+        checks: [
+          {
+            name: 'Frozen final external-review package',
+            status: 'READY',
+            summary: 'Frozen final external-review package is ready.',
+            nextAction: 'No action needed.'
+          }
+        ],
+        evidenceNotes: ['Frozen final external-review package final-external-review-package-archive-1 is ready.'],
+        downloadActions: [
+          'Download final external-review package delivery finalization archive final-external-review-package-delivery-finalization-archive-1.'
+        ],
+        sideEffectContract:
+          'POST /api/demo/final-external-review-evidence-package/delivery-finalization/archives archives the current READY delivery finalization.',
+        report: '# PatchPilot Final External Review Package Delivery Finalization Archive',
+        generatedAt: '2026-06-29T10:00:00Z',
+        archivedAt: '2026-06-29T10:05:00Z'
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const archive = await archiveDemoFinalExternalReviewEvidencePackageDeliveryFinalization();
+
+  expect(fetchMock).toHaveBeenCalledWith(
+    '/api/demo/final-external-review-evidence-package/delivery-finalization/archives',
+    { method: 'POST' }
+  );
+  expect(archive.id).toBe('final-external-review-package-delivery-finalization-archive-1');
+  expect(archive.finalized).toBe(true);
+});
+
+test('lists final external-review package delivery finalization archives through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: [
+        {
+          id: 'final-external-review-package-delivery-finalization-archive-1',
+          status: 'READY',
+          finalized: true,
+          summary: 'Final external-review package delivery finalization archive is ready.',
+          nextAction: 'Use this archive as the frozen external-review package delivery closure record.',
+          latestArchiveId: 'final-external-review-package-archive-1',
+          latestDeliveryReceiptId: 'final-external-review-package-delivery-receipt-1',
+          latestCloseoutArchiveId: 'final-acceptance-completion-closeout-archive-1',
+          latestCompletionArchiveId: 'final-acceptance-completion-archive-1',
+          latestCompletionEvidenceDeliveryReceiptId:
+            'final-acceptance-completion-evidence-delivery-receipt-1',
+          latestTaskId: 'task-8',
+          latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+          latestDeliveryTarget: 'reviewer@example.com',
+          latestDeliveryChannel: 'email',
+          latestDeliveredAt: '2026-06-29T07:20:00Z',
+          deliveryReceiptFreshness: 'FRESH',
+          deliveryReceiptFresh: true,
+          deliveryReceiptFreshnessSummary:
+            'Latest package delivery receipt matches the current frozen final external-review package.',
+          checks: [],
+          evidenceNotes: [],
+          downloadActions: [
+            'Download final external-review package delivery finalization archive final-external-review-package-delivery-finalization-archive-1.'
+          ],
+          sideEffectContract:
+            'POST /api/demo/final-external-review-evidence-package/delivery-finalization/archives archives the current READY delivery finalization.',
+          report: '# PatchPilot Final External Review Package Delivery Finalization Archive',
+          generatedAt: '2026-06-29T10:00:00Z',
+          archivedAt: '2026-06-29T10:05:00Z'
+        }
+      ],
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const archives = await listDemoFinalExternalReviewEvidencePackageDeliveryFinalizationArchives();
+
+  expect(fetchMock).toHaveBeenCalledWith(
+    '/api/demo/final-external-review-evidence-package/delivery-finalization/archives'
+  );
+  expect(archives[0].latestDeliveryReceiptId)
+    .toBe('final-external-review-package-delivery-receipt-1');
+});
+
+test('downloads final external-review package delivery finalization archive report through backend API', async () => {
+  const reportBlob = new Blob(['# PatchPilot Final External Review Package Delivery Finalization Archive'], {
+    type: 'text/markdown;charset=UTF-8'
+  });
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    blob: async () => reportBlob
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const downloadedReport = await downloadDemoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveReport(
+    'finalization/archive 1'
+  );
+
+  expect(fetchMock).toHaveBeenCalledWith(
+    '/api/demo/final-external-review-evidence-package/delivery-finalization/archives/finalization%2Farchive%201/report/download'
   );
   expect(downloadedReport).toBe(reportBlob);
 });
