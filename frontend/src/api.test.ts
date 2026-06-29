@@ -64,6 +64,9 @@ import {
   downloadDemoFinalAcceptanceCompletionArchiveReport,
   getDemoFinalAcceptanceCompletionEvidenceBundle,
   downloadDemoFinalAcceptanceCompletionEvidenceBundleReport,
+  createDemoFinalAcceptanceCompletionEvidenceDeliveryReceipt,
+  listDemoFinalAcceptanceCompletionEvidenceDeliveryReceipts,
+  downloadDemoFinalAcceptanceCompletionEvidenceDeliveryReceiptReport,
   archiveDemoLaunchAcceptanceCertificate,
   listDemoLaunchAcceptanceCertificateArchives,
   downloadDemoLaunchAcceptanceCertificateArchiveReport,
@@ -1426,6 +1429,113 @@ test('downloads final acceptance completion evidence bundle report through backe
   const downloadedReport = await downloadDemoFinalAcceptanceCompletionEvidenceBundleReport();
 
   expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-acceptance-completion-evidence-bundle/report/download');
+  expect(downloadedReport).toBe(reportBlob);
+});
+
+test('records final acceptance completion evidence delivery receipt through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        id: 'final-acceptance-completion-evidence-delivery-receipt-1',
+        status: 'READY',
+        readyToShare: true,
+        completionEvidenceBundleStatus: 'READY',
+        summary: 'PatchPilot final acceptance completion evidence bundle is ready to share.',
+        nextAction: 'Share this final acceptance completion evidence bundle with reviewers.',
+        latestCompletionArchiveId: 'final-acceptance-completion-archive-1',
+        latestSharePackageArchiveId: 'final-acceptance-share-package-archive-1',
+        latestDeliveryReceiptId: 'final-acceptance-delivery-receipt-1',
+        latestTaskId: 'task-1',
+        deliveryChannel: 'email',
+        deliveryTarget: 'reviewer@example.com',
+        operator: 'local-operator',
+        notes: 'Sent final completion evidence bundle to the reviewer.',
+        deliveredAt: '2026-06-29T04:25:00Z',
+        createdAt: '2026-06-29T04:30:00Z',
+        markdownReport: '# PatchPilot Final Acceptance Completion Evidence Delivery Receipt'
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const receipt = await createDemoFinalAcceptanceCompletionEvidenceDeliveryReceipt({
+    deliveryChannel: 'email',
+    deliveryTarget: 'reviewer@example.com',
+    operator: 'local-operator',
+    notes: 'Sent final completion evidence bundle to the reviewer.'
+  });
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-acceptance-completion-evidence-delivery-receipts', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      deliveryChannel: 'email',
+      deliveryTarget: 'reviewer@example.com',
+      operator: 'local-operator',
+      notes: 'Sent final completion evidence bundle to the reviewer.'
+    })
+  });
+  expect(receipt.id).toBe('final-acceptance-completion-evidence-delivery-receipt-1');
+  expect(receipt.latestCompletionArchiveId).toBe('final-acceptance-completion-archive-1');
+});
+
+test('lists final acceptance completion evidence delivery receipts through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: [
+        {
+          id: 'final-acceptance-completion-evidence-delivery-receipt-1',
+          status: 'READY',
+          readyToShare: true,
+          completionEvidenceBundleStatus: 'READY',
+          summary: 'PatchPilot final acceptance completion evidence bundle is ready to share.',
+          nextAction: 'Share this final acceptance completion evidence bundle with reviewers.',
+          latestCompletionArchiveId: 'final-acceptance-completion-archive-1',
+          latestSharePackageArchiveId: 'final-acceptance-share-package-archive-1',
+          latestDeliveryReceiptId: 'final-acceptance-delivery-receipt-1',
+          latestTaskId: 'task-1',
+          deliveryChannel: 'email',
+          deliveryTarget: 'reviewer@example.com',
+          operator: 'local-operator',
+          notes: 'Sent final completion evidence bundle to the reviewer.',
+          deliveredAt: '2026-06-29T04:25:00Z',
+          createdAt: '2026-06-29T04:30:00Z',
+          markdownReport: '# PatchPilot Final Acceptance Completion Evidence Delivery Receipt'
+        }
+      ],
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const receipts = await listDemoFinalAcceptanceCompletionEvidenceDeliveryReceipts();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-acceptance-completion-evidence-delivery-receipts');
+  expect(receipts).toHaveLength(1);
+  expect(receipts[0].id).toBe('final-acceptance-completion-evidence-delivery-receipt-1');
+});
+
+test('downloads final acceptance completion evidence delivery receipt report through backend API', async () => {
+  const reportBlob = new Blob(['# PatchPilot Final Acceptance Completion Evidence Delivery Receipt'], {
+    type: 'text/markdown;charset=UTF-8'
+  });
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    blob: async () => reportBlob
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const downloadedReport = await downloadDemoFinalAcceptanceCompletionEvidenceDeliveryReceiptReport('receipt/1');
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-acceptance-completion-evidence-delivery-receipts/receipt%2F1/report/download');
   expect(downloadedReport).toBe(reportBlob);
 });
 

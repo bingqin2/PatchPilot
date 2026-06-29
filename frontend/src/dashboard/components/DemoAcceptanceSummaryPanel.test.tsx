@@ -6,6 +6,7 @@ import type {
   DemoFinalAcceptanceShareFinalization,
   DemoFinalAcceptanceCompletionArchive,
   DemoFinalAcceptanceCompletionEvidenceBundle,
+  DemoFinalAcceptanceCompletionEvidenceDeliveryReceipt,
   DemoFinalAcceptanceSharePackage,
   DemoFinalAcceptanceSharePackageArchive
 } from '../../types';
@@ -211,6 +212,26 @@ const completionEvidenceBundle: DemoFinalAcceptanceCompletionEvidenceBundle = {
   markdownReport: '# PatchPilot Final Acceptance Completion Evidence Bundle'
 };
 
+const completionEvidenceDeliveryReceipt: DemoFinalAcceptanceCompletionEvidenceDeliveryReceipt = {
+  id: 'final-acceptance-completion-evidence-delivery-receipt-1',
+  status: 'READY',
+  readyToShare: true,
+  completionEvidenceBundleStatus: 'READY',
+  summary: 'PatchPilot final acceptance completion evidence bundle is ready to share.',
+  nextAction: 'Share this final acceptance completion evidence bundle with reviewers.',
+  latestCompletionArchiveId: 'final-acceptance-completion-archive-1',
+  latestSharePackageArchiveId: 'final-acceptance-share-package-archive-1',
+  latestDeliveryReceiptId: 'final-acceptance-delivery-receipt-1',
+  latestTaskId: 'task-1',
+  deliveryChannel: 'email',
+  deliveryTarget: 'reviewer@example.com',
+  operator: 'local-operator',
+  notes: 'Sent final completion evidence bundle to the reviewer.',
+  deliveredAt: '2026-06-29T04:25:00Z',
+  createdAt: '2026-06-29T04:30:00Z',
+  markdownReport: '# PatchPilot Final Acceptance Completion Evidence Delivery Receipt'
+};
+
 test('shows final demo acceptance status and certificate evidence', () => {
   render(
     <DemoAcceptanceSummaryPanel
@@ -221,6 +242,7 @@ test('shows final demo acceptance status and certificate evidence', () => {
       shareFinalization={shareFinalization}
       completionEvidenceBundle={completionEvidenceBundle}
       completionArchives={[completionArchive]}
+      completionEvidenceDeliveryReceipts={[completionEvidenceDeliveryReceipt]}
       error={null}
       sharePackageError={null}
       sharePackageArchiveError={null}
@@ -228,6 +250,7 @@ test('shows final demo acceptance status and certificate evidence', () => {
       shareFinalizationError={null}
       completionEvidenceBundleError={null}
       completionArchiveError={null}
+      completionEvidenceDeliveryReceiptError={null}
       onDownloadReport={vi.fn()}
       onDownloadSharePackageReport={vi.fn()}
       onArchiveSharePackage={vi.fn()}
@@ -238,6 +261,8 @@ test('shows final demo acceptance status and certificate evidence', () => {
       onDownloadCompletionEvidenceBundleReport={vi.fn()}
       onArchiveCompletion={vi.fn()}
       onDownloadCompletionArchiveReport={vi.fn()}
+      onCreateCompletionEvidenceDeliveryReceipt={vi.fn()}
+      onDownloadCompletionEvidenceDeliveryReceiptReport={vi.fn()}
     />
   );
 
@@ -284,6 +309,7 @@ test('downloads the final demo acceptance markdown report', async () => {
       shareFinalization={shareFinalization}
       completionEvidenceBundle={completionEvidenceBundle}
       completionArchives={[completionArchive]}
+      completionEvidenceDeliveryReceipts={[completionEvidenceDeliveryReceipt]}
       error={null}
       sharePackageError={null}
       sharePackageArchiveError={null}
@@ -291,6 +317,7 @@ test('downloads the final demo acceptance markdown report', async () => {
       shareFinalizationError={null}
       completionEvidenceBundleError={null}
       completionArchiveError={null}
+      completionEvidenceDeliveryReceiptError={null}
       onDownloadReport={downloadReport}
       onDownloadSharePackageReport={vi.fn()}
       onArchiveSharePackage={vi.fn()}
@@ -301,6 +328,8 @@ test('downloads the final demo acceptance markdown report', async () => {
       onDownloadCompletionEvidenceBundleReport={vi.fn()}
       onArchiveCompletion={vi.fn()}
       onDownloadCompletionArchiveReport={vi.fn()}
+      onCreateCompletionEvidenceDeliveryReceipt={vi.fn()}
+      onDownloadCompletionEvidenceDeliveryReceiptReport={vi.fn()}
     />
   );
 
@@ -340,6 +369,7 @@ test('copies and downloads the final acceptance share package', async () => {
       shareFinalization={shareFinalization}
       completionEvidenceBundle={completionEvidenceBundle}
       completionArchives={[completionArchive]}
+      completionEvidenceDeliveryReceipts={[completionEvidenceDeliveryReceipt]}
       error={null}
       sharePackageError={null}
       sharePackageArchiveError={null}
@@ -347,6 +377,7 @@ test('copies and downloads the final acceptance share package', async () => {
       shareFinalizationError={null}
       completionEvidenceBundleError={null}
       completionArchiveError={null}
+      completionEvidenceDeliveryReceiptError={null}
       onDownloadReport={vi.fn()}
       onDownloadSharePackageReport={downloadSharePackageReport}
       onArchiveSharePackage={vi.fn()}
@@ -357,6 +388,8 @@ test('copies and downloads the final acceptance share package', async () => {
       onDownloadCompletionEvidenceBundleReport={vi.fn()}
       onArchiveCompletion={vi.fn()}
       onDownloadCompletionArchiveReport={vi.fn()}
+      onCreateCompletionEvidenceDeliveryReceipt={vi.fn()}
+      onDownloadCompletionEvidenceDeliveryReceiptReport={vi.fn()}
     />
   );
 
@@ -394,6 +427,7 @@ test('archives and downloads final acceptance share package archives', async () 
       shareFinalization={shareFinalization}
       completionEvidenceBundle={completionEvidenceBundle}
       completionArchives={[completionArchive]}
+      completionEvidenceDeliveryReceipts={[completionEvidenceDeliveryReceipt]}
       error={null}
       sharePackageError={null}
       sharePackageArchiveError={null}
@@ -401,6 +435,7 @@ test('archives and downloads final acceptance share package archives', async () 
       shareFinalizationError={null}
       completionEvidenceBundleError={null}
       completionArchiveError={null}
+      completionEvidenceDeliveryReceiptError={null}
       onDownloadReport={vi.fn()}
       onDownloadSharePackageReport={vi.fn()}
       onArchiveSharePackage={archiveSharePackage}
@@ -411,6 +446,8 @@ test('archives and downloads final acceptance share package archives', async () 
       onDownloadCompletionEvidenceBundleReport={vi.fn()}
       onArchiveCompletion={vi.fn()}
       onDownloadCompletionArchiveReport={vi.fn()}
+      onCreateCompletionEvidenceDeliveryReceipt={vi.fn()}
+      onDownloadCompletionEvidenceDeliveryReceiptReport={vi.fn()}
     />
   );
 
@@ -447,6 +484,7 @@ test('records final acceptance delivery receipt and downloads finalization evide
       shareFinalization={shareFinalization}
       completionEvidenceBundle={completionEvidenceBundle}
       completionArchives={[completionArchive]}
+      completionEvidenceDeliveryReceipts={[completionEvidenceDeliveryReceipt]}
       error={null}
       sharePackageError={null}
       sharePackageArchiveError={null}
@@ -454,6 +492,7 @@ test('records final acceptance delivery receipt and downloads finalization evide
       shareFinalizationError={null}
       completionEvidenceBundleError={null}
       completionArchiveError={null}
+      completionEvidenceDeliveryReceiptError={null}
       onDownloadReport={vi.fn()}
       onDownloadSharePackageReport={vi.fn()}
       onArchiveSharePackage={vi.fn()}
@@ -464,6 +503,8 @@ test('records final acceptance delivery receipt and downloads finalization evide
       onDownloadCompletionEvidenceBundleReport={vi.fn()}
       onArchiveCompletion={vi.fn()}
       onDownloadCompletionArchiveReport={vi.fn()}
+      onCreateCompletionEvidenceDeliveryReceipt={vi.fn()}
+      onDownloadCompletionEvidenceDeliveryReceiptReport={vi.fn()}
     />
   );
 
@@ -514,6 +555,7 @@ test('archives and downloads final acceptance completion evidence', async () => 
       shareFinalization={shareFinalization}
       completionEvidenceBundle={completionEvidenceBundle}
       completionArchives={[completionArchive]}
+      completionEvidenceDeliveryReceipts={[completionEvidenceDeliveryReceipt]}
       error={null}
       sharePackageError={null}
       sharePackageArchiveError={null}
@@ -521,6 +563,7 @@ test('archives and downloads final acceptance completion evidence', async () => 
       shareFinalizationError={null}
       completionEvidenceBundleError={null}
       completionArchiveError={null}
+      completionEvidenceDeliveryReceiptError={null}
       onDownloadReport={vi.fn()}
       onDownloadSharePackageReport={vi.fn()}
       onArchiveSharePackage={vi.fn()}
@@ -531,6 +574,8 @@ test('archives and downloads final acceptance completion evidence', async () => 
       onDownloadCompletionEvidenceBundleReport={vi.fn()}
       onArchiveCompletion={archiveCompletion}
       onDownloadCompletionArchiveReport={downloadCompletionArchiveReport}
+      onCreateCompletionEvidenceDeliveryReceipt={vi.fn()}
+      onDownloadCompletionEvidenceDeliveryReceiptReport={vi.fn()}
     />
   );
 
@@ -570,6 +615,7 @@ test('shows and downloads final acceptance completion evidence bundle', async ()
       shareFinalization={shareFinalization}
       completionEvidenceBundle={completionEvidenceBundle}
       completionArchives={[completionArchive]}
+      completionEvidenceDeliveryReceipts={[completionEvidenceDeliveryReceipt]}
       error={null}
       sharePackageError={null}
       sharePackageArchiveError={null}
@@ -577,6 +623,7 @@ test('shows and downloads final acceptance completion evidence bundle', async ()
       shareFinalizationError={null}
       completionEvidenceBundleError={null}
       completionArchiveError={null}
+      completionEvidenceDeliveryReceiptError={null}
       onDownloadReport={vi.fn()}
       onDownloadSharePackageReport={vi.fn()}
       onArchiveSharePackage={vi.fn()}
@@ -587,12 +634,16 @@ test('shows and downloads final acceptance completion evidence bundle', async ()
       onDownloadCompletionEvidenceBundleReport={downloadCompletionEvidenceBundleReport}
       onArchiveCompletion={vi.fn()}
       onDownloadCompletionArchiveReport={vi.fn()}
+      onCreateCompletionEvidenceDeliveryReceipt={vi.fn()}
+      onDownloadCompletionEvidenceDeliveryReceiptReport={vi.fn()}
     />
   );
 
   const panel = screen.getByRole('region', { name: 'Final demo acceptance' });
   expect(within(panel).getByRole('heading', { name: 'Final acceptance completion evidence bundle' })).toBeInTheDocument();
-  expect(within(panel).getByText('PatchPilot final acceptance completion evidence bundle is ready to share.')).toBeInTheDocument();
+  expect(
+    within(panel).getAllByText('PatchPilot final acceptance completion evidence bundle is ready to share.')
+  ).not.toHaveLength(0);
   expect(within(panel).getByText('Download final acceptance completion evidence bundle.')).toBeInTheDocument();
 
   await user.click(within(panel).getByRole('button', {
@@ -603,4 +654,90 @@ test('shows and downloads final acceptance completion evidence bundle', async ()
   expect(anchorClick).toHaveBeenCalled();
   expect(revokeObjectUrl).toHaveBeenCalledWith('blob:final-acceptance-completion-evidence-bundle');
   expect(await within(panel).findByText('Final acceptance completion evidence bundle downloaded')).toBeInTheDocument();
+});
+
+test('records and downloads final acceptance completion evidence delivery receipts', async () => {
+  const user = userEvent.setup();
+  const createCompletionEvidenceDeliveryReceipt = vi.fn(async () => completionEvidenceDeliveryReceipt);
+  const downloadCompletionEvidenceDeliveryReceiptReport = vi.fn(async () => new Blob(['# Completion Evidence Receipt'], {
+    type: 'text/markdown'
+  }));
+  const createObjectUrl = vi.fn(() => 'blob:final-acceptance-completion-evidence-delivery');
+  const revokeObjectUrl = vi.fn();
+  const anchorClick = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
+  vi.stubGlobal('URL', {
+    createObjectURL: createObjectUrl,
+    revokeObjectURL: revokeObjectUrl
+  });
+
+  render(
+    <DemoAcceptanceSummaryPanel
+      summary={summary}
+      sharePackage={sharePackage}
+      sharePackageArchives={[sharePackageArchive]}
+      shareDeliveryReceipts={[shareDeliveryReceipt]}
+      shareFinalization={shareFinalization}
+      completionEvidenceBundle={completionEvidenceBundle}
+      completionArchives={[completionArchive]}
+      completionEvidenceDeliveryReceipts={[completionEvidenceDeliveryReceipt]}
+      error={null}
+      sharePackageError={null}
+      sharePackageArchiveError={null}
+      shareDeliveryReceiptError={null}
+      shareFinalizationError={null}
+      completionEvidenceBundleError={null}
+      completionArchiveError={null}
+      completionEvidenceDeliveryReceiptError={null}
+      onDownloadReport={vi.fn()}
+      onDownloadSharePackageReport={vi.fn()}
+      onArchiveSharePackage={vi.fn()}
+      onDownloadSharePackageArchiveReport={vi.fn()}
+      onCreateShareDeliveryReceipt={vi.fn()}
+      onDownloadShareDeliveryReceiptReport={vi.fn()}
+      onDownloadShareFinalizationReport={vi.fn()}
+      onDownloadCompletionEvidenceBundleReport={vi.fn()}
+      onArchiveCompletion={vi.fn()}
+      onDownloadCompletionArchiveReport={vi.fn()}
+      onCreateCompletionEvidenceDeliveryReceipt={createCompletionEvidenceDeliveryReceipt}
+      onDownloadCompletionEvidenceDeliveryReceiptReport={downloadCompletionEvidenceDeliveryReceiptReport}
+    />
+  );
+
+  const panel = screen.getByRole('region', { name: 'Final demo acceptance' });
+  expect(within(panel).getByRole('heading', {
+    name: 'Final acceptance completion evidence delivery receipts'
+  })).toBeInTheDocument();
+  expect(within(panel).getAllByText('final-acceptance-completion-evidence-delivery-receipt-1')).not.toHaveLength(0);
+
+  await user.selectOptions(within(panel).getByLabelText('Completion evidence delivery channel'), 'email');
+  await user.type(within(panel).getByLabelText('Completion evidence delivery target'), 'reviewer@example.com');
+  await user.type(within(panel).getByLabelText('Completion evidence operator'), 'local-operator');
+  await user.type(
+    within(panel).getByLabelText('Completion evidence delivery notes'),
+    'Sent final completion evidence bundle to the reviewer.'
+  );
+  await user.click(within(panel).getByRole('button', {
+    name: 'Record final acceptance completion evidence delivery receipt'
+  }));
+
+  expect(createCompletionEvidenceDeliveryReceipt).toHaveBeenCalledWith({
+    deliveryChannel: 'email',
+    deliveryTarget: 'reviewer@example.com',
+    operator: 'local-operator',
+    notes: 'Sent final completion evidence bundle to the reviewer.'
+  });
+  expect(await within(panel).findByText('Final acceptance completion evidence delivery receipt recorded')).toBeInTheDocument();
+
+  await user.click(within(panel).getByRole('button', {
+    name: 'Download final acceptance completion evidence delivery receipt final-acceptance-completion-evidence-delivery-receipt-1'
+  }));
+
+  expect(downloadCompletionEvidenceDeliveryReceiptReport).toHaveBeenCalledWith(
+    'final-acceptance-completion-evidence-delivery-receipt-1'
+  );
+  expect(anchorClick).toHaveBeenCalled();
+  expect(revokeObjectUrl).toHaveBeenCalledWith('blob:final-acceptance-completion-evidence-delivery');
+  expect(within(panel).getByText(
+    'Final acceptance completion evidence delivery receipt final-acceptance-completion-evidence-delivery-receipt-1 downloaded'
+  )).toBeInTheDocument();
 });

@@ -11,6 +11,8 @@ import type {
   DemoAcceptanceSummary,
   DemoFinalAcceptanceCompletionArchive,
   DemoFinalAcceptanceCompletionEvidenceBundle,
+  DemoFinalAcceptanceCompletionEvidenceDeliveryReceipt,
+  DemoFinalAcceptanceCompletionEvidenceDeliveryReceiptInput,
   DemoFinalAcceptanceShareDeliveryReceipt,
   DemoFinalAcceptanceShareDeliveryReceiptInput,
   DemoFinalAcceptanceShareFinalization,
@@ -322,6 +324,27 @@ export async function getDemoFinalAcceptanceCompletionEvidenceBundle(): Promise<
 
 export async function downloadDemoFinalAcceptanceCompletionEvidenceBundleReport(): Promise<Blob> {
   return getBlobApi('/api/demo/final-acceptance-completion-evidence-bundle/report/download');
+}
+
+export async function createDemoFinalAcceptanceCompletionEvidenceDeliveryReceipt(
+  input: DemoFinalAcceptanceCompletionEvidenceDeliveryReceiptInput
+): Promise<DemoFinalAcceptanceCompletionEvidenceDeliveryReceipt> {
+  return postApi<DemoFinalAcceptanceCompletionEvidenceDeliveryReceipt>(
+    '/api/demo/final-acceptance-completion-evidence-delivery-receipts',
+    input
+  );
+}
+
+export async function listDemoFinalAcceptanceCompletionEvidenceDeliveryReceipts(): Promise<DemoFinalAcceptanceCompletionEvidenceDeliveryReceipt[]> {
+  return getApi<DemoFinalAcceptanceCompletionEvidenceDeliveryReceipt[]>(
+    '/api/demo/final-acceptance-completion-evidence-delivery-receipts'
+  );
+}
+
+export async function downloadDemoFinalAcceptanceCompletionEvidenceDeliveryReceiptReport(receiptId: string): Promise<Blob> {
+  return getBlobApi(
+    `/api/demo/final-acceptance-completion-evidence-delivery-receipts/${encodeURIComponent(receiptId)}/report/download`
+  );
 }
 
 export async function archiveDemoFinalAcceptanceCompletion(): Promise<DemoFinalAcceptanceCompletionArchive> {

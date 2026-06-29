@@ -5706,3 +5706,25 @@ Validation so far:
 - `npm test -- --reporter=basic`: passed, 30 test files and 423 tests.
 - `npm run build`: passed with the existing Vite large-chunk warning.
 - `git diff --check`: passed.
+
+## 2026-06-29 - 284 Final acceptance completion evidence delivery receipts
+
+- Started `284-final-acceptance-completion-evidence-delivery-receipts` to record local proof that the final acceptance completion evidence bundle was delivered after it became ready to share.
+- Planned a complete feature slice: backend receipt DTO/VO/entity/converter/mapper/repositories/service/controller endpoints, Flyway migration, protected audit event, frontend API/type/App loading, final acceptance panel receipt form/history/downloads, README/product/frontend docs, plan doc, and regression tests.
+- RED backend tests were added first for READY-only receipt creation, not-ready rejection, required field validation, converter/entity mapping, in-memory and MyBatis repository behavior, migration text, controller create/list/download endpoints, missing receipt downloads, and protected audit recording.
+- RED frontend tests were added first for receipt API helpers, final acceptance panel receipt form/history/download behavior, and full App data loading plus dashboard create/download interactions.
+- Implemented `DemoFinalAcceptanceCompletionEvidenceDeliveryReceiptService` with in-memory and MyBatis-backed repositories, READY-only bundle gating, delivery metadata capture, Markdown report generation, and side-effect contract text.
+- Added `POST /api/demo/final-acceptance-completion-evidence-delivery-receipts`, `GET /api/demo/final-acceptance-completion-evidence-delivery-receipts`, and `GET /api/demo/final-acceptance-completion-evidence-delivery-receipts/{receiptId}/report/download`.
+- Updated the final demo acceptance dashboard panel with completion evidence delivery channel/target/operator/notes inputs, recent receipt rows, report downloads, load errors, and optimistic refresh of receipt list plus completion evidence bundle state.
+- Updated README, product spec, frontend design doc, and added this plan document.
+
+Validation so far:
+
+- `mvn -q -pl PatchPilot -Dtest=DemoFinalAcceptanceCompletionEvidenceDeliveryReceiptServiceTests,DemoFinalAcceptanceCompletionEvidenceDeliveryReceiptConvertTests,InMemoryDemoFinalAcceptanceCompletionEvidenceDeliveryReceiptRepositoryTests,MyBatisDemoFinalAcceptanceCompletionEvidenceDeliveryReceiptRepositoryTests,DemoFinalAcceptanceCompletionEvidenceDeliveryReceiptMigrationTests,DemoReadinessControllerTests test`: first failed because the new receipt DTO/VO/service/repository/mapper/entity classes did not exist; passed after backend implementation.
+- `npm test -- src/api.test.ts src/dashboard/components/DemoAcceptanceSummaryPanel.test.tsx --reporter=basic`: first failed because the receipt API helpers and panel section did not exist, then failed because the completion evidence bundle summary is intentionally visible in multiple places; passed after frontend implementation and assertion update, 2 test files and 174 tests.
+- `npm test -- src/App.test.tsx --reporter=basic`: first failed because the App fixture used the wrong completion archive URL and then hit two old 5s timeouts from repeated full-dashboard refreshes during text entry; passed after aligning the fixture URL, adding the new receipt mock routes, and replacing those two tests' character-by-character input with one-shot change events, 85 tests.
+- `npm test -- src/App.test.tsx -t "approves pending review tasks" --reporter=basic`: first exposed another oversized App integration path that exceeded the 5s Vitest default; passed after replacing expensive keyboard simulation with one-shot DOM events and using the same 10s timeout budget as other large App integration tests.
+- `npm test -- --reporter=basic`: passed, 30 test files and 428 tests.
+- `mvn -q -pl PatchPilot test`: passed.
+- `npm run build`: first failed because `defaultAppResponse` referenced final acceptance share delivery and finalization fixtures that were not globally defined; passed after promoting those fixtures, with the existing Vite large-chunk warning.
+- `git diff --check`: passed.

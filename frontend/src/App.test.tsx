@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from './App';
 
@@ -2524,6 +2524,108 @@ const demoFinalAcceptanceSharePackageArchive = {
   archivedAt: '2026-06-29T02:00:00Z'
 };
 
+const demoFinalAcceptanceShareDeliveryReceipt = {
+  id: 'final-acceptance-delivery-receipt-1',
+  status: 'READY',
+  finalAcceptanceSharePackageArchiveId: 'final-acceptance-share-package-archive-1',
+  latestTaskId: 'task-1',
+  deliveryChannel: 'email',
+  deliveryTarget: 'reviewer@example.com',
+  operator: 'local-operator',
+  notes: 'Sent final acceptance share package to the reviewer.',
+  messageSubject: 'PatchPilot final demo acceptance: task-1',
+  deliveredAt: '2026-06-29T03:05:00Z',
+  createdAt: '2026-06-29T03:10:00Z',
+  markdownReport: '# PatchPilot Final Demo Acceptance Share Delivery Receipt'
+};
+
+const demoFinalAcceptanceShareFinalization = {
+  status: 'READY',
+  finalized: true,
+  summary: 'Final demo acceptance share package is finalized with a fresh delivery receipt.',
+  nextAction: 'Use the finalization report as the external-review acceptance delivery record.',
+  latestArchiveId: 'final-acceptance-share-package-archive-1',
+  latestTaskId: 'task-1',
+  latestDeliveryReceiptId: 'final-acceptance-delivery-receipt-1',
+  latestDeliveryTarget: 'reviewer@example.com',
+  latestDeliveryChannel: 'email',
+  latestDeliveredAt: '2026-06-29T03:05:00Z',
+  deliveryReceiptFreshness: 'FRESH',
+  deliveryReceiptFresh: true,
+  deliveryReceiptFreshnessSummary: 'Latest delivery receipt matches the current final acceptance share package archive.',
+  checks: [],
+  evidenceNotes: ['Latest delivery receipt matches the current final acceptance share package archive.'],
+  markdownReport: '# PatchPilot Final Demo Acceptance Share Finalization Gate',
+  generatedAt: '2026-06-29T03:30:00Z'
+};
+
+const demoFinalAcceptanceCompletionArchive = {
+  id: 'final-acceptance-completion-archive-1',
+  status: 'READY',
+  finalized: true,
+  summary: 'PatchPilot final acceptance completion is archived.',
+  nextAction: 'Share the completion evidence bundle and record delivery.',
+  latestSharePackageArchiveId: 'final-acceptance-share-package-archive-1',
+  latestDeliveryReceiptId: 'final-acceptance-delivery-receipt-1',
+  latestTaskId: 'task-1',
+  latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+  latestDeliveryTarget: 'reviewer@example.com',
+  latestDeliveryChannel: 'email',
+  deliveryReceiptFreshness: 'FRESH',
+  evidenceNotes: ['Final acceptance delivery receipt is fresh.'],
+  downloadActions: ['Download final acceptance completion archive final-acceptance-completion-archive-1.'],
+  report: '# PatchPilot Final Acceptance Completion Archive',
+  createdAt: '2026-06-29T02:30:00Z',
+  archivedAt: '2026-06-29T02:35:00Z'
+};
+
+const demoFinalAcceptanceCompletionEvidenceBundle = {
+  status: 'READY',
+  readyToShare: true,
+  summary: 'PatchPilot final acceptance completion evidence bundle is ready to share.',
+  nextAction: 'Record a delivery receipt after sharing the completion evidence bundle.',
+  latestCompletionArchiveId: 'final-acceptance-completion-archive-1',
+  latestSharePackageArchiveId: 'final-acceptance-share-package-archive-1',
+  latestDeliveryReceiptId: 'final-acceptance-delivery-receipt-1',
+  latestTaskId: 'task-1',
+  latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+  latestDeliveryTarget: 'reviewer@example.com',
+  latestDeliveryChannel: 'email',
+  completionArchiveCount: 1,
+  downloadActions: [
+    'Download final acceptance completion evidence bundle.',
+    'Download final acceptance completion archive final-acceptance-completion-archive-1.'
+  ],
+  evidenceNotes: [
+    'Completion archive final-acceptance-completion-archive-1 is finalized.',
+    'Latest final acceptance delivery receipt final-acceptance-delivery-receipt-1 is fresh.'
+  ],
+  sideEffectContract:
+    'GET /api/demo/final-acceptance-completion-evidence-bundle is read-only: it does not create tasks, call the model, run tests, mutate Git, archive records, record delivery receipts, send messages, or write to GitHub.',
+  markdownReport: '# PatchPilot Final Acceptance Completion Evidence Bundle',
+  generatedAt: '2026-06-29T03:00:00Z'
+};
+
+const demoFinalAcceptanceCompletionEvidenceDeliveryReceipt = {
+  id: 'final-acceptance-completion-evidence-delivery-receipt-1',
+  status: 'READY',
+  readyToShare: true,
+  completionEvidenceBundleStatus: 'READY',
+  summary: 'Final acceptance completion evidence delivery receipt recorded.',
+  nextAction: 'Share the local receipt with reviewers as proof of delivery.',
+  latestCompletionArchiveId: 'final-acceptance-completion-archive-1',
+  latestSharePackageArchiveId: 'final-acceptance-share-package-archive-1',
+  latestDeliveryReceiptId: 'final-acceptance-delivery-receipt-1',
+  latestTaskId: 'task-1',
+  deliveryChannel: 'email',
+  deliveryTarget: 'reviewer@example.com',
+  operator: 'local-operator',
+  notes: 'Sent final completion evidence bundle.',
+  deliveredAt: '2026-06-29T03:10:00Z',
+  createdAt: '2026-06-29T03:15:00Z',
+  markdownReport: '# PatchPilot Final Acceptance Completion Evidence Delivery Receipt'
+};
+
 const demoLaunchEvidenceDeliveryReceipt = {
   id: 'launch-delivery-receipt-1',
   status: 'READY',
@@ -2754,6 +2856,59 @@ beforeEach(() => {
         ok: true,
         status: 200,
         blob: async () => new Blob(['# PatchPilot Final Demo Acceptance Share Package'], {
+          type: 'text/markdown;charset=UTF-8'
+        })
+      } as Response);
+    }
+    if (url === '/api/demo/final-acceptance-completion-archives' && init?.method === 'POST') {
+      return jsonResponse(demoFinalAcceptanceCompletionArchive);
+    }
+    if (url === '/api/demo/final-acceptance-completion-archives') {
+      return jsonResponse([demoFinalAcceptanceCompletionArchive]);
+    }
+    if (url === '/api/demo/final-acceptance-completion-archives/final-acceptance-completion-archive-1/report/download') {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        blob: async () => new Blob(['# PatchPilot Final Acceptance Completion Archive'], {
+          type: 'text/markdown;charset=UTF-8'
+        })
+      } as Response);
+    }
+    if (url === '/api/demo/final-acceptance-completion-evidence-bundle') {
+      return jsonResponse(demoFinalAcceptanceCompletionEvidenceBundle);
+    }
+    if (url === '/api/demo/final-acceptance-completion-evidence-bundle/report/download') {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        blob: async () => new Blob(['# PatchPilot Final Acceptance Completion Evidence Bundle'], {
+          type: 'text/markdown;charset=UTF-8'
+        })
+      } as Response);
+    }
+    if (
+      url === '/api/demo/final-acceptance-completion-evidence-delivery-receipts' &&
+      init?.method === 'POST'
+    ) {
+      return jsonResponse({
+        ...demoFinalAcceptanceCompletionEvidenceDeliveryReceipt,
+        id: 'final-acceptance-completion-evidence-delivery-receipt-2',
+        deliveryTarget: 'auditor@example.com',
+        notes: 'Shared final completion evidence.'
+      }, true, null, 201);
+    }
+    if (url === '/api/demo/final-acceptance-completion-evidence-delivery-receipts') {
+      return jsonResponse([demoFinalAcceptanceCompletionEvidenceDeliveryReceipt]);
+    }
+    if (
+      url ===
+      '/api/demo/final-acceptance-completion-evidence-delivery-receipts/final-acceptance-completion-evidence-delivery-receipt-1/report/download'
+    ) {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        blob: async () => new Blob(['# PatchPilot Final Acceptance Completion Evidence Delivery Receipt'], {
           type: 'text/markdown;charset=UTF-8'
         })
       } as Response);
@@ -3833,6 +3988,11 @@ test('renders operational task dashboard from backend APIs', async () => {
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/acceptance-summary'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-acceptance-share-package'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-acceptance-share-package/archives'));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-acceptance-completion-archives'));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-acceptance-completion-evidence-bundle'));
+  await waitFor(() =>
+    expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-acceptance-completion-evidence-delivery-receipts')
+  );
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/github/credential-readiness'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/github/webhook-setup-readiness'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/github/repository-access-readiness?owner=bingqin2&repository=PatchPilot'));
@@ -4088,7 +4248,6 @@ test('bootstraps dashboard admin token before loading protected APIs when explic
 });
 
 test('manages stored admin token from the dashboard header', async () => {
-  const user = userEvent.setup();
   const storage = new Map<string, string>([['patchpilot.adminToken', 'existing-token']]);
   vi.stubGlobal('localStorage', {
     getItem: (key: string) => storage.get(key) ?? null,
@@ -4108,9 +4267,10 @@ test('manages stored admin token from the dashboard header', async () => {
     });
   });
 
-  await user.clear(screen.getByLabelText('Dashboard admin token'));
-  await user.type(screen.getByLabelText('Dashboard admin token'), 'new-token');
-  await user.click(screen.getByRole('button', { name: 'Save dashboard admin token' }));
+  fireEvent.change(screen.getByLabelText('Dashboard admin token'), {
+    target: { value: 'new-token' }
+  });
+  fireEvent.click(screen.getByRole('button', { name: 'Save dashboard admin token' }));
 
   await waitFor(() => expect(storage.get('patchpilot.adminToken')).toBe('new-token'));
   await waitFor(() => {
@@ -4119,7 +4279,7 @@ test('manages stored admin token from the dashboard header', async () => {
     });
   });
 
-  await user.click(screen.getByRole('button', { name: 'Clear admin token' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Clear admin token' }));
 
   await waitFor(() => expect(storage.has('patchpilot.adminToken')).toBe(false));
   expect(await screen.findByText('No admin token saved')).toBeInTheDocument();
@@ -4392,6 +4552,67 @@ test('archives and downloads final acceptance share package from dashboard', asy
   await waitFor(() => expect(click).toHaveBeenCalled());
   await waitFor(() => expect(revokeObjectURL).toHaveBeenCalledWith('blob:final-acceptance-share-package-archive'));
   expect(await within(acceptancePanel).findByText('Archived final acceptance package downloaded')).toBeInTheDocument();
+});
+
+test('records and downloads final acceptance completion evidence delivery receipt from dashboard', async () => {
+  const user = userEvent.setup();
+  const fetchMock = vi.mocked(fetch);
+  const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+  const createObjectURL = vi.fn(() => 'blob:final-acceptance-completion-evidence-delivery-receipt');
+  const revokeObjectURL = vi.fn();
+  vi.stubGlobal('URL', blobUrlConstructor(createObjectURL, revokeObjectURL));
+
+  render(<App />);
+
+  const acceptancePanel = await screen.findByRole('region', { name: 'Final demo acceptance' });
+  expect(within(acceptancePanel).getByRole('heading', {
+    name: 'Final acceptance completion evidence delivery receipts'
+  })).toBeInTheDocument();
+
+  await user.clear(within(acceptancePanel).getByLabelText('Completion evidence delivery target'));
+  await user.type(within(acceptancePanel).getByLabelText('Completion evidence delivery target'), 'auditor@example.com');
+  await user.type(
+    within(acceptancePanel).getByLabelText('Completion evidence delivery notes'),
+    'Shared final completion evidence.'
+  );
+  await user.click(within(acceptancePanel).getByRole('button', {
+    name: 'Record final acceptance completion evidence delivery receipt'
+  }));
+
+  await waitFor(() =>
+    expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-acceptance-completion-evidence-delivery-receipts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        deliveryChannel: 'email',
+        deliveryTarget: 'auditor@example.com',
+        operator: '',
+        notes: 'Shared final completion evidence.'
+      })
+    })
+  );
+  await waitFor(() =>
+    expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-acceptance-completion-evidence-delivery-receipts')
+  );
+  expect(await within(acceptancePanel).findByText(
+    'Final acceptance completion evidence delivery receipt recorded'
+  )).toBeInTheDocument();
+
+  await user.click(within(acceptancePanel).getByRole('button', {
+    name:
+      'Download final acceptance completion evidence delivery receipt final-acceptance-completion-evidence-delivery-receipt-1'
+  }));
+
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
+    '/api/demo/final-acceptance-completion-evidence-delivery-receipts/final-acceptance-completion-evidence-delivery-receipt-1/report/download'
+  ));
+  await waitFor(() => expect(click).toHaveBeenCalled());
+  await waitFor(() =>
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:final-acceptance-completion-evidence-delivery-receipt')
+  );
+  expect(await within(acceptancePanel).findByText(
+    'Final acceptance completion evidence delivery receipt final-acceptance-completion-evidence-delivery-receipt-1 downloaded'
+  )).toBeInTheDocument();
 });
 
 test('records task evidence delivery receipt and downloads finalization reports from dashboard', async () => {
@@ -5479,16 +5700,23 @@ test('shows task status filter counts from backend status count API', async () =
 });
 
 test('loads status filter counts for the current search repository and time scope without status', async () => {
-  const user = userEvent.setup();
   const fetchMock = vi.mocked(fetch);
   window.history.replaceState(null, '', '/tasks/task-1?status=FAILED&repositoryOwner=bingqin2#timeline');
 
   render(<App />);
 
-  await user.type(await screen.findByRole('searchbox', { name: 'Search tasks' }), 'broken');
-  await user.type(screen.getByRole('textbox', { name: 'Filter repository name' }), 'PatchPilot');
-  await user.type(screen.getByRole('textbox', { name: 'Filter created after' }), '2026-06-20T01:00:00Z');
-  await user.type(screen.getByRole('textbox', { name: 'Filter created before' }), '2026-06-21T01:00:00Z');
+  fireEvent.change(await screen.findByRole('searchbox', { name: 'Search tasks' }), {
+    target: { value: 'broken' }
+  });
+  fireEvent.change(screen.getByRole('textbox', { name: 'Filter repository name' }), {
+    target: { value: 'PatchPilot' }
+  });
+  fireEvent.change(screen.getByRole('textbox', { name: 'Filter created after' }), {
+    target: { value: '2026-06-20T01:00:00Z' }
+  });
+  fireEvent.change(screen.getByRole('textbox', { name: 'Filter created before' }), {
+    target: { value: '2026-06-21T01:00:00Z' }
+  });
 
   expect(within(await screen.findByRole('button', { name: 'ALL' })).getByText('1')).toBeInTheDocument();
   expect(screen.getByRole('button', { name: 'FAILED' })).toHaveAttribute('aria-pressed', 'true');
@@ -6266,20 +6494,20 @@ test('retries failed tasks and refreshes dashboard data', async () => {
 });
 
 test('approves pending review tasks and refreshes dashboard data', async () => {
-  const user = userEvent.setup();
   const fetchMock = vi.mocked(fetch);
 
   render(<App />);
 
-  await user.click(await screen.findByRole('button', { name: 'PENDING_REVIEW' }));
+  fireEvent.click(await screen.findByRole('button', { name: 'PENDING_REVIEW' }));
   expect(await screen.findByText('/agent fix update deployment workflow')).toBeInTheDocument();
 
-  await user.selectOptions(await screen.findByLabelText('Approver'), 'release-captain');
-  await user.type(
-    await screen.findByLabelText('Approval reason'),
-    'Reviewed generated diff and accepted docs-only change'
-  );
-  await user.click(await screen.findByRole('button', { name: 'Approve review' }));
+  fireEvent.change(await screen.findByLabelText('Approver'), {
+    target: { value: 'release-captain' }
+  });
+  fireEvent.change(await screen.findByLabelText('Approval reason'), {
+    target: { value: 'Reviewed generated diff and accepted docs-only change' }
+  });
+  fireEvent.click(await screen.findByRole('button', { name: 'Approve review' }));
 
   await waitFor(() =>
     expect(fetchMock).toHaveBeenCalledWith('/api/tasks/task-review/approve-review', {
@@ -6293,7 +6521,7 @@ test('approves pending review tasks and refreshes dashboard data', async () => {
   );
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks?limit=50&status=PENDING_REVIEW'));
   expect(screen.queryByRole('button', { name: 'Retry task' })).not.toBeInTheDocument();
-});
+}, 10000);
 
 test('retries rejected triggers and refreshes dashboard data', async () => {
   const user = userEvent.setup();
@@ -6426,6 +6654,24 @@ function defaultAppResponse(input: RequestInfo | URL, init?: RequestInit) {
         type: 'text/markdown;charset=UTF-8'
       })
     } as Response);
+  }
+  if (url === '/api/demo/final-acceptance-share-delivery-receipts') {
+    return jsonResponse([demoFinalAcceptanceShareDeliveryReceipt]);
+  }
+  if (url === '/api/demo/final-acceptance-share-finalization') {
+    return jsonResponse(demoFinalAcceptanceShareFinalization);
+  }
+  if (url === '/api/demo/final-acceptance-completion-evidence-bundle') {
+    return jsonResponse(demoFinalAcceptanceCompletionEvidenceBundle);
+  }
+  if (url === '/api/demo/final-acceptance-completion-archives' && init?.method === 'POST') {
+    return jsonResponse(demoFinalAcceptanceCompletionArchive);
+  }
+  if (url === '/api/demo/final-acceptance-completion-archives') {
+    return jsonResponse([demoFinalAcceptanceCompletionArchive]);
+  }
+  if (url === '/api/demo/final-acceptance-completion-evidence-delivery-receipts') {
+    return jsonResponse([demoFinalAcceptanceCompletionEvidenceDeliveryReceipt]);
   }
   if (url === '/api/demo/launch-preflight' && init?.method === 'POST') {
     return jsonResponse(demoLaunchPreflight);

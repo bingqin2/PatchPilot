@@ -4,6 +4,7 @@ import io.patchpilot.backend.common.response.ApiResponse;
 import io.patchpilot.backend.demo.domain.DemoAcceptanceSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionArchiveVo;
+import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionEvidenceDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionEvidenceBundleVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceShareDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceShareFinalizationVo;
@@ -96,6 +97,7 @@ public class DemoReadinessController {
     private final DemoFinalAcceptanceShareFinalizationService demoFinalAcceptanceShareFinalizationService;
     private final DemoFinalAcceptanceCompletionArchiveService demoFinalAcceptanceCompletionArchiveService;
     private final DemoFinalAcceptanceCompletionEvidenceBundleService demoFinalAcceptanceCompletionEvidenceBundleService;
+    private final DemoFinalAcceptanceCompletionEvidenceDeliveryReceiptService demoFinalAcceptanceCompletionEvidenceDeliveryReceiptService;
     private final DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
     private final DemoReadinessSnapshotTrendService demoReadinessSnapshotTrendService;
     private final DemoLaunchPreflightService demoLaunchPreflightService;
@@ -409,6 +411,34 @@ public class DemoReadinessController {
         return ApiResponse.ok(demoFinalAcceptanceCompletionArchiveService.listRecentArchives());
     }
 
+    @PostMapping("/final-acceptance-completion-evidence-delivery-receipts")
+    public ResponseEntity<ApiResponse<DemoFinalAcceptanceCompletionEvidenceDeliveryReceiptVo>> recordFinalAcceptanceCompletionEvidenceDeliveryReceipt(
+            @RequestBody DemoFinalAcceptanceCompletionEvidenceDeliveryReceiptRequestDto request
+    ) {
+        try {
+            DemoFinalAcceptanceCompletionEvidenceDeliveryReceiptVo receipt =
+                    demoFinalAcceptanceCompletionEvidenceDeliveryReceiptService.recordDeliveryReceipt(request);
+            operatorSafetyAuditService.recordSafetyAudit(new RecordOperatorSafetyAuditCommand(
+                    "DEMO_FINAL_ACCEPTANCE_COMPLETION_EVIDENCE_DELIVERY_RECEIPT_RECORDED",
+                    "DEMO_FINAL_ACCEPTANCE_COMPLETION_EVIDENCE_DELIVERY_RECEIPT",
+                    receipt.id(),
+                    TriggerQuarantineScope.REPOSITORY,
+                    "patchpilot/local-demo",
+                    receipt.operator(),
+                    "Recorded final acceptance completion evidence delivery receipt for "
+                            + receipt.latestCompletionArchiveId()
+            ));
+            return ResponseEntity.ok(ApiResponse.ok(receipt));
+        } catch (IllegalArgumentException | IllegalStateException exception) {
+            return ResponseEntity.badRequest().body(ApiResponse.fail(exception.getMessage()));
+        }
+    }
+
+    @GetMapping("/final-acceptance-completion-evidence-delivery-receipts")
+    public ApiResponse<List<DemoFinalAcceptanceCompletionEvidenceDeliveryReceiptVo>> listFinalAcceptanceCompletionEvidenceDeliveryReceipts() {
+        return ApiResponse.ok(demoFinalAcceptanceCompletionEvidenceDeliveryReceiptService.listRecentReceipts());
+    }
+
     @GetMapping(value = "/handoff-share-center/report/download", produces = "text/markdown;charset=UTF-8")
     public ResponseEntity<String> downloadHandoffShareCenterReport() {
         return markdownAttachment(
@@ -547,6 +577,19 @@ public class DemoReadinessController {
                 .map(archive -> markdownAttachment(
                         "patchpilot-final-acceptance-completion-" + safeFilenamePart(archive.id()) + ".md",
                         archive.report()
+                ))
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @GetMapping(value = "/final-acceptance-completion-evidence-delivery-receipts/{receiptId}/report/download", produces = "text/markdown;charset=UTF-8")
+    public ResponseEntity<String> downloadFinalAcceptanceCompletionEvidenceDeliveryReceiptReport(
+            @PathVariable String receiptId
+    ) {
+        return demoFinalAcceptanceCompletionEvidenceDeliveryReceiptService.findReceipt(receiptId)
+                .map(receipt -> markdownAttachment(
+                        "patchpilot-final-acceptance-completion-evidence-delivery-receipt-"
+                                + safeFilenamePart(receipt.id()) + ".md",
+                        receipt.markdownReport()
                 ))
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
