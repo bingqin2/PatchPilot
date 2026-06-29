@@ -14,6 +14,7 @@ import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionEvidenceDe
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionEvidenceDeliveryFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewDeliveryCertificateArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewDeliveryCertificateVo;
+import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewReleaseBundleVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageDeliveryFinalizationVo;
@@ -239,6 +240,9 @@ class DemoReadinessControllerTests {
     @MockitoBean
     private DemoFinalExternalReviewDeliveryCertificateArchiveService
             demoFinalExternalReviewDeliveryCertificateArchiveService;
+
+    @MockitoBean
+    private DemoFinalExternalReviewReleaseBundleService demoFinalExternalReviewReleaseBundleService;
 
     @MockitoBean
     private DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
@@ -1395,6 +1399,52 @@ class DemoReadinessControllerTests {
 
         mockMvc.perform(get("/api/demo/final-external-review-delivery-certificate/archives/missing/report/download"))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void should_return_final_external_review_release_bundle() throws Exception {
+        when(demoFinalExternalReviewReleaseBundleService.getReleaseBundle())
+                .thenReturn(finalExternalReviewReleaseBundle());
+
+        mockMvc.perform(get("/api/demo/final-external-review-release-bundle"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.releaseReady").value(true))
+                .andExpect(jsonPath("$.data.summary")
+                        .value("PatchPilot final external-review release bundle is ready."))
+                .andExpect(jsonPath("$.data.latestCertificateArchiveId")
+                        .value("final-external-review-delivery-certificate-archive-1"))
+                .andExpect(jsonPath("$.data.latestDeliveryReceiptId")
+                        .value("final-external-review-package-delivery-receipt-1"))
+                .andExpect(jsonPath("$.data.requiredAttachments").value(hasItem(
+                        "Final external-review delivery certificate archive final-external-review-delivery-certificate-archive-1"
+                )))
+                .andExpect(jsonPath("$.data.downloadActions").value(hasItem(
+                        "Download final external-review release bundle report."
+                )))
+                .andExpect(jsonPath("$.data.markdownReport").value(containsString(
+                        "# PatchPilot Final External Review Release Bundle"
+                )));
+    }
+
+    @Test
+    void should_download_final_external_review_release_bundle_report() throws Exception {
+        when(demoFinalExternalReviewReleaseBundleService.getReleaseBundle())
+                .thenReturn(finalExternalReviewReleaseBundle());
+
+        mockMvc.perform(get("/api/demo/final-external-review-release-bundle/report/download"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString(
+                        "patchpilot-final-external-review-release-bundle.md"
+                )))
+                .andExpect(content().contentType("text/markdown;charset=UTF-8"))
+                .andExpect(content().string(containsString(
+                        "# PatchPilot Final External Review Release Bundle"
+                )))
+                .andExpect(content().string(containsString(
+                        "final-external-review-delivery-certificate-archive-1"
+                )));
     }
 
     @Test
@@ -4786,6 +4836,46 @@ class DemoReadinessControllerTests {
                 certificate.markdownReport(),
                 certificate.generatedAt(),
                 Instant.parse("2026-06-29T11:30:00Z")
+        );
+    }
+
+    private static DemoFinalExternalReviewReleaseBundleVo finalExternalReviewReleaseBundle() {
+        return new DemoFinalExternalReviewReleaseBundleVo(
+                DemoReadinessStatus.READY,
+                true,
+                "PatchPilot final external-review release bundle is ready.",
+                "Share the release bundle report and listed attachments with external reviewers.",
+                "final-external-review-delivery-certificate-archive-1",
+                "final-external-review-package-delivery-finalization-archive-1",
+                "final-external-review-package-archive-1",
+                "final-external-review-package-delivery-receipt-1",
+                "task-1",
+                "https://github.com/bingqin2/PatchPilot/pull/8",
+                "reviewer@example.com",
+                "email",
+                "2026-06-29T09:25:00Z",
+                Instant.parse("2026-06-29T11:30:00Z"),
+                Instant.parse("2026-06-29T12:00:00Z"),
+                List.of(
+                        "Final external-review delivery certificate archive final-external-review-delivery-certificate-archive-1",
+                        "Final external-review package delivery receipt final-external-review-package-delivery-receipt-1"
+                ),
+                List.of(new DemoFinalExternalReviewReleaseBundleVo.ReleaseCheck(
+                        "Final delivery certificate archive",
+                        DemoReadinessStatus.READY,
+                        "Latest final external-review delivery certificate archive is certified.",
+                        "No action needed."
+                )),
+                List.of(
+                        "Certified final external-review delivery certificate archive final-external-review-delivery-certificate-archive-1 is the release source of truth."
+                ),
+                List.of(
+                        "Download final external-review release bundle report.",
+                        "Download final external-review delivery certificate archive final-external-review-delivery-certificate-archive-1."
+                ),
+                "GET /api/demo/final-external-review-release-bundle is read-only.",
+                "# PatchPilot Final External Review Release Bundle\n\n"
+                        + "- Certificate archive: `final-external-review-delivery-certificate-archive-1`\n"
         );
     }
 }
