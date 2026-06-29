@@ -6016,3 +6016,24 @@ Validation so far:
 - `npm run build`: first failed because the new release-bundle download handler used an `errorMessage` helper that only exists in `App.tsx`; passed after matching the component's existing fixed failure-message pattern. The existing Vite large-chunk warning remains.
 - `npm test -- --run src/dashboard/components/DemoAcceptanceSummaryPanel.test.tsx src/App.test.tsx --reporter=basic`: passed after the build fix, 2 test files and 103 tests.
 - `git diff --check`: passed.
+
+## 2026-06-30 - 299 Final release bundle evidence surface
+
+- Started `299-final-release-bundle-evidence-surface` to promote the final external-review release bundle into the top-level demo evidence bundle and copied runbook.
+- Planned a complete feature slice: backend evidence-bundle field and readiness aggregation, copied runbook release-bundle lines, dashboard evidence-bundle release card with legacy fallback, README/product/frontend docs, plan doc, and regression tests.
+- Added `finalExternalReviewReleaseBundle` to `DemoEvidenceBundleVo` with compatibility defaults for older focused tests and call sites.
+- Wired `DemoEvidenceBundleService` to `DemoFinalExternalReviewReleaseBundleService` so top-level readiness and next actions now depend on terminal reviewer handoff proof.
+- Updated `DemoRunbookService` to include release readiness, certificate archive, delivery finalization archive, package archive, receipt, task, Pull Request, target/channel, attachments, evidence notes, and download actions.
+- Updated the dashboard evidence bundle panel and App smoke fixture so the first demo readout shows release-ready status, required final attachments, and the release Pull Request without opening the final acceptance panel.
+- Updated README, product spec, frontend design doc, and added this plan document.
+
+Validation so far:
+
+- `mvn -q -pl PatchPilot '-Dtest=DemoEvidenceBundleServiceTests#should_report_ready_when_all_evidence_is_healthy+should_require_final_external_review_release_bundle_before_reporting_bundle_ready' test`: passed after backend wiring.
+- `mvn -q -pl PatchPilot '-Dtest=DemoRunbookServiceTests#should_format_demo_evidence_bundle_as_markdown_runbook' test`: passed after runbook release lines were added.
+- `npm test -- --run src/dashboard/components/DemoEvidenceBundlePanel.test.tsx`: first failed on legacy fallback expectations after the release card was introduced, then passed after adjusting the old-response fixture and duplicate fallback assertion.
+- `npm test -- --run src/App.test.tsx`: passed, 86 tests.
+- `mvn -q -pl PatchPilot test`: passed.
+- `npm test`: passed, 30 test files and 465 tests.
+- `npm run build`: passed with the existing Vite large-chunk warning.
+- `git diff --check`: passed.

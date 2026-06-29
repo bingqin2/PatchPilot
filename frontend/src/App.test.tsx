@@ -1969,6 +1969,41 @@ const demoEvidenceBundle = {
     sideEffectContract: 'GET /api/demo/final-external-review-evidence-package is read-only.',
     markdownReport: '# PatchPilot Final External Review Evidence Package'
   },
+  finalExternalReviewReleaseBundle: {
+    status: 'READY',
+    releaseReady: true,
+    summary: 'PatchPilot final external-review release bundle is ready.',
+    nextAction: 'Share the release bundle report and listed attachments with external reviewers.',
+    latestCertificateArchiveId: 'final-external-review-delivery-certificate-archive-1',
+    latestDeliveryFinalizationArchiveId: 'final-external-review-package-delivery-finalization-archive-1',
+    latestPackageArchiveId: 'final-external-review-package-archive-1',
+    latestDeliveryReceiptId: 'final-external-review-package-delivery-receipt-1',
+    latestTaskId: 'task-1',
+    latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+    latestDeliveryTarget: 'reviewer@example.com',
+    latestDeliveryChannel: 'email',
+    latestDeliveredAt: '2026-06-29T07:20:00Z',
+    latestCertificateArchivedAt: '2026-06-29T10:20:00Z',
+    generatedAt: '2026-06-29T10:30:00Z',
+    requiredAttachments: [
+      'Final external-review delivery certificate archive final-external-review-delivery-certificate-archive-1',
+      'Final external-review package archive final-external-review-package-archive-1'
+    ],
+    releaseChecks: [
+      {
+        name: 'Final delivery certificate archive',
+        status: 'READY',
+        summary: 'Latest final external-review delivery certificate archive is certified.',
+        nextAction: 'No action needed.'
+      }
+    ],
+    evidenceNotes: [
+      'Certified final external-review delivery certificate archive final-external-review-delivery-certificate-archive-1 is the release source of truth.'
+    ],
+    downloadActions: ['Download final external-review release bundle report.'],
+    sideEffectContract: 'GET /api/demo/final-external-review-release-bundle is read-only.',
+    markdownReport: '# PatchPilot Final External Review Release Bundle'
+  },
   handoffShareDeliveryReceiptRecorded: true,
   handoffShareLatestDeliveryReceiptId: 'delivery-receipt-1',
   handoffShareLatestDeliveryTarget: 'maintainer@example.com',
@@ -4543,6 +4578,14 @@ test('renders operational task dashboard from backend APIs', async () => {
   const evidencePanel = screen.getByRole('region', { name: 'Demo evidence bundle' });
   expect(within(evidencePanel).getByText('Webhook setup is ready for GitHub deliveries.')).toBeInTheDocument();
   expect(within(evidencePanel).getByText('https://demo.trycloudflare.com/api/github/webhook')).toBeInTheDocument();
+  expect(within(evidencePanel).getByText('Final external-review release bundle')).toBeInTheDocument();
+  expect(within(evidencePanel).getByText('PatchPilot final external-review release bundle is ready.'))
+    .toBeInTheDocument();
+  expect(within(evidencePanel).getByText('final-external-review-delivery-certificate-archive-1'))
+    .toBeInTheDocument();
+  expect(within(evidencePanel).getByRole('link', {
+    name: 'Open final external-review release Pull Request'
+  })).toHaveAttribute('href', 'https://github.com/bingqin2/PatchPilot/pull/8');
   const acceptancePanel = screen.getByRole('region', { name: 'Final demo acceptance' });
   expect(within(acceptancePanel).getAllByText('PatchPilot final demo acceptance is ready for external review.')).not.toHaveLength(0);
   expect(within(acceptancePanel).getByRole('heading', { name: 'Final acceptance share package' })).toBeInTheDocument();

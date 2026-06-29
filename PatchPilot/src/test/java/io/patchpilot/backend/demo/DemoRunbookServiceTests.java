@@ -12,6 +12,7 @@ import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageD
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageDeliveryFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageDeliveryReceiptEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageVo;
+import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewReleaseBundleVo;
 import io.patchpilot.backend.demo.domain.DemoFinalHandoffReportPackageArchiveEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchAcceptanceCertificateEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchAcceptanceCloseoutEvidenceVo;
@@ -168,6 +169,21 @@ class DemoRunbookServiceTests {
                 .contains("- Final external-review package delivery finalization archived at: `2026-06-29T05:15:00Z`")
                 .contains("- Final external-review package delivery finalization archive next action: Use the archived final external-review package delivery finalization as the delivery closure record.")
                 .contains("- Final external-review package delivery finalization archive download: Download final external-review package delivery finalization archive final-external-review-package-delivery-finalization-archive-1.")
+                .contains("- Final external-review release bundle: `READY` - PatchPilot final external-review release bundle is ready.")
+                .contains("- Final external-review release ready: `true`")
+                .contains("- Final external-review release certificate archive: `final-external-review-delivery-certificate-archive-1`")
+                .contains("- Final external-review release finalization archive: `final-external-review-package-delivery-finalization-archive-1`")
+                .contains("- Final external-review release package archive: `final-external-review-package-archive-1`")
+                .contains("- Final external-review release delivery receipt: `final-external-review-package-delivery-receipt-1`")
+                .contains("- Final external-review release task: `task-2`")
+                .contains("- Final external-review release Pull Request: https://github.com/bingqin2/PatchPilot/pull/42")
+                .contains("- Final external-review release delivery target: reviewer@example.com via email")
+                .contains("- Final external-review release delivered at: `2026-06-29T05:00:00Z`")
+                .contains("- Final external-review release certificate archived at: `2026-06-29T05:30:00Z`")
+                .contains("- Final external-review release next action: Share the release bundle report and listed attachments with external reviewers.")
+                .contains("- Final external-review release attachment: Final external-review delivery certificate archive final-external-review-delivery-certificate-archive-1.")
+                .contains("- Final external-review release evidence: Certified delivery certificate archive final-external-review-delivery-certificate-archive-1 is the release root.")
+                .contains("- Final external-review release download: Download final external-review release bundle report.")
                 .contains("## Readiness")
                 .contains("- `Credentials`: `READY` - Required credentials are configured.")
                 .contains("## Smoke Checklist")
@@ -367,6 +383,7 @@ class DemoRunbookServiceTests {
                 finalExternalReviewEvidencePackageDeliveryReceiptEvidence(),
                 finalExternalReviewEvidencePackageDeliveryFinalization(),
                 finalExternalReviewEvidencePackageDeliveryFinalizationArchiveEvidence(),
+                finalExternalReviewReleaseBundle(),
                 true,
                 "delivery-receipt-1",
                 "Demo reviewer",
@@ -671,6 +688,49 @@ class DemoRunbookServiceTests {
                         "Download final external-review package archive final-external-review-package-archive-1.",
                         "Download final external-review package delivery receipt final-external-review-package-delivery-receipt-1."
                 )
+        );
+    }
+
+    private static DemoFinalExternalReviewReleaseBundleVo finalExternalReviewReleaseBundle() {
+        return new DemoFinalExternalReviewReleaseBundleVo(
+                DemoReadinessStatus.READY,
+                true,
+                "PatchPilot final external-review release bundle is ready.",
+                "Share the release bundle report and listed attachments with external reviewers.",
+                "final-external-review-delivery-certificate-archive-1",
+                "final-external-review-package-delivery-finalization-archive-1",
+                "final-external-review-package-archive-1",
+                "final-external-review-package-delivery-receipt-1",
+                "task-2",
+                "https://github.com/bingqin2/PatchPilot/pull/42",
+                "reviewer@example.com",
+                "email",
+                "2026-06-29T05:00:00Z",
+                Instant.parse("2026-06-29T05:30:00Z"),
+                Instant.parse("2026-06-29T05:35:00Z"),
+                List.of(
+                        "Final external-review delivery certificate archive final-external-review-delivery-certificate-archive-1.",
+                        "Final external-review package delivery finalization archive final-external-review-package-delivery-finalization-archive-1.",
+                        "Final external-review package archive final-external-review-package-archive-1.",
+                        "Final external-review package delivery receipt final-external-review-package-delivery-receipt-1."
+                ),
+                List.of(new DemoFinalExternalReviewReleaseBundleVo.ReleaseCheck(
+                        "Final external-review delivery certificate archive",
+                        DemoReadinessStatus.READY,
+                        "Certified delivery certificate archive final-external-review-delivery-certificate-archive-1 is available.",
+                        "No action needed."
+                )),
+                List.of(
+                        "Certified delivery certificate archive final-external-review-delivery-certificate-archive-1 is the release root.",
+                        "Package delivery finalization archive final-external-review-package-delivery-finalization-archive-1 is included."
+                ),
+                List.of(
+                        "Download final external-review release bundle report.",
+                        "Download final external-review delivery certificate archive final-external-review-delivery-certificate-archive-1.",
+                        "Download final external-review package delivery finalization archive final-external-review-package-delivery-finalization-archive-1."
+                ),
+                "GET /api/demo/final-external-review-release-bundle is read-only.",
+                "# PatchPilot Final External Review Release Bundle"
         );
     }
 }

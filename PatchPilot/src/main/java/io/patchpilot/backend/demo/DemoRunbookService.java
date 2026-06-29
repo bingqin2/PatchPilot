@@ -489,6 +489,63 @@ public class DemoRunbookService {
                         .append("- Final external-review package delivery finalization archive download: ")
                         .append(action)
                         .append("\n"));
+
+        runbook.append("- Final external-review release bundle: `")
+                .append(bundle.finalExternalReviewReleaseBundle().status())
+                .append("` - ")
+                .append(bundle.finalExternalReviewReleaseBundle().summary())
+                .append("\n")
+                .append("- Final external-review release ready: `")
+                .append(bundle.finalExternalReviewReleaseBundle().releaseReady())
+                .append("`\n")
+                .append("- Final external-review release certificate archive: ")
+                .append(valueOrNoneBackticked(bundle.finalExternalReviewReleaseBundle().latestCertificateArchiveId()))
+                .append("\n")
+                .append("- Final external-review release finalization archive: ")
+                .append(valueOrNoneBackticked(bundle.finalExternalReviewReleaseBundle()
+                        .latestDeliveryFinalizationArchiveId()))
+                .append("\n")
+                .append("- Final external-review release package archive: ")
+                .append(valueOrNoneBackticked(bundle.finalExternalReviewReleaseBundle().latestPackageArchiveId()))
+                .append("\n")
+                .append("- Final external-review release delivery receipt: ")
+                .append(valueOrNoneBackticked(bundle.finalExternalReviewReleaseBundle().latestDeliveryReceiptId()))
+                .append("\n")
+                .append("- Final external-review release task: ")
+                .append(valueOrNoneBackticked(bundle.finalExternalReviewReleaseBundle().latestTaskId()))
+                .append("\n")
+                .append("- Final external-review release Pull Request: ")
+                .append(valueOrNone(bundle.finalExternalReviewReleaseBundle().latestPullRequestUrl()))
+                .append("\n")
+                .append("- Final external-review release delivery target: ")
+                .append(finalExternalReviewReleaseDeliveryTarget(bundle))
+                .append("\n")
+                .append("- Final external-review release delivered at: ")
+                .append(valueOrNoneBackticked(bundle.finalExternalReviewReleaseBundle().latestDeliveredAt()))
+                .append("\n")
+                .append("- Final external-review release certificate archived at: ")
+                .append(bundle.finalExternalReviewReleaseBundle().latestCertificateArchivedAt() == null
+                        ? "none"
+                        : "`" + bundle.finalExternalReviewReleaseBundle().latestCertificateArchivedAt() + "`")
+                .append("\n")
+                .append("- Final external-review release next action: ")
+                .append(bundle.finalExternalReviewReleaseBundle().nextAction())
+                .append("\n");
+        bundle.finalExternalReviewReleaseBundle().requiredAttachments()
+                .forEach(attachment -> runbook
+                        .append("- Final external-review release attachment: ")
+                        .append(attachment)
+                        .append("\n"));
+        bundle.finalExternalReviewReleaseBundle().evidenceNotes()
+                .forEach(note -> runbook
+                        .append("- Final external-review release evidence: ")
+                        .append(note)
+                        .append("\n"));
+        bundle.finalExternalReviewReleaseBundle().downloadActions()
+                .forEach(action -> runbook
+                        .append("- Final external-review release download: ")
+                        .append(action)
+                        .append("\n"));
     }
 
     private static void appendEvaluationRunReadiness(
@@ -605,6 +662,18 @@ public class DemoRunbookService {
     private static String finalExternalReviewPackageDeliveryTarget(DemoEvidenceBundleVo bundle) {
         String target = bundle.finalExternalReviewEvidencePackageDeliveryReceiptEvidence().latestDeliveryTarget();
         String channel = bundle.finalExternalReviewEvidencePackageDeliveryReceiptEvidence().latestDeliveryChannel();
+        if (target == null || target.isBlank()) {
+            return "none";
+        }
+        if (channel == null || channel.isBlank()) {
+            return target;
+        }
+        return target + " via " + channel;
+    }
+
+    private static String finalExternalReviewReleaseDeliveryTarget(DemoEvidenceBundleVo bundle) {
+        String target = bundle.finalExternalReviewReleaseBundle().latestDeliveryTarget();
+        String channel = bundle.finalExternalReviewReleaseBundle().latestDeliveryChannel();
         if (target == null || target.isBlank()) {
             return "none";
         }
