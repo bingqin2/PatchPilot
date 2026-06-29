@@ -988,6 +988,35 @@ export interface DemoFinalAcceptanceCompletionEvidenceDeliveryFinalization {
   generatedAt: string;
 }
 
+export interface DemoFinalAcceptanceCompletionCloseoutCheck {
+  name: string;
+  status: DemoReadinessStatus;
+  summary: string;
+  nextAction: string;
+}
+
+export interface DemoFinalAcceptanceCompletionCloseout {
+  status: DemoReadinessStatus;
+  closed: boolean;
+  summary: string;
+  nextAction: string;
+  latestTaskId: string | null;
+  latestPullRequestUrl: string | null;
+  latestSharePackageArchiveId: string | null;
+  latestCompletionArchiveId: string | null;
+  latestCompletionEvidenceDeliveryReceiptId: string | null;
+  latestDeliveryTarget: string | null;
+  latestDeliveryChannel: string | null;
+  latestDeliveredAt: string | null;
+  deliveryReceiptFreshness: string;
+  checks: DemoFinalAcceptanceCompletionCloseoutCheck[];
+  evidenceNotes: string[];
+  downloadActions: string[];
+  sideEffectContract: string;
+  markdownReport: string;
+  generatedAt: string;
+}
+
 export interface DemoFinalAcceptanceCompletionEvidenceDeliveryReceiptInput {
   deliveryChannel: string;
   deliveryTarget: string;

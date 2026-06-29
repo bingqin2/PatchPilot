@@ -5749,3 +5749,25 @@ Validation so far:
 - `npm test -- --reporter=basic`: passed, 30 test files and 431 tests.
 - `npm run build`: passed with the existing Vite large-chunk warning.
 - `git diff --check`: passed.
+
+## 2026-06-29 - 286 Final acceptance completion closeout
+
+- Started `286-final-acceptance-completion-closeout` to provide one final closed/not-closed report for the externally reviewable self-hosted issue-to-PR demo.
+- Planned a complete feature slice: backend closeout read model/service/controller endpoints, frontend type/API/App loading, final acceptance panel rendering/download, README/product/frontend docs, plan doc, and regression tests.
+- RED backend service tests were added first and failed because the closeout VO/service did not exist.
+- Implemented `DemoFinalAcceptanceCompletionCloseoutService` and `DemoFinalAcceptanceCompletionCloseoutVo` so the closeout is `READY` only when final demo acceptance is accepted, reviewer-package finalization is finalized, the completion evidence bundle is share-ready, the latest completion delivery finalization is finalized, and completion evidence delivery receipt proof exists.
+- Added `GET /api/demo/final-acceptance-completion-closeout` and `GET /api/demo/final-acceptance-completion-closeout/report/download`.
+- RED controller tests first returned 404 for the new closeout endpoints, then passed after controller wiring.
+- Updated the final demo acceptance dashboard panel with completion closeout status, closed flag, latest task/Pull Request/archive/receipt proof, checks, evidence notes, download actions, side-effect contract, and Markdown download.
+- Updated README, product spec, frontend design doc, and added this plan document.
+
+Validation so far:
+
+- `mvn -q -pl PatchPilot -Dtest=DemoFinalAcceptanceCompletionCloseoutServiceTests test`: first failed because the closeout VO/service did not exist; passed after backend implementation.
+- `mvn -q -pl PatchPilot -Dtest=DemoReadinessControllerTests#should_return_final_acceptance_completion_closeout+should_download_final_acceptance_completion_closeout_report test`: first failed with 404 for the closeout endpoints; passed after controller implementation.
+- `mvn -q -pl PatchPilot -Dtest=DemoFinalAcceptanceCompletionCloseoutServiceTests,DemoReadinessControllerTests#should_return_final_acceptance_completion_closeout+should_download_final_acceptance_completion_closeout_report test`: passed.
+- `npm test -- --reporter=basic src/api.test.ts src/dashboard/components/DemoAcceptanceSummaryPanel.test.tsx src/App.test.tsx`: passed, 3 test files and 265 tests.
+- `mvn -q -pl PatchPilot test`: passed.
+- `npm test -- --reporter=basic`: passed, 30 test files and 434 tests.
+- `npm run build`: passed with the existing Vite large-chunk warning.
+- `git diff --check`: passed.

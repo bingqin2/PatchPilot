@@ -3,6 +3,7 @@ import { useState } from 'react';
 import type {
   DemoAcceptanceSummary,
   DemoFinalAcceptanceCompletionArchive,
+  DemoFinalAcceptanceCompletionCloseout,
   DemoFinalAcceptanceCompletionEvidenceBundle,
   DemoFinalAcceptanceCompletionEvidenceDeliveryFinalization,
   DemoFinalAcceptanceCompletionEvidenceDeliveryReceipt,
@@ -26,6 +27,7 @@ interface DemoAcceptanceSummaryPanelProps {
   completionArchives: DemoFinalAcceptanceCompletionArchive[];
   completionEvidenceDeliveryReceipts: DemoFinalAcceptanceCompletionEvidenceDeliveryReceipt[];
   completionEvidenceDeliveryFinalization?: DemoFinalAcceptanceCompletionEvidenceDeliveryFinalization | null;
+  completionCloseout?: DemoFinalAcceptanceCompletionCloseout | null;
   error: string | null;
   sharePackageError: string | null;
   sharePackageArchiveError: string | null;
@@ -35,6 +37,7 @@ interface DemoAcceptanceSummaryPanelProps {
   completionArchiveError: string | null;
   completionEvidenceDeliveryReceiptError: string | null;
   completionEvidenceDeliveryFinalizationError?: string | null;
+  completionCloseoutError?: string | null;
   onDownloadReport: () => Promise<Blob>;
   onDownloadSharePackageReport: () => Promise<Blob>;
   onArchiveSharePackage: () => Promise<DemoFinalAcceptanceSharePackageArchive>;
@@ -52,6 +55,7 @@ interface DemoAcceptanceSummaryPanelProps {
   ) => Promise<DemoFinalAcceptanceCompletionEvidenceDeliveryReceipt>;
   onDownloadCompletionEvidenceDeliveryReceiptReport: (receiptId: string) => Promise<Blob>;
   onDownloadCompletionEvidenceDeliveryFinalizationReport?: () => Promise<Blob>;
+  onDownloadCompletionCloseoutReport?: () => Promise<Blob>;
 }
 
 export function DemoAcceptanceSummaryPanel({
@@ -64,6 +68,7 @@ export function DemoAcceptanceSummaryPanel({
   completionArchives,
   completionEvidenceDeliveryReceipts,
   completionEvidenceDeliveryFinalization = null,
+  completionCloseout = null,
   error,
   sharePackageError,
   sharePackageArchiveError,
@@ -73,6 +78,7 @@ export function DemoAcceptanceSummaryPanel({
   completionArchiveError,
   completionEvidenceDeliveryReceiptError,
   completionEvidenceDeliveryFinalizationError = null,
+  completionCloseoutError = null,
   onDownloadReport,
   onDownloadSharePackageReport,
   onArchiveSharePackage,
@@ -85,7 +91,8 @@ export function DemoAcceptanceSummaryPanel({
   onDownloadCompletionArchiveReport,
   onCreateCompletionEvidenceDeliveryReceipt,
   onDownloadCompletionEvidenceDeliveryReceiptReport,
-  onDownloadCompletionEvidenceDeliveryFinalizationReport
+  onDownloadCompletionEvidenceDeliveryFinalizationReport,
+  onDownloadCompletionCloseoutReport
 }: DemoAcceptanceSummaryPanelProps) {
   const [downloadStatus, setDownloadStatus] = useState<string | null>(null);
   const [sharePackageCopyStatus, setSharePackageCopyStatus] = useState<string | null>(null);
@@ -102,6 +109,7 @@ export function DemoAcceptanceSummaryPanel({
     completionEvidenceDeliveryFinalizationDownloadStatus,
     setCompletionEvidenceDeliveryFinalizationDownloadStatus
   ] = useState<string | null>(null);
+  const [completionCloseoutDownloadStatus, setCompletionCloseoutDownloadStatus] = useState<string | null>(null);
   const [deliveryChannel, setDeliveryChannel] = useState('email');
   const [deliveryTarget, setDeliveryTarget] = useState('');
   const [operator, setOperator] = useState('');
@@ -210,6 +218,19 @@ export function DemoAcceptanceSummaryPanel({
       setCompletionEvidenceDeliveryFinalizationDownloadStatus(
         'Final acceptance completion delivery finalization report download failed'
       );
+    }
+  }
+
+  async function downloadCompletionCloseout() {
+    if (!onDownloadCompletionCloseoutReport) {
+      return;
+    }
+    try {
+      const report = await onDownloadCompletionCloseoutReport();
+      downloadMarkdown(report, 'patchpilot-final-acceptance-completion-closeout.md');
+      setCompletionCloseoutDownloadStatus('Final acceptance completion closeout report downloaded');
+    } catch {
+      setCompletionCloseoutDownloadStatus('Final acceptance completion closeout report download failed');
     }
   }
 
@@ -414,6 +435,7 @@ export function DemoAcceptanceSummaryPanel({
             finalization={shareFinalization}
             completionEvidenceBundle={completionEvidenceBundle}
             completionEvidenceDeliveryFinalization={completionEvidenceDeliveryFinalization}
+            completionCloseout={completionCloseout}
             completionEvidenceDeliveryReceipts={completionEvidenceDeliveryReceipts}
             error={sharePackageError}
             archiveError={sharePackageArchiveError}
@@ -421,6 +443,7 @@ export function DemoAcceptanceSummaryPanel({
             finalizationError={shareFinalizationError}
             completionEvidenceBundleError={completionEvidenceBundleError}
             completionEvidenceDeliveryFinalizationError={completionEvidenceDeliveryFinalizationError}
+            completionCloseoutError={completionCloseoutError}
             copyStatus={sharePackageCopyStatus}
             downloadStatus={sharePackageDownloadStatus}
             archiveStatus={sharePackageArchiveStatus}
@@ -431,6 +454,7 @@ export function DemoAcceptanceSummaryPanel({
             completionEvidenceDeliveryFinalizationDownloadStatus={
               completionEvidenceDeliveryFinalizationDownloadStatus
             }
+            completionCloseoutDownloadStatus={completionCloseoutDownloadStatus}
             completionArchives={completionArchives}
             completionArchiveError={completionArchiveError}
             completionEvidenceDeliveryReceiptError={completionEvidenceDeliveryReceiptError}
@@ -462,6 +486,7 @@ export function DemoAcceptanceSummaryPanel({
             onDownloadFinalization={() => void downloadShareFinalization()}
             onDownloadCompletionEvidenceBundle={() => void downloadCompletionEvidenceBundle()}
             onDownloadCompletionEvidenceDeliveryFinalization={() => void downloadCompletionEvidenceDeliveryFinalization()}
+            onDownloadCompletionCloseout={() => void downloadCompletionCloseout()}
             onArchiveCompletion={() => void archiveCompletion()}
             onDownloadCompletionArchive={(archive) => void downloadCompletionArchive(archive)}
             onCreateCompletionEvidenceDeliveryReceipt={() => void createCompletionEvidenceDeliveryReceipt()}
@@ -482,6 +507,7 @@ interface FinalAcceptanceSharePackageProps {
   finalization: DemoFinalAcceptanceShareFinalization | null;
   completionEvidenceBundle: DemoFinalAcceptanceCompletionEvidenceBundle | null;
   completionEvidenceDeliveryFinalization: DemoFinalAcceptanceCompletionEvidenceDeliveryFinalization | null;
+  completionCloseout: DemoFinalAcceptanceCompletionCloseout | null;
   completionEvidenceDeliveryReceipts: DemoFinalAcceptanceCompletionEvidenceDeliveryReceipt[];
   completionArchives: DemoFinalAcceptanceCompletionArchive[];
   error: string | null;
@@ -490,6 +516,7 @@ interface FinalAcceptanceSharePackageProps {
   finalizationError: string | null;
   completionEvidenceBundleError: string | null;
   completionEvidenceDeliveryFinalizationError: string | null;
+  completionCloseoutError: string | null;
   completionArchiveError: string | null;
   completionEvidenceDeliveryReceiptError: string | null;
   copyStatus: string | null;
@@ -500,6 +527,7 @@ interface FinalAcceptanceSharePackageProps {
   finalizationDownloadStatus: string | null;
   completionEvidenceBundleDownloadStatus: string | null;
   completionEvidenceDeliveryFinalizationDownloadStatus: string | null;
+  completionCloseoutDownloadStatus: string | null;
   completionArchiveStatus: string | null;
   completionArchiveDownloadStatus: string | null;
   completionEvidenceDeliveryReceiptStatus: string | null;
@@ -528,6 +556,7 @@ interface FinalAcceptanceSharePackageProps {
   onDownloadFinalization: () => void;
   onDownloadCompletionEvidenceBundle: () => void;
   onDownloadCompletionEvidenceDeliveryFinalization: () => void;
+  onDownloadCompletionCloseout: () => void;
   onArchiveCompletion: () => void;
   onDownloadCompletionArchive: (archive: DemoFinalAcceptanceCompletionArchive) => void;
   onCreateCompletionEvidenceDeliveryReceipt: () => void;
@@ -543,6 +572,7 @@ function FinalAcceptanceSharePackage({
   finalization,
   completionEvidenceBundle,
   completionEvidenceDeliveryFinalization,
+  completionCloseout,
   completionEvidenceDeliveryReceipts,
   completionArchives,
   error,
@@ -551,6 +581,7 @@ function FinalAcceptanceSharePackage({
   finalizationError,
   completionEvidenceBundleError,
   completionEvidenceDeliveryFinalizationError,
+  completionCloseoutError,
   completionArchiveError,
   completionEvidenceDeliveryReceiptError,
   copyStatus,
@@ -561,6 +592,7 @@ function FinalAcceptanceSharePackage({
   finalizationDownloadStatus,
   completionEvidenceBundleDownloadStatus,
   completionEvidenceDeliveryFinalizationDownloadStatus,
+  completionCloseoutDownloadStatus,
   completionArchiveStatus,
   completionArchiveDownloadStatus,
   completionEvidenceDeliveryReceiptStatus,
@@ -589,6 +621,7 @@ function FinalAcceptanceSharePackage({
   onDownloadFinalization,
   onDownloadCompletionEvidenceBundle,
   onDownloadCompletionEvidenceDeliveryFinalization,
+  onDownloadCompletionCloseout,
   onArchiveCompletion,
   onDownloadCompletionArchive,
   onCreateCompletionEvidenceDeliveryReceipt,
@@ -1073,6 +1106,88 @@ function FinalAcceptanceSharePackage({
               </>
             ) : (
               <p className="empty-state">Final acceptance completion delivery finalization has not loaded yet.</p>
+            )}
+          </div>
+
+          <div className="demo-session-handoff-checks">
+            <div className="demo-session-archive-title-row">
+              <h3>Final acceptance completion closeout</h3>
+              <div className="demo-session-archive-actions">
+                {completionCloseout ? (
+                  <span className={`demo-readiness-status demo-readiness-status-${statusClass(completionCloseout.status)}`}>
+                    {statusLabel(completionCloseout.status)}
+                  </span>
+                ) : null}
+                <button
+                  className="secondary-button"
+                  type="button"
+                  onClick={() => onDownloadCompletionCloseout()}
+                  aria-label="Download final acceptance completion closeout report"
+                  disabled={!completionCloseout}
+                >
+                  <Download size={14} />
+                  Download completion closeout
+                </button>
+                {completionCloseoutDownloadStatus ? (
+                  <span className="copy-status">{completionCloseoutDownloadStatus}</span>
+                ) : null}
+              </div>
+            </div>
+            {completionCloseoutError ? (
+              <div className="adapter-api-error">
+                <strong>Final acceptance completion closeout unavailable</strong>
+                <span>{completionCloseoutError}</span>
+              </div>
+            ) : null}
+            {completionCloseout ? (
+              <>
+                <div className="demo-session-summary">
+                  <div>
+                    <span>Closeout</span>
+                    <strong>{completionCloseout.closed ? 'Closed' : statusLabel(completionCloseout.status)}</strong>
+                    <small>{completionCloseout.summary}</small>
+                  </div>
+                  <div>
+                    <span>Completion receipt</span>
+                    <strong>{completionCloseout.latestCompletionEvidenceDeliveryReceiptId ?? 'No receipt'}</strong>
+                    <small>{completionCloseout.deliveryReceiptFreshness}</small>
+                  </div>
+                  <div>
+                    <span>Final review target</span>
+                    <strong>{completionCloseout.latestDeliveryTarget ?? 'No delivery target'}</strong>
+                    <small>{completionCloseout.nextAction}</small>
+                  </div>
+                </div>
+                <div className="demo-readiness-check-list compact-readiness-list">
+                  {completionCloseout.checks.map((check) => (
+                    <div key={check.name} className="demo-readiness-check">
+                      <div>
+                        <strong>{check.name}</strong>
+                        <p>{check.summary}</p>
+                        <p className="demo-readiness-check-action">{check.nextAction}</p>
+                      </div>
+                      <span className={`demo-readiness-status demo-readiness-status-${statusClass(check.status)}`}>
+                        {statusLabel(check.status)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <div className="demo-session-lists compact-demo-session-lists">
+                  <CompactList
+                    title="Closeout evidence"
+                    items={completionCloseout.evidenceNotes}
+                    emptyText="No closeout evidence available."
+                  />
+                  <CompactList
+                    title="Closeout downloads"
+                    items={completionCloseout.downloadActions}
+                    emptyText="No closeout downloads available."
+                  />
+                </div>
+                <small>{completionCloseout.sideEffectContract}</small>
+              </>
+            ) : (
+              <p className="empty-state">Final acceptance completion closeout has not loaded yet.</p>
             )}
           </div>
 

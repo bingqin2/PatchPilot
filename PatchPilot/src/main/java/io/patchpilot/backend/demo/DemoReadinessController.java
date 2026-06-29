@@ -4,6 +4,7 @@ import io.patchpilot.backend.common.response.ApiResponse;
 import io.patchpilot.backend.demo.domain.DemoAcceptanceSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionArchiveVo;
+import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionCloseoutVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionEvidenceDeliveryFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionEvidenceDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionEvidenceBundleVo;
@@ -100,6 +101,7 @@ public class DemoReadinessController {
     private final DemoFinalAcceptanceCompletionEvidenceBundleService demoFinalAcceptanceCompletionEvidenceBundleService;
     private final DemoFinalAcceptanceCompletionEvidenceDeliveryReceiptService demoFinalAcceptanceCompletionEvidenceDeliveryReceiptService;
     private final DemoFinalAcceptanceCompletionEvidenceDeliveryFinalizationService demoFinalAcceptanceCompletionEvidenceDeliveryFinalizationService;
+    private final DemoFinalAcceptanceCompletionCloseoutService demoFinalAcceptanceCompletionCloseoutService;
     private final DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
     private final DemoReadinessSnapshotTrendService demoReadinessSnapshotTrendService;
     private final DemoLaunchPreflightService demoLaunchPreflightService;
@@ -392,6 +394,11 @@ public class DemoReadinessController {
         return ApiResponse.ok(demoFinalAcceptanceCompletionEvidenceDeliveryFinalizationService.getFinalizationGate());
     }
 
+    @GetMapping("/final-acceptance-completion-closeout")
+    public ApiResponse<DemoFinalAcceptanceCompletionCloseoutVo> getFinalAcceptanceCompletionCloseout() {
+        return ApiResponse.ok(demoFinalAcceptanceCompletionCloseoutService.getCloseout());
+    }
+
     @PostMapping("/final-acceptance-completion-archives")
     public ResponseEntity<ApiResponse<DemoFinalAcceptanceCompletionArchiveVo>> archiveFinalAcceptanceCompletion() {
         try {
@@ -583,6 +590,14 @@ public class DemoReadinessController {
         return markdownAttachment(
                 "patchpilot-final-acceptance-completion-evidence-delivery-finalization.md",
                 demoFinalAcceptanceCompletionEvidenceDeliveryFinalizationService.getFinalizationGate().markdownReport()
+        );
+    }
+
+    @GetMapping(value = "/final-acceptance-completion-closeout/report/download", produces = "text/markdown;charset=UTF-8")
+    public ResponseEntity<String> downloadFinalAcceptanceCompletionCloseoutReport() {
+        return markdownAttachment(
+                "patchpilot-final-acceptance-completion-closeout.md",
+                demoFinalAcceptanceCompletionCloseoutService.getCloseout().markdownReport()
         );
     }
 

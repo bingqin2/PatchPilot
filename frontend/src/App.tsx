@@ -44,6 +44,7 @@ import {
   downloadDemoLaunchAcceptanceCertificateReport,
   downloadDemoAcceptanceSummaryReport,
   downloadDemoFinalAcceptanceCompletionArchiveReport,
+  downloadDemoFinalAcceptanceCompletionCloseoutReport,
   downloadDemoFinalAcceptanceCompletionEvidenceBundleReport,
   downloadDemoFinalAcceptanceCompletionEvidenceDeliveryFinalizationReport,
   downloadDemoFinalAcceptanceCompletionEvidenceDeliveryReceiptReport,
@@ -96,6 +97,7 @@ import {
   getDemoRunbook,
   getDemoReadiness,
   getDemoAcceptanceSummary,
+  getDemoFinalAcceptanceCompletionCloseout,
   getDemoFinalAcceptanceCompletionEvidenceBundle,
   getDemoFinalAcceptanceCompletionEvidenceDeliveryFinalization,
   getDemoFinalAcceptanceShareFinalization,
@@ -217,6 +219,7 @@ import type {
   DemoReadiness,
   DemoAcceptanceSummary,
   DemoFinalAcceptanceCompletionArchive,
+  DemoFinalAcceptanceCompletionCloseout,
   DemoFinalAcceptanceCompletionEvidenceBundle,
   DemoFinalAcceptanceCompletionEvidenceDeliveryFinalization,
   DemoFinalAcceptanceCompletionEvidenceDeliveryReceipt,
@@ -405,6 +408,10 @@ export default function App() {
     demoFinalAcceptanceCompletionEvidenceDeliveryFinalizationError,
     setDemoFinalAcceptanceCompletionEvidenceDeliveryFinalizationError
   ] = useState<string | null>(null);
+  const [demoFinalAcceptanceCompletionCloseout, setDemoFinalAcceptanceCompletionCloseout] =
+    useState<DemoFinalAcceptanceCompletionCloseout | null>(null);
+  const [demoFinalAcceptanceCompletionCloseoutError, setDemoFinalAcceptanceCompletionCloseoutError] =
+    useState<string | null>(null);
   const [demoReadinessSnapshots, setDemoReadinessSnapshots] = useState<DemoReadinessSnapshotArchive[]>([]);
   const [demoReadinessSnapshotError, setDemoReadinessSnapshotError] = useState<string | null>(null);
   const [demoReadinessSnapshotTrend, setDemoReadinessSnapshotTrend] = useState<DemoReadinessSnapshotTrend | null>(null);
@@ -864,6 +871,7 @@ export default function App() {
         demoFinalAcceptanceCompletionArchiveResult,
         demoFinalAcceptanceCompletionEvidenceDeliveryReceiptResult,
         demoFinalAcceptanceCompletionEvidenceDeliveryFinalizationResult,
+        demoFinalAcceptanceCompletionCloseoutResult,
         demoReadinessSnapshotResult,
         demoReadinessSnapshotTrendResult,
         demoSmokeChecklistResult,
@@ -1064,6 +1072,10 @@ export default function App() {
         getDemoFinalAcceptanceCompletionEvidenceDeliveryFinalization().then(
           (finalization) => ({ finalization, error: null as string | null }),
           (caught) => ({ finalization: null, error: errorMessage(caught) })
+        ),
+        getDemoFinalAcceptanceCompletionCloseout().then(
+          (closeout) => ({ closeout, error: null as string | null }),
+          (caught) => ({ closeout: null, error: errorMessage(caught) })
         ),
         listDemoReadinessSnapshots().then(
           (snapshots) => ({ snapshots, error: null as string | null }),
@@ -1365,6 +1377,10 @@ export default function App() {
       setDemoFinalAcceptanceCompletionEvidenceDeliveryFinalizationError(
         demoFinalAcceptanceCompletionEvidenceDeliveryFinalizationResult.error
       );
+      if (demoFinalAcceptanceCompletionCloseoutResult.closeout) {
+        setDemoFinalAcceptanceCompletionCloseout(demoFinalAcceptanceCompletionCloseoutResult.closeout);
+      }
+      setDemoFinalAcceptanceCompletionCloseoutError(demoFinalAcceptanceCompletionCloseoutResult.error);
       if (demoReadinessSnapshotResult.snapshots) {
         setDemoReadinessSnapshots(demoReadinessSnapshotResult.snapshots);
       }
@@ -1939,6 +1955,13 @@ export default function App() {
     } catch (caught) {
       setDemoFinalAcceptanceCompletionEvidenceDeliveryFinalizationError(errorMessage(caught));
     }
+    try {
+      const closeout = await getDemoFinalAcceptanceCompletionCloseout();
+      setDemoFinalAcceptanceCompletionCloseout(closeout);
+      setDemoFinalAcceptanceCompletionCloseoutError(null);
+    } catch (caught) {
+      setDemoFinalAcceptanceCompletionCloseoutError(errorMessage(caught));
+    }
     return archive;
   }, []);
   const handleDownloadDemoFinalAcceptanceCompletionArchiveReport = useCallback((archiveId: string) => (
@@ -2002,6 +2025,13 @@ export default function App() {
     } catch (caught) {
       setDemoFinalAcceptanceCompletionEvidenceDeliveryFinalizationError(errorMessage(caught));
     }
+    try {
+      const closeout = await getDemoFinalAcceptanceCompletionCloseout();
+      setDemoFinalAcceptanceCompletionCloseout(closeout);
+      setDemoFinalAcceptanceCompletionCloseoutError(null);
+    } catch (caught) {
+      setDemoFinalAcceptanceCompletionCloseoutError(errorMessage(caught));
+    }
     return receipt;
   }, []);
   const handleDownloadDemoFinalAcceptanceCompletionEvidenceDeliveryReceiptReport = useCallback((receiptId: string) => (
@@ -2009,6 +2039,9 @@ export default function App() {
   ), []);
   const handleDownloadDemoFinalAcceptanceCompletionEvidenceDeliveryFinalizationReport = useCallback(() => (
     downloadDemoFinalAcceptanceCompletionEvidenceDeliveryFinalizationReport()
+  ), []);
+  const handleDownloadDemoFinalAcceptanceCompletionCloseoutReport = useCallback(() => (
+    downloadDemoFinalAcceptanceCompletionCloseoutReport()
   ), []);
   const handleCreateDemoLaunchEvidenceDeliveryReceipt = useCallback(async (
     input: DemoLaunchEvidenceShareDeliveryReceiptInput
@@ -2610,6 +2643,7 @@ export default function App() {
         completionArchives={demoFinalAcceptanceCompletionArchives}
         completionEvidenceDeliveryReceipts={demoFinalAcceptanceCompletionEvidenceDeliveryReceipts}
         completionEvidenceDeliveryFinalization={demoFinalAcceptanceCompletionEvidenceDeliveryFinalization}
+        completionCloseout={demoFinalAcceptanceCompletionCloseout}
         error={demoAcceptanceSummaryError}
         sharePackageError={demoFinalAcceptanceSharePackageError}
         sharePackageArchiveError={demoFinalAcceptanceSharePackageArchiveError}
@@ -2619,6 +2653,7 @@ export default function App() {
         completionArchiveError={demoFinalAcceptanceCompletionArchiveError}
         completionEvidenceDeliveryReceiptError={demoFinalAcceptanceCompletionEvidenceDeliveryReceiptError}
         completionEvidenceDeliveryFinalizationError={demoFinalAcceptanceCompletionEvidenceDeliveryFinalizationError}
+        completionCloseoutError={demoFinalAcceptanceCompletionCloseoutError}
         onDownloadReport={handleDownloadDemoAcceptanceSummaryReport}
         onDownloadSharePackageReport={handleDownloadDemoFinalAcceptanceSharePackageReport}
         onArchiveSharePackage={handleArchiveDemoFinalAcceptanceSharePackage}
@@ -2636,6 +2671,7 @@ export default function App() {
         onDownloadCompletionEvidenceDeliveryFinalizationReport={
           handleDownloadDemoFinalAcceptanceCompletionEvidenceDeliveryFinalizationReport
         }
+        onDownloadCompletionCloseoutReport={handleDownloadDemoFinalAcceptanceCompletionCloseoutReport}
       />
 
       <DemoSessionSnapshotPanel
