@@ -5787,3 +5787,23 @@ Validation so far:
 
 - `mvn -q -pl PatchPilot -Dtest=DemoEvidenceBundleServiceTests,DemoRunbookServiceTests test`: first failed because the top-level evidence bundle did not expose closeout proof; passed after backend aggregation and runbook implementation.
 - `npm test -- --reporter=basic src/dashboard/components/DemoEvidenceBundlePanel.test.tsx src/App.test.tsx src/dashboard/components/DemoSessionSnapshotPanel.test.tsx`: first failed because duplicate final acceptance delivery text made an older assertion too strict; passed after using repeated-evidence assertions and adding closeout fixtures.
+
+## 2026-06-29 - 288 Final acceptance completion closeout archive
+
+- Started `288-final-acceptance-completion-closeout-archive` to make the final READY/closed completion closeout durable after live demo evidence changes.
+- Planned a complete feature slice: backend closeout archive persistence, READY-only archive guard, protected audit evidence, API create/list/download endpoints, frontend API/App/panel integration, README/product/frontend docs, plan doc, and regression tests.
+- RED backend tests were added first for service guard behavior, in-memory repository trimming, MyBatis repository conversion, migration coverage, and controller create/list/download behavior.
+- RED frontend tests were added first for API helpers, final acceptance panel closeout archive controls, and full App loading.
+- Implemented `DemoFinalAcceptanceCompletionCloseoutArchiveService` with in-memory and MyBatis-backed repositories, `V53__create_demo_final_acceptance_completion_closeout_archive.sql`, and archive conversion for evidence notes/download actions.
+- Added `POST /api/demo/final-acceptance-completion-closeout/archives`, `GET /api/demo/final-acceptance-completion-closeout/archives`, and `GET /api/demo/final-acceptance-completion-closeout/archives/{archiveId}/report/download`.
+- Updated the final demo acceptance dashboard panel with an archive button for READY/closed closeouts, recent closeout archive history, archive download action, and App refresh wiring.
+- Updated README, product spec, frontend design doc, and added this plan document.
+
+Validation so far:
+
+- `mvn -q -pl PatchPilot -Dtest=DemoFinalAcceptanceCompletionCloseoutArchiveServiceTests,InMemoryDemoFinalAcceptanceCompletionCloseoutArchiveRepositoryTests,DemoFinalAcceptanceCompletionCloseoutArchiveConvertTests,MyBatisDemoFinalAcceptanceCompletionCloseoutArchiveRepositoryTests,DemoFinalAcceptanceCompletionCloseoutArchiveMigrationTests,DemoReadinessControllerTests test`: first failed because the archive service/repository/entity/mapper/controller route did not exist; passed after backend implementation.
+- `npm test -- --reporter=basic src/api.test.ts src/dashboard/components/DemoAcceptanceSummaryPanel.test.tsx src/App.test.tsx`: first failed because the archive API helpers and UI/App wiring did not exist, then exposed repeated closeout summary text after archive history rendering was added; passed after implementation and assertion updates, 3 test files and 269 tests.
+- `mvn -q -pl PatchPilot test`: passed.
+- `npm test -- --reporter=basic`: passed, 30 test files and 438 tests.
+- `npm run build`: passed with the existing Vite large-chunk warning.
+- `git diff --check`: passed.

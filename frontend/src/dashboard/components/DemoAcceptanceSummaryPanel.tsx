@@ -3,6 +3,7 @@ import { useState } from 'react';
 import type {
   DemoAcceptanceSummary,
   DemoFinalAcceptanceCompletionArchive,
+  DemoFinalAcceptanceCompletionCloseoutArchive,
   DemoFinalAcceptanceCompletionCloseout,
   DemoFinalAcceptanceCompletionEvidenceBundle,
   DemoFinalAcceptanceCompletionEvidenceDeliveryFinalization,
@@ -25,6 +26,7 @@ interface DemoAcceptanceSummaryPanelProps {
   shareFinalization: DemoFinalAcceptanceShareFinalization | null;
   completionEvidenceBundle: DemoFinalAcceptanceCompletionEvidenceBundle | null;
   completionArchives: DemoFinalAcceptanceCompletionArchive[];
+  completionCloseoutArchives?: DemoFinalAcceptanceCompletionCloseoutArchive[];
   completionEvidenceDeliveryReceipts: DemoFinalAcceptanceCompletionEvidenceDeliveryReceipt[];
   completionEvidenceDeliveryFinalization?: DemoFinalAcceptanceCompletionEvidenceDeliveryFinalization | null;
   completionCloseout?: DemoFinalAcceptanceCompletionCloseout | null;
@@ -35,6 +37,7 @@ interface DemoAcceptanceSummaryPanelProps {
   shareFinalizationError: string | null;
   completionEvidenceBundleError: string | null;
   completionArchiveError: string | null;
+  completionCloseoutArchiveError?: string | null;
   completionEvidenceDeliveryReceiptError: string | null;
   completionEvidenceDeliveryFinalizationError?: string | null;
   completionCloseoutError?: string | null;
@@ -50,6 +53,8 @@ interface DemoAcceptanceSummaryPanelProps {
   onDownloadCompletionEvidenceBundleReport: () => Promise<Blob>;
   onArchiveCompletion: () => Promise<DemoFinalAcceptanceCompletionArchive>;
   onDownloadCompletionArchiveReport: (archiveId: string) => Promise<Blob>;
+  onArchiveCompletionCloseout?: () => Promise<DemoFinalAcceptanceCompletionCloseoutArchive>;
+  onDownloadCompletionCloseoutArchiveReport?: (archiveId: string) => Promise<Blob>;
   onCreateCompletionEvidenceDeliveryReceipt: (
     input: DemoFinalAcceptanceCompletionEvidenceDeliveryReceiptInput
   ) => Promise<DemoFinalAcceptanceCompletionEvidenceDeliveryReceipt>;
@@ -66,6 +71,7 @@ export function DemoAcceptanceSummaryPanel({
   shareFinalization,
   completionEvidenceBundle,
   completionArchives,
+  completionCloseoutArchives = [],
   completionEvidenceDeliveryReceipts,
   completionEvidenceDeliveryFinalization = null,
   completionCloseout = null,
@@ -76,6 +82,7 @@ export function DemoAcceptanceSummaryPanel({
   shareFinalizationError,
   completionEvidenceBundleError,
   completionArchiveError,
+  completionCloseoutArchiveError = null,
   completionEvidenceDeliveryReceiptError,
   completionEvidenceDeliveryFinalizationError = null,
   completionCloseoutError = null,
@@ -89,6 +96,8 @@ export function DemoAcceptanceSummaryPanel({
   onDownloadCompletionEvidenceBundleReport,
   onArchiveCompletion,
   onDownloadCompletionArchiveReport,
+  onArchiveCompletionCloseout,
+  onDownloadCompletionCloseoutArchiveReport,
   onCreateCompletionEvidenceDeliveryReceipt,
   onDownloadCompletionEvidenceDeliveryReceiptReport,
   onDownloadCompletionEvidenceDeliveryFinalizationReport,
@@ -104,6 +113,11 @@ export function DemoAcceptanceSummaryPanel({
   const [completionEvidenceBundleDownloadStatus, setCompletionEvidenceBundleDownloadStatus] = useState<string | null>(null);
   const [completionArchiveStatus, setCompletionArchiveStatus] = useState<string | null>(null);
   const [completionArchiveDownloadStatus, setCompletionArchiveDownloadStatus] = useState<string | null>(null);
+  const [completionCloseoutArchiveStatus, setCompletionCloseoutArchiveStatus] = useState<string | null>(null);
+  const [
+    completionCloseoutArchiveDownloadStatus,
+    setCompletionCloseoutArchiveDownloadStatus
+  ] = useState<string | null>(null);
   const [completionEvidenceDeliveryReceiptStatus, setCompletionEvidenceDeliveryReceiptStatus] = useState<string | null>(null);
   const [
     completionEvidenceDeliveryFinalizationDownloadStatus,
@@ -231,6 +245,31 @@ export function DemoAcceptanceSummaryPanel({
       setCompletionCloseoutDownloadStatus('Final acceptance completion closeout report downloaded');
     } catch {
       setCompletionCloseoutDownloadStatus('Final acceptance completion closeout report download failed');
+    }
+  }
+
+  async function archiveCompletionCloseout() {
+    if (!onArchiveCompletionCloseout) {
+      return;
+    }
+    try {
+      await onArchiveCompletionCloseout();
+      setCompletionCloseoutArchiveStatus('Final acceptance completion closeout archived');
+    } catch {
+      setCompletionCloseoutArchiveStatus('Final acceptance completion closeout archive failed');
+    }
+  }
+
+  async function downloadCompletionCloseoutArchive(archive: DemoFinalAcceptanceCompletionCloseoutArchive) {
+    if (!onDownloadCompletionCloseoutArchiveReport) {
+      return;
+    }
+    try {
+      const report = await onDownloadCompletionCloseoutArchiveReport(archive.id);
+      downloadMarkdown(report, `patchpilot-final-acceptance-completion-closeout-${archive.id}.md`);
+      setCompletionCloseoutArchiveDownloadStatus('Final acceptance completion closeout archive downloaded');
+    } catch {
+      setCompletionCloseoutArchiveDownloadStatus('Final acceptance completion closeout archive download failed');
     }
   }
 
@@ -455,11 +494,15 @@ export function DemoAcceptanceSummaryPanel({
               completionEvidenceDeliveryFinalizationDownloadStatus
             }
             completionCloseoutDownloadStatus={completionCloseoutDownloadStatus}
+            completionCloseoutArchives={completionCloseoutArchives}
             completionArchives={completionArchives}
             completionArchiveError={completionArchiveError}
+            completionCloseoutArchiveError={completionCloseoutArchiveError}
             completionEvidenceDeliveryReceiptError={completionEvidenceDeliveryReceiptError}
             completionArchiveStatus={completionArchiveStatus}
             completionArchiveDownloadStatus={completionArchiveDownloadStatus}
+            completionCloseoutArchiveStatus={completionCloseoutArchiveStatus}
+            completionCloseoutArchiveDownloadStatus={completionCloseoutArchiveDownloadStatus}
             completionEvidenceDeliveryReceiptStatus={completionEvidenceDeliveryReceiptStatus}
             deliveryChannel={deliveryChannel}
             deliveryTarget={deliveryTarget}
@@ -489,6 +532,8 @@ export function DemoAcceptanceSummaryPanel({
             onDownloadCompletionCloseout={() => void downloadCompletionCloseout()}
             onArchiveCompletion={() => void archiveCompletion()}
             onDownloadCompletionArchive={(archive) => void downloadCompletionArchive(archive)}
+            onArchiveCompletionCloseout={() => void archiveCompletionCloseout()}
+            onDownloadCompletionCloseoutArchive={(archive) => void downloadCompletionCloseoutArchive(archive)}
             onCreateCompletionEvidenceDeliveryReceipt={() => void createCompletionEvidenceDeliveryReceipt()}
             onDownloadCompletionEvidenceDeliveryReceipt={(receipt) => void downloadCompletionEvidenceDeliveryReceipt(receipt)}
           />
@@ -510,6 +555,7 @@ interface FinalAcceptanceSharePackageProps {
   completionCloseout: DemoFinalAcceptanceCompletionCloseout | null;
   completionEvidenceDeliveryReceipts: DemoFinalAcceptanceCompletionEvidenceDeliveryReceipt[];
   completionArchives: DemoFinalAcceptanceCompletionArchive[];
+  completionCloseoutArchives: DemoFinalAcceptanceCompletionCloseoutArchive[];
   error: string | null;
   archiveError: string | null;
   deliveryReceiptError: string | null;
@@ -518,6 +564,7 @@ interface FinalAcceptanceSharePackageProps {
   completionEvidenceDeliveryFinalizationError: string | null;
   completionCloseoutError: string | null;
   completionArchiveError: string | null;
+  completionCloseoutArchiveError: string | null;
   completionEvidenceDeliveryReceiptError: string | null;
   copyStatus: string | null;
   downloadStatus: string | null;
@@ -530,6 +577,8 @@ interface FinalAcceptanceSharePackageProps {
   completionCloseoutDownloadStatus: string | null;
   completionArchiveStatus: string | null;
   completionArchiveDownloadStatus: string | null;
+  completionCloseoutArchiveStatus: string | null;
+  completionCloseoutArchiveDownloadStatus: string | null;
   completionEvidenceDeliveryReceiptStatus: string | null;
   deliveryChannel: string;
   deliveryTarget: string;
@@ -559,6 +608,8 @@ interface FinalAcceptanceSharePackageProps {
   onDownloadCompletionCloseout: () => void;
   onArchiveCompletion: () => void;
   onDownloadCompletionArchive: (archive: DemoFinalAcceptanceCompletionArchive) => void;
+  onArchiveCompletionCloseout: () => void;
+  onDownloadCompletionCloseoutArchive: (archive: DemoFinalAcceptanceCompletionCloseoutArchive) => void;
   onCreateCompletionEvidenceDeliveryReceipt: () => void;
   onDownloadCompletionEvidenceDeliveryReceipt: (
     receipt: DemoFinalAcceptanceCompletionEvidenceDeliveryReceipt
@@ -575,6 +626,7 @@ function FinalAcceptanceSharePackage({
   completionCloseout,
   completionEvidenceDeliveryReceipts,
   completionArchives,
+  completionCloseoutArchives,
   error,
   archiveError,
   deliveryReceiptError,
@@ -583,6 +635,7 @@ function FinalAcceptanceSharePackage({
   completionEvidenceDeliveryFinalizationError,
   completionCloseoutError,
   completionArchiveError,
+  completionCloseoutArchiveError,
   completionEvidenceDeliveryReceiptError,
   copyStatus,
   downloadStatus,
@@ -595,6 +648,8 @@ function FinalAcceptanceSharePackage({
   completionCloseoutDownloadStatus,
   completionArchiveStatus,
   completionArchiveDownloadStatus,
+  completionCloseoutArchiveStatus,
+  completionCloseoutArchiveDownloadStatus,
   completionEvidenceDeliveryReceiptStatus,
   deliveryChannel,
   deliveryTarget,
@@ -624,6 +679,8 @@ function FinalAcceptanceSharePackage({
   onDownloadCompletionCloseout,
   onArchiveCompletion,
   onDownloadCompletionArchive,
+  onArchiveCompletionCloseout,
+  onDownloadCompletionCloseoutArchive,
   onCreateCompletionEvidenceDeliveryReceipt,
   onDownloadCompletionEvidenceDeliveryReceipt
 }: FinalAcceptanceSharePackageProps) {
@@ -1128,8 +1185,24 @@ function FinalAcceptanceSharePackage({
                   <Download size={14} />
                   Download completion closeout
                 </button>
+                <button
+                  className="secondary-button"
+                  type="button"
+                  onClick={() => onArchiveCompletionCloseout()}
+                  aria-label="Archive final acceptance completion closeout"
+                  disabled={!completionCloseout?.closed}
+                >
+                  <Archive size={14} />
+                  Archive completion closeout
+                </button>
                 {completionCloseoutDownloadStatus ? (
                   <span className="copy-status">{completionCloseoutDownloadStatus}</span>
+                ) : null}
+                {completionCloseoutArchiveStatus ? (
+                  <span className="copy-status">{completionCloseoutArchiveStatus}</span>
+                ) : null}
+                {completionCloseoutArchiveDownloadStatus ? (
+                  <span className="copy-status">{completionCloseoutArchiveDownloadStatus}</span>
                 ) : null}
               </div>
             </div>
@@ -1185,6 +1258,49 @@ function FinalAcceptanceSharePackage({
                   />
                 </div>
                 <small>{completionCloseout.sideEffectContract}</small>
+                <div className="demo-session-handoff-checks">
+                  <div className="demo-session-archive-title-row">
+                    <h3>Archived final acceptance completion closeouts</h3>
+                    <span>{completionCloseoutArchives.length} archives</span>
+                  </div>
+                  {completionCloseoutArchiveError ? (
+                    <div className="adapter-api-error">
+                      <strong>Final acceptance completion closeout archives unavailable</strong>
+                      <span>{completionCloseoutArchiveError}</span>
+                    </div>
+                  ) : null}
+                  {completionCloseoutArchives.length > 0 ? (
+                    <ul>
+                      {completionCloseoutArchives.map((archive) => (
+                        <li key={archive.id}>
+                          <div className="demo-webhook-delivery-main">
+                            <strong>{archive.id}</strong>
+                            <span>{archive.closed ? 'Closed' : statusLabel(archive.status)}</span>
+                          </div>
+                          <p>{archive.summary}</p>
+                          <small>Completion archive {archive.latestCompletionArchiveId ?? 'missing'}</small>
+                          <small>
+                            Completion receipt {archive.latestCompletionEvidenceDeliveryReceiptId ?? 'missing'}
+                          </small>
+                          <small>Archived {compactDateTime(archive.archivedAt)}</small>
+                          <div className="demo-session-archive-actions">
+                            <button
+                              className="secondary-button"
+                              type="button"
+                              onClick={() => onDownloadCompletionCloseoutArchive(archive)}
+                              aria-label={`Download final acceptance completion closeout ${archive.id}`}
+                            >
+                              <Download size={14} />
+                              Download final acceptance completion closeout {archive.id}
+                            </button>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="empty-state">No final acceptance completion closeout archives yet.</p>
+                  )}
+                </div>
               </>
             ) : (
               <p className="empty-state">Final acceptance completion closeout has not loaded yet.</p>
