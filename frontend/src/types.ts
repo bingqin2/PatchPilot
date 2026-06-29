@@ -1612,6 +1612,7 @@ export interface DemoEvidenceBundle {
     DemoFinalExternalReviewEvidencePackageDeliveryFinalization;
   finalExternalReviewEvidencePackageDeliveryFinalizationArchiveEvidence?:
     DemoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveEvidence;
+  finalExternalReviewReleaseBundle?: DemoFinalExternalReviewReleaseBundle;
   handoffShareDeliveryReceiptRecorded: boolean;
   handoffShareLatestDeliveryReceiptId: string | null;
   handoffShareLatestDeliveryTarget: string | null;

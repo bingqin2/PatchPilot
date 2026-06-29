@@ -229,6 +229,34 @@ export function DemoEvidenceBundlePanel({ bundle, error, onCopyRunbook }: DemoEv
       latestArchivedAt: null,
       downloadActions: ['Archive the READY final external-review package delivery finalization.']
     };
+  const finalExternalReviewReleaseBundle = bundle?.finalExternalReviewReleaseBundle ?? {
+    status: 'NEEDS_ATTENTION' as DemoReadinessStatus,
+    releaseReady: false,
+    summary: 'No final external-review release bundle is available.',
+    nextAction: 'Archive the certified final external-review delivery certificate, then download the release bundle.',
+    latestCertificateArchiveId: null,
+    latestDeliveryFinalizationArchiveId:
+      finalExternalReviewEvidencePackageDeliveryFinalizationArchiveEvidence.latestArchiveId,
+    latestPackageArchiveId:
+      finalExternalReviewEvidencePackageDeliveryFinalizationArchiveEvidence.latestPackageArchiveId,
+    latestDeliveryReceiptId:
+      finalExternalReviewEvidencePackageDeliveryFinalizationArchiveEvidence.latestDeliveryReceiptId,
+    latestTaskId:
+      finalExternalReviewEvidencePackageDeliveryFinalizationArchiveEvidence.latestTaskId,
+    latestPullRequestUrl:
+      finalExternalReviewEvidencePackageDeliveryFinalizationArchiveEvidence.latestPullRequestUrl,
+    latestDeliveryTarget: finalExternalReviewEvidencePackageDeliveryFinalization.latestDeliveryTarget,
+    latestDeliveryChannel: finalExternalReviewEvidencePackageDeliveryFinalization.latestDeliveryChannel,
+    latestDeliveredAt: finalExternalReviewEvidencePackageDeliveryFinalization.latestDeliveredAt,
+    latestCertificateArchivedAt: null,
+    generatedAt: '',
+    requiredAttachments: [],
+    releaseChecks: [],
+    evidenceNotes: ['No final external-review release bundle is available in the top-level evidence bundle.'],
+    downloadActions: ['Download the final external-review release bundle after it reports READY.'],
+    sideEffectContract: 'GET /api/demo/evidence-bundle is read-only and does not mutate tasks, Git, or GitHub.',
+    markdownReport: ''
+  };
 
   async function copyRunbook() {
     try {
@@ -773,6 +801,52 @@ export function DemoEvidenceBundlePanel({ bundle, error, onCopyRunbook }: DemoEv
                 .map((action) => (
                   <small key={action}>{action}</small>
                 ))}
+            </div>
+            <div>
+              <span>Final external-review release bundle</span>
+              <strong>
+                {finalExternalReviewReleaseBundle.releaseReady
+                  ? 'Release ready'
+                  : statusLabel(finalExternalReviewReleaseBundle.status)}
+              </strong>
+              <small>{finalExternalReviewReleaseBundle.summary}</small>
+              <small>{finalExternalReviewReleaseBundle.nextAction}</small>
+              <small>{finalExternalReviewReleaseBundle.latestCertificateArchiveId ?? 'No release certificate archive'}</small>
+              <small>
+                {finalExternalReviewReleaseBundle.latestDeliveryFinalizationArchiveId
+                  ?? 'No linked finalization archive'}
+              </small>
+              <small>{finalExternalReviewReleaseBundle.latestPackageArchiveId ?? 'No release package archive'}</small>
+              <small>{finalExternalReviewReleaseBundle.latestDeliveryReceiptId ?? 'No release delivery receipt'}</small>
+              <small>
+                {finalExternalReviewReleaseBundle.latestTaskId
+                  ? `Task ${finalExternalReviewReleaseBundle.latestTaskId}`
+                  : 'No release task'}
+              </small>
+              <small>
+                {finalExternalReviewReleaseBundle.latestDeliveryTarget
+                  ? `${finalExternalReviewReleaseBundle.latestDeliveryChannel ?? 'delivery'} - ${finalExternalReviewReleaseBundle.latestDeliveryTarget}`
+                  : 'No final external-review release delivery target'}
+              </small>
+              {finalExternalReviewReleaseBundle.latestDeliveredAt ? (
+                <small>Delivered {compactDateTime(finalExternalReviewReleaseBundle.latestDeliveredAt)}</small>
+              ) : null}
+              {finalExternalReviewReleaseBundle.latestCertificateArchivedAt ? (
+                <small>Certificate archived {compactDateTime(finalExternalReviewReleaseBundle.latestCertificateArchivedAt)}</small>
+              ) : null}
+              {finalExternalReviewReleaseBundle.latestPullRequestUrl ? (
+                <a href={finalExternalReviewReleaseBundle.latestPullRequestUrl}>
+                  Open final external-review release Pull Request
+                </a>
+              ) : (
+                <small>No final external-review release Pull Request</small>
+              )}
+              {finalExternalReviewReleaseBundle.requiredAttachments.slice(0, 2).map((attachment) => (
+                <small key={attachment}>{attachment}</small>
+              ))}
+              {finalExternalReviewReleaseBundle.downloadActions.slice(0, 2).map((action) => (
+                <small key={action}>{action}</small>
+              ))}
             </div>
             <div>
               <span>Handoff share delivery</span>

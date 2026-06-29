@@ -486,6 +486,44 @@ const bundle: DemoEvidenceBundle = {
       'Download final external-review package delivery finalization archive final-external-review-package-delivery-finalization-archive-1.'
     ]
   },
+  finalExternalReviewReleaseBundle: {
+    status: 'READY',
+    releaseReady: true,
+    summary: 'PatchPilot final external-review release bundle is ready.',
+    nextAction: 'Share the release bundle report and listed attachments with external reviewers.',
+    latestCertificateArchiveId: 'final-external-review-delivery-certificate-archive-1',
+    latestDeliveryFinalizationArchiveId: 'final-external-review-package-delivery-finalization-archive-1',
+    latestPackageArchiveId: 'final-external-review-package-archive-1',
+    latestDeliveryReceiptId: 'final-external-review-package-delivery-receipt-1',
+    latestTaskId: 'task-2',
+    latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+    latestDeliveryTarget: 'reviewer@example.com',
+    latestDeliveryChannel: 'email',
+    latestDeliveredAt: '2026-06-29T05:00:00Z',
+    latestCertificateArchivedAt: '2026-06-29T05:30:00Z',
+    generatedAt: '2026-06-29T05:35:00Z',
+    requiredAttachments: [
+      'Final external-review delivery certificate archive final-external-review-delivery-certificate-archive-1.',
+      'Final external-review package delivery finalization archive final-external-review-package-delivery-finalization-archive-1.'
+    ],
+    releaseChecks: [
+      {
+        name: 'Final external-review delivery certificate archive',
+        status: 'READY',
+        summary: 'Certified delivery certificate archive final-external-review-delivery-certificate-archive-1 is available.',
+        nextAction: 'No action needed.'
+      }
+    ],
+    evidenceNotes: [
+      'Certified delivery certificate archive final-external-review-delivery-certificate-archive-1 is the release root.'
+    ],
+    downloadActions: [
+      'Download final external-review release bundle report.',
+      'Download final external-review delivery certificate archive final-external-review-delivery-certificate-archive-1.'
+    ],
+    sideEffectContract: 'GET /api/demo/final-external-review-release-bundle is read-only.',
+    markdownReport: '# PatchPilot Final External Review Release Bundle'
+  },
   handoffShareDeliveryReceiptRecorded: true,
   handoffShareLatestDeliveryReceiptId: 'delivery-receipt-1',
   handoffShareLatestDeliveryTarget: 'maintainer@example.com',
@@ -763,6 +801,28 @@ test('summarizes demo evidence bundle for operators', () => {
       'Download final external-review package delivery finalization archive final-external-review-package-delivery-finalization-archive-1.'
     )
   ).toBeInTheDocument();
+  expect(within(panel).getByText('Final external-review release bundle')).toBeInTheDocument();
+  expect(within(panel).getByText('Release ready')).toBeInTheDocument();
+  expect(within(panel).getByText('PatchPilot final external-review release bundle is ready.')).toBeInTheDocument();
+  expect(
+    within(panel).getByText('Share the release bundle report and listed attachments with external reviewers.')
+  ).toBeInTheDocument();
+  expect(
+    within(panel).getByText('final-external-review-delivery-certificate-archive-1')
+  ).toBeInTheDocument();
+  expect(
+    within(panel).getAllByText('final-external-review-package-delivery-finalization-archive-1').length
+  ).toBeGreaterThanOrEqual(2);
+  expect(
+    within(panel).getByRole('link', { name: 'Open final external-review release Pull Request' })
+  ).toHaveAttribute('href', 'https://github.com/bingqin2/PatchPilot/pull/42');
+  expect(
+    within(panel).getByText('Final external-review delivery certificate archive final-external-review-delivery-certificate-archive-1.')
+  ).toBeInTheDocument();
+  expect(within(panel).getByText('Download final external-review release bundle report.')).toBeInTheDocument();
+  expect(
+    within(panel).getByText('Download final external-review delivery certificate archive final-external-review-delivery-certificate-archive-1.')
+  ).toBeInTheDocument();
   expect(within(panel).getByText('Handoff share delivery')).toBeInTheDocument();
   expect(within(panel).getAllByText('Fresh').length).toBeGreaterThanOrEqual(2);
   expect(within(panel).getByText('Handoff finalization')).toBeInTheDocument();
@@ -810,7 +870,9 @@ test('renders missing certificate evidence for legacy bundle responses', () => {
     finalExternalReviewEvidencePackage: undefined,
     finalExternalReviewEvidencePackageArchiveEvidence: undefined,
     finalExternalReviewEvidencePackageDeliveryReceiptEvidence: undefined,
-    finalExternalReviewEvidencePackageDeliveryFinalization: undefined
+    finalExternalReviewEvidencePackageDeliveryFinalization: undefined,
+    finalExternalReviewEvidencePackageDeliveryFinalizationArchiveEvidence: undefined,
+    finalExternalReviewReleaseBundle: undefined
   } as unknown as DemoEvidenceBundle;
 
   render(<DemoEvidenceBundlePanel bundle={legacyBundle} error={null} onCopyRunbook={vi.fn()} />);
@@ -860,7 +922,8 @@ test('renders missing certificate evidence for legacy bundle responses', () => {
   expect(
     screen.getAllByText('Archive the final external-review evidence package after it is READY.').length
   ).toBeGreaterThanOrEqual(1);
-  expect(screen.getByText('No archived final external-review Pull Request')).toBeInTheDocument();
+  expect(screen.getAllByText('No archived final external-review Pull Request').length)
+    .toBeGreaterThanOrEqual(1);
   expect(screen.getByText('Final external-review package delivery')).toBeInTheDocument();
   expect(screen.getByText('No final external-review package delivery receipt is available.')).toBeInTheDocument();
   expect(
@@ -872,6 +935,12 @@ test('renders missing certificate evidence for legacy bundle responses', () => {
   expect(screen.getByText('Record a fresh package delivery receipt for the latest frozen final external-review package.'))
     .toBeInTheDocument();
   expect(screen.getByText('No finalized final external-review package delivery receipt')).toBeInTheDocument();
+  expect(screen.getByText('Final external-review release bundle')).toBeInTheDocument();
+  expect(screen.getByText('No final external-review release bundle is available.')).toBeInTheDocument();
+  expect(
+    screen.getByText('Archive the certified final external-review delivery certificate, then download the release bundle.')
+  ).toBeInTheDocument();
+  expect(screen.getByText('No final external-review release Pull Request')).toBeInTheDocument();
 });
 
 test('copies demo runbook markdown', async () => {
