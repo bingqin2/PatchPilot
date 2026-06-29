@@ -937,6 +937,34 @@ export interface DemoFinalAcceptanceCompletionEvidenceBundle {
   markdownReport: string;
 }
 
+export interface DemoFinalAcceptanceCompletionEvidenceDeliveryReceipt {
+  id: string;
+  status: DemoReadinessStatus;
+  readyToShare: boolean;
+  completionEvidenceBundleStatus: DemoReadinessStatus;
+  summary: string;
+  nextAction: string;
+  latestCompletionArchiveId: string;
+  latestSharePackageArchiveId: string;
+  latestDeliveryReceiptId: string;
+  latestTaskId: string;
+  deliveryChannel: string;
+  deliveryTarget: string;
+  operator: string;
+  notes: string;
+  deliveredAt: string;
+  createdAt: string;
+  markdownReport: string;
+}
+
+export interface DemoFinalAcceptanceCompletionEvidenceDeliveryReceiptInput {
+  deliveryChannel: string;
+  deliveryTarget: string;
+  operator: string;
+  notes: string;
+  deliveredAt?: string;
+}
+
 export interface DemoLaunchEvidenceShareDeliveryReceipt {
   id: string;
   status: string;

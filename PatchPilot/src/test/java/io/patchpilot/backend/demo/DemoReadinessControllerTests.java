@@ -8,6 +8,7 @@ import io.patchpilot.backend.demo.domain.DemoEvidenceBundleSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
 import io.patchpilot.backend.demo.domain.DemoEvaluationRunReadinessEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionArchiveVo;
+import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionEvidenceDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceSharePackageArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceShareDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceShareFinalizationVo;
@@ -192,6 +193,9 @@ class DemoReadinessControllerTests {
 
     @MockitoBean
     private DemoFinalAcceptanceCompletionEvidenceBundleService demoFinalAcceptanceCompletionEvidenceBundleService;
+
+    @MockitoBean
+    private DemoFinalAcceptanceCompletionEvidenceDeliveryReceiptService demoFinalAcceptanceCompletionEvidenceDeliveryReceiptService;
 
     @MockitoBean
     private DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
@@ -892,6 +896,103 @@ class DemoReadinessControllerTests {
                 .andExpect(content().contentType("text/markdown;charset=UTF-8"))
                 .andExpect(content().string(containsString("# PatchPilot Final Acceptance Completion Evidence Bundle")))
                 .andExpect(content().string(containsString("final-acceptance-completion-archive-1")));
+    }
+
+    @Test
+    void should_record_final_acceptance_completion_evidence_delivery_receipt_and_record_audit() throws Exception {
+        when(demoFinalAcceptanceCompletionEvidenceDeliveryReceiptService.recordDeliveryReceipt(argThat(request ->
+                request.deliveryChannel().equals("email")
+                        && request.deliveryTarget().equals("reviewer@example.com")
+                        && request.operator().equals("local-operator")
+                        && request.notes().equals("Sent final completion evidence bundle to the reviewer.")
+                        && request.deliveredAt().equals(Instant.parse("2026-06-29T04:25:00Z"))
+        ))).thenReturn(finalAcceptanceCompletionEvidenceDeliveryReceipt());
+
+        mockMvc.perform(post("/api/demo/final-acceptance-completion-evidence-delivery-receipts")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "deliveryChannel": "email",
+                                  "deliveryTarget": "reviewer@example.com",
+                                  "operator": "local-operator",
+                                  "notes": "Sent final completion evidence bundle to the reviewer.",
+                                  "deliveredAt": "2026-06-29T04:25:00Z"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value("final-acceptance-completion-evidence-delivery-receipt-1"))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.readyToShare").value(true))
+                .andExpect(jsonPath("$.data.latestCompletionArchiveId").value("final-acceptance-completion-archive-1"))
+                .andExpect(jsonPath("$.data.latestSharePackageArchiveId").value("final-acceptance-share-package-archive-1"))
+                .andExpect(jsonPath("$.data.latestDeliveryReceiptId").value("final-acceptance-delivery-receipt-1"))
+                .andExpect(jsonPath("$.data.deliveryTarget").value("reviewer@example.com"))
+                .andExpect(jsonPath("$.data.markdownReport").value(containsString("# PatchPilot Final Acceptance Completion Evidence Delivery Receipt")));
+
+        verify(operatorSafetyAuditService).recordSafetyAudit(argThat(command ->
+                command.action().equals("DEMO_FINAL_ACCEPTANCE_COMPLETION_EVIDENCE_DELIVERY_RECEIPT_RECORDED")
+                        && command.resourceType().equals("DEMO_FINAL_ACCEPTANCE_COMPLETION_EVIDENCE_DELIVERY_RECEIPT")
+                        && command.resourceId().equals("final-acceptance-completion-evidence-delivery-receipt-1")
+                        && command.operator().equals("local-operator")
+                        && command.reason().contains("final-acceptance-completion-archive-1")
+        ));
+    }
+
+    @Test
+    void should_reject_final_acceptance_completion_evidence_delivery_receipt_when_bundle_is_not_ready() throws Exception {
+        when(demoFinalAcceptanceCompletionEvidenceDeliveryReceiptService.recordDeliveryReceipt(
+                any(DemoFinalAcceptanceCompletionEvidenceDeliveryReceiptRequestDto.class)
+        )).thenThrow(new IllegalStateException("final acceptance completion evidence bundle is not ready to share"));
+
+        mockMvc.perform(post("/api/demo/final-acceptance-completion-evidence-delivery-receipts")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "deliveryChannel": "email",
+                                  "deliveryTarget": "reviewer@example.com",
+                                  "operator": "local-operator"
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("final acceptance completion evidence bundle is not ready to share"));
+    }
+
+    @Test
+    void should_list_final_acceptance_completion_evidence_delivery_receipts() throws Exception {
+        when(demoFinalAcceptanceCompletionEvidenceDeliveryReceiptService.listRecentReceipts())
+                .thenReturn(List.of(finalAcceptanceCompletionEvidenceDeliveryReceipt()));
+
+        mockMvc.perform(get("/api/demo/final-acceptance-completion-evidence-delivery-receipts"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].id").value("final-acceptance-completion-evidence-delivery-receipt-1"))
+                .andExpect(jsonPath("$.data[0].latestCompletionArchiveId").value("final-acceptance-completion-archive-1"));
+    }
+
+    @Test
+    void should_download_final_acceptance_completion_evidence_delivery_receipt_report() throws Exception {
+        when(demoFinalAcceptanceCompletionEvidenceDeliveryReceiptService.findReceipt(
+                "final-acceptance-completion-evidence-delivery-receipt-1"
+        )).thenReturn(Optional.of(finalAcceptanceCompletionEvidenceDeliveryReceipt()));
+
+        mockMvc.perform(get("/api/demo/final-acceptance-completion-evidence-delivery-receipts/final-acceptance-completion-evidence-delivery-receipt-1/report/download"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("patchpilot-final-acceptance-completion-evidence-delivery-receipt-final-acceptance-completion-evidence-delivery-receipt-1.md")))
+                .andExpect(content().contentType("text/markdown;charset=UTF-8"))
+                .andExpect(content().string(containsString("# PatchPilot Final Acceptance Completion Evidence Delivery Receipt")))
+                .andExpect(content().string(containsString("reviewer@example.com")));
+    }
+
+    @Test
+    void should_return_not_found_when_final_acceptance_completion_evidence_delivery_receipt_is_missing() throws Exception {
+        when(demoFinalAcceptanceCompletionEvidenceDeliveryReceiptService.findReceipt("missing-receipt"))
+                .thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/api/demo/final-acceptance-completion-evidence-delivery-receipts/missing-receipt/report/download"))
+                .andExpect(status().isNotFound());
     }
 
     @Test
@@ -3607,6 +3708,28 @@ class DemoReadinessControllerTests {
                 ),
                 "GET /api/demo/final-acceptance-completion-evidence-bundle is read-only: it does not create tasks, call the model, run tests, archive records, record receipts, mutate Git, send messages, or write to GitHub.",
                 "# PatchPilot Final Acceptance Completion Evidence Bundle\n\n- Latest completion archive: `final-acceptance-completion-archive-1`\n"
+        );
+    }
+
+    private static DemoFinalAcceptanceCompletionEvidenceDeliveryReceiptVo finalAcceptanceCompletionEvidenceDeliveryReceipt() {
+        return new DemoFinalAcceptanceCompletionEvidenceDeliveryReceiptVo(
+                "final-acceptance-completion-evidence-delivery-receipt-1",
+                DemoReadinessStatus.READY,
+                true,
+                DemoReadinessStatus.READY,
+                "PatchPilot final acceptance completion evidence bundle is ready to share.",
+                "Share this final acceptance completion evidence bundle with reviewers.",
+                "final-acceptance-completion-archive-1",
+                "final-acceptance-share-package-archive-1",
+                "final-acceptance-delivery-receipt-1",
+                "task-1",
+                "email",
+                "reviewer@example.com",
+                "local-operator",
+                "Sent final completion evidence bundle to the reviewer.",
+                Instant.parse("2026-06-29T04:25:00Z"),
+                Instant.parse("2026-06-29T04:30:00Z"),
+                "# PatchPilot Final Acceptance Completion Evidence Delivery Receipt\n\n- Delivery target: `reviewer@example.com`"
         );
     }
 }
