@@ -17,6 +17,7 @@ import type {
   DemoFinalExternalReviewDeliveryCertificateArchive,
   DemoFinalExternalReviewDeliveryCertificate,
   DemoFinalExternalReviewReleaseBundle,
+  DemoFinalExternalReviewReleaseBundleArchive,
   DemoFinalExternalReviewEvidencePackage,
   DemoFinalAcceptanceShareDeliveryReceipt,
   DemoFinalAcceptanceShareDeliveryReceiptInput,
@@ -49,6 +50,7 @@ interface DemoAcceptanceSummaryPanelProps {
   finalExternalReviewDeliveryCertificate?: DemoFinalExternalReviewDeliveryCertificate | null;
   finalExternalReviewDeliveryCertificateArchives?: DemoFinalExternalReviewDeliveryCertificateArchive[];
   finalExternalReviewReleaseBundle?: DemoFinalExternalReviewReleaseBundle | null;
+  finalExternalReviewReleaseBundleArchives?: DemoFinalExternalReviewReleaseBundleArchive[];
   error: string | null;
   sharePackageError: string | null;
   sharePackageArchiveError: string | null;
@@ -68,6 +70,7 @@ interface DemoAcceptanceSummaryPanelProps {
   finalExternalReviewDeliveryCertificateError?: string | null;
   finalExternalReviewDeliveryCertificateArchiveError?: string | null;
   finalExternalReviewReleaseBundleError?: string | null;
+  finalExternalReviewReleaseBundleArchiveError?: string | null;
   onDownloadReport: () => Promise<Blob>;
   onDownloadSharePackageReport: () => Promise<Blob>;
   onArchiveSharePackage: () => Promise<DemoFinalAcceptanceSharePackageArchive>;
@@ -108,6 +111,8 @@ interface DemoAcceptanceSummaryPanelProps {
   >;
   onDownloadFinalExternalReviewDeliveryCertificateArchiveReport?: (archiveId: string) => Promise<Blob>;
   onDownloadFinalExternalReviewReleaseBundleReport?: () => Promise<Blob>;
+  onArchiveFinalExternalReviewReleaseBundle?: () => Promise<DemoFinalExternalReviewReleaseBundleArchive>;
+  onDownloadFinalExternalReviewReleaseBundleArchiveReport?: (archiveId: string) => Promise<Blob>;
 }
 
 export function DemoAcceptanceSummaryPanel({
@@ -130,6 +135,7 @@ export function DemoAcceptanceSummaryPanel({
   finalExternalReviewDeliveryCertificate = null,
   finalExternalReviewDeliveryCertificateArchives = [],
   finalExternalReviewReleaseBundle = null,
+  finalExternalReviewReleaseBundleArchives = [],
   error,
   sharePackageError,
   sharePackageArchiveError,
@@ -149,6 +155,7 @@ export function DemoAcceptanceSummaryPanel({
   finalExternalReviewDeliveryCertificateError = null,
   finalExternalReviewDeliveryCertificateArchiveError = null,
   finalExternalReviewReleaseBundleError = null,
+  finalExternalReviewReleaseBundleArchiveError = null,
   onDownloadReport,
   onDownloadSharePackageReport,
   onArchiveSharePackage,
@@ -176,7 +183,9 @@ export function DemoAcceptanceSummaryPanel({
   onDownloadFinalExternalReviewDeliveryCertificateReport,
   onArchiveFinalExternalReviewDeliveryCertificate,
   onDownloadFinalExternalReviewDeliveryCertificateArchiveReport,
-  onDownloadFinalExternalReviewReleaseBundleReport
+  onDownloadFinalExternalReviewReleaseBundleReport,
+  onArchiveFinalExternalReviewReleaseBundle,
+  onDownloadFinalExternalReviewReleaseBundleArchiveReport
 }: DemoAcceptanceSummaryPanelProps) {
   const [downloadStatus, setDownloadStatus] = useState<string | null>(null);
   const [sharePackageCopyStatus, setSharePackageCopyStatus] = useState<string | null>(null);
@@ -246,6 +255,14 @@ export function DemoAcceptanceSummaryPanel({
   const [
     finalExternalReviewReleaseBundleDownloadStatus,
     setFinalExternalReviewReleaseBundleDownloadStatus
+  ] = useState<string | null>(null);
+  const [
+    finalExternalReviewReleaseBundleArchiveStatus,
+    setFinalExternalReviewReleaseBundleArchiveStatus
+  ] = useState<string | null>(null);
+  const [
+    finalExternalReviewReleaseBundleArchiveDownloadStatus,
+    setFinalExternalReviewReleaseBundleArchiveDownloadStatus
   ] = useState<string | null>(null);
   const [deliveryChannel, setDeliveryChannel] = useState('email');
   const [deliveryTarget, setDeliveryTarget] = useState('');
@@ -583,6 +600,39 @@ export function DemoAcceptanceSummaryPanel({
     }
   }
 
+  async function archiveFinalExternalReviewReleaseBundle() {
+    if (!onArchiveFinalExternalReviewReleaseBundle) {
+      return;
+    }
+    try {
+      await onArchiveFinalExternalReviewReleaseBundle();
+      setFinalExternalReviewReleaseBundleArchiveStatus('Final external-review release bundle archived');
+    } catch {
+      setFinalExternalReviewReleaseBundleArchiveStatus(
+        'Final external-review release bundle archive failed'
+      );
+    }
+  }
+
+  async function downloadFinalExternalReviewReleaseBundleArchive(
+    archive: DemoFinalExternalReviewReleaseBundleArchive
+  ) {
+    if (!onDownloadFinalExternalReviewReleaseBundleArchiveReport) {
+      return;
+    }
+    try {
+      const report = await onDownloadFinalExternalReviewReleaseBundleArchiveReport(archive.id);
+      downloadMarkdown(report, `patchpilot-final-external-review-release-bundle-${archive.id}.md`);
+      setFinalExternalReviewReleaseBundleArchiveDownloadStatus(
+        'Final external-review release bundle archive downloaded'
+      );
+    } catch {
+      setFinalExternalReviewReleaseBundleArchiveDownloadStatus(
+        'Final external-review release bundle archive download failed'
+      );
+    }
+  }
+
   async function archiveCompletionCloseout() {
     if (!onArchiveCompletionCloseout) {
       return;
@@ -882,6 +932,7 @@ export function DemoAcceptanceSummaryPanel({
             deliveryCertificate={finalExternalReviewDeliveryCertificate}
             deliveryCertificateArchives={finalExternalReviewDeliveryCertificateArchives}
             releaseBundle={finalExternalReviewReleaseBundle}
+            releaseBundleArchives={finalExternalReviewReleaseBundleArchives}
             error={finalExternalReviewEvidencePackageError}
             archiveError={finalExternalReviewEvidencePackageArchiveError}
             deliveryReceiptError={finalExternalReviewEvidencePackageDeliveryReceiptError}
@@ -890,6 +941,7 @@ export function DemoAcceptanceSummaryPanel({
             deliveryCertificateError={finalExternalReviewDeliveryCertificateError}
             deliveryCertificateArchiveError={finalExternalReviewDeliveryCertificateArchiveError}
             releaseBundleError={finalExternalReviewReleaseBundleError}
+            releaseBundleArchiveError={finalExternalReviewReleaseBundleArchiveError}
             downloadStatus={finalExternalReviewEvidencePackageDownloadStatus}
             archiveStatus={finalExternalReviewEvidencePackageArchiveStatus}
             archiveDownloadStatus={finalExternalReviewEvidencePackageArchiveDownloadStatus}
@@ -906,6 +958,8 @@ export function DemoAcceptanceSummaryPanel({
               finalExternalReviewDeliveryCertificateArchiveDownloadStatus
             }
             releaseBundleDownloadStatus={finalExternalReviewReleaseBundleDownloadStatus}
+            releaseBundleArchiveStatus={finalExternalReviewReleaseBundleArchiveStatus}
+            releaseBundleArchiveDownloadStatus={finalExternalReviewReleaseBundleArchiveDownloadStatus}
             deliveryChannel={finalExternalReviewPackageDeliveryChannel}
             deliveryTarget={finalExternalReviewPackageDeliveryTarget}
             operator={finalExternalReviewPackageDeliveryOperator}
@@ -930,6 +984,10 @@ export function DemoAcceptanceSummaryPanel({
               void downloadFinalExternalReviewDeliveryCertificateArchive(archive)
             )}
             onDownloadReleaseBundle={() => void downloadFinalExternalReviewReleaseBundle()}
+            onArchiveReleaseBundle={() => void archiveFinalExternalReviewReleaseBundle()}
+            onDownloadReleaseBundleArchive={(archive) => (
+              void downloadFinalExternalReviewReleaseBundleArchive(archive)
+            )}
           />
         </>
       ) : (
@@ -948,6 +1006,7 @@ interface FinalExternalReviewEvidencePackageProps {
   deliveryCertificate: DemoFinalExternalReviewDeliveryCertificate | null;
   deliveryCertificateArchives: DemoFinalExternalReviewDeliveryCertificateArchive[];
   releaseBundle: DemoFinalExternalReviewReleaseBundle | null;
+  releaseBundleArchives: DemoFinalExternalReviewReleaseBundleArchive[];
   error: string | null;
   archiveError: string | null;
   deliveryReceiptError: string | null;
@@ -956,6 +1015,7 @@ interface FinalExternalReviewEvidencePackageProps {
   deliveryCertificateError: string | null;
   deliveryCertificateArchiveError: string | null;
   releaseBundleError: string | null;
+  releaseBundleArchiveError: string | null;
   downloadStatus: string | null;
   archiveStatus: string | null;
   archiveDownloadStatus: string | null;
@@ -968,6 +1028,8 @@ interface FinalExternalReviewEvidencePackageProps {
   deliveryCertificateArchiveStatus: string | null;
   deliveryCertificateArchiveDownloadStatus: string | null;
   releaseBundleDownloadStatus: string | null;
+  releaseBundleArchiveStatus: string | null;
+  releaseBundleArchiveDownloadStatus: string | null;
   deliveryChannel: string;
   deliveryTarget: string;
   operator: string;
@@ -992,6 +1054,8 @@ interface FinalExternalReviewEvidencePackageProps {
     archive: DemoFinalExternalReviewDeliveryCertificateArchive
   ) => void;
   onDownloadReleaseBundle: () => void;
+  onArchiveReleaseBundle: () => void;
+  onDownloadReleaseBundleArchive: (archive: DemoFinalExternalReviewReleaseBundleArchive) => void;
 }
 
 function FinalExternalReviewEvidencePackage({
@@ -1003,6 +1067,7 @@ function FinalExternalReviewEvidencePackage({
   deliveryCertificate,
   deliveryCertificateArchives,
   releaseBundle,
+  releaseBundleArchives,
   error,
   archiveError,
   deliveryReceiptError,
@@ -1011,6 +1076,7 @@ function FinalExternalReviewEvidencePackage({
   deliveryCertificateError,
   deliveryCertificateArchiveError,
   releaseBundleError,
+  releaseBundleArchiveError,
   downloadStatus,
   archiveStatus,
   archiveDownloadStatus,
@@ -1023,6 +1089,8 @@ function FinalExternalReviewEvidencePackage({
   deliveryCertificateArchiveStatus,
   deliveryCertificateArchiveDownloadStatus,
   releaseBundleDownloadStatus,
+  releaseBundleArchiveStatus,
+  releaseBundleArchiveDownloadStatus,
   deliveryChannel,
   deliveryTarget,
   operator,
@@ -1042,7 +1110,9 @@ function FinalExternalReviewEvidencePackage({
   onDownloadDeliveryCertificate,
   onArchiveDeliveryCertificate,
   onDownloadDeliveryCertificateArchive,
-  onDownloadReleaseBundle
+  onDownloadReleaseBundle,
+  onArchiveReleaseBundle,
+  onDownloadReleaseBundleArchive
 }: FinalExternalReviewEvidencePackageProps) {
   return (
     <div className="demo-session-handoff-checks">
@@ -1451,8 +1521,24 @@ function FinalExternalReviewEvidencePackage({
                     <Download size={14} />
                     Download final external-review release bundle
                   </button>
+                  <button
+                    className="secondary-button"
+                    type="button"
+                    onClick={() => onArchiveReleaseBundle()}
+                    aria-label="Archive final external-review release bundle"
+                    disabled={!releaseBundle || !releaseBundle.releaseReady}
+                  >
+                    <Archive size={14} />
+                    Archive final external-review release bundle
+                  </button>
                   {releaseBundleDownloadStatus ? (
                     <span className="copy-status">{releaseBundleDownloadStatus}</span>
+                  ) : null}
+                  {releaseBundleArchiveStatus ? (
+                    <span className="copy-status">{releaseBundleArchiveStatus}</span>
+                  ) : null}
+                  {releaseBundleArchiveDownloadStatus ? (
+                    <span className="copy-status">{releaseBundleArchiveDownloadStatus}</span>
                   ) : null}
                 </div>
               </div>
@@ -1460,6 +1546,12 @@ function FinalExternalReviewEvidencePackage({
                 <div className="adapter-api-error">
                   <strong>Final external-review release bundle unavailable</strong>
                   <span>{releaseBundleError}</span>
+                </div>
+              ) : null}
+              {releaseBundleArchiveError ? (
+                <div className="adapter-api-error">
+                  <strong>Final external-review release bundle archives unavailable</strong>
+                  <span>{releaseBundleArchiveError}</span>
                 </div>
               ) : null}
               {releaseBundle ? (
@@ -1525,6 +1617,45 @@ function FinalExternalReviewEvidencePackage({
               ) : (
                 <p className="empty-state">Final external-review release bundle has not loaded yet.</p>
               )}
+              <div className="demo-session-handoff-checks">
+                <div className="demo-session-archive-title-row">
+                  <h3>Archived final external-review release bundles</h3>
+                  <span>{releaseBundleArchives.length} archives</span>
+                </div>
+                {releaseBundleArchives.length > 0 ? (
+                  <ul>
+                    {releaseBundleArchives.map((archive) => (
+                      <li key={archive.id}>
+                        <div className="demo-webhook-delivery-main">
+                          <strong>{archive.id}</strong>
+                          <span>{archive.releaseReady ? 'Release ready' : statusLabel(archive.status)}</span>
+                        </div>
+                        <p>{archive.summary}</p>
+                        <small>Certificate archive {archive.latestCertificateArchiveId ?? 'missing'}</small>
+                        <small>
+                          Delivery finalization archive {archive.latestDeliveryFinalizationArchiveId ?? 'missing'}
+                        </small>
+                        <small>Package archive {archive.latestPackageArchiveId ?? 'missing'}</small>
+                        <small>Delivery receipt {archive.latestDeliveryReceiptId ?? 'missing'}</small>
+                        <small>Archived {compactDateTime(archive.archivedAt)}</small>
+                        <div className="demo-session-archive-actions">
+                          <button
+                            className="secondary-button"
+                            type="button"
+                            onClick={() => onDownloadReleaseBundleArchive(archive)}
+                            aria-label={`Download final external-review release bundle archive ${archive.id}`}
+                          >
+                            <Download size={14} />
+                            Download final external-review release bundle archive {archive.id}
+                          </button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="empty-state">No final external-review release bundle archives yet.</p>
+                )}
+              </div>
             </div>
           </div>
           <div className="demo-evidence-receipt-form">

@@ -12,6 +12,7 @@ import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageD
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageDeliveryFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageDeliveryReceiptEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageVo;
+import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewReleaseBundleArchiveEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewReleaseBundleVo;
 import io.patchpilot.backend.demo.domain.DemoFinalHandoffReportPackageArchiveEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchAcceptanceCertificateEvidenceVo;
@@ -184,6 +185,10 @@ class DemoRunbookServiceTests {
                 .contains("- Final external-review release attachment: Final external-review delivery certificate archive final-external-review-delivery-certificate-archive-1.")
                 .contains("- Final external-review release evidence: Certified delivery certificate archive final-external-review-delivery-certificate-archive-1 is the release root.")
                 .contains("- Final external-review release download: Download final external-review release bundle report.")
+                .contains("- Final external-review release bundle archive: `READY` - Latest final external-review release bundle archive is ready.")
+                .contains("- Final external-review release bundle archive id: `final-external-review-release-bundle-archive-1`")
+                .contains("- Final external-review release bundle archived certificate: `final-external-review-delivery-certificate-archive-1`")
+                .contains("- Final external-review release bundle archive download: Download final external-review release bundle archive final-external-review-release-bundle-archive-1.")
                 .contains("## Readiness")
                 .contains("- `Credentials`: `READY` - Required credentials are configured.")
                 .contains("## Smoke Checklist")
@@ -384,6 +389,7 @@ class DemoRunbookServiceTests {
                 finalExternalReviewEvidencePackageDeliveryFinalization(),
                 finalExternalReviewEvidencePackageDeliveryFinalizationArchiveEvidence(),
                 finalExternalReviewReleaseBundle(),
+                finalExternalReviewReleaseBundleArchiveEvidence(),
                 true,
                 "delivery-receipt-1",
                 "Demo reviewer",
@@ -731,6 +737,30 @@ class DemoRunbookServiceTests {
                 ),
                 "GET /api/demo/final-external-review-release-bundle is read-only.",
                 "# PatchPilot Final External Review Release Bundle"
+        );
+    }
+
+    private static DemoFinalExternalReviewReleaseBundleArchiveEvidenceVo
+    finalExternalReviewReleaseBundleArchiveEvidence() {
+        return new DemoFinalExternalReviewReleaseBundleArchiveEvidenceVo(
+                DemoReadinessStatus.READY,
+                true,
+                true,
+                "Latest final external-review release bundle archive is ready.",
+                "Use the archived final external-review release bundle as the external-review handoff record.",
+                1,
+                "final-external-review-release-bundle-archive-1",
+                "final-external-review-delivery-certificate-archive-1",
+                "final-external-review-package-delivery-finalization-archive-1",
+                "final-external-review-package-archive-1",
+                "final-external-review-package-delivery-receipt-1",
+                "task-2",
+                "https://github.com/bingqin2/PatchPilot/pull/42",
+                Instant.parse("2026-06-29T05:40:00Z"),
+                List.of(
+                        "Download final external-review release bundle archive final-external-review-release-bundle-archive-1.",
+                        "Download final external-review delivery certificate archive final-external-review-delivery-certificate-archive-1."
+                )
         );
     }
 }

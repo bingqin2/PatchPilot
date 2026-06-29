@@ -6037,3 +6037,27 @@ Validation so far:
 - `npm test`: passed, 30 test files and 465 tests.
 - `npm run build`: passed with the existing Vite large-chunk warning.
 - `git diff --check`: passed.
+
+## 2026-06-30 - 300 Final release bundle archives
+
+- Started `300-final-release-bundle-archives` to freeze the READY final external-review release bundle as durable PatchPilot-local evidence after the live release read model is ready.
+- Planned a complete feature slice: backend archive persistence, READY-only archive guard, create/list/download API endpoints, protected audit evidence, top-level evidence-bundle archive status, copied runbook archive lines, final acceptance dashboard archive controls/history/downloads, frontend API helpers, App refresh wiring, README/product/frontend/architecture docs, and regression tests.
+- Added `DemoFinalExternalReviewReleaseBundleArchiveService` with VO/entity/mapper/converter, in-memory and MyBatis repositories, and `V58__create_demo_final_external_review_release_bundle_archive.sql`.
+- Added `POST /api/demo/final-external-review-release-bundle/archives`, `GET /api/demo/final-external-review-release-bundle/archives`, and `GET /api/demo/final-external-review-release-bundle/archives/{archiveId}/report/download`.
+- Updated the top-level demo evidence bundle and copied runbook with latest release-bundle archive readiness, archive id, certificate archive, delivery finalization archive, package archive, delivery receipt, Pull Request, archived time, next action, and download actions.
+- Updated the final demo acceptance dashboard with archive creation, recent release-bundle archive history, archive report downloads, archive load errors, and App-level refresh after archive creation.
+- Updated README, product spec, frontend design doc, architecture notes, and added this plan document.
+
+Validation so far:
+
+- `mvn -q -pl PatchPilot -Dtest=DemoFinalExternalReviewReleaseBundleArchiveServiceTests,DemoFinalExternalReviewReleaseBundleArchiveConvertTests,DemoFinalExternalReviewReleaseBundleArchiveMigrationTests,DemoReadinessControllerTests#should_archive_final_external_review_release_bundle_and_record_audit+should_reject_final_external_review_release_bundle_archive_when_not_ready+should_list_final_external_review_release_bundle_archives+should_download_archived_final_external_review_release_bundle_report+should_return_not_found_when_final_external_review_release_bundle_archive_is_missing test`: passed.
+- `mvn -q -pl PatchPilot -Dtest=DemoEvidenceBundleServiceTests,DemoRunbookServiceTests test`: passed.
+- `npm test -- src/api.test.ts src/dashboard/components/DemoAcceptanceSummaryPanel.test.tsx`: first failed because release-bundle archive API helpers and UI history did not exist; passed after adding archive types, API helpers, controls, and history, 213 tests.
+- `npm test -- src/dashboard/components/DemoEvidenceBundlePanel.test.tsx`: first failed because top-level archive evidence was missing; passed after adding release-bundle archive evidence and legacy fallback, 4 tests.
+- `npm test -- src/App.test.tsx`: passed after App-level archive loading and panel wiring, 86 tests.
+- `mvn -q -pl PatchPilot -Dtest=DemoFinalExternalReviewReleaseBundleArchiveServiceTests,DemoFinalExternalReviewReleaseBundleArchiveConvertTests,DemoFinalExternalReviewReleaseBundleArchiveMigrationTests,DemoReadinessControllerTests#should_archive_final_external_review_release_bundle_and_record_audit+should_reject_final_external_review_release_bundle_archive_when_not_ready+should_list_final_external_review_release_bundle_archives+should_download_archived_final_external_review_release_bundle_report+should_return_not_found_when_final_external_review_release_bundle_archive_is_missing,DemoEvidenceBundleServiceTests,DemoRunbookServiceTests test`: passed before final integration.
+- `npm test -- --reporter=dot src/api.test.ts src/dashboard/components/DemoAcceptanceSummaryPanel.test.tsx src/dashboard/components/DemoEvidenceBundlePanel.test.tsx src/App.test.tsx`: passed, 4 test files and 303 tests.
+- `mvn -q -pl PatchPilot test`: passed.
+- `npm test -- --reporter=dot`: passed, 30 test files and 468 tests.
+- `npm run build`: passed with the existing Vite large-chunk warning.
+- `git diff --check`: passed.

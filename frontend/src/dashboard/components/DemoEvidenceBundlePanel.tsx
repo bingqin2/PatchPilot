@@ -257,6 +257,25 @@ export function DemoEvidenceBundlePanel({ bundle, error, onCopyRunbook }: DemoEv
     sideEffectContract: 'GET /api/demo/evidence-bundle is read-only and does not mutate tasks, Git, or GitHub.',
     markdownReport: ''
   };
+  const finalExternalReviewReleaseBundleArchiveEvidence =
+    bundle?.finalExternalReviewReleaseBundleArchiveEvidence ?? {
+      status: 'NEEDS_ATTENTION' as DemoReadinessStatus,
+      archived: false,
+      releaseReady: false,
+      summary: 'No final external-review release bundle archive is available.',
+      nextAction: 'Archive the READY final external-review release bundle.',
+      archiveCount: 0,
+      latestArchiveId: null,
+      latestCertificateArchiveId: finalExternalReviewReleaseBundle.latestCertificateArchiveId,
+      latestDeliveryFinalizationArchiveId:
+        finalExternalReviewReleaseBundle.latestDeliveryFinalizationArchiveId,
+      latestPackageArchiveId: finalExternalReviewReleaseBundle.latestPackageArchiveId,
+      latestDeliveryReceiptId: finalExternalReviewReleaseBundle.latestDeliveryReceiptId,
+      latestTaskId: finalExternalReviewReleaseBundle.latestTaskId,
+      latestPullRequestUrl: finalExternalReviewReleaseBundle.latestPullRequestUrl,
+      latestArchivedAt: null,
+      downloadActions: ['Archive the READY final external-review release bundle.']
+    };
 
   async function copyRunbook() {
     try {
@@ -845,6 +864,49 @@ export function DemoEvidenceBundlePanel({ bundle, error, onCopyRunbook }: DemoEv
                 <small key={attachment}>{attachment}</small>
               ))}
               {finalExternalReviewReleaseBundle.downloadActions.slice(0, 2).map((action) => (
+                <small key={action}>{action}</small>
+              ))}
+            </div>
+            <div>
+              <span>Final external-review release bundle archive</span>
+              <strong>
+                {finalExternalReviewReleaseBundleArchiveEvidence.archived
+                  && finalExternalReviewReleaseBundleArchiveEvidence.releaseReady
+                  ? 'Release bundle archive ready'
+                  : statusLabel(finalExternalReviewReleaseBundleArchiveEvidence.status)}
+              </strong>
+              <small>{finalExternalReviewReleaseBundleArchiveEvidence.summary}</small>
+              <small>{finalExternalReviewReleaseBundleArchiveEvidence.nextAction}</small>
+              <small>{finalExternalReviewReleaseBundleArchiveEvidence.latestArchiveId ?? 'No release bundle archive'}</small>
+              <small>
+                {finalExternalReviewReleaseBundleArchiveEvidence.latestCertificateArchiveId
+                  ?? 'No archived release certificate'}
+              </small>
+              <small>
+                {finalExternalReviewReleaseBundleArchiveEvidence.latestDeliveryFinalizationArchiveId
+                  ?? 'No archived release finalization'}
+              </small>
+              <small>
+                {finalExternalReviewReleaseBundleArchiveEvidence.latestPackageArchiveId
+                  ?? 'No archived release package'}
+              </small>
+              <small>
+                {finalExternalReviewReleaseBundleArchiveEvidence.latestDeliveryReceiptId
+                  ?? 'No archived release delivery receipt'}
+              </small>
+              <small>
+                {finalExternalReviewReleaseBundleArchiveEvidence.latestArchivedAt
+                  ? `Archived ${compactDateTime(finalExternalReviewReleaseBundleArchiveEvidence.latestArchivedAt)}`
+                  : `${finalExternalReviewReleaseBundleArchiveEvidence.archiveCount} archives`}
+              </small>
+              {finalExternalReviewReleaseBundleArchiveEvidence.latestPullRequestUrl ? (
+                <a href={finalExternalReviewReleaseBundleArchiveEvidence.latestPullRequestUrl}>
+                  Open archived final external-review release Pull Request
+                </a>
+              ) : (
+                <small>No archived final external-review release Pull Request</small>
+              )}
+              {finalExternalReviewReleaseBundleArchiveEvidence.downloadActions.slice(0, 2).map((action) => (
                 <small key={action}>{action}</small>
               ))}
             </div>

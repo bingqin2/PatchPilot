@@ -16,6 +16,7 @@ import type {
   DemoFinalExternalReviewEvidencePackageDeliveryReceipt,
   DemoFinalExternalReviewEvidencePackage,
   DemoFinalExternalReviewReleaseBundle,
+  DemoFinalExternalReviewReleaseBundleArchive,
   DemoFinalAcceptanceSharePackage,
   DemoFinalAcceptanceSharePackageArchive
 } from '../../types';
@@ -567,6 +568,48 @@ const finalExternalReviewReleaseBundle: DemoFinalExternalReviewReleaseBundle = {
   ],
   sideEffectContract: 'GET /api/demo/final-external-review-release-bundle is read-only.',
   markdownReport: '# PatchPilot Final External Review Release Bundle'
+};
+
+const finalExternalReviewReleaseBundleArchive: DemoFinalExternalReviewReleaseBundleArchive = {
+  id: 'final-external-review-release-bundle-archive-1',
+  status: 'READY',
+  releaseReady: true,
+  summary: 'PatchPilot final external-review release bundle archive is frozen.',
+  nextAction: 'Use this frozen release bundle archive as the external review source.',
+  latestCertificateArchiveId: 'final-external-review-delivery-certificate-archive-1',
+  latestDeliveryFinalizationArchiveId: 'final-external-review-package-delivery-finalization-archive-1',
+  latestPackageArchiveId: 'final-external-review-package-archive-1',
+  latestDeliveryReceiptId: 'final-external-review-package-delivery-receipt-1',
+  latestTaskId: 'task-1',
+  latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+  latestDeliveryTarget: 'reviewer@example.com',
+  latestDeliveryChannel: 'email',
+  latestDeliveredAt: '2026-06-29T07:20:00Z',
+  latestCertificateArchivedAt: '2026-06-29T11:30:00Z',
+  generatedAt: '2026-06-29T12:00:00Z',
+  archivedAt: '2026-06-29T12:05:00Z',
+  requiredAttachments: [
+    'Final external-review delivery certificate archive final-external-review-delivery-certificate-archive-1',
+    'Final external-review package archive final-external-review-package-archive-1'
+  ],
+  releaseChecks: [
+    {
+      name: 'Final delivery certificate archive',
+      status: 'READY',
+      summary: 'Latest final external-review delivery certificate archive is certified.',
+      nextAction: 'No action needed.'
+    }
+  ],
+  evidenceNotes: [
+    'Certified final external-review delivery certificate archive final-external-review-delivery-certificate-archive-1 is the release source of truth.'
+  ],
+  downloadActions: [
+    'Download final external-review release bundle archive report.',
+    'Download final external-review delivery certificate archive final-external-review-delivery-certificate-archive-1.'
+  ],
+  sideEffectContract:
+    'POST /api/demo/final-external-review-release-bundle/archives archives the current READY release bundle.',
+  report: '# PatchPilot Final External Review Release Bundle Archive'
 };
 
 test('shows final demo acceptance status and certificate evidence', () => {
@@ -1276,6 +1319,12 @@ test('shows and downloads final external-review release bundle', async () => {
   ], {
     type: 'text/markdown'
   }));
+  const archiveReleaseBundle = vi.fn(async () => finalExternalReviewReleaseBundleArchive);
+  const downloadReleaseBundleArchiveReport = vi.fn(async () => new Blob([
+    '# PatchPilot Final External Review Release Bundle Archive'
+  ], {
+    type: 'text/markdown'
+  }));
   const createObjectUrl = vi.fn(() => 'blob:final-external-review-release-bundle');
   const revokeObjectUrl = vi.fn();
   const anchorClick = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
@@ -1309,6 +1358,7 @@ test('shows and downloads final external-review release bundle', async () => {
         finalExternalReviewEvidencePackageDeliveryFinalizationArchive
       ]}
       finalExternalReviewReleaseBundle={finalExternalReviewReleaseBundle}
+      finalExternalReviewReleaseBundleArchives={[finalExternalReviewReleaseBundleArchive]}
       error={null}
       sharePackageError={null}
       sharePackageArchiveError={null}
@@ -1326,6 +1376,7 @@ test('shows and downloads final external-review release bundle', async () => {
       finalExternalReviewEvidencePackageDeliveryFinalizationError={null}
       finalExternalReviewEvidencePackageDeliveryFinalizationArchiveError={null}
       finalExternalReviewReleaseBundleError={null}
+      finalExternalReviewReleaseBundleArchiveError={null}
       onDownloadReport={vi.fn()}
       onDownloadSharePackageReport={vi.fn()}
       onArchiveSharePackage={vi.fn()}
@@ -1351,6 +1402,8 @@ test('shows and downloads final external-review release bundle', async () => {
       onArchiveFinalExternalReviewEvidencePackageDeliveryFinalization={vi.fn()}
       onDownloadFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveReport={vi.fn()}
       onDownloadFinalExternalReviewReleaseBundleReport={downloadReleaseBundleReport}
+      onArchiveFinalExternalReviewReleaseBundle={archiveReleaseBundle}
+      onDownloadFinalExternalReviewReleaseBundleArchiveReport={downloadReleaseBundleArchiveReport}
     />
   );
 
@@ -1365,6 +1418,13 @@ test('shows and downloads final external-review release bundle', async () => {
   )).toBeInTheDocument();
   expect(within(panel).getByText('Download final external-review release bundle report.'))
     .toBeInTheDocument();
+  expect(within(panel).getByRole('heading', {
+    name: 'Archived final external-review release bundles'
+  })).toBeInTheDocument();
+  expect(within(panel).getByText('final-external-review-release-bundle-archive-1'))
+    .toBeInTheDocument();
+  expect(within(panel).getByText('PatchPilot final external-review release bundle archive is frozen.'))
+    .toBeInTheDocument();
 
   await user.click(within(panel).getByRole('button', {
     name: 'Download final external-review release bundle'
@@ -1374,6 +1434,21 @@ test('shows and downloads final external-review release bundle', async () => {
   expect(anchorClick).toHaveBeenCalled();
   expect(revokeObjectUrl).toHaveBeenCalledWith('blob:final-external-review-release-bundle');
   expect(await within(panel).findByText('Final external-review release bundle downloaded'))
+    .toBeInTheDocument();
+
+  await user.click(within(panel).getByRole('button', {
+    name: 'Archive final external-review release bundle'
+  }));
+  await user.click(within(panel).getByRole('button', {
+    name: 'Download final external-review release bundle archive final-external-review-release-bundle-archive-1'
+  }));
+
+  expect(archiveReleaseBundle).toHaveBeenCalledTimes(1);
+  expect(downloadReleaseBundleArchiveReport)
+    .toHaveBeenCalledWith('final-external-review-release-bundle-archive-1');
+  expect(await within(panel).findByText('Final external-review release bundle archived'))
+    .toBeInTheDocument();
+  expect(within(panel).getByText('Final external-review release bundle archive downloaded'))
     .toBeInTheDocument();
 });
 
