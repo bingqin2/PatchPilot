@@ -212,6 +212,24 @@ const snapshot: DemoSessionSnapshot = {
       markdownReport: '# PatchPilot Final Acceptance Completion Closeout',
       generatedAt: '2026-06-24T10:50:00Z'
     },
+    finalAcceptanceCompletionCloseoutArchiveEvidence: {
+      status: 'READY',
+      archived: true,
+      closed: true,
+      summary: 'Latest final acceptance completion closeout archive is closed and ready.',
+      nextAction: 'Use the archived final acceptance completion closeout as the frozen external-review completion record.',
+      archiveCount: 1,
+      latestArchiveId: 'final-acceptance-completion-closeout-archive-1',
+      latestCompletionArchiveId: 'final-acceptance-completion-archive-1',
+      latestCompletionEvidenceDeliveryReceiptId: 'final-acceptance-completion-evidence-delivery-receipt-1',
+      latestTaskId: 'task-2',
+      latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+      latestArchivedAt: '2026-06-24T11:00:00Z',
+      downloadActions: [
+        'Download final acceptance completion closeout archive final-acceptance-completion-closeout-archive-1.',
+        'Download linked final acceptance completion archive final-acceptance-completion-archive-1.'
+      ]
+    },
     handoffShareDeliveryReceiptRecorded: true,
     handoffShareLatestDeliveryReceiptId: 'delivery-receipt-1',
     handoffShareLatestDeliveryTarget: 'maintainer@example.com',

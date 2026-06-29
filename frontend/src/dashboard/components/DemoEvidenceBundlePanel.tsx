@@ -104,6 +104,21 @@ export function DemoEvidenceBundlePanel({ bundle, error, onCopyRunbook }: DemoEv
     markdownReport: '',
     generatedAt: ''
   };
+  const finalAcceptanceCompletionCloseoutArchiveEvidence = bundle?.finalAcceptanceCompletionCloseoutArchiveEvidence ?? {
+    status: 'NEEDS_ATTENTION' as DemoReadinessStatus,
+    archived: false,
+    closed: false,
+    summary: 'No final acceptance completion closeout archive is available.',
+    nextAction: 'Archive the final acceptance completion closeout after it is READY and closed.',
+    archiveCount: 0,
+    latestArchiveId: null,
+    latestCompletionArchiveId: null,
+    latestCompletionEvidenceDeliveryReceiptId: null,
+    latestTaskId: null,
+    latestPullRequestUrl: null,
+    latestArchivedAt: null,
+    downloadActions: ['Archive the final acceptance completion closeout after it is READY and closed.']
+  };
 
   async function copyRunbook() {
     try {
@@ -391,6 +406,44 @@ export function DemoEvidenceBundlePanel({ bundle, error, onCopyRunbook }: DemoEv
                 <small>Delivered {compactDateTime(finalAcceptanceCompletionCloseoutEvidence.latestDeliveredAt)}</small>
               ) : null}
               {finalAcceptanceCompletionCloseoutEvidence.downloadActions.slice(0, 2).map((action) => (
+                <small key={action}>{action}</small>
+              ))}
+            </div>
+            <div>
+              <span>Final acceptance completion closeout archive</span>
+              <strong>
+                {finalAcceptanceCompletionCloseoutArchiveEvidence.closed
+                  ? 'Closed archive'
+                  : statusLabel(finalAcceptanceCompletionCloseoutArchiveEvidence.status)}
+              </strong>
+              <small>{finalAcceptanceCompletionCloseoutArchiveEvidence.summary}</small>
+              <small>{finalAcceptanceCompletionCloseoutArchiveEvidence.nextAction}</small>
+              <small>{finalAcceptanceCompletionCloseoutArchiveEvidence.archiveCount} closeout archive snapshots</small>
+              <small>{finalAcceptanceCompletionCloseoutArchiveEvidence.latestArchiveId ?? 'No final closeout archive'}</small>
+              <small>
+                {finalAcceptanceCompletionCloseoutArchiveEvidence.latestCompletionArchiveId
+                  ?? 'No linked final acceptance completion archive'}
+              </small>
+              <small>
+                {finalAcceptanceCompletionCloseoutArchiveEvidence.latestCompletionEvidenceDeliveryReceiptId
+                  ?? 'No linked completion evidence delivery receipt'}
+              </small>
+              <small>
+                {finalAcceptanceCompletionCloseoutArchiveEvidence.latestTaskId
+                  ? `Task ${finalAcceptanceCompletionCloseoutArchiveEvidence.latestTaskId}`
+                  : 'No archived completion task'}
+              </small>
+              {finalAcceptanceCompletionCloseoutArchiveEvidence.latestPullRequestUrl ? (
+                <a href={finalAcceptanceCompletionCloseoutArchiveEvidence.latestPullRequestUrl}>
+                  Open archived final acceptance completion Pull Request
+                </a>
+              ) : (
+                <small>No archived final acceptance completion Pull Request</small>
+              )}
+              {finalAcceptanceCompletionCloseoutArchiveEvidence.latestArchivedAt ? (
+                <small>Archived {compactDateTime(finalAcceptanceCompletionCloseoutArchiveEvidence.latestArchivedAt)}</small>
+              ) : null}
+              {finalAcceptanceCompletionCloseoutArchiveEvidence.downloadActions.slice(0, 2).map((action) => (
                 <small key={action}>{action}</small>
               ))}
             </div>

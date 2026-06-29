@@ -290,6 +290,35 @@ public class DemoRunbookService {
                         .append("- Final acceptance completion closeout download: ")
                         .append(action)
                         .append("\n"));
+
+        runbook.append("- Final acceptance completion closeout archive: `")
+                .append(bundle.finalAcceptanceCompletionCloseoutArchiveEvidence().status())
+                .append("` - ")
+                .append(bundle.finalAcceptanceCompletionCloseoutArchiveEvidence().summary())
+                .append("\n")
+                .append("- Final acceptance completion closeout archive id: ")
+                .append(valueOrNoneBackticked(bundle.finalAcceptanceCompletionCloseoutArchiveEvidence().latestArchiveId()))
+                .append("\n")
+                .append("- Final acceptance completion closeout archived completion: ")
+                .append(valueOrNoneBackticked(bundle.finalAcceptanceCompletionCloseoutArchiveEvidence().latestCompletionArchiveId()))
+                .append("\n")
+                .append("- Final acceptance completion closeout archived receipt: ")
+                .append(valueOrNoneBackticked(bundle.finalAcceptanceCompletionCloseoutArchiveEvidence().latestCompletionEvidenceDeliveryReceiptId()))
+                .append("\n")
+                .append("- Final acceptance completion closeout archived task: ")
+                .append(valueOrNoneBackticked(bundle.finalAcceptanceCompletionCloseoutArchiveEvidence().latestTaskId()))
+                .append("\n")
+                .append("- Final acceptance completion closeout archive Pull Request: ")
+                .append(valueOrNone(bundle.finalAcceptanceCompletionCloseoutArchiveEvidence().latestPullRequestUrl()))
+                .append("\n")
+                .append("- Final acceptance completion closeout archive next action: ")
+                .append(bundle.finalAcceptanceCompletionCloseoutArchiveEvidence().nextAction())
+                .append("\n");
+        bundle.finalAcceptanceCompletionCloseoutArchiveEvidence().downloadActions()
+                .forEach(action -> runbook
+                        .append("- Final acceptance completion closeout archive download: ")
+                        .append(action)
+                        .append("\n"));
     }
 
     private static void appendEvaluationRunReadiness(

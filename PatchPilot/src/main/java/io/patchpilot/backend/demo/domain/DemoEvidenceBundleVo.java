@@ -56,6 +56,7 @@ public record DemoEvidenceBundleVo(
         DemoFinalHandoffReportPackageArchiveEvidenceVo finalHandoffReportPackageArchiveEvidence,
         DemoFinalAcceptanceShareFinalizationVo finalAcceptanceShareFinalization,
         DemoFinalAcceptanceCompletionCloseoutVo finalAcceptanceCompletionCloseoutEvidence,
+        DemoFinalAcceptanceCompletionCloseoutArchiveEvidenceVo finalAcceptanceCompletionCloseoutArchiveEvidence,
         boolean handoffShareDeliveryReceiptRecorded,
         String handoffShareLatestDeliveryReceiptId,
         String handoffShareLatestDeliveryTarget,
@@ -183,6 +184,7 @@ public record DemoEvidenceBundleVo(
                 finalHandoffReportPackageArchiveEvidence,
                 finalAcceptanceShareFinalization,
                 DemoEvidenceBundleDefaults.missingFinalAcceptanceCompletionCloseoutEvidence(),
+                DemoEvidenceBundleDefaults.missingFinalAcceptanceCompletionCloseoutArchiveEvidence(),
                 handoffShareDeliveryReceiptRecorded,
                 handoffShareLatestDeliveryReceiptId,
                 handoffShareLatestDeliveryTarget,
@@ -311,6 +313,7 @@ public record DemoEvidenceBundleVo(
                 finalHandoffReportPackageArchiveEvidence,
                 DemoEvidenceBundleDefaults.missingFinalAcceptanceShareFinalization(),
                 DemoEvidenceBundleDefaults.missingFinalAcceptanceCompletionCloseoutEvidence(),
+                DemoEvidenceBundleDefaults.missingFinalAcceptanceCompletionCloseoutArchiveEvidence(),
                 handoffShareDeliveryReceiptRecorded,
                 handoffShareLatestDeliveryReceiptId,
                 handoffShareLatestDeliveryTarget,
@@ -438,6 +441,7 @@ public record DemoEvidenceBundleVo(
                 DemoEvidenceBundleDefaults.missingFinalHandoffReportPackageArchiveEvidence(),
                 DemoEvidenceBundleDefaults.missingFinalAcceptanceShareFinalization(),
                 DemoEvidenceBundleDefaults.missingFinalAcceptanceCompletionCloseoutEvidence(),
+                DemoEvidenceBundleDefaults.missingFinalAcceptanceCompletionCloseoutArchiveEvidence(),
                 handoffShareDeliveryReceiptRecorded,
                 handoffShareLatestDeliveryReceiptId,
                 handoffShareLatestDeliveryTarget,
@@ -563,6 +567,7 @@ public record DemoEvidenceBundleVo(
                 DemoEvidenceBundleDefaults.missingFinalHandoffReportPackageArchiveEvidence(),
                 DemoEvidenceBundleDefaults.missingFinalAcceptanceShareFinalization(),
                 DemoEvidenceBundleDefaults.missingFinalAcceptanceCompletionCloseoutEvidence(),
+                DemoEvidenceBundleDefaults.missingFinalAcceptanceCompletionCloseoutArchiveEvidence(),
                 handoffShareDeliveryReceiptRecorded,
                 handoffShareLatestDeliveryReceiptId,
                 handoffShareLatestDeliveryTarget,
@@ -687,6 +692,7 @@ public record DemoEvidenceBundleVo(
                 DemoEvidenceBundleDefaults.missingFinalHandoffReportPackageArchiveEvidence(),
                 DemoEvidenceBundleDefaults.missingFinalAcceptanceShareFinalization(),
                 DemoEvidenceBundleDefaults.missingFinalAcceptanceCompletionCloseoutEvidence(),
+                DemoEvidenceBundleDefaults.missingFinalAcceptanceCompletionCloseoutArchiveEvidence(),
                 handoffShareDeliveryReceiptRecorded,
                 handoffShareLatestDeliveryReceiptId,
                 handoffShareLatestDeliveryTarget,
@@ -779,6 +785,7 @@ public record DemoEvidenceBundleVo(
                 DemoEvidenceBundleDefaults.missingFinalHandoffReportPackageArchiveEvidence(),
                 DemoEvidenceBundleDefaults.missingFinalAcceptanceShareFinalization(),
                 DemoEvidenceBundleDefaults.missingFinalAcceptanceCompletionCloseoutEvidence(),
+                DemoEvidenceBundleDefaults.missingFinalAcceptanceCompletionCloseoutArchiveEvidence(),
                 false,
                 null,
                 null,
@@ -887,6 +894,7 @@ public record DemoEvidenceBundleVo(
                 DemoEvidenceBundleDefaults.missingFinalHandoffReportPackageArchiveEvidence(),
                 DemoEvidenceBundleDefaults.missingFinalAcceptanceShareFinalization(),
                 DemoEvidenceBundleDefaults.missingFinalAcceptanceCompletionCloseoutEvidence(),
+                DemoEvidenceBundleDefaults.missingFinalAcceptanceCompletionCloseoutArchiveEvidence(),
                 handoffShareDeliveryReceiptRecorded,
                 handoffShareLatestDeliveryReceiptId,
                 handoffShareLatestDeliveryTarget,
@@ -985,6 +993,7 @@ public record DemoEvidenceBundleVo(
                 DemoEvidenceBundleDefaults.missingFinalHandoffReportPackageArchiveEvidence(),
                 DemoEvidenceBundleDefaults.missingFinalAcceptanceShareFinalization(),
                 DemoEvidenceBundleDefaults.missingFinalAcceptanceCompletionCloseoutEvidence(),
+                DemoEvidenceBundleDefaults.missingFinalAcceptanceCompletionCloseoutArchiveEvidence(),
                 handoffShareDeliveryReceiptRecorded,
                 handoffShareLatestDeliveryReceiptId,
                 handoffShareLatestDeliveryTarget,
@@ -1088,6 +1097,7 @@ public record DemoEvidenceBundleVo(
                 DemoEvidenceBundleDefaults.missingFinalHandoffReportPackageArchiveEvidence(),
                 DemoEvidenceBundleDefaults.missingFinalAcceptanceShareFinalization(),
                 DemoEvidenceBundleDefaults.missingFinalAcceptanceCompletionCloseoutEvidence(),
+                DemoEvidenceBundleDefaults.missingFinalAcceptanceCompletionCloseoutArchiveEvidence(),
                 handoffShareDeliveryReceiptRecorded,
                 handoffShareLatestDeliveryReceiptId,
                 handoffShareLatestDeliveryTarget,
@@ -1201,6 +1211,7 @@ public record DemoEvidenceBundleVo(
                 DemoEvidenceBundleDefaults.missingFinalHandoffReportPackageArchiveEvidence(),
                 DemoEvidenceBundleDefaults.missingFinalAcceptanceShareFinalization(),
                 DemoEvidenceBundleDefaults.missingFinalAcceptanceCompletionCloseoutEvidence(),
+                DemoEvidenceBundleDefaults.missingFinalAcceptanceCompletionCloseoutArchiveEvidence(),
                 handoffShareDeliveryReceiptRecorded,
                 handoffShareLatestDeliveryReceiptId,
                 handoffShareLatestDeliveryTarget,
@@ -1377,6 +1388,24 @@ public record DemoEvidenceBundleVo(
                     "GET /api/demo/evidence-bundle is read-only and does not mutate tasks, Git, or GitHub.",
                     "# PatchPilot Final Acceptance Completion Closeout\n",
                     Instant.EPOCH
+            );
+        }
+
+        private static DemoFinalAcceptanceCompletionCloseoutArchiveEvidenceVo missingFinalAcceptanceCompletionCloseoutArchiveEvidence() {
+            return new DemoFinalAcceptanceCompletionCloseoutArchiveEvidenceVo(
+                    DemoReadinessStatus.NEEDS_ATTENTION,
+                    false,
+                    false,
+                    "No final acceptance completion closeout archive is available.",
+                    "Archive the final acceptance completion closeout after it is READY and closed.",
+                    0,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    List.of("Archive the final acceptance completion closeout after it is READY and closed.")
             );
         }
     }

@@ -1245,6 +1245,22 @@ export interface DemoFinalHandoffReportPackageArchiveEvidence {
   downloadActions: string[];
 }
 
+export interface DemoFinalAcceptanceCompletionCloseoutArchiveEvidence {
+  status: DemoReadinessStatus;
+  archived: boolean;
+  closed: boolean;
+  summary: string;
+  nextAction: string;
+  archiveCount: number;
+  latestArchiveId: string | null;
+  latestCompletionArchiveId: string | null;
+  latestCompletionEvidenceDeliveryReceiptId: string | null;
+  latestTaskId: string | null;
+  latestPullRequestUrl: string | null;
+  latestArchivedAt: string | null;
+  downloadActions: string[];
+}
+
 export interface DemoEvidenceBundle {
   status: DemoReadinessStatus;
   summary: string;
@@ -1291,6 +1307,7 @@ export interface DemoEvidenceBundle {
   finalHandoffReportPackageArchiveEvidence: DemoFinalHandoffReportPackageArchiveEvidence;
   finalAcceptanceShareFinalization: DemoFinalAcceptanceShareFinalization;
   finalAcceptanceCompletionCloseoutEvidence: DemoFinalAcceptanceCompletionCloseout;
+  finalAcceptanceCompletionCloseoutArchiveEvidence: DemoFinalAcceptanceCompletionCloseoutArchiveEvidence;
   handoffShareDeliveryReceiptRecorded: boolean;
   handoffShareLatestDeliveryReceiptId: string | null;
   handoffShareLatestDeliveryTarget: string | null;

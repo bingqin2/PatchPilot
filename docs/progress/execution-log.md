@@ -5807,3 +5807,25 @@ Validation so far:
 - `npm test -- --reporter=basic`: passed, 30 test files and 438 tests.
 - `npm run build`: passed with the existing Vite large-chunk warning.
 - `git diff --check`: passed.
+
+## 2026-06-29 - 289 Final closeout archive evidence bundle
+
+- Started `289-final-closeout-archive-evidence-bundle` to promote the latest frozen final acceptance completion closeout archive into the first demo evidence readout and copied runbook.
+- Planned a complete feature slice: backend evidence-bundle aggregation, runbook archive export, frontend top-level evidence rendering, legacy fallback behavior, README/product/frontend docs, plan doc, and regression tests.
+- RED backend tests were added first for READY closeout archive evidence in the bundle, bundle downgrade when the archive is missing, and copied runbook Markdown export.
+- RED frontend tests were added first for rendering the final acceptance completion closeout archive card in `DemoEvidenceBundlePanel` and showing safe missing-archive guidance for legacy bundle responses.
+- Implemented `DemoEvidenceBundleVo.finalAcceptanceCompletionCloseoutArchiveEvidence` and `DemoFinalAcceptanceCompletionCloseoutArchiveEvidenceVo`, then wired `DemoEvidenceBundleService` to read recent final acceptance completion closeout archives and require the latest archive to be `READY` and closed before the overall bundle is ready.
+- Updated `DemoRunbookService` so copied runbooks include closeout archive status, archive id, linked completion archive, linked completion evidence delivery receipt, task id, Pull Request, archived time, next action, and download actions.
+- Updated the dashboard evidence bundle panel so operators can see the frozen final closeout archive proof without opening the final acceptance panel.
+- Updated README, product spec, frontend design doc, and added this plan document.
+
+Validation so far:
+
+- `mvn -q -pl PatchPilot -Dtest=DemoEvidenceBundleServiceTests,DemoRunbookServiceTests test`: passed.
+- `npm test -- --reporter=basic src/dashboard/components/DemoEvidenceBundlePanel.test.tsx`: passed, 1 test file and 4 tests.
+- `npm test -- --reporter=basic src/App.test.tsx -t "retries failed tasks and refreshes dashboard data"`: passed, confirming the earlier focused timeout was not a deterministic failure.
+- `mvn -q -pl PatchPilot test`: passed.
+- `npm run build`: passed with the existing Vite large-chunk warning.
+- `npm test -- --reporter=basic src/dashboard/components/DemoEvidenceBundlePanel.test.tsx src/dashboard/components/DemoSessionSnapshotPanel.test.tsx src/App.test.tsx`: passed, 3 test files and 112 tests.
+- `npm test -- --reporter=basic`: passed, 30 test files and 438 tests.
+- `git diff --check`: passed.

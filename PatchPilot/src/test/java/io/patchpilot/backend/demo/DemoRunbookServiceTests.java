@@ -4,6 +4,7 @@ import io.patchpilot.backend.demo.domain.DemoAdapterFixtureEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoEvaluationRunReadinessEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
+import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionCloseoutArchiveEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionCloseoutVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceShareFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoFinalHandoffReportPackageArchiveEvidenceVo;
@@ -111,6 +112,14 @@ class DemoRunbookServiceTests {
                 .contains("- Final acceptance completion closeout next action: Use this closeout report as the final external-review completion record.")
                 .contains("- Final acceptance completion closeout download: Download final acceptance completion closeout report.")
                 .contains("- Final acceptance completion closeout download: Download final acceptance completion evidence bundle.")
+                .contains("- Final acceptance completion closeout archive: `READY` - Latest final acceptance completion closeout archive is closed and ready.")
+                .contains("- Final acceptance completion closeout archive id: `final-acceptance-completion-closeout-archive-1`")
+                .contains("- Final acceptance completion closeout archived completion: `final-acceptance-completion-archive-1`")
+                .contains("- Final acceptance completion closeout archived receipt: `final-acceptance-completion-evidence-delivery-receipt-1`")
+                .contains("- Final acceptance completion closeout archived task: `task-2`")
+                .contains("- Final acceptance completion closeout archive Pull Request: https://github.com/bingqin2/PatchPilot/pull/42")
+                .contains("- Final acceptance completion closeout archive next action: Use the archived final acceptance completion closeout as the frozen external-review completion record.")
+                .contains("- Final acceptance completion closeout archive download: Download final acceptance completion closeout archive final-acceptance-completion-closeout-archive-1.")
                 .contains("## Readiness")
                 .contains("- `Credentials`: `READY` - Required credentials are configured.")
                 .contains("## Smoke Checklist")
@@ -304,6 +313,7 @@ class DemoRunbookServiceTests {
                 ),
                 finalAcceptanceShareFinalization(),
                 finalAcceptanceCompletionCloseout(),
+                finalAcceptanceCompletionCloseoutArchiveEvidence(),
                 true,
                 "delivery-receipt-1",
                 "Demo reviewer",
@@ -439,6 +449,27 @@ class DemoRunbookServiceTests {
                 "Final acceptance completion closeout is read-only and does not mutate tasks, Git, or GitHub.",
                 "# PatchPilot Final Acceptance Completion Closeout",
                 Instant.parse("2026-06-29T04:00:00Z")
+        );
+    }
+
+    private static DemoFinalAcceptanceCompletionCloseoutArchiveEvidenceVo finalAcceptanceCompletionCloseoutArchiveEvidence() {
+        return new DemoFinalAcceptanceCompletionCloseoutArchiveEvidenceVo(
+                DemoReadinessStatus.READY,
+                true,
+                true,
+                "Latest final acceptance completion closeout archive is closed and ready.",
+                "Use the archived final acceptance completion closeout as the frozen external-review completion record.",
+                1,
+                "final-acceptance-completion-closeout-archive-1",
+                "final-acceptance-completion-archive-1",
+                "final-acceptance-completion-evidence-delivery-receipt-1",
+                "task-2",
+                "https://github.com/bingqin2/PatchPilot/pull/42",
+                Instant.parse("2026-06-29T04:15:00Z"),
+                List.of(
+                        "Download final acceptance completion closeout archive final-acceptance-completion-closeout-archive-1.",
+                        "Download linked final acceptance completion archive final-acceptance-completion-archive-1."
+                )
         );
     }
 }
