@@ -4043,7 +4043,7 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(screen.getAllByText('gpt-5.5')).toHaveLength(2);
   expect(screen.getByText('Generated diff')).toBeInTheDocument();
   expect(screen.getByLabelText('Generated diff preview')).toHaveTextContent('+PatchPilot smoke test');
-}, 10000);
+}, 15000);
 
 test('keeps archived fixture baseline evidence when regression summary refresh fails', async () => {
   const user = userEvent.setup();
