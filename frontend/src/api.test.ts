@@ -70,6 +70,9 @@ import {
   downloadDemoFinalAcceptanceCompletionCloseoutReport,
   getDemoFinalExternalReviewEvidencePackage,
   downloadDemoFinalExternalReviewEvidencePackageReport,
+  archiveDemoFinalExternalReviewEvidencePackage,
+  listDemoFinalExternalReviewEvidencePackageArchives,
+  downloadDemoFinalExternalReviewEvidencePackageArchiveReport,
   archiveDemoFinalAcceptanceCompletionCloseout,
   listDemoFinalAcceptanceCompletionCloseoutArchives,
   downloadDemoFinalAcceptanceCompletionCloseoutArchiveReport,
@@ -1647,6 +1650,114 @@ test('downloads final external-review evidence package through backend API', asy
   const downloadedReport = await downloadDemoFinalExternalReviewEvidencePackageReport();
 
   expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-external-review-evidence-package/report/download');
+  expect(downloadedReport).toBe(reportBlob);
+});
+
+test('archives final external-review evidence package through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        id: 'final-external-review-package-archive-1',
+        status: 'READY',
+        readyForExternalReview: true,
+        summary: 'PatchPilot final external-review evidence package is ready.',
+        nextAction: 'Share this package with reviewers as the frozen external-review record.',
+        latestTaskId: 'task-8',
+        latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+        finalAcceptanceSharePackageArchiveId: 'final-acceptance-share-package-archive-1',
+        completionArchiveId: 'final-acceptance-completion-archive-1',
+        completionEvidenceDeliveryReceiptId: 'final-acceptance-completion-evidence-delivery-receipt-1',
+        closeoutArchiveId: 'final-acceptance-completion-closeout-archive-1',
+        deliveryTarget: 'reviewer@example.com',
+        deliveryChannel: 'email',
+        deliveredAt: '2026-06-29T04:25:00Z',
+        deliveryReceiptFreshness: 'FRESH',
+        closeoutArchivedAt: '2026-06-29T06:30:00Z',
+        evidenceNotes: ['Frozen closeout archive final-acceptance-completion-closeout-archive-1 is READY and closed.'],
+        downloadActions: ['Download final external-review evidence package.'],
+        sideEffectContract: 'POST /api/demo/final-external-review-evidence-package/archives archives the READY package.',
+        report: '# PatchPilot Final External Review Evidence Package Archive',
+        generatedAt: '2026-06-29T07:00:00Z',
+        archivedAt: '2026-06-29T07:10:00Z'
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const archive = await archiveDemoFinalExternalReviewEvidencePackage();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-external-review-evidence-package/archives', {
+    method: 'POST'
+  });
+  expect(archive.id).toBe('final-external-review-package-archive-1');
+  expect(archive.readyForExternalReview).toBe(true);
+});
+
+test('lists final external-review evidence package archives through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: [
+        {
+          id: 'final-external-review-package-archive-1',
+          status: 'READY',
+          readyForExternalReview: true,
+          summary: 'PatchPilot final external-review evidence package is ready.',
+          nextAction: 'Share this package with reviewers as the frozen external-review record.',
+          latestTaskId: 'task-8',
+          latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+          finalAcceptanceSharePackageArchiveId: 'final-acceptance-share-package-archive-1',
+          completionArchiveId: 'final-acceptance-completion-archive-1',
+          completionEvidenceDeliveryReceiptId: 'final-acceptance-completion-evidence-delivery-receipt-1',
+          closeoutArchiveId: 'final-acceptance-completion-closeout-archive-1',
+          deliveryTarget: 'reviewer@example.com',
+          deliveryChannel: 'email',
+          deliveredAt: '2026-06-29T04:25:00Z',
+          deliveryReceiptFreshness: 'FRESH',
+          closeoutArchivedAt: '2026-06-29T06:30:00Z',
+          evidenceNotes: ['Frozen closeout archive final-acceptance-completion-closeout-archive-1 is READY and closed.'],
+          downloadActions: ['Download final external-review evidence package.'],
+          sideEffectContract: 'GET /api/demo/final-external-review-evidence-package/archives is read-only.',
+          report: '# PatchPilot Final External Review Evidence Package Archive',
+          generatedAt: '2026-06-29T07:00:00Z',
+          archivedAt: '2026-06-29T07:10:00Z'
+        }
+      ],
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const archives = await listDemoFinalExternalReviewEvidencePackageArchives();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-external-review-evidence-package/archives');
+  expect(archives).toHaveLength(1);
+  expect(archives[0].id).toBe('final-external-review-package-archive-1');
+});
+
+test('downloads final external-review evidence package archive report through backend API', async () => {
+  const reportBlob = new Blob(['# PatchPilot Final External Review Evidence Package Archive'], {
+    type: 'text/markdown;charset=UTF-8'
+  });
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    blob: async () => reportBlob
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const downloadedReport =
+    await downloadDemoFinalExternalReviewEvidencePackageArchiveReport('final/package archive 1');
+
+  expect(fetchMock).toHaveBeenCalledWith(
+    '/api/demo/final-external-review-evidence-package/archives/final%2Fpackage%20archive%201/report/download'
+  );
   expect(downloadedReport).toBe(reportBlob);
 });
 

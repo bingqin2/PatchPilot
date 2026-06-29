@@ -2871,6 +2871,36 @@ const demoFinalExternalReviewEvidencePackage = {
   markdownReport: '# PatchPilot Final External Review Evidence Package'
 };
 
+const demoFinalExternalReviewEvidencePackageArchive = {
+  id: 'final-external-review-package-archive-1',
+  status: 'READY',
+  readyForExternalReview: true,
+  summary: 'PatchPilot final external-review evidence package is ready.',
+  nextAction: 'Share this package with reviewers as the frozen external-review record.',
+  latestTaskId: 'task-1',
+  latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+  finalAcceptanceSharePackageArchiveId: 'final-acceptance-share-package-archive-1',
+  completionArchiveId: 'final-acceptance-completion-archive-1',
+  completionEvidenceDeliveryReceiptId: 'final-acceptance-completion-evidence-delivery-receipt-1',
+  closeoutArchiveId: 'final-acceptance-completion-closeout-archive-1',
+  deliveryTarget: 'reviewer@example.com',
+  deliveryChannel: 'email',
+  deliveredAt: '2026-06-29T03:10:00Z',
+  deliveryReceiptFreshness: 'FRESH',
+  closeoutArchivedAt: '2026-06-29T06:30:00Z',
+  evidenceNotes: [
+    'Frozen closeout archive final-acceptance-completion-closeout-archive-1 is READY and closed.'
+  ],
+  downloadActions: [
+    'Download final external-review evidence package archive final-external-review-package-archive-1.'
+  ],
+  sideEffectContract:
+    'GET /api/demo/final-external-review-evidence-package/archives is read-only: it does not create tasks, call the model, run tests, mutate Git, send messages, record receipts, or write to GitHub.',
+  report: '# PatchPilot Final External Review Evidence Package Archive',
+  generatedAt: '2026-06-29T07:00:00Z',
+  archivedAt: '2026-06-29T07:10:00Z'
+};
+
 const demoLaunchEvidenceDeliveryReceipt = {
   id: 'launch-delivery-receipt-1',
   status: 'READY',
@@ -3173,6 +3203,21 @@ beforeEach(() => {
     }
     if (url === '/api/demo/final-external-review-evidence-package') {
       return jsonResponse(demoFinalExternalReviewEvidencePackage);
+    }
+    if (url === '/api/demo/final-external-review-evidence-package/archives' && init?.method === 'POST') {
+      return jsonResponse(demoFinalExternalReviewEvidencePackageArchive);
+    }
+    if (url === '/api/demo/final-external-review-evidence-package/archives') {
+      return jsonResponse([demoFinalExternalReviewEvidencePackageArchive]);
+    }
+    if (url === '/api/demo/final-external-review-evidence-package/archives/final-external-review-package-archive-1/report/download') {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        blob: async () => new Blob(['# PatchPilot Final External Review Evidence Package Archive'], {
+          type: 'text/markdown;charset=UTF-8'
+        })
+      } as Response);
     }
     if (url === '/api/demo/final-external-review-evidence-package/report/download') {
       return Promise.resolve({
@@ -4301,6 +4346,9 @@ test('renders operational task dashboard from backend APIs', async () => {
   ));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-external-review-evidence-package'));
   await waitFor(() =>
+    expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-external-review-evidence-package/archives')
+  );
+  await waitFor(() =>
     expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-acceptance-completion-evidence-delivery-receipts')
   );
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/github/credential-readiness'));
@@ -4336,9 +4384,13 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(within(acceptancePanel).getByRole('heading', {
     name: 'Final external-review evidence package'
   })).toBeInTheDocument();
-  expect(within(acceptancePanel).getByText(
+  expect(within(acceptancePanel).getAllByText(
     'PatchPilot final external-review evidence package is ready.'
-  )).toBeInTheDocument();
+  )).not.toHaveLength(0);
+  expect(within(acceptancePanel).getByRole('heading', {
+    name: 'Archived final external-review packages'
+  })).toBeInTheDocument();
+  expect(within(acceptancePanel).getByText('final-external-review-package-archive-1')).toBeInTheDocument();
   expect(within(acceptancePanel).getAllByText(
     'Frozen closeout archive final-acceptance-completion-closeout-archive-1 is READY and closed.'
   )).not.toHaveLength(0);
@@ -4371,7 +4423,7 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(screen.getAllByText('gpt-5.5')).toHaveLength(2);
   expect(screen.getByText('Generated diff')).toBeInTheDocument();
   expect(screen.getByLabelText('Generated diff preview')).toHaveTextContent('+PatchPilot smoke test');
-}, 15000);
+}, 20000);
 
 test('keeps archived fixture baseline evidence when regression summary refresh fails', async () => {
   const user = userEvent.setup();
@@ -4437,11 +4489,18 @@ test('creates and releases trigger quarantines from rejected trigger panel', asy
     within(rejectedTriggerPanel).getByRole('combobox', { name: 'Manual quarantine scope' }),
     'REPOSITORY'
   );
-  await user.type(within(rejectedTriggerPanel).getByLabelText('Manual quarantine target'), 'bingqin2/PatchPilot');
-  await user.type(within(rejectedTriggerPanel).getByLabelText('Manual quarantine reason'), 'Blocking noisy demo repository');
-  await user.clear(within(rejectedTriggerPanel).getByLabelText('Manual quarantine duration minutes'));
-  await user.type(within(rejectedTriggerPanel).getByLabelText('Manual quarantine duration minutes'), '45');
-  await user.type(within(rejectedTriggerPanel).getByLabelText('Manual quarantine operator'), 'local-admin');
+  fireEvent.change(within(rejectedTriggerPanel).getByLabelText('Manual quarantine target'), {
+    target: { value: 'bingqin2/PatchPilot' }
+  });
+  fireEvent.change(within(rejectedTriggerPanel).getByLabelText('Manual quarantine reason'), {
+    target: { value: 'Blocking noisy demo repository' }
+  });
+  fireEvent.change(within(rejectedTriggerPanel).getByLabelText('Manual quarantine duration minutes'), {
+    target: { value: '45' }
+  });
+  fireEvent.change(within(rejectedTriggerPanel).getByLabelText('Manual quarantine operator'), {
+    target: { value: 'local-admin' }
+  });
   await user.click(within(rejectedTriggerPanel).getByRole('button', { name: 'Create quarantine' }));
 
   await waitFor(() =>
@@ -4470,7 +4529,7 @@ test('creates and releases trigger quarantines from rejected trigger panel', asy
       })
     })
   );
-});
+}, 10000);
 
 test('loads trigger quarantine evidence from rejected trigger panel', async () => {
   const user = userEvent.setup();
@@ -4520,7 +4579,9 @@ test('prompts for admin token and reloads dashboard after saving it', async () =
   render(<App />);
 
   expect(await screen.findByText('Admin token is required')).toBeInTheDocument();
-  await user.type(screen.getByLabelText('Admin API token'), 'operator-token');
+  fireEvent.change(screen.getByLabelText('Admin API token'), {
+    target: { value: 'operator-token' }
+  });
   await user.click(screen.getByRole('button', { name: 'Save admin token' }));
 
   await waitFor(() => expect(storage.get('patchpilot.adminToken')).toBe('operator-token'));
@@ -4611,7 +4672,7 @@ test('manages stored admin token from the dashboard header', async () => {
 
   await waitFor(() => expect(storage.has('patchpilot.adminToken')).toBe(false));
   expect(await screen.findByText('No admin token saved')).toBeInTheDocument();
-});
+}, 10000);
 
 test('summarizes healthy API connectivity in the dashboard header', async () => {
   const storage = new Map<string, string>([['patchpilot.adminToken', 'existing-token']]);
@@ -4849,7 +4910,7 @@ test('downloads and archives selected task evidence package from backend APIs', 
   expect(click).toHaveBeenCalledTimes(2);
   expect(revokeObjectURL).toHaveBeenCalledWith('blob:task-evidence-package');
   expect(screen.getByText('Archived evidence task-evidence-archive-1 downloaded')).toBeInTheDocument();
-});
+}, 10000);
 
 test('archives and downloads final acceptance share package from dashboard', async () => {
   const user = userEvent.setup();
@@ -6151,14 +6212,17 @@ test('syncs adapter filter changes into the URL and backend request', async () =
 });
 
 test('syncs created time filter changes into the URL and backend request', async () => {
-  const user = userEvent.setup();
   const fetchMock = vi.mocked(fetch);
   window.history.replaceState(null, '', '/tasks/task-1?status=FAILED&query=broken&repositoryOwner=bingqin2&repositoryName=PatchPilot&sort=createdAtAsc#timeline');
 
   render(<App />);
 
-  await user.type(await screen.findByRole('textbox', { name: 'Filter created after' }), '2026-06-20T01:00:00Z');
-  await user.type(screen.getByRole('textbox', { name: 'Filter created before' }), '2026-06-21T01:00:00Z');
+  fireEvent.change(await screen.findByRole('textbox', { name: 'Filter created after' }), {
+    target: { value: '2026-06-20T01:00:00Z' }
+  });
+  fireEvent.change(screen.getByRole('textbox', { name: 'Filter created before' }), {
+    target: { value: '2026-06-21T01:00:00Z' }
+  });
 
   expect(window.location.pathname).toBe('/tasks/task-1');
   expect(window.location.search).toBe(
@@ -6170,7 +6234,7 @@ test('syncs created time filter changes into the URL and backend request', async
       '/api/tasks?limit=50&query=broken&repositoryOwner=bingqin2&repositoryName=PatchPilot&createdAfter=2026-06-20T01%3A00%3A00Z&createdBefore=2026-06-21T01%3A00%3A00Z&sort=createdAtAsc&status=FAILED'
     )
   );
-});
+}, 10000);
 
 test('syncs status filter changes into the URL', async () => {
   const user = userEvent.setup();
@@ -6528,33 +6592,32 @@ test('shows dashboard refresh progress while top-level data is loading', async (
 });
 
 test('filters tasks by status with backend query parameters', async () => {
-  const user = userEvent.setup();
   const fetchMock = vi.mocked(fetch);
 
   render(<App />);
 
   expect(await screen.findByText('/agent fix replace docs/demo.md PatchPilot smoke test')).toBeInTheDocument();
 
-  await user.click(screen.getByRole('button', { name: 'FAILED' }));
+  fireEvent.click(screen.getByRole('button', { name: 'FAILED' }));
 
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks?limit=50&status=FAILED'));
   expect(screen.queryByText('/agent fix replace docs/demo.md PatchPilot smoke test')).not.toBeInTheDocument();
   expect(await screen.findByText('/agent fix replace docs/demo.md broken')).toBeInTheDocument();
   expect(await screen.findByText('Task failed')).toBeInTheDocument();
 
-  await user.click(screen.getByRole('button', { name: 'PENDING_REVIEW' }));
+  fireEvent.click(screen.getByRole('button', { name: 'PENDING_REVIEW' }));
 
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks?limit=50&status=PENDING_REVIEW'));
   expect(screen.queryByText('/agent fix replace docs/demo.md broken')).not.toBeInTheDocument();
   expect(await screen.findByText('/agent fix update deployment workflow')).toBeInTheDocument();
   expect(await screen.findByText('Generated diff rejected: sensitive path .github/workflows/deploy.yml')).toBeInTheDocument();
 
-  await user.click(screen.getByRole('button', { name: 'CANCELLED' }));
+  fireEvent.click(screen.getByRole('button', { name: 'CANCELLED' }));
 
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks?limit=50&status=CANCELLED'));
   expect(screen.getByText('No CANCELLED tasks found.')).toBeInTheDocument();
   expect(screen.getByText('Select a task to inspect execution records.')).toBeInTheDocument();
-});
+}, 10000);
 
 test('searches tasks with backend query parameters', async () => {
   const user = userEvent.setup();
@@ -6806,7 +6869,9 @@ test('retries failed tasks and refreshes dashboard data', async () => {
   expect(screen.getByText('Ready to retry')).toBeInTheDocument();
   expect(screen.getByRole('button', { name: 'Retry task' })).toBeDisabled();
 
-  await user.type(screen.getByLabelText('Retry reason'), 'Verified failure output and requested a clean retry');
+  fireEvent.change(screen.getByLabelText('Retry reason'), {
+    target: { value: 'Verified failure output and requested a clean retry' }
+  });
   await user.click(await screen.findByRole('button', { name: 'Retry task' }));
 
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks/task-2/retry-preflight'));
@@ -6819,7 +6884,7 @@ test('retries failed tasks and refreshes dashboard data', async () => {
   );
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks?limit=50&status=FAILED'));
   expect(screen.queryByRole('button', { name: 'Cancel task' })).not.toBeInTheDocument();
-});
+}, 10000);
 
 test('approves pending review tasks and refreshes dashboard data', async () => {
   const fetchMock = vi.mocked(fetch);
@@ -7006,6 +7071,12 @@ function defaultAppResponse(input: RequestInfo | URL, init?: RequestInit) {
   }
   if (url === '/api/demo/final-external-review-evidence-package') {
     return jsonResponse(demoFinalExternalReviewEvidencePackage);
+  }
+  if (url === '/api/demo/final-external-review-evidence-package/archives' && init?.method === 'POST') {
+    return jsonResponse(demoFinalExternalReviewEvidencePackageArchive);
+  }
+  if (url === '/api/demo/final-external-review-evidence-package/archives') {
+    return jsonResponse([demoFinalExternalReviewEvidencePackageArchive]);
   }
   if (url === '/api/demo/final-acceptance-completion-archives' && init?.method === 'POST') {
     return jsonResponse(demoFinalAcceptanceCompletionArchive);

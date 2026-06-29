@@ -9,6 +9,7 @@ import type {
   DemoFinalAcceptanceCompletionEvidenceDeliveryFinalization,
   DemoFinalAcceptanceCompletionEvidenceDeliveryReceipt,
   DemoFinalAcceptanceCompletionEvidenceDeliveryReceiptInput,
+  DemoFinalExternalReviewEvidencePackageArchive,
   DemoFinalExternalReviewEvidencePackage,
   DemoFinalAcceptanceShareDeliveryReceipt,
   DemoFinalAcceptanceShareDeliveryReceiptInput,
@@ -32,6 +33,7 @@ interface DemoAcceptanceSummaryPanelProps {
   completionEvidenceDeliveryFinalization?: DemoFinalAcceptanceCompletionEvidenceDeliveryFinalization | null;
   completionCloseout?: DemoFinalAcceptanceCompletionCloseout | null;
   finalExternalReviewEvidencePackage?: DemoFinalExternalReviewEvidencePackage | null;
+  finalExternalReviewEvidencePackageArchives?: DemoFinalExternalReviewEvidencePackageArchive[];
   error: string | null;
   sharePackageError: string | null;
   sharePackageArchiveError: string | null;
@@ -44,6 +46,7 @@ interface DemoAcceptanceSummaryPanelProps {
   completionEvidenceDeliveryFinalizationError?: string | null;
   completionCloseoutError?: string | null;
   finalExternalReviewEvidencePackageError?: string | null;
+  finalExternalReviewEvidencePackageArchiveError?: string | null;
   onDownloadReport: () => Promise<Blob>;
   onDownloadSharePackageReport: () => Promise<Blob>;
   onArchiveSharePackage: () => Promise<DemoFinalAcceptanceSharePackageArchive>;
@@ -65,6 +68,8 @@ interface DemoAcceptanceSummaryPanelProps {
   onDownloadCompletionEvidenceDeliveryFinalizationReport?: () => Promise<Blob>;
   onDownloadCompletionCloseoutReport?: () => Promise<Blob>;
   onDownloadFinalExternalReviewEvidencePackageReport?: () => Promise<Blob>;
+  onArchiveFinalExternalReviewEvidencePackage?: () => Promise<DemoFinalExternalReviewEvidencePackageArchive>;
+  onDownloadFinalExternalReviewEvidencePackageArchiveReport?: (archiveId: string) => Promise<Blob>;
 }
 
 export function DemoAcceptanceSummaryPanel({
@@ -80,6 +85,7 @@ export function DemoAcceptanceSummaryPanel({
   completionEvidenceDeliveryFinalization = null,
   completionCloseout = null,
   finalExternalReviewEvidencePackage = null,
+  finalExternalReviewEvidencePackageArchives = [],
   error,
   sharePackageError,
   sharePackageArchiveError,
@@ -92,6 +98,7 @@ export function DemoAcceptanceSummaryPanel({
   completionEvidenceDeliveryFinalizationError = null,
   completionCloseoutError = null,
   finalExternalReviewEvidencePackageError = null,
+  finalExternalReviewEvidencePackageArchiveError = null,
   onDownloadReport,
   onDownloadSharePackageReport,
   onArchiveSharePackage,
@@ -108,7 +115,9 @@ export function DemoAcceptanceSummaryPanel({
   onDownloadCompletionEvidenceDeliveryReceiptReport,
   onDownloadCompletionEvidenceDeliveryFinalizationReport,
   onDownloadCompletionCloseoutReport,
-  onDownloadFinalExternalReviewEvidencePackageReport
+  onDownloadFinalExternalReviewEvidencePackageReport,
+  onArchiveFinalExternalReviewEvidencePackage,
+  onDownloadFinalExternalReviewEvidencePackageArchiveReport
 }: DemoAcceptanceSummaryPanelProps) {
   const [downloadStatus, setDownloadStatus] = useState<string | null>(null);
   const [sharePackageCopyStatus, setSharePackageCopyStatus] = useState<string | null>(null);
@@ -134,6 +143,14 @@ export function DemoAcceptanceSummaryPanel({
   const [
     finalExternalReviewEvidencePackageDownloadStatus,
     setFinalExternalReviewEvidencePackageDownloadStatus
+  ] = useState<string | null>(null);
+  const [
+    finalExternalReviewEvidencePackageArchiveStatus,
+    setFinalExternalReviewEvidencePackageArchiveStatus
+  ] = useState<string | null>(null);
+  const [
+    finalExternalReviewEvidencePackageArchiveDownloadStatus,
+    setFinalExternalReviewEvidencePackageArchiveDownloadStatus
   ] = useState<string | null>(null);
   const [deliveryChannel, setDeliveryChannel] = useState('email');
   const [deliveryTarget, setDeliveryTarget] = useState('');
@@ -269,6 +286,37 @@ export function DemoAcceptanceSummaryPanel({
       setFinalExternalReviewEvidencePackageDownloadStatus('Final external-review evidence package downloaded');
     } catch {
       setFinalExternalReviewEvidencePackageDownloadStatus('Final external-review evidence package download failed');
+    }
+  }
+
+  async function archiveFinalExternalReviewEvidencePackage() {
+    if (!onArchiveFinalExternalReviewEvidencePackage) {
+      return;
+    }
+    try {
+      await onArchiveFinalExternalReviewEvidencePackage();
+      setFinalExternalReviewEvidencePackageArchiveStatus('Final external-review evidence package archived');
+    } catch {
+      setFinalExternalReviewEvidencePackageArchiveStatus('Final external-review evidence package archive failed');
+    }
+  }
+
+  async function downloadFinalExternalReviewEvidencePackageArchive(
+    archive: DemoFinalExternalReviewEvidencePackageArchive
+  ) {
+    if (!onDownloadFinalExternalReviewEvidencePackageArchiveReport) {
+      return;
+    }
+    try {
+      const report = await onDownloadFinalExternalReviewEvidencePackageArchiveReport(archive.id);
+      downloadMarkdown(report, `patchpilot-final-external-review-evidence-package-${archive.id}.md`);
+      setFinalExternalReviewEvidencePackageArchiveDownloadStatus(
+        'Final external-review evidence package archive downloaded'
+      );
+    } catch {
+      setFinalExternalReviewEvidencePackageArchiveDownloadStatus(
+        'Final external-review evidence package archive download failed'
+      );
     }
   }
 
@@ -564,9 +612,15 @@ export function DemoAcceptanceSummaryPanel({
 
           <FinalExternalReviewEvidencePackage
             evidencePackage={finalExternalReviewEvidencePackage}
+            archives={finalExternalReviewEvidencePackageArchives}
             error={finalExternalReviewEvidencePackageError}
+            archiveError={finalExternalReviewEvidencePackageArchiveError}
             downloadStatus={finalExternalReviewEvidencePackageDownloadStatus}
+            archiveStatus={finalExternalReviewEvidencePackageArchiveStatus}
+            archiveDownloadStatus={finalExternalReviewEvidencePackageArchiveDownloadStatus}
             onDownload={() => void downloadFinalExternalReviewEvidencePackage()}
+            onArchive={() => void archiveFinalExternalReviewEvidencePackage()}
+            onDownloadArchive={(archive) => void downloadFinalExternalReviewEvidencePackageArchive(archive)}
           />
         </>
       ) : (
@@ -578,16 +632,28 @@ export function DemoAcceptanceSummaryPanel({
 
 interface FinalExternalReviewEvidencePackageProps {
   evidencePackage: DemoFinalExternalReviewEvidencePackage | null;
+  archives: DemoFinalExternalReviewEvidencePackageArchive[];
   error: string | null;
+  archiveError: string | null;
   downloadStatus: string | null;
+  archiveStatus: string | null;
+  archiveDownloadStatus: string | null;
   onDownload: () => void;
+  onArchive: () => void;
+  onDownloadArchive: (archive: DemoFinalExternalReviewEvidencePackageArchive) => void;
 }
 
 function FinalExternalReviewEvidencePackage({
   evidencePackage,
+  archives,
   error,
+  archiveError,
   downloadStatus,
-  onDownload
+  archiveStatus,
+  archiveDownloadStatus,
+  onDownload,
+  onArchive,
+  onDownloadArchive
 }: FinalExternalReviewEvidencePackageProps) {
   return (
     <div className="demo-session-handoff-checks">
@@ -604,13 +670,31 @@ function FinalExternalReviewEvidencePackage({
             <Download size={14} />
             Download final external-review package
           </button>
+          <button
+            className="secondary-button"
+            type="button"
+            onClick={() => onArchive()}
+            aria-label="Archive final external-review evidence package"
+            disabled={!evidencePackage}
+          >
+            <Archive size={14} />
+            Archive final external-review package
+          </button>
           {downloadStatus ? <span className="copy-status">{downloadStatus}</span> : null}
+          {archiveStatus ? <span className="copy-status">{archiveStatus}</span> : null}
+          {archiveDownloadStatus ? <span className="copy-status">{archiveDownloadStatus}</span> : null}
         </div>
       </div>
       {error ? (
         <div className="adapter-api-error">
           <strong>Final external-review evidence package unavailable</strong>
           <span>{error}</span>
+        </div>
+      ) : null}
+      {archiveError ? (
+        <div className="adapter-api-error">
+          <strong>Final external-review evidence package archives unavailable</strong>
+          <span>{archiveError}</span>
         </div>
       ) : null}
       {evidencePackage ? (
@@ -660,6 +744,42 @@ function FinalExternalReviewEvidencePackage({
             emptyText="No final external-review download actions available."
           />
           <small>{evidencePackage.sideEffectContract}</small>
+          <div className="demo-session-handoff-checks">
+            <div className="demo-session-archive-title-row">
+              <h3>Archived final external-review packages</h3>
+              <span>{archives.length} archives</span>
+            </div>
+            {archives.length > 0 ? (
+              <ul>
+                {archives.map((archive) => (
+                  <li key={archive.id}>
+                    <div className="demo-webhook-delivery-main">
+                      <strong>{archive.id}</strong>
+                      <span>{archive.readyForExternalReview ? 'Ready' : statusLabel(archive.status)}</span>
+                    </div>
+                    <p>{archive.summary}</p>
+                    <small>Closeout archive {archive.closeoutArchiveId ?? 'missing'}</small>
+                    <small>Completion archive {archive.completionArchiveId ?? 'missing'}</small>
+                    <small>Completion receipt {archive.completionEvidenceDeliveryReceiptId ?? 'missing'}</small>
+                    <small>Archived {compactDateTime(archive.archivedAt)}</small>
+                    <div className="demo-session-archive-actions">
+                      <button
+                        className="secondary-button"
+                        type="button"
+                        onClick={() => onDownloadArchive(archive)}
+                        aria-label={`Download final external-review package ${archive.id}`}
+                      >
+                        <Download size={14} />
+                        Download final external-review package {archive.id}
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="empty-state">No final external-review package archives yet.</p>
+            )}
+          </div>
         </>
       ) : (
         <p className="empty-state">Final external-review evidence package has not loaded yet.</p>

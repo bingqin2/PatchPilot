@@ -10,6 +10,7 @@ import type {
   DemoFinalAcceptanceCompletionEvidenceBundle,
   DemoFinalAcceptanceCompletionEvidenceDeliveryFinalization,
   DemoFinalAcceptanceCompletionEvidenceDeliveryReceipt,
+  DemoFinalExternalReviewEvidencePackageArchive,
   DemoFinalExternalReviewEvidencePackage,
   DemoFinalAcceptanceSharePackage,
   DemoFinalAcceptanceSharePackageArchive
@@ -397,6 +398,35 @@ const finalExternalReviewEvidencePackage: DemoFinalExternalReviewEvidencePackage
   markdownReport: '# PatchPilot Final External Review Evidence Package'
 };
 
+const finalExternalReviewEvidencePackageArchive: DemoFinalExternalReviewEvidencePackageArchive = {
+  id: 'final-external-review-package-archive-1',
+  status: 'READY',
+  readyForExternalReview: true,
+  summary: 'PatchPilot final external-review evidence package is ready.',
+  nextAction: 'Share this package with reviewers as the frozen external-review record.',
+  latestTaskId: 'task-1',
+  latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+  finalAcceptanceSharePackageArchiveId: 'final-acceptance-share-package-archive-1',
+  completionArchiveId: 'final-acceptance-completion-archive-1',
+  completionEvidenceDeliveryReceiptId: 'final-acceptance-completion-evidence-delivery-receipt-1',
+  closeoutArchiveId: 'final-acceptance-completion-closeout-archive-1',
+  deliveryTarget: 'reviewer@example.com',
+  deliveryChannel: 'email',
+  deliveredAt: '2026-06-29T04:25:00Z',
+  deliveryReceiptFreshness: 'FRESH',
+  closeoutArchivedAt: '2026-06-29T06:30:00Z',
+  evidenceNotes: [
+    'Frozen closeout archive final-acceptance-completion-closeout-archive-1 is READY and closed.'
+  ],
+  downloadActions: [
+    'Download final external-review evidence package archive final-external-review-package-archive-1.'
+  ],
+  sideEffectContract: 'GET /api/demo/final-external-review-evidence-package/archives is read-only.',
+  report: '# PatchPilot Final External Review Evidence Package Archive',
+  generatedAt: '2026-06-29T07:00:00Z',
+  archivedAt: '2026-06-29T07:10:00Z'
+};
+
 test('shows final demo acceptance status and certificate evidence', () => {
   render(
     <DemoAcceptanceSummaryPanel
@@ -412,6 +442,7 @@ test('shows final demo acceptance status and certificate evidence', () => {
       completionEvidenceDeliveryFinalization={completionEvidenceDeliveryFinalization}
       completionCloseout={completionCloseout}
       finalExternalReviewEvidencePackage={finalExternalReviewEvidencePackage}
+      finalExternalReviewEvidencePackageArchives={[finalExternalReviewEvidencePackageArchive]}
       error={null}
       sharePackageError={null}
       sharePackageArchiveError={null}
@@ -440,6 +471,8 @@ test('shows final demo acceptance status and certificate evidence', () => {
       onDownloadCompletionEvidenceDeliveryFinalizationReport={vi.fn()}
       onDownloadCompletionCloseoutReport={vi.fn()}
       onDownloadFinalExternalReviewEvidencePackageReport={vi.fn()}
+      onArchiveFinalExternalReviewEvidencePackage={vi.fn()}
+      onDownloadFinalExternalReviewEvidencePackageArchiveReport={vi.fn()}
     />
   );
 
@@ -483,7 +516,8 @@ test('shows final demo acceptance status and certificate evidence', () => {
   expect(within(panel).getAllByText('final-acceptance-completion-closeout-archive-1').length).toBeGreaterThan(0);
   expect(within(panel).getByRole('heading', { name: 'Final external-review evidence package' })).toBeInTheDocument();
   expect(within(panel).getByText('Ready for external review')).toBeInTheDocument();
-  expect(within(panel).getByText('PatchPilot final external-review evidence package is ready.')).toBeInTheDocument();
+  expect(within(panel).getAllByText('PatchPilot final external-review evidence package is ready.'))
+    .not.toHaveLength(0);
   expect(within(panel).getByText(
     'Frozen closeout archive final-acceptance-completion-closeout-archive-1 is READY and closed.'
   )).toBeInTheDocument();
@@ -516,6 +550,7 @@ test('downloads final external-review evidence package report', async () => {
       completionEvidenceDeliveryFinalization={completionEvidenceDeliveryFinalization}
       completionCloseout={completionCloseout}
       finalExternalReviewEvidencePackage={finalExternalReviewEvidencePackage}
+      finalExternalReviewEvidencePackageArchives={[finalExternalReviewEvidencePackageArchive]}
       error={null}
       sharePackageError={null}
       sharePackageArchiveError={null}
@@ -545,6 +580,8 @@ test('downloads final external-review evidence package report', async () => {
       onDownloadCompletionEvidenceDeliveryFinalizationReport={vi.fn()}
       onDownloadCompletionCloseoutReport={vi.fn()}
       onDownloadFinalExternalReviewEvidencePackageReport={downloadPackageReport}
+      onArchiveFinalExternalReviewEvidencePackage={vi.fn()}
+      onDownloadFinalExternalReviewEvidencePackageArchiveReport={vi.fn()}
     />
   );
 
@@ -673,6 +710,86 @@ test('downloads final acceptance completion closeout report', async () => {
   expect(anchorClick).toHaveBeenCalled();
   expect(revokeObjectUrl).toHaveBeenCalledWith('blob:final-acceptance-completion-closeout');
   expect(screen.getByText('Final acceptance completion closeout report downloaded')).toBeInTheDocument();
+});
+
+test('archives and downloads final external-review evidence package archives', async () => {
+  const user = userEvent.setup();
+  const archivePackage = vi.fn(async () => finalExternalReviewEvidencePackageArchive);
+  const downloadArchiveReport = vi.fn(async () => new Blob(['# External Review Archive'], {
+    type: 'text/markdown'
+  }));
+  const createObjectUrl = vi.fn(() => 'blob:final-external-review-package-archive');
+  const revokeObjectUrl = vi.fn();
+  const anchorClick = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
+  vi.stubGlobal('URL', {
+    createObjectURL: createObjectUrl,
+    revokeObjectURL: revokeObjectUrl
+  });
+
+  render(
+    <DemoAcceptanceSummaryPanel
+      summary={summary}
+      sharePackage={sharePackage}
+      sharePackageArchives={[sharePackageArchive]}
+      shareDeliveryReceipts={[shareDeliveryReceipt]}
+      shareFinalization={shareFinalization}
+      completionEvidenceBundle={completionEvidenceBundle}
+      completionArchives={[completionArchive]}
+      completionCloseoutArchives={[completionCloseoutArchive]}
+      completionEvidenceDeliveryReceipts={[completionEvidenceDeliveryReceipt]}
+      completionEvidenceDeliveryFinalization={completionEvidenceDeliveryFinalization}
+      completionCloseout={completionCloseout}
+      finalExternalReviewEvidencePackage={finalExternalReviewEvidencePackage}
+      finalExternalReviewEvidencePackageArchives={[finalExternalReviewEvidencePackageArchive]}
+      error={null}
+      sharePackageError={null}
+      sharePackageArchiveError={null}
+      shareDeliveryReceiptError={null}
+      shareFinalizationError={null}
+      completionEvidenceBundleError={null}
+      completionArchiveError={null}
+      completionCloseoutArchiveError={null}
+      completionEvidenceDeliveryReceiptError={null}
+      completionEvidenceDeliveryFinalizationError={null}
+      completionCloseoutError={null}
+      finalExternalReviewEvidencePackageError={null}
+      finalExternalReviewEvidencePackageArchiveError={null}
+      onDownloadReport={vi.fn()}
+      onDownloadSharePackageReport={vi.fn()}
+      onArchiveSharePackage={vi.fn()}
+      onDownloadSharePackageArchiveReport={vi.fn()}
+      onCreateShareDeliveryReceipt={vi.fn()}
+      onDownloadShareDeliveryReceiptReport={vi.fn()}
+      onDownloadShareFinalizationReport={vi.fn()}
+      onDownloadCompletionEvidenceBundleReport={vi.fn()}
+      onArchiveCompletion={vi.fn()}
+      onDownloadCompletionArchiveReport={vi.fn()}
+      onArchiveCompletionCloseout={vi.fn()}
+      onDownloadCompletionCloseoutArchiveReport={vi.fn()}
+      onCreateCompletionEvidenceDeliveryReceipt={vi.fn()}
+      onDownloadCompletionEvidenceDeliveryReceiptReport={vi.fn()}
+      onDownloadCompletionEvidenceDeliveryFinalizationReport={vi.fn()}
+      onDownloadCompletionCloseoutReport={vi.fn()}
+      onDownloadFinalExternalReviewEvidencePackageReport={vi.fn()}
+      onArchiveFinalExternalReviewEvidencePackage={archivePackage}
+      onDownloadFinalExternalReviewEvidencePackageArchiveReport={downloadArchiveReport}
+    />
+  );
+
+  const panel = screen.getByRole('region', { name: 'Final demo acceptance' });
+  await user.click(within(panel).getByRole('button', {
+    name: 'Archive final external-review evidence package'
+  }));
+  await user.click(within(panel).getByRole('button', {
+    name: 'Download final external-review package final-external-review-package-archive-1'
+  }));
+
+  expect(archivePackage).toHaveBeenCalledTimes(1);
+  expect(downloadArchiveReport).toHaveBeenCalledWith('final-external-review-package-archive-1');
+  expect(anchorClick).toHaveBeenCalled();
+  expect(revokeObjectUrl).toHaveBeenCalledWith('blob:final-external-review-package-archive');
+  expect(await within(panel).findByText('Final external-review evidence package archived')).toBeInTheDocument();
+  expect(within(panel).getByText('Final external-review evidence package archive downloaded')).toBeInTheDocument();
 });
 
 test('archives and downloads final acceptance completion closeout evidence', async () => {

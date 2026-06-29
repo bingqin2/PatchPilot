@@ -1040,6 +1040,31 @@ export interface DemoFinalAcceptanceCompletionCloseoutArchive {
   archivedAt: string;
 }
 
+export interface DemoFinalExternalReviewEvidencePackageArchive {
+  id: string;
+  status: DemoReadinessStatus;
+  readyForExternalReview: boolean;
+  summary: string;
+  nextAction: string;
+  latestTaskId: string | null;
+  latestPullRequestUrl: string | null;
+  finalAcceptanceSharePackageArchiveId: string | null;
+  completionArchiveId: string | null;
+  completionEvidenceDeliveryReceiptId: string | null;
+  closeoutArchiveId: string | null;
+  deliveryTarget: string | null;
+  deliveryChannel: string | null;
+  deliveredAt: string | null;
+  deliveryReceiptFreshness: string | null;
+  closeoutArchivedAt: string | null;
+  evidenceNotes: string[];
+  downloadActions: string[];
+  sideEffectContract: string;
+  report: string;
+  generatedAt: string;
+  archivedAt: string;
+}
+
 export interface DemoFinalAcceptanceCompletionEvidenceDeliveryReceiptInput {
   deliveryChannel: string;
   deliveryTarget: string;
@@ -1261,6 +1286,23 @@ export interface DemoFinalAcceptanceCompletionCloseoutArchiveEvidence {
   downloadActions: string[];
 }
 
+export interface DemoFinalExternalReviewEvidencePackageArchiveEvidence {
+  status: DemoReadinessStatus;
+  archived: boolean;
+  readyForExternalReview: boolean;
+  summary: string;
+  nextAction: string;
+  archiveCount: number;
+  latestArchiveId: string | null;
+  latestCloseoutArchiveId: string | null;
+  latestCompletionArchiveId: string | null;
+  latestCompletionEvidenceDeliveryReceiptId: string | null;
+  latestTaskId: string | null;
+  latestPullRequestUrl: string | null;
+  latestArchivedAt: string | null;
+  downloadActions: string[];
+}
+
 export interface DemoFinalExternalReviewEvidencePackage {
   status: DemoReadinessStatus;
   readyForExternalReview: boolean;
@@ -1344,6 +1386,7 @@ export interface DemoEvidenceBundle {
   finalAcceptanceCompletionCloseoutEvidence: DemoFinalAcceptanceCompletionCloseout;
   finalAcceptanceCompletionCloseoutArchiveEvidence: DemoFinalAcceptanceCompletionCloseoutArchiveEvidence;
   finalExternalReviewEvidencePackage?: DemoFinalExternalReviewEvidencePackage;
+  finalExternalReviewEvidencePackageArchiveEvidence?: DemoFinalExternalReviewEvidencePackageArchiveEvidence;
   handoffShareDeliveryReceiptRecorded: boolean;
   handoffShareLatestDeliveryReceiptId: string | null;
   handoffShareLatestDeliveryTarget: string | null;
