@@ -4,6 +4,7 @@ import io.patchpilot.backend.demo.domain.DemoAdapterFixtureEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoEvaluationRunReadinessEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
+import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionCloseoutVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceShareFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoFinalHandoffReportPackageArchiveEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchAcceptanceCertificateEvidenceVo;
@@ -99,6 +100,17 @@ class DemoRunbookServiceTests {
                 .contains("- Final acceptance delivery target: reviewer@example.com via email")
                 .contains("- Final acceptance receipt freshness: `FRESH`")
                 .contains("- Final acceptance finalization next action: Use the finalization report as the external-review acceptance delivery record.")
+                .contains("- Final acceptance completion closeout: `READY` - PatchPilot final acceptance completion is closed with accepted certificates, finalized sharing, and fresh completion delivery proof.")
+                .contains("- Final acceptance completion closed: `true`")
+                .contains("- Final acceptance completion archive: `final-acceptance-completion-archive-1`")
+                .contains("- Final acceptance completion receipt: `final-acceptance-completion-evidence-delivery-receipt-1`")
+                .contains("- Final acceptance completion task: `task-2`")
+                .contains("- Final acceptance completion Pull Request: https://github.com/bingqin2/PatchPilot/pull/42")
+                .contains("- Final acceptance completion delivery target: reviewer@example.com via email")
+                .contains("- Final acceptance completion receipt freshness: `FRESH`")
+                .contains("- Final acceptance completion closeout next action: Use this closeout report as the final external-review completion record.")
+                .contains("- Final acceptance completion closeout download: Download final acceptance completion closeout report.")
+                .contains("- Final acceptance completion closeout download: Download final acceptance completion evidence bundle.")
                 .contains("## Readiness")
                 .contains("- `Credentials`: `READY` - Required credentials are configured.")
                 .contains("## Smoke Checklist")
@@ -291,6 +303,7 @@ class DemoRunbookServiceTests {
                         )
                 ),
                 finalAcceptanceShareFinalization(),
+                finalAcceptanceCompletionCloseout(),
                 true,
                 "delivery-receipt-1",
                 "Demo reviewer",
@@ -394,6 +407,38 @@ class DemoRunbookServiceTests {
                 List.of("Latest delivery receipt final-acceptance-delivery-receipt-1 is fresh for final-acceptance-share-package-archive-1."),
                 "# PatchPilot Final Demo Acceptance Share Finalization Gate",
                 Instant.parse("2026-06-29T03:30:00Z")
+        );
+    }
+
+    private static DemoFinalAcceptanceCompletionCloseoutVo finalAcceptanceCompletionCloseout() {
+        return new DemoFinalAcceptanceCompletionCloseoutVo(
+                DemoReadinessStatus.READY,
+                true,
+                "PatchPilot final acceptance completion is closed with accepted certificates, finalized sharing, and fresh completion delivery proof.",
+                "Use this closeout report as the final external-review completion record.",
+                "task-2",
+                "https://github.com/bingqin2/PatchPilot/pull/42",
+                "final-acceptance-share-package-archive-1",
+                "final-acceptance-completion-archive-1",
+                "final-acceptance-completion-evidence-delivery-receipt-1",
+                "reviewer@example.com",
+                "email",
+                "2026-06-29T03:45:00Z",
+                "FRESH",
+                List.of(new DemoFinalAcceptanceCompletionCloseoutVo.Check(
+                        "Completion evidence delivery",
+                        DemoReadinessStatus.READY,
+                        "Completion closeout can be used as the final external-review record.",
+                        "No action needed."
+                )),
+                List.of("Final acceptance completion archive final-acceptance-completion-archive-1 has a fresh evidence delivery receipt."),
+                List.of(
+                        "Download final acceptance completion closeout report.",
+                        "Download final acceptance completion evidence bundle."
+                ),
+                "Final acceptance completion closeout is read-only and does not mutate tasks, Git, or GitHub.",
+                "# PatchPilot Final Acceptance Completion Closeout",
+                Instant.parse("2026-06-29T04:00:00Z")
         );
     }
 }

@@ -255,6 +255,41 @@ public class DemoRunbookService {
                 .append("- Final acceptance finalization next action: ")
                 .append(bundle.finalAcceptanceShareFinalization().nextAction())
                 .append("\n");
+
+        runbook.append("- Final acceptance completion closeout: `")
+                .append(bundle.finalAcceptanceCompletionCloseoutEvidence().status())
+                .append("` - ")
+                .append(bundle.finalAcceptanceCompletionCloseoutEvidence().summary())
+                .append("\n")
+                .append("- Final acceptance completion closed: `")
+                .append(bundle.finalAcceptanceCompletionCloseoutEvidence().closed())
+                .append("`\n")
+                .append("- Final acceptance completion archive: ")
+                .append(valueOrNoneBackticked(bundle.finalAcceptanceCompletionCloseoutEvidence().latestCompletionArchiveId()))
+                .append("\n")
+                .append("- Final acceptance completion receipt: ")
+                .append(valueOrNoneBackticked(bundle.finalAcceptanceCompletionCloseoutEvidence().latestCompletionEvidenceDeliveryReceiptId()))
+                .append("\n")
+                .append("- Final acceptance completion task: ")
+                .append(valueOrNoneBackticked(bundle.finalAcceptanceCompletionCloseoutEvidence().latestTaskId()))
+                .append("\n")
+                .append("- Final acceptance completion Pull Request: ")
+                .append(valueOrNone(bundle.finalAcceptanceCompletionCloseoutEvidence().latestPullRequestUrl()))
+                .append("\n")
+                .append("- Final acceptance completion delivery target: ")
+                .append(finalAcceptanceCompletionDeliveryTarget(bundle))
+                .append("\n")
+                .append("- Final acceptance completion receipt freshness: `")
+                .append(bundle.finalAcceptanceCompletionCloseoutEvidence().deliveryReceiptFreshness())
+                .append("`\n")
+                .append("- Final acceptance completion closeout next action: ")
+                .append(bundle.finalAcceptanceCompletionCloseoutEvidence().nextAction())
+                .append("\n");
+        bundle.finalAcceptanceCompletionCloseoutEvidence().downloadActions()
+                .forEach(action -> runbook
+                        .append("- Final acceptance completion closeout download: ")
+                        .append(action)
+                        .append("\n"));
     }
 
     private static void appendEvaluationRunReadiness(
@@ -335,6 +370,18 @@ public class DemoRunbookService {
     private static String finalAcceptanceDeliveryTarget(DemoEvidenceBundleVo bundle) {
         String target = bundle.finalAcceptanceShareFinalization().latestDeliveryTarget();
         String channel = bundle.finalAcceptanceShareFinalization().latestDeliveryChannel();
+        if (target == null || target.isBlank()) {
+            return "none";
+        }
+        if (channel == null || channel.isBlank()) {
+            return target;
+        }
+        return target + " via " + channel;
+    }
+
+    private static String finalAcceptanceCompletionDeliveryTarget(DemoEvidenceBundleVo bundle) {
+        String target = bundle.finalAcceptanceCompletionCloseoutEvidence().latestDeliveryTarget();
+        String channel = bundle.finalAcceptanceCompletionCloseoutEvidence().latestDeliveryChannel();
         if (target == null || target.isBlank()) {
             return "none";
         }

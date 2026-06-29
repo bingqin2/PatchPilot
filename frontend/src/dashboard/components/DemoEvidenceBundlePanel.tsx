@@ -83,6 +83,27 @@ export function DemoEvidenceBundlePanel({ bundle, error, onCopyRunbook }: DemoEv
     markdownReport: '',
     generatedAt: ''
   };
+  const finalAcceptanceCompletionCloseoutEvidence = bundle?.finalAcceptanceCompletionCloseoutEvidence ?? {
+    status: 'NEEDS_ATTENTION' as DemoReadinessStatus,
+    closed: false,
+    summary: 'Final acceptance completion closeout is not available.',
+    nextAction: 'Close the final acceptance completion delivery loop before using the evidence bundle as final external-review proof.',
+    latestTaskId: null,
+    latestPullRequestUrl: null,
+    latestSharePackageArchiveId: null,
+    latestCompletionArchiveId: null,
+    latestCompletionEvidenceDeliveryReceiptId: null,
+    latestDeliveryTarget: null,
+    latestDeliveryChannel: null,
+    latestDeliveredAt: null,
+    deliveryReceiptFreshness: 'MISSING',
+    checks: [],
+    evidenceNotes: [],
+    downloadActions: ['Download the final acceptance completion closeout after it reports READY.'],
+    sideEffectContract: 'GET /api/demo/evidence-bundle is read-only and does not mutate tasks, Git, or GitHub.',
+    markdownReport: '',
+    generatedAt: ''
+  };
 
   async function copyRunbook() {
     try {
@@ -333,6 +354,45 @@ export function DemoEvidenceBundlePanel({ bundle, error, onCopyRunbook }: DemoEv
               {finalAcceptanceShareFinalization.latestDeliveredAt ? (
                 <small>Delivered {compactDateTime(finalAcceptanceShareFinalization.latestDeliveredAt)}</small>
               ) : null}
+            </div>
+            <div>
+              <span>Final acceptance completion closeout</span>
+              <strong>
+                {finalAcceptanceCompletionCloseoutEvidence.closed
+                  ? 'Closed'
+                  : statusLabel(finalAcceptanceCompletionCloseoutEvidence.status)}
+              </strong>
+              <small>{finalAcceptanceCompletionCloseoutEvidence.summary}</small>
+              <small>{finalAcceptanceCompletionCloseoutEvidence.nextAction}</small>
+              <small>{finalAcceptanceCompletionCloseoutEvidence.latestCompletionArchiveId ?? 'No completion archive'}</small>
+              <small>
+                {finalAcceptanceCompletionCloseoutEvidence.latestTaskId
+                  ? `Task ${finalAcceptanceCompletionCloseoutEvidence.latestTaskId}`
+                  : 'No completion task'}
+              </small>
+              <small>
+                {finalAcceptanceCompletionCloseoutEvidence.latestCompletionEvidenceDeliveryReceiptId
+                  ?? 'No completion evidence delivery receipt'}
+              </small>
+              <small>{deliveryFreshnessLabel(finalAcceptanceCompletionCloseoutEvidence.deliveryReceiptFreshness)}</small>
+              <small>
+                {finalAcceptanceCompletionCloseoutEvidence.latestDeliveryTarget
+                  ? `${finalAcceptanceCompletionCloseoutEvidence.latestDeliveryChannel ?? 'delivery'} - ${finalAcceptanceCompletionCloseoutEvidence.latestDeliveryTarget}`
+                  : 'Record a completion evidence delivery receipt after sending the final bundle.'}
+              </small>
+              {finalAcceptanceCompletionCloseoutEvidence.latestPullRequestUrl ? (
+                <a href={finalAcceptanceCompletionCloseoutEvidence.latestPullRequestUrl}>
+                  Open final acceptance completion Pull Request
+                </a>
+              ) : (
+                <small>No final acceptance completion Pull Request</small>
+              )}
+              {finalAcceptanceCompletionCloseoutEvidence.latestDeliveredAt ? (
+                <small>Delivered {compactDateTime(finalAcceptanceCompletionCloseoutEvidence.latestDeliveredAt)}</small>
+              ) : null}
+              {finalAcceptanceCompletionCloseoutEvidence.downloadActions.slice(0, 2).map((action) => (
+                <small key={action}>{action}</small>
+              ))}
             </div>
             <div>
               <span>Handoff share delivery</span>
