@@ -1878,6 +1878,40 @@ const demoEvidenceBundle = {
     markdownReport: '# PatchPilot Final Demo Acceptance Share Finalization Gate',
     generatedAt: '2026-06-29T03:30:00Z'
   },
+  finalAcceptanceCompletionCloseoutEvidence: {
+    status: 'READY',
+    closed: true,
+    summary:
+      'PatchPilot final acceptance completion is closed with accepted certificates, finalized sharing, and fresh completion delivery proof.',
+    nextAction: 'Use this closeout report as the final external-review completion record.',
+    latestTaskId: 'task-2',
+    latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+    latestSharePackageArchiveId: 'final-acceptance-share-package-archive-1',
+    latestCompletionArchiveId: 'final-acceptance-completion-archive-1',
+    latestCompletionEvidenceDeliveryReceiptId: 'final-acceptance-completion-evidence-delivery-receipt-1',
+    latestDeliveryTarget: 'reviewer@example.com',
+    latestDeliveryChannel: 'email',
+    latestDeliveredAt: '2026-06-29T03:45:00Z',
+    deliveryReceiptFreshness: 'FRESH',
+    checks: [
+      {
+        name: 'Completion evidence delivery',
+        status: 'READY',
+        summary: 'Completion closeout can be used as the final external-review record.',
+        nextAction: 'No action needed.'
+      }
+    ],
+    evidenceNotes: [
+      'Final acceptance completion archive final-acceptance-completion-archive-1 has a fresh evidence delivery receipt.'
+    ],
+    downloadActions: [
+      'Download final acceptance completion closeout report.',
+      'Download final acceptance completion evidence bundle.'
+    ],
+    sideEffectContract: 'Final acceptance completion closeout is read-only and does not mutate tasks, Git, or GitHub.',
+    markdownReport: '# PatchPilot Final Acceptance Completion Closeout',
+    generatedAt: '2026-06-29T04:00:00Z'
+  },
   handoffShareDeliveryReceiptRecorded: true,
   handoffShareLatestDeliveryReceiptId: 'delivery-receipt-1',
   handoffShareLatestDeliveryTarget: 'maintainer@example.com',

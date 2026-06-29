@@ -3,6 +3,7 @@ package io.patchpilot.backend.demo;
 import io.patchpilot.backend.configuration.ConfigurationSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceShareFinalizationVo;
+import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionCloseoutVo;
 import io.patchpilot.backend.demo.domain.DemoFinalHandoffReportPackageArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffFinalizationCheckVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffFinalizationVo;
@@ -69,6 +70,7 @@ class DemoEvidenceBundleServiceTests {
                 DemoEvidenceBundleServiceTests::launchEvidenceShareCenter,
                 DemoEvidenceBundleServiceTests::launchEvidenceFinalizationReady,
                 DemoEvidenceBundleServiceTests::finalAcceptanceShareFinalizationReady,
+                DemoEvidenceBundleServiceTests::finalAcceptanceCompletionCloseoutReady,
                 () -> List.of(launchAcceptanceCloseoutArchive(DemoReadinessStatus.READY, true)),
                 () -> List.of(launchAcceptanceCertificateArchive(DemoReadinessStatus.READY, true)),
                 () -> List.of(taskEvidenceAcceptanceCertificateArchive("READY", true)),
@@ -264,6 +266,24 @@ class DemoEvidenceBundleServiceTests {
         assertThat(bundle.finalAcceptanceShareFinalization().latestDeliveryChannel()).isEqualTo("email");
         assertThat(bundle.finalAcceptanceShareFinalization().deliveryReceiptFreshness()).isEqualTo("FRESH");
         assertThat(bundle.finalAcceptanceShareFinalization().deliveryReceiptFresh()).isTrue();
+        assertThat(bundle.finalAcceptanceCompletionCloseoutEvidence().status()).isEqualTo(DemoReadinessStatus.READY);
+        assertThat(bundle.finalAcceptanceCompletionCloseoutEvidence().closed()).isTrue();
+        assertThat(bundle.finalAcceptanceCompletionCloseoutEvidence().summary())
+                .isEqualTo("PatchPilot final acceptance completion is closed with accepted certificates, finalized sharing, and fresh completion delivery proof.");
+        assertThat(bundle.finalAcceptanceCompletionCloseoutEvidence().nextAction())
+                .isEqualTo("Use this closeout report as the final external-review completion record.");
+        assertThat(bundle.finalAcceptanceCompletionCloseoutEvidence().latestTaskId()).isEqualTo("task-2");
+        assertThat(bundle.finalAcceptanceCompletionCloseoutEvidence().latestPullRequestUrl())
+                .isEqualTo("https://github.com/bingqin2/PatchPilot/pull/42");
+        assertThat(bundle.finalAcceptanceCompletionCloseoutEvidence().latestCompletionArchiveId())
+                .isEqualTo("final-acceptance-completion-archive-1");
+        assertThat(bundle.finalAcceptanceCompletionCloseoutEvidence().latestCompletionEvidenceDeliveryReceiptId())
+                .isEqualTo("final-acceptance-completion-evidence-delivery-receipt-1");
+        assertThat(bundle.finalAcceptanceCompletionCloseoutEvidence().deliveryReceiptFreshness()).isEqualTo("FRESH");
+        assertThat(bundle.finalAcceptanceCompletionCloseoutEvidence().downloadActions()).containsExactly(
+                "Download final acceptance completion closeout report.",
+                "Download final acceptance completion evidence bundle."
+        );
         assertThat(bundle.handoffShareDeliveryReceiptRecorded()).isFalse();
         assertThat(bundle.handoffShareLatestDeliveryReceiptId()).isNull();
         assertThat(bundle.handoffShareLatestDeliveryTarget()).isNull();
@@ -309,6 +329,7 @@ class DemoEvidenceBundleServiceTests {
                 DemoEvidenceBundleServiceTests::launchEvidenceShareCenter,
                 DemoEvidenceBundleServiceTests::launchEvidenceFinalizationReady,
                 DemoEvidenceBundleServiceTests::finalAcceptanceShareFinalizationReady,
+                DemoEvidenceBundleServiceTests::finalAcceptanceCompletionCloseoutReady,
                 () -> List.of(launchAcceptanceCloseoutArchive(DemoReadinessStatus.READY, true)),
                 () -> List.of(launchAcceptanceCertificateArchive(DemoReadinessStatus.READY, true)),
                 () -> List.of(taskEvidenceAcceptanceCertificateArchive("READY", true)),
@@ -354,7 +375,50 @@ class DemoEvidenceBundleServiceTests {
         assertThat(bundle.finalHandoffReportPackageArchiveEvidence().downloadReady()).isTrue();
         assertThat(bundle.finalAcceptanceShareFinalization().finalized()).isTrue();
         assertThat(bundle.finalAcceptanceShareFinalization().deliveryReceiptFresh()).isTrue();
+        assertThat(bundle.finalAcceptanceCompletionCloseoutEvidence().closed()).isTrue();
         assertThat(bundle.nextActions()).containsExactly("Use this evidence bundle as the live demo baseline.");
+    }
+
+    @Test
+    void should_require_final_acceptance_completion_closeout_before_reporting_bundle_ready() {
+        DemoEvidenceBundleService service = new DemoEvidenceBundleService(
+                () -> readiness(DemoReadinessStatus.READY, List.of()),
+                () -> smokeChecklist(DemoSmokeChecklistStatus.READY, List.of()),
+                DemoEvidenceBundleServiceTests::configuration,
+                () -> List.of(fixture("java-maven", "PASS")),
+                FixTaskQueueSummaryVo::empty,
+                () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/42")),
+                () -> List.of(webhookDelivery("delivery-1", WebhookDeliveryDiagnosticStatus.TASK_CREATED, "task-1")),
+                DemoEvidenceBundleServiceTests::webhookSetupReadiness,
+                () -> rejectedTriggerSummary(0),
+                List::of,
+                DemoEvidenceBundleServiceTests::evaluationRunReadiness,
+                DemoEvidenceBundleServiceTests::handoffPackageArchiveSummary,
+                DemoEvidenceBundleServiceTests::deliveredHandoffShareCenter,
+                DemoEvidenceBundleServiceTests::handoffFinalizationReady,
+                DemoEvidenceBundleServiceTests::launchEvidenceShareCenter,
+                DemoEvidenceBundleServiceTests::launchEvidenceFinalizationReady,
+                DemoEvidenceBundleServiceTests::finalAcceptanceShareFinalizationReady,
+                DemoEvidenceBundleServiceTests::finalAcceptanceCompletionCloseoutNeedsAttention,
+                () -> List.of(launchAcceptanceCloseoutArchive(DemoReadinessStatus.READY, true)),
+                () -> List.of(launchAcceptanceCertificateArchive(DemoReadinessStatus.READY, true)),
+                () -> List.of(taskEvidenceAcceptanceCertificateArchive("READY", true)),
+                () -> List.of(finalHandoffReportPackageArchive(DemoReadinessStatus.READY, true))
+        );
+
+        DemoEvidenceBundleVo bundle = service.getEvidenceBundle();
+
+        assertThat(bundle.status()).isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
+        assertThat(bundle.summary()).isEqualTo("Demo evidence bundle needs attention.");
+        assertThat(bundle.finalAcceptanceCompletionCloseoutEvidence().status()).isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
+        assertThat(bundle.finalAcceptanceCompletionCloseoutEvidence().closed()).isFalse();
+        assertThat(bundle.finalAcceptanceCompletionCloseoutEvidence().summary())
+                .isEqualTo("PatchPilot final acceptance completion closeout needs a fresh completion evidence delivery finalization.");
+        assertThat(bundle.finalAcceptanceCompletionCloseoutEvidence().nextAction())
+                .isEqualTo("Record a fresh completion evidence delivery receipt, then download the closeout report again.");
+        assertThat(bundle.nextActions()).containsExactly(
+                "Record a fresh completion evidence delivery receipt, then download the closeout report again."
+        );
     }
 
     @Test
@@ -377,6 +441,7 @@ class DemoEvidenceBundleServiceTests {
                 DemoEvidenceBundleServiceTests::launchEvidenceShareCenter,
                 DemoEvidenceBundleServiceTests::launchEvidenceFinalizationReady,
                 DemoEvidenceBundleServiceTests::finalAcceptanceShareFinalizationMissingReceipt,
+                DemoEvidenceBundleServiceTests::finalAcceptanceCompletionCloseoutReady,
                 () -> List.of(launchAcceptanceCloseoutArchive(DemoReadinessStatus.READY, true)),
                 () -> List.of(launchAcceptanceCertificateArchive(DemoReadinessStatus.READY, true)),
                 () -> List.of(taskEvidenceAcceptanceCertificateArchive("READY", true)),
@@ -416,6 +481,7 @@ class DemoEvidenceBundleServiceTests {
                 DemoEvidenceBundleServiceTests::launchEvidenceShareCenter,
                 DemoEvidenceBundleServiceTests::launchEvidenceFinalizationReady,
                 DemoEvidenceBundleServiceTests::finalAcceptanceShareFinalizationReady,
+                DemoEvidenceBundleServiceTests::finalAcceptanceCompletionCloseoutReady,
                 List::of,
                 () -> List.of(launchAcceptanceCertificateArchive(DemoReadinessStatus.READY, true)),
                 () -> List.of(taskEvidenceAcceptanceCertificateArchive("READY", true)),
@@ -458,6 +524,7 @@ class DemoEvidenceBundleServiceTests {
                 DemoEvidenceBundleServiceTests::launchEvidenceShareCenter,
                 DemoEvidenceBundleServiceTests::launchEvidenceFinalizationReady,
                 DemoEvidenceBundleServiceTests::finalAcceptanceShareFinalizationReady,
+                DemoEvidenceBundleServiceTests::finalAcceptanceCompletionCloseoutReady,
                 () -> List.of(launchAcceptanceCloseoutArchive(DemoReadinessStatus.READY, true)),
                 List::of,
                 () -> List.of(taskEvidenceAcceptanceCertificateArchive("READY", true)),
@@ -501,6 +568,7 @@ class DemoEvidenceBundleServiceTests {
                 DemoEvidenceBundleServiceTests::launchEvidenceShareCenter,
                 DemoEvidenceBundleServiceTests::launchEvidenceFinalizationReady,
                 DemoEvidenceBundleServiceTests::finalAcceptanceShareFinalizationReady,
+                DemoEvidenceBundleServiceTests::finalAcceptanceCompletionCloseoutReady,
                 () -> List.of(launchAcceptanceCloseoutArchive(DemoReadinessStatus.READY, true)),
                 () -> List.of(launchAcceptanceCertificateArchive(DemoReadinessStatus.READY, true)),
                 List::of,
@@ -543,6 +611,7 @@ class DemoEvidenceBundleServiceTests {
                 DemoEvidenceBundleServiceTests::launchEvidenceShareCenter,
                 DemoEvidenceBundleServiceTests::launchEvidenceFinalizationReady,
                 DemoEvidenceBundleServiceTests::finalAcceptanceShareFinalizationReady,
+                DemoEvidenceBundleServiceTests::finalAcceptanceCompletionCloseoutReady,
                 () -> List.of(launchAcceptanceCloseoutArchive(DemoReadinessStatus.READY, true)),
                 () -> List.of(launchAcceptanceCertificateArchive(DemoReadinessStatus.READY, true)),
                 () -> List.of(taskEvidenceAcceptanceCertificateArchive("READY", true)),
@@ -1072,6 +1141,67 @@ class DemoEvidenceBundleServiceTests {
                 List.of("No fresh delivery receipt is available for final-acceptance-share-package-archive-1."),
                 "# PatchPilot Final Demo Acceptance Share Finalization Gate",
                 Instant.parse("2026-06-29T03:30:00Z")
+        );
+    }
+
+    private static DemoFinalAcceptanceCompletionCloseoutVo finalAcceptanceCompletionCloseoutReady() {
+        return new DemoFinalAcceptanceCompletionCloseoutVo(
+                DemoReadinessStatus.READY,
+                true,
+                "PatchPilot final acceptance completion is closed with accepted certificates, finalized sharing, and fresh completion delivery proof.",
+                "Use this closeout report as the final external-review completion record.",
+                "task-2",
+                "https://github.com/bingqin2/PatchPilot/pull/42",
+                "final-acceptance-share-package-archive-1",
+                "final-acceptance-completion-archive-1",
+                "final-acceptance-completion-evidence-delivery-receipt-1",
+                "reviewer@example.com",
+                "email",
+                "2026-06-29T03:45:00Z",
+                "FRESH",
+                List.of(new DemoFinalAcceptanceCompletionCloseoutVo.Check(
+                        "Completion evidence delivery",
+                        DemoReadinessStatus.READY,
+                        "Completion closeout can be used as the final external-review record.",
+                        "No action needed."
+                )),
+                List.of("Final acceptance completion archive final-acceptance-completion-archive-1 has a fresh evidence delivery receipt."),
+                List.of(
+                        "Download final acceptance completion closeout report.",
+                        "Download final acceptance completion evidence bundle."
+                ),
+                "Final acceptance completion closeout is read-only and does not mutate tasks, Git, or GitHub.",
+                "# PatchPilot Final Acceptance Completion Closeout",
+                Instant.parse("2026-06-29T04:00:00Z")
+        );
+    }
+
+    private static DemoFinalAcceptanceCompletionCloseoutVo finalAcceptanceCompletionCloseoutNeedsAttention() {
+        return new DemoFinalAcceptanceCompletionCloseoutVo(
+                DemoReadinessStatus.NEEDS_ATTENTION,
+                false,
+                "PatchPilot final acceptance completion closeout needs a fresh completion evidence delivery finalization.",
+                "Record a fresh completion evidence delivery receipt, then download the closeout report again.",
+                "task-2",
+                "https://github.com/bingqin2/PatchPilot/pull/42",
+                "final-acceptance-share-package-archive-1",
+                "final-acceptance-completion-archive-1",
+                null,
+                null,
+                null,
+                null,
+                "MISSING",
+                List.of(new DemoFinalAcceptanceCompletionCloseoutVo.Check(
+                        "Completion evidence delivery",
+                        DemoReadinessStatus.NEEDS_ATTENTION,
+                        "No fresh completion evidence delivery receipt is available.",
+                        "Record a fresh completion evidence delivery receipt."
+                )),
+                List.of("Final acceptance completion evidence still needs a delivery receipt."),
+                List.of("Download the closeout report after the completion evidence delivery receipt is fresh."),
+                "Final acceptance completion closeout is read-only and does not mutate tasks, Git, or GitHub.",
+                "# PatchPilot Final Acceptance Completion Closeout",
+                Instant.parse("2026-06-29T04:00:00Z")
         );
     }
 

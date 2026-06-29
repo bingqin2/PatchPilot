@@ -301,6 +301,40 @@ const bundle: DemoEvidenceBundle = {
     markdownReport: '# PatchPilot Final Demo Acceptance Share Finalization Gate',
     generatedAt: '2026-06-29T03:30:00Z'
   },
+  finalAcceptanceCompletionCloseoutEvidence: {
+    status: 'READY',
+    closed: true,
+    summary:
+      'PatchPilot final acceptance completion is closed with accepted certificates, finalized sharing, and fresh completion delivery proof.',
+    nextAction: 'Use this closeout report as the final external-review completion record.',
+    latestTaskId: 'task-2',
+    latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+    latestSharePackageArchiveId: 'final-acceptance-share-package-archive-1',
+    latestCompletionArchiveId: 'final-acceptance-completion-archive-1',
+    latestCompletionEvidenceDeliveryReceiptId: 'final-acceptance-completion-evidence-delivery-receipt-1',
+    latestDeliveryTarget: 'reviewer@example.com',
+    latestDeliveryChannel: 'email',
+    latestDeliveredAt: '2026-06-29T03:45:00Z',
+    deliveryReceiptFreshness: 'FRESH',
+    checks: [
+      {
+        name: 'Completion evidence delivery',
+        status: 'READY',
+        summary: 'Completion closeout can be used as the final external-review record.',
+        nextAction: 'No action needed.'
+      }
+    ],
+    evidenceNotes: [
+      'Final acceptance completion archive final-acceptance-completion-archive-1 has a fresh evidence delivery receipt.'
+    ],
+    downloadActions: [
+      'Download final acceptance completion closeout report.',
+      'Download final acceptance completion evidence bundle.'
+    ],
+    sideEffectContract: 'Final acceptance completion closeout is read-only and does not mutate tasks, Git, or GitHub.',
+    markdownReport: '# PatchPilot Final Acceptance Completion Closeout',
+    generatedAt: '2026-06-29T04:00:00Z'
+  },
   handoffShareDeliveryReceiptRecorded: true,
   handoffShareLatestDeliveryReceiptId: 'delivery-receipt-1',
   handoffShareLatestDeliveryTarget: 'maintainer@example.com',
@@ -448,7 +482,23 @@ test('summarizes demo evidence bundle for operators', () => {
   expect(within(panel).getByText('final-acceptance-share-package-archive-1')).toBeInTheDocument();
   expect(within(panel).getByText('final-acceptance-delivery-receipt-1')).toBeInTheDocument();
   expect(within(panel).getAllByText('Task task-2').length).toBeGreaterThanOrEqual(2);
-  expect(within(panel).getByText('email - reviewer@example.com')).toBeInTheDocument();
+  expect(within(panel).getAllByText('email - reviewer@example.com').length).toBeGreaterThanOrEqual(2);
+  expect(within(panel).getByText('Final acceptance completion closeout')).toBeInTheDocument();
+  expect(within(panel).getByText('Closed')).toBeInTheDocument();
+  expect(
+    within(panel).getByText(
+      'PatchPilot final acceptance completion is closed with accepted certificates, finalized sharing, and fresh completion delivery proof.'
+    )
+  ).toBeInTheDocument();
+  expect(within(panel).getByText('Use this closeout report as the final external-review completion record.')).toBeInTheDocument();
+  expect(within(panel).getByText('final-acceptance-completion-archive-1')).toBeInTheDocument();
+  expect(within(panel).getByText('final-acceptance-completion-evidence-delivery-receipt-1')).toBeInTheDocument();
+  expect(within(panel).getByRole('link', { name: 'Open final acceptance completion Pull Request' })).toHaveAttribute(
+    'href',
+    'https://github.com/bingqin2/PatchPilot/pull/42'
+  );
+  expect(within(panel).getByText('Download final acceptance completion closeout report.')).toBeInTheDocument();
+  expect(within(panel).getByText('Download final acceptance completion evidence bundle.')).toBeInTheDocument();
   expect(within(panel).getByText('Handoff share delivery')).toBeInTheDocument();
   expect(within(panel).getAllByText('Fresh').length).toBeGreaterThanOrEqual(2);
   expect(within(panel).getByText('Handoff finalization')).toBeInTheDocument();
@@ -490,7 +540,8 @@ test('renders missing certificate evidence for legacy bundle responses', () => {
     launchAcceptanceCertificateEvidence: undefined,
     taskEvidenceAcceptanceCertificateEvidence: undefined,
     finalHandoffReportPackageArchiveEvidence: undefined,
-    finalAcceptanceShareFinalization: undefined
+    finalAcceptanceShareFinalization: undefined,
+    finalAcceptanceCompletionCloseoutEvidence: undefined
   } as unknown as DemoEvidenceBundle;
 
   render(<DemoEvidenceBundlePanel bundle={legacyBundle} error={null} onCopyRunbook={vi.fn()} />);
@@ -518,6 +569,12 @@ test('renders missing certificate evidence for legacy bundle responses', () => {
   expect(
     screen.getByText('Archive and deliver the final acceptance share package before using the evidence bundle as external-review proof.')
   ).toBeInTheDocument();
+  expect(screen.getByText('Final acceptance completion closeout')).toBeInTheDocument();
+  expect(screen.getByText('Final acceptance completion closeout is not available.')).toBeInTheDocument();
+  expect(
+    screen.getByText('Close the final acceptance completion delivery loop before using the evidence bundle as final external-review proof.')
+  ).toBeInTheDocument();
+  expect(screen.getByText('No final acceptance completion Pull Request')).toBeInTheDocument();
 });
 
 test('copies demo runbook markdown', async () => {

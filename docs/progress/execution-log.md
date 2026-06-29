@@ -5771,3 +5771,19 @@ Validation so far:
 - `npm test -- --reporter=basic`: passed, 30 test files and 434 tests.
 - `npm run build`: passed with the existing Vite large-chunk warning.
 - `git diff --check`: passed.
+
+## 2026-06-29 - 287 Final acceptance completion closeout evidence bundle
+
+- Started `287-final-acceptance-completion-closeout-evidence-bundle` to promote the final completion closeout into the first demo evidence readout and copied runbook.
+- Planned a complete feature slice: backend evidence-bundle aggregation, runbook export, frontend top-level evidence rendering, legacy fallback behavior, README/product/frontend docs, plan doc, and regression tests.
+- RED backend tests were added first for READY closeout evidence in the bundle, bundle downgrade when closeout proof needs attention, and runbook Markdown export.
+- RED frontend tests were added first for rendering the final acceptance completion closeout card in `DemoEvidenceBundlePanel` and showing safe missing-closeout guidance for legacy bundle responses.
+- Implemented `DemoEvidenceBundleVo.finalAcceptanceCompletionCloseoutEvidence` with compatibility defaults, then wired `DemoEvidenceBundleService` to include `DemoFinalAcceptanceCompletionCloseoutService` in aggregate status and next-action calculation.
+- Updated `DemoRunbookService` so copied runbooks include closeout status, closed flag, completion archive id, delivery receipt id, task id, Pull Request, delivery target/channel, freshness, next action, and download actions.
+- Updated the dashboard evidence bundle panel so operators can see final acceptance completion closeout proof without opening the final acceptance panel.
+- Updated README, product spec, frontend design doc, and added this plan document.
+
+Validation so far:
+
+- `mvn -q -pl PatchPilot -Dtest=DemoEvidenceBundleServiceTests,DemoRunbookServiceTests test`: first failed because the top-level evidence bundle did not expose closeout proof; passed after backend aggregation and runbook implementation.
+- `npm test -- --reporter=basic src/dashboard/components/DemoEvidenceBundlePanel.test.tsx src/App.test.tsx src/dashboard/components/DemoSessionSnapshotPanel.test.tsx`: first failed because duplicate final acceptance delivery text made an older assertion too strict; passed after using repeated-evidence assertions and adding closeout fixtures.
