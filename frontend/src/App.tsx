@@ -55,6 +55,7 @@ import {
   downloadDemoFinalAcceptanceCompletionEvidenceDeliveryReceiptReport,
   downloadDemoFinalExternalReviewEvidencePackageDeliveryFinalizationReport,
   downloadDemoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveReport,
+  downloadDemoFinalExternalReviewDeliveryCertificateReport,
   downloadDemoFinalExternalReviewEvidencePackageDeliveryReceiptReport,
   downloadDemoFinalExternalReviewEvidencePackageArchiveReport,
   downloadDemoFinalExternalReviewEvidencePackageReport,
@@ -111,6 +112,7 @@ import {
   getDemoFinalAcceptanceCompletionEvidenceBundle,
   getDemoFinalAcceptanceCompletionEvidenceDeliveryFinalization,
   getDemoFinalExternalReviewEvidencePackageDeliveryFinalization,
+  getDemoFinalExternalReviewDeliveryCertificate,
   getDemoFinalExternalReviewEvidencePackage,
   getDemoFinalAcceptanceShareFinalization,
   getDemoFinalAcceptanceSharePackage,
@@ -246,6 +248,7 @@ import type {
   DemoFinalExternalReviewEvidencePackageDeliveryFinalization,
   DemoFinalExternalReviewEvidencePackageDeliveryReceipt,
   DemoFinalExternalReviewEvidencePackageDeliveryReceiptInput,
+  DemoFinalExternalReviewDeliveryCertificate,
   DemoFinalExternalReviewEvidencePackage,
   DemoFinalAcceptanceShareDeliveryReceipt,
   DemoFinalAcceptanceShareDeliveryReceiptInput,
@@ -472,6 +475,14 @@ export default function App() {
   const [
     demoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveError,
     setDemoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveError
+  ] = useState<string | null>(null);
+  const [
+    demoFinalExternalReviewDeliveryCertificate,
+    setDemoFinalExternalReviewDeliveryCertificate
+  ] = useState<DemoFinalExternalReviewDeliveryCertificate | null>(null);
+  const [
+    demoFinalExternalReviewDeliveryCertificateError,
+    setDemoFinalExternalReviewDeliveryCertificateError
   ] = useState<string | null>(null);
   const [demoReadinessSnapshots, setDemoReadinessSnapshots] = useState<DemoReadinessSnapshotArchive[]>([]);
   const [demoReadinessSnapshotError, setDemoReadinessSnapshotError] = useState<string | null>(null);
@@ -939,6 +950,7 @@ export default function App() {
         demoFinalExternalReviewEvidencePackageDeliveryReceiptResult,
         demoFinalExternalReviewEvidencePackageDeliveryFinalizationResult,
         demoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveResult,
+        demoFinalExternalReviewDeliveryCertificateResult,
         demoReadinessSnapshotResult,
         demoReadinessSnapshotTrendResult,
         demoSmokeChecklistResult,
@@ -1167,6 +1179,10 @@ export default function App() {
         listDemoFinalExternalReviewEvidencePackageDeliveryFinalizationArchives().then(
           (archives) => ({ archives, error: null as string | null }),
           (caught) => ({ archives: null, error: errorMessage(caught) })
+        ),
+        getDemoFinalExternalReviewDeliveryCertificate().then(
+          (certificate) => ({ certificate, error: null as string | null }),
+          (caught) => ({ certificate: null, error: errorMessage(caught) })
         ),
         listDemoReadinessSnapshots().then(
           (snapshots) => ({ snapshots, error: null as string | null }),
@@ -1509,6 +1525,14 @@ export default function App() {
       }
       setDemoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveError(
         demoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveResult.error
+      );
+      if (demoFinalExternalReviewDeliveryCertificateResult.certificate) {
+        setDemoFinalExternalReviewDeliveryCertificate(
+          demoFinalExternalReviewDeliveryCertificateResult.certificate
+        );
+      }
+      setDemoFinalExternalReviewDeliveryCertificateError(
+        demoFinalExternalReviewDeliveryCertificateResult.error
       );
       if (demoReadinessSnapshotResult.snapshots) {
         setDemoReadinessSnapshots(demoReadinessSnapshotResult.snapshots);
@@ -2225,6 +2249,9 @@ export default function App() {
   const handleDownloadDemoFinalExternalReviewEvidencePackageDeliveryFinalizationReport = useCallback(() => (
     downloadDemoFinalExternalReviewEvidencePackageDeliveryFinalizationReport()
   ), []);
+  const handleDownloadDemoFinalExternalReviewDeliveryCertificateReport = useCallback(() => (
+    downloadDemoFinalExternalReviewDeliveryCertificateReport()
+  ), []);
   const handleArchiveDemoFinalExternalReviewEvidencePackage = useCallback(async () => {
     const archive = await archiveDemoFinalExternalReviewEvidencePackage();
     setDemoFinalExternalReviewEvidencePackageArchives((current) => [
@@ -2252,6 +2279,13 @@ export default function App() {
       setDemoEvidenceBundleError(null);
     } catch (caught) {
       setDemoEvidenceBundleError(errorMessage(caught));
+    }
+    try {
+      const certificate = await getDemoFinalExternalReviewDeliveryCertificate();
+      setDemoFinalExternalReviewDeliveryCertificate(certificate);
+      setDemoFinalExternalReviewDeliveryCertificateError(null);
+    } catch (caught) {
+      setDemoFinalExternalReviewDeliveryCertificateError(errorMessage(caught));
     }
     return archive;
   }, []);
@@ -2941,6 +2975,7 @@ export default function App() {
         finalExternalReviewEvidencePackageDeliveryFinalizationArchives={
           demoFinalExternalReviewEvidencePackageDeliveryFinalizationArchives
         }
+        finalExternalReviewDeliveryCertificate={demoFinalExternalReviewDeliveryCertificate}
         error={demoAcceptanceSummaryError}
         sharePackageError={demoFinalAcceptanceSharePackageError}
         sharePackageArchiveError={demoFinalAcceptanceSharePackageArchiveError}
@@ -2963,6 +2998,7 @@ export default function App() {
         finalExternalReviewEvidencePackageDeliveryFinalizationArchiveError={
           demoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveError
         }
+        finalExternalReviewDeliveryCertificateError={demoFinalExternalReviewDeliveryCertificateError}
         onDownloadReport={handleDownloadDemoAcceptanceSummaryReport}
         onDownloadSharePackageReport={handleDownloadDemoFinalAcceptanceSharePackageReport}
         onArchiveSharePackage={handleArchiveDemoFinalAcceptanceSharePackage}
@@ -3006,6 +3042,9 @@ export default function App() {
         }
         onDownloadFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveReport={
           handleDownloadDemoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveReport
+        }
+        onDownloadFinalExternalReviewDeliveryCertificateReport={
+          handleDownloadDemoFinalExternalReviewDeliveryCertificateReport
         }
       />
 

@@ -5964,3 +5964,19 @@ Validation so far:
 - `git diff --check`: passed.
 - `mvn -pl PatchPilot test`: passed, 1169 tests.
 - `npm test -- --reporter=dot`: passed, 30 test files and 457 tests.
+
+## 2026-06-30 - 296 Final external review delivery certificate
+
+- Started `296-final-external-review-delivery-certificate` to turn the latest archived final external-review package delivery finalization into a single terminal certificate for reviewer-facing delivery proof.
+- Planned a complete feature slice: read-only backend certificate service, JSON and Markdown download endpoints, frontend API helpers, App loading/refresh wiring, final acceptance dashboard certificate card, README/product/frontend docs, plan doc, and regression tests.
+- Added backend coverage for certified and missing-archive certificate states plus controller JSON/download routes.
+- Implemented `DemoFinalExternalReviewDeliveryCertificateService` and `DemoFinalExternalReviewDeliveryCertificateVo` so the certificate is derived from the latest delivery-finalization archive without creating tasks, calling the model, running tests, mutating Git, recording receipts, sending messages, or writing to GitHub.
+- Added `GET /api/demo/final-external-review-delivery-certificate` and `GET /api/demo/final-external-review-delivery-certificate/report/download`.
+- Updated the final demo acceptance dashboard with certificate loading, a certificate card, linked archive/receipt/target evidence, checks, download actions, and Markdown report download.
+- Updated README, product spec, frontend design doc, and added this plan document.
+
+Validation so far:
+
+- `mvn -q -pl PatchPilot -Dtest=DemoFinalExternalReviewDeliveryCertificateServiceTests,DemoReadinessControllerTests#should_return_final_external_review_delivery_certificate+should_download_final_external_review_delivery_certificate_report,DemoEvidenceBundleServiceTests test`: passed during backend wiring.
+- `npm test -- src/api.test.ts`: first failed because the new frontend API helpers were missing; passed after adding type and API helpers, 188 tests.
+- `npm test -- src/App.test.tsx`: first failed because adding the certificate introduced a legitimate second delivery-receipt evidence reference; passed after making the assertion count-based, 86 tests.

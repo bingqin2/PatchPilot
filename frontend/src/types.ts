@@ -1417,6 +1417,35 @@ export interface DemoFinalExternalReviewEvidencePackageDeliveryFinalizationArchi
   archivedAt: string;
 }
 
+export interface DemoFinalExternalReviewDeliveryCertificate {
+  status: DemoReadinessStatus;
+  certified: boolean;
+  summary: string;
+  nextAction: string;
+  latestDeliveryFinalizationArchiveId: string | null;
+  latestPackageArchiveId: string | null;
+  latestDeliveryReceiptId: string | null;
+  latestTaskId: string | null;
+  latestPullRequestUrl: string | null;
+  latestDeliveryTarget: string | null;
+  latestDeliveryChannel: string | null;
+  latestDeliveredAt: string | null;
+  latestArchivedAt: string | null;
+  deliveryReceiptFreshness: string;
+  deliveryReceiptFresh: boolean;
+  checks: Array<{
+    name: string;
+    status: DemoReadinessStatus;
+    summary: string;
+    nextAction: string;
+  }>;
+  evidenceNotes: string[];
+  downloadActions: string[];
+  sideEffectContract: string;
+  markdownReport: string;
+  generatedAt: string;
+}
+
 export interface DemoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveEvidence {
   status: DemoReadinessStatus;
   archived: boolean;

@@ -9,6 +9,7 @@ import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionCloseoutVo
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionEvidenceDeliveryFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionEvidenceDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionEvidenceBundleVo;
+import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewDeliveryCertificateVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageDeliveryFinalizationVo;
@@ -117,6 +118,7 @@ public class DemoReadinessController {
             demoFinalExternalReviewEvidencePackageDeliveryFinalizationService;
     private final DemoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveService
             demoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveService;
+    private final DemoFinalExternalReviewDeliveryCertificateService demoFinalExternalReviewDeliveryCertificateService;
     private final DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
     private final DemoReadinessSnapshotTrendService demoReadinessSnapshotTrendService;
     private final DemoLaunchPreflightService demoLaunchPreflightService;
@@ -541,6 +543,11 @@ public class DemoReadinessController {
         );
     }
 
+    @GetMapping("/final-external-review-delivery-certificate")
+    public ApiResponse<DemoFinalExternalReviewDeliveryCertificateVo> getFinalExternalReviewDeliveryCertificate() {
+        return ApiResponse.ok(demoFinalExternalReviewDeliveryCertificateService.getCertificate());
+    }
+
     @GetMapping(value = "/handoff-share-center/report/download", produces = "text/markdown;charset=UTF-8")
     public ResponseEntity<String> downloadHandoffShareCenterReport() {
         return markdownAttachment(
@@ -743,6 +750,14 @@ public class DemoReadinessController {
                         archive.report()
                 ))
                 .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @GetMapping(value = "/final-external-review-delivery-certificate/report/download", produces = "text/markdown;charset=UTF-8")
+    public ResponseEntity<String> downloadFinalExternalReviewDeliveryCertificateReport() {
+        return markdownAttachment(
+                "patchpilot-final-external-review-delivery-certificate.md",
+                demoFinalExternalReviewDeliveryCertificateService.getCertificate().markdownReport()
+        );
     }
 
     @GetMapping(value = "/final-acceptance-completion-closeout/archives/{archiveId}/report/download", produces = "text/markdown;charset=UTF-8")
