@@ -5980,3 +5980,19 @@ Validation so far:
 - `mvn -q -pl PatchPilot -Dtest=DemoFinalExternalReviewDeliveryCertificateServiceTests,DemoReadinessControllerTests#should_return_final_external_review_delivery_certificate+should_download_final_external_review_delivery_certificate_report,DemoEvidenceBundleServiceTests test`: passed during backend wiring.
 - `npm test -- src/api.test.ts`: first failed because the new frontend API helpers were missing; passed after adding type and API helpers, 188 tests.
 - `npm test -- src/App.test.tsx`: first failed because adding the certificate introduced a legitimate second delivery-receipt evidence reference; passed after making the assertion count-based, 86 tests.
+
+## 2026-06-30 - 297 Final external review delivery certificate archives
+
+- Started `297-final-external-review-delivery-certificate-archives` to freeze the certified final external-review delivery certificate as durable local evidence after the final reviewer-facing delivery loop is certified.
+- Planned a complete feature slice: backend archive persistence, certified-only archive guard, in-memory/MyBatis repositories, Flyway migration, create/list/download API endpoints, protected audit, final acceptance dashboard archive controls/history/downloads, frontend API coverage, README/product/frontend docs, plan doc, and regression tests.
+- Implemented `DemoFinalExternalReviewDeliveryCertificateArchiveService` with `DemoFinalExternalReviewDeliveryCertificateArchiveVo`, entity, mapper, converter, in-memory repository, MyBatis repository, and `V57__create_demo_final_external_review_delivery_certificate_archive.sql`.
+- Added `POST /api/demo/final-external-review-delivery-certificate/archives`, `GET /api/demo/final-external-review-delivery-certificate/archives`, and `GET /api/demo/final-external-review-delivery-certificate/archives/{archiveId}/report/download`.
+- Updated the final demo acceptance dashboard with a certificate archive button, recent certificate archive history, archived report downloads, archive load errors, App refresh wiring, and full API helper coverage.
+- Updated README, product spec, frontend design doc, and added this plan document.
+
+Validation:
+
+- `mvn -q -pl PatchPilot -Dtest=DemoFinalExternalReviewDeliveryCertificateArchiveServiceTests,DemoFinalExternalReviewDeliveryCertificateArchiveConvertTests,MyBatisDemoFinalExternalReviewDeliveryCertificateArchiveRepositoryTests,DemoFinalExternalReviewDeliveryCertificateArchiveMigrationTests,DemoReadinessControllerTests#should_archive_final_external_review_delivery_certificate_and_record_audit+should_reject_final_external_review_delivery_certificate_archive_when_not_certified+should_list_final_external_review_delivery_certificate_archives+should_download_archived_final_external_review_delivery_certificate_report+should_return_not_found_when_final_external_review_delivery_certificate_archive_is_missing test`: passed.
+- `npm test`: first failed because the full App smoke test expected a single matching certificate summary after archive history added the same summary; passed after changing that assertion to count-based. Final result: 30 test files and 462 tests passed.
+- `npm run build`: passed with the existing Vite large-chunk warning.
+- `mvn -q -pl PatchPilot test`: passed.
