@@ -5,6 +5,7 @@ import type {
   DemoFinalAcceptanceShareDeliveryReceipt,
   DemoFinalAcceptanceShareFinalization,
   DemoFinalAcceptanceCompletionArchive,
+  DemoFinalAcceptanceCompletionCloseout,
   DemoFinalAcceptanceCompletionEvidenceBundle,
   DemoFinalAcceptanceCompletionEvidenceDeliveryFinalization,
   DemoFinalAcceptanceCompletionEvidenceDeliveryReceipt,
@@ -278,6 +279,49 @@ const completionEvidenceDeliveryFinalization: DemoFinalAcceptanceCompletionEvide
   generatedAt: '2026-06-29T05:00:00Z'
 };
 
+const completionCloseout: DemoFinalAcceptanceCompletionCloseout = {
+  status: 'READY',
+  closed: true,
+  summary:
+    'PatchPilot final acceptance completion is closed with accepted certificates, finalized sharing, and fresh completion delivery proof.',
+  nextAction: 'Use this closeout report as the final external-review completion record.',
+  latestTaskId: 'task-1',
+  latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+  latestSharePackageArchiveId: 'final-acceptance-share-package-archive-1',
+  latestCompletionArchiveId: 'final-acceptance-completion-archive-1',
+  latestCompletionEvidenceDeliveryReceiptId: 'final-acceptance-completion-evidence-delivery-receipt-1',
+  latestDeliveryTarget: 'reviewer@example.com',
+  latestDeliveryChannel: 'email',
+  latestDeliveredAt: '2026-06-29T04:25:00Z',
+  deliveryReceiptFreshness: 'FRESH',
+  checks: [
+    {
+      name: 'Final acceptance summary',
+      status: 'READY',
+      summary: 'Final demo acceptance summary is accepted.',
+      nextAction: 'No action needed.'
+    },
+    {
+      name: 'Completion evidence delivery finalization',
+      status: 'READY',
+      summary: 'Completion evidence delivery finalization is fresh.',
+      nextAction: 'No action needed.'
+    }
+  ],
+  evidenceNotes: [
+    'Final demo acceptance summary is accepted.',
+    'Completion evidence bundle final-acceptance-completion-archive-1 is ready to share.'
+  ],
+  downloadActions: [
+    'Download final acceptance completion closeout report.',
+    'Download final acceptance completion evidence bundle.'
+  ],
+  sideEffectContract:
+    'GET /api/demo/final-acceptance-completion-closeout is read-only: it does not create tasks, call the model, run tests, archive records, record receipts, mutate Git, send messages, or write to GitHub.',
+  markdownReport: '# PatchPilot Final Acceptance Completion Closeout',
+  generatedAt: '2026-06-29T06:00:00Z'
+};
+
 test('shows final demo acceptance status and certificate evidence', () => {
   render(
     <DemoAcceptanceSummaryPanel
@@ -290,6 +334,7 @@ test('shows final demo acceptance status and certificate evidence', () => {
       completionArchives={[completionArchive]}
       completionEvidenceDeliveryReceipts={[completionEvidenceDeliveryReceipt]}
       completionEvidenceDeliveryFinalization={completionEvidenceDeliveryFinalization}
+      completionCloseout={completionCloseout}
       error={null}
       sharePackageError={null}
       sharePackageArchiveError={null}
@@ -299,6 +344,7 @@ test('shows final demo acceptance status and certificate evidence', () => {
       completionArchiveError={null}
       completionEvidenceDeliveryReceiptError={null}
       completionEvidenceDeliveryFinalizationError={null}
+      completionCloseoutError={null}
       onDownloadReport={vi.fn()}
       onDownloadSharePackageReport={vi.fn()}
       onArchiveSharePackage={vi.fn()}
@@ -312,6 +358,7 @@ test('shows final demo acceptance status and certificate evidence', () => {
       onCreateCompletionEvidenceDeliveryReceipt={vi.fn()}
       onDownloadCompletionEvidenceDeliveryReceiptReport={vi.fn()}
       onDownloadCompletionEvidenceDeliveryFinalizationReport={vi.fn()}
+      onDownloadCompletionCloseoutReport={vi.fn()}
     />
   );
 
@@ -343,6 +390,12 @@ test('shows final demo acceptance status and certificate evidence', () => {
   expect(within(panel).getAllByText(
     'Latest completion evidence delivery receipt matches the current completion evidence bundle.'
   )).not.toHaveLength(0);
+  expect(within(panel).getByRole('heading', { name: 'Final acceptance completion closeout' })).toBeInTheDocument();
+  expect(within(panel).getByText(
+    'PatchPilot final acceptance completion is closed with accepted certificates, finalized sharing, and fresh completion delivery proof.'
+  )).toBeInTheDocument();
+  expect(within(panel).getAllByText('final-acceptance-completion-evidence-delivery-receipt-1'))
+    .not.toHaveLength(0);
 });
 
 test('downloads the final demo acceptance markdown report', async () => {
@@ -398,6 +451,69 @@ test('downloads the final demo acceptance markdown report', async () => {
   expect(anchorClick).toHaveBeenCalled();
   expect(revokeObjectUrl).toHaveBeenCalledWith('blob:final-demo-acceptance');
   expect(screen.getByText('Final demo acceptance report downloaded')).toBeInTheDocument();
+});
+
+test('downloads final acceptance completion closeout report', async () => {
+  const user = userEvent.setup();
+  const downloadCloseoutReport = vi.fn(async () => new Blob(['# PatchPilot Final Acceptance Completion Closeout'], {
+    type: 'text/markdown'
+  }));
+  const createObjectUrl = vi.fn(() => 'blob:final-acceptance-completion-closeout');
+  const revokeObjectUrl = vi.fn();
+  const anchorClick = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
+  vi.stubGlobal('URL', {
+    createObjectURL: createObjectUrl,
+    revokeObjectURL: revokeObjectUrl
+  });
+
+  render(
+    <DemoAcceptanceSummaryPanel
+      summary={summary}
+      sharePackage={sharePackage}
+      sharePackageArchives={[sharePackageArchive]}
+      shareDeliveryReceipts={[shareDeliveryReceipt]}
+      shareFinalization={shareFinalization}
+      completionEvidenceBundle={completionEvidenceBundle}
+      completionArchives={[completionArchive]}
+      completionEvidenceDeliveryReceipts={[completionEvidenceDeliveryReceipt]}
+      completionEvidenceDeliveryFinalization={completionEvidenceDeliveryFinalization}
+      completionCloseout={completionCloseout}
+      error={null}
+      sharePackageError={null}
+      sharePackageArchiveError={null}
+      shareDeliveryReceiptError={null}
+      shareFinalizationError={null}
+      completionEvidenceBundleError={null}
+      completionArchiveError={null}
+      completionEvidenceDeliveryReceiptError={null}
+      completionEvidenceDeliveryFinalizationError={null}
+      completionCloseoutError={null}
+      onDownloadReport={vi.fn()}
+      onDownloadSharePackageReport={vi.fn()}
+      onArchiveSharePackage={vi.fn()}
+      onDownloadSharePackageArchiveReport={vi.fn()}
+      onCreateShareDeliveryReceipt={vi.fn()}
+      onDownloadShareDeliveryReceiptReport={vi.fn()}
+      onDownloadShareFinalizationReport={vi.fn()}
+      onDownloadCompletionEvidenceBundleReport={vi.fn()}
+      onArchiveCompletion={vi.fn()}
+      onDownloadCompletionArchiveReport={vi.fn()}
+      onCreateCompletionEvidenceDeliveryReceipt={vi.fn()}
+      onDownloadCompletionEvidenceDeliveryReceiptReport={vi.fn()}
+      onDownloadCompletionEvidenceDeliveryFinalizationReport={vi.fn()}
+      onDownloadCompletionCloseoutReport={downloadCloseoutReport}
+    />
+  );
+
+  await user.click(screen.getByRole('button', {
+    name: 'Download final acceptance completion closeout report'
+  }));
+
+  expect(downloadCloseoutReport).toHaveBeenCalledTimes(1);
+  expect(createObjectUrl).toHaveBeenCalled();
+  expect(anchorClick).toHaveBeenCalled();
+  expect(revokeObjectUrl).toHaveBeenCalledWith('blob:final-acceptance-completion-closeout');
+  expect(screen.getByText('Final acceptance completion closeout report downloaded')).toBeInTheDocument();
 });
 
 test('copies and downloads the final acceptance share package', async () => {

@@ -10,6 +10,7 @@ import type {
   DemoEvidenceBundle,
   DemoAcceptanceSummary,
   DemoFinalAcceptanceCompletionArchive,
+  DemoFinalAcceptanceCompletionCloseout,
   DemoFinalAcceptanceCompletionEvidenceBundle,
   DemoFinalAcceptanceCompletionEvidenceDeliveryFinalization,
   DemoFinalAcceptanceCompletionEvidenceDeliveryReceipt,
@@ -335,6 +336,14 @@ export async function getDemoFinalAcceptanceCompletionEvidenceDeliveryFinalizati
 
 export async function downloadDemoFinalAcceptanceCompletionEvidenceDeliveryFinalizationReport(): Promise<Blob> {
   return getBlobApi('/api/demo/final-acceptance-completion-evidence-delivery-finalization/report/download');
+}
+
+export async function getDemoFinalAcceptanceCompletionCloseout(): Promise<DemoFinalAcceptanceCompletionCloseout> {
+  return getApi<DemoFinalAcceptanceCompletionCloseout>('/api/demo/final-acceptance-completion-closeout');
+}
+
+export async function downloadDemoFinalAcceptanceCompletionCloseoutReport(): Promise<Blob> {
+  return getBlobApi('/api/demo/final-acceptance-completion-closeout/report/download');
 }
 
 export async function createDemoFinalAcceptanceCompletionEvidenceDeliveryReceipt(

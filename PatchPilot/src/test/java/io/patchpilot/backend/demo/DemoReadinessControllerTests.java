@@ -8,6 +8,7 @@ import io.patchpilot.backend.demo.domain.DemoEvidenceBundleSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
 import io.patchpilot.backend.demo.domain.DemoEvaluationRunReadinessEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionArchiveVo;
+import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionCloseoutVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionEvidenceDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionEvidenceDeliveryFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceSharePackageArchiveVo;
@@ -200,6 +201,9 @@ class DemoReadinessControllerTests {
 
     @MockitoBean
     private DemoFinalAcceptanceCompletionEvidenceDeliveryFinalizationService demoFinalAcceptanceCompletionEvidenceDeliveryFinalizationService;
+
+    @MockitoBean
+    private DemoFinalAcceptanceCompletionCloseoutService demoFinalAcceptanceCompletionCloseoutService;
 
     @MockitoBean
     private DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
@@ -939,6 +943,53 @@ class DemoReadinessControllerTests {
                 .andExpect(content().contentType("text/markdown;charset=UTF-8"))
                 .andExpect(content().string(containsString(
                         "# PatchPilot Final Acceptance Completion Evidence Delivery Finalization"
+                )))
+                .andExpect(content().string(containsString(
+                        "final-acceptance-completion-evidence-delivery-receipt-1"
+                )));
+    }
+
+    @Test
+    void should_return_final_acceptance_completion_closeout() throws Exception {
+        when(demoFinalAcceptanceCompletionCloseoutService.getCloseout())
+                .thenReturn(finalAcceptanceCompletionCloseout());
+
+        mockMvc.perform(get("/api/demo/final-acceptance-completion-closeout"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.closed").value(true))
+                .andExpect(jsonPath("$.data.latestTaskId").value("task-1"))
+                .andExpect(jsonPath("$.data.latestPullRequestUrl").value("https://github.com/bingqin2/PatchPilot/pull/8"))
+                .andExpect(jsonPath("$.data.latestSharePackageArchiveId").value("final-acceptance-share-package-archive-1"))
+                .andExpect(jsonPath("$.data.latestCompletionArchiveId").value("final-acceptance-completion-archive-1"))
+                .andExpect(jsonPath("$.data.latestCompletionEvidenceDeliveryReceiptId")
+                        .value("final-acceptance-completion-evidence-delivery-receipt-1"))
+                .andExpect(jsonPath("$.data.deliveryReceiptFreshness").value("FRESH"))
+                .andExpect(jsonPath("$.data.checks[0].name").value("Final acceptance summary"))
+                .andExpect(jsonPath("$.data.evidenceNotes[0]").value("Final demo acceptance summary is accepted."))
+                .andExpect(jsonPath("$.data.downloadActions").value(hasItem(
+                        "Download final acceptance completion closeout report."
+                )))
+                .andExpect(jsonPath("$.data.sideEffectContract").value(containsString("read-only")))
+                .andExpect(jsonPath("$.data.markdownReport").value(containsString(
+                        "# PatchPilot Final Acceptance Completion Closeout"
+                )));
+    }
+
+    @Test
+    void should_download_final_acceptance_completion_closeout_report() throws Exception {
+        when(demoFinalAcceptanceCompletionCloseoutService.getCloseout())
+                .thenReturn(finalAcceptanceCompletionCloseout());
+
+        mockMvc.perform(get("/api/demo/final-acceptance-completion-closeout/report/download"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString(
+                        "patchpilot-final-acceptance-completion-closeout.md"
+                )))
+                .andExpect(content().contentType("text/markdown;charset=UTF-8"))
+                .andExpect(content().string(containsString(
+                        "# PatchPilot Final Acceptance Completion Closeout"
                 )))
                 .andExpect(content().string(containsString(
                         "final-acceptance-completion-evidence-delivery-receipt-1"
@@ -3810,6 +3861,36 @@ class DemoReadinessControllerTests {
                         + "- Latest completion evidence delivery receipt: `final-acceptance-completion-evidence-delivery-receipt-1`\n"
                         + "- Delivery receipt freshness: `FRESH`\n",
                 Instant.parse("2026-06-29T05:00:00Z")
+        );
+    }
+
+    private static DemoFinalAcceptanceCompletionCloseoutVo finalAcceptanceCompletionCloseout() {
+        return new DemoFinalAcceptanceCompletionCloseoutVo(
+                DemoReadinessStatus.READY,
+                true,
+                "PatchPilot final acceptance completion is closed with accepted certificates, finalized sharing, and fresh completion delivery proof.",
+                "Use this closeout report as the final external-review completion record.",
+                "task-1",
+                "https://github.com/bingqin2/PatchPilot/pull/8",
+                "final-acceptance-share-package-archive-1",
+                "final-acceptance-completion-archive-1",
+                "final-acceptance-completion-evidence-delivery-receipt-1",
+                "reviewer@example.com",
+                "email",
+                "2026-06-29T04:25:00Z",
+                "FRESH",
+                List.of(new DemoFinalAcceptanceCompletionCloseoutVo.Check(
+                        "Final acceptance summary",
+                        DemoReadinessStatus.READY,
+                        "Final demo acceptance summary is accepted.",
+                        "No action needed."
+                )),
+                List.of("Final demo acceptance summary is accepted."),
+                List.of("Download final acceptance completion closeout report."),
+                "GET /api/demo/final-acceptance-completion-closeout is read-only.",
+                "# PatchPilot Final Acceptance Completion Closeout\n\n"
+                        + "- Latest completion evidence delivery receipt: `final-acceptance-completion-evidence-delivery-receipt-1`\n",
+                Instant.parse("2026-06-29T06:00:00Z")
         );
     }
 }
