@@ -22,6 +22,7 @@ import {
   cancelTask,
   composeDemoLaunchCommand,
   createDemoFinalAcceptanceCompletionEvidenceDeliveryReceipt,
+  createDemoFinalExternalReviewEvidencePackageDeliveryReceipt,
   createDemoFinalAcceptanceShareDeliveryReceipt,
   createDemoHandoffShareDeliveryReceipt,
   createDemoLaunchEvidenceShareDeliveryReceipt,
@@ -51,6 +52,7 @@ import {
   downloadDemoFinalAcceptanceCompletionEvidenceBundleReport,
   downloadDemoFinalAcceptanceCompletionEvidenceDeliveryFinalizationReport,
   downloadDemoFinalAcceptanceCompletionEvidenceDeliveryReceiptReport,
+  downloadDemoFinalExternalReviewEvidencePackageDeliveryReceiptReport,
   downloadDemoFinalExternalReviewEvidencePackageArchiveReport,
   downloadDemoFinalExternalReviewEvidencePackageReport,
   downloadDemoFinalAcceptanceShareDeliveryReceiptReport,
@@ -115,6 +117,7 @@ import {
   listDemoFinalAcceptanceCompletionCloseoutArchives,
   listDemoFinalAcceptanceCompletionEvidenceDeliveryReceipts,
   listDemoFinalExternalReviewEvidencePackageArchives,
+  listDemoFinalExternalReviewEvidencePackageDeliveryReceipts,
   listDemoFinalAcceptanceShareDeliveryReceipts,
   listDemoFinalAcceptanceSharePackageArchives,
   listDemoLaunchEvidenceShareDeliveryReceipts,
@@ -234,6 +237,8 @@ import type {
   DemoFinalAcceptanceCompletionEvidenceDeliveryReceipt,
   DemoFinalAcceptanceCompletionEvidenceDeliveryReceiptInput,
   DemoFinalExternalReviewEvidencePackageArchive,
+  DemoFinalExternalReviewEvidencePackageDeliveryReceipt,
+  DemoFinalExternalReviewEvidencePackageDeliveryReceiptInput,
   DemoFinalExternalReviewEvidencePackage,
   DemoFinalAcceptanceShareDeliveryReceipt,
   DemoFinalAcceptanceShareDeliveryReceiptInput,
@@ -436,6 +441,14 @@ export default function App() {
   const [
     demoFinalExternalReviewEvidencePackageArchiveError,
     setDemoFinalExternalReviewEvidencePackageArchiveError
+  ] = useState<string | null>(null);
+  const [
+    demoFinalExternalReviewEvidencePackageDeliveryReceipts,
+    setDemoFinalExternalReviewEvidencePackageDeliveryReceipts
+  ] = useState<DemoFinalExternalReviewEvidencePackageDeliveryReceipt[]>([]);
+  const [
+    demoFinalExternalReviewEvidencePackageDeliveryReceiptError,
+    setDemoFinalExternalReviewEvidencePackageDeliveryReceiptError
   ] = useState<string | null>(null);
   const [demoReadinessSnapshots, setDemoReadinessSnapshots] = useState<DemoReadinessSnapshotArchive[]>([]);
   const [demoReadinessSnapshotError, setDemoReadinessSnapshotError] = useState<string | null>(null);
@@ -900,6 +913,7 @@ export default function App() {
         demoFinalAcceptanceCompletionCloseoutArchiveResult,
         demoFinalExternalReviewEvidencePackageResult,
         demoFinalExternalReviewEvidencePackageArchiveResult,
+        demoFinalExternalReviewEvidencePackageDeliveryReceiptResult,
         demoReadinessSnapshotResult,
         demoReadinessSnapshotTrendResult,
         demoSmokeChecklistResult,
@@ -1116,6 +1130,10 @@ export default function App() {
         listDemoFinalExternalReviewEvidencePackageArchives().then(
           (archives) => ({ archives, error: null as string | null }),
           (caught) => ({ archives: null, error: errorMessage(caught) })
+        ),
+        listDemoFinalExternalReviewEvidencePackageDeliveryReceipts().then(
+          (receipts) => ({ receipts, error: null as string | null }),
+          (caught) => ({ receipts: null, error: errorMessage(caught) })
         ),
         listDemoReadinessSnapshots().then(
           (snapshots) => ({ snapshots, error: null as string | null }),
@@ -1434,6 +1452,14 @@ export default function App() {
       }
       setDemoFinalExternalReviewEvidencePackageArchiveError(
         demoFinalExternalReviewEvidencePackageArchiveResult.error
+      );
+      if (demoFinalExternalReviewEvidencePackageDeliveryReceiptResult.receipts) {
+        setDemoFinalExternalReviewEvidencePackageDeliveryReceipts(
+          demoFinalExternalReviewEvidencePackageDeliveryReceiptResult.receipts
+        );
+      }
+      setDemoFinalExternalReviewEvidencePackageDeliveryReceiptError(
+        demoFinalExternalReviewEvidencePackageDeliveryReceiptResult.error
       );
       if (demoReadinessSnapshotResult.snapshots) {
         setDemoReadinessSnapshots(demoReadinessSnapshotResult.snapshots);
@@ -2173,6 +2199,41 @@ export default function App() {
   const handleDownloadDemoFinalExternalReviewEvidencePackageArchiveReport = useCallback((archiveId: string) => (
     downloadDemoFinalExternalReviewEvidencePackageArchiveReport(archiveId)
   ), []);
+  const handleCreateDemoFinalExternalReviewEvidencePackageDeliveryReceipt = useCallback(async (
+    input: DemoFinalExternalReviewEvidencePackageDeliveryReceiptInput
+  ) => {
+    const receipt = await createDemoFinalExternalReviewEvidencePackageDeliveryReceipt(input);
+    setDemoFinalExternalReviewEvidencePackageDeliveryReceipts((current) => [
+      receipt,
+      ...current.filter((item) => item.id !== receipt.id)
+    ].slice(0, 20));
+    setDemoFinalExternalReviewEvidencePackageDeliveryReceiptError(null);
+    try {
+      const receipts = await listDemoFinalExternalReviewEvidencePackageDeliveryReceipts();
+      setDemoFinalExternalReviewEvidencePackageDeliveryReceipts(receipts);
+      setDemoFinalExternalReviewEvidencePackageDeliveryReceiptError(null);
+    } catch (caught) {
+      setDemoFinalExternalReviewEvidencePackageDeliveryReceiptError(errorMessage(caught));
+    }
+    try {
+      const evidencePackage = await getDemoFinalExternalReviewEvidencePackage();
+      setDemoFinalExternalReviewEvidencePackage(evidencePackage);
+      setDemoFinalExternalReviewEvidencePackageError(null);
+    } catch (caught) {
+      setDemoFinalExternalReviewEvidencePackageError(errorMessage(caught));
+    }
+    try {
+      const bundle = await getDemoEvidenceBundle();
+      setDemoEvidenceBundle(bundle);
+      setDemoEvidenceBundleError(null);
+    } catch (caught) {
+      setDemoEvidenceBundleError(errorMessage(caught));
+    }
+    return receipt;
+  }, []);
+  const handleDownloadDemoFinalExternalReviewEvidencePackageDeliveryReceiptReport = useCallback((receiptId: string) => (
+    downloadDemoFinalExternalReviewEvidencePackageDeliveryReceiptReport(receiptId)
+  ), []);
   const handleCreateDemoLaunchEvidenceDeliveryReceipt = useCallback(async (
     input: DemoLaunchEvidenceShareDeliveryReceiptInput
   ) => {
@@ -2777,6 +2838,9 @@ export default function App() {
         completionCloseout={demoFinalAcceptanceCompletionCloseout}
         finalExternalReviewEvidencePackage={demoFinalExternalReviewEvidencePackage}
         finalExternalReviewEvidencePackageArchives={demoFinalExternalReviewEvidencePackageArchives}
+        finalExternalReviewEvidencePackageDeliveryReceipts={
+          demoFinalExternalReviewEvidencePackageDeliveryReceipts
+        }
         error={demoAcceptanceSummaryError}
         sharePackageError={demoFinalAcceptanceSharePackageError}
         sharePackageArchiveError={demoFinalAcceptanceSharePackageArchiveError}
@@ -2790,6 +2854,9 @@ export default function App() {
         completionCloseoutError={demoFinalAcceptanceCompletionCloseoutError}
         finalExternalReviewEvidencePackageError={demoFinalExternalReviewEvidencePackageError}
         finalExternalReviewEvidencePackageArchiveError={demoFinalExternalReviewEvidencePackageArchiveError}
+        finalExternalReviewEvidencePackageDeliveryReceiptError={
+          demoFinalExternalReviewEvidencePackageDeliveryReceiptError
+        }
         onDownloadReport={handleDownloadDemoAcceptanceSummaryReport}
         onDownloadSharePackageReport={handleDownloadDemoFinalAcceptanceSharePackageReport}
         onArchiveSharePackage={handleArchiveDemoFinalAcceptanceSharePackage}
@@ -2818,6 +2885,12 @@ export default function App() {
         onArchiveFinalExternalReviewEvidencePackage={handleArchiveDemoFinalExternalReviewEvidencePackage}
         onDownloadFinalExternalReviewEvidencePackageArchiveReport={
           handleDownloadDemoFinalExternalReviewEvidencePackageArchiveReport
+        }
+        onCreateFinalExternalReviewEvidencePackageDeliveryReceipt={
+          handleCreateDemoFinalExternalReviewEvidencePackageDeliveryReceipt
+        }
+        onDownloadFinalExternalReviewEvidencePackageDeliveryReceiptReport={
+          handleDownloadDemoFinalExternalReviewEvidencePackageDeliveryReceiptReport
         }
       />
 

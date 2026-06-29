@@ -8,6 +8,7 @@ import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionCloseoutAr
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionCloseoutVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceShareFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageArchiveEvidenceVo;
+import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageDeliveryReceiptEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageVo;
 import io.patchpilot.backend.demo.domain.DemoFinalHandoffReportPackageArchiveEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchAcceptanceCertificateEvidenceVo;
@@ -142,6 +143,13 @@ class DemoRunbookServiceTests {
                 .contains("- Final external-review package archive Pull Request: https://github.com/bingqin2/PatchPilot/pull/42")
                 .contains("- Final external-review package archive next action: Use the archived final external-review evidence package as the frozen reviewer-facing record.")
                 .contains("- Final external-review package archive download: Download final external-review evidence package archive final-external-review-package-archive-1.")
+                .contains("- Final external-review package delivery receipt: `READY` - Latest final external-review package delivery receipt is fresh.")
+                .contains("- Final external-review package delivery receipt id: `final-external-review-package-delivery-receipt-1`")
+                .contains("- Final external-review delivered package archive: `final-external-review-package-archive-1`")
+                .contains("- Final external-review package delivery target: reviewer@example.com via email")
+                .contains("- Final external-review package delivered at: `2026-06-29T05:00:00Z`")
+                .contains("- Final external-review package delivery next action: Use the delivery receipt as proof that the frozen final external-review package was shared.")
+                .contains("- Final external-review package delivery download: Download final external-review package delivery receipt final-external-review-package-delivery-receipt-1.")
                 .contains("## Readiness")
                 .contains("- `Credentials`: `READY` - Required credentials are configured.")
                 .contains("## Smoke Checklist")
@@ -338,6 +346,7 @@ class DemoRunbookServiceTests {
                 finalAcceptanceCompletionCloseoutArchiveEvidence(),
                 finalExternalReviewEvidencePackage(),
                 finalExternalReviewEvidencePackageArchiveEvidence(),
+                finalExternalReviewEvidencePackageDeliveryReceiptEvidence(),
                 true,
                 "delivery-receipt-1",
                 "Demo reviewer",
@@ -557,6 +566,30 @@ class DemoRunbookServiceTests {
                         "Download final external-review evidence package archive final-external-review-package-archive-1.",
                         "Download final acceptance completion closeout archive final-acceptance-completion-closeout-archive-1."
                 )
+        );
+    }
+
+    private static DemoFinalExternalReviewEvidencePackageDeliveryReceiptEvidenceVo
+    finalExternalReviewEvidencePackageDeliveryReceiptEvidence() {
+        return new DemoFinalExternalReviewEvidencePackageDeliveryReceiptEvidenceVo(
+                DemoReadinessStatus.READY,
+                true,
+                true,
+                "FRESH",
+                "Latest final external-review package delivery receipt is fresh.",
+                "Use the delivery receipt as proof that the frozen final external-review package was shared.",
+                1,
+                "final-external-review-package-delivery-receipt-1",
+                "final-external-review-package-archive-1",
+                "final-acceptance-completion-closeout-archive-1",
+                "final-acceptance-completion-archive-1",
+                "final-acceptance-completion-evidence-delivery-receipt-1",
+                "task-2",
+                "https://github.com/bingqin2/PatchPilot/pull/42",
+                "reviewer@example.com",
+                "email",
+                Instant.parse("2026-06-29T05:00:00Z"),
+                List.of("Download final external-review package delivery receipt final-external-review-package-delivery-receipt-1.")
         );
     }
 }

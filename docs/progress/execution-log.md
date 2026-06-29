@@ -5899,3 +5899,26 @@ Validation so far:
 - `npm test -- --reporter=dot`: first exposed two full-suite App integration timeout budgets after the dashboard evidence surface grew; passed after replacing slow repeated status clicks with direct events and increasing only the long smoke test budget, 30 test files and 445 tests.
 - `mvn -q -pl PatchPilot test`: passed.
 - `npm run build`: passed with the existing Vite large-chunk warning.
+
+## 2026-06-30 - 293 Final external review package delivery receipts
+
+- Started `293-final-external-review-package-delivery-receipts` to close the final external-review package handoff loop after the reviewer-facing package has been frozen as a durable archive.
+- Planned a complete feature slice: backend delivery receipt persistence, protected create/list/download API endpoints, evidence-bundle freshness aggregation, runbook export, final acceptance dashboard receipt controls, top-level evidence rendering, README/product/frontend docs, plan doc, and regression tests.
+- Added backend coverage for receipt creation guard behavior, in-memory ordering, converter mapping, MyBatis migration/repository behavior, controller create/list/download endpoints, evidence-bundle freshness states, and runbook receipt export.
+- Added frontend coverage for receipt API helpers, final acceptance panel record/download behavior, top-level evidence-bundle receipt rendering and legacy fallback, and full App startup/record/download wiring.
+- Implemented `DemoFinalExternalReviewEvidencePackageDeliveryReceiptService` with in-memory and MyBatis-backed repositories, `V55__create_demo_final_external_review_evidence_package_delivery_receipt.sql`, and delivery receipt conversion for frozen package metadata, delivery metadata, report text, and protected audit evidence.
+- Added `POST /api/demo/final-external-review-evidence-package/delivery-receipts`, `GET /api/demo/final-external-review-evidence-package/delivery-receipts`, and `GET /api/demo/final-external-review-evidence-package/delivery-receipts/{receiptId}/report/download`.
+- Updated `DemoEvidenceBundleService` and `DemoRunbookService` so the latest final external-review package delivery receipt appears as fresh, stale, or missing evidence in the first demo evidence readout and copied runbook.
+- Updated the final demo acceptance dashboard panel with receipt recording fields, recent receipt history, receipt report downloads, App refresh wiring, and separate record/download status messages.
+- Updated README, product spec, frontend design doc, and added this plan document.
+
+Validation so far:
+
+- `mvn -q -pl PatchPilot -Dtest=DemoEvidenceBundleServiceTests,DemoRunbookServiceTests test`: passed after adding receipt evidence to the bundle and runbook.
+- `mvn -q -pl PatchPilot -Dtest=DemoFinalExternalReviewEvidencePackageDeliveryReceiptServiceTests,InMemoryDemoFinalExternalReviewEvidencePackageDeliveryReceiptRepositoryTests,DemoFinalExternalReviewEvidencePackageDeliveryReceiptConvertTests,MyBatisDemoFinalExternalReviewEvidencePackageDeliveryReceiptRepositoryTests,DemoFinalExternalReviewEvidencePackageDeliveryReceiptMigrationTests,DemoReadinessControllerTests,DemoEvidenceBundleServiceTests,DemoRunbookServiceTests test`: passed.
+- `npm test -- --run src/api.test.ts src/dashboard/components/DemoEvidenceBundlePanel.test.tsx src/dashboard/components/DemoAcceptanceSummaryPanel.test.tsx`: first failed because the top-level evidence test used a single-match archive id assertion and the final acceptance panel reused one status value for receipt record/download actions; passed after count-based assertion and separate record/download status state, 3 test files and 199 tests.
+- `npm test -- --run src/App.test.tsx`: passed after adding App-level fixture, startup loading assertions, and dashboard record/download coverage, 1 test file and 86 tests.
+- `mvn -q -pl PatchPilot test`: passed.
+- `npm test -- --reporter=dot`: passed, 30 test files and 450 tests.
+- `npm run build`: passed with the existing Vite large-chunk warning.
+- `git diff --check`: passed.

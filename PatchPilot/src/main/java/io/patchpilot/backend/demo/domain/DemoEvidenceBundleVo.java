@@ -59,6 +59,8 @@ public record DemoEvidenceBundleVo(
         DemoFinalAcceptanceCompletionCloseoutArchiveEvidenceVo finalAcceptanceCompletionCloseoutArchiveEvidence,
         DemoFinalExternalReviewEvidencePackageVo finalExternalReviewEvidencePackage,
         DemoFinalExternalReviewEvidencePackageArchiveEvidenceVo finalExternalReviewEvidencePackageArchiveEvidence,
+        DemoFinalExternalReviewEvidencePackageDeliveryReceiptEvidenceVo
+                finalExternalReviewEvidencePackageDeliveryReceiptEvidence,
         boolean handoffShareDeliveryReceiptRecorded,
         String handoffShareLatestDeliveryReceiptId,
         String handoffShareLatestDeliveryTarget,
@@ -192,6 +194,7 @@ public record DemoEvidenceBundleVo(
                 finalAcceptanceCompletionCloseoutArchiveEvidence,
                 finalExternalReviewEvidencePackage,
                 DemoEvidenceBundleDefaults.missingFinalExternalReviewEvidencePackageArchiveEvidence(),
+                DemoEvidenceBundleDefaults.missingFinalExternalReviewEvidencePackageDeliveryReceiptEvidence(),
                 handoffShareDeliveryReceiptRecorded,
                 handoffShareLatestDeliveryReceiptId,
                 handoffShareLatestDeliveryTarget,
@@ -1610,6 +1613,30 @@ public record DemoEvidenceBundleVo(
                     null,
                     null,
                     List.of("Archive the final external-review evidence package after it is READY.")
+            );
+        }
+
+        private static DemoFinalExternalReviewEvidencePackageDeliveryReceiptEvidenceVo
+        missingFinalExternalReviewEvidencePackageDeliveryReceiptEvidence() {
+            return new DemoFinalExternalReviewEvidencePackageDeliveryReceiptEvidenceVo(
+                    DemoReadinessStatus.NEEDS_ATTENTION,
+                    false,
+                    false,
+                    "MISSING",
+                    "No final external-review package delivery receipt is available.",
+                    "Record a delivery receipt after sharing the latest final external-review package archive.",
+                    0,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    List.of("Record a final external-review package delivery receipt after sharing the archive.")
             );
         }
     }
