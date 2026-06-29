@@ -9,6 +9,7 @@ import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionCloseoutVo
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionEvidenceDeliveryFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionEvidenceDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionEvidenceBundleVo;
+import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceShareDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceShareFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceSharePackageArchiveVo;
@@ -104,6 +105,7 @@ public class DemoReadinessController {
     private final DemoFinalAcceptanceCompletionEvidenceDeliveryFinalizationService demoFinalAcceptanceCompletionEvidenceDeliveryFinalizationService;
     private final DemoFinalAcceptanceCompletionCloseoutService demoFinalAcceptanceCompletionCloseoutService;
     private final DemoFinalAcceptanceCompletionCloseoutArchiveService demoFinalAcceptanceCompletionCloseoutArchiveService;
+    private final DemoFinalExternalReviewEvidencePackageService demoFinalExternalReviewEvidencePackageService;
     private final DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
     private final DemoReadinessSnapshotTrendService demoReadinessSnapshotTrendService;
     private final DemoLaunchPreflightService demoLaunchPreflightService;
@@ -401,6 +403,11 @@ public class DemoReadinessController {
         return ApiResponse.ok(demoFinalAcceptanceCompletionCloseoutService.getCloseout());
     }
 
+    @GetMapping("/final-external-review-evidence-package")
+    public ApiResponse<DemoFinalExternalReviewEvidencePackageVo> getFinalExternalReviewEvidencePackage() {
+        return ApiResponse.ok(demoFinalExternalReviewEvidencePackageService.getPackage());
+    }
+
     @PostMapping("/final-acceptance-completion-archives")
     public ResponseEntity<ApiResponse<DemoFinalAcceptanceCompletionArchiveVo>> archiveFinalAcceptanceCompletion() {
         try {
@@ -600,6 +607,14 @@ public class DemoReadinessController {
         return markdownAttachment(
                 "patchpilot-final-acceptance-completion-closeout.md",
                 demoFinalAcceptanceCompletionCloseoutService.getCloseout().markdownReport()
+        );
+    }
+
+    @GetMapping(value = "/final-external-review-evidence-package/report/download", produces = "text/markdown;charset=UTF-8")
+    public ResponseEntity<String> downloadFinalExternalReviewEvidencePackageReport() {
+        return markdownAttachment(
+                "patchpilot-final-external-review-evidence-package.md",
+                demoFinalExternalReviewEvidencePackageService.getPackage().markdownReport()
         );
     }
 

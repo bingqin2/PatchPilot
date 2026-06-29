@@ -50,6 +50,7 @@ import {
   downloadDemoFinalAcceptanceCompletionEvidenceBundleReport,
   downloadDemoFinalAcceptanceCompletionEvidenceDeliveryFinalizationReport,
   downloadDemoFinalAcceptanceCompletionEvidenceDeliveryReceiptReport,
+  downloadDemoFinalExternalReviewEvidencePackageReport,
   downloadDemoFinalAcceptanceShareDeliveryReceiptReport,
   downloadDemoFinalAcceptanceShareFinalizationReport,
   downloadDemoFinalAcceptanceSharePackageArchiveReport,
@@ -102,6 +103,7 @@ import {
   getDemoFinalAcceptanceCompletionCloseout,
   getDemoFinalAcceptanceCompletionEvidenceBundle,
   getDemoFinalAcceptanceCompletionEvidenceDeliveryFinalization,
+  getDemoFinalExternalReviewEvidencePackage,
   getDemoFinalAcceptanceShareFinalization,
   getDemoFinalAcceptanceSharePackage,
   getDemoReadinessSnapshotTrend,
@@ -228,6 +230,7 @@ import type {
   DemoFinalAcceptanceCompletionEvidenceDeliveryFinalization,
   DemoFinalAcceptanceCompletionEvidenceDeliveryReceipt,
   DemoFinalAcceptanceCompletionEvidenceDeliveryReceiptInput,
+  DemoFinalExternalReviewEvidencePackage,
   DemoFinalAcceptanceShareDeliveryReceipt,
   DemoFinalAcceptanceShareDeliveryReceiptInput,
   DemoFinalAcceptanceShareFinalization,
@@ -419,6 +422,10 @@ export default function App() {
   const [demoFinalAcceptanceCompletionCloseoutArchives, setDemoFinalAcceptanceCompletionCloseoutArchives] =
     useState<DemoFinalAcceptanceCompletionCloseoutArchive[]>([]);
   const [demoFinalAcceptanceCompletionCloseoutArchiveError, setDemoFinalAcceptanceCompletionCloseoutArchiveError] =
+    useState<string | null>(null);
+  const [demoFinalExternalReviewEvidencePackage, setDemoFinalExternalReviewEvidencePackage] =
+    useState<DemoFinalExternalReviewEvidencePackage | null>(null);
+  const [demoFinalExternalReviewEvidencePackageError, setDemoFinalExternalReviewEvidencePackageError] =
     useState<string | null>(null);
   const [demoReadinessSnapshots, setDemoReadinessSnapshots] = useState<DemoReadinessSnapshotArchive[]>([]);
   const [demoReadinessSnapshotError, setDemoReadinessSnapshotError] = useState<string | null>(null);
@@ -881,6 +888,7 @@ export default function App() {
         demoFinalAcceptanceCompletionEvidenceDeliveryFinalizationResult,
         demoFinalAcceptanceCompletionCloseoutResult,
         demoFinalAcceptanceCompletionCloseoutArchiveResult,
+        demoFinalExternalReviewEvidencePackageResult,
         demoReadinessSnapshotResult,
         demoReadinessSnapshotTrendResult,
         demoSmokeChecklistResult,
@@ -1089,6 +1097,10 @@ export default function App() {
         listDemoFinalAcceptanceCompletionCloseoutArchives().then(
           (archives) => ({ archives, error: null as string | null }),
           (caught) => ({ archives: null, error: errorMessage(caught) })
+        ),
+        getDemoFinalExternalReviewEvidencePackage().then(
+          (evidencePackage) => ({ evidencePackage, error: null as string | null }),
+          (caught) => ({ evidencePackage: null, error: errorMessage(caught) })
         ),
         listDemoReadinessSnapshots().then(
           (snapshots) => ({ snapshots, error: null as string | null }),
@@ -1398,6 +1410,10 @@ export default function App() {
         setDemoFinalAcceptanceCompletionCloseoutArchives(demoFinalAcceptanceCompletionCloseoutArchiveResult.archives);
       }
       setDemoFinalAcceptanceCompletionCloseoutArchiveError(demoFinalAcceptanceCompletionCloseoutArchiveResult.error);
+      if (demoFinalExternalReviewEvidencePackageResult.evidencePackage) {
+        setDemoFinalExternalReviewEvidencePackage(demoFinalExternalReviewEvidencePackageResult.evidencePackage);
+      }
+      setDemoFinalExternalReviewEvidencePackageError(demoFinalExternalReviewEvidencePackageResult.error);
       if (demoReadinessSnapshotResult.snapshots) {
         setDemoReadinessSnapshots(demoReadinessSnapshotResult.snapshots);
       }
@@ -1979,6 +1995,13 @@ export default function App() {
     } catch (caught) {
       setDemoFinalAcceptanceCompletionCloseoutError(errorMessage(caught));
     }
+    try {
+      const evidencePackage = await getDemoFinalExternalReviewEvidencePackage();
+      setDemoFinalExternalReviewEvidencePackage(evidencePackage);
+      setDemoFinalExternalReviewEvidencePackageError(null);
+    } catch (caught) {
+      setDemoFinalExternalReviewEvidencePackageError(errorMessage(caught));
+    }
     return archive;
   }, []);
   const handleDownloadDemoFinalAcceptanceCompletionArchiveReport = useCallback((archiveId: string) => (
@@ -2004,6 +2027,13 @@ export default function App() {
       setDemoFinalAcceptanceCompletionCloseoutError(null);
     } catch (caught) {
       setDemoFinalAcceptanceCompletionCloseoutError(errorMessage(caught));
+    }
+    try {
+      const evidencePackage = await getDemoFinalExternalReviewEvidencePackage();
+      setDemoFinalExternalReviewEvidencePackage(evidencePackage);
+      setDemoFinalExternalReviewEvidencePackageError(null);
+    } catch (caught) {
+      setDemoFinalExternalReviewEvidencePackageError(errorMessage(caught));
     }
     return archive;
   }, []);
@@ -2075,6 +2105,13 @@ export default function App() {
     } catch (caught) {
       setDemoFinalAcceptanceCompletionCloseoutError(errorMessage(caught));
     }
+    try {
+      const evidencePackage = await getDemoFinalExternalReviewEvidencePackage();
+      setDemoFinalExternalReviewEvidencePackage(evidencePackage);
+      setDemoFinalExternalReviewEvidencePackageError(null);
+    } catch (caught) {
+      setDemoFinalExternalReviewEvidencePackageError(errorMessage(caught));
+    }
     return receipt;
   }, []);
   const handleDownloadDemoFinalAcceptanceCompletionEvidenceDeliveryReceiptReport = useCallback((receiptId: string) => (
@@ -2085,6 +2122,9 @@ export default function App() {
   ), []);
   const handleDownloadDemoFinalAcceptanceCompletionCloseoutReport = useCallback(() => (
     downloadDemoFinalAcceptanceCompletionCloseoutReport()
+  ), []);
+  const handleDownloadDemoFinalExternalReviewEvidencePackageReport = useCallback(() => (
+    downloadDemoFinalExternalReviewEvidencePackageReport()
   ), []);
   const handleCreateDemoLaunchEvidenceDeliveryReceipt = useCallback(async (
     input: DemoLaunchEvidenceShareDeliveryReceiptInput
@@ -2688,6 +2728,7 @@ export default function App() {
         completionEvidenceDeliveryReceipts={demoFinalAcceptanceCompletionEvidenceDeliveryReceipts}
         completionEvidenceDeliveryFinalization={demoFinalAcceptanceCompletionEvidenceDeliveryFinalization}
         completionCloseout={demoFinalAcceptanceCompletionCloseout}
+        finalExternalReviewEvidencePackage={demoFinalExternalReviewEvidencePackage}
         error={demoAcceptanceSummaryError}
         sharePackageError={demoFinalAcceptanceSharePackageError}
         sharePackageArchiveError={demoFinalAcceptanceSharePackageArchiveError}
@@ -2699,6 +2740,7 @@ export default function App() {
         completionEvidenceDeliveryReceiptError={demoFinalAcceptanceCompletionEvidenceDeliveryReceiptError}
         completionEvidenceDeliveryFinalizationError={demoFinalAcceptanceCompletionEvidenceDeliveryFinalizationError}
         completionCloseoutError={demoFinalAcceptanceCompletionCloseoutError}
+        finalExternalReviewEvidencePackageError={demoFinalExternalReviewEvidencePackageError}
         onDownloadReport={handleDownloadDemoAcceptanceSummaryReport}
         onDownloadSharePackageReport={handleDownloadDemoFinalAcceptanceSharePackageReport}
         onArchiveSharePackage={handleArchiveDemoFinalAcceptanceSharePackage}
@@ -2721,6 +2763,9 @@ export default function App() {
           handleDownloadDemoFinalAcceptanceCompletionEvidenceDeliveryFinalizationReport
         }
         onDownloadCompletionCloseoutReport={handleDownloadDemoFinalAcceptanceCompletionCloseoutReport}
+        onDownloadFinalExternalReviewEvidencePackageReport={
+          handleDownloadDemoFinalExternalReviewEvidencePackageReport
+        }
       />
 
       <DemoSessionSnapshotPanel
