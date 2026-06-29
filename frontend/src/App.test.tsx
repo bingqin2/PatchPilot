@@ -2626,6 +2626,48 @@ const demoFinalAcceptanceCompletionEvidenceDeliveryReceipt = {
   markdownReport: '# PatchPilot Final Acceptance Completion Evidence Delivery Receipt'
 };
 
+const demoFinalAcceptanceCompletionEvidenceDeliveryFinalization = {
+  status: 'READY',
+  finalized: true,
+  summary: 'Final acceptance completion evidence delivery is finalized with a fresh delivery receipt.',
+  nextAction: 'Use the finalization report as the reviewer-facing completion delivery record.',
+  latestCompletionArchiveId: 'final-acceptance-completion-archive-1',
+  latestSharePackageArchiveId: 'final-acceptance-share-package-archive-1',
+  latestDeliveryReceiptId: 'final-acceptance-delivery-receipt-1',
+  latestTaskId: 'task-1',
+  latestCompletionEvidenceDeliveryReceiptId: 'final-acceptance-completion-evidence-delivery-receipt-1',
+  latestDeliveryTarget: 'reviewer@example.com',
+  latestDeliveryChannel: 'email',
+  latestDeliveredAt: '2026-06-29T03:10:00Z',
+  deliveryReceiptFreshness: 'FRESH',
+  deliveryReceiptFresh: true,
+  deliveryReceiptFreshnessSummary:
+    'Latest completion evidence delivery receipt matches the current completion evidence bundle.',
+  checks: [
+    {
+      name: 'Completion evidence bundle',
+      status: 'READY',
+      summary: 'Completion evidence bundle is ready to share.',
+      nextAction: 'No action needed.'
+    },
+    {
+      name: 'Completion evidence delivery receipt',
+      status: 'READY',
+      summary: 'Latest completion evidence delivery receipt matches the current completion evidence bundle.',
+      nextAction: 'No action needed.'
+    }
+  ],
+  evidenceNotes: [
+    'Completion evidence bundle final-acceptance-completion-archive-1 is ready to share.',
+    'Completion evidence delivery receipt final-acceptance-completion-evidence-delivery-receipt-1 is fresh.'
+  ],
+  downloadActions: ['Download final acceptance completion evidence delivery finalization report.'],
+  sideEffectContract:
+    'GET /api/demo/final-acceptance-completion-evidence-delivery-finalization is read-only: it does not create tasks, call the model, run tests, archive records, record receipts, mutate Git, send messages, or write to GitHub.',
+  markdownReport: '# PatchPilot Final Acceptance Completion Evidence Delivery Finalization',
+  generatedAt: '2026-06-29T05:00:00Z'
+};
+
 const demoLaunchEvidenceDeliveryReceipt = {
   id: 'launch-delivery-receipt-1',
   status: 'READY',
@@ -2883,6 +2925,18 @@ beforeEach(() => {
         ok: true,
         status: 200,
         blob: async () => new Blob(['# PatchPilot Final Acceptance Completion Evidence Bundle'], {
+          type: 'text/markdown;charset=UTF-8'
+        })
+      } as Response);
+    }
+    if (url === '/api/demo/final-acceptance-completion-evidence-delivery-finalization') {
+      return jsonResponse(demoFinalAcceptanceCompletionEvidenceDeliveryFinalization);
+    }
+    if (url === '/api/demo/final-acceptance-completion-evidence-delivery-finalization/report/download') {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        blob: async () => new Blob(['# PatchPilot Final Acceptance Completion Evidence Delivery Finalization'], {
           type: 'text/markdown;charset=UTF-8'
         })
       } as Response);
@@ -3761,6 +3815,15 @@ test('renders operational task dashboard from backend APIs', async () => {
     'href',
     'https://github.com/bingqin2/PatchPilot/pull/8'
   );
+  expect(screen.getByRole('heading', {
+    name: 'Final acceptance completion delivery finalization'
+  })).toBeInTheDocument();
+  expect(screen.getByText(
+    'Final acceptance completion evidence delivery is finalized with a fresh delivery receipt.'
+  )).toBeInTheDocument();
+  expect(screen.getAllByText(
+    'Latest completion evidence delivery receipt matches the current completion evidence bundle.'
+  )).not.toHaveLength(0);
   const selfHostedLaunchPanel = screen.getByRole('region', { name: 'Self-hosted launch readiness' });
   expect(within(selfHostedLaunchPanel).getByRole('heading', { name: 'Self-hosted launch readiness' })).toBeInTheDocument();
   expect(within(selfHostedLaunchPanel).getAllByText('Self-hosted PatchPilot is ready for a controlled issue-to-PR launch.')).toHaveLength(2);
@@ -6663,6 +6726,9 @@ function defaultAppResponse(input: RequestInfo | URL, init?: RequestInit) {
   }
   if (url === '/api/demo/final-acceptance-completion-evidence-bundle') {
     return jsonResponse(demoFinalAcceptanceCompletionEvidenceBundle);
+  }
+  if (url === '/api/demo/final-acceptance-completion-evidence-delivery-finalization') {
+    return jsonResponse(demoFinalAcceptanceCompletionEvidenceDeliveryFinalization);
   }
   if (url === '/api/demo/final-acceptance-completion-archives' && init?.method === 'POST') {
     return jsonResponse(demoFinalAcceptanceCompletionArchive);

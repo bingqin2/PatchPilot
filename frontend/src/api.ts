@@ -11,6 +11,7 @@ import type {
   DemoAcceptanceSummary,
   DemoFinalAcceptanceCompletionArchive,
   DemoFinalAcceptanceCompletionEvidenceBundle,
+  DemoFinalAcceptanceCompletionEvidenceDeliveryFinalization,
   DemoFinalAcceptanceCompletionEvidenceDeliveryReceipt,
   DemoFinalAcceptanceCompletionEvidenceDeliveryReceiptInput,
   DemoFinalAcceptanceShareDeliveryReceipt,
@@ -324,6 +325,16 @@ export async function getDemoFinalAcceptanceCompletionEvidenceBundle(): Promise<
 
 export async function downloadDemoFinalAcceptanceCompletionEvidenceBundleReport(): Promise<Blob> {
   return getBlobApi('/api/demo/final-acceptance-completion-evidence-bundle/report/download');
+}
+
+export async function getDemoFinalAcceptanceCompletionEvidenceDeliveryFinalization(): Promise<DemoFinalAcceptanceCompletionEvidenceDeliveryFinalization> {
+  return getApi<DemoFinalAcceptanceCompletionEvidenceDeliveryFinalization>(
+    '/api/demo/final-acceptance-completion-evidence-delivery-finalization'
+  );
+}
+
+export async function downloadDemoFinalAcceptanceCompletionEvidenceDeliveryFinalizationReport(): Promise<Blob> {
+  return getBlobApi('/api/demo/final-acceptance-completion-evidence-delivery-finalization/report/download');
 }
 
 export async function createDemoFinalAcceptanceCompletionEvidenceDeliveryReceipt(

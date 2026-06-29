@@ -5729,3 +5729,23 @@ Validation so far:
 - `mvn -q -pl PatchPilot test`: passed.
 - `npm run build`: first failed because `defaultAppResponse` referenced final acceptance share delivery and finalization fixtures that were not globally defined; passed after promoting those fixtures, with the existing Vite large-chunk warning.
 - `git diff --check`: passed.
+
+## 2026-06-29 - 285 Final acceptance completion delivery finalization
+
+- Started `285-final-acceptance-completion-delivery-finalization` to close the final acceptance completion evidence delivery loop after a bundle delivery receipt has been recorded.
+- Planned a complete feature slice: backend read-only finalization VO/service/controller endpoints, frontend type/API/App loading, final acceptance panel rendering/downloads, README/product/frontend docs, plan doc, and regression tests.
+- RED backend tests were added first for READY finalization, missing receipt guidance, stale receipt guidance, blocked bundle guidance, REST serialization, and Markdown report download.
+- RED frontend tests were added first for finalization API helpers, final acceptance panel rendering, finalization report download behavior, and full App fixture loading.
+- Implemented `DemoFinalAcceptanceCompletionEvidenceDeliveryFinalizationService` and `DemoFinalAcceptanceCompletionEvidenceDeliveryFinalizationVo` so the finalization gate is READY only when the latest completion evidence bundle is share-ready and the latest completion evidence delivery receipt matches the bundle's completion archive, share package archive, delivery receipt, and task identifiers.
+- Added `GET /api/demo/final-acceptance-completion-evidence-delivery-finalization` and `GET /api/demo/final-acceptance-completion-evidence-delivery-finalization/report/download`.
+- Updated the final demo acceptance dashboard panel with completion delivery finalization status, receipt freshness, evidence checks, evidence notes, download actions, side-effect contract, and Markdown download.
+- Updated README, product spec, frontend design doc, and added this plan document.
+
+Validation so far:
+
+- `mvn -q -pl PatchPilot -Dtest=DemoFinalAcceptanceCompletionEvidenceDeliveryFinalizationServiceTests,DemoReadinessControllerTests test`: first failed because the finalization VO/service/controller route did not exist; passed after backend implementation.
+- `npm test -- --reporter=basic src/api.test.ts src/dashboard/components/DemoAcceptanceSummaryPanel.test.tsx src/App.test.tsx`: first failed because the API helpers and panel finalization section did not exist, then failed on expected duplicate read-only/freshness evidence after adding the section; passed after frontend implementation and assertion updates, 3 test files and 262 tests.
+- `mvn -q -pl PatchPilot test`: passed.
+- `npm test -- --reporter=basic`: passed, 30 test files and 431 tests.
+- `npm run build`: passed with the existing Vite large-chunk warning.
+- `git diff --check`: passed.

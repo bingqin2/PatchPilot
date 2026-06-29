@@ -9,6 +9,7 @@ import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
 import io.patchpilot.backend.demo.domain.DemoEvaluationRunReadinessEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionEvidenceDeliveryReceiptVo;
+import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionEvidenceDeliveryFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceSharePackageArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceShareDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceShareFinalizationVo;
@@ -196,6 +197,9 @@ class DemoReadinessControllerTests {
 
     @MockitoBean
     private DemoFinalAcceptanceCompletionEvidenceDeliveryReceiptService demoFinalAcceptanceCompletionEvidenceDeliveryReceiptService;
+
+    @MockitoBean
+    private DemoFinalAcceptanceCompletionEvidenceDeliveryFinalizationService demoFinalAcceptanceCompletionEvidenceDeliveryFinalizationService;
 
     @MockitoBean
     private DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
@@ -896,6 +900,49 @@ class DemoReadinessControllerTests {
                 .andExpect(content().contentType("text/markdown;charset=UTF-8"))
                 .andExpect(content().string(containsString("# PatchPilot Final Acceptance Completion Evidence Bundle")))
                 .andExpect(content().string(containsString("final-acceptance-completion-archive-1")));
+    }
+
+    @Test
+    void should_return_final_acceptance_completion_evidence_delivery_finalization() throws Exception {
+        when(demoFinalAcceptanceCompletionEvidenceDeliveryFinalizationService.getFinalizationGate())
+                .thenReturn(finalAcceptanceCompletionEvidenceDeliveryFinalization());
+
+        mockMvc.perform(get("/api/demo/final-acceptance-completion-evidence-delivery-finalization"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.finalized").value(true))
+                .andExpect(jsonPath("$.data.latestCompletionArchiveId").value("final-acceptance-completion-archive-1"))
+                .andExpect(jsonPath("$.data.latestCompletionEvidenceDeliveryReceiptId")
+                        .value("final-acceptance-completion-evidence-delivery-receipt-1"))
+                .andExpect(jsonPath("$.data.deliveryReceiptFreshness").value("FRESH"))
+                .andExpect(jsonPath("$.data.deliveryReceiptFresh").value(true))
+                .andExpect(jsonPath("$.data.checks[0].name").value("Completion evidence bundle"))
+                .andExpect(jsonPath("$.data.downloadActions[0]")
+                        .value("Download final acceptance completion evidence delivery finalization report."))
+                .andExpect(jsonPath("$.data.sideEffectContract").value(containsString("read-only")))
+                .andExpect(jsonPath("$.data.markdownReport").value(containsString(
+                        "# PatchPilot Final Acceptance Completion Evidence Delivery Finalization"
+                )));
+    }
+
+    @Test
+    void should_download_final_acceptance_completion_evidence_delivery_finalization_report() throws Exception {
+        when(demoFinalAcceptanceCompletionEvidenceDeliveryFinalizationService.getFinalizationGate())
+                .thenReturn(finalAcceptanceCompletionEvidenceDeliveryFinalization());
+
+        mockMvc.perform(get("/api/demo/final-acceptance-completion-evidence-delivery-finalization/report/download"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString(
+                        "patchpilot-final-acceptance-completion-evidence-delivery-finalization.md"
+                )))
+                .andExpect(content().contentType("text/markdown;charset=UTF-8"))
+                .andExpect(content().string(containsString(
+                        "# PatchPilot Final Acceptance Completion Evidence Delivery Finalization"
+                )))
+                .andExpect(content().string(containsString(
+                        "final-acceptance-completion-evidence-delivery-receipt-1"
+                )));
     }
 
     @Test
@@ -3730,6 +3777,39 @@ class DemoReadinessControllerTests {
                 Instant.parse("2026-06-29T04:25:00Z"),
                 Instant.parse("2026-06-29T04:30:00Z"),
                 "# PatchPilot Final Acceptance Completion Evidence Delivery Receipt\n\n- Delivery target: `reviewer@example.com`"
+        );
+    }
+
+    private static DemoFinalAcceptanceCompletionEvidenceDeliveryFinalizationVo finalAcceptanceCompletionEvidenceDeliveryFinalization() {
+        return new DemoFinalAcceptanceCompletionEvidenceDeliveryFinalizationVo(
+                DemoReadinessStatus.READY,
+                true,
+                "Final acceptance completion evidence delivery is finalized with a fresh delivery receipt.",
+                "Use the finalization report as the reviewer-facing completion delivery record.",
+                "final-acceptance-completion-archive-1",
+                "final-acceptance-share-package-archive-1",
+                "final-acceptance-delivery-receipt-1",
+                "task-1",
+                "final-acceptance-completion-evidence-delivery-receipt-1",
+                "reviewer@example.com",
+                "email",
+                "2026-06-29T04:25:00Z",
+                "FRESH",
+                true,
+                "Latest completion evidence delivery receipt matches the current completion evidence bundle.",
+                List.of(new DemoFinalAcceptanceCompletionEvidenceDeliveryFinalizationVo.Check(
+                        "Completion evidence bundle",
+                        DemoReadinessStatus.READY,
+                        "Completion evidence bundle is ready to share.",
+                        "No action needed."
+                )),
+                List.of("Completion evidence delivery receipt final-acceptance-completion-evidence-delivery-receipt-1 is fresh."),
+                List.of("Download final acceptance completion evidence delivery finalization report."),
+                "GET /api/demo/final-acceptance-completion-evidence-delivery-finalization is read-only.",
+                "# PatchPilot Final Acceptance Completion Evidence Delivery Finalization\n\n"
+                        + "- Latest completion evidence delivery receipt: `final-acceptance-completion-evidence-delivery-receipt-1`\n"
+                        + "- Delivery receipt freshness: `FRESH`\n",
+                Instant.parse("2026-06-29T05:00:00Z")
         );
     }
 }
