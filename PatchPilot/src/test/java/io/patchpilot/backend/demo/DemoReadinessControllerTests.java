@@ -14,6 +14,7 @@ import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionEvidenceDe
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionEvidenceDeliveryFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewDeliveryCertificateArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewDeliveryCertificateVo;
+import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewReleaseBundleArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewReleaseBundleVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveVo;
@@ -243,6 +244,9 @@ class DemoReadinessControllerTests {
 
     @MockitoBean
     private DemoFinalExternalReviewReleaseBundleService demoFinalExternalReviewReleaseBundleService;
+
+    @MockitoBean
+    private DemoFinalExternalReviewReleaseBundleArchiveService demoFinalExternalReviewReleaseBundleArchiveService;
 
     @MockitoBean
     private DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
@@ -1445,6 +1449,92 @@ class DemoReadinessControllerTests {
                 .andExpect(content().string(containsString(
                         "final-external-review-delivery-certificate-archive-1"
                 )));
+    }
+
+    @Test
+    void should_archive_final_external_review_release_bundle_and_record_audit() throws Exception {
+        when(demoFinalExternalReviewReleaseBundleArchiveService.archiveCurrentReleaseBundle())
+                .thenReturn(finalExternalReviewReleaseBundleArchive());
+
+        mockMvc.perform(post("/api/demo/final-external-review-release-bundle/archives"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id")
+                        .value("final-external-review-release-bundle-archive-1"))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.releaseReady").value(true))
+                .andExpect(jsonPath("$.data.latestCertificateArchiveId")
+                        .value("final-external-review-delivery-certificate-archive-1"))
+                .andExpect(jsonPath("$.data.latestDeliveryFinalizationArchiveId")
+                        .value("final-external-review-package-delivery-finalization-archive-1"))
+                .andExpect(jsonPath("$.data.latestDeliveryReceiptId")
+                        .value("final-external-review-package-delivery-receipt-1"))
+                .andExpect(jsonPath("$.data.report").value(containsString(
+                        "# PatchPilot Final External Review Release Bundle"
+                )));
+
+        verify(operatorSafetyAuditService).recordSafetyAudit(argThat(command ->
+                command.action().equals("DEMO_FINAL_EXTERNAL_REVIEW_RELEASE_BUNDLE_ARCHIVED")
+                        && command.resourceType().equals("DEMO_FINAL_EXTERNAL_REVIEW_RELEASE_BUNDLE_ARCHIVE")
+                        && command.resourceId().equals("final-external-review-release-bundle-archive-1")
+                        && command.reason().contains("final-external-review-delivery-certificate-archive-1")
+        ));
+    }
+
+    @Test
+    void should_reject_final_external_review_release_bundle_archive_when_not_ready() throws Exception {
+        when(demoFinalExternalReviewReleaseBundleArchiveService.archiveCurrentReleaseBundle())
+                .thenThrow(new IllegalStateException("final external-review release bundle is not ready"));
+
+        mockMvc.perform(post("/api/demo/final-external-review-release-bundle/archives"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("final external-review release bundle is not ready"));
+    }
+
+    @Test
+    void should_list_final_external_review_release_bundle_archives() throws Exception {
+        when(demoFinalExternalReviewReleaseBundleArchiveService.listRecentArchives())
+                .thenReturn(List.of(finalExternalReviewReleaseBundleArchive()));
+
+        mockMvc.perform(get("/api/demo/final-external-review-release-bundle/archives"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].id")
+                        .value("final-external-review-release-bundle-archive-1"))
+                .andExpect(jsonPath("$.data[0].latestCertificateArchiveId")
+                        .value("final-external-review-delivery-certificate-archive-1"))
+                .andExpect(jsonPath("$.data[0].archivedAt").value("2026-06-29T12:30:00Z"));
+    }
+
+    @Test
+    void should_download_archived_final_external_review_release_bundle_report() throws Exception {
+        when(demoFinalExternalReviewReleaseBundleArchiveService.findArchive(
+                "final-external-review-release-bundle-archive-1"
+        )).thenReturn(Optional.of(finalExternalReviewReleaseBundleArchive()));
+
+        mockMvc.perform(get("/api/demo/final-external-review-release-bundle/archives/final-external-review-release-bundle-archive-1/report/download"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString(
+                        "patchpilot-final-external-review-release-bundle-final-external-review-release-bundle-archive-1.md"
+                )))
+                .andExpect(content().contentType("text/markdown;charset=UTF-8"))
+                .andExpect(content().string(containsString(
+                        "# PatchPilot Final External Review Release Bundle"
+                )))
+                .andExpect(content().string(containsString(
+                        "final-external-review-delivery-certificate-archive-1"
+                )));
+    }
+
+    @Test
+    void should_return_not_found_when_final_external_review_release_bundle_archive_is_missing() throws Exception {
+        when(demoFinalExternalReviewReleaseBundleArchiveService.findArchive("missing"))
+                .thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/api/demo/final-external-review-release-bundle/archives/missing/report/download"))
+                .andExpect(status().isNotFound());
     }
 
     @Test
@@ -4876,6 +4966,42 @@ class DemoReadinessControllerTests {
                 "GET /api/demo/final-external-review-release-bundle is read-only.",
                 "# PatchPilot Final External Review Release Bundle\n\n"
                         + "- Certificate archive: `final-external-review-delivery-certificate-archive-1`\n"
+        );
+    }
+
+    private static DemoFinalExternalReviewReleaseBundleArchiveVo finalExternalReviewReleaseBundleArchive() {
+        DemoFinalExternalReviewReleaseBundleVo bundle = finalExternalReviewReleaseBundle();
+        return new DemoFinalExternalReviewReleaseBundleArchiveVo(
+                "final-external-review-release-bundle-archive-1",
+                bundle.status(),
+                bundle.releaseReady(),
+                bundle.summary(),
+                bundle.nextAction(),
+                bundle.latestCertificateArchiveId(),
+                bundle.latestDeliveryFinalizationArchiveId(),
+                bundle.latestPackageArchiveId(),
+                bundle.latestDeliveryReceiptId(),
+                bundle.latestTaskId(),
+                bundle.latestPullRequestUrl(),
+                bundle.latestDeliveryTarget(),
+                bundle.latestDeliveryChannel(),
+                bundle.latestDeliveredAt(),
+                bundle.latestCertificateArchivedAt(),
+                bundle.requiredAttachments(),
+                bundle.releaseChecks().stream()
+                        .map(check -> new DemoFinalExternalReviewReleaseBundleArchiveVo.ReleaseCheck(
+                                check.name(),
+                                check.status(),
+                                check.summary(),
+                                check.nextAction()
+                        ))
+                        .toList(),
+                bundle.evidenceNotes(),
+                bundle.downloadActions(),
+                bundle.sideEffectContract(),
+                bundle.markdownReport(),
+                bundle.generatedAt(),
+                Instant.parse("2026-06-29T12:30:00Z")
         );
     }
 }

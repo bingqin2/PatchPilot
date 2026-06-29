@@ -11,6 +11,7 @@ import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageA
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageDeliveryFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageVo;
+import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewReleaseBundleArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewReleaseBundleVo;
 import io.patchpilot.backend.demo.domain.DemoFinalHandoffReportPackageArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffFinalizationCheckVo;
@@ -89,7 +90,8 @@ class DemoEvidenceBundleServiceTests {
                 () -> List.of(finalExternalReviewEvidencePackageDeliveryReceipt()),
                 DemoEvidenceBundleServiceTests::finalExternalReviewEvidencePackageDeliveryFinalizationReady,
                 () -> List.of(finalExternalReviewEvidencePackageDeliveryFinalizationArchive()),
-                DemoEvidenceBundleServiceTests::finalExternalReviewReleaseBundleReady
+                DemoEvidenceBundleServiceTests::finalExternalReviewReleaseBundleReady,
+                () -> List.of(finalExternalReviewReleaseBundleArchive())
         );
 
         DemoEvidenceBundleVo bundle = service.getEvidenceBundle();
@@ -446,6 +448,19 @@ class DemoEvidenceBundleServiceTests {
                 "Final external-review package archive final-external-review-package-archive-1.",
                 "Final external-review package delivery receipt final-external-review-package-delivery-receipt-1."
         );
+        assertThat(bundle.finalExternalReviewReleaseBundleArchiveEvidence().status())
+                .isEqualTo(DemoReadinessStatus.READY);
+        assertThat(bundle.finalExternalReviewReleaseBundleArchiveEvidence().archived()).isTrue();
+        assertThat(bundle.finalExternalReviewReleaseBundleArchiveEvidence().releaseReady()).isTrue();
+        assertThat(bundle.finalExternalReviewReleaseBundleArchiveEvidence().latestArchiveId())
+                .isEqualTo("final-external-review-release-bundle-archive-1");
+        assertThat(bundle.finalExternalReviewReleaseBundleArchiveEvidence().latestCertificateArchiveId())
+                .isEqualTo("final-external-review-delivery-certificate-archive-1");
+        assertThat(bundle.finalExternalReviewReleaseBundleArchiveEvidence().downloadActions()).containsExactly(
+                "Download final external-review release bundle archive final-external-review-release-bundle-archive-1.",
+                "Download final external-review delivery certificate archive final-external-review-delivery-certificate-archive-1.",
+                "Download final external-review package delivery finalization archive final-external-review-package-delivery-finalization-archive-1."
+        );
         assertThat(bundle.handoffShareDeliveryReceiptRecorded()).isFalse();
         assertThat(bundle.handoffShareLatestDeliveryReceiptId()).isNull();
         assertThat(bundle.handoffShareLatestDeliveryTarget()).isNull();
@@ -502,7 +517,8 @@ class DemoEvidenceBundleServiceTests {
                 () -> List.of(finalExternalReviewEvidencePackageDeliveryReceipt()),
                 DemoEvidenceBundleServiceTests::finalExternalReviewEvidencePackageDeliveryFinalizationReady,
                 () -> List.of(finalExternalReviewEvidencePackageDeliveryFinalizationArchive()),
-                DemoEvidenceBundleServiceTests::finalExternalReviewReleaseBundleReady
+                DemoEvidenceBundleServiceTests::finalExternalReviewReleaseBundleReady,
+                () -> List.of(finalExternalReviewReleaseBundleArchive())
         );
 
         DemoEvidenceBundleVo bundle = service.getEvidenceBundle();
@@ -552,7 +568,61 @@ class DemoEvidenceBundleServiceTests {
         assertThat(bundle.finalExternalReviewEvidencePackageDeliveryFinalization().finalized()).isTrue();
         assertThat(bundle.finalExternalReviewEvidencePackageDeliveryFinalizationArchiveEvidence().finalized()).isTrue();
         assertThat(bundle.finalExternalReviewReleaseBundle().releaseReady()).isTrue();
+        assertThat(bundle.finalExternalReviewReleaseBundleArchiveEvidence().releaseReady()).isTrue();
         assertThat(bundle.nextActions()).containsExactly("Use this evidence bundle as the live demo baseline.");
+    }
+
+    @Test
+    void should_require_final_external_review_release_bundle_archive_before_reporting_bundle_ready() {
+        DemoEvidenceBundleService service = new DemoEvidenceBundleService(
+                () -> readiness(DemoReadinessStatus.READY, List.of()),
+                () -> smokeChecklist(DemoSmokeChecklistStatus.READY, List.of()),
+                DemoEvidenceBundleServiceTests::configuration,
+                () -> List.of(fixture("java-maven", "PASS")),
+                FixTaskQueueSummaryVo::empty,
+                () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/42")),
+                () -> List.of(webhookDelivery("delivery-1", WebhookDeliveryDiagnosticStatus.TASK_CREATED, "task-1")),
+                DemoEvidenceBundleServiceTests::webhookSetupReadiness,
+                () -> rejectedTriggerSummary(0),
+                List::of,
+                DemoEvidenceBundleServiceTests::evaluationRunReadiness,
+                DemoEvidenceBundleServiceTests::handoffPackageArchiveSummary,
+                DemoEvidenceBundleServiceTests::deliveredHandoffShareCenter,
+                DemoEvidenceBundleServiceTests::handoffFinalizationReady,
+                DemoEvidenceBundleServiceTests::launchEvidenceShareCenter,
+                DemoEvidenceBundleServiceTests::launchEvidenceFinalizationReady,
+                DemoEvidenceBundleServiceTests::finalAcceptanceShareFinalizationReady,
+                DemoEvidenceBundleServiceTests::finalAcceptanceCompletionCloseoutReady,
+                () -> List.of(launchAcceptanceCloseoutArchive(DemoReadinessStatus.READY, true)),
+                () -> List.of(launchAcceptanceCertificateArchive(DemoReadinessStatus.READY, true)),
+                () -> List.of(taskEvidenceAcceptanceCertificateArchive("READY", true)),
+                () -> List.of(finalHandoffReportPackageArchive(DemoReadinessStatus.READY, true)),
+                () -> List.of(finalAcceptanceCompletionCloseoutArchive(DemoReadinessStatus.READY, true)),
+                DemoEvidenceBundleServiceTests::finalExternalReviewEvidencePackageReady,
+                () -> List.of(finalExternalReviewEvidencePackageArchive(DemoReadinessStatus.READY, true)),
+                () -> List.of(finalExternalReviewEvidencePackageDeliveryReceipt()),
+                DemoEvidenceBundleServiceTests::finalExternalReviewEvidencePackageDeliveryFinalizationReady,
+                () -> List.of(finalExternalReviewEvidencePackageDeliveryFinalizationArchive()),
+                DemoEvidenceBundleServiceTests::finalExternalReviewReleaseBundleReady,
+                List::of
+        );
+
+        DemoEvidenceBundleVo bundle = service.getEvidenceBundle();
+
+        assertThat(bundle.status()).isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
+        assertThat(bundle.summary()).isEqualTo("Demo evidence bundle needs attention.");
+        assertThat(bundle.finalExternalReviewReleaseBundle().releaseReady()).isTrue();
+        assertThat(bundle.finalExternalReviewReleaseBundleArchiveEvidence().status())
+                .isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
+        assertThat(bundle.finalExternalReviewReleaseBundleArchiveEvidence().archived()).isFalse();
+        assertThat(bundle.finalExternalReviewReleaseBundleArchiveEvidence().releaseReady()).isFalse();
+        assertThat(bundle.finalExternalReviewReleaseBundleArchiveEvidence().summary())
+                .isEqualTo("No final external-review release bundle archive is available.");
+        assertThat(bundle.finalExternalReviewReleaseBundleArchiveEvidence().nextAction())
+                .isEqualTo("Archive the READY final external-review release bundle.");
+        assertThat(bundle.nextActions()).containsExactly(
+                "Archive the READY final external-review release bundle."
+        );
     }
 
     @Test
@@ -1886,6 +1956,42 @@ class DemoEvidenceBundleServiceTests {
                 ),
                 "GET /api/demo/final-external-review-release-bundle is read-only.",
                 "# PatchPilot Final External Review Release Bundle"
+        );
+    }
+
+    private static DemoFinalExternalReviewReleaseBundleArchiveVo finalExternalReviewReleaseBundleArchive() {
+        DemoFinalExternalReviewReleaseBundleVo bundle = finalExternalReviewReleaseBundleReady();
+        return new DemoFinalExternalReviewReleaseBundleArchiveVo(
+                "final-external-review-release-bundle-archive-1",
+                bundle.status(),
+                bundle.releaseReady(),
+                bundle.summary(),
+                bundle.nextAction(),
+                bundle.latestCertificateArchiveId(),
+                bundle.latestDeliveryFinalizationArchiveId(),
+                bundle.latestPackageArchiveId(),
+                bundle.latestDeliveryReceiptId(),
+                bundle.latestTaskId(),
+                bundle.latestPullRequestUrl(),
+                bundle.latestDeliveryTarget(),
+                bundle.latestDeliveryChannel(),
+                bundle.latestDeliveredAt(),
+                bundle.latestCertificateArchivedAt(),
+                bundle.requiredAttachments(),
+                bundle.releaseChecks().stream()
+                        .map(check -> new DemoFinalExternalReviewReleaseBundleArchiveVo.ReleaseCheck(
+                                check.name(),
+                                check.status(),
+                                check.summary(),
+                                check.nextAction()
+                        ))
+                        .toList(),
+                bundle.evidenceNotes(),
+                bundle.downloadActions(),
+                bundle.sideEffectContract(),
+                bundle.markdownReport(),
+                bundle.generatedAt(),
+                Instant.parse("2026-06-29T05:40:00Z")
         );
     }
 

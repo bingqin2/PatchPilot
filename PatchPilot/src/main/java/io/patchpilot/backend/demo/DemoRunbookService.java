@@ -546,6 +546,48 @@ public class DemoRunbookService {
                         .append("- Final external-review release download: ")
                         .append(action)
                         .append("\n"));
+
+        runbook.append("- Final external-review release bundle archive: `")
+                .append(bundle.finalExternalReviewReleaseBundleArchiveEvidence().status())
+                .append("` - ")
+                .append(bundle.finalExternalReviewReleaseBundleArchiveEvidence().summary())
+                .append("\n")
+                .append("- Final external-review release bundle archive id: ")
+                .append(valueOrNoneBackticked(bundle.finalExternalReviewReleaseBundleArchiveEvidence()
+                        .latestArchiveId()))
+                .append("\n")
+                .append("- Final external-review release bundle archived certificate: ")
+                .append(valueOrNoneBackticked(bundle.finalExternalReviewReleaseBundleArchiveEvidence()
+                        .latestCertificateArchiveId()))
+                .append("\n")
+                .append("- Final external-review release bundle archived finalization: ")
+                .append(valueOrNoneBackticked(bundle.finalExternalReviewReleaseBundleArchiveEvidence()
+                        .latestDeliveryFinalizationArchiveId()))
+                .append("\n")
+                .append("- Final external-review release bundle archived package: ")
+                .append(valueOrNoneBackticked(bundle.finalExternalReviewReleaseBundleArchiveEvidence()
+                        .latestPackageArchiveId()))
+                .append("\n")
+                .append("- Final external-review release bundle archived delivery receipt: ")
+                .append(valueOrNoneBackticked(bundle.finalExternalReviewReleaseBundleArchiveEvidence()
+                        .latestDeliveryReceiptId()))
+                .append("\n")
+                .append("- Final external-review release bundle archive Pull Request: ")
+                .append(valueOrNone(bundle.finalExternalReviewReleaseBundleArchiveEvidence().latestPullRequestUrl()))
+                .append("\n")
+                .append("- Final external-review release bundle archived at: ")
+                .append(bundle.finalExternalReviewReleaseBundleArchiveEvidence().latestArchivedAt() == null
+                        ? "none"
+                        : "`" + bundle.finalExternalReviewReleaseBundleArchiveEvidence().latestArchivedAt() + "`")
+                .append("\n")
+                .append("- Final external-review release bundle archive next action: ")
+                .append(bundle.finalExternalReviewReleaseBundleArchiveEvidence().nextAction())
+                .append("\n");
+        bundle.finalExternalReviewReleaseBundleArchiveEvidence().downloadActions()
+                .forEach(action -> runbook
+                        .append("- Final external-review release bundle archive download: ")
+                        .append(action)
+                        .append("\n"));
     }
 
     private static void appendEvaluationRunReadiness(
