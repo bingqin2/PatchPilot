@@ -353,6 +353,45 @@ const bundle: DemoEvidenceBundle = {
       'Download linked final acceptance completion archive final-acceptance-completion-archive-1.'
     ]
   },
+  finalExternalReviewEvidencePackage: {
+    status: 'READY',
+    readyForExternalReview: true,
+    summary: 'PatchPilot final external-review evidence package is ready.',
+    nextAction: 'Share this package with reviewers as the frozen external-review record.',
+    finalAcceptanceSummaryStatus: 'READY',
+    finalAcceptanceShareFinalizationStatus: 'READY',
+    completionEvidenceBundleStatus: 'READY',
+    completionDeliveryFinalizationStatus: 'READY',
+    completionCloseoutStatus: 'READY',
+    closeoutArchiveStatus: 'READY',
+    latestTaskId: 'task-2',
+    latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+    finalAcceptanceSharePackageArchiveId: 'final-acceptance-share-package-archive-1',
+    completionArchiveId: 'final-acceptance-completion-archive-1',
+    completionEvidenceDeliveryReceiptId: 'final-acceptance-completion-evidence-delivery-receipt-1',
+    closeoutArchiveId: 'final-acceptance-completion-closeout-archive-1',
+    deliveryTarget: 'reviewer@example.com',
+    deliveryChannel: 'email',
+    deliveredAt: '2026-06-29T03:45:00Z',
+    deliveryReceiptFreshness: 'FRESH',
+    closeoutArchivedAt: '2026-06-29T04:15:00Z',
+    generatedAt: '2026-06-29T04:30:00Z',
+    checks: [
+      {
+        name: 'Frozen closeout archive',
+        status: 'READY',
+        summary: 'Frozen closeout archive final-acceptance-completion-closeout-archive-1 is closed.',
+        nextAction: 'No action needed.'
+      }
+    ],
+    evidenceNotes: ['Frozen closeout archive final-acceptance-completion-closeout-archive-1 is READY and closed.'],
+    downloadActions: [
+      'Download final external-review evidence package.',
+      'Download final acceptance completion closeout archive final-acceptance-completion-closeout-archive-1.'
+    ],
+    sideEffectContract: 'GET /api/demo/final-external-review-evidence-package is read-only.',
+    markdownReport: '# PatchPilot Final External Review Evidence Package'
+  },
   handoffShareDeliveryReceiptRecorded: true,
   handoffShareLatestDeliveryReceiptId: 'delivery-receipt-1',
   handoffShareLatestDeliveryTarget: 'maintainer@example.com',
@@ -525,7 +564,8 @@ test('summarizes demo evidence bundle for operators', () => {
     within(panel).getByText('Use the archived final acceptance completion closeout as the frozen external-review completion record.')
   ).toBeInTheDocument();
   expect(within(panel).getByText('1 closeout archive snapshots')).toBeInTheDocument();
-  expect(within(panel).getByText('final-acceptance-completion-closeout-archive-1')).toBeInTheDocument();
+  expect(within(panel).getAllByText('final-acceptance-completion-closeout-archive-1').length)
+    .toBeGreaterThanOrEqual(1);
   expect(within(panel).getAllByText('final-acceptance-completion-archive-1').length).toBeGreaterThanOrEqual(2);
   expect(within(panel).getAllByText('final-acceptance-completion-evidence-delivery-receipt-1').length).toBeGreaterThanOrEqual(2);
   expect(within(panel).getByRole('link', { name: 'Open archived final acceptance completion Pull Request' })).toHaveAttribute(
@@ -533,11 +573,30 @@ test('summarizes demo evidence bundle for operators', () => {
     'https://github.com/bingqin2/PatchPilot/pull/42'
   );
   expect(
-    within(panel).getByText('Download final acceptance completion closeout archive final-acceptance-completion-closeout-archive-1.')
-  ).toBeInTheDocument();
+    within(panel).getAllByText('Download final acceptance completion closeout archive final-acceptance-completion-closeout-archive-1.').length
+  ).toBeGreaterThanOrEqual(1);
   expect(
     within(panel).getByText('Download linked final acceptance completion archive final-acceptance-completion-archive-1.')
   ).toBeInTheDocument();
+  expect(within(panel).getByText('Final external-review evidence package')).toBeInTheDocument();
+  expect(within(panel).getByText('Ready for external review')).toBeInTheDocument();
+  expect(within(panel).getByText('PatchPilot final external-review evidence package is ready.')).toBeInTheDocument();
+  expect(
+    within(panel).getByText('Share this package with reviewers as the frozen external-review record.')
+  ).toBeInTheDocument();
+  expect(within(panel).getAllByText('final-acceptance-completion-closeout-archive-1').length)
+    .toBeGreaterThanOrEqual(2);
+  expect(within(panel).getAllByText('final-acceptance-completion-archive-1').length).toBeGreaterThanOrEqual(3);
+  expect(within(panel).getAllByText('final-acceptance-completion-evidence-delivery-receipt-1').length)
+    .toBeGreaterThanOrEqual(3);
+  expect(within(panel).getByRole('link', { name: 'Open final external-review Pull Request' })).toHaveAttribute(
+    'href',
+    'https://github.com/bingqin2/PatchPilot/pull/42'
+  );
+  expect(within(panel).getByText('Download final external-review evidence package.')).toBeInTheDocument();
+  expect(
+    within(panel).getAllByText('Download final acceptance completion closeout archive final-acceptance-completion-closeout-archive-1.').length
+  ).toBeGreaterThanOrEqual(2);
   expect(within(panel).getByText('Handoff share delivery')).toBeInTheDocument();
   expect(within(panel).getAllByText('Fresh').length).toBeGreaterThanOrEqual(2);
   expect(within(panel).getByText('Handoff finalization')).toBeInTheDocument();
@@ -581,7 +640,8 @@ test('renders missing certificate evidence for legacy bundle responses', () => {
     finalHandoffReportPackageArchiveEvidence: undefined,
     finalAcceptanceShareFinalization: undefined,
     finalAcceptanceCompletionCloseoutEvidence: undefined,
-    finalAcceptanceCompletionCloseoutArchiveEvidence: undefined
+    finalAcceptanceCompletionCloseoutArchiveEvidence: undefined,
+    finalExternalReviewEvidencePackage: undefined
   } as unknown as DemoEvidenceBundle;
 
   render(<DemoEvidenceBundlePanel bundle={legacyBundle} error={null} onCopyRunbook={vi.fn()} />);
@@ -620,6 +680,12 @@ test('renders missing certificate evidence for legacy bundle responses', () => {
   expect(screen.getAllByText('Archive the final acceptance completion closeout after it is READY and closed.').length)
     .toBeGreaterThanOrEqual(1);
   expect(screen.getByText('No archived final acceptance completion Pull Request')).toBeInTheDocument();
+  expect(screen.getByText('Final external-review evidence package')).toBeInTheDocument();
+  expect(screen.getByText('Final external-review evidence package is not available in the top-level evidence bundle.'))
+    .toBeInTheDocument();
+  expect(screen.getByText('Load the final external-review evidence package before sharing demo evidence externally.'))
+    .toBeInTheDocument();
+  expect(screen.getByText('No final external-review Pull Request')).toBeInTheDocument();
 });
 
 test('copies demo runbook markdown', async () => {

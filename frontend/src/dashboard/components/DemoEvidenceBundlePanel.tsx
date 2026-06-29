@@ -119,6 +119,35 @@ export function DemoEvidenceBundlePanel({ bundle, error, onCopyRunbook }: DemoEv
     latestArchivedAt: null,
     downloadActions: ['Archive the final acceptance completion closeout after it is READY and closed.']
   };
+  const finalExternalReviewEvidencePackage = bundle?.finalExternalReviewEvidencePackage ?? {
+    status: 'NEEDS_ATTENTION' as DemoReadinessStatus,
+    readyForExternalReview: false,
+    summary: 'Final external-review evidence package is not available in the top-level evidence bundle.',
+    nextAction: 'Load the final external-review evidence package before sharing demo evidence externally.',
+    finalAcceptanceSummaryStatus: 'NEEDS_ATTENTION' as DemoReadinessStatus,
+    finalAcceptanceShareFinalizationStatus: 'NEEDS_ATTENTION' as DemoReadinessStatus,
+    completionEvidenceBundleStatus: 'NEEDS_ATTENTION' as DemoReadinessStatus,
+    completionDeliveryFinalizationStatus: 'NEEDS_ATTENTION' as DemoReadinessStatus,
+    completionCloseoutStatus: 'NEEDS_ATTENTION' as DemoReadinessStatus,
+    closeoutArchiveStatus: 'NEEDS_ATTENTION' as DemoReadinessStatus,
+    latestTaskId: null,
+    latestPullRequestUrl: null,
+    finalAcceptanceSharePackageArchiveId: null,
+    completionArchiveId: null,
+    completionEvidenceDeliveryReceiptId: null,
+    closeoutArchiveId: null,
+    deliveryTarget: null,
+    deliveryChannel: null,
+    deliveredAt: null,
+    deliveryReceiptFreshness: 'MISSING',
+    closeoutArchivedAt: null,
+    generatedAt: '',
+    checks: [],
+    evidenceNotes: ['No final external-review evidence package is available in the top-level evidence bundle.'],
+    downloadActions: ['Download the final external-review evidence package after it reports READY.'],
+    sideEffectContract: 'GET /api/demo/evidence-bundle is read-only and does not mutate tasks, Git, or GitHub.',
+    markdownReport: ''
+  };
 
   async function copyRunbook() {
     try {
@@ -444,6 +473,46 @@ export function DemoEvidenceBundlePanel({ bundle, error, onCopyRunbook }: DemoEv
                 <small>Archived {compactDateTime(finalAcceptanceCompletionCloseoutArchiveEvidence.latestArchivedAt)}</small>
               ) : null}
               {finalAcceptanceCompletionCloseoutArchiveEvidence.downloadActions.slice(0, 2).map((action) => (
+                <small key={action}>{action}</small>
+              ))}
+            </div>
+            <div>
+              <span>Final external-review evidence package</span>
+              <strong>
+                {finalExternalReviewEvidencePackage.readyForExternalReview
+                  ? 'Ready for external review'
+                  : statusLabel(finalExternalReviewEvidencePackage.status)}
+              </strong>
+              <small>{finalExternalReviewEvidencePackage.summary}</small>
+              <small>{finalExternalReviewEvidencePackage.nextAction}</small>
+              <small>{finalExternalReviewEvidencePackage.closeoutArchiveId ?? 'No final external-review closeout archive'}</small>
+              <small>{finalExternalReviewEvidencePackage.completionArchiveId ?? 'No final completion archive'}</small>
+              <small>
+                {finalExternalReviewEvidencePackage.completionEvidenceDeliveryReceiptId
+                  ?? 'No final completion evidence delivery receipt'}
+              </small>
+              <small>
+                {finalExternalReviewEvidencePackage.latestTaskId
+                  ? `Task ${finalExternalReviewEvidencePackage.latestTaskId}`
+                  : 'No final external-review task'}
+              </small>
+              {finalExternalReviewEvidencePackage.latestPullRequestUrl ? (
+                <a href={finalExternalReviewEvidencePackage.latestPullRequestUrl}>
+                  Open final external-review Pull Request
+                </a>
+              ) : (
+                <small>No final external-review Pull Request</small>
+              )}
+              <small>{deliveryFreshnessLabel(finalExternalReviewEvidencePackage.deliveryReceiptFreshness ?? 'MISSING')}</small>
+              <small>
+                {finalExternalReviewEvidencePackage.deliveryTarget
+                  ? `${finalExternalReviewEvidencePackage.deliveryChannel ?? 'delivery'} - ${finalExternalReviewEvidencePackage.deliveryTarget}`
+                  : 'No final external-review delivery target'}
+              </small>
+              {finalExternalReviewEvidencePackage.closeoutArchivedAt ? (
+                <small>Archived {compactDateTime(finalExternalReviewEvidencePackage.closeoutArchivedAt)}</small>
+              ) : null}
+              {finalExternalReviewEvidencePackage.downloadActions.slice(0, 2).map((action) => (
                 <small key={action}>{action}</small>
               ))}
             </div>

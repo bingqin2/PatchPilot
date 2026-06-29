@@ -319,6 +319,44 @@ public class DemoRunbookService {
                         .append("- Final acceptance completion closeout archive download: ")
                         .append(action)
                         .append("\n"));
+
+        runbook.append("- Final external-review evidence package: `")
+                .append(bundle.finalExternalReviewEvidencePackage().status())
+                .append("` - ")
+                .append(bundle.finalExternalReviewEvidencePackage().summary())
+                .append("\n")
+                .append("- Final external-review ready: `")
+                .append(bundle.finalExternalReviewEvidencePackage().readyForExternalReview())
+                .append("`\n")
+                .append("- Final external-review closeout archive: ")
+                .append(valueOrNoneBackticked(bundle.finalExternalReviewEvidencePackage().closeoutArchiveId()))
+                .append("\n")
+                .append("- Final external-review completion archive: ")
+                .append(valueOrNoneBackticked(bundle.finalExternalReviewEvidencePackage().completionArchiveId()))
+                .append("\n")
+                .append("- Final external-review completion receipt: ")
+                .append(valueOrNoneBackticked(bundle.finalExternalReviewEvidencePackage().completionEvidenceDeliveryReceiptId()))
+                .append("\n")
+                .append("- Final external-review task: ")
+                .append(valueOrNoneBackticked(bundle.finalExternalReviewEvidencePackage().latestTaskId()))
+                .append("\n")
+                .append("- Final external-review Pull Request: ")
+                .append(valueOrNone(bundle.finalExternalReviewEvidencePackage().latestPullRequestUrl()))
+                .append("\n")
+                .append("- Final external-review delivery target: ")
+                .append(finalExternalReviewDeliveryTarget(bundle))
+                .append("\n")
+                .append("- Final external-review receipt freshness: `")
+                .append(bundle.finalExternalReviewEvidencePackage().deliveryReceiptFreshness())
+                .append("`\n")
+                .append("- Final external-review package next action: ")
+                .append(bundle.finalExternalReviewEvidencePackage().nextAction())
+                .append("\n");
+        bundle.finalExternalReviewEvidencePackage().downloadActions()
+                .forEach(action -> runbook
+                        .append("- Final external-review package download: ")
+                        .append(action)
+                        .append("\n"));
     }
 
     private static void appendEvaluationRunReadiness(
@@ -411,6 +449,18 @@ public class DemoRunbookService {
     private static String finalAcceptanceCompletionDeliveryTarget(DemoEvidenceBundleVo bundle) {
         String target = bundle.finalAcceptanceCompletionCloseoutEvidence().latestDeliveryTarget();
         String channel = bundle.finalAcceptanceCompletionCloseoutEvidence().latestDeliveryChannel();
+        if (target == null || target.isBlank()) {
+            return "none";
+        }
+        if (channel == null || channel.isBlank()) {
+            return target;
+        }
+        return target + " via " + channel;
+    }
+
+    private static String finalExternalReviewDeliveryTarget(DemoEvidenceBundleVo bundle) {
+        String target = bundle.finalExternalReviewEvidencePackage().deliveryTarget();
+        String channel = bundle.finalExternalReviewEvidencePackage().deliveryChannel();
         if (target == null || target.isBlank()) {
             return "none";
         }

@@ -7,6 +7,7 @@ import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionCloseoutArchiveEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionCloseoutVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceShareFinalizationVo;
+import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageVo;
 import io.patchpilot.backend.demo.domain.DemoFinalHandoffReportPackageArchiveEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchAcceptanceCertificateEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchAcceptanceCloseoutEvidenceVo;
@@ -120,6 +121,17 @@ class DemoRunbookServiceTests {
                 .contains("- Final acceptance completion closeout archive Pull Request: https://github.com/bingqin2/PatchPilot/pull/42")
                 .contains("- Final acceptance completion closeout archive next action: Use the archived final acceptance completion closeout as the frozen external-review completion record.")
                 .contains("- Final acceptance completion closeout archive download: Download final acceptance completion closeout archive final-acceptance-completion-closeout-archive-1.")
+                .contains("- Final external-review evidence package: `READY` - PatchPilot final external-review evidence package is ready.")
+                .contains("- Final external-review ready: `true`")
+                .contains("- Final external-review closeout archive: `final-acceptance-completion-closeout-archive-1`")
+                .contains("- Final external-review completion archive: `final-acceptance-completion-archive-1`")
+                .contains("- Final external-review completion receipt: `final-acceptance-completion-evidence-delivery-receipt-1`")
+                .contains("- Final external-review task: `task-2`")
+                .contains("- Final external-review Pull Request: https://github.com/bingqin2/PatchPilot/pull/42")
+                .contains("- Final external-review delivery target: reviewer@example.com via email")
+                .contains("- Final external-review receipt freshness: `FRESH`")
+                .contains("- Final external-review package next action: Share this package with reviewers as the frozen external-review record.")
+                .contains("- Final external-review package download: Download final external-review evidence package.")
                 .contains("## Readiness")
                 .contains("- `Credentials`: `READY` - Required credentials are configured.")
                 .contains("## Smoke Checklist")
@@ -314,6 +326,7 @@ class DemoRunbookServiceTests {
                 finalAcceptanceShareFinalization(),
                 finalAcceptanceCompletionCloseout(),
                 finalAcceptanceCompletionCloseoutArchiveEvidence(),
+                finalExternalReviewEvidencePackage(),
                 true,
                 "delivery-receipt-1",
                 "Demo reviewer",
@@ -470,6 +483,46 @@ class DemoRunbookServiceTests {
                         "Download final acceptance completion closeout archive final-acceptance-completion-closeout-archive-1.",
                         "Download linked final acceptance completion archive final-acceptance-completion-archive-1."
                 )
+        );
+    }
+
+    private static DemoFinalExternalReviewEvidencePackageVo finalExternalReviewEvidencePackage() {
+        return new DemoFinalExternalReviewEvidencePackageVo(
+                DemoReadinessStatus.READY,
+                true,
+                "PatchPilot final external-review evidence package is ready.",
+                "Share this package with reviewers as the frozen external-review record.",
+                DemoReadinessStatus.READY,
+                DemoReadinessStatus.READY,
+                DemoReadinessStatus.READY,
+                DemoReadinessStatus.READY,
+                DemoReadinessStatus.READY,
+                DemoReadinessStatus.READY,
+                "task-2",
+                "https://github.com/bingqin2/PatchPilot/pull/42",
+                "final-acceptance-share-package-archive-1",
+                "final-acceptance-completion-archive-1",
+                "final-acceptance-completion-evidence-delivery-receipt-1",
+                "final-acceptance-completion-closeout-archive-1",
+                "reviewer@example.com",
+                "email",
+                "2026-06-29T03:45:00Z",
+                "FRESH",
+                Instant.parse("2026-06-29T04:15:00Z"),
+                Instant.parse("2026-06-29T04:30:00Z"),
+                List.of(new DemoFinalExternalReviewEvidencePackageVo.Check(
+                        "Frozen closeout archive",
+                        DemoReadinessStatus.READY,
+                        "Frozen closeout archive final-acceptance-completion-closeout-archive-1 is closed.",
+                        "No action needed."
+                )),
+                List.of("Frozen closeout archive final-acceptance-completion-closeout-archive-1 is READY and closed."),
+                List.of(
+                        "Download final external-review evidence package.",
+                        "Download final acceptance completion closeout archive final-acceptance-completion-closeout-archive-1."
+                ),
+                "GET /api/demo/final-external-review-evidence-package is read-only.",
+                "# PatchPilot Final External Review Evidence Package"
         );
     }
 }

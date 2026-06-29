@@ -10,6 +10,7 @@ import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionCloseoutAr
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionCloseoutArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionCloseoutVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceShareFinalizationVo;
+import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageVo;
 import io.patchpilot.backend.demo.domain.DemoFinalHandoffReportPackageArchiveEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoFinalHandoffReportPackageArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffFinalizationVo;
@@ -81,6 +82,7 @@ public class DemoEvidenceBundleService {
     private final Supplier<DemoFinalAcceptanceCompletionCloseoutVo> finalAcceptanceCompletionCloseoutSupplier;
     private final Supplier<List<DemoFinalAcceptanceCompletionCloseoutArchiveVo>>
             finalAcceptanceCompletionCloseoutArchiveSupplier;
+    private final Supplier<DemoFinalExternalReviewEvidencePackageVo> finalExternalReviewEvidencePackageSupplier;
     private final Supplier<List<DemoLaunchAcceptanceCloseoutArchiveVo>> launchAcceptanceCloseoutArchiveSupplier;
     private final Supplier<List<DemoLaunchAcceptanceCertificateArchiveVo>> launchAcceptanceCertificateArchiveSupplier;
     private final Supplier<List<FixTaskEvidencePackageAcceptanceCertificateArchiveVo>>
@@ -108,6 +110,7 @@ public class DemoEvidenceBundleService {
             DemoFinalAcceptanceShareFinalizationService demoFinalAcceptanceShareFinalizationService,
             DemoFinalAcceptanceCompletionCloseoutService demoFinalAcceptanceCompletionCloseoutService,
             DemoFinalAcceptanceCompletionCloseoutArchiveRepository finalAcceptanceCompletionCloseoutArchiveRepository,
+            DemoFinalExternalReviewEvidencePackageService demoFinalExternalReviewEvidencePackageService,
             DemoLaunchAcceptanceCloseoutArchiveRepository launchAcceptanceCloseoutArchiveRepository,
             DemoLaunchAcceptanceCertificateArchiveRepository launchAcceptanceCertificateArchiveRepository,
             FixTaskEvidencePackageAcceptanceCertificateArchiveRepository taskEvidenceAcceptanceCertificateArchiveRepository,
@@ -145,8 +148,63 @@ public class DemoEvidenceBundleService {
                 () -> launchAcceptanceCertificateArchiveRepository.listRecentArchives(20),
                 () -> taskEvidenceAcceptanceCertificateArchiveRepository.listRecentArchives(20),
                 () -> finalHandoffReportPackageArchiveRepository.listRecentArchives(20),
-                () -> finalAcceptanceCompletionCloseoutArchiveRepository.listRecentArchives(20)
+                () -> finalAcceptanceCompletionCloseoutArchiveRepository.listRecentArchives(20),
+                demoFinalExternalReviewEvidencePackageService::getPackage
         );
+    }
+
+    DemoEvidenceBundleService(
+            Supplier<DemoReadinessVo> readinessSupplier,
+            Supplier<DemoSmokeChecklistVo> smokeChecklistSupplier,
+            Supplier<ConfigurationSummaryVo> configurationSupplier,
+            Supplier<List<LanguageAdapterFixtureVerificationVo>> fixtureSupplier,
+            Supplier<FixTaskQueueSummaryVo> queueSummarySupplier,
+            Supplier<List<FixTaskVo>> recentTasksSupplier,
+            Supplier<List<WebhookDeliveryDiagnosticVo>> webhookDeliveriesSupplier,
+            Supplier<GitHubWebhookSetupReadinessVo> webhookSetupReadinessSupplier,
+            Supplier<RejectedTriggerAuditSummaryVo> rejectedTriggerSummarySupplier,
+            Supplier<List<TriggerQuarantineVo>> activeQuarantinesSupplier,
+            Supplier<EvaluationRunArchiveReadinessSummaryVo> evaluationRunReadinessSupplier,
+            Supplier<DemoHandoffPackageArchiveSummaryVo> handoffPackageArchiveSummarySupplier,
+            Supplier<DemoHandoffShareCenterVo> handoffShareCenterSupplier,
+            Supplier<DemoHandoffFinalizationVo> handoffFinalizationSupplier,
+            Supplier<DemoLaunchEvidenceShareCenterVo> launchEvidenceShareCenterSupplier,
+            Supplier<DemoLaunchEvidenceFinalizationVo> launchEvidenceFinalizationSupplier,
+            Supplier<DemoFinalAcceptanceShareFinalizationVo> finalAcceptanceShareFinalizationSupplier,
+            Supplier<DemoFinalAcceptanceCompletionCloseoutVo> finalAcceptanceCompletionCloseoutSupplier,
+            Supplier<List<DemoLaunchAcceptanceCloseoutArchiveVo>> launchAcceptanceCloseoutArchiveSupplier,
+            Supplier<List<DemoLaunchAcceptanceCertificateArchiveVo>> launchAcceptanceCertificateArchiveSupplier,
+            Supplier<List<FixTaskEvidencePackageAcceptanceCertificateArchiveVo>>
+                    taskEvidenceAcceptanceCertificateArchiveSupplier,
+            Supplier<List<DemoFinalHandoffReportPackageArchiveVo>> finalHandoffReportPackageArchiveSupplier,
+            Supplier<List<DemoFinalAcceptanceCompletionCloseoutArchiveVo>>
+                    finalAcceptanceCompletionCloseoutArchiveSupplier,
+            Supplier<DemoFinalExternalReviewEvidencePackageVo> finalExternalReviewEvidencePackageSupplier
+    ) {
+        this.readinessSupplier = readinessSupplier;
+        this.smokeChecklistSupplier = smokeChecklistSupplier;
+        this.configurationSupplier = configurationSupplier;
+        this.fixtureSupplier = fixtureSupplier;
+        this.queueSummarySupplier = queueSummarySupplier;
+        this.recentTasksSupplier = recentTasksSupplier;
+        this.webhookDeliveriesSupplier = webhookDeliveriesSupplier;
+        this.webhookSetupReadinessSupplier = webhookSetupReadinessSupplier;
+        this.rejectedTriggerSummarySupplier = rejectedTriggerSummarySupplier;
+        this.activeQuarantinesSupplier = activeQuarantinesSupplier;
+        this.evaluationRunReadinessSupplier = evaluationRunReadinessSupplier;
+        this.handoffPackageArchiveSummarySupplier = handoffPackageArchiveSummarySupplier;
+        this.handoffShareCenterSupplier = handoffShareCenterSupplier;
+        this.handoffFinalizationSupplier = handoffFinalizationSupplier;
+        this.launchEvidenceShareCenterSupplier = launchEvidenceShareCenterSupplier;
+        this.launchEvidenceFinalizationSupplier = launchEvidenceFinalizationSupplier;
+        this.finalAcceptanceShareFinalizationSupplier = finalAcceptanceShareFinalizationSupplier;
+        this.finalAcceptanceCompletionCloseoutSupplier = finalAcceptanceCompletionCloseoutSupplier;
+        this.finalAcceptanceCompletionCloseoutArchiveSupplier = finalAcceptanceCompletionCloseoutArchiveSupplier;
+        this.launchAcceptanceCloseoutArchiveSupplier = launchAcceptanceCloseoutArchiveSupplier;
+        this.launchAcceptanceCertificateArchiveSupplier = launchAcceptanceCertificateArchiveSupplier;
+        this.taskEvidenceAcceptanceCertificateArchiveSupplier = taskEvidenceAcceptanceCertificateArchiveSupplier;
+        this.finalHandoffReportPackageArchiveSupplier = finalHandoffReportPackageArchiveSupplier;
+        this.finalExternalReviewEvidencePackageSupplier = finalExternalReviewEvidencePackageSupplier;
     }
 
     DemoEvidenceBundleService(
@@ -176,29 +234,32 @@ public class DemoEvidenceBundleService {
             Supplier<List<DemoFinalAcceptanceCompletionCloseoutArchiveVo>>
                     finalAcceptanceCompletionCloseoutArchiveSupplier
     ) {
-        this.readinessSupplier = readinessSupplier;
-        this.smokeChecklistSupplier = smokeChecklistSupplier;
-        this.configurationSupplier = configurationSupplier;
-        this.fixtureSupplier = fixtureSupplier;
-        this.queueSummarySupplier = queueSummarySupplier;
-        this.recentTasksSupplier = recentTasksSupplier;
-        this.webhookDeliveriesSupplier = webhookDeliveriesSupplier;
-        this.webhookSetupReadinessSupplier = webhookSetupReadinessSupplier;
-        this.rejectedTriggerSummarySupplier = rejectedTriggerSummarySupplier;
-        this.activeQuarantinesSupplier = activeQuarantinesSupplier;
-        this.evaluationRunReadinessSupplier = evaluationRunReadinessSupplier;
-        this.handoffPackageArchiveSummarySupplier = handoffPackageArchiveSummarySupplier;
-        this.handoffShareCenterSupplier = handoffShareCenterSupplier;
-        this.handoffFinalizationSupplier = handoffFinalizationSupplier;
-        this.launchEvidenceShareCenterSupplier = launchEvidenceShareCenterSupplier;
-        this.launchEvidenceFinalizationSupplier = launchEvidenceFinalizationSupplier;
-        this.finalAcceptanceShareFinalizationSupplier = finalAcceptanceShareFinalizationSupplier;
-        this.finalAcceptanceCompletionCloseoutSupplier = finalAcceptanceCompletionCloseoutSupplier;
-        this.finalAcceptanceCompletionCloseoutArchiveSupplier = finalAcceptanceCompletionCloseoutArchiveSupplier;
-        this.launchAcceptanceCloseoutArchiveSupplier = launchAcceptanceCloseoutArchiveSupplier;
-        this.launchAcceptanceCertificateArchiveSupplier = launchAcceptanceCertificateArchiveSupplier;
-        this.taskEvidenceAcceptanceCertificateArchiveSupplier = taskEvidenceAcceptanceCertificateArchiveSupplier;
-        this.finalHandoffReportPackageArchiveSupplier = finalHandoffReportPackageArchiveSupplier;
+        this(
+                readinessSupplier,
+                smokeChecklistSupplier,
+                configurationSupplier,
+                fixtureSupplier,
+                queueSummarySupplier,
+                recentTasksSupplier,
+                webhookDeliveriesSupplier,
+                webhookSetupReadinessSupplier,
+                rejectedTriggerSummarySupplier,
+                activeQuarantinesSupplier,
+                evaluationRunReadinessSupplier,
+                handoffPackageArchiveSummarySupplier,
+                handoffShareCenterSupplier,
+                handoffFinalizationSupplier,
+                launchEvidenceShareCenterSupplier,
+                launchEvidenceFinalizationSupplier,
+                finalAcceptanceShareFinalizationSupplier,
+                finalAcceptanceCompletionCloseoutSupplier,
+                launchAcceptanceCloseoutArchiveSupplier,
+                launchAcceptanceCertificateArchiveSupplier,
+                taskEvidenceAcceptanceCertificateArchiveSupplier,
+                finalHandoffReportPackageArchiveSupplier,
+                finalAcceptanceCompletionCloseoutArchiveSupplier,
+                DemoEvidenceBundleService::compatibilityFinalExternalReviewEvidencePackage
+        );
     }
 
     DemoEvidenceBundleService(
@@ -249,7 +310,8 @@ public class DemoEvidenceBundleService {
                 launchAcceptanceCertificateArchiveSupplier,
                 taskEvidenceAcceptanceCertificateArchiveSupplier,
                 finalHandoffReportPackageArchiveSupplier,
-                DemoEvidenceBundleService::compatibilityFinalAcceptanceCompletionCloseoutArchives
+                DemoEvidenceBundleService::compatibilityFinalAcceptanceCompletionCloseoutArchives,
+                DemoEvidenceBundleService::compatibilityFinalExternalReviewEvidencePackage
         );
     }
 
@@ -284,6 +346,8 @@ public class DemoEvidenceBundleService {
                 taskEvidenceAcceptanceCertificateEvidence(taskEvidenceAcceptanceCertificateArchiveSupplier.get());
         DemoFinalHandoffReportPackageArchiveEvidenceVo finalHandoffReportPackageArchiveEvidence =
                 finalHandoffReportPackageArchiveEvidence(finalHandoffReportPackageArchiveSupplier.get());
+        DemoFinalExternalReviewEvidencePackageVo finalExternalReviewEvidencePackage =
+                finalExternalReviewEvidencePackageSupplier.get();
 
         DemoAdapterFixtureEvidenceVo adapterFixtureEvidence = adapterFixtureEvidence(fixtures);
         DemoEvaluationRunReadinessEvidenceVo evaluationRunReadinessEvidence = evaluationRunReadinessEvidence(evaluationRunReadiness);
@@ -310,7 +374,8 @@ public class DemoEvidenceBundleService {
                 launchAcceptanceCloseoutEvidence,
                 launchAcceptanceCertificateEvidence,
                 taskEvidenceAcceptanceCertificateEvidence,
-                finalHandoffReportPackageArchiveEvidence
+                finalHandoffReportPackageArchiveEvidence,
+                finalExternalReviewEvidencePackage
         );
         DemoReadinessStatus status = aggregateStatus(
                 readiness,
@@ -326,7 +391,8 @@ public class DemoEvidenceBundleService {
                 launchAcceptanceCloseoutEvidence,
                 launchAcceptanceCertificateEvidence,
                 taskEvidenceAcceptanceCertificateEvidence,
-                finalHandoffReportPackageArchiveEvidence
+                finalHandoffReportPackageArchiveEvidence,
+                finalExternalReviewEvidencePackage
         );
 
         return new DemoEvidenceBundleVo(
@@ -382,6 +448,7 @@ public class DemoEvidenceBundleService {
                 finalAcceptanceShareFinalization,
                 finalAcceptanceCompletionCloseout,
                 finalAcceptanceCompletionCloseoutArchiveEvidence,
+                finalExternalReviewEvidencePackage,
                 handoffShareCenter.deliveryReceiptRecorded(),
                 handoffShareCenter.latestDeliveryReceiptId(),
                 handoffShareCenter.latestDeliveryTarget(),
@@ -838,6 +905,43 @@ public class DemoEvidenceBundleService {
         ));
     }
 
+    private static DemoFinalExternalReviewEvidencePackageVo compatibilityFinalExternalReviewEvidencePackage() {
+        return new DemoFinalExternalReviewEvidencePackageVo(
+                DemoReadinessStatus.READY,
+                true,
+                "PatchPilot final external-review evidence package is ready.",
+                "Share this package with reviewers as the frozen external-review record.",
+                DemoReadinessStatus.READY,
+                DemoReadinessStatus.READY,
+                DemoReadinessStatus.READY,
+                DemoReadinessStatus.READY,
+                DemoReadinessStatus.READY,
+                DemoReadinessStatus.READY,
+                null,
+                null,
+                null,
+                "final-acceptance-completion-archive-compat",
+                "final-acceptance-completion-evidence-delivery-receipt-compat",
+                "final-acceptance-completion-closeout-archive-compat",
+                null,
+                null,
+                null,
+                "FRESH",
+                Instant.EPOCH,
+                Instant.EPOCH,
+                List.of(new DemoFinalExternalReviewEvidencePackageVo.Check(
+                        "Final external-review evidence package",
+                        DemoReadinessStatus.READY,
+                        "Compatibility final external-review package is ready.",
+                        "No action needed."
+                )),
+                List.of("Compatibility final external-review evidence is ready."),
+                List.of("Download final external-review evidence package."),
+                "Compatibility final external-review package is read-only.",
+                "# PatchPilot Final External Review Evidence Package"
+        );
+    }
+
     private static DemoReadinessStatus aggregateStatus(
             DemoReadinessVo readiness,
             DemoSmokeChecklistVo smokeChecklist,
@@ -852,7 +956,8 @@ public class DemoEvidenceBundleService {
             DemoLaunchAcceptanceCloseoutEvidenceVo launchAcceptanceCloseoutEvidence,
             DemoLaunchAcceptanceCertificateEvidenceVo launchAcceptanceCertificateEvidence,
             DemoTaskEvidenceAcceptanceCertificateEvidenceVo taskEvidenceAcceptanceCertificateEvidence,
-            DemoFinalHandoffReportPackageArchiveEvidenceVo finalHandoffReportPackageArchiveEvidence
+            DemoFinalHandoffReportPackageArchiveEvidenceVo finalHandoffReportPackageArchiveEvidence,
+            DemoFinalExternalReviewEvidencePackageVo finalExternalReviewEvidencePackage
     ) {
         if (readiness.status() == DemoReadinessStatus.BLOCKED
                 || smokeChecklist.status() == DemoSmokeChecklistStatus.BLOCKED
@@ -865,7 +970,8 @@ public class DemoEvidenceBundleService {
                 || launchAcceptanceCloseoutEvidence.status() == DemoReadinessStatus.BLOCKED
                 || launchAcceptanceCertificateEvidence.status() == DemoReadinessStatus.BLOCKED
                 || taskEvidenceAcceptanceCertificateEvidence.status() == DemoReadinessStatus.BLOCKED
-                || finalHandoffReportPackageArchiveEvidence.status() == DemoReadinessStatus.BLOCKED) {
+                || finalHandoffReportPackageArchiveEvidence.status() == DemoReadinessStatus.BLOCKED
+                || finalExternalReviewEvidencePackage.status() == DemoReadinessStatus.BLOCKED) {
             return DemoReadinessStatus.BLOCKED;
         }
         if (readiness.status() == DemoReadinessStatus.NEEDS_ATTENTION
@@ -881,7 +987,8 @@ public class DemoEvidenceBundleService {
                 || launchAcceptanceCloseoutEvidence.status() == DemoReadinessStatus.NEEDS_ATTENTION
                 || launchAcceptanceCertificateEvidence.status() == DemoReadinessStatus.NEEDS_ATTENTION
                 || taskEvidenceAcceptanceCertificateEvidence.status() == DemoReadinessStatus.NEEDS_ATTENTION
-                || finalHandoffReportPackageArchiveEvidence.status() == DemoReadinessStatus.NEEDS_ATTENTION) {
+                || finalHandoffReportPackageArchiveEvidence.status() == DemoReadinessStatus.NEEDS_ATTENTION
+                || finalExternalReviewEvidencePackage.status() == DemoReadinessStatus.NEEDS_ATTENTION) {
             return DemoReadinessStatus.NEEDS_ATTENTION;
         }
         return DemoReadinessStatus.READY;
@@ -938,7 +1045,8 @@ public class DemoEvidenceBundleService {
             DemoLaunchAcceptanceCloseoutEvidenceVo launchAcceptanceCloseoutEvidence,
             DemoLaunchAcceptanceCertificateEvidenceVo launchAcceptanceCertificateEvidence,
             DemoTaskEvidenceAcceptanceCertificateEvidenceVo taskEvidenceAcceptanceCertificateEvidence,
-            DemoFinalHandoffReportPackageArchiveEvidenceVo finalHandoffReportPackageArchiveEvidence
+            DemoFinalHandoffReportPackageArchiveEvidenceVo finalHandoffReportPackageArchiveEvidence,
+            DemoFinalExternalReviewEvidencePackageVo finalExternalReviewEvidencePackage
     ) {
         List<String> actions = new ArrayList<>();
         actions.addAll(readiness.nextActions());
@@ -981,6 +1089,9 @@ public class DemoEvidenceBundleService {
         }
         if (finalHandoffReportPackageArchiveEvidence.status() != DemoReadinessStatus.READY) {
             actions.add(finalHandoffReportPackageArchiveEvidence.nextAction());
+        }
+        if (finalExternalReviewEvidencePackage.status() != DemoReadinessStatus.READY) {
+            actions.add(finalExternalReviewEvidencePackage.nextAction());
         }
         List<String> distinctActions = actions.stream()
                 .filter(DemoEvidenceBundleService::hasText)

@@ -5850,3 +5850,24 @@ Validation so far:
 - `npm test -- --reporter=basic`: passed, 30 test files and 441 tests.
 - `npm run build`: passed with the existing Vite large-chunk warning.
 - `git diff --check`: passed.
+
+## 2026-06-29 - 291 Final external review evidence bundle
+
+- Started `291-final-external-review-evidence-bundle` to promote the final external-review evidence package into the first demo evidence readout and copied runbook.
+- Planned a complete feature slice: backend evidence-bundle aggregation, runbook package export, frontend top-level evidence rendering, legacy fallback behavior, README/product/frontend docs, plan doc, and regression tests.
+- Added backend coverage for the bundle exposing the final package, downgrading bundle readiness when the package is not ready, and copying package evidence into the runbook.
+- Added frontend coverage for rendering the final external-review evidence package card in `DemoEvidenceBundlePanel` and showing safe missing-package guidance for legacy bundle responses.
+- Implemented `DemoEvidenceBundleVo.finalExternalReviewEvidencePackage`, wired `DemoEvidenceBundleService` to read `DemoFinalExternalReviewEvidencePackageService`, and included package status in bundle readiness and next actions.
+- Updated `DemoRunbookService` so copied runbooks include final external-review package status, ready flag, closeout archive, completion archive, completion evidence delivery receipt, task, Pull Request, delivery target, freshness, next action, and download actions.
+- Updated the dashboard evidence bundle panel so operators can see final reviewer-facing proof from the top-level demo evidence bundle.
+- Updated README, product spec, frontend design doc, and added this plan document.
+
+Validation so far:
+
+- `mvn -q -pl PatchPilot -Dtest=DemoEvidenceBundleServiceTests,DemoRunbookServiceTests test`: passed.
+- `npm test -- --run src/dashboard/components/DemoEvidenceBundlePanel.test.tsx`: first failed because repeated closeout archive ids and download actions now appeared in both archive and final package cards; passed after changing those assertions to count-based checks.
+- `npm test -- --run src/dashboard/components/DemoEvidenceBundlePanel.test.tsx src/App.test.tsx`: passed, 2 test files and 89 tests.
+- `mvn -q -pl PatchPilot test`: passed.
+- `npm test -- --reporter=dot`: passed, 30 test files and 441 tests.
+- `npm run build`: passed with the existing Vite large-chunk warning.
+- `git diff --check`: passed.

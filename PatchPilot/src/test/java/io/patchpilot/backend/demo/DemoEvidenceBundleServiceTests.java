@@ -5,6 +5,7 @@ import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionCloseoutArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceShareFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionCloseoutVo;
+import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageVo;
 import io.patchpilot.backend.demo.domain.DemoFinalHandoffReportPackageArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffFinalizationCheckVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffFinalizationVo;
@@ -76,7 +77,8 @@ class DemoEvidenceBundleServiceTests {
                 () -> List.of(launchAcceptanceCertificateArchive(DemoReadinessStatus.READY, true)),
                 () -> List.of(taskEvidenceAcceptanceCertificateArchive("READY", true)),
                 () -> List.of(finalHandoffReportPackageArchive(DemoReadinessStatus.READY, true)),
-                () -> List.of(finalAcceptanceCompletionCloseoutArchive(DemoReadinessStatus.READY, true))
+                () -> List.of(finalAcceptanceCompletionCloseoutArchive(DemoReadinessStatus.READY, true)),
+                DemoEvidenceBundleServiceTests::finalExternalReviewEvidencePackageReady
         );
 
         DemoEvidenceBundleVo bundle = service.getEvidenceBundle();
@@ -308,6 +310,25 @@ class DemoEvidenceBundleServiceTests {
                 "Download linked final acceptance completion archive final-acceptance-completion-archive-1.",
                 "Download final acceptance completion evidence delivery receipt final-acceptance-completion-evidence-delivery-receipt-1."
         );
+        assertThat(bundle.finalExternalReviewEvidencePackage().status()).isEqualTo(DemoReadinessStatus.READY);
+        assertThat(bundle.finalExternalReviewEvidencePackage().readyForExternalReview()).isTrue();
+        assertThat(bundle.finalExternalReviewEvidencePackage().summary())
+                .isEqualTo("PatchPilot final external-review evidence package is ready.");
+        assertThat(bundle.finalExternalReviewEvidencePackage().nextAction())
+                .isEqualTo("Share this package with reviewers as the frozen external-review record.");
+        assertThat(bundle.finalExternalReviewEvidencePackage().latestTaskId()).isEqualTo("task-2");
+        assertThat(bundle.finalExternalReviewEvidencePackage().latestPullRequestUrl())
+                .isEqualTo("https://github.com/bingqin2/PatchPilot/pull/42");
+        assertThat(bundle.finalExternalReviewEvidencePackage().completionArchiveId())
+                .isEqualTo("final-acceptance-completion-archive-1");
+        assertThat(bundle.finalExternalReviewEvidencePackage().completionEvidenceDeliveryReceiptId())
+                .isEqualTo("final-acceptance-completion-evidence-delivery-receipt-1");
+        assertThat(bundle.finalExternalReviewEvidencePackage().closeoutArchiveId())
+                .isEqualTo("final-acceptance-completion-closeout-archive-1");
+        assertThat(bundle.finalExternalReviewEvidencePackage().downloadActions()).containsExactly(
+                "Download final external-review evidence package.",
+                "Download final acceptance completion closeout archive final-acceptance-completion-closeout-archive-1."
+        );
         assertThat(bundle.handoffShareDeliveryReceiptRecorded()).isFalse();
         assertThat(bundle.handoffShareLatestDeliveryReceiptId()).isNull();
         assertThat(bundle.handoffShareLatestDeliveryTarget()).isNull();
@@ -358,7 +379,8 @@ class DemoEvidenceBundleServiceTests {
                 () -> List.of(launchAcceptanceCertificateArchive(DemoReadinessStatus.READY, true)),
                 () -> List.of(taskEvidenceAcceptanceCertificateArchive("READY", true)),
                 () -> List.of(finalHandoffReportPackageArchive(DemoReadinessStatus.READY, true)),
-                () -> List.of(finalAcceptanceCompletionCloseoutArchive(DemoReadinessStatus.READY, true))
+                () -> List.of(finalAcceptanceCompletionCloseoutArchive(DemoReadinessStatus.READY, true)),
+                DemoEvidenceBundleServiceTests::finalExternalReviewEvidencePackageReady
         );
 
         DemoEvidenceBundleVo bundle = service.getEvidenceBundle();
@@ -402,7 +424,51 @@ class DemoEvidenceBundleServiceTests {
         assertThat(bundle.finalAcceptanceShareFinalization().deliveryReceiptFresh()).isTrue();
         assertThat(bundle.finalAcceptanceCompletionCloseoutEvidence().closed()).isTrue();
         assertThat(bundle.finalAcceptanceCompletionCloseoutArchiveEvidence().closed()).isTrue();
+        assertThat(bundle.finalExternalReviewEvidencePackage().readyForExternalReview()).isTrue();
         assertThat(bundle.nextActions()).containsExactly("Use this evidence bundle as the live demo baseline.");
+    }
+
+    @Test
+    void should_require_final_external_review_package_before_reporting_bundle_ready() {
+        DemoEvidenceBundleService service = new DemoEvidenceBundleService(
+                () -> readiness(DemoReadinessStatus.READY, List.of()),
+                () -> smokeChecklist(DemoSmokeChecklistStatus.READY, List.of()),
+                DemoEvidenceBundleServiceTests::configuration,
+                () -> List.of(fixture("java-maven", "PASS")),
+                FixTaskQueueSummaryVo::empty,
+                () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/42")),
+                () -> List.of(webhookDelivery("delivery-1", WebhookDeliveryDiagnosticStatus.TASK_CREATED, "task-1")),
+                DemoEvidenceBundleServiceTests::webhookSetupReadiness,
+                () -> rejectedTriggerSummary(0),
+                List::of,
+                DemoEvidenceBundleServiceTests::evaluationRunReadiness,
+                DemoEvidenceBundleServiceTests::handoffPackageArchiveSummary,
+                DemoEvidenceBundleServiceTests::deliveredHandoffShareCenter,
+                DemoEvidenceBundleServiceTests::handoffFinalizationReady,
+                DemoEvidenceBundleServiceTests::launchEvidenceShareCenter,
+                DemoEvidenceBundleServiceTests::launchEvidenceFinalizationReady,
+                DemoEvidenceBundleServiceTests::finalAcceptanceShareFinalizationReady,
+                DemoEvidenceBundleServiceTests::finalAcceptanceCompletionCloseoutReady,
+                () -> List.of(launchAcceptanceCloseoutArchive(DemoReadinessStatus.READY, true)),
+                () -> List.of(launchAcceptanceCertificateArchive(DemoReadinessStatus.READY, true)),
+                () -> List.of(taskEvidenceAcceptanceCertificateArchive("READY", true)),
+                () -> List.of(finalHandoffReportPackageArchive(DemoReadinessStatus.READY, true)),
+                () -> List.of(finalAcceptanceCompletionCloseoutArchive(DemoReadinessStatus.READY, true)),
+                DemoEvidenceBundleServiceTests::finalExternalReviewEvidencePackageWaitingForArchive
+        );
+
+        DemoEvidenceBundleVo bundle = service.getEvidenceBundle();
+
+        assertThat(bundle.status()).isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
+        assertThat(bundle.summary()).isEqualTo("Demo evidence bundle needs attention.");
+        assertThat(bundle.finalExternalReviewEvidencePackage().status())
+                .isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
+        assertThat(bundle.finalExternalReviewEvidencePackage().readyForExternalReview()).isFalse();
+        assertThat(bundle.finalExternalReviewEvidencePackage().summary())
+                .isEqualTo("PatchPilot final external-review evidence package is waiting for a frozen closeout archive.");
+        assertThat(bundle.nextActions()).containsExactly(
+                "Archive the READY final acceptance completion closeout before sharing the final external-review package."
+        );
     }
 
     @Test
@@ -1305,6 +1371,83 @@ class DemoEvidenceBundleServiceTests {
                 "# PatchPilot Final Acceptance Completion Closeout Archive",
                 Instant.parse("2026-06-29T04:00:00Z"),
                 Instant.parse("2026-06-29T04:15:00Z")
+        );
+    }
+
+    private static DemoFinalExternalReviewEvidencePackageVo finalExternalReviewEvidencePackageReady() {
+        return new DemoFinalExternalReviewEvidencePackageVo(
+                DemoReadinessStatus.READY,
+                true,
+                "PatchPilot final external-review evidence package is ready.",
+                "Share this package with reviewers as the frozen external-review record.",
+                DemoReadinessStatus.READY,
+                DemoReadinessStatus.READY,
+                DemoReadinessStatus.READY,
+                DemoReadinessStatus.READY,
+                DemoReadinessStatus.READY,
+                DemoReadinessStatus.READY,
+                "task-2",
+                "https://github.com/bingqin2/PatchPilot/pull/42",
+                "final-acceptance-share-package-archive-1",
+                "final-acceptance-completion-archive-1",
+                "final-acceptance-completion-evidence-delivery-receipt-1",
+                "final-acceptance-completion-closeout-archive-1",
+                "reviewer@example.com",
+                "email",
+                "2026-06-29T03:45:00Z",
+                "FRESH",
+                Instant.parse("2026-06-29T04:15:00Z"),
+                Instant.parse("2026-06-29T04:30:00Z"),
+                List.of(new DemoFinalExternalReviewEvidencePackageVo.Check(
+                        "Frozen closeout archive",
+                        DemoReadinessStatus.READY,
+                        "Frozen closeout archive final-acceptance-completion-closeout-archive-1 is closed.",
+                        "No action needed."
+                )),
+                List.of("Frozen closeout archive final-acceptance-completion-closeout-archive-1 is READY and closed."),
+                List.of(
+                        "Download final external-review evidence package.",
+                        "Download final acceptance completion closeout archive final-acceptance-completion-closeout-archive-1."
+                ),
+                "GET /api/demo/final-external-review-evidence-package is read-only.",
+                "# PatchPilot Final External Review Evidence Package"
+        );
+    }
+
+    private static DemoFinalExternalReviewEvidencePackageVo finalExternalReviewEvidencePackageWaitingForArchive() {
+        return new DemoFinalExternalReviewEvidencePackageVo(
+                DemoReadinessStatus.NEEDS_ATTENTION,
+                false,
+                "PatchPilot final external-review evidence package is waiting for a frozen closeout archive.",
+                "Archive the READY final acceptance completion closeout before sharing the final external-review package.",
+                DemoReadinessStatus.READY,
+                DemoReadinessStatus.READY,
+                DemoReadinessStatus.READY,
+                DemoReadinessStatus.READY,
+                DemoReadinessStatus.READY,
+                DemoReadinessStatus.NEEDS_ATTENTION,
+                "task-2",
+                "https://github.com/bingqin2/PatchPilot/pull/42",
+                "final-acceptance-share-package-archive-1",
+                "final-acceptance-completion-archive-1",
+                "final-acceptance-completion-evidence-delivery-receipt-1",
+                null,
+                "reviewer@example.com",
+                "email",
+                "2026-06-29T03:45:00Z",
+                "FRESH",
+                null,
+                Instant.parse("2026-06-29T04:30:00Z"),
+                List.of(new DemoFinalExternalReviewEvidencePackageVo.Check(
+                        "Frozen closeout archive",
+                        DemoReadinessStatus.NEEDS_ATTENTION,
+                        "No frozen final acceptance completion closeout archive is available.",
+                        "Archive the READY final acceptance completion closeout."
+                )),
+                List.of("No frozen final acceptance completion closeout archive is available."),
+                List.of("Download final external-review evidence package."),
+                "GET /api/demo/final-external-review-evidence-package is read-only.",
+                "# PatchPilot Final External Review Evidence Package"
         );
     }
 
