@@ -1261,6 +1261,41 @@ export interface DemoFinalAcceptanceCompletionCloseoutArchiveEvidence {
   downloadActions: string[];
 }
 
+export interface DemoFinalExternalReviewEvidencePackage {
+  status: DemoReadinessStatus;
+  readyForExternalReview: boolean;
+  summary: string;
+  nextAction: string;
+  finalAcceptanceSummaryStatus: DemoReadinessStatus;
+  finalAcceptanceShareFinalizationStatus: DemoReadinessStatus;
+  completionEvidenceBundleStatus: DemoReadinessStatus;
+  completionDeliveryFinalizationStatus: DemoReadinessStatus;
+  completionCloseoutStatus: DemoReadinessStatus;
+  closeoutArchiveStatus: DemoReadinessStatus;
+  latestTaskId: string | null;
+  latestPullRequestUrl: string | null;
+  finalAcceptanceSharePackageArchiveId: string | null;
+  completionArchiveId: string | null;
+  completionEvidenceDeliveryReceiptId: string | null;
+  closeoutArchiveId: string | null;
+  deliveryTarget: string | null;
+  deliveryChannel: string | null;
+  deliveredAt: string | null;
+  deliveryReceiptFreshness: string | null;
+  closeoutArchivedAt: string | null;
+  generatedAt: string;
+  checks: Array<{
+    name: string;
+    status: DemoReadinessStatus;
+    summary: string;
+    nextAction: string;
+  }>;
+  evidenceNotes: string[];
+  downloadActions: string[];
+  sideEffectContract: string;
+  markdownReport: string;
+}
+
 export interface DemoEvidenceBundle {
   status: DemoReadinessStatus;
   summary: string;

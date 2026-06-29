@@ -9,6 +9,7 @@ import type {
   DemoFinalAcceptanceCompletionEvidenceDeliveryFinalization,
   DemoFinalAcceptanceCompletionEvidenceDeliveryReceipt,
   DemoFinalAcceptanceCompletionEvidenceDeliveryReceiptInput,
+  DemoFinalExternalReviewEvidencePackage,
   DemoFinalAcceptanceShareDeliveryReceipt,
   DemoFinalAcceptanceShareDeliveryReceiptInput,
   DemoFinalAcceptanceShareFinalization,
@@ -30,6 +31,7 @@ interface DemoAcceptanceSummaryPanelProps {
   completionEvidenceDeliveryReceipts: DemoFinalAcceptanceCompletionEvidenceDeliveryReceipt[];
   completionEvidenceDeliveryFinalization?: DemoFinalAcceptanceCompletionEvidenceDeliveryFinalization | null;
   completionCloseout?: DemoFinalAcceptanceCompletionCloseout | null;
+  finalExternalReviewEvidencePackage?: DemoFinalExternalReviewEvidencePackage | null;
   error: string | null;
   sharePackageError: string | null;
   sharePackageArchiveError: string | null;
@@ -41,6 +43,7 @@ interface DemoAcceptanceSummaryPanelProps {
   completionEvidenceDeliveryReceiptError: string | null;
   completionEvidenceDeliveryFinalizationError?: string | null;
   completionCloseoutError?: string | null;
+  finalExternalReviewEvidencePackageError?: string | null;
   onDownloadReport: () => Promise<Blob>;
   onDownloadSharePackageReport: () => Promise<Blob>;
   onArchiveSharePackage: () => Promise<DemoFinalAcceptanceSharePackageArchive>;
@@ -61,6 +64,7 @@ interface DemoAcceptanceSummaryPanelProps {
   onDownloadCompletionEvidenceDeliveryReceiptReport: (receiptId: string) => Promise<Blob>;
   onDownloadCompletionEvidenceDeliveryFinalizationReport?: () => Promise<Blob>;
   onDownloadCompletionCloseoutReport?: () => Promise<Blob>;
+  onDownloadFinalExternalReviewEvidencePackageReport?: () => Promise<Blob>;
 }
 
 export function DemoAcceptanceSummaryPanel({
@@ -75,6 +79,7 @@ export function DemoAcceptanceSummaryPanel({
   completionEvidenceDeliveryReceipts,
   completionEvidenceDeliveryFinalization = null,
   completionCloseout = null,
+  finalExternalReviewEvidencePackage = null,
   error,
   sharePackageError,
   sharePackageArchiveError,
@@ -86,6 +91,7 @@ export function DemoAcceptanceSummaryPanel({
   completionEvidenceDeliveryReceiptError,
   completionEvidenceDeliveryFinalizationError = null,
   completionCloseoutError = null,
+  finalExternalReviewEvidencePackageError = null,
   onDownloadReport,
   onDownloadSharePackageReport,
   onArchiveSharePackage,
@@ -101,7 +107,8 @@ export function DemoAcceptanceSummaryPanel({
   onCreateCompletionEvidenceDeliveryReceipt,
   onDownloadCompletionEvidenceDeliveryReceiptReport,
   onDownloadCompletionEvidenceDeliveryFinalizationReport,
-  onDownloadCompletionCloseoutReport
+  onDownloadCompletionCloseoutReport,
+  onDownloadFinalExternalReviewEvidencePackageReport
 }: DemoAcceptanceSummaryPanelProps) {
   const [downloadStatus, setDownloadStatus] = useState<string | null>(null);
   const [sharePackageCopyStatus, setSharePackageCopyStatus] = useState<string | null>(null);
@@ -124,6 +131,10 @@ export function DemoAcceptanceSummaryPanel({
     setCompletionEvidenceDeliveryFinalizationDownloadStatus
   ] = useState<string | null>(null);
   const [completionCloseoutDownloadStatus, setCompletionCloseoutDownloadStatus] = useState<string | null>(null);
+  const [
+    finalExternalReviewEvidencePackageDownloadStatus,
+    setFinalExternalReviewEvidencePackageDownloadStatus
+  ] = useState<string | null>(null);
   const [deliveryChannel, setDeliveryChannel] = useState('email');
   const [deliveryTarget, setDeliveryTarget] = useState('');
   const [operator, setOperator] = useState('');
@@ -245,6 +256,19 @@ export function DemoAcceptanceSummaryPanel({
       setCompletionCloseoutDownloadStatus('Final acceptance completion closeout report downloaded');
     } catch {
       setCompletionCloseoutDownloadStatus('Final acceptance completion closeout report download failed');
+    }
+  }
+
+  async function downloadFinalExternalReviewEvidencePackage() {
+    if (!onDownloadFinalExternalReviewEvidencePackageReport) {
+      return;
+    }
+    try {
+      const report = await onDownloadFinalExternalReviewEvidencePackageReport();
+      downloadMarkdown(report, 'patchpilot-final-external-review-evidence-package.md');
+      setFinalExternalReviewEvidencePackageDownloadStatus('Final external-review evidence package downloaded');
+    } catch {
+      setFinalExternalReviewEvidencePackageDownloadStatus('Final external-review evidence package download failed');
     }
   }
 
@@ -537,11 +561,110 @@ export function DemoAcceptanceSummaryPanel({
             onCreateCompletionEvidenceDeliveryReceipt={() => void createCompletionEvidenceDeliveryReceipt()}
             onDownloadCompletionEvidenceDeliveryReceipt={(receipt) => void downloadCompletionEvidenceDeliveryReceipt(receipt)}
           />
+
+          <FinalExternalReviewEvidencePackage
+            evidencePackage={finalExternalReviewEvidencePackage}
+            error={finalExternalReviewEvidencePackageError}
+            downloadStatus={finalExternalReviewEvidencePackageDownloadStatus}
+            onDownload={() => void downloadFinalExternalReviewEvidencePackage()}
+          />
         </>
       ) : (
         <div className="empty-state">Final demo acceptance summary has not loaded yet.</div>
       )}
     </section>
+  );
+}
+
+interface FinalExternalReviewEvidencePackageProps {
+  evidencePackage: DemoFinalExternalReviewEvidencePackage | null;
+  error: string | null;
+  downloadStatus: string | null;
+  onDownload: () => void;
+}
+
+function FinalExternalReviewEvidencePackage({
+  evidencePackage,
+  error,
+  downloadStatus,
+  onDownload
+}: FinalExternalReviewEvidencePackageProps) {
+  return (
+    <div className="demo-session-handoff-checks">
+      <div className="demo-session-archive-title-row">
+        <h3>Final external-review evidence package</h3>
+        <div className="demo-session-archive-actions">
+          <button
+            className="secondary-button"
+            type="button"
+            onClick={() => onDownload()}
+            aria-label="Download final external-review package"
+            disabled={!evidencePackage}
+          >
+            <Download size={14} />
+            Download final external-review package
+          </button>
+          {downloadStatus ? <span className="copy-status">{downloadStatus}</span> : null}
+        </div>
+      </div>
+      {error ? (
+        <div className="adapter-api-error">
+          <strong>Final external-review evidence package unavailable</strong>
+          <span>{error}</span>
+        </div>
+      ) : null}
+      {evidencePackage ? (
+        <>
+          <div className="demo-session-summary">
+            <div>
+              <span>External review</span>
+              <strong>{evidencePackage.readyForExternalReview ? 'Ready for external review' : statusLabel(evidencePackage.status)}</strong>
+              <small>{evidencePackage.summary}</small>
+            </div>
+            <div>
+              <span>Frozen closeout archive</span>
+              <strong>{evidencePackage.closeoutArchiveId ?? 'No closeout archive'}</strong>
+              <small>{evidencePackage.closeoutArchivedAt ? `Archived ${compactDateTime(evidencePackage.closeoutArchivedAt)}` : evidencePackage.nextAction}</small>
+            </div>
+            <div>
+              <span>Completion proof</span>
+              <strong>{evidencePackage.completionArchiveId ?? 'No completion archive'}</strong>
+              <small>{evidencePackage.completionEvidenceDeliveryReceiptId ?? 'No completion delivery receipt'}</small>
+            </div>
+            <div>
+              <span>Delivery target</span>
+              <strong>{evidencePackage.deliveryTarget ?? 'No delivery target'}</strong>
+              <small>{evidencePackage.deliveryChannel ?? 'No delivery channel'} - {evidencePackage.deliveryReceiptFreshness ?? 'No freshness'}</small>
+            </div>
+          </div>
+          <ul>
+            {evidencePackage.checks.map((check) => (
+              <li key={check.name}>
+                <div className="demo-webhook-delivery-main">
+                  <strong>{check.name}</strong>
+                  <span>{statusLabel(check.status)}</span>
+                </div>
+                <p>{check.summary}</p>
+                <small>{check.nextAction}</small>
+              </li>
+            ))}
+          </ul>
+          <CompactList
+            title="External review evidence"
+            items={evidencePackage.evidenceNotes}
+            emptyText="No final external-review evidence notes available."
+          />
+          <CompactList
+            title="External review downloads"
+            items={evidencePackage.downloadActions}
+            emptyText="No final external-review download actions available."
+          />
+          <small>{evidencePackage.sideEffectContract}</small>
+        </>
+      ) : (
+        <p className="empty-state">Final external-review evidence package has not loaded yet.</p>
+      )}
+    </div>
   );
 }
 

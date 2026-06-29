@@ -5829,3 +5829,24 @@ Validation so far:
 - `npm test -- --reporter=basic src/dashboard/components/DemoEvidenceBundlePanel.test.tsx src/dashboard/components/DemoSessionSnapshotPanel.test.tsx src/App.test.tsx`: passed, 3 test files and 112 tests.
 - `npm test -- --reporter=basic`: passed, 30 test files and 438 tests.
 - `git diff --check`: passed.
+
+## 2026-06-29 - 290 Final external review evidence package
+
+- Started `290-final-external-review-evidence-package` to provide one final reviewer-facing package that aggregates the accepted final demo summary, finalized reviewer package, completion evidence bundle, completion delivery finalization, final completion closeout, and latest frozen closeout archive.
+- Planned a complete feature slice: backend read-only package VO/service/controller endpoints, frontend type/API/App loading, final acceptance panel rendering/downloads, README/product/frontend docs, plan doc, and regression tests.
+- RED backend tests were added first for READY package generation, missing frozen archive guidance, blocked final acceptance guidance, not-closed archive guidance, REST serialization, and Markdown report download.
+- RED frontend tests were added first for package API helpers, final acceptance panel rendering, package report download behavior, and full App fixture loading.
+- Implemented `DemoFinalExternalReviewEvidencePackageService` and `DemoFinalExternalReviewEvidencePackageVo` so the package is `READY` only when the full final acceptance/completion chain is ready and the latest frozen closeout archive is `READY` and closed.
+- Added `GET /api/demo/final-external-review-evidence-package` and `GET /api/demo/final-external-review-evidence-package/report/download`.
+- Updated the final demo acceptance dashboard panel with final external-review package status, frozen archive proof, delivery proof, checks, evidence notes, download actions, side-effect contract, and Markdown download.
+- Updated App loading and refresh wiring so completion archive, completion evidence delivery receipt, and completion closeout archive actions refresh the final external-review package.
+- Updated README, product spec, frontend design doc, and added this plan document.
+
+Validation so far:
+
+- `mvn -q -pl PatchPilot -Dtest=DemoFinalExternalReviewEvidencePackageServiceTests,DemoReadinessControllerTests test`: first failed because the package VO/service/controller route did not exist; passed after backend implementation.
+- `npm test -- --reporter=basic src/api.test.ts src/dashboard/components/DemoAcceptanceSummaryPanel.test.tsx src/App.test.tsx`: first failed because the API helpers and panel package section did not exist, then failed on expected duplicate closeout archive id evidence after the package section was added; passed after App wiring and assertion updates, 3 test files and 272 tests.
+- `mvn -q -pl PatchPilot test`: passed.
+- `npm test -- --reporter=basic`: passed, 30 test files and 441 tests.
+- `npm run build`: passed with the existing Vite large-chunk warning.
+- `git diff --check`: passed.

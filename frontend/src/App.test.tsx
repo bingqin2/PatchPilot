@@ -2788,6 +2788,50 @@ const demoFinalAcceptanceCompletionCloseoutArchive = {
   archivedAt: '2026-06-29T06:30:00Z'
 };
 
+const demoFinalExternalReviewEvidencePackage = {
+  status: 'READY',
+  readyForExternalReview: true,
+  summary: 'PatchPilot final external-review evidence package is ready.',
+  nextAction: 'Share this package with reviewers as the frozen external-review record.',
+  finalAcceptanceSummaryStatus: 'READY',
+  finalAcceptanceShareFinalizationStatus: 'READY',
+  completionEvidenceBundleStatus: 'READY',
+  completionDeliveryFinalizationStatus: 'READY',
+  completionCloseoutStatus: 'READY',
+  closeoutArchiveStatus: 'READY',
+  latestTaskId: 'task-1',
+  latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+  finalAcceptanceSharePackageArchiveId: 'final-acceptance-share-package-archive-1',
+  completionArchiveId: 'final-acceptance-completion-archive-1',
+  completionEvidenceDeliveryReceiptId: 'final-acceptance-completion-evidence-delivery-receipt-1',
+  closeoutArchiveId: 'final-acceptance-completion-closeout-archive-1',
+  deliveryTarget: 'reviewer@example.com',
+  deliveryChannel: 'email',
+  deliveredAt: '2026-06-29T03:10:00Z',
+  deliveryReceiptFreshness: 'FRESH',
+  closeoutArchivedAt: '2026-06-29T06:30:00Z',
+  generatedAt: '2026-06-29T07:00:00Z',
+  checks: [
+    {
+      name: 'Frozen final acceptance completion closeout archive',
+      status: 'READY',
+      summary: 'Frozen closeout archive final-acceptance-completion-closeout-archive-1 is READY and closed.',
+      nextAction: 'No action needed.'
+    }
+  ],
+  evidenceNotes: [
+    'Final demo acceptance summary is accepted.',
+    'Frozen closeout archive final-acceptance-completion-closeout-archive-1 is READY and closed.'
+  ],
+  downloadActions: [
+    'Download final external-review evidence package.',
+    'Download final acceptance completion closeout archive final-acceptance-completion-closeout-archive-1.'
+  ],
+  sideEffectContract:
+    'GET /api/demo/final-external-review-evidence-package is read-only: it does not create tasks, call the model, run tests, archive records, record receipts, mutate Git, send messages, or write to GitHub.',
+  markdownReport: '# PatchPilot Final External Review Evidence Package'
+};
+
 const demoLaunchEvidenceDeliveryReceipt = {
   id: 'launch-delivery-receipt-1',
   status: 'READY',
@@ -3084,6 +3128,18 @@ beforeEach(() => {
         ok: true,
         status: 200,
         blob: async () => new Blob(['# PatchPilot Final Acceptance Completion Closeout'], {
+          type: 'text/markdown;charset=UTF-8'
+        })
+      } as Response);
+    }
+    if (url === '/api/demo/final-external-review-evidence-package') {
+      return jsonResponse(demoFinalExternalReviewEvidencePackage);
+    }
+    if (url === '/api/demo/final-external-review-evidence-package/report/download') {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        blob: async () => new Blob(['# PatchPilot Final External Review Evidence Package'], {
           type: 'text/markdown;charset=UTF-8'
         })
       } as Response);
@@ -4204,6 +4260,7 @@ test('renders operational task dashboard from backend APIs', async () => {
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
     '/api/demo/final-acceptance-completion-closeout/archives'
   ));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-external-review-evidence-package'));
   await waitFor(() =>
     expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-acceptance-completion-evidence-delivery-receipts')
   );
@@ -4227,7 +4284,8 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(within(acceptancePanel).getByRole('heading', {
     name: 'Archived final acceptance completion closeouts'
   })).toBeInTheDocument();
-  expect(within(acceptancePanel).getByText('final-acceptance-completion-closeout-archive-1')).toBeInTheDocument();
+  expect(within(acceptancePanel).getAllByText('final-acceptance-completion-closeout-archive-1').length)
+    .toBeGreaterThan(0);
   expect(within(acceptancePanel).getAllByText('PatchPilot final demo acceptance: task-1')).not.toHaveLength(0);
   expect(within(acceptancePanel).getByRole('heading', { name: 'Archived final acceptance packages' })).toBeInTheDocument();
   expect(within(acceptancePanel).getByText('final-acceptance-share-package-archive-1')).toBeInTheDocument();
@@ -4235,6 +4293,15 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(within(acceptancePanel).getByRole('heading', { name: 'Final acceptance completion closeout' })).toBeInTheDocument();
   expect(within(acceptancePanel).getAllByText(
     'PatchPilot final acceptance completion is closed with accepted certificates, finalized sharing, and fresh completion delivery proof.'
+  )).not.toHaveLength(0);
+  expect(within(acceptancePanel).getByRole('heading', {
+    name: 'Final external-review evidence package'
+  })).toBeInTheDocument();
+  expect(within(acceptancePanel).getByText(
+    'PatchPilot final external-review evidence package is ready.'
+  )).toBeInTheDocument();
+  expect(within(acceptancePanel).getAllByText(
+    'Frozen closeout archive final-acceptance-completion-closeout-archive-1 is READY and closed.'
   )).not.toHaveLength(0);
   expect(screen.getByLabelText('Webhook setup readiness')).toHaveTextContent('# PatchPilot Webhook Setup Readiness');
   expect(screen.getAllByText('demo-session-20260624T003000Z').length).toBeGreaterThanOrEqual(4);
@@ -6897,6 +6964,9 @@ function defaultAppResponse(input: RequestInfo | URL, init?: RequestInit) {
   }
   if (url === '/api/demo/final-acceptance-completion-closeout/archives') {
     return jsonResponse([demoFinalAcceptanceCompletionCloseoutArchive]);
+  }
+  if (url === '/api/demo/final-external-review-evidence-package') {
+    return jsonResponse(demoFinalExternalReviewEvidencePackage);
   }
   if (url === '/api/demo/final-acceptance-completion-archives' && init?.method === 'POST') {
     return jsonResponse(demoFinalAcceptanceCompletionArchive);
