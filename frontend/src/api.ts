@@ -18,6 +18,7 @@ import type {
   DemoFinalAcceptanceCompletionEvidenceDeliveryReceiptInput,
   DemoFinalExternalReviewEvidencePackage,
   DemoFinalExternalReviewEvidencePackageArchive,
+  DemoFinalExternalReviewEvidencePackageDeliveryFinalization,
   DemoFinalExternalReviewEvidencePackageDeliveryReceipt,
   DemoFinalExternalReviewEvidencePackageDeliveryReceiptInput,
   DemoFinalAcceptanceShareDeliveryReceipt,
@@ -400,6 +401,18 @@ export async function downloadDemoFinalExternalReviewEvidencePackageDeliveryRece
   return getBlobApi(
     `/api/demo/final-external-review-evidence-package/delivery-receipts/${encodeURIComponent(receiptId)}/report/download`
   );
+}
+
+export async function getDemoFinalExternalReviewEvidencePackageDeliveryFinalization(): Promise<
+  DemoFinalExternalReviewEvidencePackageDeliveryFinalization
+> {
+  return getApi<DemoFinalExternalReviewEvidencePackageDeliveryFinalization>(
+    '/api/demo/final-external-review-evidence-package/delivery-finalization'
+  );
+}
+
+export async function downloadDemoFinalExternalReviewEvidencePackageDeliveryFinalizationReport(): Promise<Blob> {
+  return getBlobApi('/api/demo/final-external-review-evidence-package/delivery-finalization/report/download');
 }
 
 export async function archiveDemoFinalAcceptanceCompletionCloseout(): Promise<DemoFinalAcceptanceCompletionCloseoutArchive> {

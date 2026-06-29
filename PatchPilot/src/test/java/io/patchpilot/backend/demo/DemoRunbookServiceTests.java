@@ -8,6 +8,7 @@ import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionCloseoutAr
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionCloseoutVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceShareFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageArchiveEvidenceVo;
+import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageDeliveryFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageDeliveryReceiptEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageVo;
 import io.patchpilot.backend.demo.domain.DemoFinalHandoffReportPackageArchiveEvidenceVo;
@@ -150,6 +151,13 @@ class DemoRunbookServiceTests {
                 .contains("- Final external-review package delivered at: `2026-06-29T05:00:00Z`")
                 .contains("- Final external-review package delivery next action: Use the delivery receipt as proof that the frozen final external-review package was shared.")
                 .contains("- Final external-review package delivery download: Download final external-review package delivery receipt final-external-review-package-delivery-receipt-1.")
+                .contains("- Final external-review package delivery finalization: `READY` - Final external-review package delivery is finalized with a fresh package delivery receipt.")
+                .contains("- Final external-review package delivery finalized: `true`")
+                .contains("- Final external-review finalized package archive: `final-external-review-package-archive-1`")
+                .contains("- Final external-review finalized delivery receipt: `final-external-review-package-delivery-receipt-1`")
+                .contains("- Final external-review finalization receipt freshness: `FRESH`")
+                .contains("- Final external-review package delivery finalization next action: Use the finalization report as proof that the frozen external-review package was delivered.")
+                .contains("- Final external-review package delivery finalization download: Download final external-review package delivery finalization report.")
                 .contains("## Readiness")
                 .contains("- `Credentials`: `READY` - Required credentials are configured.")
                 .contains("## Smoke Checklist")
@@ -347,6 +355,7 @@ class DemoRunbookServiceTests {
                 finalExternalReviewEvidencePackage(),
                 finalExternalReviewEvidencePackageArchiveEvidence(),
                 finalExternalReviewEvidencePackageDeliveryReceiptEvidence(),
+                finalExternalReviewEvidencePackageDeliveryFinalization(),
                 true,
                 "delivery-receipt-1",
                 "Demo reviewer",
@@ -590,6 +599,44 @@ class DemoRunbookServiceTests {
                 "email",
                 Instant.parse("2026-06-29T05:00:00Z"),
                 List.of("Download final external-review package delivery receipt final-external-review-package-delivery-receipt-1.")
+        );
+    }
+
+    private static DemoFinalExternalReviewEvidencePackageDeliveryFinalizationVo
+    finalExternalReviewEvidencePackageDeliveryFinalization() {
+        return new DemoFinalExternalReviewEvidencePackageDeliveryFinalizationVo(
+                DemoReadinessStatus.READY,
+                true,
+                "Final external-review package delivery is finalized with a fresh package delivery receipt.",
+                "Use the finalization report as proof that the frozen external-review package was delivered.",
+                "final-external-review-package-archive-1",
+                "final-external-review-package-delivery-receipt-1",
+                "final-acceptance-completion-closeout-archive-1",
+                "final-acceptance-completion-archive-1",
+                "final-acceptance-completion-evidence-delivery-receipt-1",
+                "task-2",
+                "https://github.com/bingqin2/PatchPilot/pull/42",
+                "reviewer@example.com",
+                "email",
+                "2026-06-29T05:00:00Z",
+                "FRESH",
+                true,
+                "Latest package delivery receipt matches the current frozen final external-review package.",
+                List.of(new DemoFinalExternalReviewEvidencePackageDeliveryFinalizationVo.Check(
+                        "Final external-review package delivery receipt",
+                        DemoReadinessStatus.READY,
+                        "Final external-review package delivery receipt final-external-review-package-delivery-receipt-1 is fresh.",
+                        "No action needed."
+                )),
+                List.of("Final external-review package delivery receipt final-external-review-package-delivery-receipt-1 is fresh."),
+                List.of(
+                        "Download final external-review package delivery finalization report.",
+                        "Download final external-review package archive final-external-review-package-archive-1.",
+                        "Download final external-review package delivery receipt final-external-review-package-delivery-receipt-1."
+                ),
+                "GET /api/demo/final-external-review-evidence-package/delivery-finalization is read-only.",
+                "# PatchPilot Final External Review Package Delivery Finalization",
+                Instant.parse("2026-06-29T05:10:00Z")
         );
     }
 }

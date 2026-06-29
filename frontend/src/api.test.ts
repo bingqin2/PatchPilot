@@ -76,6 +76,8 @@ import {
   createDemoFinalExternalReviewEvidencePackageDeliveryReceipt,
   listDemoFinalExternalReviewEvidencePackageDeliveryReceipts,
   downloadDemoFinalExternalReviewEvidencePackageDeliveryReceiptReport,
+  getDemoFinalExternalReviewEvidencePackageDeliveryFinalization,
+  downloadDemoFinalExternalReviewEvidencePackageDeliveryFinalizationReport,
   archiveDemoFinalAcceptanceCompletionCloseout,
   listDemoFinalAcceptanceCompletionCloseoutArchives,
   downloadDemoFinalAcceptanceCompletionCloseoutArchiveReport,
@@ -1874,6 +1876,81 @@ test('downloads final external-review package delivery receipt report through ba
 
   expect(fetchMock).toHaveBeenCalledWith(
     '/api/demo/final-external-review-evidence-package/delivery-receipts/receipt%2F1/report/download'
+  );
+  expect(downloadedReport).toBe(reportBlob);
+});
+
+test('fetches final external-review package delivery finalization through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        status: 'READY',
+        finalized: true,
+        summary: 'Final external-review package delivery is finalized with a fresh package delivery receipt.',
+        nextAction: 'Use the finalization report as proof that the frozen external-review package was delivered.',
+        latestArchiveId: 'final-external-review-package-archive-1',
+        latestDeliveryReceiptId: 'final-external-review-package-delivery-receipt-1',
+        latestCloseoutArchiveId: 'final-acceptance-completion-closeout-archive-1',
+        latestCompletionArchiveId: 'final-acceptance-completion-archive-1',
+        latestCompletionEvidenceDeliveryReceiptId:
+          'final-acceptance-completion-evidence-delivery-receipt-1',
+        latestTaskId: 'task-8',
+        latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+        latestDeliveryTarget: 'reviewer@example.com',
+        latestDeliveryChannel: 'email',
+        latestDeliveredAt: '2026-06-29T07:20:00Z',
+        deliveryReceiptFreshness: 'FRESH',
+        deliveryReceiptFresh: true,
+        deliveryReceiptFreshnessSummary:
+          'Latest package delivery receipt matches the current frozen final external-review package.',
+        checks: [
+          {
+            name: 'Frozen final external-review package',
+            status: 'READY',
+            summary: 'Frozen final external-review package is ready.',
+            nextAction: 'No action needed.'
+          }
+        ],
+        evidenceNotes: ['Frozen final external-review package final-external-review-package-archive-1 is ready.'],
+        downloadActions: ['Download final external-review package delivery finalization report.'],
+        sideEffectContract:
+          'GET /api/demo/final-external-review-evidence-package/delivery-finalization is read-only.',
+        markdownReport: '# PatchPilot Final External Review Package Delivery Finalization',
+        generatedAt: '2026-06-29T10:00:00Z'
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const finalization = await getDemoFinalExternalReviewEvidencePackageDeliveryFinalization();
+
+  expect(fetchMock).toHaveBeenCalledWith(
+    '/api/demo/final-external-review-evidence-package/delivery-finalization'
+  );
+  expect(finalization.finalized).toBe(true);
+  expect(finalization.latestDeliveryReceiptId)
+    .toBe('final-external-review-package-delivery-receipt-1');
+});
+
+test('downloads final external-review package delivery finalization report through backend API', async () => {
+  const reportBlob = new Blob(['# PatchPilot Final External Review Package Delivery Finalization'], {
+    type: 'text/markdown;charset=UTF-8'
+  });
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    blob: async () => reportBlob
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const downloadedReport = await downloadDemoFinalExternalReviewEvidencePackageDeliveryFinalizationReport();
+
+  expect(fetchMock).toHaveBeenCalledWith(
+    '/api/demo/final-external-review-evidence-package/delivery-finalization/report/download'
   );
   expect(downloadedReport).toBe(reportBlob);
 });

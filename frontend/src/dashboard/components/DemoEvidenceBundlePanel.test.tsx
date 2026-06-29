@@ -432,6 +432,42 @@ const bundle: DemoEvidenceBundle = {
       'Download final external-review package delivery receipt final-external-review-package-delivery-receipt-1.'
     ]
   },
+  finalExternalReviewEvidencePackageDeliveryFinalization: {
+    status: 'READY',
+    finalized: true,
+    summary: 'Final external-review package delivery is finalized with a fresh package delivery receipt.',
+    nextAction: 'Use the finalization report as proof that the frozen external-review package was delivered.',
+    latestArchiveId: 'final-external-review-package-archive-1',
+    latestDeliveryReceiptId: 'final-external-review-package-delivery-receipt-1',
+    latestCloseoutArchiveId: 'final-acceptance-completion-closeout-archive-1',
+    latestCompletionArchiveId: 'final-acceptance-completion-archive-1',
+    latestCompletionEvidenceDeliveryReceiptId: 'final-acceptance-completion-evidence-delivery-receipt-1',
+    latestTaskId: 'task-2',
+    latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+    latestDeliveryTarget: 'reviewer@example.com',
+    latestDeliveryChannel: 'email',
+    latestDeliveredAt: '2026-06-29T05:00:00Z',
+    deliveryReceiptFreshness: 'FRESH',
+    deliveryReceiptFresh: true,
+    deliveryReceiptFreshnessSummary:
+      'Latest package delivery receipt matches the current frozen final external-review package.',
+    checks: [
+      {
+        name: 'Final package delivery receipt',
+        status: 'READY',
+        summary: 'Package delivery receipt final-external-review-package-delivery-receipt-1 matches the archive.',
+        nextAction: 'No action needed.'
+      }
+    ],
+    evidenceNotes: [
+      'Final external-review package archive final-external-review-package-archive-1 has a fresh package delivery receipt.'
+    ],
+    downloadActions: ['Download final external-review package delivery finalization report.'],
+    sideEffectContract:
+      'GET /api/demo/final-external-review-evidence-package/delivery-finalization is read-only.',
+    markdownReport: '# PatchPilot Final External Review Package Delivery Finalization',
+    generatedAt: '2026-06-29T05:10:00Z'
+  },
   handoffShareDeliveryReceiptRecorded: true,
   handoffShareLatestDeliveryReceiptId: 'delivery-receipt-1',
   handoffShareLatestDeliveryTarget: 'maintainer@example.com',
@@ -662,9 +698,28 @@ test('summarizes demo evidence bundle for operators', () => {
     within(panel).getByText('Use the delivery receipt as proof that the frozen final external-review package was shared.')
   ).toBeInTheDocument();
   expect(within(panel).getByText('1 final external-review package delivery receipts')).toBeInTheDocument();
-  expect(within(panel).getByText('final-external-review-package-delivery-receipt-1')).toBeInTheDocument();
+  expect(
+    within(panel).getAllByText('final-external-review-package-delivery-receipt-1').length
+  ).toBeGreaterThanOrEqual(1);
   expect(
     within(panel).getByText('Download final external-review package delivery receipt final-external-review-package-delivery-receipt-1.')
+  ).toBeInTheDocument();
+  expect(within(panel).getByText('Final external-review package delivery finalization')).toBeInTheDocument();
+  expect(within(panel).getAllByText('Finalized').length).toBeGreaterThanOrEqual(4);
+  expect(
+    within(panel).getByText('Final external-review package delivery is finalized with a fresh package delivery receipt.')
+  ).toBeInTheDocument();
+  expect(
+    within(panel).getByText('Use the finalization report as proof that the frozen external-review package was delivered.')
+  ).toBeInTheDocument();
+  expect(
+    within(panel).getByText('Latest package delivery receipt matches the current frozen final external-review package.')
+  ).toBeInTheDocument();
+  expect(
+    within(panel).getAllByText('final-external-review-package-delivery-receipt-1').length
+  ).toBeGreaterThanOrEqual(2);
+  expect(
+    within(panel).getByText('Download final external-review package delivery finalization report.')
   ).toBeInTheDocument();
   expect(within(panel).getByText('Handoff share delivery')).toBeInTheDocument();
   expect(within(panel).getAllByText('Fresh').length).toBeGreaterThanOrEqual(2);
@@ -712,7 +767,8 @@ test('renders missing certificate evidence for legacy bundle responses', () => {
     finalAcceptanceCompletionCloseoutArchiveEvidence: undefined,
     finalExternalReviewEvidencePackage: undefined,
     finalExternalReviewEvidencePackageArchiveEvidence: undefined,
-    finalExternalReviewEvidencePackageDeliveryReceiptEvidence: undefined
+    finalExternalReviewEvidencePackageDeliveryReceiptEvidence: undefined,
+    finalExternalReviewEvidencePackageDeliveryFinalization: undefined
   } as unknown as DemoEvidenceBundle;
 
   render(<DemoEvidenceBundlePanel bundle={legacyBundle} error={null} onCopyRunbook={vi.fn()} />);
@@ -769,6 +825,11 @@ test('renders missing certificate evidence for legacy bundle responses', () => {
     screen.getByText('Share the latest final external-review package archive and record a delivery receipt.')
   ).toBeInTheDocument();
   expect(screen.getByText('No final external-review package delivery receipt')).toBeInTheDocument();
+  expect(screen.getByText('Final external-review package delivery finalization')).toBeInTheDocument();
+  expect(screen.getByText('Final external-review package delivery is not finalized.')).toBeInTheDocument();
+  expect(screen.getByText('Record a fresh package delivery receipt for the latest frozen final external-review package.'))
+    .toBeInTheDocument();
+  expect(screen.getByText('No finalized final external-review package delivery receipt')).toBeInTheDocument();
 });
 
 test('copies demo runbook markdown', async () => {
