@@ -24,6 +24,7 @@ import type {
   DemoFinalExternalReviewEvidencePackageDeliveryReceiptInput,
   DemoFinalExternalReviewDeliveryCertificateArchive,
   DemoFinalExternalReviewDeliveryCertificate,
+  DemoFinalExternalReviewReleaseBundle,
   DemoFinalAcceptanceShareDeliveryReceipt,
   DemoFinalAcceptanceShareDeliveryReceiptInput,
   DemoFinalAcceptanceShareFinalization,
@@ -476,6 +477,18 @@ export async function downloadDemoFinalExternalReviewDeliveryCertificateArchiveR
   return getBlobApi(
     `/api/demo/final-external-review-delivery-certificate/archives/${encodeURIComponent(archiveId)}/report/download`
   );
+}
+
+export async function getDemoFinalExternalReviewReleaseBundle(): Promise<
+  DemoFinalExternalReviewReleaseBundle
+> {
+  return getApi<DemoFinalExternalReviewReleaseBundle>(
+    '/api/demo/final-external-review-release-bundle'
+  );
+}
+
+export async function downloadDemoFinalExternalReviewReleaseBundleReport(): Promise<Blob> {
+  return getBlobApi('/api/demo/final-external-review-release-bundle/report/download');
 }
 
 export async function archiveDemoFinalAcceptanceCompletionCloseout(): Promise<DemoFinalAcceptanceCompletionCloseoutArchive> {

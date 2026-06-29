@@ -1477,6 +1477,35 @@ export interface DemoFinalExternalReviewDeliveryCertificateArchive {
   archivedAt: string;
 }
 
+export interface DemoFinalExternalReviewReleaseBundle {
+  status: DemoReadinessStatus;
+  releaseReady: boolean;
+  summary: string;
+  nextAction: string;
+  latestCertificateArchiveId: string | null;
+  latestDeliveryFinalizationArchiveId: string | null;
+  latestPackageArchiveId: string | null;
+  latestDeliveryReceiptId: string | null;
+  latestTaskId: string | null;
+  latestPullRequestUrl: string | null;
+  latestDeliveryTarget: string | null;
+  latestDeliveryChannel: string | null;
+  latestDeliveredAt: string | null;
+  latestCertificateArchivedAt: string | null;
+  generatedAt: string;
+  requiredAttachments: string[];
+  releaseChecks: Array<{
+    name: string;
+    status: DemoReadinessStatus;
+    summary: string;
+    nextAction: string;
+  }>;
+  evidenceNotes: string[];
+  downloadActions: string[];
+  sideEffectContract: string;
+  markdownReport: string;
+}
+
 export interface DemoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveEvidence {
   status: DemoReadinessStatus;
   archived: boolean;

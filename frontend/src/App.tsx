@@ -58,6 +58,7 @@ import {
   downloadDemoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveReport,
   downloadDemoFinalExternalReviewDeliveryCertificateArchiveReport,
   downloadDemoFinalExternalReviewDeliveryCertificateReport,
+  downloadDemoFinalExternalReviewReleaseBundleReport,
   downloadDemoFinalExternalReviewEvidencePackageDeliveryReceiptReport,
   downloadDemoFinalExternalReviewEvidencePackageArchiveReport,
   downloadDemoFinalExternalReviewEvidencePackageReport,
@@ -115,6 +116,7 @@ import {
   getDemoFinalAcceptanceCompletionEvidenceDeliveryFinalization,
   getDemoFinalExternalReviewEvidencePackageDeliveryFinalization,
   getDemoFinalExternalReviewDeliveryCertificate,
+  getDemoFinalExternalReviewReleaseBundle,
   getDemoFinalExternalReviewEvidencePackage,
   getDemoFinalAcceptanceShareFinalization,
   getDemoFinalAcceptanceSharePackage,
@@ -253,6 +255,7 @@ import type {
   DemoFinalExternalReviewEvidencePackageDeliveryReceiptInput,
   DemoFinalExternalReviewDeliveryCertificateArchive,
   DemoFinalExternalReviewDeliveryCertificate,
+  DemoFinalExternalReviewReleaseBundle,
   DemoFinalExternalReviewEvidencePackage,
   DemoFinalAcceptanceShareDeliveryReceipt,
   DemoFinalAcceptanceShareDeliveryReceiptInput,
@@ -495,6 +498,14 @@ export default function App() {
   const [
     demoFinalExternalReviewDeliveryCertificateArchiveError,
     setDemoFinalExternalReviewDeliveryCertificateArchiveError
+  ] = useState<string | null>(null);
+  const [
+    demoFinalExternalReviewReleaseBundle,
+    setDemoFinalExternalReviewReleaseBundle
+  ] = useState<DemoFinalExternalReviewReleaseBundle | null>(null);
+  const [
+    demoFinalExternalReviewReleaseBundleError,
+    setDemoFinalExternalReviewReleaseBundleError
   ] = useState<string | null>(null);
   const [demoReadinessSnapshots, setDemoReadinessSnapshots] = useState<DemoReadinessSnapshotArchive[]>([]);
   const [demoReadinessSnapshotError, setDemoReadinessSnapshotError] = useState<string | null>(null);
@@ -964,6 +975,7 @@ export default function App() {
         demoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveResult,
         demoFinalExternalReviewDeliveryCertificateResult,
         demoFinalExternalReviewDeliveryCertificateArchiveResult,
+        demoFinalExternalReviewReleaseBundleResult,
         demoReadinessSnapshotResult,
         demoReadinessSnapshotTrendResult,
         demoSmokeChecklistResult,
@@ -1200,6 +1212,10 @@ export default function App() {
         listDemoFinalExternalReviewDeliveryCertificateArchives().then(
           (archives) => ({ archives, error: null as string | null }),
           (caught) => ({ archives: null, error: errorMessage(caught) })
+        ),
+        getDemoFinalExternalReviewReleaseBundle().then(
+          (bundle) => ({ bundle, error: null as string | null }),
+          (caught) => ({ bundle: null, error: errorMessage(caught) })
         ),
         listDemoReadinessSnapshots().then(
           (snapshots) => ({ snapshots, error: null as string | null }),
@@ -1559,6 +1575,10 @@ export default function App() {
       setDemoFinalExternalReviewDeliveryCertificateArchiveError(
         demoFinalExternalReviewDeliveryCertificateArchiveResult.error
       );
+      if (demoFinalExternalReviewReleaseBundleResult.bundle) {
+        setDemoFinalExternalReviewReleaseBundle(demoFinalExternalReviewReleaseBundleResult.bundle);
+      }
+      setDemoFinalExternalReviewReleaseBundleError(demoFinalExternalReviewReleaseBundleResult.error);
       if (demoReadinessSnapshotResult.snapshots) {
         setDemoReadinessSnapshots(demoReadinessSnapshotResult.snapshots);
       }
@@ -2277,6 +2297,9 @@ export default function App() {
   const handleDownloadDemoFinalExternalReviewDeliveryCertificateReport = useCallback(() => (
     downloadDemoFinalExternalReviewDeliveryCertificateReport()
   ), []);
+  const handleDownloadDemoFinalExternalReviewReleaseBundleReport = useCallback(() => (
+    downloadDemoFinalExternalReviewReleaseBundleReport()
+  ), []);
   const handleArchiveDemoFinalExternalReviewDeliveryCertificate = useCallback(async () => {
     const archive = await archiveDemoFinalExternalReviewDeliveryCertificate();
     setDemoFinalExternalReviewDeliveryCertificateArchives((current) => [
@@ -2297,6 +2320,13 @@ export default function App() {
       setDemoFinalExternalReviewDeliveryCertificateError(null);
     } catch (caught) {
       setDemoFinalExternalReviewDeliveryCertificateError(errorMessage(caught));
+    }
+    try {
+      const releaseBundle = await getDemoFinalExternalReviewReleaseBundle();
+      setDemoFinalExternalReviewReleaseBundle(releaseBundle);
+      setDemoFinalExternalReviewReleaseBundleError(null);
+    } catch (caught) {
+      setDemoFinalExternalReviewReleaseBundleError(errorMessage(caught));
     }
     return archive;
   }, []);
@@ -3032,6 +3062,7 @@ export default function App() {
         finalExternalReviewDeliveryCertificateArchives={
           demoFinalExternalReviewDeliveryCertificateArchives
         }
+        finalExternalReviewReleaseBundle={demoFinalExternalReviewReleaseBundle}
         error={demoAcceptanceSummaryError}
         sharePackageError={demoFinalAcceptanceSharePackageError}
         sharePackageArchiveError={demoFinalAcceptanceSharePackageArchiveError}
@@ -3058,6 +3089,7 @@ export default function App() {
         finalExternalReviewDeliveryCertificateArchiveError={
           demoFinalExternalReviewDeliveryCertificateArchiveError
         }
+        finalExternalReviewReleaseBundleError={demoFinalExternalReviewReleaseBundleError}
         onDownloadReport={handleDownloadDemoAcceptanceSummaryReport}
         onDownloadSharePackageReport={handleDownloadDemoFinalAcceptanceSharePackageReport}
         onArchiveSharePackage={handleArchiveDemoFinalAcceptanceSharePackage}
@@ -3110,6 +3142,9 @@ export default function App() {
         }
         onDownloadFinalExternalReviewDeliveryCertificateArchiveReport={
           handleDownloadDemoFinalExternalReviewDeliveryCertificateArchiveReport
+        }
+        onDownloadFinalExternalReviewReleaseBundleReport={
+          handleDownloadDemoFinalExternalReviewReleaseBundleReport
         }
       />
 

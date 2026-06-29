@@ -2963,6 +2963,43 @@ const demoFinalExternalReviewDeliveryCertificateArchive = {
   archivedAt: '2026-06-29T10:20:00Z'
 };
 
+const demoFinalExternalReviewReleaseBundle = {
+  status: 'READY',
+  releaseReady: true,
+  summary: 'PatchPilot final external-review release bundle is ready.',
+  nextAction: 'Share the release bundle report and listed attachments with external reviewers.',
+  latestCertificateArchiveId: 'final-external-review-delivery-certificate-archive-1',
+  latestDeliveryFinalizationArchiveId: 'final-external-review-package-delivery-finalization-archive-1',
+  latestPackageArchiveId: 'final-external-review-package-archive-1',
+  latestDeliveryReceiptId: 'final-external-review-package-delivery-receipt-1',
+  latestTaskId: 'task-1',
+  latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+  latestDeliveryTarget: 'reviewer@example.com',
+  latestDeliveryChannel: 'email',
+  latestDeliveredAt: '2026-06-29T07:20:00Z',
+  latestCertificateArchivedAt: '2026-06-29T10:20:00Z',
+  generatedAt: '2026-06-29T10:30:00Z',
+  requiredAttachments: [
+    'Final external-review delivery certificate archive final-external-review-delivery-certificate-archive-1',
+    'Final external-review package archive final-external-review-package-archive-1'
+  ],
+  releaseChecks: [
+    {
+      name: 'Final delivery certificate archive',
+      status: 'READY',
+      summary: 'Latest final external-review delivery certificate archive is certified.',
+      nextAction: 'No action needed.'
+    }
+  ],
+  evidenceNotes: [
+    'Certified final external-review delivery certificate archive final-external-review-delivery-certificate-archive-1 is the release source of truth.'
+  ],
+  downloadActions: ['Download final external-review release bundle report.'],
+  sideEffectContract:
+    'GET /api/demo/final-external-review-release-bundle is read-only: it does not create tasks, call the model, run tests, archive records, record receipts, mutate Git, send messages, or write to GitHub.',
+  markdownReport: '# PatchPilot Final External Review Release Bundle'
+};
+
 const demoLaunchEvidenceDeliveryReceipt = {
   id: 'launch-delivery-receipt-1',
   status: 'READY',
@@ -3324,6 +3361,18 @@ beforeEach(() => {
     }
     if (url === '/api/demo/final-external-review-delivery-certificate/archives') {
       return jsonResponse([demoFinalExternalReviewDeliveryCertificateArchive]);
+    }
+    if (url === '/api/demo/final-external-review-release-bundle') {
+      return jsonResponse(demoFinalExternalReviewReleaseBundle);
+    }
+    if (url === '/api/demo/final-external-review-release-bundle/report/download') {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        blob: async () => new Blob(['# PatchPilot Final External Review Release Bundle'], {
+          type: 'text/markdown;charset=UTF-8'
+        })
+      } as Response);
     }
     if (
       url ===
@@ -4476,6 +4525,9 @@ test('renders operational task dashboard from backend APIs', async () => {
     expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-external-review-delivery-certificate/archives')
   );
   await waitFor(() =>
+    expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-external-review-release-bundle')
+  );
+  await waitFor(() =>
     expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-acceptance-completion-evidence-delivery-receipts')
   );
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/github/credential-readiness'));
@@ -4495,6 +4547,14 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(within(acceptancePanel).getAllByText('PatchPilot final demo acceptance is ready for external review.')).not.toHaveLength(0);
   expect(within(acceptancePanel).getByRole('heading', { name: 'Final acceptance share package' })).toBeInTheDocument();
   expect(within(acceptancePanel).getByText('PatchPilot final demo acceptance package is ready to send.')).toBeInTheDocument();
+  expect(within(acceptancePanel).getByRole('heading', {
+    name: 'Final external-review release bundle'
+  })).toBeInTheDocument();
+  expect(within(acceptancePanel).getByText('PatchPilot final external-review release bundle is ready.'))
+    .toBeInTheDocument();
+  expect(within(acceptancePanel).getByText(
+    'Final external-review delivery certificate archive final-external-review-delivery-certificate-archive-1'
+  )).toBeInTheDocument();
   expect(within(acceptancePanel).getByRole('heading', {
     name: 'Archived final acceptance completion closeouts'
   })).toBeInTheDocument();
@@ -7300,6 +7360,18 @@ function defaultAppResponse(input: RequestInfo | URL, init?: RequestInit) {
   }
   if (url === '/api/demo/final-external-review-delivery-certificate/archives') {
     return jsonResponse([demoFinalExternalReviewDeliveryCertificateArchive]);
+  }
+  if (url === '/api/demo/final-external-review-release-bundle') {
+    return jsonResponse(demoFinalExternalReviewReleaseBundle);
+  }
+  if (url === '/api/demo/final-external-review-release-bundle/report/download') {
+    return Promise.resolve({
+      ok: true,
+      status: 200,
+      blob: async () => new Blob(['# PatchPilot Final External Review Release Bundle'], {
+        type: 'text/markdown;charset=UTF-8'
+      })
+    } as Response);
   }
   if (
     url ===

@@ -5996,3 +5996,23 @@ Validation:
 - `npm test`: first failed because the full App smoke test expected a single matching certificate summary after archive history added the same summary; passed after changing that assertion to count-based. Final result: 30 test files and 462 tests passed.
 - `npm run build`: passed with the existing Vite large-chunk warning.
 - `mvn -q -pl PatchPilot test`: passed.
+
+## 2026-06-30 - 298 Final external review release bundle
+
+- Started `298-final-external-review-release-bundle` to create one terminal release bundle after the certified final external-review delivery certificate has been archived.
+- Planned a complete feature slice: backend release read model, JSON and Markdown download endpoints, frontend API helpers, App loading, final demo acceptance dashboard release card, README/product/frontend docs, plan doc, and regression tests.
+- Added backend coverage for READY and missing-certificate-archive release-bundle states plus controller JSON/download routes.
+- Implemented `DemoFinalExternalReviewReleaseBundleService` and `DemoFinalExternalReviewReleaseBundleVo` so the release bundle derives from the latest certificate archive and remains read-only.
+- Added `GET /api/demo/final-external-review-release-bundle` and `GET /api/demo/final-external-review-release-bundle/report/download`.
+- Updated the final demo acceptance dashboard with release readiness, linked archive/receipt/task/Pull Request evidence, required attachments, release checks, evidence notes, download actions, and Markdown report download.
+- Updated README, product spec, frontend design doc, and added this plan document.
+
+Validation so far:
+
+- `mvn -q -pl PatchPilot -Dtest=DemoFinalExternalReviewReleaseBundleServiceTests,DemoReadinessControllerTests#should_return_final_external_review_release_bundle+should_download_final_external_review_release_bundle_report test`: passed.
+- `npm test -- --run src/api.test.ts src/dashboard/components/DemoAcceptanceSummaryPanel.test.tsx src/App.test.tsx --reporter=basic`: passed, 3 test files and 296 tests.
+- `mvn -q -pl PatchPilot test`: passed.
+- `npm test -- --reporter=dot`: passed, 30 test files and 465 tests.
+- `npm run build`: first failed because the new release-bundle download handler used an `errorMessage` helper that only exists in `App.tsx`; passed after matching the component's existing fixed failure-message pattern. The existing Vite large-chunk warning remains.
+- `npm test -- --run src/dashboard/components/DemoAcceptanceSummaryPanel.test.tsx src/App.test.tsx --reporter=basic`: passed after the build fix, 2 test files and 103 tests.
+- `git diff --check`: passed.
