@@ -1343,6 +1343,7 @@ export interface DemoEvidenceBundle {
   finalAcceptanceShareFinalization: DemoFinalAcceptanceShareFinalization;
   finalAcceptanceCompletionCloseoutEvidence: DemoFinalAcceptanceCompletionCloseout;
   finalAcceptanceCompletionCloseoutArchiveEvidence: DemoFinalAcceptanceCompletionCloseoutArchiveEvidence;
+  finalExternalReviewEvidencePackage?: DemoFinalExternalReviewEvidencePackage;
   handoffShareDeliveryReceiptRecorded: boolean;
   handoffShareLatestDeliveryReceiptId: string | null;
   handoffShareLatestDeliveryTarget: string | null;

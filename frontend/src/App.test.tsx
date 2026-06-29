@@ -1930,6 +1930,45 @@ const demoEvidenceBundle = {
       'Download linked final acceptance completion archive final-acceptance-completion-archive-1.'
     ]
   },
+  finalExternalReviewEvidencePackage: {
+    status: 'READY',
+    readyForExternalReview: true,
+    summary: 'PatchPilot final external-review evidence package is ready.',
+    nextAction: 'Share this package with reviewers as the frozen external-review record.',
+    finalAcceptanceSummaryStatus: 'READY',
+    finalAcceptanceShareFinalizationStatus: 'READY',
+    completionEvidenceBundleStatus: 'READY',
+    completionDeliveryFinalizationStatus: 'READY',
+    completionCloseoutStatus: 'READY',
+    closeoutArchiveStatus: 'READY',
+    latestTaskId: 'task-2',
+    latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+    finalAcceptanceSharePackageArchiveId: 'final-acceptance-share-package-archive-1',
+    completionArchiveId: 'final-acceptance-completion-archive-1',
+    completionEvidenceDeliveryReceiptId: 'final-acceptance-completion-evidence-delivery-receipt-1',
+    closeoutArchiveId: 'final-acceptance-completion-closeout-archive-1',
+    deliveryTarget: 'reviewer@example.com',
+    deliveryChannel: 'email',
+    deliveredAt: '2026-06-29T03:45:00Z',
+    deliveryReceiptFreshness: 'FRESH',
+    closeoutArchivedAt: '2026-06-29T04:15:00Z',
+    generatedAt: '2026-06-29T04:30:00Z',
+    checks: [
+      {
+        name: 'Frozen closeout archive',
+        status: 'READY',
+        summary: 'Frozen closeout archive final-acceptance-completion-closeout-archive-1 is closed.',
+        nextAction: 'No action needed.'
+      }
+    ],
+    evidenceNotes: ['Frozen closeout archive final-acceptance-completion-closeout-archive-1 is READY and closed.'],
+    downloadActions: [
+      'Download final external-review evidence package.',
+      'Download final acceptance completion closeout archive final-acceptance-completion-closeout-archive-1.'
+    ],
+    sideEffectContract: 'GET /api/demo/final-external-review-evidence-package is read-only.',
+    markdownReport: '# PatchPilot Final External Review Evidence Package'
+  },
   handoffShareDeliveryReceiptRecorded: true,
   handoffShareLatestDeliveryReceiptId: 'delivery-receipt-1',
   handoffShareLatestDeliveryTarget: 'maintainer@example.com',
