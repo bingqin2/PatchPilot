@@ -6,6 +6,7 @@ import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionCloseoutAr
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceShareFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionCloseoutVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageArchiveVo;
+import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageDeliveryFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageVo;
 import io.patchpilot.backend.demo.domain.DemoFinalHandoffReportPackageArchiveVo;
@@ -82,7 +83,8 @@ class DemoEvidenceBundleServiceTests {
                 () -> List.of(finalAcceptanceCompletionCloseoutArchive(DemoReadinessStatus.READY, true)),
                 DemoEvidenceBundleServiceTests::finalExternalReviewEvidencePackageReady,
                 () -> List.of(finalExternalReviewEvidencePackageArchive(DemoReadinessStatus.READY, true)),
-                () -> List.of(finalExternalReviewEvidencePackageDeliveryReceipt())
+                () -> List.of(finalExternalReviewEvidencePackageDeliveryReceipt()),
+                DemoEvidenceBundleServiceTests::finalExternalReviewEvidencePackageDeliveryFinalizationReady
         );
 
         DemoEvidenceBundleVo bundle = service.getEvidenceBundle();
@@ -389,6 +391,22 @@ class DemoEvidenceBundleServiceTests {
         assertThat(bundle.finalExternalReviewEvidencePackageDeliveryReceiptEvidence().latestDeliveredAt())
                 .isEqualTo(Instant.parse("2026-06-29T05:00:00Z"));
         assertThat(bundle.finalExternalReviewEvidencePackageDeliveryReceiptEvidence().downloadActions()).containsExactly(
+                "Download final external-review package delivery receipt final-external-review-package-delivery-receipt-1."
+        );
+        assertThat(bundle.finalExternalReviewEvidencePackageDeliveryFinalization().status())
+                .isEqualTo(DemoReadinessStatus.READY);
+        assertThat(bundle.finalExternalReviewEvidencePackageDeliveryFinalization().finalized()).isTrue();
+        assertThat(bundle.finalExternalReviewEvidencePackageDeliveryFinalization().summary())
+                .isEqualTo("Final external-review package delivery is finalized with a fresh package delivery receipt.");
+        assertThat(bundle.finalExternalReviewEvidencePackageDeliveryFinalization().latestArchiveId())
+                .isEqualTo("final-external-review-package-archive-1");
+        assertThat(bundle.finalExternalReviewEvidencePackageDeliveryFinalization().latestDeliveryReceiptId())
+                .isEqualTo("final-external-review-package-delivery-receipt-1");
+        assertThat(bundle.finalExternalReviewEvidencePackageDeliveryFinalization().deliveryReceiptFreshness())
+                .isEqualTo("FRESH");
+        assertThat(bundle.finalExternalReviewEvidencePackageDeliveryFinalization().downloadActions()).containsExactly(
+                "Download final external-review package delivery finalization report.",
+                "Download final external-review package archive final-external-review-package-archive-1.",
                 "Download final external-review package delivery receipt final-external-review-package-delivery-receipt-1."
         );
         assertThat(bundle.handoffShareDeliveryReceiptRecorded()).isFalse();
@@ -1593,6 +1611,44 @@ class DemoEvidenceBundleServiceTests {
                 Instant.parse("2026-06-29T05:00:00Z"),
                 Instant.parse("2026-06-29T05:05:00Z"),
                 "# PatchPilot Final External Review Package Delivery Receipt"
+        );
+    }
+
+    private static DemoFinalExternalReviewEvidencePackageDeliveryFinalizationVo
+    finalExternalReviewEvidencePackageDeliveryFinalizationReady() {
+        return new DemoFinalExternalReviewEvidencePackageDeliveryFinalizationVo(
+                DemoReadinessStatus.READY,
+                true,
+                "Final external-review package delivery is finalized with a fresh package delivery receipt.",
+                "Use the finalization report as proof that the frozen external-review package was delivered.",
+                "final-external-review-package-archive-1",
+                "final-external-review-package-delivery-receipt-1",
+                "final-acceptance-completion-closeout-archive-1",
+                "final-acceptance-completion-archive-1",
+                "final-acceptance-completion-evidence-delivery-receipt-1",
+                "task-2",
+                "https://github.com/bingqin2/PatchPilot/pull/42",
+                "reviewer@example.com",
+                "email",
+                "2026-06-29T05:00:00Z",
+                "FRESH",
+                true,
+                "Latest package delivery receipt matches the current frozen final external-review package.",
+                List.of(new DemoFinalExternalReviewEvidencePackageDeliveryFinalizationVo.Check(
+                        "Final external-review package delivery receipt",
+                        DemoReadinessStatus.READY,
+                        "Final external-review package delivery receipt final-external-review-package-delivery-receipt-1 is fresh.",
+                        "No action needed."
+                )),
+                List.of("Final external-review package delivery receipt final-external-review-package-delivery-receipt-1 is fresh."),
+                List.of(
+                        "Download final external-review package delivery finalization report.",
+                        "Download final external-review package archive final-external-review-package-archive-1.",
+                        "Download final external-review package delivery receipt final-external-review-package-delivery-receipt-1."
+                ),
+                "GET /api/demo/final-external-review-evidence-package/delivery-finalization is read-only.",
+                "# PatchPilot Final External Review Package Delivery Finalization",
+                Instant.parse("2026-06-29T05:10:00Z")
         );
     }
 

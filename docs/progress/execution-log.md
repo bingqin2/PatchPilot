@@ -5922,3 +5922,25 @@ Validation so far:
 - `npm test -- --reporter=dot`: passed, 30 test files and 450 tests.
 - `npm run build`: passed with the existing Vite large-chunk warning.
 - `git diff --check`: passed.
+
+## 2026-06-30 - 294 Final external review package delivery finalization
+
+- Started `294-final-external-review-package-delivery-finalization` to close the final reviewer-facing delivery loop after a READY final external-review package is frozen and externally delivered.
+- Planned a complete feature slice: read-only backend finalization model, JSON and Markdown endpoints, evidence-bundle aggregation, copied runbook export, final acceptance dashboard finalization readout/download, top-level evidence-bundle rendering, README/product/frontend docs, plan doc, and regression tests.
+- Added backend coverage for READY, missing receipt, stale receipt, and blocked archive states plus controller, evidence-bundle, and runbook behavior.
+- Implemented `DemoFinalExternalReviewEvidencePackageDeliveryFinalizationService` and `DemoFinalExternalReviewEvidencePackageDeliveryFinalizationVo`, then exposed `GET /api/demo/final-external-review-evidence-package/delivery-finalization` and `GET /api/demo/final-external-review-evidence-package/delivery-finalization/report/download`.
+- Updated `DemoEvidenceBundleService` and `DemoRunbookService` so the top-level demo evidence and copied runbook include the latest package archive id, delivery receipt id, freshness, finalization checks, evidence notes, and download actions.
+- Added frontend API helpers, App loading/refresh wiring, final acceptance panel status/check/evidence rendering, Markdown report download, and refresh after final package archive or delivery receipt actions.
+- Added top-level evidence-bundle finalization rendering with legacy fallback guidance so older bundle responses do not hide the final review proof section.
+- Updated README, product spec, frontend design doc, and added this plan document.
+
+Validation so far:
+
+- `mvn -q -pl PatchPilot -Dtest=DemoFinalExternalReviewEvidencePackageDeliveryFinalizationServiceTests,DemoEvidenceBundleServiceTests,DemoRunbookServiceTests,DemoReadinessControllerTests test`: passed after backend implementation.
+- `npm test -- --run src/api.test.ts src/dashboard/components/DemoAcceptanceSummaryPanel.test.tsx --reporter=basic`: passed after API helpers and final acceptance panel wiring.
+- `npm test -- --run src/dashboard/components/DemoEvidenceBundlePanel.test.tsx --reporter=basic`: first failed because the evidence bundle panel did not render finalization; then failed on a legitimate duplicate receipt id after the card was added; passed after adding the finalization card and count-based receipt assertion.
+- `npm test -- --run src/api.test.ts src/dashboard/components/DemoAcceptanceSummaryPanel.test.tsx src/dashboard/components/DemoEvidenceBundlePanel.test.tsx src/App.test.tsx --reporter=basic`: passed, 4 test files and 288 tests.
+- `mvn -q -pl PatchPilot test`: passed.
+- `npm test -- --reporter=dot`: passed, 30 test files and 453 tests.
+- `npm run build`: passed with the existing Vite large-chunk warning.
+- `git diff --check`: passed.

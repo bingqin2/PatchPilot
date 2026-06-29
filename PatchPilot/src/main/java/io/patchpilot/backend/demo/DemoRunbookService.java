@@ -421,6 +421,34 @@ public class DemoRunbookService {
                         .append("- Final external-review package delivery download: ")
                         .append(action)
                         .append("\n"));
+
+        runbook.append("- Final external-review package delivery finalization: `")
+                .append(bundle.finalExternalReviewEvidencePackageDeliveryFinalization().status())
+                .append("` - ")
+                .append(bundle.finalExternalReviewEvidencePackageDeliveryFinalization().summary())
+                .append("\n")
+                .append("- Final external-review package delivery finalized: `")
+                .append(bundle.finalExternalReviewEvidencePackageDeliveryFinalization().finalized())
+                .append("`\n")
+                .append("- Final external-review finalized package archive: ")
+                .append(valueOrNoneBackticked(bundle.finalExternalReviewEvidencePackageDeliveryFinalization()
+                        .latestArchiveId()))
+                .append("\n")
+                .append("- Final external-review finalized delivery receipt: ")
+                .append(valueOrNoneBackticked(bundle.finalExternalReviewEvidencePackageDeliveryFinalization()
+                        .latestDeliveryReceiptId()))
+                .append("\n")
+                .append("- Final external-review finalization receipt freshness: `")
+                .append(bundle.finalExternalReviewEvidencePackageDeliveryFinalization().deliveryReceiptFreshness())
+                .append("`\n")
+                .append("- Final external-review package delivery finalization next action: ")
+                .append(bundle.finalExternalReviewEvidencePackageDeliveryFinalization().nextAction())
+                .append("\n");
+        bundle.finalExternalReviewEvidencePackageDeliveryFinalization().downloadActions()
+                .forEach(action -> runbook
+                        .append("- Final external-review package delivery finalization download: ")
+                        .append(action)
+                        .append("\n"));
     }
 
     private static void appendEvaluationRunReadiness(

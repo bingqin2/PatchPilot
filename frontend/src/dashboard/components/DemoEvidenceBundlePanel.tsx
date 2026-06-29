@@ -186,6 +186,33 @@ export function DemoEvidenceBundlePanel({ bundle, error, onCopyRunbook }: DemoEv
       latestDeliveredAt: null,
       downloadActions: ['Record a final external-review package delivery receipt after sharing the archive.']
     };
+  const finalExternalReviewEvidencePackageDeliveryFinalization =
+    bundle?.finalExternalReviewEvidencePackageDeliveryFinalization ?? {
+      status: 'NEEDS_ATTENTION' as DemoReadinessStatus,
+      finalized: false,
+      summary: 'Final external-review package delivery is not finalized.',
+      nextAction: 'Record a fresh package delivery receipt for the latest frozen final external-review package.',
+      latestArchiveId: finalExternalReviewEvidencePackageArchiveEvidence.latestArchiveId,
+      latestDeliveryReceiptId: finalExternalReviewEvidencePackageDeliveryReceiptEvidence.latestReceiptId,
+      latestCloseoutArchiveId: finalExternalReviewEvidencePackageArchiveEvidence.latestCloseoutArchiveId,
+      latestCompletionArchiveId: finalExternalReviewEvidencePackageArchiveEvidence.latestCompletionArchiveId,
+      latestCompletionEvidenceDeliveryReceiptId:
+        finalExternalReviewEvidencePackageArchiveEvidence.latestCompletionEvidenceDeliveryReceiptId,
+      latestTaskId: finalExternalReviewEvidencePackageArchiveEvidence.latestTaskId,
+      latestPullRequestUrl: finalExternalReviewEvidencePackageArchiveEvidence.latestPullRequestUrl,
+      latestDeliveryTarget: finalExternalReviewEvidencePackageDeliveryReceiptEvidence.latestDeliveryTarget,
+      latestDeliveryChannel: finalExternalReviewEvidencePackageDeliveryReceiptEvidence.latestDeliveryChannel,
+      latestDeliveredAt: finalExternalReviewEvidencePackageDeliveryReceiptEvidence.latestDeliveredAt,
+      deliveryReceiptFreshness: finalExternalReviewEvidencePackageDeliveryReceiptEvidence.freshness,
+      deliveryReceiptFresh: false,
+      deliveryReceiptFreshnessSummary: 'No fresh package delivery receipt finalizes the current frozen package.',
+      checks: [],
+      evidenceNotes: ['No final external-review package delivery finalization is available in the top-level evidence bundle.'],
+      downloadActions: ['Download the final external-review package delivery finalization after it reports READY.'],
+      sideEffectContract: 'GET /api/demo/evidence-bundle is read-only and does not mutate tasks, Git, or GitHub.',
+      markdownReport: '',
+      generatedAt: ''
+    };
 
   async function copyRunbook() {
     try {
@@ -645,6 +672,50 @@ export function DemoEvidenceBundlePanel({ bundle, error, onCopyRunbook }: DemoEv
                 <small>No delivered final external-review Pull Request</small>
               )}
               {finalExternalReviewEvidencePackageDeliveryReceiptEvidence.downloadActions.slice(0, 2).map((action) => (
+                <small key={action}>{action}</small>
+              ))}
+            </div>
+            <div>
+              <span>Final external-review package delivery finalization</span>
+              <strong>
+                {finalExternalReviewEvidencePackageDeliveryFinalization.finalized
+                  ? 'Finalized'
+                  : statusLabel(finalExternalReviewEvidencePackageDeliveryFinalization.status)}
+              </strong>
+              <small>{finalExternalReviewEvidencePackageDeliveryFinalization.summary}</small>
+              <small>{finalExternalReviewEvidencePackageDeliveryFinalization.nextAction}</small>
+              <small>
+                {finalExternalReviewEvidencePackageDeliveryFinalization.latestArchiveId
+                  ?? 'No finalized final external-review package archive'}
+              </small>
+              <small>
+                {finalExternalReviewEvidencePackageDeliveryFinalization.latestDeliveryReceiptId
+                  ?? 'No finalized final external-review package delivery receipt'}
+              </small>
+              <small>
+                {finalExternalReviewEvidencePackageDeliveryFinalization.latestCompletionEvidenceDeliveryReceiptId
+                  ?? 'No linked completion evidence delivery receipt'}
+              </small>
+              <small>{deliveryFreshnessLabel(finalExternalReviewEvidencePackageDeliveryFinalization.deliveryReceiptFreshness)}</small>
+              <small>{finalExternalReviewEvidencePackageDeliveryFinalization.deliveryReceiptFreshnessSummary}</small>
+              <small>
+                {finalExternalReviewEvidencePackageDeliveryFinalization.latestDeliveryTarget
+                  ? `${finalExternalReviewEvidencePackageDeliveryFinalization.latestDeliveryChannel ?? 'delivery'} - ${finalExternalReviewEvidencePackageDeliveryFinalization.latestDeliveryTarget}`
+                  : 'No finalized final external-review package delivery target'}
+              </small>
+              {finalExternalReviewEvidencePackageDeliveryFinalization.latestDeliveredAt ? (
+                <small>
+                  Delivered {compactDateTime(finalExternalReviewEvidencePackageDeliveryFinalization.latestDeliveredAt)}
+                </small>
+              ) : null}
+              {finalExternalReviewEvidencePackageDeliveryFinalization.latestPullRequestUrl ? (
+                <a href={finalExternalReviewEvidencePackageDeliveryFinalization.latestPullRequestUrl}>
+                  Open finalized final external-review Pull Request
+                </a>
+              ) : (
+                <small>No finalized final external-review Pull Request</small>
+              )}
+              {finalExternalReviewEvidencePackageDeliveryFinalization.downloadActions.slice(0, 2).map((action) => (
                 <small key={action}>{action}</small>
               ))}
             </div>
