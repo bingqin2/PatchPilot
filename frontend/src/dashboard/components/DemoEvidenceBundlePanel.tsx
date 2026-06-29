@@ -148,6 +148,22 @@ export function DemoEvidenceBundlePanel({ bundle, error, onCopyRunbook }: DemoEv
     sideEffectContract: 'GET /api/demo/evidence-bundle is read-only and does not mutate tasks, Git, or GitHub.',
     markdownReport: ''
   };
+  const finalExternalReviewEvidencePackageArchiveEvidence = bundle?.finalExternalReviewEvidencePackageArchiveEvidence ?? {
+    status: 'NEEDS_ATTENTION' as DemoReadinessStatus,
+    archived: false,
+    readyForExternalReview: false,
+    summary: 'No final external-review evidence package archive is available.',
+    nextAction: 'Archive the final external-review evidence package after it is READY.',
+    archiveCount: 0,
+    latestArchiveId: null,
+    latestCloseoutArchiveId: null,
+    latestCompletionArchiveId: null,
+    latestCompletionEvidenceDeliveryReceiptId: null,
+    latestTaskId: null,
+    latestPullRequestUrl: null,
+    latestArchivedAt: null,
+    downloadActions: ['Archive the final external-review evidence package after it is READY.']
+  };
 
   async function copyRunbook() {
     try {
@@ -513,6 +529,53 @@ export function DemoEvidenceBundlePanel({ bundle, error, onCopyRunbook }: DemoEv
                 <small>Archived {compactDateTime(finalExternalReviewEvidencePackage.closeoutArchivedAt)}</small>
               ) : null}
               {finalExternalReviewEvidencePackage.downloadActions.slice(0, 2).map((action) => (
+                <small key={action}>{action}</small>
+              ))}
+            </div>
+            <div>
+              <span>Final external-review package archive</span>
+              <strong>
+                {finalExternalReviewEvidencePackageArchiveEvidence.readyForExternalReview
+                  ? 'Frozen archive'
+                  : statusLabel(finalExternalReviewEvidencePackageArchiveEvidence.status)}
+              </strong>
+              <small>{finalExternalReviewEvidencePackageArchiveEvidence.summary}</small>
+              <small>{finalExternalReviewEvidencePackageArchiveEvidence.nextAction}</small>
+              <small>
+                {finalExternalReviewEvidencePackageArchiveEvidence.archiveCount} final external-review package archives
+              </small>
+              <small>
+                {finalExternalReviewEvidencePackageArchiveEvidence.latestArchiveId
+                  ?? 'No final external-review package archive'}
+              </small>
+              <small>
+                {finalExternalReviewEvidencePackageArchiveEvidence.latestCloseoutArchiveId
+                  ?? 'No linked final external-review closeout archive'}
+              </small>
+              <small>
+                {finalExternalReviewEvidencePackageArchiveEvidence.latestCompletionArchiveId
+                  ?? 'No linked final acceptance completion archive'}
+              </small>
+              <small>
+                {finalExternalReviewEvidencePackageArchiveEvidence.latestCompletionEvidenceDeliveryReceiptId
+                  ?? 'No linked completion evidence delivery receipt'}
+              </small>
+              <small>
+                {finalExternalReviewEvidencePackageArchiveEvidence.latestTaskId
+                  ? `Task ${finalExternalReviewEvidencePackageArchiveEvidence.latestTaskId}`
+                  : 'No archived final external-review task'}
+              </small>
+              {finalExternalReviewEvidencePackageArchiveEvidence.latestPullRequestUrl ? (
+                <a href={finalExternalReviewEvidencePackageArchiveEvidence.latestPullRequestUrl}>
+                  Open archived final external-review Pull Request
+                </a>
+              ) : (
+                <small>No archived final external-review Pull Request</small>
+              )}
+              {finalExternalReviewEvidencePackageArchiveEvidence.latestArchivedAt ? (
+                <small>Archived {compactDateTime(finalExternalReviewEvidencePackageArchiveEvidence.latestArchivedAt)}</small>
+              ) : null}
+              {finalExternalReviewEvidencePackageArchiveEvidence.downloadActions.slice(0, 2).map((action) => (
                 <small key={action}>{action}</small>
               ))}
             </div>

@@ -5871,3 +5871,31 @@ Validation so far:
 - `npm test -- --reporter=dot`: passed, 30 test files and 441 tests.
 - `npm run build`: passed with the existing Vite large-chunk warning.
 - `git diff --check`: passed.
+
+## 2026-06-29 - 292 Final external review package archive
+
+- Started `292-final-external-review-package-archive` to freeze the final reviewer-facing package as durable PatchPilot-local evidence after the live final external-review package reaches READY.
+- Planned a complete feature slice: backend archive persistence, READY-only archive guard, protected admin audit evidence, create/list/download API endpoints, evidence-bundle and runbook aggregation, final acceptance dashboard archive controls, top-level evidence rendering, README/product/frontend docs, plan doc, and regression tests.
+- RED backend tests were added first for service guard behavior, in-memory repository ordering, MyBatis conversion and migration coverage, controller create/list/download behavior, evidence-bundle archive evidence, and runbook archive export.
+- RED frontend tests were added first for API helpers, final acceptance panel archive controls/history/downloads, full App loading, and top-level evidence-bundle archive evidence.
+- Implemented `DemoFinalExternalReviewEvidencePackageArchiveService` with in-memory and MyBatis-backed repositories, `V54__create_demo_final_external_review_evidence_package_archive.sql`, and archive conversion for frozen package metadata, report text, evidence notes, and download actions.
+- Added `POST /api/demo/final-external-review-evidence-package/archives`, `GET /api/demo/final-external-review-evidence-package/archives`, and `GET /api/demo/final-external-review-evidence-package/archives/{archiveId}/report/download`.
+- Updated `DemoEvidenceBundleService` and `DemoRunbookService` so the latest final external-review package archive appears in the first demo evidence readout and copied runbook.
+- Updated the final demo acceptance dashboard panel with a final package archive action, recent archive history, archived report downloads, load errors, App refresh wiring, and top-level evidence-bundle archive proof.
+- Updated README, product spec, frontend design doc, and added this plan document.
+
+Validation so far:
+
+- `mvn -q -pl PatchPilot -Dtest=DemoFinalExternalReviewEvidencePackageArchiveServiceTests,InMemoryDemoFinalExternalReviewEvidencePackageArchiveRepositoryTests test`: first failed because archive service/repository behavior did not exist; passed after backend implementation.
+- `mvn -q -pl PatchPilot -Dtest=DemoFinalExternalReviewEvidencePackageArchiveConvertTests,MyBatisDemoFinalExternalReviewEvidencePackageArchiveRepositoryTests,DemoFinalExternalReviewEvidencePackageArchiveMigrationTests test`: first failed because converter, MyBatis repository, and migration did not exist; passed after persistence implementation.
+- `mvn -q -pl PatchPilot -Dtest=DemoReadinessControllerTests#should_archive_final_external_review_evidence_package_and_record_audit+should_reject_final_external_review_evidence_package_archive_when_package_is_not_ready+should_list_final_external_review_evidence_package_archives+should_download_archived_final_external_review_evidence_package_report+should_return_not_found_when_final_external_review_evidence_package_archive_is_missing test`: first failed because archive controller routes did not exist; passed after API implementation.
+- `mvn -q -pl PatchPilot -Dtest=DemoEvidenceBundleServiceTests test`: passed after adding latest archive evidence to the bundle.
+- `mvn -q -pl PatchPilot -Dtest=DemoRunbookServiceTests test`: passed after adding latest archive evidence to copied runbooks.
+- `npm test -- --run src/api.test.ts`: passed after adding final external-review package archive API helpers and adjusting POST expectations.
+- `npm test -- --run src/dashboard/components/DemoAcceptanceSummaryPanel.test.tsx`: passed after adding final package archive controls and history.
+- `npm test -- --run src/dashboard/components/DemoEvidenceBundlePanel.test.tsx`: first failed because the top-level evidence panel did not render `Final external-review package archive`; passed after adding archive evidence rendering and legacy fallback guidance.
+- `mvn -q -pl PatchPilot -Dtest=DemoFinalExternalReviewEvidencePackageArchiveServiceTests,InMemoryDemoFinalExternalReviewEvidencePackageArchiveRepositoryTests,DemoFinalExternalReviewEvidencePackageArchiveConvertTests,MyBatisDemoFinalExternalReviewEvidencePackageArchiveRepositoryTests,DemoFinalExternalReviewEvidencePackageArchiveMigrationTests,DemoReadinessControllerTests,DemoEvidenceBundleServiceTests,DemoRunbookServiceTests test`: passed.
+- `npm test -- --run src/api.test.ts src/dashboard/components/DemoAcceptanceSummaryPanel.test.tsx src/dashboard/components/DemoEvidenceBundlePanel.test.tsx src/App.test.tsx`: passed, 4 test files and 280 tests.
+- `npm test -- --reporter=dot`: first exposed two full-suite App integration timeout budgets after the dashboard evidence surface grew; passed after replacing slow repeated status clicks with direct events and increasing only the long smoke test budget, 30 test files and 445 tests.
+- `mvn -q -pl PatchPilot test`: passed.
+- `npm run build`: passed with the existing Vite large-chunk warning.

@@ -357,6 +357,39 @@ public class DemoRunbookService {
                         .append("- Final external-review package download: ")
                         .append(action)
                         .append("\n"));
+
+        runbook.append("- Final external-review package archive: `")
+                .append(bundle.finalExternalReviewEvidencePackageArchiveEvidence().status())
+                .append("` - ")
+                .append(bundle.finalExternalReviewEvidencePackageArchiveEvidence().summary())
+                .append("\n")
+                .append("- Final external-review package archive id: ")
+                .append(valueOrNoneBackticked(bundle.finalExternalReviewEvidencePackageArchiveEvidence().latestArchiveId()))
+                .append("\n")
+                .append("- Final external-review archived closeout: ")
+                .append(valueOrNoneBackticked(bundle.finalExternalReviewEvidencePackageArchiveEvidence().latestCloseoutArchiveId()))
+                .append("\n")
+                .append("- Final external-review archived completion: ")
+                .append(valueOrNoneBackticked(bundle.finalExternalReviewEvidencePackageArchiveEvidence().latestCompletionArchiveId()))
+                .append("\n")
+                .append("- Final external-review archived completion receipt: ")
+                .append(valueOrNoneBackticked(bundle.finalExternalReviewEvidencePackageArchiveEvidence()
+                        .latestCompletionEvidenceDeliveryReceiptId()))
+                .append("\n")
+                .append("- Final external-review archived task: ")
+                .append(valueOrNoneBackticked(bundle.finalExternalReviewEvidencePackageArchiveEvidence().latestTaskId()))
+                .append("\n")
+                .append("- Final external-review package archive Pull Request: ")
+                .append(valueOrNone(bundle.finalExternalReviewEvidencePackageArchiveEvidence().latestPullRequestUrl()))
+                .append("\n")
+                .append("- Final external-review package archive next action: ")
+                .append(bundle.finalExternalReviewEvidencePackageArchiveEvidence().nextAction())
+                .append("\n");
+        bundle.finalExternalReviewEvidencePackageArchiveEvidence().downloadActions()
+                .forEach(action -> runbook
+                        .append("- Final external-review package archive download: ")
+                        .append(action)
+                        .append("\n"));
     }
 
     private static void appendEvaluationRunReadiness(

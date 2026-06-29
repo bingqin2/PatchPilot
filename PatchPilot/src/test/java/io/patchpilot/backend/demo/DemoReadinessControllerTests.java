@@ -12,6 +12,7 @@ import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionCloseoutAr
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionCloseoutVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionEvidenceDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionEvidenceDeliveryFinalizationVo;
+import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceSharePackageArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceShareDeliveryReceiptVo;
@@ -212,6 +213,9 @@ class DemoReadinessControllerTests {
 
     @MockitoBean
     private DemoFinalExternalReviewEvidencePackageService demoFinalExternalReviewEvidencePackageService;
+
+    @MockitoBean
+    private DemoFinalExternalReviewEvidencePackageArchiveService demoFinalExternalReviewEvidencePackageArchiveService;
 
     @MockitoBean
     private DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
@@ -1057,6 +1061,89 @@ class DemoReadinessControllerTests {
                 .andExpect(content().string(containsString(
                         "final-acceptance-completion-closeout-archive-1"
                 )));
+    }
+
+    @Test
+    void should_archive_final_external_review_evidence_package_and_record_audit() throws Exception {
+        when(demoFinalExternalReviewEvidencePackageArchiveService.archiveCurrentPackage())
+                .thenReturn(finalExternalReviewEvidencePackageArchive());
+
+        mockMvc.perform(post("/api/demo/final-external-review-evidence-package/archives"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value("final-external-review-package-archive-1"))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.readyForExternalReview").value(true))
+                .andExpect(jsonPath("$.data.latestTaskId").value("task-1"))
+                .andExpect(jsonPath("$.data.latestPullRequestUrl").value("https://github.com/bingqin2/PatchPilot/pull/8"))
+                .andExpect(jsonPath("$.data.completionArchiveId").value("final-acceptance-completion-archive-1"))
+                .andExpect(jsonPath("$.data.completionEvidenceDeliveryReceiptId")
+                        .value("final-acceptance-completion-evidence-delivery-receipt-1"))
+                .andExpect(jsonPath("$.data.closeoutArchiveId").value("final-acceptance-completion-closeout-archive-1"))
+                .andExpect(jsonPath("$.data.deliveryReceiptFreshness").value("FRESH"))
+                .andExpect(jsonPath("$.data.report").value(containsString(
+                        "# PatchPilot Final External Review Evidence Package"
+                )));
+
+        verify(operatorSafetyAuditService).recordSafetyAudit(argThat(command ->
+                command.action().equals("DEMO_FINAL_EXTERNAL_REVIEW_PACKAGE_ARCHIVED")
+                        && command.resourceType().equals("DEMO_FINAL_EXTERNAL_REVIEW_PACKAGE_ARCHIVE")
+                        && command.resourceId().equals("final-external-review-package-archive-1")
+                        && command.reason().contains("final-acceptance-completion-closeout-archive-1")
+        ));
+    }
+
+    @Test
+    void should_reject_final_external_review_evidence_package_archive_when_package_is_not_ready() throws Exception {
+        when(demoFinalExternalReviewEvidencePackageArchiveService.archiveCurrentPackage())
+                .thenThrow(new IllegalStateException("final external-review evidence package is not ready"));
+
+        mockMvc.perform(post("/api/demo/final-external-review-evidence-package/archives"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("final external-review evidence package is not ready"));
+    }
+
+    @Test
+    void should_list_final_external_review_evidence_package_archives() throws Exception {
+        when(demoFinalExternalReviewEvidencePackageArchiveService.listRecentArchives())
+                .thenReturn(List.of(finalExternalReviewEvidencePackageArchive()));
+
+        mockMvc.perform(get("/api/demo/final-external-review-evidence-package/archives"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].id").value("final-external-review-package-archive-1"))
+                .andExpect(jsonPath("$.data[0].archivedAt").value("2026-06-29T08:30:00Z"));
+    }
+
+    @Test
+    void should_download_archived_final_external_review_evidence_package_report() throws Exception {
+        when(demoFinalExternalReviewEvidencePackageArchiveService.findArchive(
+                "final-external-review-package-archive-1"
+        )).thenReturn(Optional.of(finalExternalReviewEvidencePackageArchive()));
+
+        mockMvc.perform(get("/api/demo/final-external-review-evidence-package/archives/final-external-review-package-archive-1/report/download"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString(
+                        "patchpilot-final-external-review-evidence-package-final-external-review-package-archive-1.md"
+                )))
+                .andExpect(content().contentType("text/markdown;charset=UTF-8"))
+                .andExpect(content().string(containsString(
+                        "# PatchPilot Final External Review Evidence Package"
+                )))
+                .andExpect(content().string(containsString(
+                        "final-acceptance-completion-closeout-archive-1"
+                )));
+    }
+
+    @Test
+    void should_return_not_found_when_final_external_review_evidence_package_archive_is_missing() throws Exception {
+        when(demoFinalExternalReviewEvidencePackageArchiveService.findArchive("missing"))
+                .thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/api/demo/final-external-review-evidence-package/archives/missing/report/download"))
+                .andExpect(status().isNotFound());
     }
 
     @Test
@@ -4103,6 +4190,34 @@ class DemoReadinessControllerTests {
                 "GET /api/demo/final-external-review-evidence-package is read-only.",
                 "# PatchPilot Final External Review Evidence Package\n\n"
                         + "- Closeout archive: `final-acceptance-completion-closeout-archive-1`\n"
+        );
+    }
+
+    private static DemoFinalExternalReviewEvidencePackageArchiveVo finalExternalReviewEvidencePackageArchive() {
+        return new DemoFinalExternalReviewEvidencePackageArchiveVo(
+                "final-external-review-package-archive-1",
+                DemoReadinessStatus.READY,
+                true,
+                "PatchPilot final external-review evidence package is ready.",
+                "Share this package with reviewers as the frozen external-review record.",
+                "task-1",
+                "https://github.com/bingqin2/PatchPilot/pull/8",
+                "final-acceptance-share-package-archive-1",
+                "final-acceptance-completion-archive-1",
+                "final-acceptance-completion-evidence-delivery-receipt-1",
+                "final-acceptance-completion-closeout-archive-1",
+                "reviewer@example.com",
+                "email",
+                "2026-06-29T04:25:00Z",
+                "FRESH",
+                Instant.parse("2026-06-29T06:30:00Z"),
+                List.of("Frozen closeout archive final-acceptance-completion-closeout-archive-1 is READY and closed."),
+                List.of("Download final external-review evidence package."),
+                "GET /api/demo/final-external-review-evidence-package is read-only.",
+                "# PatchPilot Final External Review Evidence Package\n\n"
+                        + "- Closeout archive: `final-acceptance-completion-closeout-archive-1`\n",
+                Instant.parse("2026-06-29T07:00:00Z"),
+                Instant.parse("2026-06-29T08:30:00Z")
         );
     }
 }

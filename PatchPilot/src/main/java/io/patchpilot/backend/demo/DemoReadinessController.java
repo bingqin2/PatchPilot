@@ -9,6 +9,7 @@ import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionCloseoutVo
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionEvidenceDeliveryFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionEvidenceDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionEvidenceBundleVo;
+import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceShareDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceShareFinalizationVo;
@@ -106,6 +107,7 @@ public class DemoReadinessController {
     private final DemoFinalAcceptanceCompletionCloseoutService demoFinalAcceptanceCompletionCloseoutService;
     private final DemoFinalAcceptanceCompletionCloseoutArchiveService demoFinalAcceptanceCompletionCloseoutArchiveService;
     private final DemoFinalExternalReviewEvidencePackageService demoFinalExternalReviewEvidencePackageService;
+    private final DemoFinalExternalReviewEvidencePackageArchiveService demoFinalExternalReviewEvidencePackageArchiveService;
     private final DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
     private final DemoReadinessSnapshotTrendService demoReadinessSnapshotTrendService;
     private final DemoLaunchPreflightService demoLaunchPreflightService;
@@ -618,6 +620,18 @@ public class DemoReadinessController {
         );
     }
 
+    @GetMapping(value = "/final-external-review-evidence-package/archives/{archiveId}/report/download", produces = "text/markdown;charset=UTF-8")
+    public ResponseEntity<String> downloadArchivedFinalExternalReviewEvidencePackageReport(
+            @PathVariable String archiveId
+    ) {
+        return demoFinalExternalReviewEvidencePackageArchiveService.findArchive(archiveId)
+                .map(archive -> markdownAttachment(
+                        "patchpilot-final-external-review-evidence-package-" + safeFilenamePart(archive.id()) + ".md",
+                        archive.report()
+                ))
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
     @GetMapping(value = "/final-acceptance-completion-closeout/archives/{archiveId}/report/download", produces = "text/markdown;charset=UTF-8")
     public ResponseEntity<String> downloadArchivedFinalAcceptanceCompletionCloseoutReport(
             @PathVariable String archiveId
@@ -769,6 +783,31 @@ public class DemoReadinessController {
     @GetMapping("/final-acceptance-completion-closeout/archives")
     public ApiResponse<List<DemoFinalAcceptanceCompletionCloseoutArchiveVo>> listFinalAcceptanceCompletionCloseoutArchives() {
         return ApiResponse.ok(demoFinalAcceptanceCompletionCloseoutArchiveService.listRecentArchives());
+    }
+
+    @PostMapping("/final-external-review-evidence-package/archives")
+    public ResponseEntity<ApiResponse<DemoFinalExternalReviewEvidencePackageArchiveVo>> archiveFinalExternalReviewEvidencePackage() {
+        try {
+            DemoFinalExternalReviewEvidencePackageArchiveVo archive =
+                    demoFinalExternalReviewEvidencePackageArchiveService.archiveCurrentPackage();
+            operatorSafetyAuditService.recordSafetyAudit(new RecordOperatorSafetyAuditCommand(
+                    "DEMO_FINAL_EXTERNAL_REVIEW_PACKAGE_ARCHIVED",
+                    "DEMO_FINAL_EXTERNAL_REVIEW_PACKAGE_ARCHIVE",
+                    archive.id(),
+                    TriggerQuarantineScope.REPOSITORY,
+                    "patchpilot/local-demo",
+                    "admin-api",
+                    "Archived final external-review evidence package " + archive.closeoutArchiveId()
+            ));
+            return ResponseEntity.ok(ApiResponse.ok(archive));
+        } catch (IllegalStateException exception) {
+            return ResponseEntity.badRequest().body(ApiResponse.fail(exception.getMessage()));
+        }
+    }
+
+    @GetMapping("/final-external-review-evidence-package/archives")
+    public ApiResponse<List<DemoFinalExternalReviewEvidencePackageArchiveVo>> listFinalExternalReviewEvidencePackageArchives() {
+        return ApiResponse.ok(demoFinalExternalReviewEvidencePackageArchiveService.listRecentArchives());
     }
 
     @PostMapping("/launch-evidence-share-delivery-receipts")
