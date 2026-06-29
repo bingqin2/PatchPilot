@@ -164,6 +164,28 @@ export function DemoEvidenceBundlePanel({ bundle, error, onCopyRunbook }: DemoEv
     latestArchivedAt: null,
     downloadActions: ['Archive the final external-review evidence package after it is READY.']
   };
+  const finalExternalReviewEvidencePackageDeliveryReceiptEvidence =
+    bundle?.finalExternalReviewEvidencePackageDeliveryReceiptEvidence ?? {
+      status: 'NEEDS_ATTENTION' as DemoReadinessStatus,
+      recorded: false,
+      fresh: false,
+      freshness: 'MISSING',
+      summary: 'No final external-review package delivery receipt is available.',
+      nextAction: 'Share the latest final external-review package archive and record a delivery receipt.',
+      receiptCount: 0,
+      latestReceiptId: null,
+      latestPackageArchiveId: finalExternalReviewEvidencePackageArchiveEvidence.latestArchiveId,
+      latestCloseoutArchiveId: finalExternalReviewEvidencePackageArchiveEvidence.latestCloseoutArchiveId,
+      latestCompletionArchiveId: finalExternalReviewEvidencePackageArchiveEvidence.latestCompletionArchiveId,
+      latestCompletionEvidenceDeliveryReceiptId:
+        finalExternalReviewEvidencePackageArchiveEvidence.latestCompletionEvidenceDeliveryReceiptId,
+      latestTaskId: finalExternalReviewEvidencePackageArchiveEvidence.latestTaskId,
+      latestPullRequestUrl: finalExternalReviewEvidencePackageArchiveEvidence.latestPullRequestUrl,
+      latestDeliveryTarget: null,
+      latestDeliveryChannel: null,
+      latestDeliveredAt: null,
+      downloadActions: ['Record a final external-review package delivery receipt after sharing the archive.']
+    };
 
   async function copyRunbook() {
     try {
@@ -576,6 +598,53 @@ export function DemoEvidenceBundlePanel({ bundle, error, onCopyRunbook }: DemoEv
                 <small>Archived {compactDateTime(finalExternalReviewEvidencePackageArchiveEvidence.latestArchivedAt)}</small>
               ) : null}
               {finalExternalReviewEvidencePackageArchiveEvidence.downloadActions.slice(0, 2).map((action) => (
+                <small key={action}>{action}</small>
+              ))}
+            </div>
+            <div>
+              <span>Final external-review package delivery</span>
+              <strong>
+                {finalExternalReviewEvidencePackageDeliveryReceiptEvidence.fresh
+                  ? 'Fresh receipt'
+                  : statusLabel(finalExternalReviewEvidencePackageDeliveryReceiptEvidence.status)}
+              </strong>
+              <small>{finalExternalReviewEvidencePackageDeliveryReceiptEvidence.summary}</small>
+              <small>{finalExternalReviewEvidencePackageDeliveryReceiptEvidence.nextAction}</small>
+              <small>
+                {finalExternalReviewEvidencePackageDeliveryReceiptEvidence.receiptCount} final external-review package
+                delivery receipts
+              </small>
+              <small>
+                {finalExternalReviewEvidencePackageDeliveryReceiptEvidence.latestReceiptId
+                  ?? 'No final external-review package delivery receipt'}
+              </small>
+              <small>
+                {finalExternalReviewEvidencePackageDeliveryReceiptEvidence.latestPackageArchiveId
+                  ?? 'No delivered final external-review package archive'}
+              </small>
+              <small>
+                {finalExternalReviewEvidencePackageDeliveryReceiptEvidence.latestCompletionEvidenceDeliveryReceiptId
+                  ?? 'No linked completion evidence delivery receipt'}
+              </small>
+              <small>{deliveryFreshnessLabel(finalExternalReviewEvidencePackageDeliveryReceiptEvidence.freshness)}</small>
+              <small>
+                {finalExternalReviewEvidencePackageDeliveryReceiptEvidence.latestDeliveryTarget
+                  ? `${finalExternalReviewEvidencePackageDeliveryReceiptEvidence.latestDeliveryChannel ?? 'delivery'} - ${finalExternalReviewEvidencePackageDeliveryReceiptEvidence.latestDeliveryTarget}`
+                  : 'No final external-review package delivery target'}
+              </small>
+              {finalExternalReviewEvidencePackageDeliveryReceiptEvidence.latestDeliveredAt ? (
+                <small>
+                  Delivered {compactDateTime(finalExternalReviewEvidencePackageDeliveryReceiptEvidence.latestDeliveredAt)}
+                </small>
+              ) : null}
+              {finalExternalReviewEvidencePackageDeliveryReceiptEvidence.latestPullRequestUrl ? (
+                <a href={finalExternalReviewEvidencePackageDeliveryReceiptEvidence.latestPullRequestUrl}>
+                  Open delivered final external-review Pull Request
+                </a>
+              ) : (
+                <small>No delivered final external-review Pull Request</small>
+              )}
+              {finalExternalReviewEvidencePackageDeliveryReceiptEvidence.downloadActions.slice(0, 2).map((action) => (
                 <small key={action}>{action}</small>
               ))}
             </div>

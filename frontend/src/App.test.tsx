@@ -2901,6 +2901,27 @@ const demoFinalExternalReviewEvidencePackageArchive = {
   archivedAt: '2026-06-29T07:10:00Z'
 };
 
+const demoFinalExternalReviewEvidencePackageDeliveryReceipt = {
+  id: 'final-external-review-package-delivery-receipt-1',
+  status: 'READY',
+  finalExternalReviewPackageArchiveStatus: 'READY',
+  finalExternalReviewPackageArchiveId: 'final-external-review-package-archive-1',
+  closeoutArchiveId: 'final-acceptance-completion-closeout-archive-1',
+  completionArchiveId: 'final-acceptance-completion-archive-1',
+  completionEvidenceDeliveryReceiptId: 'final-acceptance-completion-evidence-delivery-receipt-1',
+  latestTaskId: 'task-1',
+  latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+  summary: 'PatchPilot final external-review evidence package archive was delivered.',
+  nextAction: 'Use the delivery receipt as proof that the frozen final external-review package was shared.',
+  deliveryChannel: 'email',
+  deliveryTarget: 'reviewer@example.com',
+  operator: 'release-captain',
+  notes: 'Sent to reviewer mailbox.',
+  deliveredAt: '2026-06-29T07:20:00Z',
+  createdAt: '2026-06-29T07:25:00Z',
+  markdownReport: '# PatchPilot Final External Review Package Delivery Receipt'
+};
+
 const demoLaunchEvidenceDeliveryReceipt = {
   id: 'launch-delivery-receipt-1',
   status: 'READY',
@@ -3209,6 +3230,32 @@ beforeEach(() => {
     }
     if (url === '/api/demo/final-external-review-evidence-package/archives') {
       return jsonResponse([demoFinalExternalReviewEvidencePackageArchive]);
+    }
+    if (
+      url === '/api/demo/final-external-review-evidence-package/delivery-receipts' &&
+      init?.method === 'POST'
+    ) {
+      return jsonResponse({
+        ...demoFinalExternalReviewEvidencePackageDeliveryReceipt,
+        id: 'final-external-review-package-delivery-receipt-2',
+        deliveryTarget: 'auditor@example.com',
+        notes: 'Sent archived package.'
+      }, true, null, 201);
+    }
+    if (url === '/api/demo/final-external-review-evidence-package/delivery-receipts') {
+      return jsonResponse([demoFinalExternalReviewEvidencePackageDeliveryReceipt]);
+    }
+    if (
+      url ===
+      '/api/demo/final-external-review-evidence-package/delivery-receipts/final-external-review-package-delivery-receipt-1/report/download'
+    ) {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        blob: async () => new Blob(['# PatchPilot Final External Review Package Delivery Receipt'], {
+          type: 'text/markdown;charset=UTF-8'
+        })
+      } as Response);
     }
     if (url === '/api/demo/final-external-review-evidence-package/archives/final-external-review-package-archive-1/report/download') {
       return Promise.resolve({
@@ -4349,6 +4396,9 @@ test('renders operational task dashboard from backend APIs', async () => {
     expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-external-review-evidence-package/archives')
   );
   await waitFor(() =>
+    expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-external-review-evidence-package/delivery-receipts')
+  );
+  await waitFor(() =>
     expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-acceptance-completion-evidence-delivery-receipts')
   );
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/github/credential-readiness'));
@@ -4391,6 +4441,12 @@ test('renders operational task dashboard from backend APIs', async () => {
     name: 'Archived final external-review packages'
   })).toBeInTheDocument();
   expect(within(acceptancePanel).getByText('final-external-review-package-archive-1')).toBeInTheDocument();
+  expect(within(acceptancePanel).getByRole('heading', {
+    name: 'Final external-review package delivery receipts'
+  })).toBeInTheDocument();
+  expect(within(acceptancePanel).getByText(
+    'final-external-review-package-delivery-receipt-1'
+  )).toBeInTheDocument();
   expect(within(acceptancePanel).getAllByText(
     'Frozen closeout archive final-acceptance-completion-closeout-archive-1 is READY and closed.'
   )).not.toHaveLength(0);
@@ -5001,6 +5057,65 @@ test('records and downloads final acceptance completion evidence delivery receip
   );
   expect(await within(acceptancePanel).findByText(
     'Final acceptance completion evidence delivery receipt final-acceptance-completion-evidence-delivery-receipt-1 downloaded'
+  )).toBeInTheDocument();
+});
+
+test('records and downloads final external-review package delivery receipt from dashboard', async () => {
+  const user = userEvent.setup();
+  const fetchMock = vi.mocked(fetch);
+  const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+  const createObjectURL = vi.fn(() => 'blob:final-external-review-package-delivery-receipt');
+  const revokeObjectURL = vi.fn();
+  vi.stubGlobal('URL', blobUrlConstructor(createObjectURL, revokeObjectURL));
+
+  render(<App />);
+
+  const acceptancePanel = await screen.findByRole('region', { name: 'Final demo acceptance' });
+  expect(within(acceptancePanel).getByRole('heading', {
+    name: 'Final external-review package delivery receipts'
+  })).toBeInTheDocument();
+
+  await user.selectOptions(within(acceptancePanel).getByLabelText('Package delivery channel'), 'github-comment');
+  await user.clear(within(acceptancePanel).getByLabelText('Package delivery target'));
+  await user.type(within(acceptancePanel).getByLabelText('Package delivery target'), 'auditor@example.com');
+  await user.type(within(acceptancePanel).getByLabelText('Package delivery notes'), 'Sent archived package.');
+  await user.click(within(acceptancePanel).getByRole('button', {
+    name: 'Record final external-review package delivery receipt'
+  }));
+
+  await waitFor(() =>
+    expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-external-review-evidence-package/delivery-receipts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        deliveryChannel: 'github-comment',
+        deliveryTarget: 'auditor@example.com',
+        operator: '',
+        notes: 'Sent archived package.'
+      })
+    })
+  );
+  await waitFor(() =>
+    expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-external-review-evidence-package/delivery-receipts')
+  );
+  expect(await within(acceptancePanel).findByText(
+    'Final external-review package delivery receipt recorded'
+  )).toBeInTheDocument();
+
+  await user.click(within(acceptancePanel).getByRole('button', {
+    name:
+      'Download final external-review package delivery receipt final-external-review-package-delivery-receipt-1'
+  }));
+
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
+    '/api/demo/final-external-review-evidence-package/delivery-receipts/final-external-review-package-delivery-receipt-1/report/download'
+  ));
+  await waitFor(() => expect(click).toHaveBeenCalled());
+  await waitFor(() =>
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:final-external-review-package-delivery-receipt')
+  );
+  expect(await within(acceptancePanel).findByText(
+    'Final external-review package delivery receipt downloaded'
   )).toBeInTheDocument();
 });
 
@@ -7077,6 +7192,29 @@ function defaultAppResponse(input: RequestInfo | URL, init?: RequestInit) {
   }
   if (url === '/api/demo/final-external-review-evidence-package/archives') {
     return jsonResponse([demoFinalExternalReviewEvidencePackageArchive]);
+  }
+  if (url === '/api/demo/final-external-review-evidence-package/delivery-receipts' && init?.method === 'POST') {
+    return jsonResponse({
+      ...demoFinalExternalReviewEvidencePackageDeliveryReceipt,
+      id: 'final-external-review-package-delivery-receipt-2',
+      deliveryTarget: 'auditor@example.com',
+      notes: 'Sent archived package.'
+    }, true, null, 201);
+  }
+  if (url === '/api/demo/final-external-review-evidence-package/delivery-receipts') {
+    return jsonResponse([demoFinalExternalReviewEvidencePackageDeliveryReceipt]);
+  }
+  if (
+    url ===
+    '/api/demo/final-external-review-evidence-package/delivery-receipts/final-external-review-package-delivery-receipt-1/report/download'
+  ) {
+    return Promise.resolve({
+      ok: true,
+      status: 200,
+      blob: async () => new Blob(['# PatchPilot Final External Review Package Delivery Receipt'], {
+        type: 'text/markdown;charset=UTF-8'
+      })
+    } as Response);
   }
   if (url === '/api/demo/final-acceptance-completion-archives' && init?.method === 'POST') {
     return jsonResponse(demoFinalAcceptanceCompletionArchive);

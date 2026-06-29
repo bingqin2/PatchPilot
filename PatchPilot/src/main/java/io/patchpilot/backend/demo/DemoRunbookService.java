@@ -390,6 +390,37 @@ public class DemoRunbookService {
                         .append("- Final external-review package archive download: ")
                         .append(action)
                         .append("\n"));
+
+        runbook.append("- Final external-review package delivery receipt: `")
+                .append(bundle.finalExternalReviewEvidencePackageDeliveryReceiptEvidence().status())
+                .append("` - ")
+                .append(bundle.finalExternalReviewEvidencePackageDeliveryReceiptEvidence().summary())
+                .append("\n")
+                .append("- Final external-review package delivery receipt id: ")
+                .append(valueOrNoneBackticked(bundle.finalExternalReviewEvidencePackageDeliveryReceiptEvidence()
+                        .latestReceiptId()))
+                .append("\n")
+                .append("- Final external-review delivered package archive: ")
+                .append(valueOrNoneBackticked(bundle.finalExternalReviewEvidencePackageDeliveryReceiptEvidence()
+                        .latestPackageArchiveId()))
+                .append("\n")
+                .append("- Final external-review package delivery target: ")
+                .append(finalExternalReviewPackageDeliveryTarget(bundle))
+                .append("\n")
+                .append("- Final external-review package delivered at: ")
+                .append(bundle.finalExternalReviewEvidencePackageDeliveryReceiptEvidence().latestDeliveredAt() == null
+                        ? "none"
+                        : "`" + bundle.finalExternalReviewEvidencePackageDeliveryReceiptEvidence()
+                                .latestDeliveredAt() + "`")
+                .append("\n")
+                .append("- Final external-review package delivery next action: ")
+                .append(bundle.finalExternalReviewEvidencePackageDeliveryReceiptEvidence().nextAction())
+                .append("\n");
+        bundle.finalExternalReviewEvidencePackageDeliveryReceiptEvidence().downloadActions()
+                .forEach(action -> runbook
+                        .append("- Final external-review package delivery download: ")
+                        .append(action)
+                        .append("\n"));
     }
 
     private static void appendEvaluationRunReadiness(
@@ -494,6 +525,18 @@ public class DemoRunbookService {
     private static String finalExternalReviewDeliveryTarget(DemoEvidenceBundleVo bundle) {
         String target = bundle.finalExternalReviewEvidencePackage().deliveryTarget();
         String channel = bundle.finalExternalReviewEvidencePackage().deliveryChannel();
+        if (target == null || target.isBlank()) {
+            return "none";
+        }
+        if (channel == null || channel.isBlank()) {
+            return target;
+        }
+        return target + " via " + channel;
+    }
+
+    private static String finalExternalReviewPackageDeliveryTarget(DemoEvidenceBundleVo bundle) {
+        String target = bundle.finalExternalReviewEvidencePackageDeliveryReceiptEvidence().latestDeliveryTarget();
+        String channel = bundle.finalExternalReviewEvidencePackageDeliveryReceiptEvidence().latestDeliveryChannel();
         if (target == null || target.isBlank()) {
             return "none";
         }

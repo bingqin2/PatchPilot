@@ -410,6 +410,28 @@ const bundle: DemoEvidenceBundle = {
       'Download final external-review evidence package archive final-external-review-package-archive-1.'
     ]
   },
+  finalExternalReviewEvidencePackageDeliveryReceiptEvidence: {
+    status: 'READY',
+    recorded: true,
+    fresh: true,
+    freshness: 'FRESH',
+    summary: 'Latest final external-review package delivery receipt is fresh.',
+    nextAction: 'Use the delivery receipt as proof that the frozen final external-review package was shared.',
+    receiptCount: 1,
+    latestReceiptId: 'final-external-review-package-delivery-receipt-1',
+    latestPackageArchiveId: 'final-external-review-package-archive-1',
+    latestCloseoutArchiveId: 'final-acceptance-completion-closeout-archive-1',
+    latestCompletionArchiveId: 'final-acceptance-completion-archive-1',
+    latestCompletionEvidenceDeliveryReceiptId: 'final-acceptance-completion-evidence-delivery-receipt-1',
+    latestTaskId: 'task-2',
+    latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+    latestDeliveryTarget: 'reviewer@example.com',
+    latestDeliveryChannel: 'email',
+    latestDeliveredAt: '2026-06-29T05:00:00Z',
+    downloadActions: [
+      'Download final external-review package delivery receipt final-external-review-package-delivery-receipt-1.'
+    ]
+  },
   handoffShareDeliveryReceiptRecorded: true,
   handoffShareLatestDeliveryReceiptId: 'delivery-receipt-1',
   handoffShareLatestDeliveryTarget: 'maintainer@example.com',
@@ -624,13 +646,25 @@ test('summarizes demo evidence bundle for operators', () => {
     within(panel).getByText('Use the archived final external-review evidence package as the frozen reviewer-facing record.')
   ).toBeInTheDocument();
   expect(within(panel).getByText('1 final external-review package archives')).toBeInTheDocument();
-  expect(within(panel).getByText('final-external-review-package-archive-1')).toBeInTheDocument();
+  expect(within(panel).getAllByText('final-external-review-package-archive-1').length)
+    .toBeGreaterThanOrEqual(2);
   expect(within(panel).getByRole('link', { name: 'Open archived final external-review Pull Request' })).toHaveAttribute(
     'href',
     'https://github.com/bingqin2/PatchPilot/pull/42'
   );
   expect(
     within(panel).getByText('Download final external-review evidence package archive final-external-review-package-archive-1.')
+  ).toBeInTheDocument();
+  expect(within(panel).getByText('Final external-review package delivery')).toBeInTheDocument();
+  expect(within(panel).getByText('Fresh receipt')).toBeInTheDocument();
+  expect(within(panel).getByText('Latest final external-review package delivery receipt is fresh.')).toBeInTheDocument();
+  expect(
+    within(panel).getByText('Use the delivery receipt as proof that the frozen final external-review package was shared.')
+  ).toBeInTheDocument();
+  expect(within(panel).getByText('1 final external-review package delivery receipts')).toBeInTheDocument();
+  expect(within(panel).getByText('final-external-review-package-delivery-receipt-1')).toBeInTheDocument();
+  expect(
+    within(panel).getByText('Download final external-review package delivery receipt final-external-review-package-delivery-receipt-1.')
   ).toBeInTheDocument();
   expect(within(panel).getByText('Handoff share delivery')).toBeInTheDocument();
   expect(within(panel).getAllByText('Fresh').length).toBeGreaterThanOrEqual(2);
@@ -677,7 +711,8 @@ test('renders missing certificate evidence for legacy bundle responses', () => {
     finalAcceptanceCompletionCloseoutEvidence: undefined,
     finalAcceptanceCompletionCloseoutArchiveEvidence: undefined,
     finalExternalReviewEvidencePackage: undefined,
-    finalExternalReviewEvidencePackageArchiveEvidence: undefined
+    finalExternalReviewEvidencePackageArchiveEvidence: undefined,
+    finalExternalReviewEvidencePackageDeliveryReceiptEvidence: undefined
   } as unknown as DemoEvidenceBundle;
 
   render(<DemoEvidenceBundlePanel bundle={legacyBundle} error={null} onCopyRunbook={vi.fn()} />);
@@ -728,6 +763,12 @@ test('renders missing certificate evidence for legacy bundle responses', () => {
     screen.getAllByText('Archive the final external-review evidence package after it is READY.').length
   ).toBeGreaterThanOrEqual(1);
   expect(screen.getByText('No archived final external-review Pull Request')).toBeInTheDocument();
+  expect(screen.getByText('Final external-review package delivery')).toBeInTheDocument();
+  expect(screen.getByText('No final external-review package delivery receipt is available.')).toBeInTheDocument();
+  expect(
+    screen.getByText('Share the latest final external-review package archive and record a delivery receipt.')
+  ).toBeInTheDocument();
+  expect(screen.getByText('No final external-review package delivery receipt')).toBeInTheDocument();
 });
 
 test('copies demo runbook markdown', async () => {

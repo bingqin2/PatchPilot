@@ -18,6 +18,8 @@ import type {
   DemoFinalAcceptanceCompletionEvidenceDeliveryReceiptInput,
   DemoFinalExternalReviewEvidencePackage,
   DemoFinalExternalReviewEvidencePackageArchive,
+  DemoFinalExternalReviewEvidencePackageDeliveryReceipt,
+  DemoFinalExternalReviewEvidencePackageDeliveryReceiptInput,
   DemoFinalAcceptanceShareDeliveryReceipt,
   DemoFinalAcceptanceShareDeliveryReceiptInput,
   DemoFinalAcceptanceShareFinalization,
@@ -372,6 +374,31 @@ export async function listDemoFinalExternalReviewEvidencePackageArchives(): Prom
 export async function downloadDemoFinalExternalReviewEvidencePackageArchiveReport(archiveId: string): Promise<Blob> {
   return getBlobApi(
     `/api/demo/final-external-review-evidence-package/archives/${encodeURIComponent(archiveId)}/report/download`
+  );
+}
+
+export async function createDemoFinalExternalReviewEvidencePackageDeliveryReceipt(
+  input: DemoFinalExternalReviewEvidencePackageDeliveryReceiptInput
+): Promise<DemoFinalExternalReviewEvidencePackageDeliveryReceipt> {
+  return postApi<DemoFinalExternalReviewEvidencePackageDeliveryReceipt>(
+    '/api/demo/final-external-review-evidence-package/delivery-receipts',
+    input
+  );
+}
+
+export async function listDemoFinalExternalReviewEvidencePackageDeliveryReceipts(): Promise<
+  DemoFinalExternalReviewEvidencePackageDeliveryReceipt[]
+> {
+  return getApi<DemoFinalExternalReviewEvidencePackageDeliveryReceipt[]>(
+    '/api/demo/final-external-review-evidence-package/delivery-receipts'
+  );
+}
+
+export async function downloadDemoFinalExternalReviewEvidencePackageDeliveryReceiptReport(
+  receiptId: string
+): Promise<Blob> {
+  return getBlobApi(
+    `/api/demo/final-external-review-evidence-package/delivery-receipts/${encodeURIComponent(receiptId)}/report/download`
   );
 }
 

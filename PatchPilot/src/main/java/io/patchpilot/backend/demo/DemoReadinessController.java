@@ -10,6 +10,7 @@ import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionEvidenceDe
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionEvidenceDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionEvidenceBundleVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageArchiveVo;
+import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceShareDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceShareFinalizationVo;
@@ -108,6 +109,8 @@ public class DemoReadinessController {
     private final DemoFinalAcceptanceCompletionCloseoutArchiveService demoFinalAcceptanceCompletionCloseoutArchiveService;
     private final DemoFinalExternalReviewEvidencePackageService demoFinalExternalReviewEvidencePackageService;
     private final DemoFinalExternalReviewEvidencePackageArchiveService demoFinalExternalReviewEvidencePackageArchiveService;
+    private final DemoFinalExternalReviewEvidencePackageDeliveryReceiptService
+            demoFinalExternalReviewEvidencePackageDeliveryReceiptService;
     private final DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
     private final DemoReadinessSnapshotTrendService demoReadinessSnapshotTrendService;
     private final DemoLaunchPreflightService demoLaunchPreflightService;
@@ -464,6 +467,35 @@ public class DemoReadinessController {
         return ApiResponse.ok(demoFinalAcceptanceCompletionEvidenceDeliveryReceiptService.listRecentReceipts());
     }
 
+    @PostMapping("/final-external-review-evidence-package/delivery-receipts")
+    public ResponseEntity<ApiResponse<DemoFinalExternalReviewEvidencePackageDeliveryReceiptVo>> recordFinalExternalReviewPackageDeliveryReceipt(
+            @RequestBody DemoFinalExternalReviewEvidencePackageDeliveryReceiptRequestDto request
+    ) {
+        try {
+            DemoFinalExternalReviewEvidencePackageDeliveryReceiptVo receipt =
+                    demoFinalExternalReviewEvidencePackageDeliveryReceiptService.recordDeliveryReceipt(request);
+            operatorSafetyAuditService.recordSafetyAudit(new RecordOperatorSafetyAuditCommand(
+                    "DEMO_FINAL_EXTERNAL_REVIEW_PACKAGE_DELIVERY_RECEIPT_RECORDED",
+                    "DEMO_FINAL_EXTERNAL_REVIEW_PACKAGE_DELIVERY_RECEIPT",
+                    receipt.id(),
+                    TriggerQuarantineScope.REPOSITORY,
+                    "patchpilot/local-demo",
+                    receipt.operator(),
+                    "Recorded final external-review package delivery receipt for "
+                            + receipt.finalExternalReviewPackageArchiveId()
+            ));
+            return ResponseEntity.ok(ApiResponse.ok(receipt));
+        } catch (IllegalArgumentException | IllegalStateException exception) {
+            return ResponseEntity.badRequest().body(ApiResponse.fail(exception.getMessage()));
+        }
+    }
+
+    @GetMapping("/final-external-review-evidence-package/delivery-receipts")
+    public ApiResponse<List<DemoFinalExternalReviewEvidencePackageDeliveryReceiptVo>>
+    listFinalExternalReviewPackageDeliveryReceipts() {
+        return ApiResponse.ok(demoFinalExternalReviewEvidencePackageDeliveryReceiptService.listRecentReceipts());
+    }
+
     @GetMapping(value = "/handoff-share-center/report/download", produces = "text/markdown;charset=UTF-8")
     public ResponseEntity<String> downloadHandoffShareCenterReport() {
         return markdownAttachment(
@@ -628,6 +660,19 @@ public class DemoReadinessController {
                 .map(archive -> markdownAttachment(
                         "patchpilot-final-external-review-evidence-package-" + safeFilenamePart(archive.id()) + ".md",
                         archive.report()
+                ))
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @GetMapping(value = "/final-external-review-evidence-package/delivery-receipts/{receiptId}/report/download", produces = "text/markdown;charset=UTF-8")
+    public ResponseEntity<String> downloadFinalExternalReviewPackageDeliveryReceiptReport(
+            @PathVariable String receiptId
+    ) {
+        return demoFinalExternalReviewEvidencePackageDeliveryReceiptService.findReceipt(receiptId)
+                .map(receipt -> markdownAttachment(
+                        "patchpilot-final-external-review-package-delivery-receipt-"
+                                + safeFilenamePart(receipt.id()) + ".md",
+                        receipt.markdownReport()
                 ))
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
