@@ -10,11 +10,14 @@ import io.patchpilot.backend.demo.domain.DemoSelfHostedLaunchReadinessVo;
 import io.patchpilot.backend.demo.domain.DemoSmokeChecklistStatus;
 import io.patchpilot.backend.demo.domain.DemoSmokeChecklistStepVo;
 import io.patchpilot.backend.demo.domain.DemoSmokeChecklistVo;
+import io.patchpilot.backend.github.credential.domain.GitHubPublishPermissionReadinessVo;
+import io.patchpilot.backend.github.credential.domain.GitHubPublishReadinessVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskQueueSummaryVo;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -22,7 +25,7 @@ class SelfHostedLaunchReadinessServiceTests {
 
     @Test
     void should_mark_launch_package_ready_when_readiness_evidence_and_finalization_are_ready() {
-        SelfHostedLaunchReadinessService service = new SelfHostedLaunchReadinessService(
+        SelfHostedLaunchReadinessService service = service(
                 () -> readiness(DemoReadinessStatus.READY, List.of()),
                 () -> evidenceBundle(DemoReadinessStatus.READY, DemoReadinessStatus.READY, true, List.of())
         );
@@ -38,6 +41,8 @@ class SelfHostedLaunchReadinessServiceTests {
                         "Demo readiness:READY",
                         "Evidence bundle:READY",
                         "Handoff finalization:READY",
+                        "GitHub publish path:READY",
+                        "GitHub publish permissions:READY",
                         "Credentials and secrets:READY",
                         "Webhook setup:READY",
                         "Queue and worker:READY"
@@ -54,7 +59,7 @@ class SelfHostedLaunchReadinessServiceTests {
 
     @Test
     void should_need_attention_when_final_handoff_delivery_evidence_is_missing() {
-        SelfHostedLaunchReadinessService service = new SelfHostedLaunchReadinessService(
+        SelfHostedLaunchReadinessService service = service(
                 () -> readiness(DemoReadinessStatus.READY, List.of()),
                 () -> evidenceBundle(
                         DemoReadinessStatus.NEEDS_ATTENTION,
@@ -85,7 +90,7 @@ class SelfHostedLaunchReadinessServiceTests {
 
     @Test
     void should_block_launch_when_demo_readiness_is_blocked() {
-        SelfHostedLaunchReadinessService service = new SelfHostedLaunchReadinessService(
+        SelfHostedLaunchReadinessService service = service(
                 () -> readiness(
                         DemoReadinessStatus.BLOCKED,
                         List.of("Configure missing credentials in .env and restart the backend.")
@@ -108,6 +113,102 @@ class SelfHostedLaunchReadinessServiceTests {
         assertThat(readiness.nextActions()).containsExactly(
                 "Configure missing credentials in .env and restart the backend.",
                 "Resolve blocked launch checks before posting a live /agent fix trigger."
+        );
+    }
+
+    @Test
+    void should_need_attention_when_github_publish_permissions_are_read_only() {
+        SelfHostedLaunchReadinessService service = service(
+                () -> readiness(DemoReadinessStatus.READY, List.of()),
+                () -> evidenceBundle(DemoReadinessStatus.READY, DemoReadinessStatus.READY, true, List.of()),
+                SelfHostedLaunchReadinessServiceTests::readyPublishReadiness,
+                () -> publishPermissionReadiness(
+                        "NEEDS_ATTENTION",
+                        false,
+                        "GitHub token can read the repository but does not expose write permissions required for publish.",
+                        "Grant Contents: Read and write, Pull requests: Read and write, and Issues: Read and write on the demo repository; then restart PatchPilot if the token changed."
+                )
+        );
+
+        DemoSelfHostedLaunchReadinessVo readiness = service.getReadinessPackage();
+
+        assertThat(readiness.status()).isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
+        assertThat(readiness.readyToLaunch()).isFalse();
+        assertThat(readiness.checks())
+                .filteredOn(check -> check.name().equals("GitHub publish permissions"))
+                .singleElement()
+                .satisfies(check -> {
+                    assertThat(check.status()).isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
+                    assertThat(check.message()).contains("does not expose write permissions");
+                    assertThat(check.action()).contains("Grant Contents: Read and write");
+                });
+        assertThat(readiness.nextActions()).contains(
+                "Grant Contents: Read and write, Pull requests: Read and write, and Issues: Read and write on the demo repository; then restart PatchPilot if the token changed.",
+                "Resolve launch package warnings, then rerun this readiness package."
+        );
+        assertThat(readiness.markdownReport())
+                .contains("GitHub publish permissions")
+                .contains("Grant Contents: Read and write");
+    }
+
+    @Test
+    void should_block_launch_when_github_publish_path_is_blocked() {
+        SelfHostedLaunchReadinessService service = service(
+                () -> readiness(DemoReadinessStatus.READY, List.of()),
+                () -> evidenceBundle(DemoReadinessStatus.READY, DemoReadinessStatus.READY, true, List.of()),
+                () -> publishReadiness(
+                        "BLOCKED",
+                        false,
+                        "GitHub publish path is blocked before PatchPilot can push branches or create Pull Requests.",
+                        "Configure PATCHPILOT_GITHUB_TOKEN and restart the backend."
+                ),
+                SelfHostedLaunchReadinessServiceTests::readyPublishPermissionReadiness
+        );
+
+        DemoSelfHostedLaunchReadinessVo readiness = service.getReadinessPackage();
+
+        assertThat(readiness.status()).isEqualTo(DemoReadinessStatus.BLOCKED);
+        assertThat(readiness.readyToLaunch()).isFalse();
+        assertThat(readiness.checks())
+                .filteredOn(check -> check.name().equals("GitHub publish path"))
+                .singleElement()
+                .satisfies(check -> {
+                    assertThat(check.status()).isEqualTo(DemoReadinessStatus.BLOCKED);
+                    assertThat(check.message()).contains("blocked before PatchPilot can push");
+                    assertThat(check.action()).isEqualTo("Configure PATCHPILOT_GITHUB_TOKEN and restart the backend.");
+                });
+        assertThat(readiness.nextActions()).contains(
+                "Configure PATCHPILOT_GITHUB_TOKEN and restart the backend.",
+                "Resolve blocked launch checks before posting a live /agent fix trigger."
+        );
+        assertThat(readiness.markdownReport())
+                .contains("GitHub publish path")
+                .contains("Configure PATCHPILOT_GITHUB_TOKEN");
+    }
+
+    private static SelfHostedLaunchReadinessService service(
+            Supplier<DemoReadinessVo> readinessSupplier,
+            Supplier<DemoEvidenceBundleVo> evidenceBundleSupplier
+    ) {
+        return service(
+                readinessSupplier,
+                evidenceBundleSupplier,
+                SelfHostedLaunchReadinessServiceTests::readyPublishReadiness,
+                SelfHostedLaunchReadinessServiceTests::readyPublishPermissionReadiness
+        );
+    }
+
+    private static SelfHostedLaunchReadinessService service(
+            Supplier<DemoReadinessVo> readinessSupplier,
+            Supplier<DemoEvidenceBundleVo> evidenceBundleSupplier,
+            Supplier<GitHubPublishReadinessVo> publishReadinessSupplier,
+            Supplier<GitHubPublishPermissionReadinessVo> publishPermissionReadinessSupplier
+    ) {
+        return new SelfHostedLaunchReadinessService(
+                readinessSupplier,
+                evidenceBundleSupplier,
+                publishReadinessSupplier,
+                publishPermissionReadinessSupplier
         );
     }
 
@@ -190,5 +291,73 @@ class SelfHostedLaunchReadinessServiceTests {
 
     private static String firstAction(List<String> nextActions) {
         return nextActions.isEmpty() ? "No action needed." : nextActions.get(0);
+    }
+
+    private static GitHubPublishReadinessVo readyPublishReadiness() {
+        return publishReadiness(
+                "READY",
+                true,
+                "GitHub publish path is ready for PatchPilot push and Pull Request creation.",
+                "Continue with the live /agent fix demo."
+        );
+    }
+
+    private static GitHubPublishReadinessVo publishReadiness(
+            String status,
+            boolean publishReady,
+            String summary,
+            String nextAction
+    ) {
+        return new GitHubPublishReadinessVo(
+                status,
+                publishReady,
+                true,
+                true,
+                "bingqin2/PatchPilot",
+                "main",
+                summary,
+                nextAction,
+                "git push origin HEAD:<patchpilot-branch>",
+                "Read-only readiness probe.",
+                List.of(),
+                List.of("Repository: bingqin2/PatchPilot"),
+                Instant.parse("2026-06-30T00:00:00Z")
+        );
+    }
+
+    private static GitHubPublishPermissionReadinessVo readyPublishPermissionReadiness() {
+        return publishPermissionReadiness(
+                "READY",
+                true,
+                "GitHub token has repository publish permissions for PatchPilot push and Pull Request creation.",
+                "Continue with the live /agent fix demo."
+        );
+    }
+
+    private static GitHubPublishPermissionReadinessVo publishPermissionReadiness(
+            String status,
+            boolean publishPermissionReady,
+            String summary,
+            String nextAction
+    ) {
+        return new GitHubPublishPermissionReadinessVo(
+                status,
+                publishPermissionReady,
+                true,
+                true,
+                "bingqin2/PatchPilot",
+                "main",
+                true,
+                publishPermissionReady,
+                publishPermissionReady,
+                publishPermissionReady,
+                summary,
+                nextAction,
+                "Read-only permission probe.",
+                List.of(),
+                List.of("Repository: bingqin2/PatchPilot"),
+                12,
+                Instant.parse("2026-06-30T00:00:00Z")
+        );
     }
 }

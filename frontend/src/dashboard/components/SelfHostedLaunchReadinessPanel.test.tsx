@@ -19,10 +19,23 @@ const launchReadiness: DemoSelfHostedLaunchReadiness = {
       status: 'NEEDS_ATTENTION',
       message: 'Demo handoff package is send-ready but final delivery evidence is not current.',
       action: 'Send the current handoff package, record a delivery receipt, then download the finalization report.'
+    },
+    {
+      name: 'GitHub publish path',
+      status: 'READY',
+      message: 'GitHub publish path is ready for PatchPilot push and Pull Request creation.',
+      action: 'Continue with the live /agent fix demo.'
+    },
+    {
+      name: 'GitHub publish permissions',
+      status: 'NEEDS_ATTENTION',
+      message: 'GitHub token can read the repository but does not expose write permissions required for publish.',
+      action: 'Grant Contents: Read and write, Pull requests: Read and write, and Issues: Read and write on the demo repository; then restart PatchPilot if the token changed.'
     }
   ],
   nextActions: [
     'Send the current handoff package, record a delivery receipt, then download the finalization report.',
+    'Grant Contents: Read and write, Pull requests: Read and write, and Issues: Read and write on the demo repository; then restart PatchPilot if the token changed.',
     'Resolve launch package warnings, then rerun this readiness package.'
   ],
   generatedAt: '2026-06-27T01:00:00Z',
@@ -62,6 +75,11 @@ test('renders self-hosted launch readiness checks and next actions', () => {
   expect(within(panel).getByText('Not ready')).toBeInTheDocument();
   expect(within(panel).getByText('Handoff finalization')).toBeInTheDocument();
   expect(within(panel).getByText('Demo handoff package is send-ready but final delivery evidence is not current.')).toBeInTheDocument();
+  expect(within(panel).getByText('GitHub publish path')).toBeInTheDocument();
+  expect(within(panel).getByText('GitHub publish path is ready for PatchPilot push and Pull Request creation.')).toBeInTheDocument();
+  expect(within(panel).getByText('GitHub publish permissions')).toBeInTheDocument();
+  expect(within(panel).getByText('GitHub token can read the repository but does not expose write permissions required for publish.')).toBeInTheDocument();
+  expect(within(panel).getAllByText('Grant Contents: Read and write, Pull requests: Read and write, and Issues: Read and write on the demo repository; then restart PatchPilot if the token changed.').length).toBeGreaterThanOrEqual(2);
   expect(within(panel).getByText('Resolve launch package warnings, then rerun this readiness package.')).toBeInTheDocument();
   expect(within(panel).getByText('Recent launch readiness archives')).toBeInTheDocument();
   expect(within(panel).getByText('launch-readiness-archive-1')).toBeInTheDocument();

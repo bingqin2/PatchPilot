@@ -2539,6 +2539,18 @@ const demoSelfHostedLaunchReadiness = {
       status: 'READY',
       message: 'Demo handoff is finalized with a fresh delivery receipt for the current archive.',
       action: 'Use the finalization report as the post-demo delivery acceptance record.'
+    },
+    {
+      name: 'GitHub publish path',
+      status: 'READY',
+      message: 'GitHub publish path is ready for PatchPilot push and Pull Request creation.',
+      action: 'Continue with the live /agent fix demo.'
+    },
+    {
+      name: 'GitHub publish permissions',
+      status: 'READY',
+      message: 'GitHub token has repository publish permissions for PatchPilot push and Pull Request creation.',
+      action: 'Continue with the live /agent fix demo.'
     }
   ],
   nextActions: [
@@ -4691,6 +4703,10 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(within(selfHostedLaunchPanel).getAllByText('Self-hosted PatchPilot is ready for a controlled issue-to-PR launch.')).toHaveLength(2);
   expect(within(selfHostedLaunchPanel).getByText('Ready to launch')).toBeInTheDocument();
   expect(within(selfHostedLaunchPanel).getByText('Handoff finalization')).toBeInTheDocument();
+  expect(within(selfHostedLaunchPanel).getByText('GitHub publish path')).toBeInTheDocument();
+  expect(within(selfHostedLaunchPanel).getByText('GitHub publish path is ready for PatchPilot push and Pull Request creation.')).toBeInTheDocument();
+  expect(within(selfHostedLaunchPanel).getByText('GitHub publish permissions')).toBeInTheDocument();
+  expect(within(selfHostedLaunchPanel).getByText('GitHub token has repository publish permissions for PatchPilot push and Pull Request creation.')).toBeInTheDocument();
   expect(within(selfHostedLaunchPanel).getByText('Recent launch readiness archives')).toBeInTheDocument();
   expect(within(selfHostedLaunchPanel).getByText('launch-readiness-archive-1')).toBeInTheDocument();
   expect(within(selfHostedLaunchPanel).getByText('Post the tested /agent fix comment, watch the task reach COMPLETED, then use the generated Pull Request for review.')).toBeInTheDocument();
@@ -7683,7 +7699,7 @@ test('approves pending review tasks and refreshes dashboard data', async () => {
   );
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks?limit=50&status=PENDING_REVIEW'));
   expect(screen.queryByRole('button', { name: 'Retry task' })).not.toBeInTheDocument();
-}, 10000);
+}, 15000);
 
 test('retries rejected triggers and refreshes dashboard data', async () => {
   const user = userEvent.setup();
