@@ -307,6 +307,29 @@ export function DemoEvidenceBundlePanel({ bundle, error, onCopyRunbook }: DemoEv
       markdownReport: '',
       generatedAt: ''
     };
+  const finalExternalReviewReleaseBundleDeliveryFinalizationArchiveEvidence =
+    bundle?.finalExternalReviewReleaseBundleDeliveryFinalizationArchiveEvidence ?? {
+      status: 'NEEDS_ATTENTION' as DemoReadinessStatus,
+      archived: false,
+      finalized: false,
+      summary: 'No final external-review release bundle delivery finalization archive is available.',
+      nextAction: 'Archive the READY final external-review release bundle delivery finalization.',
+      archiveCount: 0,
+      latestArchiveId: null,
+      latestReleaseBundleArchiveId: finalExternalReviewReleaseBundleDeliveryFinalization.latestArchiveId,
+      latestDeliveryReceiptId:
+        finalExternalReviewReleaseBundleDeliveryFinalization.latestDeliveryReceiptId,
+      latestCertificateArchiveId:
+        finalExternalReviewReleaseBundleDeliveryFinalization.latestCertificateArchiveId,
+      latestPackageArchiveId:
+        finalExternalReviewReleaseBundleDeliveryFinalization.latestPackageArchiveId,
+      latestTaskId: finalExternalReviewReleaseBundleDeliveryFinalization.latestTaskId,
+      latestPullRequestUrl: finalExternalReviewReleaseBundleDeliveryFinalization.latestPullRequestUrl,
+      latestArchivedAt: null,
+      downloadActions: [
+        'Archive the READY final external-review release bundle delivery finalization.'
+      ]
+    };
 
   async function copyRunbook() {
     try {
@@ -984,6 +1007,47 @@ export function DemoEvidenceBundlePanel({ bundle, error, onCopyRunbook }: DemoEv
               {finalExternalReviewReleaseBundleDeliveryFinalization.downloadActions.slice(0, 2).map((action) => (
                 <small key={action}>{action}</small>
               ))}
+            </div>
+            <div>
+              <span>Final external-review release bundle delivery archive</span>
+              <strong>
+                {finalExternalReviewReleaseBundleDeliveryFinalizationArchiveEvidence.finalized
+                  ? 'Archived finalization'
+                  : statusLabel(finalExternalReviewReleaseBundleDeliveryFinalizationArchiveEvidence.status)}
+              </strong>
+              <small>{finalExternalReviewReleaseBundleDeliveryFinalizationArchiveEvidence.summary}</small>
+              <small>{finalExternalReviewReleaseBundleDeliveryFinalizationArchiveEvidence.nextAction}</small>
+              <small>
+                {finalExternalReviewReleaseBundleDeliveryFinalizationArchiveEvidence.latestArchiveId
+                  ?? 'No release bundle delivery finalization archive'}
+              </small>
+              <small>
+                {finalExternalReviewReleaseBundleDeliveryFinalizationArchiveEvidence.latestReleaseBundleArchiveId
+                  ?? 'No archived release bundle'}
+              </small>
+              <small>
+                {finalExternalReviewReleaseBundleDeliveryFinalizationArchiveEvidence.latestDeliveryReceiptId
+                  ?? 'No archived release bundle delivery receipt'}
+              </small>
+              <small>
+                {finalExternalReviewReleaseBundleDeliveryFinalizationArchiveEvidence.latestArchivedAt
+                  ? `Archived ${compactDateTime(
+                    finalExternalReviewReleaseBundleDeliveryFinalizationArchiveEvidence.latestArchivedAt
+                  )}`
+                  : `${finalExternalReviewReleaseBundleDeliveryFinalizationArchiveEvidence.archiveCount} archives`}
+              </small>
+              {finalExternalReviewReleaseBundleDeliveryFinalizationArchiveEvidence.latestPullRequestUrl ? (
+                <a href={finalExternalReviewReleaseBundleDeliveryFinalizationArchiveEvidence.latestPullRequestUrl}>
+                  Open archived final external-review release bundle delivery Pull Request
+                </a>
+              ) : (
+                <small>No archived final external-review release bundle delivery Pull Request</small>
+              )}
+              {finalExternalReviewReleaseBundleDeliveryFinalizationArchiveEvidence.downloadActions
+                .slice(0, 2)
+                .map((action) => (
+                  <small key={action}>{action}</small>
+                ))}
             </div>
             <div>
               <span>Handoff share delivery</span>

@@ -8,6 +8,7 @@ import {
   archiveDemoFinalExternalReviewEvidencePackageDeliveryFinalization,
   archiveDemoFinalExternalReviewDeliveryCertificate,
   archiveDemoFinalExternalReviewReleaseBundle,
+  archiveDemoFinalExternalReviewReleaseBundleDeliveryFinalization,
   approveTaskReview,
   archiveTaskEvidencePackageAcceptanceCertificate,
   archiveTaskEvidencePackageAcceptanceCloseout,
@@ -62,6 +63,7 @@ import {
   downloadDemoFinalExternalReviewDeliveryCertificateReport,
   downloadDemoFinalExternalReviewReleaseBundleReport,
   downloadDemoFinalExternalReviewReleaseBundleArchiveReport,
+  downloadDemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchiveReport,
   downloadDemoFinalExternalReviewReleaseBundleDeliveryFinalizationReport,
   downloadDemoFinalExternalReviewReleaseBundleDeliveryReceiptReport,
   downloadDemoFinalExternalReviewEvidencePackageDeliveryReceiptReport,
@@ -137,6 +139,7 @@ import {
   listDemoFinalExternalReviewEvidencePackageDeliveryReceipts,
   listDemoFinalExternalReviewDeliveryCertificateArchives,
   listDemoFinalExternalReviewReleaseBundleArchives,
+  listDemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchives,
   listDemoFinalExternalReviewReleaseBundleDeliveryReceipts,
   listDemoFinalAcceptanceShareDeliveryReceipts,
   listDemoFinalAcceptanceSharePackageArchives,
@@ -266,6 +269,7 @@ import type {
   DemoFinalExternalReviewReleaseBundle,
   DemoFinalExternalReviewReleaseBundleArchive,
   DemoFinalExternalReviewReleaseBundleDeliveryFinalization,
+  DemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchive,
   DemoFinalExternalReviewReleaseBundleDeliveryReceipt,
   DemoFinalExternalReviewReleaseBundleDeliveryReceiptInput,
   DemoFinalExternalReviewEvidencePackage,
@@ -542,6 +546,14 @@ export default function App() {
   const [
     demoFinalExternalReviewReleaseBundleDeliveryFinalizationError,
     setDemoFinalExternalReviewReleaseBundleDeliveryFinalizationError
+  ] = useState<string | null>(null);
+  const [
+    demoFinalExternalReviewReleaseBundleDeliveryFinalizationArchives,
+    setDemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchives
+  ] = useState<DemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchive[]>([]);
+  const [
+    demoFinalExternalReviewReleaseBundleDeliveryFinalizationArchiveError,
+    setDemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchiveError
   ] = useState<string | null>(null);
   const [demoReadinessSnapshots, setDemoReadinessSnapshots] = useState<DemoReadinessSnapshotArchive[]>([]);
   const [demoReadinessSnapshotError, setDemoReadinessSnapshotError] = useState<string | null>(null);
@@ -1015,6 +1027,7 @@ export default function App() {
         demoFinalExternalReviewReleaseBundleArchiveResult,
         demoFinalExternalReviewReleaseBundleDeliveryReceiptResult,
         demoFinalExternalReviewReleaseBundleDeliveryFinalizationResult,
+        demoFinalExternalReviewReleaseBundleDeliveryFinalizationArchiveResult,
         demoReadinessSnapshotResult,
         demoReadinessSnapshotTrendResult,
         demoSmokeChecklistResult,
@@ -1267,6 +1280,10 @@ export default function App() {
         getDemoFinalExternalReviewReleaseBundleDeliveryFinalization().then(
           (finalization) => ({ finalization, error: null as string | null }),
           (caught) => ({ finalization: null, error: errorMessage(caught) })
+        ),
+        listDemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchives().then(
+          (archives) => ({ archives, error: null as string | null }),
+          (caught) => ({ archives: null, error: errorMessage(caught) })
         ),
         listDemoReadinessSnapshots().then(
           (snapshots) => ({ snapshots, error: null as string | null }),
@@ -1653,6 +1670,14 @@ export default function App() {
       }
       setDemoFinalExternalReviewReleaseBundleDeliveryFinalizationError(
         demoFinalExternalReviewReleaseBundleDeliveryFinalizationResult.error
+      );
+      if (demoFinalExternalReviewReleaseBundleDeliveryFinalizationArchiveResult.archives) {
+        setDemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchives(
+          demoFinalExternalReviewReleaseBundleDeliveryFinalizationArchiveResult.archives
+        );
+      }
+      setDemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchiveError(
+        demoFinalExternalReviewReleaseBundleDeliveryFinalizationArchiveResult.error
       );
       if (demoReadinessSnapshotResult.snapshots) {
         setDemoReadinessSnapshots(demoReadinessSnapshotResult.snapshots);
@@ -2457,6 +2482,41 @@ export default function App() {
   const handleDownloadDemoFinalExternalReviewReleaseBundleDeliveryFinalizationReport = useCallback(() => (
     downloadDemoFinalExternalReviewReleaseBundleDeliveryFinalizationReport()
   ), []);
+  const handleArchiveDemoFinalExternalReviewReleaseBundleDeliveryFinalization = useCallback(async () => {
+    const archive = await archiveDemoFinalExternalReviewReleaseBundleDeliveryFinalization();
+    setDemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchives((current) => [
+      archive,
+      ...current.filter((item) => item.id !== archive.id)
+    ].slice(0, 20));
+    setDemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchiveError(null);
+    try {
+      const archives = await listDemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchives();
+      setDemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchives(archives);
+      setDemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchiveError(null);
+    } catch (caught) {
+      setDemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchiveError(errorMessage(caught));
+    }
+    try {
+      const finalization = await getDemoFinalExternalReviewReleaseBundleDeliveryFinalization();
+      setDemoFinalExternalReviewReleaseBundleDeliveryFinalization(finalization);
+      setDemoFinalExternalReviewReleaseBundleDeliveryFinalizationError(null);
+    } catch (caught) {
+      setDemoFinalExternalReviewReleaseBundleDeliveryFinalizationError(errorMessage(caught));
+    }
+    try {
+      const evidenceBundle = await getDemoEvidenceBundle();
+      setDemoEvidenceBundle(evidenceBundle);
+      setDemoEvidenceBundleError(null);
+    } catch (caught) {
+      setDemoEvidenceBundleError(errorMessage(caught));
+    }
+    return archive;
+  }, []);
+  const handleDownloadDemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchiveReport = useCallback((
+    archiveId: string
+  ) => (
+    downloadDemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchiveReport(archiveId)
+  ), []);
   const handleArchiveDemoFinalExternalReviewDeliveryCertificate = useCallback(async () => {
     const archive = await archiveDemoFinalExternalReviewDeliveryCertificate();
     setDemoFinalExternalReviewDeliveryCertificateArchives((current) => [
@@ -3227,6 +3287,9 @@ export default function App() {
         finalExternalReviewReleaseBundleDeliveryFinalization={
           demoFinalExternalReviewReleaseBundleDeliveryFinalization
         }
+        finalExternalReviewReleaseBundleDeliveryFinalizationArchives={
+          demoFinalExternalReviewReleaseBundleDeliveryFinalizationArchives
+        }
         error={demoAcceptanceSummaryError}
         sharePackageError={demoFinalAcceptanceSharePackageError}
         sharePackageArchiveError={demoFinalAcceptanceSharePackageArchiveError}
@@ -3262,6 +3325,9 @@ export default function App() {
         }
         finalExternalReviewReleaseBundleDeliveryFinalizationError={
           demoFinalExternalReviewReleaseBundleDeliveryFinalizationError
+        }
+        finalExternalReviewReleaseBundleDeliveryFinalizationArchiveError={
+          demoFinalExternalReviewReleaseBundleDeliveryFinalizationArchiveError
         }
         onDownloadReport={handleDownloadDemoAcceptanceSummaryReport}
         onDownloadSharePackageReport={handleDownloadDemoFinalAcceptanceSharePackageReport}
@@ -3333,6 +3399,12 @@ export default function App() {
         }
         onDownloadFinalExternalReviewReleaseBundleDeliveryFinalizationReport={
           handleDownloadDemoFinalExternalReviewReleaseBundleDeliveryFinalizationReport
+        }
+        onArchiveFinalExternalReviewReleaseBundleDeliveryFinalization={
+          handleArchiveDemoFinalExternalReviewReleaseBundleDeliveryFinalization
+        }
+        onDownloadFinalExternalReviewReleaseBundleDeliveryFinalizationArchiveReport={
+          handleDownloadDemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchiveReport
         }
       />
 

@@ -27,6 +27,7 @@ import type {
   DemoFinalExternalReviewReleaseBundle,
   DemoFinalExternalReviewReleaseBundleArchive,
   DemoFinalExternalReviewReleaseBundleDeliveryFinalization,
+  DemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchive,
   DemoFinalExternalReviewReleaseBundleDeliveryReceipt,
   DemoFinalExternalReviewReleaseBundleDeliveryReceiptInput,
   DemoFinalAcceptanceShareDeliveryReceipt,
@@ -554,6 +555,30 @@ export async function getDemoFinalExternalReviewReleaseBundleDeliveryFinalizatio
 
 export async function downloadDemoFinalExternalReviewReleaseBundleDeliveryFinalizationReport(): Promise<Blob> {
   return getBlobApi('/api/demo/final-external-review-release-bundle/delivery-finalization/report/download');
+}
+
+export async function archiveDemoFinalExternalReviewReleaseBundleDeliveryFinalization(): Promise<
+  DemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchive
+> {
+  return postApi<DemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchive>(
+    '/api/demo/final-external-review-release-bundle/delivery-finalization/archives'
+  );
+}
+
+export async function listDemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchives(): Promise<
+  DemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchive[]
+> {
+  return getApi<DemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchive[]>(
+    '/api/demo/final-external-review-release-bundle/delivery-finalization/archives'
+  );
+}
+
+export async function downloadDemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchiveReport(
+  archiveId: string
+): Promise<Blob> {
+  return getBlobApi(
+    `/api/demo/final-external-review-release-bundle/delivery-finalization/archives/${encodeURIComponent(archiveId)}/report/download`
+  );
 }
 
 export async function archiveDemoFinalAcceptanceCompletionCloseout(): Promise<DemoFinalAcceptanceCompletionCloseoutArchive> {
