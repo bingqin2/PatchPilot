@@ -94,6 +94,8 @@ import {
   archiveDemoFinalExternalReviewReleaseBundleDeliveryCertificate,
   listDemoFinalExternalReviewReleaseBundleDeliveryCertificateArchives,
   downloadDemoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveReport,
+  getDemoFinalReviewerHandoffPackage,
+  downloadDemoFinalReviewerHandoffPackageReport,
   downloadDemoFinalExternalReviewReleaseBundleDeliveryFinalizationReport,
   archiveDemoFinalExternalReviewReleaseBundleDeliveryFinalization,
   listDemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchives,
@@ -3054,6 +3056,81 @@ test('downloads final external-review release bundle delivery certificate archiv
   expect(fetchMock).toHaveBeenCalledWith(
     '/api/demo/final-external-review-release-bundle/delivery-certificate/archives/certificate%2Farchive%201/report/download'
   );
+  expect(downloadedReport).toBe(reportBlob);
+});
+
+test('gets final reviewer handoff package through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        status: 'READY',
+        readyForReview: true,
+        summary: 'Final reviewer handoff package is ready from the latest terminal delivery certificate archive.',
+        nextAction: 'Send the handoff package report and listed attachments to the external reviewer.',
+        latestCertificateArchiveId: 'final-reviewer-certificate-archive-1',
+        latestDeliveryFinalizationArchiveId:
+          'final-external-review-release-bundle-delivery-finalization-archive-1',
+        latestReleaseBundleArchiveId: 'final-external-review-release-bundle-archive-1',
+        latestDeliveryReceiptId: 'final-external-review-release-bundle-delivery-receipt-1',
+        latestPackageCertificateArchiveId: 'final-external-review-delivery-certificate-archive-1',
+        latestPackageArchiveId: 'final-external-review-package-archive-1',
+        latestPackageDeliveryReceiptId: 'final-external-review-package-delivery-receipt-1',
+        latestTaskId: 'task-8',
+        latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+        latestDeliveryTarget: 'reviewer@example.com',
+        latestDeliveryChannel: 'email',
+        latestDeliveredAt: '2026-06-29T07:20:00Z',
+        latestArchivedAt: '2026-06-29T07:40:00Z',
+        requiredAttachments: [
+          'Final reviewer handoff package report.',
+          'Terminal release-bundle delivery certificate archive final-reviewer-certificate-archive-1.'
+        ],
+        checks: [
+          {
+            name: 'Terminal delivery certificate archive',
+            status: 'READY',
+            summary: 'Latest terminal certificate archive is certified.',
+            nextAction: 'No action needed.'
+          }
+        ],
+        evidenceNotes: [
+          'Terminal certificate archive final-reviewer-certificate-archive-1 is the final reviewer handoff root.'
+        ],
+        downloadActions: ['Download final reviewer handoff package report.'],
+        sideEffectContract: 'GET /api/demo/final-reviewer-handoff-package is read-only.',
+        markdownReport: '# PatchPilot Final Reviewer Handoff Package',
+        generatedAt: '2026-06-29T07:45:00Z'
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const handoffPackage = await getDemoFinalReviewerHandoffPackage();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-reviewer-handoff-package');
+  expect(handoffPackage.readyForReview).toBe(true);
+  expect(handoffPackage.latestCertificateArchiveId).toBe('final-reviewer-certificate-archive-1');
+  expect(handoffPackage.requiredAttachments).toContain('Final reviewer handoff package report.');
+});
+
+test('downloads final reviewer handoff package report through backend API', async () => {
+  const reportBlob = new Blob(['# PatchPilot Final Reviewer Handoff Package'], {
+    type: 'text/markdown;charset=UTF-8'
+  });
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    blob: async () => reportBlob
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const downloadedReport = await downloadDemoFinalReviewerHandoffPackageReport();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-reviewer-handoff-package/report/download');
   expect(downloadedReport).toBe(reportBlob);
 });
 

@@ -6158,3 +6158,23 @@ Validation:
 - `npm test -- --reporter=dot`: passed, 30 test files and 482 tests.
 - `npm run build`: passed with the existing Vite large-chunk warning.
 - `git diff --check`: passed.
+
+## 2026-06-30 - 306 Final reviewer handoff package
+
+- Started `306-final-reviewer-handoff-package` to turn the archived terminal release-bundle delivery certificate into one final reviewer send/no-send package.
+- Added `DemoFinalReviewerHandoffPackageService` and `DemoFinalReviewerHandoffPackageVo`, deriving readiness from the latest certified release-bundle delivery certificate archive, frozen release-bundle archive, and fresh release-bundle delivery proof.
+- Added `GET /api/demo/final-reviewer-handoff-package` and `GET /api/demo/final-reviewer-handoff-package/report/download`.
+- Updated the top-level evidence bundle and copied runbook with final reviewer handoff package readiness, linked archive ids, delivery proof, required attachments, download actions, Pull Request, and next action.
+- Updated the dashboard evidence panel with a final reviewer handoff card, legacy fallback, and Markdown download action.
+- Updated frontend API helpers, App wiring, README, product spec, architecture notes, frontend design notes, and added this plan document.
+
+Validation:
+
+- `mvn -q -pl PatchPilot -Dtest=DemoFinalReviewerHandoffPackageServiceTests,DemoReadinessControllerTests test`: passed.
+- `mvn -q -pl PatchPilot -Dtest=DemoEvidenceBundleServiceTests,DemoRunbookServiceTests test`: passed.
+- `mvn -q -pl PatchPilot -Dtest=DemoFinalReviewerHandoffPackageServiceTests,DemoReadinessControllerTests,DemoEvidenceBundleServiceTests,DemoRunbookServiceTests test`: passed.
+- `mvn -q -pl PatchPilot test`: passed with existing Mockito/Java agent warnings.
+- `npm --prefix frontend test -- --run src/api.test.ts src/dashboard/components/DemoEvidenceBundlePanel.test.tsx`: first failed because jsdom did not provide `URL.createObjectURL`; passed after stubbing browser download APIs in the panel test, 2 test files and 215 tests.
+- `npm --prefix frontend test -- --reporter=dot`: passed, 30 test files and 484 tests.
+- `npm --prefix frontend run build`: passed with the existing Vite large-chunk warning.
+- `git diff --check`: passed.

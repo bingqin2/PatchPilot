@@ -681,6 +681,35 @@ public class DemoRunbookService {
                         .append("- Final external-review release bundle delivery certificate archive download: ")
                         .append(action)
                         .append("\n"));
+
+        runbook.append("- Final reviewer handoff package: `")
+                .append(bundle.finalReviewerHandoffPackage().status())
+                .append("` - ")
+                .append(bundle.finalReviewerHandoffPackage().summary())
+                .append("\n")
+                .append("- Final reviewer handoff ready: `")
+                .append(bundle.finalReviewerHandoffPackage().readyForReview())
+                .append("`\n")
+                .append("- Final reviewer handoff terminal certificate: ")
+                .append(valueOrNoneBackticked(bundle.finalReviewerHandoffPackage().latestCertificateArchiveId()))
+                .append("\n")
+                .append("- Final reviewer handoff release bundle: ")
+                .append(valueOrNoneBackticked(bundle.finalReviewerHandoffPackage().latestReleaseBundleArchiveId()))
+                .append("\n")
+                .append("- Final reviewer handoff delivery receipt: ")
+                .append(valueOrNoneBackticked(bundle.finalReviewerHandoffPackage().latestDeliveryReceiptId()))
+                .append("\n")
+                .append("- Final reviewer handoff Pull Request: ")
+                .append(valueOrNone(bundle.finalReviewerHandoffPackage().latestPullRequestUrl()))
+                .append("\n")
+                .append("- Final reviewer handoff next action: ")
+                .append(bundle.finalReviewerHandoffPackage().nextAction())
+                .append("\n");
+        bundle.finalReviewerHandoffPackage().downloadActions()
+                .forEach(action -> runbook
+                        .append("- Final reviewer handoff download: ")
+                        .append(action)
+                        .append("\n"));
     }
 
     private static void appendEvaluationRunReadiness(

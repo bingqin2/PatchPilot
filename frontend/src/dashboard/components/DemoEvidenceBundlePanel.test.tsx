@@ -626,6 +626,48 @@ const bundle: DemoEvidenceBundle = {
       'Download final external-review release bundle delivery finalization archive final-external-review-release-bundle-delivery-finalization-archive-1.'
     ]
   },
+  finalReviewerHandoffPackage: {
+    status: 'READY',
+    readyForReview: true,
+    summary: 'Final reviewer handoff package is ready from the latest terminal delivery certificate archive.',
+    nextAction: 'Send the handoff package report and listed attachments to the external reviewer.',
+    latestCertificateArchiveId: 'final-external-review-release-bundle-delivery-certificate-archive-1',
+    latestDeliveryFinalizationArchiveId:
+      'final-external-review-release-bundle-delivery-finalization-archive-1',
+    latestReleaseBundleArchiveId: 'final-external-review-release-bundle-archive-1',
+    latestDeliveryReceiptId: 'final-external-review-release-bundle-delivery-receipt-1',
+    latestPackageCertificateArchiveId: 'final-external-review-delivery-certificate-archive-1',
+    latestPackageArchiveId: 'final-external-review-package-archive-1',
+    latestPackageDeliveryReceiptId: 'final-external-review-package-delivery-receipt-1',
+    latestTaskId: 'task-2',
+    latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+    latestDeliveryTarget: 'reviewer@example.com',
+    latestDeliveryChannel: 'email',
+    latestDeliveredAt: '2026-06-29T06:20:00Z',
+    latestArchivedAt: '2026-06-29T06:10:00Z',
+    requiredAttachments: [
+      'Final reviewer handoff package report.',
+      'Terminal release-bundle delivery certificate archive final-external-review-release-bundle-delivery-certificate-archive-1.'
+    ],
+    checks: [
+      {
+        name: 'Terminal delivery certificate archive',
+        status: 'READY',
+        summary: 'Latest terminal certificate archive is certified.',
+        nextAction: 'No action needed.'
+      }
+    ],
+    evidenceNotes: [
+      'Terminal certificate archive final-external-review-release-bundle-delivery-certificate-archive-1 is the final reviewer handoff root.'
+    ],
+    downloadActions: [
+      'Download final reviewer handoff package report.',
+      'Download terminal release-bundle delivery certificate archive final-external-review-release-bundle-delivery-certificate-archive-1.'
+    ],
+    sideEffectContract: 'GET /api/demo/final-reviewer-handoff-package is read-only.',
+    markdownReport: '# PatchPilot Final Reviewer Handoff Package',
+    generatedAt: '2026-06-29T06:30:00Z'
+  },
   handoffShareDeliveryReceiptRecorded: true,
   handoffShareLatestDeliveryReceiptId: 'delivery-receipt-1',
   handoffShareLatestDeliveryTarget: 'maintainer@example.com',
@@ -645,8 +687,30 @@ const bundle: DemoEvidenceBundle = {
   nextActions: ['Fix failing adapter fixtures before a live demo.', 'Inspect active trigger quarantines before a live demo.']
 };
 
-test('summarizes demo evidence bundle for operators', () => {
-  render(<DemoEvidenceBundlePanel bundle={bundle} error={null} onCopyRunbook={vi.fn()} />);
+test('summarizes demo evidence bundle for operators', async () => {
+  const downloadFinalReviewerHandoffPackageReport = vi.fn(async () => new Blob([
+    '# PatchPilot Final Reviewer Handoff Package'
+  ], { type: 'text/markdown;charset=UTF-8' }));
+  const createObjectURL = vi.fn(() => 'blob:reviewer-handoff');
+  const revokeObjectURL = vi.fn();
+  Object.defineProperty(URL, 'createObjectURL', {
+    configurable: true,
+    value: createObjectURL
+  });
+  Object.defineProperty(URL, 'revokeObjectURL', {
+    configurable: true,
+    value: revokeObjectURL
+  });
+  const anchorClick = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
+
+  render(
+    <DemoEvidenceBundlePanel
+      bundle={bundle}
+      error={null}
+      onCopyRunbook={vi.fn()}
+      onDownloadFinalReviewerHandoffPackageReport={downloadFinalReviewerHandoffPackageReport}
+    />
+  );
 
   const panel = screen.getByRole('region', { name: 'Demo evidence bundle' });
   expect(within(panel).getByRole('heading', { name: 'Demo evidence bundle' })).toBeInTheDocument();
@@ -1001,6 +1065,32 @@ test('summarizes demo evidence bundle for operators', () => {
       'Download final external-review release bundle delivery certificate archive final-external-review-release-bundle-delivery-certificate-archive-1.'
     )
   ).toBeInTheDocument();
+  expect(within(panel).getByText('Final reviewer handoff package')).toBeInTheDocument();
+  expect(within(panel).getByText('Ready for reviewer')).toBeInTheDocument();
+  expect(
+    within(panel).getByText('Final reviewer handoff package is ready from the latest terminal delivery certificate archive.')
+  ).toBeInTheDocument();
+  expect(
+    within(panel).getByText('Send the handoff package report and listed attachments to the external reviewer.')
+  ).toBeInTheDocument();
+  expect(
+    within(panel).getAllByText(
+      'final-external-review-release-bundle-delivery-certificate-archive-1'
+    ).length
+  ).toBeGreaterThanOrEqual(2);
+  expect(
+    within(panel).getByText('Final reviewer handoff package report.')
+  ).toBeInTheDocument();
+  expect(within(panel).getByText('Download final reviewer handoff package report.')).toBeInTheDocument();
+  expect(
+    within(panel).getByRole('link', { name: 'Open final reviewer handoff Pull Request' })
+  ).toHaveAttribute('href', 'https://github.com/bingqin2/PatchPilot/pull/42');
+  await userEvent.click(within(panel).getByRole('button', { name: 'Download reviewer handoff' }));
+  expect(downloadFinalReviewerHandoffPackageReport).toHaveBeenCalledTimes(1);
+  expect(createObjectURL).toHaveBeenCalled();
+  expect(anchorClick).toHaveBeenCalled();
+  expect(revokeObjectURL).toHaveBeenCalledWith('blob:reviewer-handoff');
+  expect(within(panel).getByText('Final reviewer handoff package downloaded')).toBeInTheDocument();
   expect(within(panel).getByText('Handoff share delivery')).toBeInTheDocument();
   expect(within(panel).getAllByText('Fresh').length).toBeGreaterThanOrEqual(2);
   expect(within(panel).getByText('Handoff finalization')).toBeInTheDocument();
@@ -1054,7 +1144,8 @@ test('renders missing certificate evidence for legacy bundle responses', () => {
     finalExternalReviewReleaseBundleArchiveEvidence: undefined,
     finalExternalReviewReleaseBundleDeliveryFinalization: undefined,
     finalExternalReviewReleaseBundleDeliveryFinalizationArchiveEvidence: undefined,
-    finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence: undefined
+    finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence: undefined,
+    finalReviewerHandoffPackage: undefined
   } as unknown as DemoEvidenceBundle;
 
   render(<DemoEvidenceBundlePanel bundle={legacyBundle} error={null} onCopyRunbook={vi.fn()} />);
@@ -1151,6 +1242,12 @@ test('renders missing certificate evidence for legacy bundle responses', () => {
   ).toBeGreaterThanOrEqual(1);
   expect(screen.getByText('No archived final external-review release bundle delivery certificate Pull Request'))
     .toBeInTheDocument();
+  expect(screen.getByText('Final reviewer handoff package')).toBeInTheDocument();
+  expect(screen.getByText('No final reviewer handoff package is available.')).toBeInTheDocument();
+  expect(
+    screen.getByText('Archive the terminal release-bundle delivery certificate before downloading reviewer handoff proof.')
+  ).toBeInTheDocument();
+  expect(screen.getByText('No final reviewer handoff Pull Request')).toBeInTheDocument();
 });
 
 test('copies demo runbook markdown', async () => {

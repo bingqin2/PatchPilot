@@ -69,6 +69,7 @@ import {
   downloadDemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchiveReport,
   downloadDemoFinalExternalReviewReleaseBundleDeliveryFinalizationReport,
   downloadDemoFinalExternalReviewReleaseBundleDeliveryReceiptReport,
+  downloadDemoFinalReviewerHandoffPackageReport,
   downloadDemoFinalExternalReviewEvidencePackageDeliveryReceiptReport,
   downloadDemoFinalExternalReviewEvidencePackageArchiveReport,
   downloadDemoFinalExternalReviewEvidencePackageReport,
@@ -2576,6 +2577,9 @@ export default function App() {
   const handleDownloadDemoFinalExternalReviewReleaseBundleDeliveryCertificateReport = useCallback(() => (
     downloadDemoFinalExternalReviewReleaseBundleDeliveryCertificateReport()
   ), []);
+  const handleDownloadDemoFinalReviewerHandoffPackageReport = useCallback(() => (
+    downloadDemoFinalReviewerHandoffPackageReport()
+  ), []);
   const handleArchiveDemoFinalExternalReviewReleaseBundleDeliveryCertificate = useCallback(async () => {
     const archive = await archiveDemoFinalExternalReviewReleaseBundleDeliveryCertificate();
     setDemoFinalExternalReviewReleaseBundleDeliveryCertificateArchives((current) => [
@@ -3344,6 +3348,7 @@ export default function App() {
         bundle={demoEvidenceBundle}
         error={demoEvidenceBundleError}
         onCopyRunbook={handleCopyDemoRunbook}
+        onDownloadFinalReviewerHandoffPackageReport={handleDownloadDemoFinalReviewerHandoffPackageReport}
       />
 
       <DemoAcceptanceSummaryPanel

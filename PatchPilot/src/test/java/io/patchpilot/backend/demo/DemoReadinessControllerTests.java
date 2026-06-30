@@ -21,6 +21,7 @@ import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewReleaseBundleDel
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewReleaseBundleDeliveryFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewReleaseBundleDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewReleaseBundleVo;
+import io.patchpilot.backend.demo.domain.DemoFinalReviewerHandoffPackageVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageDeliveryFinalizationVo;
@@ -272,6 +273,9 @@ class DemoReadinessControllerTests {
     @MockitoBean
     private DemoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveService
             demoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveService;
+
+    @MockitoBean
+    private DemoFinalReviewerHandoffPackageService demoFinalReviewerHandoffPackageService;
 
     @MockitoBean
     private DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
@@ -1962,6 +1966,44 @@ class DemoReadinessControllerTests {
 
         mockMvc.perform(get("/api/demo/final-external-review-release-bundle/delivery-certificate/archives/missing/report/download"))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void should_return_final_reviewer_handoff_package() throws Exception {
+        when(demoFinalReviewerHandoffPackageService.getPackage()).thenReturn(finalReviewerHandoffPackage());
+
+        mockMvc.perform(get("/api/demo/final-reviewer-handoff-package"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.readyForReview").value(true))
+                .andExpect(jsonPath("$.data.latestCertificateArchiveId")
+                        .value("final-external-review-release-bundle-delivery-certificate-archive-1"))
+                .andExpect(jsonPath("$.data.latestReleaseBundleArchiveId")
+                        .value("final-external-review-release-bundle-archive-1"))
+                .andExpect(jsonPath("$.data.latestDeliveryReceiptId")
+                        .value("final-external-review-release-bundle-delivery-receipt-1"))
+                .andExpect(jsonPath("$.data.requiredAttachments[0]")
+                        .value("Final reviewer handoff package report."))
+                .andExpect(jsonPath("$.data.downloadActions[0]")
+                        .value("Download final reviewer handoff package report."))
+                .andExpect(jsonPath("$.data.sideEffectContract").value(containsString("read-only")));
+    }
+
+    @Test
+    void should_download_final_reviewer_handoff_package_report() throws Exception {
+        when(demoFinalReviewerHandoffPackageService.getPackage()).thenReturn(finalReviewerHandoffPackage());
+
+        mockMvc.perform(get("/api/demo/final-reviewer-handoff-package/report/download"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString(
+                        "patchpilot-final-reviewer-handoff-package.md"
+                )))
+                .andExpect(content().contentType("text/markdown;charset=UTF-8"))
+                .andExpect(content().string(containsString("# PatchPilot Final Reviewer Handoff Package")))
+                .andExpect(content().string(containsString(
+                        "final-external-review-release-bundle-delivery-certificate-archive-1"
+                )));
     }
 
     @Test
@@ -5623,6 +5665,41 @@ class DemoReadinessControllerTests {
                 certificate.markdownReport(),
                 certificate.generatedAt(),
                 Instant.parse("2026-06-29T15:30:00Z")
+        );
+    }
+
+    private static DemoFinalReviewerHandoffPackageVo finalReviewerHandoffPackage() {
+        return new DemoFinalReviewerHandoffPackageVo(
+                DemoReadinessStatus.READY,
+                true,
+                "Final reviewer handoff package is ready from the latest terminal delivery certificate archive.",
+                "Send the handoff package report and listed attachments to the external reviewer.",
+                "final-external-review-release-bundle-delivery-certificate-archive-1",
+                "final-external-review-release-bundle-delivery-finalization-archive-1",
+                "final-external-review-release-bundle-archive-1",
+                "final-external-review-release-bundle-delivery-receipt-1",
+                "final-external-review-delivery-certificate-archive-1",
+                "final-external-review-package-archive-1",
+                "final-external-review-package-delivery-receipt-1",
+                "task-1",
+                "https://github.com/bingqin2/PatchPilot/pull/8",
+                "reviewer@example.com",
+                "email",
+                "2026-06-30T02:10:00Z",
+                Instant.parse("2026-06-30T03:30:00Z"),
+                List.of("Final reviewer handoff package report."),
+                List.of(new DemoFinalReviewerHandoffPackageVo.Check(
+                        "Terminal delivery certificate archive",
+                        DemoReadinessStatus.READY,
+                        "Latest terminal certificate archive is certified.",
+                        "No action needed."
+                )),
+                List.of("Terminal certificate archive final-external-review-release-bundle-delivery-certificate-archive-1 is certified."),
+                List.of("Download final reviewer handoff package report."),
+                "GET /api/demo/final-reviewer-handoff-package is read-only.",
+                "# PatchPilot Final Reviewer Handoff Package\n\n"
+                        + "- Terminal certificate archive: `final-external-review-release-bundle-delivery-certificate-archive-1`\n",
+                Instant.parse("2026-06-30T05:00:00Z")
         );
     }
 }
