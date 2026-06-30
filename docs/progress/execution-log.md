@@ -44,6 +44,23 @@ Validation so far:
 - `npm --prefix frontend run build`: passed after TypeScript and production Vite build verification, with the existing large chunk warning.
 - `git diff --check`: passed.
 
+## 2026-06-30 - 309 GitHub publish permission readiness
+
+- Started `309-github-publish-permission-readiness` to make GitHub token write-permission blockers visible before a live task reaches branch push, Pull Request creation, or issue feedback.
+- Added a read-only GitHub repository permission probe that parses `default_branch` and non-sensitive `permissions.pull`, `permissions.push`, `permissions.admin`, and `permissions.maintain` fields from the repository metadata API.
+- Added `GET /api/github/publish-permission-readiness`, backed by `GitHubPublishPermissionReadinessService`, to summarize repository read, branch push, Pull Request creation, and issue-feedback permission checks without mutating GitHub or exposing tokens.
+- Updated the operator setup checklist to load the permission readiness beside publish readiness and render a dedicated permissions card with read/push/PR/issue-feedback capability and next actions.
+- Updated README and added this plan document.
+
+Validation:
+
+- `mvn -q -pl PatchPilot -Dtest=GitHubRepositoryPermissionHttpProbeTests,GitHubPublishPermissionReadinessServiceTests,GitHubCredentialReadinessControllerTests test`: first failed because the new probe, VOs, service, and controller route did not exist; passed after backend implementation.
+- `npm --prefix frontend test -- --run src/api.test.ts src/dashboard/components/OperatorSetupChecklistPanel.test.tsx src/App.test.tsx -t "operator setup|publish permission|GitHub publish permission"`: first failed because the App-level ready count did not include the newly ready permission check; passed after updating the fixture expectation.
+- `mvn -q -pl PatchPilot test`: passed after full backend regression verification.
+- `npm --prefix frontend test -- --reporter=dot`: first failed because the operator setup test expected a single read-only `does not run git push` side-effect contract while the page now renders one contract for publish readiness and one for publish permission readiness; passed after asserting both contracts are present, 30 test files and 494 tests.
+- `npm --prefix frontend run build`: passed after TypeScript and production Vite build verification, with the existing large chunk warning.
+- `git diff --check`: passed.
+
 Implemented launch certificate evidence bundle from `docs/plans/261-launch-certificate-evidence-bundle.md`.
 
 Changes:

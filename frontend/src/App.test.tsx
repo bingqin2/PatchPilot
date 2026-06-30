@@ -1511,6 +1511,51 @@ const githubPublishReadiness = {
   checkedAt: '2026-06-30T01:00:00Z'
 };
 
+const githubPublishPermissionReadiness = {
+  status: 'READY',
+  publishPermissionReady: true,
+  tokenConfigured: true,
+  repositoryConfigured: true,
+  repository: 'bingqin2/PatchPilot',
+  defaultBranch: 'main',
+  canReadRepository: true,
+  canPushBranches: true,
+  canCreatePullRequests: true,
+  issueFeedbackPermissionLikely: true,
+  summary: 'GitHub token has repository publish permissions for PatchPilot push and Pull Request creation.',
+  nextAction: 'Continue with the live /agent fix demo.',
+  sideEffectContract: 'Read-only permission probe: this endpoint does not run git push, does not create branches, does not create Pull Requests, does not write issue comments, and does not expose tokens.',
+  permissionChecks: [
+    {
+      name: 'Repository read',
+      status: 'READY',
+      summary: 'Token can read repository metadata.',
+      nextAction: 'No action needed.'
+    },
+    {
+      name: 'Branch push',
+      status: 'READY',
+      summary: 'Token can publish PatchPilot branches.',
+      nextAction: 'No action needed.'
+    },
+    {
+      name: 'Pull Request creation',
+      status: 'READY',
+      summary: 'Token can create Pull Requests for pushed branches.',
+      nextAction: 'No action needed.'
+    },
+    {
+      name: 'Issue feedback',
+      status: 'READY',
+      summary: 'Token is likely able to write task status feedback on issues.',
+      nextAction: 'No action needed.'
+    }
+  ],
+  evidenceNotes: ['Repository: bingqin2/PatchPilot'],
+  latencyMs: 35,
+  checkedAt: '2026-06-30T06:00:00Z'
+};
+
 const githubWebhookUrlReadiness = {
   publicBaseUrlConfigured: true,
   status: 'READY',
@@ -3477,6 +3522,9 @@ beforeEach(() => {
     if (url === '/api/github/publish-readiness?owner=bingqin2&repository=PatchPilot') {
       return jsonResponse(githubPublishReadiness);
     }
+    if (url === '/api/github/publish-permission-readiness?owner=bingqin2&repository=PatchPilot') {
+      return jsonResponse(githubPublishPermissionReadiness);
+    }
     if (url === '/api/demo/readiness') {
       return jsonResponse(demoReadiness);
     }
@@ -5388,7 +5436,7 @@ test('summarizes operator setup readiness before a demo run', async () => {
 
   const setupChecklist = await screen.findByRole('region', { name: 'Operator setup checklist' });
   expect(within(setupChecklist).getByRole('heading', { name: 'Operator setup checklist' })).toBeInTheDocument();
-  expect(within(setupChecklist).getByText('13/15 checks ready')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('14/16 checks ready')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Backend connectivity')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Ready - /health reports UP')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Required credentials')).toBeInTheDocument();
@@ -5399,6 +5447,10 @@ test('summarizes operator setup readiness before a demo run', async () => {
   expect(within(setupChecklist).getByText('Ready - GitHub publish path is ready for PatchPilot push and Pull Request creation.')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('READY - GitHub publish path is ready for PatchPilot push and Pull Request creation.')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('git push origin HEAD:<patchpilot-branch>')).toBeInTheDocument();
+  expect(within(setupChecklist).getAllByText('GitHub publish permissions')[0]).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('Ready - GitHub token has repository publish permissions for PatchPilot push and Pull Request creation.')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('READY - GitHub token has repository publish permissions for PatchPilot push and Pull Request creation.')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('Branch push: READY')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Repository access')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Ready - GitHub token can read repository bingqin2/PatchPilot.')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Webhook setup')).toBeInTheDocument();
@@ -5496,6 +5548,9 @@ test('shows when every operator setup check is ready', async () => {
     if (url === '/api/github/publish-readiness?owner=bingqin2&repository=PatchPilot') {
       return jsonResponse(githubPublishReadiness);
     }
+    if (url === '/api/github/publish-permission-readiness?owner=bingqin2&repository=PatchPilot') {
+      return jsonResponse(githubPublishPermissionReadiness);
+    }
     return defaultAppResponse(input, init);
   });
   vi.stubGlobal('fetch', fetchMock);
@@ -5503,7 +5558,7 @@ test('shows when every operator setup check is ready', async () => {
   render(<App />);
 
   const setupChecklist = await screen.findByRole('region', { name: 'Operator setup checklist' });
-  expect(within(setupChecklist).getByText('15/15 checks ready')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('16/16 checks ready')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Ready - GitHub token can read repository bingqin2/PatchPilot.')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Ready - Configured public webhook URL reaches PatchPilot health.')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Ready - Demo repository and recent trigger user align with configured safety allowlists.')).toBeInTheDocument();
@@ -7740,6 +7795,9 @@ function defaultAppResponse(input: RequestInfo | URL, init?: RequestInit) {
   }
   if (url === '/api/github/publish-readiness?owner=bingqin2&repository=PatchPilot') {
     return jsonResponse(githubPublishReadiness);
+  }
+  if (url === '/api/github/publish-permission-readiness?owner=bingqin2&repository=PatchPilot') {
+    return jsonResponse(githubPublishPermissionReadiness);
   }
   if (url === '/api/demo/readiness') {
     return jsonResponse(demoReadiness);

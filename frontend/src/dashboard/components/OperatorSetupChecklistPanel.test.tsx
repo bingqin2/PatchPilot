@@ -4,6 +4,7 @@ import type {
   ConfigurationSummary,
   DemoReadiness,
   GitHubCredentialReadiness,
+  GitHubPublishPermissionReadiness,
   GitHubPublishReadiness,
   GitHubRepositoryAccessReadiness,
   GitHubWebhookUrlReadiness,
@@ -129,6 +130,51 @@ const githubPublishReadiness: GitHubPublishReadiness = {
   checkedAt: '2026-06-30T01:00:00Z'
 };
 
+const githubPublishPermissionReadiness: GitHubPublishPermissionReadiness = {
+  status: 'READY',
+  publishPermissionReady: true,
+  tokenConfigured: true,
+  repositoryConfigured: true,
+  repository: 'bingqin2/PatchPilot',
+  defaultBranch: 'main',
+  canReadRepository: true,
+  canPushBranches: true,
+  canCreatePullRequests: true,
+  issueFeedbackPermissionLikely: true,
+  summary: 'GitHub token has repository publish permissions for PatchPilot push and Pull Request creation.',
+  nextAction: 'Continue with the live /agent fix demo.',
+  sideEffectContract: 'Read-only permission probe: this endpoint does not run git push, does not create branches, does not create Pull Requests, does not write issue comments, and does not expose tokens.',
+  permissionChecks: [
+    {
+      name: 'Repository read',
+      status: 'READY',
+      summary: 'Token can read repository metadata.',
+      nextAction: 'No action needed.'
+    },
+    {
+      name: 'Branch push',
+      status: 'READY',
+      summary: 'Token can publish PatchPilot branches.',
+      nextAction: 'No action needed.'
+    },
+    {
+      name: 'Pull Request creation',
+      status: 'READY',
+      summary: 'Token can create Pull Requests for pushed branches.',
+      nextAction: 'No action needed.'
+    },
+    {
+      name: 'Issue feedback',
+      status: 'READY',
+      summary: 'Token is likely able to write task status feedback on issues.',
+      nextAction: 'No action needed.'
+    }
+  ],
+  evidenceNotes: ['Repository: bingqin2/PatchPilot'],
+  latencyMs: 35,
+  checkedAt: '2026-06-30T06:00:00Z'
+};
+
 const githubWebhookUrlReadiness: GitHubWebhookUrlReadiness = {
   publicBaseUrlConfigured: true,
   status: 'READY',
@@ -222,7 +268,7 @@ test('shows repository preflight scope as ready when demo fixtures are allowed',
   renderChecklist(configuration);
 
   const panel = screen.getByRole('region', { name: 'Operator setup checklist' });
-  expect(within(panel).getByText('15/15 checks ready')).toBeInTheDocument();
+  expect(within(panel).getByText('16/16 checks ready')).toBeInTheDocument();
   expect(within(panel).getByText('GitHub credentials')).toBeInTheDocument();
   expect(within(panel).getByText('Ready - GitHub API accepted the configured token.')).toBeInTheDocument();
   expect(within(panel).getByText('Repository access')).toBeInTheDocument();
@@ -230,7 +276,14 @@ test('shows repository preflight scope as ready when demo fixtures are allowed',
   expect(within(panel).getAllByText('GitHub publish readiness')[0]).toBeInTheDocument();
   expect(within(panel).getByText('READY - GitHub publish path is ready for PatchPilot push and Pull Request creation.')).toBeInTheDocument();
   expect(within(panel).getByText('git push origin HEAD:<patchpilot-branch>')).toBeInTheDocument();
-  expect(within(panel).getByText(/does not run git push/)).toBeInTheDocument();
+  expect(within(panel).getAllByText(/does not run git push/)).toHaveLength(2);
+  expect(within(panel).getAllByText('GitHub publish permissions')[0]).toBeInTheDocument();
+  expect(within(panel).getByText('Ready - GitHub token has repository publish permissions for PatchPilot push and Pull Request creation.')).toBeInTheDocument();
+  expect(within(panel).getByText('READY - GitHub token has repository publish permissions for PatchPilot push and Pull Request creation.')).toBeInTheDocument();
+  expect(within(panel).getByText('Push: yes')).toBeInTheDocument();
+  expect(within(panel).getByText('PR: yes')).toBeInTheDocument();
+  expect(within(panel).getByText('Issue feedback: yes')).toBeInTheDocument();
+  expect(within(panel).getByText('Branch push: READY')).toBeInTheDocument();
   expect(within(panel).getByText('Webhook setup')).toBeInTheDocument();
   expect(within(panel).getByText('Ready - Configured public webhook URL reaches PatchPilot health.')).toBeInTheDocument();
   expect(within(panel).getByText('https://demo.trycloudflare.com/api/github/webhook')).toBeInTheDocument();
@@ -273,7 +326,7 @@ test('shows repository preflight scope setup action when demo fixtures are outsi
   });
 
   const panel = screen.getByRole('region', { name: 'Operator setup checklist' });
-  expect(within(panel).getByText('14/15 checks ready')).toBeInTheDocument();
+  expect(within(panel).getByText('15/16 checks ready')).toBeInTheDocument();
   expect(within(panel).getByText('Repository preflight scope')).toBeInTheDocument();
   expect(within(panel).getByText('Attention - demo fixture preflight path is not allowed')).toBeInTheDocument();
   expect(within(panel).getByText('Add docs/demo-repositories or the project root to PATCHPILOT_REPOSITORY_PREFLIGHT_ALLOWED_ROOT_DIRS.')).toBeInTheDocument();
@@ -298,7 +351,7 @@ test('uses demo readiness preflight scope result when backend reports a scope wa
   });
 
   const panel = screen.getByRole('region', { name: 'Operator setup checklist' });
-  expect(within(panel).getByText('14/15 checks ready')).toBeInTheDocument();
+  expect(within(panel).getByText('15/16 checks ready')).toBeInTheDocument();
   expect(within(panel).getByText('Attention - Repository preflight allowed roots do not include docs/demo-repositories.')).toBeInTheDocument();
   expect(within(panel).getByText('Configure PATCHPILOT_REPOSITORY_PREFLIGHT_ALLOWED_ROOT_DIRS to include docs/demo-repositories or the project root before a live demo.')).toBeInTheDocument();
 });
@@ -320,7 +373,7 @@ test('uses demo readiness worker heartbeat result when backend reports a stale w
   });
 
   const panel = screen.getByRole('region', { name: 'Operator setup checklist' });
-  expect(within(panel).getByText('14/15 checks ready')).toBeInTheDocument();
+  expect(within(panel).getByText('15/16 checks ready')).toBeInTheDocument();
   expect(within(panel).getByText('Attention - Worker heartbeat is stale.')).toBeInTheDocument();
   expect(within(panel).getByText('Check whether the queue worker scheduler is still running.')).toBeInTheDocument();
 });
@@ -339,7 +392,7 @@ test('shows adapter runtime setup action when an executable is missing', () => {
   ]);
 
   const panel = screen.getByRole('region', { name: 'Operator setup checklist' });
-  expect(within(panel).getByText('14/15 checks ready')).toBeInTheDocument();
+  expect(within(panel).getByText('15/16 checks ready')).toBeInTheDocument();
   expect(within(panel).getByText('Adapter runtimes')).toBeInTheDocument();
   expect(within(panel).getByText('Attention - 1 runtime executable missing: python-hatch requires python')).toBeInTheDocument();
   expect(within(panel).getByText('Install missing adapter executables on the backend PATH before demonstrating affected languages.')).toBeInTheDocument();
@@ -354,7 +407,7 @@ test('shows model provider setup action when the health probe is not ready', () 
   });
 
   const panel = screen.getByRole('region', { name: 'Operator setup checklist' });
-  expect(within(panel).getByText('14/15 checks ready')).toBeInTheDocument();
+  expect(within(panel).getByText('15/16 checks ready')).toBeInTheDocument();
   expect(within(panel).getByText('Model provider health')).toBeInTheDocument();
   expect(within(panel).getByText('Attention - Model provider health probe failed: HTTP 401')).toBeInTheDocument();
   expect(within(panel).getByText('Check PATCHPILOT_AGENT_API_KEY, PATCHPILOT_AGENT_BASE_URL, and PATCHPILOT_AGENT_MODEL.')).toBeInTheDocument();
@@ -369,7 +422,7 @@ test('shows GitHub credential setup action when token probe is not ready', () =>
   });
 
   const panel = screen.getByRole('region', { name: 'Operator setup checklist' });
-  expect(within(panel).getByText('14/15 checks ready')).toBeInTheDocument();
+  expect(within(panel).getByText('15/16 checks ready')).toBeInTheDocument();
   expect(within(panel).getByText('GitHub credentials')).toBeInTheDocument();
   expect(within(panel).getByText('Attention - GitHub credential probe failed: HTTP 401')).toBeInTheDocument();
   expect(within(panel).getByText('Check PATCHPILOT_GITHUB_TOKEN permissions before running a live task.')).toBeInTheDocument();
@@ -391,7 +444,7 @@ test('shows repository access setup action when the selected repository cannot b
   );
 
   const panel = screen.getByRole('region', { name: 'Operator setup checklist' });
-  expect(within(panel).getByText('14/15 checks ready')).toBeInTheDocument();
+  expect(within(panel).getByText('15/16 checks ready')).toBeInTheDocument();
   expect(within(panel).getByText('Repository access')).toBeInTheDocument();
   expect(within(panel).getByText('Attention - GitHub repository access probe failed: HTTP 404')).toBeInTheDocument();
   expect(within(panel).getByText('Check PATCHPILOT_GITHUB_TOKEN permissions and repository allowlist for bingqin2/PatchPilot.')).toBeInTheDocument();
@@ -423,7 +476,7 @@ test('uses demo readiness repository access result when backend reports the demo
   );
 
   const panel = screen.getByRole('region', { name: 'Operator setup checklist' });
-  expect(within(panel).getByText('14/15 checks ready')).toBeInTheDocument();
+  expect(within(panel).getByText('15/16 checks ready')).toBeInTheDocument();
   expect(within(panel).getByText('Repository access')).toBeInTheDocument();
   expect(within(panel).getByText('Attention - GitHub repository access probe failed: HTTP 404')).toBeInTheDocument();
   expect(within(panel).getByText('Check PATCHPILOT_GITHUB_TOKEN permissions, GitHub App installation access, and repository allowlist for bingqin2/PatchPilot; then retry the readiness check.')).toBeInTheDocument();
@@ -448,7 +501,7 @@ test('uses demo readiness target policy result when allowlists do not match the 
   });
 
   const panel = screen.getByRole('region', { name: 'Operator setup checklist' });
-  expect(within(panel).getByText('14/15 checks ready')).toBeInTheDocument();
+  expect(within(panel).getByText('15/16 checks ready')).toBeInTheDocument();
   expect(within(panel).getByText('Demo target policy')).toBeInTheDocument();
   expect(within(panel).getByText('Attention - Demo repository bingqin2/PatchPilot is not in PATCHPILOT_ALLOWED_REPOSITORIES.')).toBeInTheDocument();
   expect(within(panel).getByText('Update demo safety allowlists before a live demo: add bingqin2/PatchPilot to PATCHPILOT_ALLOWED_REPOSITORIES.')).toBeInTheDocument();
@@ -471,7 +524,7 @@ test('shows webhook URL setup action when the configured public URL is stale', (
   );
 
   const panel = screen.getByRole('region', { name: 'Operator setup checklist' });
-  expect(within(panel).getByText('14/15 checks ready')).toBeInTheDocument();
+  expect(within(panel).getByText('15/16 checks ready')).toBeInTheDocument();
   expect(within(panel).getByText('Webhook setup')).toBeInTheDocument();
   expect(within(panel).getByText('Attention - HTTP 502 from public URL.')).toBeInTheDocument();
   expect(within(panel).getByText('Restart cloudflared, update PATCHPILOT_GITHUB_WEBHOOK_PUBLIC_BASE_URL, and set the GitHub webhook Payload URL again.')).toBeInTheDocument();
@@ -505,12 +558,67 @@ test('shows GitHub publish setup action when push and PR publishing are blocked'
   );
 
   const panel = screen.getByRole('region', { name: 'Operator setup checklist' });
-  expect(within(panel).getByText('14/15 checks ready')).toBeInTheDocument();
+  expect(within(panel).getByText('15/16 checks ready')).toBeInTheDocument();
   expect(within(panel).getAllByText('GitHub publish readiness')[0]).toBeInTheDocument();
   expect(within(panel).getByText('Attention - GitHub publish path is blocked before PatchPilot can push branches or create Pull Requests.')).toBeInTheDocument();
   expect(within(panel).getByText('BLOCKED - GitHub publish path is blocked before PatchPilot can push branches or create Pull Requests.')).toBeInTheDocument();
   expect(within(panel).getByText('GitHub token: BLOCKED')).toBeInTheDocument();
   expect(within(panel).getAllByText('Configure PATCHPILOT_GITHUB_TOKEN and restart the backend.')).toHaveLength(2);
+});
+
+test('shows GitHub publish permission setup action when repository token is read only', () => {
+  renderChecklist(
+    configuration,
+    demoReadiness,
+    runtimeReadiness,
+    modelProviderHealth,
+    githubCredentialReadiness,
+    githubRepositoryAccessReadiness,
+    githubWebhookUrlReadiness,
+    githubPublishReadiness,
+    {
+      ...githubPublishPermissionReadiness,
+      status: 'NEEDS_ATTENTION',
+      publishPermissionReady: false,
+      canPushBranches: false,
+      canCreatePullRequests: false,
+      issueFeedbackPermissionLikely: false,
+      summary: 'GitHub token can read the repository but does not expose write permissions required for publish.',
+      nextAction: 'Grant Contents: Read and write, Pull requests: Read and write, and Issues: Read and write on the demo repository; then restart PatchPilot if the token changed.',
+      permissionChecks: [
+        githubPublishPermissionReadiness.permissionChecks[0],
+        {
+          name: 'Branch push',
+          status: 'NEEDS_ATTENTION',
+          summary: 'Token does not expose branch write permission.',
+          nextAction: 'Grant Contents: Read and write for the demo repository.'
+        },
+        {
+          name: 'Pull Request creation',
+          status: 'NEEDS_ATTENTION',
+          summary: 'Pull Request creation permission was not confirmed.',
+          nextAction: 'Grant Pull requests: Read and write for the demo repository.'
+        },
+        {
+          name: 'Issue feedback',
+          status: 'NEEDS_ATTENTION',
+          summary: 'Issue feedback permission was not confirmed.',
+          nextAction: 'Grant Issues: Read and write if PatchPilot should comment on issues.'
+        }
+      ]
+    }
+  );
+
+  const panel = screen.getByRole('region', { name: 'Operator setup checklist' });
+  expect(within(panel).getByText('15/16 checks ready')).toBeInTheDocument();
+  expect(within(panel).getAllByText('GitHub publish permissions')[0]).toBeInTheDocument();
+  expect(within(panel).getByText('Attention - GitHub token can read the repository but does not expose write permissions required for publish.')).toBeInTheDocument();
+  expect(within(panel).getByText('NEEDS_ATTENTION - GitHub token can read the repository but does not expose write permissions required for publish.')).toBeInTheDocument();
+  expect(within(panel).getByText('Push: no')).toBeInTheDocument();
+  expect(within(panel).getByText('PR: no')).toBeInTheDocument();
+  expect(within(panel).getByText('Issue feedback: no')).toBeInTheDocument();
+  expect(within(panel).getByText('Branch push: NEEDS_ATTENTION')).toBeInTheDocument();
+  expect(within(panel).getAllByText('Grant Contents: Read and write, Pull requests: Read and write, and Issues: Read and write on the demo repository; then restart PatchPilot if the token changed.')).toHaveLength(2);
 });
 
 function renderChecklist(
@@ -521,13 +629,15 @@ function renderChecklist(
   credentialReadiness: GitHubCredentialReadiness = githubCredentialReadiness,
   repositoryAccessReadiness: GitHubRepositoryAccessReadiness = githubRepositoryAccessReadiness,
   webhookUrlReadiness: GitHubWebhookUrlReadiness = githubWebhookUrlReadiness,
-  publishReadiness: GitHubPublishReadiness = githubPublishReadiness
+  publishReadiness: GitHubPublishReadiness = githubPublishReadiness,
+  publishPermissionReadiness: GitHubPublishPermissionReadiness = githubPublishPermissionReadiness
 ) {
   render(
     <OperatorSetupChecklistPanel
       backendHealth={backendHealth}
       configuration={config}
       githubCredentialReadiness={credentialReadiness}
+      githubPublishPermissionReadiness={publishPermissionReadiness}
       githubPublishReadiness={publishReadiness}
       githubRepositoryAccessReadiness={repositoryAccessReadiness}
       githubWebhookUrlReadiness={webhookUrlReadiness}

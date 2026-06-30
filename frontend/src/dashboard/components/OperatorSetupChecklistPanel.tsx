@@ -3,6 +3,7 @@ import type {
   ConfigurationSummary,
   DemoReadiness,
   GitHubCredentialReadiness,
+  GitHubPublishPermissionReadiness,
   GitHubPublishReadiness,
   GitHubRepositoryAccessReadiness,
   GitHubWebhookUrlReadiness,
@@ -18,6 +19,7 @@ interface OperatorSetupChecklistPanelProps {
   backendHealth: BackendHealth | null;
   configuration: ConfigurationSummary | null;
   githubCredentialReadiness: GitHubCredentialReadiness | null;
+  githubPublishPermissionReadiness: GitHubPublishPermissionReadiness | null;
   githubPublishReadiness: GitHubPublishReadiness | null;
   githubRepositoryAccessReadiness: GitHubRepositoryAccessReadiness | null;
   githubWebhookUrlReadiness: GitHubWebhookUrlReadiness | null;
@@ -43,6 +45,7 @@ export function OperatorSetupChecklistPanel({
   backendHealth,
   configuration,
   githubCredentialReadiness,
+  githubPublishPermissionReadiness,
   githubPublishReadiness,
   githubRepositoryAccessReadiness,
   githubWebhookUrlReadiness,
@@ -59,6 +62,7 @@ export function OperatorSetupChecklistPanel({
     backendHealth,
     configuration,
     githubCredentialReadiness,
+    githubPublishPermissionReadiness,
     githubPublishReadiness,
     githubRepositoryAccessReadiness,
     githubWebhookUrlReadiness,
@@ -113,6 +117,31 @@ export function OperatorSetupChecklistPanel({
         </div>
       ) : null}
 
+      {githubPublishPermissionReadiness ? (
+        <div className={`operator-publish-readiness operator-publish-readiness-${githubPublishPermissionReadiness.status.toLowerCase()}`}>
+          <div>
+            <span>GitHub publish permissions</span>
+            <strong>{githubPublishPermissionReadiness.status} - {githubPublishPermissionReadiness.summary}</strong>
+            <p>{githubPublishPermissionReadiness.nextAction}</p>
+          </div>
+          <div className="operator-permission-grid">
+            <span>Read: {githubPublishPermissionReadiness.canReadRepository ? 'yes' : 'no'}</span>
+            <span>Push: {githubPublishPermissionReadiness.canPushBranches ? 'yes' : 'no'}</span>
+            <span>PR: {githubPublishPermissionReadiness.canCreatePullRequests ? 'yes' : 'no'}</span>
+            <span>Issue feedback: {githubPublishPermissionReadiness.issueFeedbackPermissionLikely ? 'yes' : 'no'}</span>
+          </div>
+          <ul>
+            {githubPublishPermissionReadiness.permissionChecks.map((check) => (
+              <li key={check.name}>
+                <strong>{check.name}: {check.status}</strong>
+                <span>{check.summary}</span>
+              </li>
+            ))}
+          </ul>
+          <p>{githubPublishPermissionReadiness.sideEffectContract}</p>
+        </div>
+      ) : null}
+
       {nextActions.length > 0 ? (
         <div className="operator-setup-actions">
           <h3>Next setup actions</h3>
@@ -133,6 +162,7 @@ function setupChecks({
   backendHealth,
   configuration,
   githubCredentialReadiness,
+  githubPublishPermissionReadiness,
   githubPublishReadiness,
   githubRepositoryAccessReadiness,
   githubWebhookUrlReadiness,
@@ -150,6 +180,7 @@ function setupChecks({
     credentialCheck(configuration, hasStoredAdminToken),
     githubCredentialCheck(githubCredentialReadiness, demoReadiness),
     githubPublishCheck(githubPublishReadiness),
+    githubPublishPermissionCheck(githubPublishPermissionReadiness),
     githubWebhookUrlCheck(githubWebhookUrlReadiness, demoReadiness),
     githubRepositoryAccessCheck(githubRepositoryAccessReadiness, demoReadiness),
     safetyPolicyCheck(configuration),
@@ -172,6 +203,17 @@ function githubPublishCheck(githubPublishReadiness: GitHubPublishReadiness | nul
     message: githubPublishReadiness?.summary ?? 'GitHub publish readiness has not loaded',
     action: githubPublishReadiness?.nextAction ?? 'Confirm /api/github/publish-readiness before a live issue-to-PR demo.',
     detail: githubPublishReadiness?.repository
+  };
+}
+
+function githubPublishPermissionCheck(githubPublishPermissionReadiness: GitHubPublishPermissionReadiness | null): SetupCheck {
+  const ready = githubPublishPermissionReadiness?.status === 'READY';
+  return {
+    name: 'GitHub publish permissions',
+    ready,
+    message: githubPublishPermissionReadiness?.summary ?? 'GitHub publish permission readiness has not loaded',
+    action: githubPublishPermissionReadiness?.nextAction ?? 'Confirm /api/github/publish-permission-readiness before a live issue-to-PR demo.',
+    detail: githubPublishPermissionReadiness?.repository
   };
 }
 
