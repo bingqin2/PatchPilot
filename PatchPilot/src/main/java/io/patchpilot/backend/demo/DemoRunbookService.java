@@ -588,6 +588,43 @@ public class DemoRunbookService {
                         .append("- Final external-review release bundle archive download: ")
                         .append(action)
                         .append("\n"));
+
+        runbook.append("- Final external-review release bundle delivery finalization: `")
+                .append(bundle.finalExternalReviewReleaseBundleDeliveryFinalization().status())
+                .append("` - ")
+                .append(bundle.finalExternalReviewReleaseBundleDeliveryFinalization().summary())
+                .append("\n")
+                .append("- Final external-review release bundle delivery finalized: `")
+                .append(bundle.finalExternalReviewReleaseBundleDeliveryFinalization().finalized())
+                .append("`\n")
+                .append("- Final external-review release bundle delivery archive: ")
+                .append(valueOrNoneBackticked(bundle.finalExternalReviewReleaseBundleDeliveryFinalization()
+                        .latestArchiveId()))
+                .append("\n")
+                .append("- Final external-review release bundle delivery receipt: ")
+                .append(valueOrNoneBackticked(bundle.finalExternalReviewReleaseBundleDeliveryFinalization()
+                        .latestDeliveryReceiptId()))
+                .append("\n")
+                .append("- Final external-review release bundle delivery freshness: `")
+                .append(bundle.finalExternalReviewReleaseBundleDeliveryFinalization()
+                        .releaseBundleDeliveryReceiptFreshness())
+                .append("`\n")
+                .append("- Final external-review release bundle delivery receipt fresh: `")
+                .append(bundle.finalExternalReviewReleaseBundleDeliveryFinalization()
+                        .releaseBundleDeliveryReceiptFresh())
+                .append("`\n")
+                .append("- Final external-review release bundle delivery target: ")
+                .append(valueOrNone(bundle.finalExternalReviewReleaseBundleDeliveryFinalization()
+                        .latestDeliveryTarget()))
+                .append("\n")
+                .append("- Final external-review release bundle delivery next action: ")
+                .append(bundle.finalExternalReviewReleaseBundleDeliveryFinalization().nextAction())
+                .append("\n");
+        bundle.finalExternalReviewReleaseBundleDeliveryFinalization().downloadActions()
+                .forEach(action -> runbook
+                        .append("- Final external-review release bundle delivery finalization download: ")
+                        .append(action)
+                        .append("\n"));
     }
 
     private static void appendEvaluationRunReadiness(

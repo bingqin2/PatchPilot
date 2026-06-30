@@ -12,6 +12,7 @@ import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageD
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewReleaseBundleArchiveVo;
+import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewReleaseBundleDeliveryFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewReleaseBundleVo;
 import io.patchpilot.backend.demo.domain.DemoFinalHandoffReportPackageArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffFinalizationCheckVo;
@@ -91,7 +92,8 @@ class DemoEvidenceBundleServiceTests {
                 DemoEvidenceBundleServiceTests::finalExternalReviewEvidencePackageDeliveryFinalizationReady,
                 () -> List.of(finalExternalReviewEvidencePackageDeliveryFinalizationArchive()),
                 DemoEvidenceBundleServiceTests::finalExternalReviewReleaseBundleReady,
-                () -> List.of(finalExternalReviewReleaseBundleArchive())
+                () -> List.of(finalExternalReviewReleaseBundleArchive()),
+                DemoEvidenceBundleServiceTests::finalExternalReviewReleaseBundleDeliveryFinalizationReady
         );
 
         DemoEvidenceBundleVo bundle = service.getEvidenceBundle();
@@ -461,6 +463,20 @@ class DemoEvidenceBundleServiceTests {
                 "Download final external-review delivery certificate archive final-external-review-delivery-certificate-archive-1.",
                 "Download final external-review package delivery finalization archive final-external-review-package-delivery-finalization-archive-1."
         );
+        assertThat(bundle.finalExternalReviewReleaseBundleDeliveryFinalization().status())
+                .isEqualTo(DemoReadinessStatus.READY);
+        assertThat(bundle.finalExternalReviewReleaseBundleDeliveryFinalization().finalized()).isTrue();
+        assertThat(bundle.finalExternalReviewReleaseBundleDeliveryFinalization().latestArchiveId())
+                .isEqualTo("final-external-review-release-bundle-archive-1");
+        assertThat(bundle.finalExternalReviewReleaseBundleDeliveryFinalization().latestDeliveryReceiptId())
+                .isEqualTo("final-external-review-release-bundle-delivery-receipt-1");
+        assertThat(bundle.finalExternalReviewReleaseBundleDeliveryFinalization()
+                .releaseBundleDeliveryReceiptFreshness()).isEqualTo("FRESH");
+        assertThat(bundle.finalExternalReviewReleaseBundleDeliveryFinalization().downloadActions()).containsExactly(
+                "Download final external-review release bundle delivery finalization report.",
+                "Download final external-review release bundle archive final-external-review-release-bundle-archive-1.",
+                "Download final external-review release bundle delivery receipt final-external-review-release-bundle-delivery-receipt-1."
+        );
         assertThat(bundle.handoffShareDeliveryReceiptRecorded()).isFalse();
         assertThat(bundle.handoffShareLatestDeliveryReceiptId()).isNull();
         assertThat(bundle.handoffShareLatestDeliveryTarget()).isNull();
@@ -569,7 +585,58 @@ class DemoEvidenceBundleServiceTests {
         assertThat(bundle.finalExternalReviewEvidencePackageDeliveryFinalizationArchiveEvidence().finalized()).isTrue();
         assertThat(bundle.finalExternalReviewReleaseBundle().releaseReady()).isTrue();
         assertThat(bundle.finalExternalReviewReleaseBundleArchiveEvidence().releaseReady()).isTrue();
+        assertThat(bundle.finalExternalReviewReleaseBundleDeliveryFinalization().finalized()).isTrue();
         assertThat(bundle.nextActions()).containsExactly("Use this evidence bundle as the live demo baseline.");
+    }
+
+    @Test
+    void should_require_final_external_review_release_bundle_delivery_finalization_before_reporting_bundle_ready() {
+        DemoEvidenceBundleService service = new DemoEvidenceBundleService(
+                () -> readiness(DemoReadinessStatus.READY, List.of()),
+                () -> smokeChecklist(DemoSmokeChecklistStatus.READY, List.of()),
+                DemoEvidenceBundleServiceTests::configuration,
+                () -> List.of(fixture("java-maven", "PASS")),
+                FixTaskQueueSummaryVo::empty,
+                () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/42")),
+                () -> List.of(webhookDelivery("delivery-1", WebhookDeliveryDiagnosticStatus.TASK_CREATED, "task-1")),
+                DemoEvidenceBundleServiceTests::webhookSetupReadiness,
+                () -> rejectedTriggerSummary(0),
+                List::of,
+                DemoEvidenceBundleServiceTests::evaluationRunReadiness,
+                DemoEvidenceBundleServiceTests::handoffPackageArchiveSummary,
+                DemoEvidenceBundleServiceTests::deliveredHandoffShareCenter,
+                DemoEvidenceBundleServiceTests::handoffFinalizationReady,
+                DemoEvidenceBundleServiceTests::launchEvidenceShareCenter,
+                DemoEvidenceBundleServiceTests::launchEvidenceFinalizationReady,
+                DemoEvidenceBundleServiceTests::finalAcceptanceShareFinalizationReady,
+                DemoEvidenceBundleServiceTests::finalAcceptanceCompletionCloseoutReady,
+                () -> List.of(launchAcceptanceCloseoutArchive(DemoReadinessStatus.READY, true)),
+                () -> List.of(launchAcceptanceCertificateArchive(DemoReadinessStatus.READY, true)),
+                () -> List.of(taskEvidenceAcceptanceCertificateArchive("READY", true)),
+                () -> List.of(finalHandoffReportPackageArchive(DemoReadinessStatus.READY, true)),
+                () -> List.of(finalAcceptanceCompletionCloseoutArchive(DemoReadinessStatus.READY, true)),
+                DemoEvidenceBundleServiceTests::finalExternalReviewEvidencePackageReady,
+                () -> List.of(finalExternalReviewEvidencePackageArchive(DemoReadinessStatus.READY, true)),
+                () -> List.of(finalExternalReviewEvidencePackageDeliveryReceipt()),
+                DemoEvidenceBundleServiceTests::finalExternalReviewEvidencePackageDeliveryFinalizationReady,
+                () -> List.of(finalExternalReviewEvidencePackageDeliveryFinalizationArchive()),
+                DemoEvidenceBundleServiceTests::finalExternalReviewReleaseBundleReady,
+                () -> List.of(finalExternalReviewReleaseBundleArchive()),
+                DemoEvidenceBundleServiceTests::finalExternalReviewReleaseBundleDeliveryFinalizationMissingReceipt
+        );
+
+        DemoEvidenceBundleVo bundle = service.getEvidenceBundle();
+
+        assertThat(bundle.status()).isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
+        assertThat(bundle.finalExternalReviewReleaseBundleArchiveEvidence().releaseReady()).isTrue();
+        assertThat(bundle.finalExternalReviewReleaseBundleDeliveryFinalization().status())
+                .isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
+        assertThat(bundle.finalExternalReviewReleaseBundleDeliveryFinalization().finalized()).isFalse();
+        assertThat(bundle.finalExternalReviewReleaseBundleDeliveryFinalization()
+                .releaseBundleDeliveryReceiptFreshness()).isEqualTo("MISSING");
+        assertThat(bundle.nextActions()).containsExactly(
+                "Deliver the frozen final external-review release bundle, record a release-bundle delivery receipt, then download the finalization report."
+        );
     }
 
     @Test
@@ -1992,6 +2059,83 @@ class DemoEvidenceBundleServiceTests {
                 bundle.markdownReport(),
                 bundle.generatedAt(),
                 Instant.parse("2026-06-29T05:40:00Z")
+        );
+    }
+
+    private static DemoFinalExternalReviewReleaseBundleDeliveryFinalizationVo
+    finalExternalReviewReleaseBundleDeliveryFinalizationReady() {
+        return new DemoFinalExternalReviewReleaseBundleDeliveryFinalizationVo(
+                DemoReadinessStatus.READY,
+                true,
+                "Final external-review release bundle delivery is finalized with a fresh release-bundle receipt.",
+                "Use the release bundle delivery finalization report as the terminal reviewer handoff record.",
+                "final-external-review-release-bundle-archive-1",
+                "final-external-review-release-bundle-delivery-receipt-1",
+                "final-external-review-delivery-certificate-archive-1",
+                "final-external-review-package-delivery-finalization-archive-1",
+                "final-external-review-package-archive-1",
+                "final-external-review-package-delivery-receipt-1",
+                "task-2",
+                "https://github.com/bingqin2/PatchPilot/pull/42",
+                "reviewer@example.com",
+                "email",
+                "2026-06-29T05:45:00Z",
+                "FRESH",
+                true,
+                "Latest release bundle delivery receipt matches the current frozen final external-review release bundle.",
+                List.of(new DemoFinalExternalReviewReleaseBundleDeliveryFinalizationVo.Check(
+                        "Release bundle delivery receipt",
+                        DemoReadinessStatus.READY,
+                        "Final external-review release bundle delivery receipt final-external-review-release-bundle-delivery-receipt-1 is fresh.",
+                        "No action needed."
+                )),
+                List.of(
+                        "Frozen final external-review release bundle final-external-review-release-bundle-archive-1 is ready.",
+                        "Release bundle delivery receipt final-external-review-release-bundle-delivery-receipt-1 is fresh."
+                ),
+                List.of(
+                        "Download final external-review release bundle delivery finalization report.",
+                        "Download final external-review release bundle archive final-external-review-release-bundle-archive-1.",
+                        "Download final external-review release bundle delivery receipt final-external-review-release-bundle-delivery-receipt-1."
+                ),
+                "GET /api/demo/final-external-review-release-bundle/delivery-finalization is read-only.",
+                "# PatchPilot Final External Review Release Bundle Delivery Finalization",
+                Instant.parse("2026-06-29T05:50:00Z")
+        );
+    }
+
+    private static DemoFinalExternalReviewReleaseBundleDeliveryFinalizationVo
+    finalExternalReviewReleaseBundleDeliveryFinalizationMissingReceipt() {
+        return new DemoFinalExternalReviewReleaseBundleDeliveryFinalizationVo(
+                DemoReadinessStatus.NEEDS_ATTENTION,
+                false,
+                "Final external-review release bundle archive is ready but has no release-bundle delivery receipt.",
+                "Deliver the frozen final external-review release bundle, record a release-bundle delivery receipt, then download the finalization report.",
+                "final-external-review-release-bundle-archive-1",
+                null,
+                "final-external-review-delivery-certificate-archive-1",
+                "final-external-review-package-delivery-finalization-archive-1",
+                "final-external-review-package-archive-1",
+                "final-external-review-package-delivery-receipt-1",
+                "task-2",
+                "https://github.com/bingqin2/PatchPilot/pull/42",
+                "reviewer@example.com",
+                "email",
+                "2026-06-29T05:00:00Z",
+                "MISSING",
+                false,
+                "No release bundle delivery receipt is available for the current frozen final external-review release bundle.",
+                List.of(new DemoFinalExternalReviewReleaseBundleDeliveryFinalizationVo.Check(
+                        "Release bundle delivery receipt",
+                        DemoReadinessStatus.NEEDS_ATTENTION,
+                        "No release bundle delivery receipt is available.",
+                        "Record a fresh delivery receipt for the current frozen final external-review release bundle."
+                )),
+                List.of("No final external-review release bundle delivery receipt is available."),
+                List.of("Download final external-review release bundle delivery finalization report."),
+                "GET /api/demo/final-external-review-release-bundle/delivery-finalization is read-only.",
+                "# PatchPilot Final External Review Release Bundle Delivery Finalization",
+                Instant.parse("2026-06-29T05:50:00Z")
         );
     }
 

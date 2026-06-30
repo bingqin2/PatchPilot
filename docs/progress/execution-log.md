@@ -6061,3 +6061,25 @@ Validation so far:
 - `npm test -- --reporter=dot`: passed, 30 test files and 468 tests.
 - `npm run build`: passed with the existing Vite large-chunk warning.
 - `git diff --check`: passed.
+
+## 2026-06-30 - 301 Final release bundle delivery finalization
+
+- Started `301-final-release-bundle-delivery-finalization` to close the terminal external-review handoff loop after the final release bundle has been frozen.
+- Planned a complete feature slice: backend delivery receipt persistence, READY-archive receipt guard, read-only delivery finalization gate, create/list/download/finalization API endpoints, protected audit evidence, top-level evidence-bundle aggregation, copied runbook export, final acceptance dashboard receipt controls/history/finalization downloads, frontend API helpers, App refresh wiring, README/product/frontend/architecture docs, and regression tests.
+- Added `DemoFinalExternalReviewReleaseBundleDeliveryReceiptService` with request/VO/entity/mapper/converter/repositories, in-memory and MyBatis storage, and `V59__create_demo_final_external_review_release_bundle_delivery_receipt.sql`.
+- Added `POST /api/demo/final-external-review-release-bundle/delivery-receipts`, `GET /api/demo/final-external-review-release-bundle/delivery-receipts`, `GET /api/demo/final-external-review-release-bundle/delivery-receipts/{receiptId}/report/download`, `GET /api/demo/final-external-review-release-bundle/delivery-finalization`, and `GET /api/demo/final-external-review-release-bundle/delivery-finalization/report/download`.
+- Updated the top-level demo evidence bundle and copied runbook with final release-bundle delivery finalization status, latest frozen release-bundle archive, latest receipt, receipt freshness, delivery target/channel, next action, and download actions.
+- Updated the final demo acceptance dashboard with release-bundle delivery receipt form fields, recent receipt rows, receipt report downloads, finalization status/checks/evidence notes, finalization report download, and App-level refresh after receipt creation.
+- Updated README, product spec, frontend design doc, architecture notes, and added this plan document.
+
+Validation so far:
+
+- `mvn -q -pl PatchPilot -Dtest=DemoEvidenceBundleServiceTests,DemoRunbookServiceTests,DemoReadinessControllerTests,DemoFinalExternalReviewReleaseBundleDeliveryReceiptServiceTests,DemoFinalExternalReviewReleaseBundleDeliveryFinalizationServiceTests,DemoFinalExternalReviewReleaseBundleDeliveryReceiptConvertTests,DemoFinalExternalReviewReleaseBundleDeliveryReceiptMigrationTests test`: passed during backend wiring.
+- `npm test -- --run src/api.test.ts -t "release bundle delivery"`: passed, 5 focused API tests.
+- `npm test -- --run src/dashboard/components/DemoAcceptanceSummaryPanel.test.tsx -t "release bundle delivery evidence"`: passed, 1 focused panel test.
+- `npm test -- --run src/dashboard/components/DemoEvidenceBundlePanel.test.tsx -t "summarizes demo evidence"`: first exposed a duplicate expected release-bundle archive download action after the finalization evidence was added; passed after changing the assertion to accept repeated evidence.
+- `npm test -- --run src/App.test.tsx -t "renders operational task dashboard"`: first exposed App fixture initialization order and duplicate release-bundle archive id assertions; passed after moving the release-bundle delivery fixtures before the evidence bundle fixture and using count-based evidence assertions.
+- `mvn -q -pl PatchPilot test`: passed.
+- `npm test -- --reporter=dot`: passed, 30 test files and 474 tests.
+- `npm run build`: passed with the existing Vite large-chunk warning.
+- `git diff --check`: passed.
