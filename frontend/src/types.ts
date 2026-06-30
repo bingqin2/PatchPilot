@@ -1751,6 +1751,25 @@ export interface DemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchive
   downloadActions: string[];
 }
 
+export interface DemoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence {
+  status: DemoReadinessStatus;
+  archived: boolean;
+  certified: boolean;
+  summary: string;
+  nextAction: string;
+  archiveCount: number;
+  latestArchiveId: string | null;
+  latestDeliveryFinalizationArchiveId: string | null;
+  latestReleaseBundleArchiveId: string | null;
+  latestDeliveryReceiptId: string | null;
+  latestCertificateArchiveId: string | null;
+  latestPackageArchiveId: string | null;
+  latestTaskId: string | null;
+  latestPullRequestUrl: string | null;
+  latestArchivedAt: string | null;
+  downloadActions: string[];
+}
+
 export interface DemoFinalExternalReviewEvidencePackage {
   status: DemoReadinessStatus;
   readyForExternalReview: boolean;
@@ -1847,6 +1866,8 @@ export interface DemoEvidenceBundle {
     DemoFinalExternalReviewReleaseBundleDeliveryFinalization;
   finalExternalReviewReleaseBundleDeliveryFinalizationArchiveEvidence?:
     DemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchiveEvidence;
+  finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence?:
+    DemoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence;
   handoffShareDeliveryReceiptRecorded: boolean;
   handoffShareLatestDeliveryReceiptId: string | null;
   handoffShareLatestDeliveryTarget: string | null;

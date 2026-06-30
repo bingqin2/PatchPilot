@@ -6139,3 +6139,22 @@ Validation so far:
 - `mvn -q -pl PatchPilot -Dtest=DemoReadinessControllerTests#should_archive_final_external_review_release_bundle_delivery_certificate_and_record_audit+DemoReadinessControllerTests#should_reject_final_external_review_release_bundle_delivery_certificate_archive_when_not_certified+DemoReadinessControllerTests#should_list_final_external_review_release_bundle_delivery_certificate_archives+DemoReadinessControllerTests#should_download_archived_final_external_review_release_bundle_delivery_certificate_report+DemoReadinessControllerTests#should_return_not_found_when_final_external_review_release_bundle_delivery_certificate_archive_is_missing,DemoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveServiceTests,DemoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveConvertTests test`: first failed on a case-sensitive test assertion, then passed after fixing the assertion.
 - `npm test -- --run src/api.test.ts --reporter=dot`: passed, 209 tests.
 - `npm test -- --run src/App.test.tsx src/api.test.ts --reporter=dot`: passed, 2 test files and 295 tests.
+
+## 2026-06-30 - 305 Final release certificate archive evidence
+
+- Started `305-final-release-certificate-archive-evidence` to surface the durable terminal release-bundle delivery certificate archive in the first demo readout instead of requiring operators to open archive history.
+- Added `DemoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidenceVo` and wired `DemoEvidenceBundleService` to aggregate the latest archive status, certified flag, archive id, linked delivery finalization archive, linked release-bundle archive, delivery receipt, certificate/package ids, task, Pull Request, archived time, next action, and download actions.
+- Updated `DemoRunbookService` so `GET /api/demo/runbook` repeats the terminal certificate archive proof with the same linked evidence and downloads.
+- Updated `DemoEvidenceBundlePanel` and frontend types so the dashboard shows a `Final external-review release bundle delivery certificate archive` card with a legacy fallback when older backend payloads omit the field.
+- Updated README, product spec, architecture notes, frontend design direction, and added this plan document.
+
+Validation:
+
+- `mvn -q -pl PatchPilot -Dtest=DemoEvidenceBundleServiceTests#should_require_final_external_review_release_bundle_delivery_certificate_archive_before_reporting_bundle_ready+DemoEvidenceBundleServiceTests#should_build_demo_evidence_bundle_from_existing_read_models test`: passed after backend aggregation was implemented.
+- `mvn -q -pl PatchPilot -Dtest=DemoRunbookServiceTests#should_format_demo_evidence_bundle_as_markdown_runbook test`: first failed because the runbook did not output release-bundle delivery certificate archive evidence; passed after adding the runbook lines.
+- `npm test -- --run src/dashboard/components/DemoEvidenceBundlePanel.test.tsx --reporter=dot`: first failed because the panel did not render the new certificate archive card; passed after adding fallback and rendering.
+- `npm test -- --run src/App.test.tsx -t "renders operational task dashboard" --reporter=dot`: first failed because the App smoke assertion expected a linked finalization archive id to appear once; passed after adding the top-level certificate archive fixture and count-based evidence assertions.
+- `mvn -q -pl PatchPilot test`: passed with existing Mockito/Java agent and Lombok Unsafe warnings.
+- `npm test -- --reporter=dot`: passed, 30 test files and 482 tests.
+- `npm run build`: passed with the existing Vite large-chunk warning.
+- `git diff --check`: passed.

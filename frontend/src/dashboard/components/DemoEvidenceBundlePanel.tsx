@@ -330,6 +330,34 @@ export function DemoEvidenceBundlePanel({ bundle, error, onCopyRunbook }: DemoEv
         'Archive the READY final external-review release bundle delivery finalization.'
       ]
     };
+  const finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence =
+    bundle?.finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence ?? {
+      status: 'NEEDS_ATTENTION' as DemoReadinessStatus,
+      archived: false,
+      certified: false,
+      summary: 'No final external-review release bundle delivery certificate archive is available.',
+      nextAction: 'Archive the certified final external-review release bundle delivery certificate.',
+      archiveCount: 0,
+      latestArchiveId: null,
+      latestDeliveryFinalizationArchiveId:
+        finalExternalReviewReleaseBundleDeliveryFinalizationArchiveEvidence.latestArchiveId,
+      latestReleaseBundleArchiveId:
+        finalExternalReviewReleaseBundleDeliveryFinalizationArchiveEvidence.latestReleaseBundleArchiveId,
+      latestDeliveryReceiptId:
+        finalExternalReviewReleaseBundleDeliveryFinalizationArchiveEvidence.latestDeliveryReceiptId,
+      latestCertificateArchiveId:
+        finalExternalReviewReleaseBundleDeliveryFinalizationArchiveEvidence.latestCertificateArchiveId,
+      latestPackageArchiveId:
+        finalExternalReviewReleaseBundleDeliveryFinalizationArchiveEvidence.latestPackageArchiveId,
+      latestTaskId:
+        finalExternalReviewReleaseBundleDeliveryFinalizationArchiveEvidence.latestTaskId,
+      latestPullRequestUrl:
+        finalExternalReviewReleaseBundleDeliveryFinalizationArchiveEvidence.latestPullRequestUrl,
+      latestArchivedAt: null,
+      downloadActions: [
+        'Archive the certified final external-review release bundle delivery certificate.'
+      ]
+    };
 
   async function copyRunbook() {
     try {
@@ -1044,6 +1072,52 @@ export function DemoEvidenceBundlePanel({ bundle, error, onCopyRunbook }: DemoEv
                 <small>No archived final external-review release bundle delivery Pull Request</small>
               )}
               {finalExternalReviewReleaseBundleDeliveryFinalizationArchiveEvidence.downloadActions
+                .slice(0, 2)
+                .map((action) => (
+                  <small key={action}>{action}</small>
+                ))}
+            </div>
+            <div>
+              <span>Final external-review release bundle delivery certificate archive</span>
+              <strong>
+                {finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence.certified
+                  ? 'Certified delivery archive'
+                  : statusLabel(finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence.status)}
+              </strong>
+              <small>{finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence.summary}</small>
+              <small>{finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence.nextAction}</small>
+              <small>
+                {finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence.latestArchiveId
+                  ?? 'No release bundle delivery certificate archive'}
+              </small>
+              <small>
+                {finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence
+                  .latestDeliveryFinalizationArchiveId
+                  ?? 'No archived release bundle delivery finalization'}
+              </small>
+              <small>
+                {finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence.latestReleaseBundleArchiveId
+                  ?? 'No archived release bundle'}
+              </small>
+              <small>
+                {finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence.latestDeliveryReceiptId
+                  ?? 'No archived release bundle delivery receipt'}
+              </small>
+              <small>
+                {finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence.latestArchivedAt
+                  ? `Archived ${compactDateTime(
+                    finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence.latestArchivedAt
+                  )}`
+                  : `${finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence.archiveCount} archives`}
+              </small>
+              {finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence.latestPullRequestUrl ? (
+                <a href={finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence.latestPullRequestUrl}>
+                  Open archived final external-review release bundle delivery certificate Pull Request
+                </a>
+              ) : (
+                <small>No archived final external-review release bundle delivery certificate Pull Request</small>
+              )}
+              {finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence.downloadActions
                 .slice(0, 2)
                 .map((action) => (
                   <small key={action}>{action}</small>
