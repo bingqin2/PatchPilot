@@ -165,6 +165,7 @@ import {
   runEvaluationFixtureBaseline,
   preflightDemoLaunch,
   getGitHubCredentialReadiness,
+  getGitHubLivePublishPreflight,
   getGitHubPublishPermissionReadiness,
   getGitHubPublishReadiness,
   getGitHubRepositoryAccessReadiness,
@@ -360,6 +361,7 @@ import type {
   FixTaskQueueSummary,
   FixTaskWorkerHealth,
   GitHubCredentialReadiness,
+  GitHubLivePublishPreflight,
   GitHubPublishPermissionReadiness,
   GitHubPublishReadiness,
   GitHubRepositoryAccessReadiness,
@@ -429,6 +431,7 @@ export default function App() {
   const [latency, setLatency] = useState<FixTaskLatencySummary | null>(null);
   const [configuration, setConfiguration] = useState<ConfigurationSummary | null>(null);
   const [githubCredentialReadiness, setGitHubCredentialReadiness] = useState<GitHubCredentialReadiness | null>(null);
+  const [githubLivePublishPreflight, setGitHubLivePublishPreflight] = useState<GitHubLivePublishPreflight | null>(null);
   const [githubPublishPermissionReadiness, setGitHubPublishPermissionReadiness] = useState<GitHubPublishPermissionReadiness | null>(null);
   const [githubPublishReadiness, setGitHubPublishReadiness] = useState<GitHubPublishReadiness | null>(null);
   const [githubRepositoryAccessReadiness, setGitHubRepositoryAccessReadiness] = useState<GitHubRepositoryAccessReadiness | null>(null);
@@ -1506,6 +1509,14 @@ export default function App() {
           (caught) => ({ readiness: null, error: errorMessage(caught) })
         );
         setGitHubPublishPermissionReadiness(publishPermissionReadinessResult.readiness);
+        const livePublishPreflightResult = await getGitHubLivePublishPreflight(
+          repositoryTarget.owner,
+          repositoryTarget.repository
+        ).then(
+          (preflight) => ({ preflight, error: null as string | null }),
+          (caught) => ({ preflight: null, error: errorMessage(caught) })
+        );
+        setGitHubLivePublishPreflight(livePublishPreflightResult.preflight);
       } else {
         setGitHubRepositoryAccessReadiness(null);
         const publishReadinessResult = await getGitHubPublishReadiness().then(
@@ -1518,6 +1529,11 @@ export default function App() {
           (caught) => ({ readiness: null, error: errorMessage(caught) })
         );
         setGitHubPublishPermissionReadiness(publishPermissionReadinessResult.readiness);
+        const livePublishPreflightResult = await getGitHubLivePublishPreflight().then(
+          (preflight) => ({ preflight, error: null as string | null }),
+          (caught) => ({ preflight: null, error: errorMessage(caught) })
+        );
+        setGitHubLivePublishPreflight(livePublishPreflightResult.preflight);
       }
       setStatusCounts(taskStatusCounts);
       setMetrics(metricsSummary);
@@ -3408,6 +3424,7 @@ export default function App() {
         backendHealth={backendHealth}
         configuration={configuration}
         githubCredentialReadiness={githubCredentialReadiness}
+        githubLivePublishPreflight={githubLivePublishPreflight}
         githubPublishPermissionReadiness={githubPublishPermissionReadiness}
         githubPublishReadiness={githubPublishReadiness}
         githubRepositoryAccessReadiness={githubRepositoryAccessReadiness}

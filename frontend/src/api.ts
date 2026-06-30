@@ -109,6 +109,7 @@ import type {
   FixTaskQueueSummary,
   FixTaskWorkerHealth,
   GitHubCredentialReadiness,
+  GitHubLivePublishPreflight,
   GitHubPublishPermissionReadiness,
   GitHubPublishReadiness,
   GitHubRepositoryAccessReadiness,
@@ -312,6 +313,19 @@ export async function getGitHubPublishPermissionReadiness(
   const queryString = searchParams.toString();
   return getApi<GitHubPublishPermissionReadiness>(
     queryString ? `/api/github/publish-permission-readiness?${queryString}` : '/api/github/publish-permission-readiness'
+  );
+}
+
+export async function getGitHubLivePublishPreflight(
+  owner?: string,
+  repository?: string
+): Promise<GitHubLivePublishPreflight> {
+  const searchParams = new URLSearchParams();
+  appendSearchParam(searchParams, 'owner', owner);
+  appendSearchParam(searchParams, 'repository', repository);
+  const queryString = searchParams.toString();
+  return getApi<GitHubLivePublishPreflight>(
+    queryString ? `/api/github/live-publish-preflight?${queryString}` : '/api/github/live-publish-preflight'
   );
 }
 

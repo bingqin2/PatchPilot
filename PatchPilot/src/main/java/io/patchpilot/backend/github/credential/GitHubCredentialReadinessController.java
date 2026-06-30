@@ -2,6 +2,7 @@ package io.patchpilot.backend.github.credential;
 
 import io.patchpilot.backend.common.response.ApiResponse;
 import io.patchpilot.backend.github.credential.domain.GitHubCredentialReadinessVo;
+import io.patchpilot.backend.github.credential.domain.GitHubLivePublishPreflightVo;
 import io.patchpilot.backend.github.credential.domain.GitHubPublishPermissionReadinessVo;
 import io.patchpilot.backend.github.credential.domain.GitHubPublishReadinessVo;
 import io.patchpilot.backend.github.credential.domain.GitHubRepositoryAccessReadinessVo;
@@ -24,6 +25,7 @@ public class GitHubCredentialReadinessController {
     private final GitHubWebhookSetupReadinessService gitHubWebhookSetupReadinessService;
     private final GitHubPublishReadinessService gitHubPublishReadinessService;
     private final GitHubPublishPermissionReadinessService gitHubPublishPermissionReadinessService;
+    private final GitHubLivePublishPreflightService gitHubLivePublishPreflightService;
 
     @GetMapping("/credential-readiness")
     public ApiResponse<GitHubCredentialReadinessVo> getReadiness() {
@@ -62,5 +64,13 @@ public class GitHubCredentialReadinessController {
             @RequestParam(required = false) String repository
     ) {
         return ApiResponse.ok(gitHubPublishPermissionReadinessService.getReadiness(owner, repository));
+    }
+
+    @GetMapping("/live-publish-preflight")
+    public ApiResponse<GitHubLivePublishPreflightVo> getLivePublishPreflight(
+            @RequestParam(required = false) String owner,
+            @RequestParam(required = false) String repository
+    ) {
+        return ApiResponse.ok(gitHubLivePublishPreflightService.getPreflight(owner, repository));
     }
 }

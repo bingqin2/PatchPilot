@@ -3,6 +3,8 @@ package io.patchpilot.backend.github.credential;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.patchpilot.backend.github.credential.domain.GitHubCredentialReadinessVo;
+import io.patchpilot.backend.github.credential.domain.GitHubLivePublishPreflightCheckVo;
+import io.patchpilot.backend.github.credential.domain.GitHubLivePublishPreflightVo;
 import io.patchpilot.backend.github.credential.domain.GitHubPublishPermissionReadinessCheckVo;
 import io.patchpilot.backend.github.credential.domain.GitHubPublishPermissionReadinessVo;
 import io.patchpilot.backend.github.credential.domain.GitHubPublishReadinessCheckVo;
@@ -241,6 +243,61 @@ class GitHubCredentialReadinessControllerTests {
                 .andExpect(content().string(not(containsString("github-token"))));
     }
 
+    @Test
+    void should_return_non_sensitive_github_live_publish_preflight() throws Exception {
+        GitHubLivePublishPreflightService livePublishPreflightService = new GitHubLivePublishPreflightService(
+                (owner, repository) -> new GitHubLivePublishPreflightVo(
+                        "NEEDS_ATTENTION",
+                        false,
+                        true,
+                        true,
+                        owner + "/" + repository,
+                        "main",
+                        List.of("patchpilot/task-1"),
+                        List.of("https://github.com/bingqin2/PatchPilot/pull/4"),
+                        "Live GitHub publish preflight found existing PatchPilot publish artifacts.",
+                        "Close or merge stale PatchPilot Pull Requests and delete old patchpilot/* branches before the live demo.",
+                        "Read-only live publish preflight: this endpoint does not run git push, does not create branches, does not open Pull Requests, does not write issue comments, and does not expose tokens.",
+                        List.of(
+                                new GitHubLivePublishPreflightCheckVo(
+                                        "Open PatchPilot Pull Requests",
+                                        "NEEDS_ATTENTION",
+                                        "Found 1 open PatchPilot Pull Request.",
+                                        "Close, merge, or intentionally keep the existing PatchPilot Pull Request before demo launch."
+                                )
+                        ),
+                        List.of("Repository: " + owner + "/" + repository, "Open PatchPilot Pull Request count: 1"),
+                        42,
+                        Instant.parse("2026-06-30T09:00:00Z")
+                )
+        );
+        MockMvc mockMvc = mockMvc(
+                new GitHubCredentialReadinessService(() -> null),
+                new GitHubWebhookUrlReadinessService(() -> null),
+                new GitHubWebhookSetupReadinessService(() -> null),
+                new GitHubPublishReadinessService((owner, repository) -> null),
+                new GitHubPublishPermissionReadinessService((owner, repository) -> null),
+                livePublishPreflightService
+        );
+
+        mockMvc.perform(get("/api/github/live-publish-preflight")
+                        .param("owner", "bingqin2")
+                        .param("repository", "PatchPilot")
+                        .header("X-PatchPilot-Admin-Token", "test-admin-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.status").value("NEEDS_ATTENTION"))
+                .andExpect(jsonPath("$.data.livePublishReady").value(false))
+                .andExpect(jsonPath("$.data.repository").value("bingqin2/PatchPilot"))
+                .andExpect(jsonPath("$.data.defaultBranch").value("main"))
+                .andExpect(jsonPath("$.data.patchpilotBranches[0]").value("patchpilot/task-1"))
+                .andExpect(jsonPath("$.data.openPatchpilotPullRequests[0]").value("https://github.com/bingqin2/PatchPilot/pull/4"))
+                .andExpect(jsonPath("$.data.sideEffectContract").value(containsString("does not run git push")))
+                .andExpect(jsonPath("$.data.sideEffectContract").value(containsString("does not open Pull Requests")))
+                .andExpect(jsonPath("$.data.checks[0].name").value("Open PatchPilot Pull Requests"))
+                .andExpect(content().string(not(containsString("github-token"))));
+    }
+
     private static MockMvc mockMvc(GitHubCredentialReadinessService service) {
         return mockMvc(service, new GitHubWebhookUrlReadinessService(() -> null));
     }
@@ -262,7 +319,8 @@ class GitHubCredentialReadinessControllerTests {
                 webhookUrlReadinessService,
                 setupReadinessService,
                 new GitHubPublishReadinessService((owner, repository) -> null),
-                new GitHubPublishPermissionReadinessService((owner, repository) -> null)
+                new GitHubPublishPermissionReadinessService((owner, repository) -> null),
+                new GitHubLivePublishPreflightService((owner, repository) -> null)
         );
     }
 
@@ -277,7 +335,8 @@ class GitHubCredentialReadinessControllerTests {
                 webhookUrlReadinessService,
                 setupReadinessService,
                 publishReadinessService,
-                new GitHubPublishPermissionReadinessService((owner, repository) -> null)
+                new GitHubPublishPermissionReadinessService((owner, repository) -> null),
+                new GitHubLivePublishPreflightService((owner, repository) -> null)
         );
     }
 
@@ -287,6 +346,24 @@ class GitHubCredentialReadinessControllerTests {
             GitHubWebhookSetupReadinessService setupReadinessService,
             GitHubPublishReadinessService publishReadinessService,
             GitHubPublishPermissionReadinessService publishPermissionReadinessService
+    ) {
+        return mockMvc(
+                service,
+                webhookUrlReadinessService,
+                setupReadinessService,
+                publishReadinessService,
+                publishPermissionReadinessService,
+                new GitHubLivePublishPreflightService((owner, repository) -> null)
+        );
+    }
+
+    private static MockMvc mockMvc(
+            GitHubCredentialReadinessService service,
+            GitHubWebhookUrlReadinessService webhookUrlReadinessService,
+            GitHubWebhookSetupReadinessService setupReadinessService,
+            GitHubPublishReadinessService publishReadinessService,
+            GitHubPublishPermissionReadinessService publishPermissionReadinessService,
+            GitHubLivePublishPreflightService livePublishPreflightService
     ) {
         AdminApiSecurityProperties properties = new AdminApiSecurityProperties();
         properties.setAdminToken("test-admin-token");
@@ -299,7 +376,8 @@ class GitHubCredentialReadinessControllerTests {
                         webhookUrlReadinessService,
                         setupReadinessService,
                         publishReadinessService,
-                        publishPermissionReadinessService
+                        publishPermissionReadinessService,
+                        livePublishPreflightService
                 ))
                 .setMessageConverters(new org.springframework.http.converter.json.MappingJackson2HttpMessageConverter(objectMapper))
                 .addFilters(new AdminApiSecurityFilter(properties, objectMapper))
