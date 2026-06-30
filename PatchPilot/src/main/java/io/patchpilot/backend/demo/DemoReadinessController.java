@@ -18,6 +18,7 @@ import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewReleaseBundleDel
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewReleaseBundleDeliveryFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewReleaseBundleDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewReleaseBundleVo;
+import io.patchpilot.backend.demo.domain.DemoFinalReviewerHandoffPackageVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageDeliveryFinalizationVo;
@@ -141,6 +142,7 @@ public class DemoReadinessController {
             demoFinalExternalReviewReleaseBundleDeliveryCertificateService;
     private final DemoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveService
             demoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveService;
+    private final DemoFinalReviewerHandoffPackageService demoFinalReviewerHandoffPackageService;
     private final DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
     private final DemoReadinessSnapshotTrendService demoReadinessSnapshotTrendService;
     private final DemoLaunchPreflightService demoLaunchPreflightService;
@@ -1044,6 +1046,19 @@ public class DemoReadinessController {
                         archive.report()
                 ))
                 .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/final-reviewer-handoff-package")
+    public ApiResponse<DemoFinalReviewerHandoffPackageVo> getFinalReviewerHandoffPackage() {
+        return ApiResponse.ok(demoFinalReviewerHandoffPackageService.getPackage());
+    }
+
+    @GetMapping(value = "/final-reviewer-handoff-package/report/download", produces = "text/markdown;charset=UTF-8")
+    public ResponseEntity<String> downloadFinalReviewerHandoffPackageReport() {
+        return markdownAttachment(
+                "patchpilot-final-reviewer-handoff-package.md",
+                demoFinalReviewerHandoffPackageService.getPackage().markdownReport()
+        );
     }
 
     @GetMapping(value = "/final-acceptance-completion-closeout/archives/{archiveId}/report/download", produces = "text/markdown;charset=UTF-8")

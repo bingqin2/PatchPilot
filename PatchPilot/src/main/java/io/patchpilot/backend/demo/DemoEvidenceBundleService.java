@@ -26,6 +26,7 @@ import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewReleaseBundleDel
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewReleaseBundleVo;
+import io.patchpilot.backend.demo.domain.DemoFinalReviewerHandoffPackageVo;
 import io.patchpilot.backend.demo.domain.DemoFinalHandoffReportPackageArchiveEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoFinalHandoffReportPackageArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoHandoffFinalizationVo;
@@ -841,11 +842,16 @@ public class DemoEvidenceBundleService {
                 finalExternalReviewReleaseBundleDeliveryFinalizationArchiveEvidence(
                         finalExternalReviewReleaseBundleDeliveryFinalizationArchiveSupplier.get()
                 );
+        List<DemoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveVo>
+                finalExternalReviewReleaseBundleDeliveryCertificateArchives =
+                finalExternalReviewReleaseBundleDeliveryCertificateArchiveSupplier.get();
         DemoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidenceVo
                 finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence =
                 finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence(
-                        finalExternalReviewReleaseBundleDeliveryCertificateArchiveSupplier.get()
+                        finalExternalReviewReleaseBundleDeliveryCertificateArchives
                 );
+        DemoFinalReviewerHandoffPackageVo finalReviewerHandoffPackage =
+                finalReviewerHandoffPackageEvidence(finalExternalReviewReleaseBundleDeliveryCertificateArchives);
 
         DemoAdapterFixtureEvidenceVo adapterFixtureEvidence = adapterFixtureEvidence(fixtures);
         DemoEvaluationRunReadinessEvidenceVo evaluationRunReadinessEvidence = evaluationRunReadinessEvidence(evaluationRunReadiness);
@@ -882,7 +888,8 @@ public class DemoEvidenceBundleService {
                 finalExternalReviewReleaseBundleArchiveEvidence,
                 finalExternalReviewReleaseBundleDeliveryFinalization,
                 finalExternalReviewReleaseBundleDeliveryFinalizationArchiveEvidence,
-                finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence
+                finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence,
+                finalReviewerHandoffPackage
         );
         DemoReadinessStatus status = aggregateStatus(
                 readiness,
@@ -908,7 +915,8 @@ public class DemoEvidenceBundleService {
                 finalExternalReviewReleaseBundleArchiveEvidence,
                 finalExternalReviewReleaseBundleDeliveryFinalization,
                 finalExternalReviewReleaseBundleDeliveryFinalizationArchiveEvidence,
-                finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence
+                finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence,
+                finalReviewerHandoffPackage
         );
 
         return new DemoEvidenceBundleVo(
@@ -974,6 +982,7 @@ public class DemoEvidenceBundleService {
                 finalExternalReviewReleaseBundleDeliveryFinalization,
                 finalExternalReviewReleaseBundleDeliveryFinalizationArchiveEvidence,
                 finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence,
+                finalReviewerHandoffPackage,
                 handoffShareCenter.deliveryReceiptRecorded(),
                 handoffShareCenter.latestDeliveryReceiptId(),
                 handoffShareCenter.latestDeliveryTarget(),
@@ -1957,6 +1966,157 @@ public class DemoEvidenceBundleService {
         return "Latest final external-review release bundle delivery certificate archive is not certified yet.";
     }
 
+    private static DemoFinalReviewerHandoffPackageVo finalReviewerHandoffPackageEvidence(
+            List<DemoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveVo> archives
+    ) {
+        DemoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveVo latestArchive =
+                archives.isEmpty() ? null : archives.get(0);
+        if (latestArchive == null) {
+            return new DemoFinalReviewerHandoffPackageVo(
+                    DemoReadinessStatus.NEEDS_ATTENTION,
+                    false,
+                    "No terminal release-bundle delivery certificate archive is available for reviewer handoff.",
+                    "Archive the certified final external-review release bundle delivery certificate.",
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    List.of(),
+                    List.of(new DemoFinalReviewerHandoffPackageVo.Check(
+                            "Terminal delivery certificate archive",
+                            DemoReadinessStatus.NEEDS_ATTENTION,
+                            "No terminal release-bundle delivery certificate archive is available.",
+                            "Archive the certified final external-review release bundle delivery certificate."
+                    )),
+                    List.of("Final reviewer handoff package is unavailable until terminal proof is archived."),
+                    List.of("Archive the certified terminal release-bundle delivery certificate before downloading the final reviewer handoff package."),
+                    "GET /api/demo/evidence-bundle is read-only and does not mutate tasks, Git, or GitHub.",
+                    "# PatchPilot Final Reviewer Handoff Package\n",
+                    Instant.now()
+            );
+        }
+
+        boolean readyForReview = latestArchive.status() == DemoReadinessStatus.READY
+                && latestArchive.certified()
+                && latestArchive.releaseBundleDeliveryReceiptFresh()
+                && hasText(latestArchive.latestReleaseBundleArchiveId());
+        DemoReadinessStatus status = finalReviewerHandoffPackageStatus(latestArchive, readyForReview);
+        String nextAction = status == DemoReadinessStatus.READY
+                ? "Send the handoff package report and listed attachments to the external reviewer."
+                : "Resolve final reviewer handoff package blockers, then download the package report.";
+        List<String> attachments = new ArrayList<>();
+        List<String> downloads = new ArrayList<>();
+        downloads.add("Download final reviewer handoff package report.");
+        downloads.add("Download final external-review release bundle delivery certificate archive "
+                + latestArchive.id() + ".");
+        if (readyForReview) {
+            attachments.add("Final reviewer handoff package report.");
+            attachments.add("Terminal release-bundle delivery certificate archive " + latestArchive.id() + ".");
+        }
+        if (hasText(latestArchive.latestReleaseBundleArchiveId())) {
+            if (readyForReview) {
+                attachments.add("Frozen release bundle archive " + latestArchive.latestReleaseBundleArchiveId() + ".");
+            }
+            downloads.add("Download final external-review release bundle archive "
+                    + latestArchive.latestReleaseBundleArchiveId() + ".");
+        }
+        if (hasText(latestArchive.latestDeliveryFinalizationArchiveId())) {
+            if (readyForReview) {
+                attachments.add("Release-bundle delivery finalization archive "
+                        + latestArchive.latestDeliveryFinalizationArchiveId() + ".");
+            }
+            downloads.add("Download final external-review release bundle delivery finalization archive "
+                    + latestArchive.latestDeliveryFinalizationArchiveId() + ".");
+        }
+        if (hasText(latestArchive.latestDeliveryReceiptId())) {
+            if (readyForReview) {
+                attachments.add("Release-bundle delivery receipt " + latestArchive.latestDeliveryReceiptId() + ".");
+            }
+            downloads.add("Download final external-review release bundle delivery receipt "
+                    + latestArchive.latestDeliveryReceiptId() + ".");
+        }
+        if (hasText(latestArchive.latestPullRequestUrl())) {
+            downloads.add("Open Pull Request " + latestArchive.latestPullRequestUrl() + " for external review.");
+        }
+
+        return new DemoFinalReviewerHandoffPackageVo(
+                status,
+                readyForReview,
+                finalReviewerHandoffPackageSummary(latestArchive, readyForReview, status),
+                nextAction,
+                latestArchive.id(),
+                latestArchive.latestDeliveryFinalizationArchiveId(),
+                latestArchive.latestReleaseBundleArchiveId(),
+                latestArchive.latestDeliveryReceiptId(),
+                latestArchive.latestCertificateArchiveId(),
+                latestArchive.latestPackageArchiveId(),
+                latestArchive.latestPackageDeliveryReceiptId(),
+                latestArchive.latestTaskId(),
+                latestArchive.latestPullRequestUrl(),
+                latestArchive.latestDeliveryTarget(),
+                latestArchive.latestDeliveryChannel(),
+                latestArchive.latestDeliveredAt(),
+                latestArchive.archivedAt(),
+                List.copyOf(attachments),
+                List.of(new DemoFinalReviewerHandoffPackageVo.Check(
+                        "Terminal delivery certificate archive",
+                        latestArchive.certified() ? DemoReadinessStatus.READY : status,
+                        latestArchive.certified()
+                                ? "Latest terminal certificate archive is certified."
+                                : "Latest terminal certificate archive is not certified.",
+                        latestArchive.certified() ? "No action needed." : "Archive a certified terminal certificate."
+                )),
+                List.of("Terminal certificate archive " + latestArchive.id()
+                        + (latestArchive.certified() ? " is certified." : " is not certified.")),
+                List.copyOf(downloads),
+                "GET /api/demo/evidence-bundle is read-only and does not mutate tasks, Git, or GitHub.",
+                "# PatchPilot Final Reviewer Handoff Package\n",
+                Instant.now()
+        );
+    }
+
+    private static DemoReadinessStatus finalReviewerHandoffPackageStatus(
+            DemoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveVo archive,
+            boolean readyForReview
+    ) {
+        if (readyForReview) {
+            return DemoReadinessStatus.READY;
+        }
+        if (archive.status() == DemoReadinessStatus.BLOCKED) {
+            return DemoReadinessStatus.BLOCKED;
+        }
+        return DemoReadinessStatus.NEEDS_ATTENTION;
+    }
+
+    private static String finalReviewerHandoffPackageSummary(
+            DemoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveVo archive,
+            boolean readyForReview,
+            DemoReadinessStatus status
+    ) {
+        if (readyForReview) {
+            return "Final reviewer handoff package is ready from the latest terminal delivery certificate archive.";
+        }
+        if (status == DemoReadinessStatus.BLOCKED) {
+            return "Final reviewer handoff package is blocked by the latest terminal delivery certificate archive.";
+        }
+        if (!archive.certified()) {
+            return "Final reviewer handoff package is waiting for a certified terminal delivery certificate archive.";
+        }
+        if (!archive.releaseBundleDeliveryReceiptFresh()) {
+            return "Final reviewer handoff package is waiting for fresh release-bundle delivery proof.";
+        }
+        return "Final reviewer handoff package is waiting for a frozen release bundle archive.";
+    }
+
     private static DemoFinalExternalReviewEvidencePackageVo compatibilityFinalExternalReviewEvidencePackage() {
         return new DemoFinalExternalReviewEvidencePackageVo(
                 DemoReadinessStatus.READY,
@@ -2304,7 +2464,8 @@ public class DemoEvidenceBundleService {
             DemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchiveEvidenceVo
                     finalExternalReviewReleaseBundleDeliveryFinalizationArchiveEvidence,
             DemoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidenceVo
-                    finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence
+                    finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence,
+            DemoFinalReviewerHandoffPackageVo finalReviewerHandoffPackage
     ) {
         if (readiness.status() == DemoReadinessStatus.BLOCKED
                 || smokeChecklist.status() == DemoSmokeChecklistStatus.BLOCKED
@@ -2330,6 +2491,8 @@ public class DemoEvidenceBundleService {
                 || finalExternalReviewReleaseBundleDeliveryFinalizationArchiveEvidence.status()
                 == DemoReadinessStatus.BLOCKED
                 || finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence.status()
+                == DemoReadinessStatus.BLOCKED
+                || finalReviewerHandoffPackage.status()
                 == DemoReadinessStatus.BLOCKED) {
             return DemoReadinessStatus.BLOCKED;
         }
@@ -2362,6 +2525,8 @@ public class DemoEvidenceBundleService {
                 || finalExternalReviewReleaseBundleDeliveryFinalizationArchiveEvidence.status()
                 == DemoReadinessStatus.NEEDS_ATTENTION
                 || finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence.status()
+                == DemoReadinessStatus.NEEDS_ATTENTION
+                || finalReviewerHandoffPackage.status()
                 == DemoReadinessStatus.NEEDS_ATTENTION) {
             return DemoReadinessStatus.NEEDS_ATTENTION;
         }
@@ -2435,7 +2600,8 @@ public class DemoEvidenceBundleService {
             DemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchiveEvidenceVo
                     finalExternalReviewReleaseBundleDeliveryFinalizationArchiveEvidence,
             DemoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidenceVo
-                    finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence
+                    finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence,
+            DemoFinalReviewerHandoffPackageVo finalReviewerHandoffPackage
     ) {
         List<String> actions = new ArrayList<>();
         actions.addAll(readiness.nextActions());
@@ -2510,6 +2676,9 @@ public class DemoEvidenceBundleService {
         }
         if (finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence.status() != DemoReadinessStatus.READY) {
             actions.add(finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence.nextAction());
+        }
+        if (finalReviewerHandoffPackage.status() != DemoReadinessStatus.READY) {
+            actions.add(finalReviewerHandoffPackage.nextAction());
         }
         List<String> distinctActions = actions.stream()
                 .filter(DemoEvidenceBundleService::hasText)

@@ -7,9 +7,15 @@ interface DemoEvidenceBundlePanelProps {
   bundle: DemoEvidenceBundle | null;
   error: string | null;
   onCopyRunbook: () => Promise<string>;
+  onDownloadFinalReviewerHandoffPackageReport?: () => Promise<Blob>;
 }
 
-export function DemoEvidenceBundlePanel({ bundle, error, onCopyRunbook }: DemoEvidenceBundlePanelProps) {
+export function DemoEvidenceBundlePanel({
+  bundle,
+  error,
+  onCopyRunbook,
+  onDownloadFinalReviewerHandoffPackageReport
+}: DemoEvidenceBundlePanelProps) {
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
   const certificateEvidence = bundle?.launchAcceptanceCertificateEvidence ?? {
     status: 'NEEDS_ATTENTION' as DemoReadinessStatus,
@@ -358,6 +364,41 @@ export function DemoEvidenceBundlePanel({ bundle, error, onCopyRunbook }: DemoEv
         'Archive the certified final external-review release bundle delivery certificate.'
       ]
     };
+  const finalReviewerHandoffPackage = bundle?.finalReviewerHandoffPackage ?? {
+    status: 'NEEDS_ATTENTION' as DemoReadinessStatus,
+    readyForReview: false,
+    summary: 'No final reviewer handoff package is available.',
+    nextAction: 'Archive the terminal release-bundle delivery certificate before downloading reviewer handoff proof.',
+    latestCertificateArchiveId: finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence.latestArchiveId,
+    latestDeliveryFinalizationArchiveId:
+      finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence.latestDeliveryFinalizationArchiveId,
+    latestReleaseBundleArchiveId:
+      finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence.latestReleaseBundleArchiveId,
+    latestDeliveryReceiptId:
+      finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence.latestDeliveryReceiptId,
+    latestPackageCertificateArchiveId:
+      finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence.latestCertificateArchiveId,
+    latestPackageArchiveId:
+      finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence.latestPackageArchiveId,
+    latestPackageDeliveryReceiptId: null,
+    latestTaskId: finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence.latestTaskId,
+    latestPullRequestUrl: finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence.latestPullRequestUrl,
+    latestDeliveryTarget: null,
+    latestDeliveryChannel: null,
+    latestDeliveredAt: null,
+    latestArchivedAt: finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence.latestArchivedAt,
+    requiredAttachments: [],
+    checks: [],
+    evidenceNotes: [
+      'No final reviewer handoff package is available in the top-level evidence bundle.'
+    ],
+    downloadActions: [
+      'Archive the terminal release-bundle delivery certificate before downloading final reviewer handoff proof.'
+    ],
+    sideEffectContract: 'GET /api/demo/evidence-bundle is read-only and does not mutate tasks, Git, or GitHub.',
+    markdownReport: '',
+    generatedAt: ''
+  };
 
   async function copyRunbook() {
     try {
@@ -366,6 +407,20 @@ export function DemoEvidenceBundlePanel({ bundle, error, onCopyRunbook }: DemoEv
       setCopyStatus('Demo runbook copied');
     } catch {
       setCopyStatus('Copy failed');
+    }
+  }
+
+  async function downloadFinalReviewerHandoffPackageReport() {
+    if (!onDownloadFinalReviewerHandoffPackageReport) {
+      return;
+    }
+
+    try {
+      const report = await onDownloadFinalReviewerHandoffPackageReport();
+      downloadMarkdown(report, 'patchpilot-final-reviewer-handoff-package.md');
+      setCopyStatus('Final reviewer handoff package downloaded');
+    } catch {
+      setCopyStatus('Download failed');
     }
   }
 
@@ -1124,6 +1179,66 @@ export function DemoEvidenceBundlePanel({ bundle, error, onCopyRunbook }: DemoEv
                 ))}
             </div>
             <div>
+              <span>Final reviewer handoff package</span>
+              <strong>
+                {finalReviewerHandoffPackage.readyForReview
+                  ? 'Ready for reviewer'
+                  : statusLabel(finalReviewerHandoffPackage.status)}
+              </strong>
+              <small>{finalReviewerHandoffPackage.summary}</small>
+              <small>{finalReviewerHandoffPackage.nextAction}</small>
+              <small>{finalReviewerHandoffPackage.latestCertificateArchiveId ?? 'No terminal certificate archive'}</small>
+              <small>
+                {finalReviewerHandoffPackage.latestReleaseBundleArchiveId
+                  ?? 'No frozen release bundle archive'}
+              </small>
+              <small>
+                {finalReviewerHandoffPackage.latestDeliveryFinalizationArchiveId
+                  ?? 'No release bundle delivery finalization archive'}
+              </small>
+              <small>{finalReviewerHandoffPackage.latestDeliveryReceiptId ?? 'No release bundle delivery receipt'}</small>
+              <small>{finalReviewerHandoffPackage.latestPackageCertificateArchiveId ?? 'No package certificate archive'}</small>
+              <small>{finalReviewerHandoffPackage.latestPackageArchiveId ?? 'No final external-review package archive'}</small>
+              <small>
+                {finalReviewerHandoffPackage.latestTaskId
+                  ? `Task ${finalReviewerHandoffPackage.latestTaskId}`
+                  : 'No reviewer handoff task'}
+              </small>
+              <small>
+                {finalReviewerHandoffPackage.latestDeliveryTarget
+                  ? `${finalReviewerHandoffPackage.latestDeliveryChannel ?? 'delivery'} - ${finalReviewerHandoffPackage.latestDeliveryTarget}`
+                  : 'No final reviewer delivery target'}
+              </small>
+              {finalReviewerHandoffPackage.latestDeliveredAt ? (
+                <small>Delivered {compactDateTime(finalReviewerHandoffPackage.latestDeliveredAt)}</small>
+              ) : null}
+              {finalReviewerHandoffPackage.latestArchivedAt ? (
+                <small>Certificate archived {compactDateTime(finalReviewerHandoffPackage.latestArchivedAt)}</small>
+              ) : null}
+              {finalReviewerHandoffPackage.latestPullRequestUrl ? (
+                <a href={finalReviewerHandoffPackage.latestPullRequestUrl}>
+                  Open final reviewer handoff Pull Request
+                </a>
+              ) : (
+                <small>No final reviewer handoff Pull Request</small>
+              )}
+              {finalReviewerHandoffPackage.requiredAttachments.slice(0, 2).map((attachment) => (
+                <small key={attachment}>{attachment}</small>
+              ))}
+              {finalReviewerHandoffPackage.downloadActions.slice(0, 2).map((action) => (
+                <small key={action}>{action}</small>
+              ))}
+              {onDownloadFinalReviewerHandoffPackageReport ? (
+                <button
+                  className="secondary-button"
+                  type="button"
+                  onClick={() => void downloadFinalReviewerHandoffPackageReport()}
+                >
+                  Download reviewer handoff
+                </button>
+              ) : null}
+            </div>
+            <div>
               <span>Handoff share delivery</span>
               <strong>{deliveryFreshnessLabel(bundle.handoffShareDeliveryReceiptFreshness)}</strong>
               <small>{bundle.handoffShareDeliveryReceiptFreshnessSummary}</small>
@@ -1266,4 +1381,15 @@ function signed(value: number) {
 
 function csv(values: string[]) {
   return values.length === 0 ? 'none' : values.join(', ');
+}
+
+function downloadMarkdown(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
 }

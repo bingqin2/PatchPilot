@@ -1770,6 +1770,38 @@ export interface DemoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveE
   downloadActions: string[];
 }
 
+export interface DemoFinalReviewerHandoffPackage {
+  status: DemoReadinessStatus;
+  readyForReview: boolean;
+  summary: string;
+  nextAction: string;
+  latestCertificateArchiveId: string | null;
+  latestDeliveryFinalizationArchiveId: string | null;
+  latestReleaseBundleArchiveId: string | null;
+  latestDeliveryReceiptId: string | null;
+  latestPackageCertificateArchiveId: string | null;
+  latestPackageArchiveId: string | null;
+  latestPackageDeliveryReceiptId: string | null;
+  latestTaskId: string | null;
+  latestPullRequestUrl: string | null;
+  latestDeliveryTarget: string | null;
+  latestDeliveryChannel: string | null;
+  latestDeliveredAt: string | null;
+  latestArchivedAt: string | null;
+  requiredAttachments: string[];
+  checks: Array<{
+    name: string;
+    status: DemoReadinessStatus;
+    summary: string;
+    nextAction: string;
+  }>;
+  evidenceNotes: string[];
+  downloadActions: string[];
+  sideEffectContract: string;
+  markdownReport: string;
+  generatedAt: string;
+}
+
 export interface DemoFinalExternalReviewEvidencePackage {
   status: DemoReadinessStatus;
   readyForExternalReview: boolean;
@@ -1868,6 +1900,7 @@ export interface DemoEvidenceBundle {
     DemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchiveEvidence;
   finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence?:
     DemoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence;
+  finalReviewerHandoffPackage?: DemoFinalReviewerHandoffPackage;
   handoffShareDeliveryReceiptRecorded: boolean;
   handoffShareLatestDeliveryReceiptId: string | null;
   handoffShareLatestDeliveryTarget: string | null;

@@ -32,6 +32,7 @@ import type {
   DemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchive,
   DemoFinalExternalReviewReleaseBundleDeliveryReceipt,
   DemoFinalExternalReviewReleaseBundleDeliveryReceiptInput,
+  DemoFinalReviewerHandoffPackage,
   DemoFinalAcceptanceShareDeliveryReceipt,
   DemoFinalAcceptanceShareDeliveryReceiptInput,
   DemoFinalAcceptanceShareFinalization,
@@ -617,6 +618,14 @@ export async function downloadDemoFinalExternalReviewReleaseBundleDeliveryCertif
   return getBlobApi(
     `/api/demo/final-external-review-release-bundle/delivery-certificate/archives/${encodeURIComponent(archiveId)}/report/download`
   );
+}
+
+export async function getDemoFinalReviewerHandoffPackage(): Promise<DemoFinalReviewerHandoffPackage> {
+  return getApi<DemoFinalReviewerHandoffPackage>('/api/demo/final-reviewer-handoff-package');
+}
+
+export async function downloadDemoFinalReviewerHandoffPackageReport(): Promise<Blob> {
+  return getBlobApi('/api/demo/final-reviewer-handoff-package/report/download');
 }
 
 export async function archiveDemoFinalAcceptanceCompletionCloseout(): Promise<DemoFinalAcceptanceCompletionCloseoutArchive> {

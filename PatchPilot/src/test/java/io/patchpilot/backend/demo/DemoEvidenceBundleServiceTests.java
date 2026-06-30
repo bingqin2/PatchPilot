@@ -519,6 +519,14 @@ class DemoEvidenceBundleServiceTests {
                         "Download final external-review release bundle archive final-external-review-release-bundle-archive-1.",
                         "Download final external-review release bundle delivery receipt final-external-review-release-bundle-delivery-receipt-1."
                 );
+        assertThat(bundle.finalReviewerHandoffPackage().status()).isEqualTo(DemoReadinessStatus.READY);
+        assertThat(bundle.finalReviewerHandoffPackage().readyForReview()).isTrue();
+        assertThat(bundle.finalReviewerHandoffPackage().latestCertificateArchiveId())
+                .isEqualTo("final-external-review-release-bundle-delivery-certificate-archive-1");
+        assertThat(bundle.finalReviewerHandoffPackage().latestReleaseBundleArchiveId())
+                .isEqualTo("final-external-review-release-bundle-archive-1");
+        assertThat(bundle.finalReviewerHandoffPackage().downloadActions())
+                .contains("Download final reviewer handoff package report.");
         assertThat(bundle.handoffShareDeliveryReceiptRecorded()).isFalse();
         assertThat(bundle.handoffShareLatestDeliveryReceiptId()).isNull();
         assertThat(bundle.handoffShareLatestDeliveryTarget()).isNull();
