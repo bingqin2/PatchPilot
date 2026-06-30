@@ -2,6 +2,7 @@ package io.patchpilot.backend.github.credential;
 
 import io.patchpilot.backend.common.response.ApiResponse;
 import io.patchpilot.backend.github.credential.domain.GitHubCredentialReadinessVo;
+import io.patchpilot.backend.github.credential.domain.GitHubPublishReadinessVo;
 import io.patchpilot.backend.github.credential.domain.GitHubRepositoryAccessReadinessVo;
 import io.patchpilot.backend.github.credential.domain.GitHubWebhookSetupReadinessVo;
 import io.patchpilot.backend.github.credential.domain.GitHubWebhookUrlReadinessVo;
@@ -20,6 +21,7 @@ public class GitHubCredentialReadinessController {
     private final GitHubRepositoryAccessReadinessService gitHubRepositoryAccessReadinessService;
     private final GitHubWebhookUrlReadinessService gitHubWebhookUrlReadinessService;
     private final GitHubWebhookSetupReadinessService gitHubWebhookSetupReadinessService;
+    private final GitHubPublishReadinessService gitHubPublishReadinessService;
 
     @GetMapping("/credential-readiness")
     public ApiResponse<GitHubCredentialReadinessVo> getReadiness() {
@@ -42,5 +44,13 @@ public class GitHubCredentialReadinessController {
     @GetMapping("/webhook-setup-readiness")
     public ApiResponse<GitHubWebhookSetupReadinessVo> getWebhookSetupReadiness() {
         return ApiResponse.ok(gitHubWebhookSetupReadinessService.getReadiness());
+    }
+
+    @GetMapping("/publish-readiness")
+    public ApiResponse<GitHubPublishReadinessVo> getPublishReadiness(
+            @RequestParam(required = false) String owner,
+            @RequestParam(required = false) String repository
+    ) {
+        return ApiResponse.ok(gitHubPublishReadinessService.getReadiness(owner, repository));
     }
 }

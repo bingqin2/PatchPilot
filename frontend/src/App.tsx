@@ -165,6 +165,7 @@ import {
   runEvaluationFixtureBaseline,
   preflightDemoLaunch,
   getGitHubCredentialReadiness,
+  getGitHubPublishReadiness,
   getGitHubRepositoryAccessReadiness,
   getGitHubWebhookSetupReadiness,
   getGitHubWebhookUrlReadiness,
@@ -358,6 +359,7 @@ import type {
   FixTaskQueueSummary,
   FixTaskWorkerHealth,
   GitHubCredentialReadiness,
+  GitHubPublishReadiness,
   GitHubRepositoryAccessReadiness,
   GitHubWebhookSetupReadiness,
   GitHubWebhookUrlReadiness,
@@ -425,6 +427,7 @@ export default function App() {
   const [latency, setLatency] = useState<FixTaskLatencySummary | null>(null);
   const [configuration, setConfiguration] = useState<ConfigurationSummary | null>(null);
   const [githubCredentialReadiness, setGitHubCredentialReadiness] = useState<GitHubCredentialReadiness | null>(null);
+  const [githubPublishReadiness, setGitHubPublishReadiness] = useState<GitHubPublishReadiness | null>(null);
   const [githubRepositoryAccessReadiness, setGitHubRepositoryAccessReadiness] = useState<GitHubRepositoryAccessReadiness | null>(null);
   const [githubWebhookUrlReadiness, setGitHubWebhookUrlReadiness] = useState<GitHubWebhookUrlReadiness | null>(null);
   const [githubWebhookSetupReadiness, setGitHubWebhookSetupReadiness] = useState<GitHubWebhookSetupReadiness | null>(null);
@@ -1484,8 +1487,21 @@ export default function App() {
           (caught) => ({ readiness: null, error: errorMessage(caught) })
         );
         setGitHubRepositoryAccessReadiness(repositoryAccessResult.readiness);
+        const publishReadinessResult = await getGitHubPublishReadiness(
+          repositoryTarget.owner,
+          repositoryTarget.repository
+        ).then(
+          (readiness) => ({ readiness, error: null as string | null }),
+          (caught) => ({ readiness: null, error: errorMessage(caught) })
+        );
+        setGitHubPublishReadiness(publishReadinessResult.readiness);
       } else {
         setGitHubRepositoryAccessReadiness(null);
+        const publishReadinessResult = await getGitHubPublishReadiness().then(
+          (readiness) => ({ readiness, error: null as string | null }),
+          (caught) => ({ readiness: null, error: errorMessage(caught) })
+        );
+        setGitHubPublishReadiness(publishReadinessResult.readiness);
       }
       setStatusCounts(taskStatusCounts);
       setMetrics(metricsSummary);
@@ -3376,6 +3392,7 @@ export default function App() {
         backendHealth={backendHealth}
         configuration={configuration}
         githubCredentialReadiness={githubCredentialReadiness}
+        githubPublishReadiness={githubPublishReadiness}
         githubRepositoryAccessReadiness={githubRepositoryAccessReadiness}
         githubWebhookUrlReadiness={githubWebhookUrlReadiness}
         modelProviderHealth={modelProviderHealth}

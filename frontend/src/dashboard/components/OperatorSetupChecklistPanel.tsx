@@ -3,6 +3,7 @@ import type {
   ConfigurationSummary,
   DemoReadiness,
   GitHubCredentialReadiness,
+  GitHubPublishReadiness,
   GitHubRepositoryAccessReadiness,
   GitHubWebhookUrlReadiness,
   ModelProviderHealth,
@@ -17,6 +18,7 @@ interface OperatorSetupChecklistPanelProps {
   backendHealth: BackendHealth | null;
   configuration: ConfigurationSummary | null;
   githubCredentialReadiness: GitHubCredentialReadiness | null;
+  githubPublishReadiness: GitHubPublishReadiness | null;
   githubRepositoryAccessReadiness: GitHubRepositoryAccessReadiness | null;
   githubWebhookUrlReadiness: GitHubWebhookUrlReadiness | null;
   modelProviderHealth: ModelProviderHealth | null;
@@ -41,6 +43,7 @@ export function OperatorSetupChecklistPanel({
   backendHealth,
   configuration,
   githubCredentialReadiness,
+  githubPublishReadiness,
   githubRepositoryAccessReadiness,
   githubWebhookUrlReadiness,
   modelProviderHealth,
@@ -56,6 +59,7 @@ export function OperatorSetupChecklistPanel({
     backendHealth,
     configuration,
     githubCredentialReadiness,
+    githubPublishReadiness,
     githubRepositoryAccessReadiness,
     githubWebhookUrlReadiness,
     modelProviderHealth,
@@ -89,6 +93,26 @@ export function OperatorSetupChecklistPanel({
         ))}
       </div>
 
+      {githubPublishReadiness ? (
+        <div className={`operator-publish-readiness operator-publish-readiness-${githubPublishReadiness.status.toLowerCase()}`}>
+          <div>
+            <span>GitHub publish readiness</span>
+            <strong>{githubPublishReadiness.status} - {githubPublishReadiness.summary}</strong>
+            <p>{githubPublishReadiness.nextAction}</p>
+          </div>
+          <code>{githubPublishReadiness.safePublishCommand}</code>
+          <ul>
+            {githubPublishReadiness.checks.map((check) => (
+              <li key={check.name}>
+                <strong>{check.name}: {check.status}</strong>
+                <span>{check.summary}</span>
+              </li>
+            ))}
+          </ul>
+          <p>{githubPublishReadiness.sideEffectContract}</p>
+        </div>
+      ) : null}
+
       {nextActions.length > 0 ? (
         <div className="operator-setup-actions">
           <h3>Next setup actions</h3>
@@ -109,6 +133,7 @@ function setupChecks({
   backendHealth,
   configuration,
   githubCredentialReadiness,
+  githubPublishReadiness,
   githubRepositoryAccessReadiness,
   githubWebhookUrlReadiness,
   modelProviderHealth,
@@ -124,6 +149,7 @@ function setupChecks({
     backendCheck(backendHealth),
     credentialCheck(configuration, hasStoredAdminToken),
     githubCredentialCheck(githubCredentialReadiness, demoReadiness),
+    githubPublishCheck(githubPublishReadiness),
     githubWebhookUrlCheck(githubWebhookUrlReadiness, demoReadiness),
     githubRepositoryAccessCheck(githubRepositoryAccessReadiness, demoReadiness),
     safetyPolicyCheck(configuration),
@@ -136,6 +162,17 @@ function setupChecks({
     workerHeartbeatCheck(demoReadiness, workerHealth),
     recentPullRequestCheck(demoReadiness, tasks)
   ];
+}
+
+function githubPublishCheck(githubPublishReadiness: GitHubPublishReadiness | null): SetupCheck {
+  const ready = githubPublishReadiness?.status === 'READY';
+  return {
+    name: 'GitHub publish readiness',
+    ready,
+    message: githubPublishReadiness?.summary ?? 'GitHub publish readiness has not loaded',
+    action: githubPublishReadiness?.nextAction ?? 'Confirm /api/github/publish-readiness before a live issue-to-PR demo.',
+    detail: githubPublishReadiness?.repository
+  };
 }
 
 function backendCheck(backendHealth: BackendHealth | null): SetupCheck {

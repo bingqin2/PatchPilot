@@ -77,7 +77,8 @@ class GitHubRepositoryAccessReadinessControllerTests {
                         new GitHubCredentialReadinessService(() -> null),
                         service,
                         new GitHubWebhookUrlReadinessService(() -> null),
-                        new GitHubWebhookSetupReadinessService(() -> null)
+                        new GitHubWebhookSetupReadinessService(() -> null),
+                        new GitHubPublishReadinessService((owner, repository) -> null)
                 ))
                 .setMessageConverters(new org.springframework.http.converter.json.MappingJackson2HttpMessageConverter(objectMapper))
                 .addFilters(new AdminApiSecurityFilter(properties, objectMapper))
