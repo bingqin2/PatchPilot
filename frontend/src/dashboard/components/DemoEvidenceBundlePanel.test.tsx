@@ -608,7 +608,7 @@ test('summarizes demo evidence bundle for operators', () => {
 
   const panel = screen.getByRole('region', { name: 'Demo evidence bundle' });
   expect(within(panel).getByRole('heading', { name: 'Demo evidence bundle' })).toBeInTheDocument();
-  expect(within(panel).getByText('Needs attention')).toBeInTheDocument();
+  expect(within(panel).getAllByText('Needs attention').length).toBeGreaterThanOrEqual(1);
   expect(within(panel).getByText('Demo evidence bundle needs attention.')).toBeInTheDocument();
   expect(within(panel).getByText('12')).toBeInTheDocument();
   expect(within(panel).getByText('1 failed')).toBeInTheDocument();
@@ -906,8 +906,8 @@ test('summarizes demo evidence bundle for operators', () => {
     within(panel).getByText('Final external-review release bundle delivery is finalized with a fresh receipt.')
   ).toBeInTheDocument();
   expect(
-    within(panel).getByText('final-external-review-release-bundle-delivery-receipt-1')
-  ).toBeInTheDocument();
+    within(panel).getAllByText('final-external-review-release-bundle-delivery-receipt-1').length
+  ).toBeGreaterThanOrEqual(1);
   expect(
     within(panel).getByText('Latest release bundle delivery receipt matches the current frozen release bundle archive.')
   ).toBeInTheDocument();

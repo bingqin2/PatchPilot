@@ -1599,6 +1599,40 @@ export interface DemoFinalExternalReviewReleaseBundleDeliveryFinalization {
   generatedAt: string;
 }
 
+export interface DemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchive {
+  id: string;
+  status: DemoReadinessStatus;
+  finalized: boolean;
+  summary: string;
+  nextAction: string;
+  latestArchiveId: string | null;
+  latestDeliveryReceiptId: string | null;
+  latestCertificateArchiveId: string | null;
+  latestDeliveryFinalizationArchiveId: string | null;
+  latestPackageArchiveId: string | null;
+  latestPackageDeliveryReceiptId: string | null;
+  latestTaskId: string | null;
+  latestPullRequestUrl: string | null;
+  latestDeliveryTarget: string | null;
+  latestDeliveryChannel: string | null;
+  latestDeliveredAt: string | null;
+  releaseBundleDeliveryReceiptFreshness: string;
+  releaseBundleDeliveryReceiptFresh: boolean;
+  releaseBundleDeliveryReceiptFreshnessSummary: string;
+  checks: Array<{
+    name: string;
+    status: DemoReadinessStatus;
+    summary: string;
+    nextAction: string;
+  }>;
+  evidenceNotes: string[];
+  downloadActions: string[];
+  sideEffectContract: string;
+  report: string;
+  generatedAt: string;
+  archivedAt: string;
+}
+
 export interface DemoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveEvidence {
   status: DemoReadinessStatus;
   archived: boolean;
@@ -1627,6 +1661,24 @@ export interface DemoFinalExternalReviewReleaseBundleArchiveEvidence {
   latestDeliveryFinalizationArchiveId: string | null;
   latestPackageArchiveId: string | null;
   latestDeliveryReceiptId: string | null;
+  latestTaskId: string | null;
+  latestPullRequestUrl: string | null;
+  latestArchivedAt: string | null;
+  downloadActions: string[];
+}
+
+export interface DemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchiveEvidence {
+  status: DemoReadinessStatus;
+  archived: boolean;
+  finalized: boolean;
+  summary: string;
+  nextAction: string;
+  archiveCount: number;
+  latestArchiveId: string | null;
+  latestReleaseBundleArchiveId: string | null;
+  latestDeliveryReceiptId: string | null;
+  latestCertificateArchiveId: string | null;
+  latestPackageArchiveId: string | null;
   latestTaskId: string | null;
   latestPullRequestUrl: string | null;
   latestArchivedAt: string | null;
@@ -1727,6 +1779,8 @@ export interface DemoEvidenceBundle {
   finalExternalReviewReleaseBundleArchiveEvidence?: DemoFinalExternalReviewReleaseBundleArchiveEvidence;
   finalExternalReviewReleaseBundleDeliveryFinalization?:
     DemoFinalExternalReviewReleaseBundleDeliveryFinalization;
+  finalExternalReviewReleaseBundleDeliveryFinalizationArchiveEvidence?:
+    DemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchiveEvidence;
   handoffShareDeliveryReceiptRecorded: boolean;
   handoffShareLatestDeliveryReceiptId: string | null;
   handoffShareLatestDeliveryTarget: string | null;

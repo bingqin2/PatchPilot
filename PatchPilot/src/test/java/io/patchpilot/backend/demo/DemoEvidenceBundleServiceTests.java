@@ -12,6 +12,7 @@ import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageD
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewReleaseBundleArchiveVo;
+import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewReleaseBundleDeliveryFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewReleaseBundleVo;
 import io.patchpilot.backend.demo.domain.DemoFinalHandoffReportPackageArchiveVo;
@@ -93,7 +94,8 @@ class DemoEvidenceBundleServiceTests {
                 () -> List.of(finalExternalReviewEvidencePackageDeliveryFinalizationArchive()),
                 DemoEvidenceBundleServiceTests::finalExternalReviewReleaseBundleReady,
                 () -> List.of(finalExternalReviewReleaseBundleArchive()),
-                DemoEvidenceBundleServiceTests::finalExternalReviewReleaseBundleDeliveryFinalizationReady
+                DemoEvidenceBundleServiceTests::finalExternalReviewReleaseBundleDeliveryFinalizationReady,
+                () -> List.of(finalExternalReviewReleaseBundleDeliveryFinalizationArchive())
         );
 
         DemoEvidenceBundleVo bundle = service.getEvidenceBundle();
@@ -477,6 +479,25 @@ class DemoEvidenceBundleServiceTests {
                 "Download final external-review release bundle archive final-external-review-release-bundle-archive-1.",
                 "Download final external-review release bundle delivery receipt final-external-review-release-bundle-delivery-receipt-1."
         );
+        assertThat(bundle.finalExternalReviewReleaseBundleDeliveryFinalizationArchiveEvidence().status())
+                .isEqualTo(DemoReadinessStatus.READY);
+        assertThat(bundle.finalExternalReviewReleaseBundleDeliveryFinalizationArchiveEvidence().archived()).isTrue();
+        assertThat(bundle.finalExternalReviewReleaseBundleDeliveryFinalizationArchiveEvidence().finalized()).isTrue();
+        assertThat(bundle.finalExternalReviewReleaseBundleDeliveryFinalizationArchiveEvidence().latestArchiveId())
+                .isEqualTo("final-external-review-release-bundle-delivery-finalization-archive-1");
+        assertThat(bundle.finalExternalReviewReleaseBundleDeliveryFinalizationArchiveEvidence()
+                .latestReleaseBundleArchiveId())
+                .isEqualTo("final-external-review-release-bundle-archive-1");
+        assertThat(bundle.finalExternalReviewReleaseBundleDeliveryFinalizationArchiveEvidence()
+                .latestDeliveryReceiptId())
+                .isEqualTo("final-external-review-release-bundle-delivery-receipt-1");
+        assertThat(bundle.finalExternalReviewReleaseBundleDeliveryFinalizationArchiveEvidence().downloadActions())
+                .containsExactly(
+                        "Download final external-review release bundle delivery finalization archive final-external-review-release-bundle-delivery-finalization-archive-1.",
+                        "Download final external-review release bundle archive final-external-review-release-bundle-archive-1.",
+                        "Download final external-review release bundle delivery receipt final-external-review-release-bundle-delivery-receipt-1.",
+                        "Download final external-review delivery certificate archive final-external-review-delivery-certificate-archive-1."
+                );
         assertThat(bundle.handoffShareDeliveryReceiptRecorded()).isFalse();
         assertThat(bundle.handoffShareLatestDeliveryReceiptId()).isNull();
         assertThat(bundle.handoffShareLatestDeliveryTarget()).isNull();
@@ -2101,6 +2122,47 @@ class DemoEvidenceBundleServiceTests {
                 "GET /api/demo/final-external-review-release-bundle/delivery-finalization is read-only.",
                 "# PatchPilot Final External Review Release Bundle Delivery Finalization",
                 Instant.parse("2026-06-29T05:50:00Z")
+        );
+    }
+
+    private static DemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchiveVo
+    finalExternalReviewReleaseBundleDeliveryFinalizationArchive() {
+        DemoFinalExternalReviewReleaseBundleDeliveryFinalizationVo finalization =
+                finalExternalReviewReleaseBundleDeliveryFinalizationReady();
+        return new DemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchiveVo(
+                "final-external-review-release-bundle-delivery-finalization-archive-1",
+                finalization.status(),
+                finalization.finalized(),
+                finalization.summary(),
+                finalization.nextAction(),
+                finalization.latestArchiveId(),
+                finalization.latestDeliveryReceiptId(),
+                finalization.latestCertificateArchiveId(),
+                finalization.latestDeliveryFinalizationArchiveId(),
+                finalization.latestPackageArchiveId(),
+                finalization.latestPackageDeliveryReceiptId(),
+                finalization.latestTaskId(),
+                finalization.latestPullRequestUrl(),
+                finalization.latestDeliveryTarget(),
+                finalization.latestDeliveryChannel(),
+                finalization.latestDeliveredAt(),
+                finalization.releaseBundleDeliveryReceiptFreshness(),
+                finalization.releaseBundleDeliveryReceiptFresh(),
+                finalization.releaseBundleDeliveryReceiptFreshnessSummary(),
+                finalization.checks().stream()
+                        .map(check -> new DemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchiveVo.Check(
+                                check.name(),
+                                check.status(),
+                                check.summary(),
+                                check.nextAction()
+                        ))
+                        .toList(),
+                finalization.evidenceNotes(),
+                finalization.downloadActions(),
+                finalization.sideEffectContract(),
+                finalization.markdownReport(),
+                finalization.generatedAt(),
+                Instant.parse("2026-06-29T06:00:00Z")
         );
     }
 

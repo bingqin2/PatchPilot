@@ -6083,3 +6083,23 @@ Validation so far:
 - `npm test -- --reporter=dot`: passed, 30 test files and 474 tests.
 - `npm run build`: passed with the existing Vite large-chunk warning.
 - `git diff --check`: passed.
+
+## 2026-06-30 - 302 Final release bundle delivery finalization archives
+
+- Started `302-final-release-bundle-delivery-finalization-archives` to freeze the READY terminal release-bundle delivery finalization as durable local evidence.
+- Planned a complete feature slice: backend archive persistence, READY/finalized guard, create/list/download API endpoints, protected audit evidence, top-level evidence-bundle archive status, final acceptance dashboard archive controls/history/downloads, frontend API helpers, App refresh wiring, README/product/frontend/architecture docs, and regression tests.
+- Added `DemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchiveService` with VO/entity/mapper/converter, in-memory and MyBatis repositories, and `V60__create_demo_final_external_review_release_bundle_delivery_finalization_archive.sql`.
+- Added `POST /api/demo/final-external-review-release-bundle/delivery-finalization/archives`, `GET /api/demo/final-external-review-release-bundle/delivery-finalization/archives`, and `GET /api/demo/final-external-review-release-bundle/delivery-finalization/archives/{archiveId}/report/download`.
+- Updated the top-level demo evidence bundle with latest release-bundle delivery finalization archive readiness, archive id, release-bundle archive id, delivery receipt id, certificate archive id, Pull Request, archived time, next action, and download actions.
+- Updated the final demo acceptance dashboard with archive creation, recent release-bundle delivery finalization archive history, archive report downloads, archive load errors, and App-level refresh after archive creation.
+- Updated README, product spec, frontend design doc, architecture notes, and added this plan document.
+
+Validation so far:
+
+- `mvn -q -pl PatchPilot -Dtest=DemoEvidenceBundleServiceTests,DemoReadinessControllerTests,DemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchiveServiceTests,DemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchiveConvertTests test`: passed.
+- `npm test -- --run src/api.test.ts src/App.test.tsx --reporter=dot`: passed, 2 test files and 290 tests.
+- `npm test -- --run src/dashboard/components/DemoEvidenceBundlePanel.test.tsx --reporter=dot`: first exposed duplicate status/receipt assertions after archive evidence reused live proof ids; passed after changing the assertions to allow repeated evidence labels, 4 tests.
+- `mvn -q -pl PatchPilot test`: passed.
+- `npm test -- --reporter=dot`: passed, 30 test files and 477 tests.
+- `npm run build`: passed with the existing Vite large-chunk warning.
+- `git diff --check`: passed.
