@@ -6123,3 +6123,19 @@ Validation so far:
 - `npm test -- --reporter=dot`: passed, 30 test files and 479 tests.
 - `npm run build`: passed with the existing Vite large-chunk warning.
 - `git diff --check`: passed.
+
+## 2026-06-30 - 304 Final release bundle delivery certificate archives
+
+- Started `304-final-release-bundle-delivery-certificate-archives` to freeze the certified terminal release-bundle delivery certificate as durable PatchPilot-local evidence.
+- Planned a complete feature slice: backend archive persistence, certified-only guard, create/list/download API endpoints, protected audit evidence, final demo acceptance dashboard archive controls/history/downloads, frontend API helpers, App refresh wiring, README/product/frontend/architecture docs, and regression tests.
+- Added `DemoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveService` with VO/entity/mapper/converter, in-memory and MyBatis repositories, and `V61__create_demo_final_external_review_release_bundle_delivery_certificate_archive.sql`.
+- Added `POST /api/demo/final-external-review-release-bundle/delivery-certificate/archives`, `GET /api/demo/final-external-review-release-bundle/delivery-certificate/archives`, and `GET /api/demo/final-external-review-release-bundle/delivery-certificate/archives/{archiveId}/report/download`.
+- Updated the final demo acceptance dashboard with terminal release-bundle delivery certificate archive creation, recent archive history, archive report downloads, archive load errors, and App-level refresh after archive creation.
+- Updated README, product spec, frontend design doc, architecture notes, and added this plan document.
+
+Validation so far:
+
+- `mvn -q -pl PatchPilot -Dtest=DemoReadinessControllerTests#should_archive_final_external_review_release_bundle_delivery_certificate_and_record_audit test`: first failed because the new controller fixture helper did not exist.
+- `mvn -q -pl PatchPilot -Dtest=DemoReadinessControllerTests#should_archive_final_external_review_release_bundle_delivery_certificate_and_record_audit+DemoReadinessControllerTests#should_reject_final_external_review_release_bundle_delivery_certificate_archive_when_not_certified+DemoReadinessControllerTests#should_list_final_external_review_release_bundle_delivery_certificate_archives+DemoReadinessControllerTests#should_download_archived_final_external_review_release_bundle_delivery_certificate_report+DemoReadinessControllerTests#should_return_not_found_when_final_external_review_release_bundle_delivery_certificate_archive_is_missing,DemoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveServiceTests,DemoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveConvertTests test`: first failed on a case-sensitive test assertion, then passed after fixing the assertion.
+- `npm test -- --run src/api.test.ts --reporter=dot`: passed, 209 tests.
+- `npm test -- --run src/App.test.tsx src/api.test.ts --reporter=dot`: passed, 2 test files and 295 tests.

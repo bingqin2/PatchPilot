@@ -26,6 +26,7 @@ import type {
   DemoFinalExternalReviewDeliveryCertificate,
   DemoFinalExternalReviewReleaseBundle,
   DemoFinalExternalReviewReleaseBundleArchive,
+  DemoFinalExternalReviewReleaseBundleDeliveryCertificateArchive,
   DemoFinalExternalReviewReleaseBundleDeliveryCertificate,
   DemoFinalExternalReviewReleaseBundleDeliveryFinalization,
   DemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchive,
@@ -592,6 +593,30 @@ export async function getDemoFinalExternalReviewReleaseBundleDeliveryCertificate
 
 export async function downloadDemoFinalExternalReviewReleaseBundleDeliveryCertificateReport(): Promise<Blob> {
   return getBlobApi('/api/demo/final-external-review-release-bundle/delivery-certificate/report/download');
+}
+
+export async function archiveDemoFinalExternalReviewReleaseBundleDeliveryCertificate(): Promise<
+  DemoFinalExternalReviewReleaseBundleDeliveryCertificateArchive
+> {
+  return postApi<DemoFinalExternalReviewReleaseBundleDeliveryCertificateArchive>(
+    '/api/demo/final-external-review-release-bundle/delivery-certificate/archives'
+  );
+}
+
+export async function listDemoFinalExternalReviewReleaseBundleDeliveryCertificateArchives(): Promise<
+  DemoFinalExternalReviewReleaseBundleDeliveryCertificateArchive[]
+> {
+  return getApi<DemoFinalExternalReviewReleaseBundleDeliveryCertificateArchive[]>(
+    '/api/demo/final-external-review-release-bundle/delivery-certificate/archives'
+  );
+}
+
+export async function downloadDemoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveReport(
+  archiveId: string
+): Promise<Blob> {
+  return getBlobApi(
+    `/api/demo/final-external-review-release-bundle/delivery-certificate/archives/${encodeURIComponent(archiveId)}/report/download`
+  );
 }
 
 export async function archiveDemoFinalAcceptanceCompletionCloseout(): Promise<DemoFinalAcceptanceCompletionCloseoutArchive> {
