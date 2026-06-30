@@ -15,6 +15,7 @@ import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionEvidenceDe
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewDeliveryCertificateArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewDeliveryCertificateVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewReleaseBundleArchiveVo;
+import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewReleaseBundleDeliveryCertificateVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewReleaseBundleDeliveryFinalizationVo;
@@ -267,6 +268,10 @@ class DemoReadinessControllerTests {
     @MockitoBean
     private DemoFinalExternalReviewReleaseBundleDeliveryCertificateService
             demoFinalExternalReviewReleaseBundleDeliveryCertificateService;
+
+    @MockitoBean
+    private DemoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveService
+            demoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveService;
 
     @MockitoBean
     private DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
@@ -1861,6 +1866,102 @@ class DemoReadinessControllerTests {
                 .andExpect(content().string(containsString(
                         "final-external-review-release-bundle-delivery-receipt-1"
                 )));
+    }
+
+    @Test
+    void should_archive_final_external_review_release_bundle_delivery_certificate_and_record_audit()
+            throws Exception {
+        when(demoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveService.archiveCurrentCertificate())
+                .thenReturn(finalExternalReviewReleaseBundleDeliveryCertificateArchive());
+
+        mockMvc.perform(post("/api/demo/final-external-review-release-bundle/delivery-certificate/archives"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id")
+                        .value("final-external-review-release-bundle-delivery-certificate-archive-1"))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.certified").value(true))
+                .andExpect(jsonPath("$.data.latestDeliveryFinalizationArchiveId")
+                        .value("final-external-review-release-bundle-delivery-finalization-archive-1"))
+                .andExpect(jsonPath("$.data.latestReleaseBundleArchiveId")
+                        .value("final-external-review-release-bundle-archive-1"))
+                .andExpect(jsonPath("$.data.latestDeliveryReceiptId")
+                        .value("final-external-review-release-bundle-delivery-receipt-1"))
+                .andExpect(jsonPath("$.data.releaseBundleDeliveryReceiptFreshness").value("FRESH"))
+                .andExpect(jsonPath("$.data.report").value(containsString(
+                        "# PatchPilot Final External Review Release Bundle Delivery Certificate"
+                )));
+
+        verify(operatorSafetyAuditService).recordSafetyAudit(argThat(command ->
+                command.action().equals("DEMO_FINAL_EXTERNAL_REVIEW_RELEASE_BUNDLE_DELIVERY_CERTIFICATE_ARCHIVED")
+                        && command.resourceType()
+                        .equals("DEMO_FINAL_EXTERNAL_REVIEW_RELEASE_BUNDLE_DELIVERY_CERTIFICATE_ARCHIVE")
+                        && command.resourceId()
+                        .equals("final-external-review-release-bundle-delivery-certificate-archive-1")
+                        && command.reason().contains("final-external-review-release-bundle-delivery-receipt-1")
+        ));
+    }
+
+    @Test
+    void should_reject_final_external_review_release_bundle_delivery_certificate_archive_when_not_certified()
+            throws Exception {
+        when(demoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveService.archiveCurrentCertificate())
+                .thenThrow(new IllegalStateException(
+                        "final external-review release bundle delivery certificate is not certified"
+                ));
+
+        mockMvc.perform(post("/api/demo/final-external-review-release-bundle/delivery-certificate/archives"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message")
+                        .value("final external-review release bundle delivery certificate is not certified"));
+    }
+
+    @Test
+    void should_list_final_external_review_release_bundle_delivery_certificate_archives() throws Exception {
+        when(demoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveService.listRecentArchives())
+                .thenReturn(List.of(finalExternalReviewReleaseBundleDeliveryCertificateArchive()));
+
+        mockMvc.perform(get("/api/demo/final-external-review-release-bundle/delivery-certificate/archives"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].id")
+                        .value("final-external-review-release-bundle-delivery-certificate-archive-1"))
+                .andExpect(jsonPath("$.data[0].latestDeliveryReceiptId")
+                        .value("final-external-review-release-bundle-delivery-receipt-1"))
+                .andExpect(jsonPath("$.data[0].archivedAt").value("2026-06-29T15:30:00Z"));
+    }
+
+    @Test
+    void should_download_archived_final_external_review_release_bundle_delivery_certificate_report()
+            throws Exception {
+        when(demoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveService.findArchive(
+                "final-external-review-release-bundle-delivery-certificate-archive-1"
+        )).thenReturn(Optional.of(finalExternalReviewReleaseBundleDeliveryCertificateArchive()));
+
+        mockMvc.perform(get("/api/demo/final-external-review-release-bundle/delivery-certificate/archives/final-external-review-release-bundle-delivery-certificate-archive-1/report/download"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString(
+                        "patchpilot-final-external-review-release-bundle-delivery-certificate-final-external-review-release-bundle-delivery-certificate-archive-1.md"
+                )))
+                .andExpect(content().contentType("text/markdown;charset=UTF-8"))
+                .andExpect(content().string(containsString(
+                        "# PatchPilot Final External Review Release Bundle Delivery Certificate"
+                )))
+                .andExpect(content().string(containsString(
+                        "final-external-review-release-bundle-delivery-receipt-1"
+                )));
+    }
+
+    @Test
+    void should_return_not_found_when_final_external_review_release_bundle_delivery_certificate_archive_is_missing()
+            throws Exception {
+        when(demoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveService.findArchive("missing"))
+                .thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/api/demo/final-external-review-release-bundle/delivery-certificate/archives/missing/report/download"))
+                .andExpect(status().isNotFound());
     }
 
     @Test
@@ -5481,6 +5582,47 @@ class DemoReadinessControllerTests {
                         + "- Certified: `true`\n"
                         + "- Release bundle delivery receipt: `final-external-review-release-bundle-delivery-receipt-1`\n",
                 Instant.parse("2026-06-29T15:00:00Z")
+        );
+    }
+
+    private static DemoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveVo
+    finalExternalReviewReleaseBundleDeliveryCertificateArchive() {
+        DemoFinalExternalReviewReleaseBundleDeliveryCertificateVo certificate =
+                finalExternalReviewReleaseBundleDeliveryCertificate();
+        return new DemoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveVo(
+                "final-external-review-release-bundle-delivery-certificate-archive-1",
+                certificate.status(),
+                certificate.certified(),
+                certificate.summary(),
+                certificate.nextAction(),
+                certificate.latestDeliveryFinalizationArchiveId(),
+                certificate.latestReleaseBundleArchiveId(),
+                certificate.latestDeliveryReceiptId(),
+                certificate.latestCertificateArchiveId(),
+                certificate.latestPackageArchiveId(),
+                certificate.latestPackageDeliveryReceiptId(),
+                certificate.latestTaskId(),
+                certificate.latestPullRequestUrl(),
+                certificate.latestDeliveryTarget(),
+                certificate.latestDeliveryChannel(),
+                certificate.latestDeliveredAt(),
+                certificate.latestArchivedAt(),
+                certificate.releaseBundleDeliveryReceiptFreshness(),
+                certificate.releaseBundleDeliveryReceiptFresh(),
+                certificate.checks().stream()
+                        .map(check -> new DemoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveVo.Check(
+                                check.name(),
+                                check.status(),
+                                check.summary(),
+                                check.nextAction()
+                        ))
+                        .toList(),
+                certificate.evidenceNotes(),
+                certificate.downloadActions(),
+                certificate.sideEffectContract(),
+                certificate.markdownReport(),
+                certificate.generatedAt(),
+                Instant.parse("2026-06-29T15:30:00Z")
         );
     }
 }

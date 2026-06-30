@@ -8,6 +8,7 @@ import {
   archiveDemoFinalExternalReviewEvidencePackageDeliveryFinalization,
   archiveDemoFinalExternalReviewDeliveryCertificate,
   archiveDemoFinalExternalReviewReleaseBundle,
+  archiveDemoFinalExternalReviewReleaseBundleDeliveryCertificate,
   archiveDemoFinalExternalReviewReleaseBundleDeliveryFinalization,
   approveTaskReview,
   archiveTaskEvidencePackageAcceptanceCertificate,
@@ -63,6 +64,7 @@ import {
   downloadDemoFinalExternalReviewDeliveryCertificateReport,
   downloadDemoFinalExternalReviewReleaseBundleReport,
   downloadDemoFinalExternalReviewReleaseBundleArchiveReport,
+  downloadDemoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveReport,
   downloadDemoFinalExternalReviewReleaseBundleDeliveryCertificateReport,
   downloadDemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchiveReport,
   downloadDemoFinalExternalReviewReleaseBundleDeliveryFinalizationReport,
@@ -141,6 +143,7 @@ import {
   listDemoFinalExternalReviewEvidencePackageDeliveryReceipts,
   listDemoFinalExternalReviewDeliveryCertificateArchives,
   listDemoFinalExternalReviewReleaseBundleArchives,
+  listDemoFinalExternalReviewReleaseBundleDeliveryCertificateArchives,
   listDemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchives,
   listDemoFinalExternalReviewReleaseBundleDeliveryReceipts,
   listDemoFinalAcceptanceShareDeliveryReceipts,
@@ -270,6 +273,7 @@ import type {
   DemoFinalExternalReviewDeliveryCertificate,
   DemoFinalExternalReviewReleaseBundle,
   DemoFinalExternalReviewReleaseBundleArchive,
+  DemoFinalExternalReviewReleaseBundleDeliveryCertificateArchive,
   DemoFinalExternalReviewReleaseBundleDeliveryCertificate,
   DemoFinalExternalReviewReleaseBundleDeliveryFinalization,
   DemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchive,
@@ -563,8 +567,16 @@ export default function App() {
     setDemoFinalExternalReviewReleaseBundleDeliveryCertificate
   ] = useState<DemoFinalExternalReviewReleaseBundleDeliveryCertificate | null>(null);
   const [
+    demoFinalExternalReviewReleaseBundleDeliveryCertificateArchives,
+    setDemoFinalExternalReviewReleaseBundleDeliveryCertificateArchives
+  ] = useState<DemoFinalExternalReviewReleaseBundleDeliveryCertificateArchive[]>([]);
+  const [
     demoFinalExternalReviewReleaseBundleDeliveryCertificateError,
     setDemoFinalExternalReviewReleaseBundleDeliveryCertificateError
+  ] = useState<string | null>(null);
+  const [
+    demoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveError,
+    setDemoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveError
   ] = useState<string | null>(null);
   const [demoReadinessSnapshots, setDemoReadinessSnapshots] = useState<DemoReadinessSnapshotArchive[]>([]);
   const [demoReadinessSnapshotError, setDemoReadinessSnapshotError] = useState<string | null>(null);
@@ -1040,6 +1052,7 @@ export default function App() {
         demoFinalExternalReviewReleaseBundleDeliveryFinalizationResult,
         demoFinalExternalReviewReleaseBundleDeliveryFinalizationArchiveResult,
         demoFinalExternalReviewReleaseBundleDeliveryCertificateResult,
+        demoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveResult,
         demoReadinessSnapshotResult,
         demoReadinessSnapshotTrendResult,
         demoSmokeChecklistResult,
@@ -1300,6 +1313,10 @@ export default function App() {
         getDemoFinalExternalReviewReleaseBundleDeliveryCertificate().then(
           (certificate) => ({ certificate, error: null as string | null }),
           (caught) => ({ certificate: null, error: errorMessage(caught) })
+        ),
+        listDemoFinalExternalReviewReleaseBundleDeliveryCertificateArchives().then(
+          (archives) => ({ archives, error: null as string | null }),
+          (caught) => ({ archives: null, error: errorMessage(caught) })
         ),
         listDemoReadinessSnapshots().then(
           (snapshots) => ({ snapshots, error: null as string | null }),
@@ -1702,6 +1719,14 @@ export default function App() {
       }
       setDemoFinalExternalReviewReleaseBundleDeliveryCertificateError(
         demoFinalExternalReviewReleaseBundleDeliveryCertificateResult.error
+      );
+      if (demoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveResult.archives) {
+        setDemoFinalExternalReviewReleaseBundleDeliveryCertificateArchives(
+          demoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveResult.archives
+        );
+      }
+      setDemoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveError(
+        demoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveResult.error
       );
       if (demoReadinessSnapshotResult.snapshots) {
         setDemoReadinessSnapshots(demoReadinessSnapshotResult.snapshots);
@@ -2551,6 +2576,41 @@ export default function App() {
   const handleDownloadDemoFinalExternalReviewReleaseBundleDeliveryCertificateReport = useCallback(() => (
     downloadDemoFinalExternalReviewReleaseBundleDeliveryCertificateReport()
   ), []);
+  const handleArchiveDemoFinalExternalReviewReleaseBundleDeliveryCertificate = useCallback(async () => {
+    const archive = await archiveDemoFinalExternalReviewReleaseBundleDeliveryCertificate();
+    setDemoFinalExternalReviewReleaseBundleDeliveryCertificateArchives((current) => [
+      archive,
+      ...current.filter((item) => item.id !== archive.id)
+    ].slice(0, 20));
+    setDemoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveError(null);
+    try {
+      const archives = await listDemoFinalExternalReviewReleaseBundleDeliveryCertificateArchives();
+      setDemoFinalExternalReviewReleaseBundleDeliveryCertificateArchives(archives);
+      setDemoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveError(null);
+    } catch (caught) {
+      setDemoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveError(errorMessage(caught));
+    }
+    try {
+      const certificate = await getDemoFinalExternalReviewReleaseBundleDeliveryCertificate();
+      setDemoFinalExternalReviewReleaseBundleDeliveryCertificate(certificate);
+      setDemoFinalExternalReviewReleaseBundleDeliveryCertificateError(null);
+    } catch (caught) {
+      setDemoFinalExternalReviewReleaseBundleDeliveryCertificateError(errorMessage(caught));
+    }
+    try {
+      const evidenceBundle = await getDemoEvidenceBundle();
+      setDemoEvidenceBundle(evidenceBundle);
+      setDemoEvidenceBundleError(null);
+    } catch (caught) {
+      setDemoEvidenceBundleError(errorMessage(caught));
+    }
+    return archive;
+  }, []);
+  const handleDownloadDemoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveReport = useCallback((
+    archiveId: string
+  ) => (
+    downloadDemoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveReport(archiveId)
+  ), []);
   const handleArchiveDemoFinalExternalReviewDeliveryCertificate = useCallback(async () => {
     const archive = await archiveDemoFinalExternalReviewDeliveryCertificate();
     setDemoFinalExternalReviewDeliveryCertificateArchives((current) => [
@@ -3327,6 +3387,9 @@ export default function App() {
         finalExternalReviewReleaseBundleDeliveryCertificate={
           demoFinalExternalReviewReleaseBundleDeliveryCertificate
         }
+        finalExternalReviewReleaseBundleDeliveryCertificateArchives={
+          demoFinalExternalReviewReleaseBundleDeliveryCertificateArchives
+        }
         error={demoAcceptanceSummaryError}
         sharePackageError={demoFinalAcceptanceSharePackageError}
         sharePackageArchiveError={demoFinalAcceptanceSharePackageArchiveError}
@@ -3368,6 +3431,9 @@ export default function App() {
         }
         finalExternalReviewReleaseBundleDeliveryCertificateError={
           demoFinalExternalReviewReleaseBundleDeliveryCertificateError
+        }
+        finalExternalReviewReleaseBundleDeliveryCertificateArchiveError={
+          demoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveError
         }
         onDownloadReport={handleDownloadDemoAcceptanceSummaryReport}
         onDownloadSharePackageReport={handleDownloadDemoFinalAcceptanceSharePackageReport}
@@ -3448,6 +3514,12 @@ export default function App() {
         }
         onDownloadFinalExternalReviewReleaseBundleDeliveryCertificateReport={
           handleDownloadDemoFinalExternalReviewReleaseBundleDeliveryCertificateReport
+        }
+        onArchiveFinalExternalReviewReleaseBundleDeliveryCertificate={
+          handleArchiveDemoFinalExternalReviewReleaseBundleDeliveryCertificate
+        }
+        onDownloadFinalExternalReviewReleaseBundleDeliveryCertificateArchiveReport={
+          handleDownloadDemoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveReport
         }
       />
 
