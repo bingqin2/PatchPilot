@@ -2,6 +2,24 @@
 
 This file records dated implementation progress, validation commands, and important outcomes.
 
+## 2026-06-30 - 310 Self-hosted launch publish gates
+
+- Started `310-self-hosted-launch-publish-gates` to make the final self-hosted launch readiness package include the GitHub publish path and publish permission diagnostics added in 308 and 309.
+- Added `GitHub publish path` and `GitHub publish permissions` checks to `SelfHostedLaunchReadinessService` so the launch package warns or blocks before a live `/agent fix` trigger when branch push, Pull Request creation, or issue-feedback capability is not ready.
+- Kept the launch readiness package read-only: the new checks consume existing non-mutating readiness probes and do not push branches, open Pull Requests, write issue comments, create tasks, call the model, archive records, or write to GitHub.
+- Updated the self-hosted launch readiness dashboard test and App smoke fixture so the final go/no-go panel visibly includes both publish gates.
+- Updated README, product spec, and added this plan document.
+
+Validation so far:
+
+- `mvn -q -pl PatchPilot -Dtest=SelfHostedLaunchReadinessServiceTests test`: first failed because the service did not accept publish-readiness suppliers or emit the new checks; passed after backend aggregation was implemented.
+- `npm --prefix frontend test -- --run src/dashboard/components/SelfHostedLaunchReadinessPanel.test.tsx src/App.test.tsx -t "self-hosted launch|operational task dashboard"`: first failed because the permission remediation appears both as a check action and a launch next action; passed after asserting the repeated operator action intentionally.
+- `npm --prefix frontend test -- --run src/App.test.tsx -t "approves pending review tasks and refreshes dashboard data"`: first timed out at the existing 10 second budget during full frontend verification; passed after raising that single long App workflow budget to 15 seconds.
+- `mvn -q -pl PatchPilot test`: passed after full backend regression verification.
+- `npm --prefix frontend test -- --reporter=dot`: passed after full frontend regression verification, 30 test files and 494 tests.
+- `npm --prefix frontend run build`: passed after TypeScript and production Vite build verification, with the existing large chunk warning.
+- `git diff --check`: passed.
+
 ## 2026-06-28
 
 Implemented task adapter execution evidence from `docs/plans/262-task-adapter-execution-evidence.md`.

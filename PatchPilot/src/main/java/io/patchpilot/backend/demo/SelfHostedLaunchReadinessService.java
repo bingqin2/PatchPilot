@@ -6,6 +6,10 @@ import io.patchpilot.backend.demo.domain.DemoReadinessStatus;
 import io.patchpilot.backend.demo.domain.DemoReadinessVo;
 import io.patchpilot.backend.demo.domain.DemoSelfHostedLaunchCheckVo;
 import io.patchpilot.backend.demo.domain.DemoSelfHostedLaunchReadinessVo;
+import io.patchpilot.backend.github.credential.GitHubPublishPermissionReadinessService;
+import io.patchpilot.backend.github.credential.GitHubPublishReadinessService;
+import io.patchpilot.backend.github.credential.domain.GitHubPublishPermissionReadinessVo;
+import io.patchpilot.backend.github.credential.domain.GitHubPublishReadinessVo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -20,29 +24,44 @@ public class SelfHostedLaunchReadinessService {
 
     private final Supplier<DemoReadinessVo> readinessSupplier;
     private final Supplier<DemoEvidenceBundleVo> evidenceBundleSupplier;
+    private final Supplier<GitHubPublishReadinessVo> publishReadinessSupplier;
+    private final Supplier<GitHubPublishPermissionReadinessVo> publishPermissionReadinessSupplier;
 
     @Autowired
     public SelfHostedLaunchReadinessService(
             DemoReadinessService demoReadinessService,
-            DemoEvidenceBundleService demoEvidenceBundleService
+            DemoEvidenceBundleService demoEvidenceBundleService,
+            GitHubPublishReadinessService gitHubPublishReadinessService,
+            GitHubPublishPermissionReadinessService gitHubPublishPermissionReadinessService
     ) {
-        this(demoReadinessService::getReadiness, demoEvidenceBundleService::getEvidenceBundle);
+        this(
+                demoReadinessService::getReadiness,
+                demoEvidenceBundleService::getEvidenceBundle,
+                () -> gitHubPublishReadinessService.getReadiness(null, null),
+                () -> gitHubPublishPermissionReadinessService.getReadiness(null, null)
+        );
     }
 
     SelfHostedLaunchReadinessService(
             Supplier<DemoReadinessVo> readinessSupplier,
-            Supplier<DemoEvidenceBundleVo> evidenceBundleSupplier
+            Supplier<DemoEvidenceBundleVo> evidenceBundleSupplier,
+            Supplier<GitHubPublishReadinessVo> publishReadinessSupplier,
+            Supplier<GitHubPublishPermissionReadinessVo> publishPermissionReadinessSupplier
     ) {
         this.readinessSupplier = readinessSupplier;
         this.evidenceBundleSupplier = evidenceBundleSupplier;
+        this.publishReadinessSupplier = publishReadinessSupplier;
+        this.publishPermissionReadinessSupplier = publishPermissionReadinessSupplier;
     }
 
     public DemoSelfHostedLaunchReadinessVo getReadinessPackage() {
         DemoReadinessVo readiness = readinessSupplier.get();
         DemoEvidenceBundleVo evidenceBundle = evidenceBundleSupplier.get();
-        List<DemoSelfHostedLaunchCheckVo> checks = checks(readiness, evidenceBundle);
+        GitHubPublishReadinessVo publishReadiness = publishReadinessSupplier.get();
+        GitHubPublishPermissionReadinessVo publishPermissionReadiness = publishPermissionReadinessSupplier.get();
+        List<DemoSelfHostedLaunchCheckVo> checks = checks(readiness, evidenceBundle, publishReadiness, publishPermissionReadiness);
         DemoReadinessStatus status = aggregateStatus(checks);
-        List<String> nextActions = nextActions(status, readiness, evidenceBundle);
+        List<String> nextActions = nextActions(status, readiness, evidenceBundle, publishReadiness, publishPermissionReadiness);
         Instant generatedAt = Instant.now();
         return new DemoSelfHostedLaunchReadinessVo(
                 status,
@@ -57,7 +76,9 @@ public class SelfHostedLaunchReadinessService {
 
     private static List<DemoSelfHostedLaunchCheckVo> checks(
             DemoReadinessVo readiness,
-            DemoEvidenceBundleVo evidenceBundle
+            DemoEvidenceBundleVo evidenceBundle,
+            GitHubPublishReadinessVo publishReadiness,
+            GitHubPublishPermissionReadinessVo publishPermissionReadiness
     ) {
         return List.of(
                 new DemoSelfHostedLaunchCheckVo(
@@ -77,6 +98,18 @@ public class SelfHostedLaunchReadinessService {
                         evidenceBundle.handoffFinalizationStatus(),
                         evidenceBundle.handoffFinalizationSummary(),
                         evidenceBundle.handoffFinalizationNextAction()
+                ),
+                new DemoSelfHostedLaunchCheckVo(
+                        "GitHub publish path",
+                        githubStatus(publishReadiness.status()),
+                        publishReadiness.summary(),
+                        publishReadiness.nextAction()
+                ),
+                new DemoSelfHostedLaunchCheckVo(
+                        "GitHub publish permissions",
+                        githubStatus(publishPermissionReadiness.status()),
+                        publishPermissionReadiness.summary(),
+                        publishPermissionReadiness.nextAction()
                 ),
                 projectedCheck("Credentials and secrets", readiness, "Credentials"),
                 projectedCheck("Webhook setup", readiness, "Webhook setup"),
@@ -130,7 +163,9 @@ public class SelfHostedLaunchReadinessService {
     private static List<String> nextActions(
             DemoReadinessStatus status,
             DemoReadinessVo readiness,
-            DemoEvidenceBundleVo evidenceBundle
+            DemoEvidenceBundleVo evidenceBundle,
+            GitHubPublishReadinessVo publishReadiness,
+            GitHubPublishPermissionReadinessVo publishPermissionReadiness
     ) {
         if (status == DemoReadinessStatus.READY) {
             return List.of("Post the tested /agent fix comment, watch the task reach COMPLETED, then use the generated Pull Request for review.");
@@ -138,6 +173,12 @@ public class SelfHostedLaunchReadinessService {
         Set<String> actions = new LinkedHashSet<>();
         actions.addAll(readiness.nextActions());
         actions.addAll(evidenceBundle.nextActions());
+        if (!GitHubPublishReadinessService.READY.equals(publishReadiness.status())) {
+            actions.add(publishReadiness.nextAction());
+        }
+        if (!GitHubPublishPermissionReadinessService.READY.equals(publishPermissionReadiness.status())) {
+            actions.add(publishPermissionReadiness.nextAction());
+        }
         if (status == DemoReadinessStatus.BLOCKED) {
             actions.add("Resolve blocked launch checks before posting a live /agent fix trigger.");
         } else {
@@ -175,5 +216,17 @@ public class SelfHostedLaunchReadinessService {
 
     private static String firstAction(List<String> nextActions) {
         return nextActions.isEmpty() ? "No action needed." : nextActions.get(0);
+    }
+
+    private static DemoReadinessStatus githubStatus(String status) {
+        if (GitHubPublishReadinessService.READY.equals(status)
+                || GitHubPublishPermissionReadinessService.READY.equals(status)) {
+            return DemoReadinessStatus.READY;
+        }
+        if (GitHubPublishReadinessService.BLOCKED.equals(status)
+                || GitHubPublishPermissionReadinessService.BLOCKED.equals(status)) {
+            return DemoReadinessStatus.BLOCKED;
+        }
+        return DemoReadinessStatus.NEEDS_ATTENTION;
     }
 }
