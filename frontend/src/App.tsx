@@ -29,6 +29,7 @@ import {
   createDemoFinalAcceptanceCompletionEvidenceDeliveryReceipt,
   createDemoFinalExternalReviewEvidencePackageDeliveryReceipt,
   createDemoFinalExternalReviewReleaseBundleDeliveryReceipt,
+  createDemoFinalReviewerHandoffDeliveryReceipt,
   createDemoFinalAcceptanceShareDeliveryReceipt,
   createDemoHandoffShareDeliveryReceipt,
   createDemoLaunchEvidenceShareDeliveryReceipt,
@@ -69,6 +70,8 @@ import {
   downloadDemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchiveReport,
   downloadDemoFinalExternalReviewReleaseBundleDeliveryFinalizationReport,
   downloadDemoFinalExternalReviewReleaseBundleDeliveryReceiptReport,
+  downloadDemoFinalReviewerHandoffDeliveryFinalizationReport,
+  downloadDemoFinalReviewerHandoffDeliveryReceiptReport,
   downloadDemoFinalReviewerHandoffPackageReport,
   downloadDemoFinalExternalReviewEvidencePackageDeliveryReceiptReport,
   downloadDemoFinalExternalReviewEvidencePackageArchiveReport,
@@ -130,6 +133,7 @@ import {
   getDemoFinalExternalReviewReleaseBundle,
   getDemoFinalExternalReviewReleaseBundleDeliveryCertificate,
   getDemoFinalExternalReviewReleaseBundleDeliveryFinalization,
+  getDemoFinalReviewerHandoffDeliveryFinalization,
   getDemoFinalExternalReviewEvidencePackage,
   getDemoFinalAcceptanceShareFinalization,
   getDemoFinalAcceptanceSharePackage,
@@ -147,6 +151,7 @@ import {
   listDemoFinalExternalReviewReleaseBundleDeliveryCertificateArchives,
   listDemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchives,
   listDemoFinalExternalReviewReleaseBundleDeliveryReceipts,
+  listDemoFinalReviewerHandoffDeliveryReceipts,
   listDemoFinalAcceptanceShareDeliveryReceipts,
   listDemoFinalAcceptanceSharePackageArchives,
   listDemoLaunchEvidenceShareDeliveryReceipts,
@@ -280,6 +285,9 @@ import type {
   DemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchive,
   DemoFinalExternalReviewReleaseBundleDeliveryReceipt,
   DemoFinalExternalReviewReleaseBundleDeliveryReceiptInput,
+  DemoFinalReviewerHandoffDeliveryFinalization,
+  DemoFinalReviewerHandoffDeliveryReceipt,
+  DemoFinalReviewerHandoffDeliveryReceiptInput,
   DemoFinalExternalReviewEvidencePackage,
   DemoFinalAcceptanceShareDeliveryReceipt,
   DemoFinalAcceptanceShareDeliveryReceiptInput,
@@ -578,6 +586,22 @@ export default function App() {
   const [
     demoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveError,
     setDemoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveError
+  ] = useState<string | null>(null);
+  const [
+    demoFinalReviewerHandoffDeliveryReceipts,
+    setDemoFinalReviewerHandoffDeliveryReceipts
+  ] = useState<DemoFinalReviewerHandoffDeliveryReceipt[]>([]);
+  const [
+    demoFinalReviewerHandoffDeliveryReceiptError,
+    setDemoFinalReviewerHandoffDeliveryReceiptError
+  ] = useState<string | null>(null);
+  const [
+    demoFinalReviewerHandoffDeliveryFinalization,
+    setDemoFinalReviewerHandoffDeliveryFinalization
+  ] = useState<DemoFinalReviewerHandoffDeliveryFinalization | null>(null);
+  const [
+    demoFinalReviewerHandoffDeliveryFinalizationError,
+    setDemoFinalReviewerHandoffDeliveryFinalizationError
   ] = useState<string | null>(null);
   const [demoReadinessSnapshots, setDemoReadinessSnapshots] = useState<DemoReadinessSnapshotArchive[]>([]);
   const [demoReadinessSnapshotError, setDemoReadinessSnapshotError] = useState<string | null>(null);
@@ -1054,6 +1078,8 @@ export default function App() {
         demoFinalExternalReviewReleaseBundleDeliveryFinalizationArchiveResult,
         demoFinalExternalReviewReleaseBundleDeliveryCertificateResult,
         demoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveResult,
+        demoFinalReviewerHandoffDeliveryReceiptResult,
+        demoFinalReviewerHandoffDeliveryFinalizationResult,
         demoReadinessSnapshotResult,
         demoReadinessSnapshotTrendResult,
         demoSmokeChecklistResult,
@@ -1318,6 +1344,14 @@ export default function App() {
         listDemoFinalExternalReviewReleaseBundleDeliveryCertificateArchives().then(
           (archives) => ({ archives, error: null as string | null }),
           (caught) => ({ archives: null, error: errorMessage(caught) })
+        ),
+        listDemoFinalReviewerHandoffDeliveryReceipts().then(
+          (receipts) => ({ receipts, error: null as string | null }),
+          (caught) => ({ receipts: null, error: errorMessage(caught) })
+        ),
+        getDemoFinalReviewerHandoffDeliveryFinalization().then(
+          (finalization) => ({ finalization, error: null as string | null }),
+          (caught) => ({ finalization: null, error: errorMessage(caught) })
         ),
         listDemoReadinessSnapshots().then(
           (snapshots) => ({ snapshots, error: null as string | null }),
@@ -1728,6 +1762,20 @@ export default function App() {
       }
       setDemoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveError(
         demoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveResult.error
+      );
+      if (demoFinalReviewerHandoffDeliveryReceiptResult.receipts) {
+        setDemoFinalReviewerHandoffDeliveryReceipts(demoFinalReviewerHandoffDeliveryReceiptResult.receipts);
+      }
+      setDemoFinalReviewerHandoffDeliveryReceiptError(
+        demoFinalReviewerHandoffDeliveryReceiptResult.error
+      );
+      if (demoFinalReviewerHandoffDeliveryFinalizationResult.finalization) {
+        setDemoFinalReviewerHandoffDeliveryFinalization(
+          demoFinalReviewerHandoffDeliveryFinalizationResult.finalization
+        );
+      }
+      setDemoFinalReviewerHandoffDeliveryFinalizationError(
+        demoFinalReviewerHandoffDeliveryFinalizationResult.error
       );
       if (demoReadinessSnapshotResult.snapshots) {
         setDemoReadinessSnapshots(demoReadinessSnapshotResult.snapshots);
@@ -2580,6 +2628,46 @@ export default function App() {
   const handleDownloadDemoFinalReviewerHandoffPackageReport = useCallback(() => (
     downloadDemoFinalReviewerHandoffPackageReport()
   ), []);
+  const handleCreateDemoFinalReviewerHandoffDeliveryReceipt = useCallback(async (
+    input: DemoFinalReviewerHandoffDeliveryReceiptInput
+  ) => {
+    const receipt = await createDemoFinalReviewerHandoffDeliveryReceipt(input);
+    setDemoFinalReviewerHandoffDeliveryReceipts((current) => [
+      receipt,
+      ...current.filter((item) => item.id !== receipt.id)
+    ].slice(0, 20));
+    setDemoFinalReviewerHandoffDeliveryReceiptError(null);
+    try {
+      const receipts = await listDemoFinalReviewerHandoffDeliveryReceipts();
+      setDemoFinalReviewerHandoffDeliveryReceipts(receipts);
+      setDemoFinalReviewerHandoffDeliveryReceiptError(null);
+    } catch (caught) {
+      setDemoFinalReviewerHandoffDeliveryReceiptError(errorMessage(caught));
+    }
+    try {
+      const finalization = await getDemoFinalReviewerHandoffDeliveryFinalization();
+      setDemoFinalReviewerHandoffDeliveryFinalization(finalization);
+      setDemoFinalReviewerHandoffDeliveryFinalizationError(null);
+    } catch (caught) {
+      setDemoFinalReviewerHandoffDeliveryFinalizationError(errorMessage(caught));
+    }
+    try {
+      const evidenceBundle = await getDemoEvidenceBundle();
+      setDemoEvidenceBundle(evidenceBundle);
+      setDemoEvidenceBundleError(null);
+    } catch (caught) {
+      setDemoEvidenceBundleError(errorMessage(caught));
+    }
+    return receipt;
+  }, []);
+  const handleDownloadDemoFinalReviewerHandoffDeliveryReceiptReport = useCallback((
+    receiptId: string
+  ) => (
+    downloadDemoFinalReviewerHandoffDeliveryReceiptReport(receiptId)
+  ), []);
+  const handleDownloadDemoFinalReviewerHandoffDeliveryFinalizationReport = useCallback(() => (
+    downloadDemoFinalReviewerHandoffDeliveryFinalizationReport()
+  ), []);
   const handleArchiveDemoFinalExternalReviewReleaseBundleDeliveryCertificate = useCallback(async () => {
     const archive = await archiveDemoFinalExternalReviewReleaseBundleDeliveryCertificate();
     setDemoFinalExternalReviewReleaseBundleDeliveryCertificateArchives((current) => [
@@ -3395,6 +3483,13 @@ export default function App() {
         finalExternalReviewReleaseBundleDeliveryCertificateArchives={
           demoFinalExternalReviewReleaseBundleDeliveryCertificateArchives
         }
+        finalReviewerHandoffPackage={demoEvidenceBundle?.finalReviewerHandoffPackage ?? null}
+        finalReviewerHandoffDeliveryReceipts={demoFinalReviewerHandoffDeliveryReceipts}
+        finalReviewerHandoffDeliveryFinalization={
+          demoFinalReviewerHandoffDeliveryFinalization
+            ?? demoEvidenceBundle?.finalReviewerHandoffDeliveryFinalization
+            ?? null
+        }
         error={demoAcceptanceSummaryError}
         sharePackageError={demoFinalAcceptanceSharePackageError}
         sharePackageArchiveError={demoFinalAcceptanceSharePackageArchiveError}
@@ -3440,6 +3535,8 @@ export default function App() {
         finalExternalReviewReleaseBundleDeliveryCertificateArchiveError={
           demoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveError
         }
+        finalReviewerHandoffDeliveryReceiptError={demoFinalReviewerHandoffDeliveryReceiptError}
+        finalReviewerHandoffDeliveryFinalizationError={demoFinalReviewerHandoffDeliveryFinalizationError}
         onDownloadReport={handleDownloadDemoAcceptanceSummaryReport}
         onDownloadSharePackageReport={handleDownloadDemoFinalAcceptanceSharePackageReport}
         onArchiveSharePackage={handleArchiveDemoFinalAcceptanceSharePackage}
@@ -3525,6 +3622,13 @@ export default function App() {
         }
         onDownloadFinalExternalReviewReleaseBundleDeliveryCertificateArchiveReport={
           handleDownloadDemoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveReport
+        }
+        onCreateFinalReviewerHandoffDeliveryReceipt={handleCreateDemoFinalReviewerHandoffDeliveryReceipt}
+        onDownloadFinalReviewerHandoffDeliveryReceiptReport={
+          handleDownloadDemoFinalReviewerHandoffDeliveryReceiptReport
+        }
+        onDownloadFinalReviewerHandoffDeliveryFinalizationReport={
+          handleDownloadDemoFinalReviewerHandoffDeliveryFinalizationReport
         }
       />
 

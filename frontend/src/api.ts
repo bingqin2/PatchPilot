@@ -32,6 +32,9 @@ import type {
   DemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchive,
   DemoFinalExternalReviewReleaseBundleDeliveryReceipt,
   DemoFinalExternalReviewReleaseBundleDeliveryReceiptInput,
+  DemoFinalReviewerHandoffDeliveryFinalization,
+  DemoFinalReviewerHandoffDeliveryReceipt,
+  DemoFinalReviewerHandoffDeliveryReceiptInput,
   DemoFinalReviewerHandoffPackage,
   DemoFinalAcceptanceShareDeliveryReceipt,
   DemoFinalAcceptanceShareDeliveryReceiptInput,
@@ -626,6 +629,43 @@ export async function getDemoFinalReviewerHandoffPackage(): Promise<DemoFinalRev
 
 export async function downloadDemoFinalReviewerHandoffPackageReport(): Promise<Blob> {
   return getBlobApi('/api/demo/final-reviewer-handoff-package/report/download');
+}
+
+export async function createDemoFinalReviewerHandoffDeliveryReceipt(
+  input: DemoFinalReviewerHandoffDeliveryReceiptInput
+): Promise<DemoFinalReviewerHandoffDeliveryReceipt> {
+  return postApi<DemoFinalReviewerHandoffDeliveryReceipt>(
+    '/api/demo/final-reviewer-handoff-package/delivery-receipts',
+    input
+  );
+}
+
+export async function listDemoFinalReviewerHandoffDeliveryReceipts(): Promise<
+  DemoFinalReviewerHandoffDeliveryReceipt[]
+> {
+  return getApi<DemoFinalReviewerHandoffDeliveryReceipt[]>(
+    '/api/demo/final-reviewer-handoff-package/delivery-receipts'
+  );
+}
+
+export async function downloadDemoFinalReviewerHandoffDeliveryReceiptReport(
+  receiptId: string
+): Promise<Blob> {
+  return getBlobApi(
+    `/api/demo/final-reviewer-handoff-package/delivery-receipts/${encodeURIComponent(receiptId)}/report/download`
+  );
+}
+
+export async function getDemoFinalReviewerHandoffDeliveryFinalization(): Promise<
+  DemoFinalReviewerHandoffDeliveryFinalization
+> {
+  return getApi<DemoFinalReviewerHandoffDeliveryFinalization>(
+    '/api/demo/final-reviewer-handoff-package/delivery-finalization'
+  );
+}
+
+export async function downloadDemoFinalReviewerHandoffDeliveryFinalizationReport(): Promise<Blob> {
+  return getBlobApi('/api/demo/final-reviewer-handoff-package/delivery-finalization/report/download');
 }
 
 export async function archiveDemoFinalAcceptanceCompletionCloseout(): Promise<DemoFinalAcceptanceCompletionCloseoutArchive> {

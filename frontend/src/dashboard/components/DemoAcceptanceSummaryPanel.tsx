@@ -24,6 +24,10 @@ import type {
   DemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchive,
   DemoFinalExternalReviewReleaseBundleDeliveryReceipt,
   DemoFinalExternalReviewReleaseBundleDeliveryReceiptInput,
+  DemoFinalReviewerHandoffDeliveryFinalization,
+  DemoFinalReviewerHandoffDeliveryReceipt,
+  DemoFinalReviewerHandoffDeliveryReceiptInput,
+  DemoFinalReviewerHandoffPackage,
   DemoFinalExternalReviewEvidencePackage,
   DemoFinalAcceptanceShareDeliveryReceipt,
   DemoFinalAcceptanceShareDeliveryReceiptInput,
@@ -66,6 +70,9 @@ interface DemoAcceptanceSummaryPanelProps {
     DemoFinalExternalReviewReleaseBundleDeliveryCertificate | null;
   finalExternalReviewReleaseBundleDeliveryCertificateArchives?:
     DemoFinalExternalReviewReleaseBundleDeliveryCertificateArchive[];
+  finalReviewerHandoffPackage?: DemoFinalReviewerHandoffPackage | null;
+  finalReviewerHandoffDeliveryReceipts?: DemoFinalReviewerHandoffDeliveryReceipt[];
+  finalReviewerHandoffDeliveryFinalization?: DemoFinalReviewerHandoffDeliveryFinalization | null;
   error: string | null;
   sharePackageError: string | null;
   sharePackageArchiveError: string | null;
@@ -91,6 +98,8 @@ interface DemoAcceptanceSummaryPanelProps {
   finalExternalReviewReleaseBundleDeliveryFinalizationArchiveError?: string | null;
   finalExternalReviewReleaseBundleDeliveryCertificateError?: string | null;
   finalExternalReviewReleaseBundleDeliveryCertificateArchiveError?: string | null;
+  finalReviewerHandoffDeliveryReceiptError?: string | null;
+  finalReviewerHandoffDeliveryFinalizationError?: string | null;
   onDownloadReport: () => Promise<Blob>;
   onDownloadSharePackageReport: () => Promise<Blob>;
   onArchiveSharePackage: () => Promise<DemoFinalAcceptanceSharePackageArchive>;
@@ -151,6 +160,11 @@ interface DemoAcceptanceSummaryPanelProps {
   onDownloadFinalExternalReviewReleaseBundleDeliveryCertificateArchiveReport?: (
     archiveId: string
   ) => Promise<Blob>;
+  onCreateFinalReviewerHandoffDeliveryReceipt?: (
+    input: DemoFinalReviewerHandoffDeliveryReceiptInput
+  ) => Promise<DemoFinalReviewerHandoffDeliveryReceipt>;
+  onDownloadFinalReviewerHandoffDeliveryReceiptReport?: (receiptId: string) => Promise<Blob>;
+  onDownloadFinalReviewerHandoffDeliveryFinalizationReport?: () => Promise<Blob>;
 }
 
 export function DemoAcceptanceSummaryPanel({
@@ -179,6 +193,9 @@ export function DemoAcceptanceSummaryPanel({
   finalExternalReviewReleaseBundleDeliveryFinalizationArchives = [],
   finalExternalReviewReleaseBundleDeliveryCertificate = null,
   finalExternalReviewReleaseBundleDeliveryCertificateArchives = [],
+  finalReviewerHandoffPackage = null,
+  finalReviewerHandoffDeliveryReceipts = [],
+  finalReviewerHandoffDeliveryFinalization = null,
   error,
   sharePackageError,
   sharePackageArchiveError,
@@ -204,6 +221,8 @@ export function DemoAcceptanceSummaryPanel({
   finalExternalReviewReleaseBundleDeliveryFinalizationArchiveError = null,
   finalExternalReviewReleaseBundleDeliveryCertificateError = null,
   finalExternalReviewReleaseBundleDeliveryCertificateArchiveError = null,
+  finalReviewerHandoffDeliveryReceiptError = null,
+  finalReviewerHandoffDeliveryFinalizationError = null,
   onDownloadReport,
   onDownloadSharePackageReport,
   onArchiveSharePackage,
@@ -241,7 +260,10 @@ export function DemoAcceptanceSummaryPanel({
   onDownloadFinalExternalReviewReleaseBundleDeliveryFinalizationArchiveReport,
   onDownloadFinalExternalReviewReleaseBundleDeliveryCertificateReport,
   onArchiveFinalExternalReviewReleaseBundleDeliveryCertificate,
-  onDownloadFinalExternalReviewReleaseBundleDeliveryCertificateArchiveReport
+  onDownloadFinalExternalReviewReleaseBundleDeliveryCertificateArchiveReport,
+  onCreateFinalReviewerHandoffDeliveryReceipt,
+  onDownloadFinalReviewerHandoffDeliveryReceiptReport,
+  onDownloadFinalReviewerHandoffDeliveryFinalizationReport
 }: DemoAcceptanceSummaryPanelProps) {
   const [downloadStatus, setDownloadStatus] = useState<string | null>(null);
   const [sharePackageCopyStatus, setSharePackageCopyStatus] = useState<string | null>(null);
@@ -352,6 +374,18 @@ export function DemoAcceptanceSummaryPanel({
     finalExternalReviewReleaseBundleDeliveryCertificateArchiveDownloadStatus,
     setFinalExternalReviewReleaseBundleDeliveryCertificateArchiveDownloadStatus
   ] = useState<string | null>(null);
+  const [
+    finalReviewerHandoffDeliveryReceiptStatus,
+    setFinalReviewerHandoffDeliveryReceiptStatus
+  ] = useState<string | null>(null);
+  const [
+    finalReviewerHandoffDeliveryReceiptDownloadStatus,
+    setFinalReviewerHandoffDeliveryReceiptDownloadStatus
+  ] = useState<string | null>(null);
+  const [
+    finalReviewerHandoffDeliveryFinalizationDownloadStatus,
+    setFinalReviewerHandoffDeliveryFinalizationDownloadStatus
+  ] = useState<string | null>(null);
   const [deliveryChannel, setDeliveryChannel] = useState('email');
   const [deliveryTarget, setDeliveryTarget] = useState('');
   const [operator, setOperator] = useState('');
@@ -368,6 +402,10 @@ export function DemoAcceptanceSummaryPanel({
   const [finalExternalReviewReleaseBundleDeliveryTarget, setFinalExternalReviewReleaseBundleDeliveryTarget] = useState('');
   const [finalExternalReviewReleaseBundleDeliveryOperator, setFinalExternalReviewReleaseBundleDeliveryOperator] = useState('');
   const [finalExternalReviewReleaseBundleDeliveryNotes, setFinalExternalReviewReleaseBundleDeliveryNotes] = useState('');
+  const [finalReviewerHandoffDeliveryChannel, setFinalReviewerHandoffDeliveryChannel] = useState('email');
+  const [finalReviewerHandoffDeliveryTarget, setFinalReviewerHandoffDeliveryTarget] = useState('');
+  const [finalReviewerHandoffDeliveryOperator, setFinalReviewerHandoffDeliveryOperator] = useState('');
+  const [finalReviewerHandoffDeliveryNotes, setFinalReviewerHandoffDeliveryNotes] = useState('');
 
   async function downloadReport() {
     try {
@@ -882,6 +920,59 @@ export function DemoAcceptanceSummaryPanel({
     }
   }
 
+  async function createFinalReviewerHandoffDeliveryReceipt() {
+    if (!onCreateFinalReviewerHandoffDeliveryReceipt) {
+      return;
+    }
+    try {
+      await onCreateFinalReviewerHandoffDeliveryReceipt({
+        deliveryChannel: finalReviewerHandoffDeliveryChannel,
+        deliveryTarget: finalReviewerHandoffDeliveryTarget.trim(),
+        operator: finalReviewerHandoffDeliveryOperator.trim(),
+        notes: finalReviewerHandoffDeliveryNotes.trim()
+      });
+      setFinalReviewerHandoffDeliveryReceiptStatus('Final reviewer handoff delivery receipt recorded');
+    } catch {
+      setFinalReviewerHandoffDeliveryReceiptStatus('Final reviewer handoff delivery receipt failed');
+    }
+  }
+
+  async function downloadFinalReviewerHandoffDeliveryReceipt(
+    receipt: DemoFinalReviewerHandoffDeliveryReceipt
+  ) {
+    if (!onDownloadFinalReviewerHandoffDeliveryReceiptReport) {
+      return;
+    }
+    try {
+      const report = await onDownloadFinalReviewerHandoffDeliveryReceiptReport(receipt.id);
+      downloadMarkdown(report, `patchpilot-final-reviewer-handoff-delivery-receipt-${receipt.id}.md`);
+      setFinalReviewerHandoffDeliveryReceiptDownloadStatus(
+        `Final reviewer handoff delivery receipt ${receipt.id} downloaded`
+      );
+    } catch {
+      setFinalReviewerHandoffDeliveryReceiptDownloadStatus(
+        'Final reviewer handoff delivery receipt download failed'
+      );
+    }
+  }
+
+  async function downloadFinalReviewerHandoffDeliveryFinalization() {
+    if (!onDownloadFinalReviewerHandoffDeliveryFinalizationReport) {
+      return;
+    }
+    try {
+      const report = await onDownloadFinalReviewerHandoffDeliveryFinalizationReport();
+      downloadMarkdown(report, 'patchpilot-final-reviewer-handoff-delivery-finalization.md');
+      setFinalReviewerHandoffDeliveryFinalizationDownloadStatus(
+        'Final reviewer handoff delivery finalization report downloaded'
+      );
+    } catch {
+      setFinalReviewerHandoffDeliveryFinalizationDownloadStatus(
+        'Final reviewer handoff delivery finalization report download failed'
+      );
+    }
+  }
+
   async function archiveCompletionCloseout() {
     if (!onArchiveCompletionCloseout) {
       return;
@@ -1191,6 +1282,9 @@ export function DemoAcceptanceSummaryPanel({
             releaseBundleDeliveryCertificateArchives={
               finalExternalReviewReleaseBundleDeliveryCertificateArchives
             }
+            finalReviewerHandoffPackage={finalReviewerHandoffPackage}
+            finalReviewerHandoffDeliveryReceipts={finalReviewerHandoffDeliveryReceipts}
+            finalReviewerHandoffDeliveryFinalization={finalReviewerHandoffDeliveryFinalization}
             error={finalExternalReviewEvidencePackageError}
             archiveError={finalExternalReviewEvidencePackageArchiveError}
             deliveryReceiptError={finalExternalReviewEvidencePackageDeliveryReceiptError}
@@ -1209,6 +1303,8 @@ export function DemoAcceptanceSummaryPanel({
             releaseBundleDeliveryCertificateArchiveError={
               finalExternalReviewReleaseBundleDeliveryCertificateArchiveError
             }
+            finalReviewerHandoffDeliveryReceiptError={finalReviewerHandoffDeliveryReceiptError}
+            finalReviewerHandoffDeliveryFinalizationError={finalReviewerHandoffDeliveryFinalizationError}
             downloadStatus={finalExternalReviewEvidencePackageDownloadStatus}
             archiveStatus={finalExternalReviewEvidencePackageArchiveStatus}
             archiveDownloadStatus={finalExternalReviewEvidencePackageArchiveDownloadStatus}
@@ -1249,6 +1345,13 @@ export function DemoAcceptanceSummaryPanel({
             releaseBundleDeliveryCertificateArchiveDownloadStatus={
               finalExternalReviewReleaseBundleDeliveryCertificateArchiveDownloadStatus
             }
+            finalReviewerHandoffDeliveryReceiptStatus={finalReviewerHandoffDeliveryReceiptStatus}
+            finalReviewerHandoffDeliveryReceiptDownloadStatus={
+              finalReviewerHandoffDeliveryReceiptDownloadStatus
+            }
+            finalReviewerHandoffDeliveryFinalizationDownloadStatus={
+              finalReviewerHandoffDeliveryFinalizationDownloadStatus
+            }
             deliveryChannel={finalExternalReviewPackageDeliveryChannel}
             deliveryTarget={finalExternalReviewPackageDeliveryTarget}
             operator={finalExternalReviewPackageDeliveryOperator}
@@ -1257,6 +1360,10 @@ export function DemoAcceptanceSummaryPanel({
             releaseBundleDeliveryTarget={finalExternalReviewReleaseBundleDeliveryTarget}
             releaseBundleDeliveryOperator={finalExternalReviewReleaseBundleDeliveryOperator}
             releaseBundleDeliveryNotes={finalExternalReviewReleaseBundleDeliveryNotes}
+            finalReviewerHandoffDeliveryChannel={finalReviewerHandoffDeliveryChannel}
+            finalReviewerHandoffDeliveryTarget={finalReviewerHandoffDeliveryTarget}
+            finalReviewerHandoffDeliveryOperator={finalReviewerHandoffDeliveryOperator}
+            finalReviewerHandoffDeliveryNotes={finalReviewerHandoffDeliveryNotes}
             onDownload={() => void downloadFinalExternalReviewEvidencePackage()}
             onArchive={() => void archiveFinalExternalReviewEvidencePackage()}
             onDownloadArchive={(archive) => void downloadFinalExternalReviewEvidencePackageArchive(archive)}
@@ -1309,6 +1416,17 @@ export function DemoAcceptanceSummaryPanel({
             onDownloadReleaseBundleDeliveryCertificateArchive={(archive) => (
               void downloadFinalExternalReviewReleaseBundleDeliveryCertificateArchive(archive)
             )}
+            onFinalReviewerHandoffDeliveryChannelChange={setFinalReviewerHandoffDeliveryChannel}
+            onFinalReviewerHandoffDeliveryTargetChange={setFinalReviewerHandoffDeliveryTarget}
+            onFinalReviewerHandoffDeliveryOperatorChange={setFinalReviewerHandoffDeliveryOperator}
+            onFinalReviewerHandoffDeliveryNotesChange={setFinalReviewerHandoffDeliveryNotes}
+            onCreateFinalReviewerHandoffDeliveryReceipt={() => void createFinalReviewerHandoffDeliveryReceipt()}
+            onDownloadFinalReviewerHandoffDeliveryReceipt={(receipt) => (
+              void downloadFinalReviewerHandoffDeliveryReceipt(receipt)
+            )}
+            onDownloadFinalReviewerHandoffDeliveryFinalization={() => (
+              void downloadFinalReviewerHandoffDeliveryFinalization()
+            )}
           />
         </>
       ) : (
@@ -1333,6 +1451,9 @@ interface FinalExternalReviewEvidencePackageProps {
   releaseBundleDeliveryFinalizationArchives: DemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchive[];
   releaseBundleDeliveryCertificate: DemoFinalExternalReviewReleaseBundleDeliveryCertificate | null;
   releaseBundleDeliveryCertificateArchives: DemoFinalExternalReviewReleaseBundleDeliveryCertificateArchive[];
+  finalReviewerHandoffPackage: DemoFinalReviewerHandoffPackage | null;
+  finalReviewerHandoffDeliveryReceipts: DemoFinalReviewerHandoffDeliveryReceipt[];
+  finalReviewerHandoffDeliveryFinalization: DemoFinalReviewerHandoffDeliveryFinalization | null;
   error: string | null;
   archiveError: string | null;
   deliveryReceiptError: string | null;
@@ -1347,6 +1468,8 @@ interface FinalExternalReviewEvidencePackageProps {
   releaseBundleDeliveryFinalizationArchiveError: string | null;
   releaseBundleDeliveryCertificateError: string | null;
   releaseBundleDeliveryCertificateArchiveError: string | null;
+  finalReviewerHandoffDeliveryReceiptError: string | null;
+  finalReviewerHandoffDeliveryFinalizationError: string | null;
   downloadStatus: string | null;
   archiveStatus: string | null;
   archiveDownloadStatus: string | null;
@@ -1369,6 +1492,9 @@ interface FinalExternalReviewEvidencePackageProps {
   releaseBundleDeliveryCertificateDownloadStatus: string | null;
   releaseBundleDeliveryCertificateArchiveStatus: string | null;
   releaseBundleDeliveryCertificateArchiveDownloadStatus: string | null;
+  finalReviewerHandoffDeliveryReceiptStatus: string | null;
+  finalReviewerHandoffDeliveryReceiptDownloadStatus: string | null;
+  finalReviewerHandoffDeliveryFinalizationDownloadStatus: string | null;
   deliveryChannel: string;
   deliveryTarget: string;
   operator: string;
@@ -1377,6 +1503,10 @@ interface FinalExternalReviewEvidencePackageProps {
   releaseBundleDeliveryTarget: string;
   releaseBundleDeliveryOperator: string;
   releaseBundleDeliveryNotes: string;
+  finalReviewerHandoffDeliveryChannel: string;
+  finalReviewerHandoffDeliveryTarget: string;
+  finalReviewerHandoffDeliveryOperator: string;
+  finalReviewerHandoffDeliveryNotes: string;
   onDownload: () => void;
   onArchive: () => void;
   onDownloadArchive: (archive: DemoFinalExternalReviewEvidencePackageArchive) => void;
@@ -1417,6 +1547,15 @@ interface FinalExternalReviewEvidencePackageProps {
   onDownloadReleaseBundleDeliveryCertificateArchive: (
     archive: DemoFinalExternalReviewReleaseBundleDeliveryCertificateArchive
   ) => void;
+  onFinalReviewerHandoffDeliveryChannelChange: (value: string) => void;
+  onFinalReviewerHandoffDeliveryTargetChange: (value: string) => void;
+  onFinalReviewerHandoffDeliveryOperatorChange: (value: string) => void;
+  onFinalReviewerHandoffDeliveryNotesChange: (value: string) => void;
+  onCreateFinalReviewerHandoffDeliveryReceipt: () => void;
+  onDownloadFinalReviewerHandoffDeliveryReceipt: (
+    receipt: DemoFinalReviewerHandoffDeliveryReceipt
+  ) => void;
+  onDownloadFinalReviewerHandoffDeliveryFinalization: () => void;
 }
 
 function FinalExternalReviewEvidencePackage({
@@ -1434,6 +1573,9 @@ function FinalExternalReviewEvidencePackage({
   releaseBundleDeliveryFinalizationArchives,
   releaseBundleDeliveryCertificate,
   releaseBundleDeliveryCertificateArchives,
+  finalReviewerHandoffPackage,
+  finalReviewerHandoffDeliveryReceipts,
+  finalReviewerHandoffDeliveryFinalization,
   error,
   archiveError,
   deliveryReceiptError,
@@ -1448,6 +1590,8 @@ function FinalExternalReviewEvidencePackage({
   releaseBundleDeliveryFinalizationArchiveError,
   releaseBundleDeliveryCertificateError,
   releaseBundleDeliveryCertificateArchiveError,
+  finalReviewerHandoffDeliveryReceiptError,
+  finalReviewerHandoffDeliveryFinalizationError,
   downloadStatus,
   archiveStatus,
   archiveDownloadStatus,
@@ -1470,6 +1614,9 @@ function FinalExternalReviewEvidencePackage({
   releaseBundleDeliveryCertificateDownloadStatus,
   releaseBundleDeliveryCertificateArchiveStatus,
   releaseBundleDeliveryCertificateArchiveDownloadStatus,
+  finalReviewerHandoffDeliveryReceiptStatus,
+  finalReviewerHandoffDeliveryReceiptDownloadStatus,
+  finalReviewerHandoffDeliveryFinalizationDownloadStatus,
   deliveryChannel,
   deliveryTarget,
   operator,
@@ -1478,6 +1625,10 @@ function FinalExternalReviewEvidencePackage({
   releaseBundleDeliveryTarget,
   releaseBundleDeliveryOperator,
   releaseBundleDeliveryNotes,
+  finalReviewerHandoffDeliveryChannel,
+  finalReviewerHandoffDeliveryTarget,
+  finalReviewerHandoffDeliveryOperator,
+  finalReviewerHandoffDeliveryNotes,
   onDownload,
   onArchive,
   onDownloadArchive,
@@ -1507,7 +1658,14 @@ function FinalExternalReviewEvidencePackage({
   onDownloadReleaseBundleDeliveryFinalizationArchive,
   onDownloadReleaseBundleDeliveryCertificate,
   onArchiveReleaseBundleDeliveryCertificate,
-  onDownloadReleaseBundleDeliveryCertificateArchive
+  onDownloadReleaseBundleDeliveryCertificateArchive,
+  onFinalReviewerHandoffDeliveryChannelChange,
+  onFinalReviewerHandoffDeliveryTargetChange,
+  onFinalReviewerHandoffDeliveryOperatorChange,
+  onFinalReviewerHandoffDeliveryNotesChange,
+  onCreateFinalReviewerHandoffDeliveryReceipt,
+  onDownloadFinalReviewerHandoffDeliveryReceipt,
+  onDownloadFinalReviewerHandoffDeliveryFinalization
 }: FinalExternalReviewEvidencePackageProps) {
   return (
     <div className="demo-session-handoff-checks">
@@ -2489,6 +2647,217 @@ function FinalExternalReviewEvidencePackage({
                   <p className="empty-state">
                     No final external-review release bundle delivery receipts recorded.
                   </p>
+                )}
+              </div>
+              <div className="demo-session-handoff-checks">
+                <div className="demo-session-archive-title-row">
+                  <h3>Final reviewer handoff delivery finalization</h3>
+                  <div className="demo-session-archive-actions">
+                    {finalReviewerHandoffDeliveryFinalization ? (
+                      <span className={`demo-readiness-status demo-readiness-status-${statusClass(finalReviewerHandoffDeliveryFinalization.status)}`}>
+                        {finalReviewerHandoffDeliveryFinalization.finalized
+                          ? 'Finalized'
+                          : statusLabel(finalReviewerHandoffDeliveryFinalization.status)}
+                      </span>
+                    ) : null}
+                    <button
+                      className="secondary-button"
+                      type="button"
+                      onClick={() => onDownloadFinalReviewerHandoffDeliveryFinalization()}
+                      aria-label="Download final reviewer handoff delivery finalization report"
+                      disabled={!finalReviewerHandoffDeliveryFinalization}
+                    >
+                      <Download size={14} />
+                      Download final reviewer handoff delivery finalization report
+                    </button>
+                    {finalReviewerHandoffDeliveryFinalizationDownloadStatus ? (
+                      <span className="copy-status">
+                        {finalReviewerHandoffDeliveryFinalizationDownloadStatus}
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
+                {finalReviewerHandoffDeliveryFinalizationError ? (
+                  <div className="adapter-api-error">
+                    <strong>Final reviewer handoff delivery finalization unavailable</strong>
+                    <span>{finalReviewerHandoffDeliveryFinalizationError}</span>
+                  </div>
+                ) : null}
+                {finalReviewerHandoffDeliveryFinalization ? (
+                  <>
+                    <div className="demo-session-summary">
+                      <div>
+                        <span>Finalized</span>
+                        <strong>
+                          {finalReviewerHandoffDeliveryFinalization.finalized
+                            ? 'Finalized'
+                            : statusLabel(finalReviewerHandoffDeliveryFinalization.status)}
+                        </strong>
+                        <small>{finalReviewerHandoffDeliveryFinalization.summary}</small>
+                      </div>
+                      <div>
+                        <span>Reviewer receipt</span>
+                        <strong>
+                          {finalReviewerHandoffDeliveryFinalization.latestDeliveryReceiptId
+                            ?? 'No reviewer receipt'}
+                        </strong>
+                        <small>{finalReviewerHandoffDeliveryFinalization.handoffDeliveryReceiptFreshnessSummary}</small>
+                      </div>
+                      <div>
+                        <span>Terminal certificate</span>
+                        <strong>
+                          {finalReviewerHandoffDeliveryFinalization.latestCertificateArchiveId
+                            ?? 'No terminal certificate'}
+                        </strong>
+                        <small>
+                          {finalReviewerHandoffDeliveryFinalization.handoffDeliveryReceiptFreshness}
+                          {finalReviewerHandoffDeliveryFinalization.handoffDeliveryReceiptFresh
+                            ? ' and fresh'
+                            : ' and not fresh'}
+                        </small>
+                      </div>
+                      <div>
+                        <span>Reviewer target</span>
+                        <strong>
+                          {finalReviewerHandoffDeliveryFinalization.latestDeliveryTarget ?? 'No delivery target'}
+                        </strong>
+                        <small>
+                          {finalReviewerHandoffDeliveryFinalization.latestDeliveryChannel ?? 'No delivery channel'}
+                          {finalReviewerHandoffDeliveryFinalization.latestDeliveredAt
+                            ? ` - ${compactDateTime(finalReviewerHandoffDeliveryFinalization.latestDeliveredAt)}`
+                            : ''}
+                        </small>
+                      </div>
+                    </div>
+                    <ul>
+                      {finalReviewerHandoffDeliveryFinalization.checks.map((check) => (
+                        <li key={check.name}>
+                          <div className="demo-webhook-delivery-main">
+                            <strong>{check.name}</strong>
+                            <span>{statusLabel(check.status)}</span>
+                          </div>
+                          <p>{check.summary}</p>
+                          <small>{check.nextAction}</small>
+                        </li>
+                      ))}
+                    </ul>
+                    <CompactList
+                      title="Final reviewer handoff delivery evidence"
+                      items={finalReviewerHandoffDeliveryFinalization.evidenceNotes}
+                      emptyText="No final reviewer handoff delivery evidence available."
+                    />
+                    <CompactList
+                      title="Final reviewer handoff delivery downloads"
+                      items={finalReviewerHandoffDeliveryFinalization.downloadActions}
+                      emptyText="No final reviewer handoff delivery downloads available."
+                    />
+                    <small>{finalReviewerHandoffDeliveryFinalization.sideEffectContract}</small>
+                  </>
+                ) : (
+                  <p className="empty-state">
+                    Final reviewer handoff delivery finalization has not loaded yet.
+                  </p>
+                )}
+              </div>
+              <div className="demo-evidence-receipt-form">
+                <div className="demo-session-archive-title-row">
+                  <h3>Record final reviewer handoff delivery receipt</h3>
+                  {finalReviewerHandoffDeliveryReceiptStatus ? (
+                    <span className="copy-status">{finalReviewerHandoffDeliveryReceiptStatus}</span>
+                  ) : null}
+                  {finalReviewerHandoffDeliveryReceiptDownloadStatus ? (
+                    <span className="copy-status">{finalReviewerHandoffDeliveryReceiptDownloadStatus}</span>
+                  ) : null}
+                </div>
+                {finalReviewerHandoffDeliveryReceiptError ? (
+                  <div className="adapter-api-error">
+                    <strong>Final reviewer handoff delivery receipts unavailable</strong>
+                    <span>{finalReviewerHandoffDeliveryReceiptError}</span>
+                  </div>
+                ) : null}
+                <label>
+                  Final reviewer handoff delivery channel
+                  <select
+                    value={finalReviewerHandoffDeliveryChannel}
+                    onChange={(event) => onFinalReviewerHandoffDeliveryChannelChange(event.target.value)}
+                  >
+                    <option value="email">email</option>
+                    <option value="slack">slack</option>
+                    <option value="github-comment">github-comment</option>
+                    <option value="manual">manual</option>
+                  </select>
+                </label>
+                <label>
+                  Final reviewer handoff delivery target
+                  <input
+                    value={finalReviewerHandoffDeliveryTarget}
+                    onChange={(event) => onFinalReviewerHandoffDeliveryTargetChange(event.target.value)}
+                    placeholder="reviewer@example.com"
+                  />
+                </label>
+                <label>
+                  Final reviewer handoff delivery operator
+                  <input
+                    value={finalReviewerHandoffDeliveryOperator}
+                    onChange={(event) => onFinalReviewerHandoffDeliveryOperatorChange(event.target.value)}
+                    placeholder="handoff-captain"
+                  />
+                </label>
+                <label>
+                  Final reviewer handoff delivery notes
+                  <textarea
+                    value={finalReviewerHandoffDeliveryNotes}
+                    onChange={(event) => onFinalReviewerHandoffDeliveryNotesChange(event.target.value)}
+                    placeholder="Sent the final reviewer handoff package."
+                  />
+                </label>
+                <button
+                  className="primary-button"
+                  type="button"
+                  onClick={() => onCreateFinalReviewerHandoffDeliveryReceipt()}
+                  disabled={!finalReviewerHandoffPackage?.readyForReview}
+                >
+                  Record final reviewer handoff delivery receipt
+                </button>
+              </div>
+              <div className="demo-session-handoff-checks">
+                <div className="demo-session-archive-title-row">
+                  <h3>Final reviewer handoff delivery receipts</h3>
+                  <span>{finalReviewerHandoffDeliveryReceipts.length} receipts</span>
+                </div>
+                {finalReviewerHandoffDeliveryReceipts.length > 0 ? (
+                  <ul>
+                    {finalReviewerHandoffDeliveryReceipts.map((receipt) => (
+                      <li key={receipt.id}>
+                        <div className="demo-webhook-delivery-main">
+                          <strong>{receipt.id}</strong>
+                          <span>{receipt.fresh ? 'Fresh' : statusLabel(receipt.status)}</span>
+                        </div>
+                        <p>{receipt.summary}</p>
+                        <small>Terminal certificate {receipt.latestCertificateArchiveId ?? 'missing'}</small>
+                        <small>Release bundle {receipt.latestReleaseBundleArchiveId ?? 'missing'}</small>
+                        <small>Release receipt {receipt.latestReleaseBundleDeliveryReceiptId ?? 'missing'}</small>
+                        <small>Package certificate {receipt.latestPackageCertificateArchiveId ?? 'missing'}</small>
+                        <small>Package receipt {receipt.latestPackageDeliveryReceiptId ?? 'missing'}</small>
+                        <small>Target {receipt.deliveryTarget}</small>
+                        <small>Channel {receipt.deliveryChannel}</small>
+                        <small>Delivered {compactDateTime(receipt.deliveredAt)}</small>
+                        <div className="demo-session-archive-actions">
+                          <button
+                            className="secondary-button"
+                            type="button"
+                            onClick={() => onDownloadFinalReviewerHandoffDeliveryReceipt(receipt)}
+                            aria-label={`Download final reviewer handoff delivery receipt ${receipt.id}`}
+                          >
+                            <Download size={14} />
+                            Download final reviewer handoff delivery receipt {receipt.id}
+                          </button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="empty-state">No final reviewer handoff delivery receipts recorded.</p>
                 )}
               </div>
             </div>

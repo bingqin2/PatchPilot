@@ -6178,3 +6178,26 @@ Validation:
 - `npm --prefix frontend test -- --reporter=dot`: passed, 30 test files and 484 tests.
 - `npm --prefix frontend run build`: passed with the existing Vite large-chunk warning.
 - `git diff --check`: passed.
+
+## 2026-06-30 - 307 Final reviewer handoff delivery
+
+- Started `307-final-reviewer-handoff-delivery` to close the demo evidence chain after the final reviewer handoff package is ready.
+- Added local final reviewer handoff delivery receipt persistence, in-memory and MyBatis repositories, converter/entity/mapper wiring, and `V62__create_demo_final_reviewer_handoff_delivery_receipt.sql`.
+- Added `POST /api/demo/final-reviewer-handoff-package/delivery-receipts`, `GET /api/demo/final-reviewer-handoff-package/delivery-receipts`, `GET /api/demo/final-reviewer-handoff-package/delivery-finalization`, and Markdown report downloads for receipt and finalization evidence.
+- Added `DemoFinalReviewerHandoffDeliveryFinalizationService` so the terminal gate reports READY only when the current handoff package has a fresh local delivery receipt.
+- Updated the evidence bundle and runbook with final reviewer handoff delivery finalization status, receipt id, terminal certificate archive, release bundle archive, package receipt, delivery target, freshness, next action, and download instruction.
+- Updated frontend API helpers, types, App refresh wiring, final demo acceptance dashboard controls, receipt form, finalization card, receipt history, and Markdown downloads.
+
+Validation so far:
+
+- `mvn -q -pl PatchPilot -Dtest=DemoFinalReviewerHandoffDeliveryReceiptServiceTests,DemoFinalReviewerHandoffDeliveryFinalizationServiceTests test`: passed.
+- `mvn -q -pl PatchPilot -Dtest=DemoReadinessControllerTests test`: passed.
+- `mvn -q -pl PatchPilot -Dtest=DemoEvidenceBundleServiceTests test`: passed.
+- `mvn -q -pl PatchPilot -Dtest=DemoRunbookServiceTests test`: passed.
+- `npm test -- src/dashboard/components/DemoAcceptanceSummaryPanel.test.tsx`: first failed because the final reviewer handoff delivery finalization UI did not exist; passed after adding the dashboard finalization/receipt controls, 19 tests.
+- `npm test -- src/App.test.tsx`: passed, 86 tests.
+- `mvn -q -pl PatchPilot -Dtest=DemoFinalReviewerHandoffDeliveryReceiptServiceTests,DemoFinalReviewerHandoffDeliveryFinalizationServiceTests,DemoReadinessControllerTests,DemoEvidenceBundleServiceTests,DemoRunbookServiceTests test`: passed with existing Mockito inline-agent warning.
+- `npm test -- --reporter=dot`: passed, 30 test files and 490 tests.
+- `mvn -q -pl PatchPilot test`: passed with existing Mockito inline-agent warning.
+- `npm run build`: passed with the existing Vite large-chunk warning.
+- `git diff --check`: passed.
