@@ -9,6 +9,7 @@ import {
   getBackendHealth,
   getConfigurationSummary,
   getGitHubCredentialReadiness,
+  getGitHubPublishReadiness,
   getGitHubWebhookSetupReadiness,
   getGitHubWebhookUrlReadiness,
   getGitHubRepositoryAccessReadiness,
@@ -357,6 +358,48 @@ test('gets GitHub repository access readiness through backend API', async () => 
   expect(readiness.status).toBe('READY');
   expect(readiness.repository).toBe('bingqin2/PatchPilot');
   expect(readiness.defaultBranch).toBe('main');
+});
+
+test('gets GitHub publish readiness through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        status: 'READY',
+        publishReady: true,
+        tokenConfigured: true,
+        repositoryConfigured: true,
+        repository: 'bingqin2/PatchPilot',
+        defaultBranch: 'main',
+        summary: 'GitHub publish path is ready for PatchPilot push and Pull Request creation.',
+        nextAction: 'Continue with the live /agent fix demo.',
+        safePublishCommand: 'git push origin HEAD:<patchpilot-branch>',
+        sideEffectContract: 'Read-only readiness probe: this endpoint does not run git push, does not create Pull Requests, and does not expose tokens.',
+        checks: [
+          {
+            name: 'GitHub token',
+            status: 'READY',
+            summary: 'GitHub API accepted the configured token.',
+            nextAction: 'No action needed.'
+          }
+        ],
+        evidenceNotes: ['Token configured: true'],
+        checkedAt: '2026-06-30T01:00:00Z'
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const readiness = await getGitHubPublishReadiness(' bingqin2 ', ' PatchPilot ');
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/github/publish-readiness?owner=bingqin2&repository=PatchPilot');
+  expect(readiness.status).toBe('READY');
+  expect(readiness.repository).toBe('bingqin2/PatchPilot');
+  expect(readiness.safePublishCommand).toBe('git push origin HEAD:<patchpilot-branch>');
+  expect(readiness.sideEffectContract).toContain('does not run git push');
 });
 
 test('gets GitHub webhook URL readiness through backend API', async () => {

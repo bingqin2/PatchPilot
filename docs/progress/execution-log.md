@@ -26,6 +26,24 @@ Validation:
 - `npm run build`: first failed because a task detail test fixture used a `supported` field that is not part of `SupportedLanguageAdapter`; passed after aligning the fixture with the typed API contract.
 - `git diff --check`: passed.
 
+## 2026-06-30 - 308 GitHub publish readiness diagnostics
+
+- Started `308-github-publish-readiness-diagnostics` to make push/PR publication blockers visible before a live `/agent fix` task reaches Git push.
+- Added `GET /api/github/publish-readiness`, backed by `GitHubPublishReadinessService`, to aggregate GitHub token readiness, repository access readiness, configured demo repository fallback, safe push command shape, evidence notes, and a no-side-effect contract.
+- Updated GitHub readiness controller tests and repository-access controller fixtures for the new controller dependency.
+- Updated frontend API helpers, types, App loading, and the operator setup checklist with a dedicated GitHub publish readiness row plus a detailed diagnostics card for READY, NEEDS_ATTENTION, and BLOCKED states.
+- Updated README and added this plan document.
+
+Validation so far:
+
+- `npm --prefix frontend test -- --run src/api.test.ts src/dashboard/components/OperatorSetupChecklistPanel.test.tsx`: first failed because the publish blocked test matched the same operator action twice; passed after using the multiple-match assertion, 2 test files and 230 tests.
+- `npm --prefix frontend test -- --run src/App.test.tsx -t "operator setup"`: first failed because App-level setup readiness mocks and totals did not include the new publish readiness probe; passed after wiring the publish readiness API response and checklist count, 2 tests run.
+- `mvn -q -pl PatchPilot -Dtest=GitHubPublishReadinessServiceTests,GitHubCredentialReadinessControllerTests,GitHubRepositoryAccessReadinessControllerTests test`: passed after focused backend service and controller verification.
+- `mvn -q -pl PatchPilot test`: passed after full backend regression verification.
+- `npm --prefix frontend test -- --reporter=dot`: passed after full frontend regression verification, 30 test files and 492 tests.
+- `npm --prefix frontend run build`: passed after TypeScript and production Vite build verification, with the existing large chunk warning.
+- `git diff --check`: passed.
+
 Implemented launch certificate evidence bundle from `docs/plans/261-launch-certificate-evidence-bundle.md`.
 
 Changes:

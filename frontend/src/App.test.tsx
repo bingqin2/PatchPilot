@@ -1476,6 +1476,41 @@ const githubRepositoryAccessReadiness = {
   operatorAction: 'No action needed.'
 };
 
+const githubPublishReadiness = {
+  status: 'READY',
+  publishReady: true,
+  tokenConfigured: true,
+  repositoryConfigured: true,
+  repository: 'bingqin2/PatchPilot',
+  defaultBranch: 'main',
+  summary: 'GitHub publish path is ready for PatchPilot push and Pull Request creation.',
+  nextAction: 'Continue with the live /agent fix demo.',
+  safePublishCommand: 'git push origin HEAD:<patchpilot-branch>',
+  sideEffectContract: 'Read-only readiness probe: this endpoint does not run git push, does not create branches, does not create Pull Requests, does not write issue comments, and does not expose tokens.',
+  checks: [
+    {
+      name: 'GitHub token',
+      status: 'READY',
+      summary: 'GitHub API accepted the configured token.',
+      nextAction: 'No action needed.'
+    },
+    {
+      name: 'Repository access',
+      status: 'READY',
+      summary: 'GitHub token can read repository bingqin2/PatchPilot.',
+      nextAction: 'No action needed.'
+    },
+    {
+      name: 'Publish command safety',
+      status: 'READY',
+      summary: 'PatchPilot uses a bounded push shape: git push origin HEAD:<patchpilot-branch>.',
+      nextAction: 'No action needed.'
+    }
+  ],
+  evidenceNotes: ['Token configured: true', 'Default branch: main'],
+  checkedAt: '2026-06-30T01:00:00Z'
+};
+
 const githubWebhookUrlReadiness = {
   publicBaseUrlConfigured: true,
   status: 'READY',
@@ -3439,6 +3474,9 @@ beforeEach(() => {
     if (url === '/api/github/repository-access-readiness?owner=bingqin2&repository=PatchPilot') {
       return jsonResponse(githubRepositoryAccessReadiness);
     }
+    if (url === '/api/github/publish-readiness?owner=bingqin2&repository=PatchPilot') {
+      return jsonResponse(githubPublishReadiness);
+    }
     if (url === '/api/demo/readiness') {
       return jsonResponse(demoReadiness);
     }
@@ -5350,13 +5388,17 @@ test('summarizes operator setup readiness before a demo run', async () => {
 
   const setupChecklist = await screen.findByRole('region', { name: 'Operator setup checklist' });
   expect(within(setupChecklist).getByRole('heading', { name: 'Operator setup checklist' })).toBeInTheDocument();
-  expect(within(setupChecklist).getByText('12/14 checks ready')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('13/15 checks ready')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Backend connectivity')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Ready - /health reports UP')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Required credentials')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Ready - agent, GitHub, webhook, and browser admin token are configured')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('GitHub credentials')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Ready - GitHub API accepted the configured token.')).toBeInTheDocument();
+  expect(within(setupChecklist).getAllByText('GitHub publish readiness')[0]).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('Ready - GitHub publish path is ready for PatchPilot push and Pull Request creation.')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('READY - GitHub publish path is ready for PatchPilot push and Pull Request creation.')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('git push origin HEAD:<patchpilot-branch>')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Repository access')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Ready - GitHub token can read repository bingqin2/PatchPilot.')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Webhook setup')).toBeInTheDocument();
@@ -5451,6 +5493,9 @@ test('shows when every operator setup check is ready', async () => {
     if (url === '/api/github/repository-access-readiness?owner=bingqin2&repository=PatchPilot') {
       return jsonResponse(githubRepositoryAccessReadiness);
     }
+    if (url === '/api/github/publish-readiness?owner=bingqin2&repository=PatchPilot') {
+      return jsonResponse(githubPublishReadiness);
+    }
     return defaultAppResponse(input, init);
   });
   vi.stubGlobal('fetch', fetchMock);
@@ -5458,7 +5503,7 @@ test('shows when every operator setup check is ready', async () => {
   render(<App />);
 
   const setupChecklist = await screen.findByRole('region', { name: 'Operator setup checklist' });
-  expect(within(setupChecklist).getByText('14/14 checks ready')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('15/15 checks ready')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Ready - GitHub token can read repository bingqin2/PatchPilot.')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Ready - Configured public webhook URL reaches PatchPilot health.')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Ready - Demo repository and recent trigger user align with configured safety allowlists.')).toBeInTheDocument();
@@ -7692,6 +7737,9 @@ function defaultAppResponse(input: RequestInfo | URL, init?: RequestInit) {
   }
   if (url === '/api/github/repository-access-readiness?owner=bingqin2&repository=PatchPilot') {
     return jsonResponse(githubRepositoryAccessReadiness);
+  }
+  if (url === '/api/github/publish-readiness?owner=bingqin2&repository=PatchPilot') {
+    return jsonResponse(githubPublishReadiness);
   }
   if (url === '/api/demo/readiness') {
     return jsonResponse(demoReadiness);
