@@ -497,6 +497,33 @@ export interface GitHubPublishReadiness {
   checkedAt: string;
 }
 
+export interface GitHubPublishPermissionReadinessCheck {
+  name: string;
+  status: 'READY' | 'NEEDS_ATTENTION' | 'BLOCKED';
+  summary: string;
+  nextAction: string;
+}
+
+export interface GitHubPublishPermissionReadiness {
+  status: 'READY' | 'NEEDS_ATTENTION' | 'BLOCKED';
+  publishPermissionReady: boolean;
+  tokenConfigured: boolean;
+  repositoryConfigured: boolean;
+  repository: string;
+  defaultBranch: string | null;
+  canReadRepository: boolean;
+  canPushBranches: boolean;
+  canCreatePullRequests: boolean;
+  issueFeedbackPermissionLikely: boolean;
+  summary: string;
+  nextAction: string;
+  sideEffectContract: string;
+  permissionChecks: GitHubPublishPermissionReadinessCheck[];
+  evidenceNotes: string[];
+  latencyMs: number;
+  checkedAt: string;
+}
+
 export type GitHubWebhookUrlReadinessStatus = 'READY' | 'NEEDS_ATTENTION';
 
 export interface GitHubWebhookUrlReadiness {

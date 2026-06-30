@@ -9,6 +9,7 @@ import {
   getBackendHealth,
   getConfigurationSummary,
   getGitHubCredentialReadiness,
+  getGitHubPublishPermissionReadiness,
   getGitHubPublishReadiness,
   getGitHubWebhookSetupReadiness,
   getGitHubWebhookUrlReadiness,
@@ -399,6 +400,53 @@ test('gets GitHub publish readiness through backend API', async () => {
   expect(readiness.status).toBe('READY');
   expect(readiness.repository).toBe('bingqin2/PatchPilot');
   expect(readiness.safePublishCommand).toBe('git push origin HEAD:<patchpilot-branch>');
+  expect(readiness.sideEffectContract).toContain('does not run git push');
+});
+
+test('gets GitHub publish permission readiness through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        status: 'READY',
+        publishPermissionReady: true,
+        tokenConfigured: true,
+        repositoryConfigured: true,
+        repository: 'bingqin2/PatchPilot',
+        defaultBranch: 'main',
+        canReadRepository: true,
+        canPushBranches: true,
+        canCreatePullRequests: true,
+        issueFeedbackPermissionLikely: true,
+        summary: 'GitHub token has repository publish permissions for PatchPilot push and Pull Request creation.',
+        nextAction: 'Continue with the live /agent fix demo.',
+        sideEffectContract: 'Read-only permission probe: this endpoint does not run git push, does not create Pull Requests, and does not expose tokens.',
+        permissionChecks: [
+          {
+            name: 'Branch push',
+            status: 'READY',
+            summary: 'Token can publish PatchPilot branches.',
+            nextAction: 'No action needed.'
+          }
+        ],
+        evidenceNotes: ['Repository: bingqin2/PatchPilot'],
+        latencyMs: 35,
+        checkedAt: '2026-06-30T06:00:00Z'
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const readiness = await getGitHubPublishPermissionReadiness(' bingqin2 ', ' PatchPilot ');
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/github/publish-permission-readiness?owner=bingqin2&repository=PatchPilot');
+  expect(readiness.status).toBe('READY');
+  expect(readiness.repository).toBe('bingqin2/PatchPilot');
+  expect(readiness.canPushBranches).toBe(true);
+  expect(readiness.canCreatePullRequests).toBe(true);
   expect(readiness.sideEffectContract).toContain('does not run git push');
 });
 

@@ -109,6 +109,7 @@ import type {
   FixTaskQueueSummary,
   FixTaskWorkerHealth,
   GitHubCredentialReadiness,
+  GitHubPublishPermissionReadiness,
   GitHubPublishReadiness,
   GitHubRepositoryAccessReadiness,
   GitHubWebhookSetupReadiness,
@@ -298,6 +299,19 @@ export async function getGitHubPublishReadiness(
   const queryString = searchParams.toString();
   return getApi<GitHubPublishReadiness>(
     queryString ? `/api/github/publish-readiness?${queryString}` : '/api/github/publish-readiness'
+  );
+}
+
+export async function getGitHubPublishPermissionReadiness(
+  owner?: string,
+  repository?: string
+): Promise<GitHubPublishPermissionReadiness> {
+  const searchParams = new URLSearchParams();
+  appendSearchParam(searchParams, 'owner', owner);
+  appendSearchParam(searchParams, 'repository', repository);
+  const queryString = searchParams.toString();
+  return getApi<GitHubPublishPermissionReadiness>(
+    queryString ? `/api/github/publish-permission-readiness?${queryString}` : '/api/github/publish-permission-readiness'
   );
 }
 

@@ -3,6 +3,8 @@ package io.patchpilot.backend.github.credential;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.patchpilot.backend.github.credential.domain.GitHubCredentialReadinessVo;
+import io.patchpilot.backend.github.credential.domain.GitHubPublishPermissionReadinessCheckVo;
+import io.patchpilot.backend.github.credential.domain.GitHubPublishPermissionReadinessVo;
 import io.patchpilot.backend.github.credential.domain.GitHubPublishReadinessCheckVo;
 import io.patchpilot.backend.github.credential.domain.GitHubPublishReadinessVo;
 import io.patchpilot.backend.github.credential.domain.GitHubWebhookSetupReadinessVo;
@@ -182,6 +184,63 @@ class GitHubCredentialReadinessControllerTests {
                 .andExpect(content().string(not(containsString("github-token"))));
     }
 
+    @Test
+    void should_return_non_sensitive_github_publish_permission_readiness() throws Exception {
+        GitHubPublishPermissionReadinessService permissionReadinessService = new GitHubPublishPermissionReadinessService(
+                (owner, repository) -> new GitHubPublishPermissionReadinessVo(
+                        "READY",
+                        true,
+                        true,
+                        true,
+                        owner + "/" + repository,
+                        "main",
+                        true,
+                        true,
+                        true,
+                        true,
+                        "GitHub token has repository publish permissions for PatchPilot push and Pull Request creation.",
+                        "Continue with the live /agent fix demo.",
+                        "Read-only permission probe: this endpoint does not run git push, does not create branches, does not create Pull Requests, does not write issue comments, and does not expose tokens.",
+                        List.of(
+                                new GitHubPublishPermissionReadinessCheckVo(
+                                        "Branch push",
+                                        "READY",
+                                        "Token can publish PatchPilot branches.",
+                                        "No action needed."
+                                )
+                        ),
+                        List.of("Repository: " + owner + "/" + repository),
+                        35,
+                        Instant.parse("2026-06-30T06:00:00Z")
+                )
+        );
+        MockMvc mockMvc = mockMvc(
+                new GitHubCredentialReadinessService(() -> null),
+                new GitHubWebhookUrlReadinessService(() -> null),
+                new GitHubWebhookSetupReadinessService(() -> null),
+                new GitHubPublishReadinessService((owner, repository) -> null),
+                permissionReadinessService
+        );
+
+        mockMvc.perform(get("/api/github/publish-permission-readiness")
+                        .param("owner", "bingqin2")
+                        .param("repository", "PatchPilot")
+                        .header("X-PatchPilot-Admin-Token", "test-admin-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.publishPermissionReady").value(true))
+                .andExpect(jsonPath("$.data.repository").value("bingqin2/PatchPilot"))
+                .andExpect(jsonPath("$.data.defaultBranch").value("main"))
+                .andExpect(jsonPath("$.data.canReadRepository").value(true))
+                .andExpect(jsonPath("$.data.canPushBranches").value(true))
+                .andExpect(jsonPath("$.data.canCreatePullRequests").value(true))
+                .andExpect(jsonPath("$.data.issueFeedbackPermissionLikely").value(true))
+                .andExpect(jsonPath("$.data.sideEffectContract").value(containsString("does not run git push")))
+                .andExpect(jsonPath("$.data.permissionChecks[0].name").value("Branch push"))
+                .andExpect(content().string(not(containsString("github-token"))));
+    }
+
     private static MockMvc mockMvc(GitHubCredentialReadinessService service) {
         return mockMvc(service, new GitHubWebhookUrlReadinessService(() -> null));
     }
@@ -202,7 +261,8 @@ class GitHubCredentialReadinessControllerTests {
                 service,
                 webhookUrlReadinessService,
                 setupReadinessService,
-                new GitHubPublishReadinessService((owner, repository) -> null)
+                new GitHubPublishReadinessService((owner, repository) -> null),
+                new GitHubPublishPermissionReadinessService((owner, repository) -> null)
         );
     }
 
@@ -211,6 +271,22 @@ class GitHubCredentialReadinessControllerTests {
             GitHubWebhookUrlReadinessService webhookUrlReadinessService,
             GitHubWebhookSetupReadinessService setupReadinessService,
             GitHubPublishReadinessService publishReadinessService
+    ) {
+        return mockMvc(
+                service,
+                webhookUrlReadinessService,
+                setupReadinessService,
+                publishReadinessService,
+                new GitHubPublishPermissionReadinessService((owner, repository) -> null)
+        );
+    }
+
+    private static MockMvc mockMvc(
+            GitHubCredentialReadinessService service,
+            GitHubWebhookUrlReadinessService webhookUrlReadinessService,
+            GitHubWebhookSetupReadinessService setupReadinessService,
+            GitHubPublishReadinessService publishReadinessService,
+            GitHubPublishPermissionReadinessService publishPermissionReadinessService
     ) {
         AdminApiSecurityProperties properties = new AdminApiSecurityProperties();
         properties.setAdminToken("test-admin-token");
@@ -222,7 +298,8 @@ class GitHubCredentialReadinessControllerTests {
                         new GitHubRepositoryAccessReadinessService((owner, repository) -> null),
                         webhookUrlReadinessService,
                         setupReadinessService,
-                        publishReadinessService
+                        publishReadinessService,
+                        publishPermissionReadinessService
                 ))
                 .setMessageConverters(new org.springframework.http.converter.json.MappingJackson2HttpMessageConverter(objectMapper))
                 .addFilters(new AdminApiSecurityFilter(properties, objectMapper))
