@@ -625,6 +625,62 @@ public class DemoRunbookService {
                         .append("- Final external-review release bundle delivery finalization download: ")
                         .append(action)
                         .append("\n"));
+
+        runbook.append("- Final external-review release bundle delivery certificate archive: `")
+                .append(bundle.finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence().status())
+                .append("` - ")
+                .append(bundle.finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence().summary())
+                .append("\n")
+                .append("- Final external-review release bundle delivery certificate archive id: ")
+                .append(valueOrNoneBackticked(bundle
+                        .finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence()
+                        .latestArchiveId()))
+                .append("\n")
+                .append("- Final external-review release bundle delivery certificate archived finalization: ")
+                .append(valueOrNoneBackticked(bundle
+                        .finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence()
+                        .latestDeliveryFinalizationArchiveId()))
+                .append("\n")
+                .append("- Final external-review release bundle delivery certificate archived release bundle: ")
+                .append(valueOrNoneBackticked(bundle
+                        .finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence()
+                        .latestReleaseBundleArchiveId()))
+                .append("\n")
+                .append("- Final external-review release bundle delivery certificate archived receipt: ")
+                .append(valueOrNoneBackticked(bundle
+                        .finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence()
+                        .latestDeliveryReceiptId()))
+                .append("\n")
+                .append("- Final external-review release bundle delivery certificate archived certificate: ")
+                .append(valueOrNoneBackticked(bundle
+                        .finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence()
+                        .latestCertificateArchiveId()))
+                .append("\n")
+                .append("- Final external-review release bundle delivery certificate archived package: ")
+                .append(valueOrNoneBackticked(bundle
+                        .finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence()
+                        .latestPackageArchiveId()))
+                .append("\n")
+                .append("- Final external-review release bundle delivery certificate archive Pull Request: ")
+                .append(valueOrNone(bundle
+                        .finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence()
+                        .latestPullRequestUrl()))
+                .append("\n")
+                .append("- Final external-review release bundle delivery certificate archived at: ")
+                .append(bundle.finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence()
+                        .latestArchivedAt() == null
+                        ? "none"
+                        : "`" + bundle.finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence()
+                        .latestArchivedAt() + "`")
+                .append("\n")
+                .append("- Final external-review release bundle delivery certificate archive next action: ")
+                .append(bundle.finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence().nextAction())
+                .append("\n");
+        bundle.finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence().downloadActions()
+                .forEach(action -> runbook
+                        .append("- Final external-review release bundle delivery certificate archive download: ")
+                        .append(action)
+                        .append("\n"));
     }
 
     private static void appendEvaluationRunReadiness(
