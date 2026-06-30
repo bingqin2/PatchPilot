@@ -40,6 +40,7 @@ PatchPilot is not a chatbot and does not auto-merge code. The current target is 
 - Admin-protected GitHub credential readiness probe that verifies the configured token is accepted by GitHub without exposing the token or mutating GitHub state.
 - Admin-protected GitHub publish readiness diagnostic that aggregates credential and repository-access probes into a push/PR readiness result without running `git push` or mutating GitHub.
 - Admin-protected GitHub publish permission readiness diagnostic that reads non-sensitive repository permission booleans and explains whether push, Pull Request creation, and issue feedback are likely to work before a live task mutates GitHub.
+- Admin-protected live GitHub publish preflight that combines publish readiness, publish permissions, and read-only GitHub branch/Pull Request inventory so operators can clear stale `patchpilot/*` branches or open PatchPilot PRs before posting a live `/agent fix`.
 - Issue comment status updates for accepted, running, verification, success, and failure states, including best-effort failure feedback creation when the original status comment is missing.
 - Failed and cancelled task retry preflight that explains whether retry is safe, shows sanitized failure context, blocks blind retries when GitHub permissions or repository support must be fixed first, and requires an operator reason before requeueing.
 - Demo readiness gate that summarizes credentials, model provider health, adapter fixtures, adapter runtime executables, evaluation baseline regression evidence, queue health, worker heartbeat readiness, and recent PR evidence before a live smoke run.
@@ -252,6 +253,15 @@ curl -H "X-PatchPilot-Admin-Token: $PATCHPILOT_ADMIN_TOKEN" \
 ```
 
 The response reports whether the token can read repository metadata, publish branches, create Pull Requests, and likely write issue feedback. It reads GitHub repository metadata only; it does not run `git push`, create branches, open Pull Requests, write issue comments, or expose token values.
+
+Then inspect the live publish preflight:
+
+```bash
+curl -H "X-PatchPilot-Admin-Token: $PATCHPILOT_ADMIN_TOKEN" \
+  "http://127.0.0.1:8080/api/github/live-publish-preflight?owner=bingqin2&repository=PatchPilot"
+```
+
+This preflight aggregates publish readiness, publish permission readiness, existing `patchpilot/*` branches, and open PatchPilot Pull Requests. A `NEEDS_ATTENTION` response usually means the operator should merge, close, or delete stale PatchPilot publish artifacts before posting the live issue comment. The endpoint is read-only: it does not push, create branches, open Pull Requests, write issue comments, create tasks, call the model, or expose token values.
 
 ## Run With Docker Compose
 

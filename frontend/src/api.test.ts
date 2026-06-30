@@ -11,6 +11,7 @@ import {
   getGitHubCredentialReadiness,
   getGitHubPublishPermissionReadiness,
   getGitHubPublishReadiness,
+  getGitHubLivePublishPreflight,
   getGitHubWebhookSetupReadiness,
   getGitHubWebhookUrlReadiness,
   getGitHubRepositoryAccessReadiness,
@@ -448,6 +449,51 @@ test('gets GitHub publish permission readiness through backend API', async () =>
   expect(readiness.canPushBranches).toBe(true);
   expect(readiness.canCreatePullRequests).toBe(true);
   expect(readiness.sideEffectContract).toContain('does not run git push');
+});
+
+test('gets GitHub live publish preflight through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        status: 'NEEDS_ATTENTION',
+        livePublishReady: false,
+        tokenConfigured: true,
+        repositoryConfigured: true,
+        repository: 'bingqin2/PatchPilot',
+        defaultBranch: 'main',
+        patchpilotBranches: ['patchpilot/task-1'],
+        openPatchpilotPullRequests: ['https://github.com/bingqin2/PatchPilot/pull/4'],
+        summary: 'Live GitHub publish preflight found existing PatchPilot publish artifacts.',
+        nextAction: 'Review, close or merge stale PatchPilot Pull Requests, and delete old patchpilot/* branches before the live demo.',
+        sideEffectContract: 'Read-only live publish preflight: this endpoint does not run git push, does not create branches, does not open Pull Requests, does not write issue comments, and does not expose tokens.',
+        checks: [
+          {
+            name: 'Open PatchPilot Pull Requests',
+            status: 'NEEDS_ATTENTION',
+            summary: 'Found 1 open PatchPilot Pull Request.',
+            nextAction: 'Close, merge, or intentionally keep the existing PatchPilot Pull Request before demo launch.'
+          }
+        ],
+        evidenceNotes: ['Repository: bingqin2/PatchPilot'],
+        latencyMs: 42,
+        checkedAt: '2026-06-30T09:00:00Z'
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const preflight = await getGitHubLivePublishPreflight(' bingqin2 ', ' PatchPilot ');
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/github/live-publish-preflight?owner=bingqin2&repository=PatchPilot');
+  expect(preflight.status).toBe('NEEDS_ATTENTION');
+  expect(preflight.repository).toBe('bingqin2/PatchPilot');
+  expect(preflight.patchpilotBranches).toContain('patchpilot/task-1');
+  expect(preflight.openPatchpilotPullRequests).toContain('https://github.com/bingqin2/PatchPilot/pull/4');
+  expect(preflight.sideEffectContract).toContain('does not open Pull Requests');
 });
 
 test('gets GitHub webhook URL readiness through backend API', async () => {

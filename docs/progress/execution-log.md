@@ -6254,3 +6254,20 @@ Validation so far:
 - `mvn -q -pl PatchPilot test`: passed with existing Mockito inline-agent warning.
 - `npm run build`: passed with the existing Vite large-chunk warning.
 - `git diff --check`: passed.
+
+## 2026-06-30 - 311 Live GitHub publish preflight
+
+- Started `311-live-github-publish-preflight` to add one final read-only check before an operator posts a live `/agent fix` issue comment.
+- Added `GET /api/github/live-publish-preflight`, backed by `GitHubLivePublishPreflightService` and a read-only GitHub HTTP probe for branch and open Pull Request metadata.
+- Aggregated publish path readiness, publish permission readiness, existing `patchpilot/*` branches, and open PatchPilot Pull Request URLs into a single READY/NEEDS_ATTENTION/BLOCKED operator result.
+- Updated the operator setup checklist with a live publish preflight row and detail card that shows stale branch count, open PatchPilot PR count, check summaries, next action, repository/default-branch evidence, and the read-only side-effect contract.
+- Updated frontend API helpers, App loading, typed payloads, README, product spec, and this plan document.
+
+Validation so far:
+
+- `mvn -q -pl PatchPilot -Dtest=GitHubLivePublishPreflightServiceTests,GitHubLivePublishPreflightHttpProbeTests,GitHubCredentialReadinessControllerTests test`: first failed because the preflight types, service, probe, and endpoint did not exist; passed after backend implementation.
+- `npm --prefix frontend test -- --run src/api.test.ts src/dashboard/components/OperatorSetupChecklistPanel.test.tsx src/App.test.tsx -t "live publish preflight|operator setup" --reporter=dot`: first failed because the App-level all-ready setup count still expected `16/16`; passed after updating the assertion to `17/17`.
+- `mvn -q -pl PatchPilot test`: passed with existing Mockito/Java agent and Spring test logging.
+- `npm --prefix frontend test -- --reporter=dot`: first failed because existing operator setup checklist tests still expected 16 total checks and two publish side-effect paragraphs; passed after updating those assertions to 17 checks and three read-only publish cards. Final result: 30 test files and 496 tests passed.
+- `npm --prefix frontend run build`: passed with the existing Vite large-chunk warning.
+- `git diff --check`: passed.

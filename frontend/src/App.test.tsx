@@ -1556,6 +1556,37 @@ const githubPublishPermissionReadiness = {
   checkedAt: '2026-06-30T06:00:00Z'
 };
 
+const githubLivePublishPreflight = {
+  status: 'READY',
+  livePublishReady: true,
+  tokenConfigured: true,
+  repositoryConfigured: true,
+  repository: 'bingqin2/PatchPilot',
+  defaultBranch: 'main',
+  patchpilotBranches: [],
+  openPatchpilotPullRequests: [],
+  summary: 'Live GitHub publish preflight is ready for a clean PatchPilot branch and Pull Request.',
+  nextAction: 'Post the live /agent fix comment when the rest of launch readiness is READY.',
+  sideEffectContract: 'Read-only live publish preflight: this endpoint does not run git push, does not create branches, does not open Pull Requests, does not write issue comments, and does not expose tokens.',
+  checks: [
+    {
+      name: 'PatchPilot branch inventory',
+      status: 'READY',
+      summary: 'No existing patchpilot/* branches were found.',
+      nextAction: 'No action needed.'
+    },
+    {
+      name: 'Open PatchPilot Pull Requests',
+      status: 'READY',
+      summary: 'No open PatchPilot Pull Requests were found.',
+      nextAction: 'No action needed.'
+    }
+  ],
+  evidenceNotes: ['Repository: bingqin2/PatchPilot', 'PatchPilot branch count: 0'],
+  latencyMs: 42,
+  checkedAt: '2026-06-30T09:00:00Z'
+};
+
 const githubWebhookUrlReadiness = {
   publicBaseUrlConfigured: true,
   status: 'READY',
@@ -3537,6 +3568,9 @@ beforeEach(() => {
     if (url === '/api/github/publish-permission-readiness?owner=bingqin2&repository=PatchPilot') {
       return jsonResponse(githubPublishPermissionReadiness);
     }
+    if (url === '/api/github/live-publish-preflight?owner=bingqin2&repository=PatchPilot') {
+      return jsonResponse(githubLivePublishPreflight);
+    }
     if (url === '/api/demo/readiness') {
       return jsonResponse(demoReadiness);
     }
@@ -5452,7 +5486,7 @@ test('summarizes operator setup readiness before a demo run', async () => {
 
   const setupChecklist = await screen.findByRole('region', { name: 'Operator setup checklist' });
   expect(within(setupChecklist).getByRole('heading', { name: 'Operator setup checklist' })).toBeInTheDocument();
-  expect(within(setupChecklist).getByText('14/16 checks ready')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('15/17 checks ready')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Backend connectivity')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Ready - /health reports UP')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Required credentials')).toBeInTheDocument();
@@ -5467,6 +5501,11 @@ test('summarizes operator setup readiness before a demo run', async () => {
   expect(within(setupChecklist).getByText('Ready - GitHub token has repository publish permissions for PatchPilot push and Pull Request creation.')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('READY - GitHub token has repository publish permissions for PatchPilot push and Pull Request creation.')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Branch push: READY')).toBeInTheDocument();
+  expect(within(setupChecklist).getAllByText('GitHub live publish preflight')[0]).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('Ready - Live GitHub publish preflight is ready for a clean PatchPilot branch and Pull Request.')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('READY - Live GitHub publish preflight is ready for a clean PatchPilot branch and Pull Request.')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('PatchPilot branch inventory: READY')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('Open PatchPilot Pull Requests: READY')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Repository access')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Ready - GitHub token can read repository bingqin2/PatchPilot.')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Webhook setup')).toBeInTheDocument();
@@ -5567,6 +5606,9 @@ test('shows when every operator setup check is ready', async () => {
     if (url === '/api/github/publish-permission-readiness?owner=bingqin2&repository=PatchPilot') {
       return jsonResponse(githubPublishPermissionReadiness);
     }
+    if (url === '/api/github/live-publish-preflight?owner=bingqin2&repository=PatchPilot') {
+      return jsonResponse(githubLivePublishPreflight);
+    }
     return defaultAppResponse(input, init);
   });
   vi.stubGlobal('fetch', fetchMock);
@@ -5574,7 +5616,7 @@ test('shows when every operator setup check is ready', async () => {
   render(<App />);
 
   const setupChecklist = await screen.findByRole('region', { name: 'Operator setup checklist' });
-  expect(within(setupChecklist).getByText('16/16 checks ready')).toBeInTheDocument();
+  expect(within(setupChecklist).getByText('17/17 checks ready')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Ready - GitHub token can read repository bingqin2/PatchPilot.')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Ready - Configured public webhook URL reaches PatchPilot health.')).toBeInTheDocument();
   expect(within(setupChecklist).getByText('Ready - Demo repository and recent trigger user align with configured safety allowlists.')).toBeInTheDocument();
@@ -7814,6 +7856,9 @@ function defaultAppResponse(input: RequestInfo | URL, init?: RequestInit) {
   }
   if (url === '/api/github/publish-permission-readiness?owner=bingqin2&repository=PatchPilot') {
     return jsonResponse(githubPublishPermissionReadiness);
+  }
+  if (url === '/api/github/live-publish-preflight?owner=bingqin2&repository=PatchPilot') {
+    return jsonResponse(githubLivePublishPreflight);
   }
   if (url === '/api/demo/readiness') {
     return jsonResponse(demoReadiness);

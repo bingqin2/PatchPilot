@@ -3,6 +3,7 @@ import type {
   ConfigurationSummary,
   DemoReadiness,
   GitHubCredentialReadiness,
+  GitHubLivePublishPreflight,
   GitHubPublishPermissionReadiness,
   GitHubPublishReadiness,
   GitHubRepositoryAccessReadiness,
@@ -19,6 +20,7 @@ interface OperatorSetupChecklistPanelProps {
   backendHealth: BackendHealth | null;
   configuration: ConfigurationSummary | null;
   githubCredentialReadiness: GitHubCredentialReadiness | null;
+  githubLivePublishPreflight: GitHubLivePublishPreflight | null;
   githubPublishPermissionReadiness: GitHubPublishPermissionReadiness | null;
   githubPublishReadiness: GitHubPublishReadiness | null;
   githubRepositoryAccessReadiness: GitHubRepositoryAccessReadiness | null;
@@ -45,6 +47,7 @@ export function OperatorSetupChecklistPanel({
   backendHealth,
   configuration,
   githubCredentialReadiness,
+  githubLivePublishPreflight,
   githubPublishPermissionReadiness,
   githubPublishReadiness,
   githubRepositoryAccessReadiness,
@@ -62,6 +65,7 @@ export function OperatorSetupChecklistPanel({
     backendHealth,
     configuration,
     githubCredentialReadiness,
+    githubLivePublishPreflight,
     githubPublishPermissionReadiness,
     githubPublishReadiness,
     githubRepositoryAccessReadiness,
@@ -142,6 +146,44 @@ export function OperatorSetupChecklistPanel({
         </div>
       ) : null}
 
+      {githubLivePublishPreflight ? (
+        <div className={`operator-publish-readiness operator-publish-readiness-${githubLivePublishPreflight.status.toLowerCase()}`}>
+          <div>
+            <span>GitHub live publish preflight</span>
+            <strong>{githubLivePublishPreflight.status} - {githubLivePublishPreflight.summary}</strong>
+            <p>{githubLivePublishPreflight.nextAction}</p>
+          </div>
+          <div className="operator-permission-grid">
+            <span>PatchPilot branches: {githubLivePublishPreflight.patchpilotBranches.length}</span>
+            <span>Open PatchPilot PRs: {githubLivePublishPreflight.openPatchpilotPullRequests.length}</span>
+            <span>Default branch: {githubLivePublishPreflight.defaultBranch ?? 'unknown'}</span>
+          </div>
+          {githubLivePublishPreflight.patchpilotBranches.length > 0 ? (
+            <ul>
+              {githubLivePublishPreflight.patchpilotBranches.map((branch) => (
+                <li key={branch}>{branch}</li>
+              ))}
+            </ul>
+          ) : null}
+          {githubLivePublishPreflight.openPatchpilotPullRequests.length > 0 ? (
+            <ul>
+              {githubLivePublishPreflight.openPatchpilotPullRequests.map((pullRequestUrl) => (
+                <li key={pullRequestUrl}>{pullRequestUrl}</li>
+              ))}
+            </ul>
+          ) : null}
+          <ul>
+            {githubLivePublishPreflight.checks.map((check) => (
+              <li key={check.name}>
+                <strong>{check.name}: {check.status}</strong>
+                <span>{check.summary}</span>
+              </li>
+            ))}
+          </ul>
+          <p>{githubLivePublishPreflight.sideEffectContract}</p>
+        </div>
+      ) : null}
+
       {nextActions.length > 0 ? (
         <div className="operator-setup-actions">
           <h3>Next setup actions</h3>
@@ -162,6 +204,7 @@ function setupChecks({
   backendHealth,
   configuration,
   githubCredentialReadiness,
+  githubLivePublishPreflight,
   githubPublishPermissionReadiness,
   githubPublishReadiness,
   githubRepositoryAccessReadiness,
@@ -181,6 +224,7 @@ function setupChecks({
     githubCredentialCheck(githubCredentialReadiness, demoReadiness),
     githubPublishCheck(githubPublishReadiness),
     githubPublishPermissionCheck(githubPublishPermissionReadiness),
+    githubLivePublishPreflightCheck(githubLivePublishPreflight),
     githubWebhookUrlCheck(githubWebhookUrlReadiness, demoReadiness),
     githubRepositoryAccessCheck(githubRepositoryAccessReadiness, demoReadiness),
     safetyPolicyCheck(configuration),
@@ -193,6 +237,17 @@ function setupChecks({
     workerHeartbeatCheck(demoReadiness, workerHealth),
     recentPullRequestCheck(demoReadiness, tasks)
   ];
+}
+
+function githubLivePublishPreflightCheck(githubLivePublishPreflight: GitHubLivePublishPreflight | null): SetupCheck {
+  const ready = githubLivePublishPreflight?.status === 'READY';
+  return {
+    name: 'GitHub live publish preflight',
+    ready,
+    message: githubLivePublishPreflight?.summary ?? 'GitHub live publish preflight has not loaded',
+    action: githubLivePublishPreflight?.nextAction ?? 'Confirm /api/github/live-publish-preflight before a live issue-to-PR demo.',
+    detail: githubLivePublishPreflight?.repository
+  };
 }
 
 function githubPublishCheck(githubPublishReadiness: GitHubPublishReadiness | null): SetupCheck {

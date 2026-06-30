@@ -524,6 +524,31 @@ export interface GitHubPublishPermissionReadiness {
   checkedAt: string;
 }
 
+export interface GitHubLivePublishPreflightCheck {
+  name: string;
+  status: 'READY' | 'NEEDS_ATTENTION' | 'BLOCKED';
+  summary: string;
+  nextAction: string;
+}
+
+export interface GitHubLivePublishPreflight {
+  status: 'READY' | 'NEEDS_ATTENTION' | 'BLOCKED';
+  livePublishReady: boolean;
+  tokenConfigured: boolean;
+  repositoryConfigured: boolean;
+  repository: string;
+  defaultBranch: string | null;
+  patchpilotBranches: string[];
+  openPatchpilotPullRequests: string[];
+  summary: string;
+  nextAction: string;
+  sideEffectContract: string;
+  checks: GitHubLivePublishPreflightCheck[];
+  evidenceNotes: string[];
+  latencyMs: number;
+  checkedAt: string;
+}
+
 export type GitHubWebhookUrlReadinessStatus = 'READY' | 'NEEDS_ATTENTION';
 
 export interface GitHubWebhookUrlReadiness {
