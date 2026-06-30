@@ -15,6 +15,8 @@ import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionEvidenceDe
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewDeliveryCertificateArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewDeliveryCertificateVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewReleaseBundleArchiveVo;
+import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewReleaseBundleDeliveryFinalizationVo;
+import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewReleaseBundleDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewReleaseBundleVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveVo;
@@ -247,6 +249,14 @@ class DemoReadinessControllerTests {
 
     @MockitoBean
     private DemoFinalExternalReviewReleaseBundleArchiveService demoFinalExternalReviewReleaseBundleArchiveService;
+
+    @MockitoBean
+    private DemoFinalExternalReviewReleaseBundleDeliveryReceiptService
+            demoFinalExternalReviewReleaseBundleDeliveryReceiptService;
+
+    @MockitoBean
+    private DemoFinalExternalReviewReleaseBundleDeliveryFinalizationService
+            demoFinalExternalReviewReleaseBundleDeliveryFinalizationService;
 
     @MockitoBean
     private DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
@@ -1535,6 +1545,166 @@ class DemoReadinessControllerTests {
 
         mockMvc.perform(get("/api/demo/final-external-review-release-bundle/archives/missing/report/download"))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void should_record_final_external_review_release_bundle_delivery_receipt_and_record_audit() throws Exception {
+        when(demoFinalExternalReviewReleaseBundleDeliveryReceiptService.recordDeliveryReceipt(argThat(request ->
+                request.deliveryChannel().equals("email")
+                        && request.deliveryTarget().equals("reviewer@example.com")
+                        && request.operator().equals("local-operator")
+                        && request.notes().equals("Sent frozen final release bundle to reviewers.")
+                        && request.deliveredAt().equals(Instant.parse("2026-06-29T13:25:00Z"))
+        ))).thenReturn(finalExternalReviewReleaseBundleDeliveryReceipt());
+
+        mockMvc.perform(post("/api/demo/final-external-review-release-bundle/delivery-receipts")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "deliveryChannel": "email",
+                                  "deliveryTarget": "reviewer@example.com",
+                                  "operator": "local-operator",
+                                  "notes": "Sent frozen final release bundle to reviewers.",
+                                  "deliveredAt": "2026-06-29T13:25:00Z"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id")
+                        .value("final-external-review-release-bundle-delivery-receipt-1"))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.releaseBundleArchiveStatus").value("READY"))
+                .andExpect(jsonPath("$.data.releaseBundleArchiveId")
+                        .value("final-external-review-release-bundle-archive-1"))
+                .andExpect(jsonPath("$.data.latestCertificateArchiveId")
+                        .value("final-external-review-delivery-certificate-archive-1"))
+                .andExpect(jsonPath("$.data.latestPackageDeliveryReceiptId")
+                        .value("final-external-review-package-delivery-receipt-1"))
+                .andExpect(jsonPath("$.data.deliveryTarget").value("reviewer@example.com"))
+                .andExpect(jsonPath("$.data.markdownReport").value(containsString(
+                        "# PatchPilot Final External Review Release Bundle Delivery Receipt"
+                )));
+
+        verify(operatorSafetyAuditService).recordSafetyAudit(argThat(command ->
+                command.action().equals("DEMO_FINAL_EXTERNAL_REVIEW_RELEASE_BUNDLE_DELIVERY_RECEIPT_RECORDED")
+                        && command.resourceType().equals(
+                        "DEMO_FINAL_EXTERNAL_REVIEW_RELEASE_BUNDLE_DELIVERY_RECEIPT"
+                )
+                        && command.resourceId().equals(
+                        "final-external-review-release-bundle-delivery-receipt-1"
+                )
+                        && command.operator().equals("local-operator")
+                        && command.reason().contains("final-external-review-release-bundle-archive-1")
+        ));
+    }
+
+    @Test
+    void should_reject_final_external_review_release_bundle_delivery_receipt_when_archive_is_not_ready()
+            throws Exception {
+        when(demoFinalExternalReviewReleaseBundleDeliveryReceiptService.recordDeliveryReceipt(
+                any(DemoFinalExternalReviewReleaseBundleDeliveryReceiptRequestDto.class)
+        )).thenThrow(new IllegalStateException(
+                "final external-review release bundle archive is not ready for delivery"
+        ));
+
+        mockMvc.perform(post("/api/demo/final-external-review-release-bundle/delivery-receipts")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "deliveryChannel": "email",
+                                  "deliveryTarget": "reviewer@example.com",
+                                  "operator": "local-operator"
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message")
+                        .value("final external-review release bundle archive is not ready for delivery"));
+    }
+
+    @Test
+    void should_list_final_external_review_release_bundle_delivery_receipts() throws Exception {
+        when(demoFinalExternalReviewReleaseBundleDeliveryReceiptService.listRecentReceipts())
+                .thenReturn(List.of(finalExternalReviewReleaseBundleDeliveryReceipt()));
+
+        mockMvc.perform(get("/api/demo/final-external-review-release-bundle/delivery-receipts"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].id")
+                        .value("final-external-review-release-bundle-delivery-receipt-1"))
+                .andExpect(jsonPath("$.data[0].releaseBundleArchiveId")
+                        .value("final-external-review-release-bundle-archive-1"));
+    }
+
+    @Test
+    void should_download_final_external_review_release_bundle_delivery_receipt_report() throws Exception {
+        when(demoFinalExternalReviewReleaseBundleDeliveryReceiptService.findReceipt(
+                "final-external-review-release-bundle-delivery-receipt-1"
+        )).thenReturn(Optional.of(finalExternalReviewReleaseBundleDeliveryReceipt()));
+
+        mockMvc.perform(get("/api/demo/final-external-review-release-bundle/delivery-receipts/final-external-review-release-bundle-delivery-receipt-1/report/download"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString(
+                        "patchpilot-final-external-review-release-bundle-delivery-receipt-final-external-review-release-bundle-delivery-receipt-1.md"
+                )))
+                .andExpect(content().contentType("text/markdown;charset=UTF-8"))
+                .andExpect(content().string(containsString(
+                        "# PatchPilot Final External Review Release Bundle Delivery Receipt"
+                )))
+                .andExpect(content().string(containsString("reviewer@example.com")));
+    }
+
+    @Test
+    void should_return_not_found_when_final_external_review_release_bundle_delivery_receipt_is_missing()
+            throws Exception {
+        when(demoFinalExternalReviewReleaseBundleDeliveryReceiptService.findReceipt("missing-receipt"))
+                .thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/api/demo/final-external-review-release-bundle/delivery-receipts/missing-receipt/report/download"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void should_return_final_external_review_release_bundle_delivery_finalization() throws Exception {
+        when(demoFinalExternalReviewReleaseBundleDeliveryFinalizationService.getFinalizationGate())
+                .thenReturn(finalExternalReviewReleaseBundleDeliveryFinalization());
+
+        mockMvc.perform(get("/api/demo/final-external-review-release-bundle/delivery-finalization"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.finalized").value(true))
+                .andExpect(jsonPath("$.data.latestArchiveId")
+                        .value("final-external-review-release-bundle-archive-1"))
+                .andExpect(jsonPath("$.data.latestDeliveryReceiptId")
+                        .value("final-external-review-release-bundle-delivery-receipt-1"))
+                .andExpect(jsonPath("$.data.latestPackageDeliveryReceiptId")
+                        .value("final-external-review-package-delivery-receipt-1"))
+                .andExpect(jsonPath("$.data.releaseBundleDeliveryReceiptFreshness").value("FRESH"))
+                .andExpect(jsonPath("$.data.releaseBundleDeliveryReceiptFresh").value(true))
+                .andExpect(jsonPath("$.data.checks[0].name")
+                        .value("Frozen final external-review release bundle"))
+                .andExpect(jsonPath("$.data.evidenceNotes[0]").value(
+                        "Frozen final external-review release bundle final-external-review-release-bundle-archive-1 is ready."
+                ))
+                .andExpect(jsonPath("$.data.sideEffectContract").value(containsString("read-only")));
+    }
+
+    @Test
+    void should_download_final_external_review_release_bundle_delivery_finalization_report() throws Exception {
+        when(demoFinalExternalReviewReleaseBundleDeliveryFinalizationService.getFinalizationGate())
+                .thenReturn(finalExternalReviewReleaseBundleDeliveryFinalization());
+
+        mockMvc.perform(get("/api/demo/final-external-review-release-bundle/delivery-finalization/report/download"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString(
+                        "patchpilot-final-external-review-release-bundle-delivery-finalization.md"
+                )))
+                .andExpect(content().contentType("text/markdown;charset=UTF-8"))
+                .andExpect(content().string(containsString(
+                        "# PatchPilot Final External Review Release Bundle Delivery Finalization"
+                )));
     }
 
     @Test
@@ -5002,6 +5172,75 @@ class DemoReadinessControllerTests {
                 bundle.markdownReport(),
                 bundle.generatedAt(),
                 Instant.parse("2026-06-29T12:30:00Z")
+        );
+    }
+
+    private static DemoFinalExternalReviewReleaseBundleDeliveryReceiptVo
+    finalExternalReviewReleaseBundleDeliveryReceipt() {
+        return new DemoFinalExternalReviewReleaseBundleDeliveryReceiptVo(
+                "final-external-review-release-bundle-delivery-receipt-1",
+                DemoReadinessStatus.READY,
+                DemoReadinessStatus.READY,
+                "final-external-review-release-bundle-archive-1",
+                "final-external-review-delivery-certificate-archive-1",
+                "final-external-review-package-delivery-finalization-archive-1",
+                "final-external-review-package-archive-1",
+                "final-external-review-package-delivery-receipt-1",
+                "task-1",
+                "https://github.com/bingqin2/PatchPilot/pull/8",
+                "PatchPilot final external-review release bundle is ready.",
+                "Share the release bundle report and listed attachments with external reviewers.",
+                "email",
+                "reviewer@example.com",
+                "local-operator",
+                "Sent frozen final release bundle to reviewers.",
+                Instant.parse("2026-06-29T13:25:00Z"),
+                Instant.parse("2026-06-29T13:30:00Z"),
+                "# PatchPilot Final External Review Release Bundle Delivery Receipt\n\n"
+                        + "- Release bundle archive: `final-external-review-release-bundle-archive-1`\n"
+                        + "- Delivery target: `reviewer@example.com`\n"
+        );
+    }
+
+    private static DemoFinalExternalReviewReleaseBundleDeliveryFinalizationVo
+    finalExternalReviewReleaseBundleDeliveryFinalization() {
+        return new DemoFinalExternalReviewReleaseBundleDeliveryFinalizationVo(
+                DemoReadinessStatus.READY,
+                true,
+                "Final external-review release bundle delivery is finalized with a fresh release-bundle receipt.",
+                "Use the release bundle delivery finalization report as the terminal reviewer handoff record.",
+                "final-external-review-release-bundle-archive-1",
+                "final-external-review-release-bundle-delivery-receipt-1",
+                "final-external-review-delivery-certificate-archive-1",
+                "final-external-review-package-delivery-finalization-archive-1",
+                "final-external-review-package-archive-1",
+                "final-external-review-package-delivery-receipt-1",
+                "task-1",
+                "https://github.com/bingqin2/PatchPilot/pull/8",
+                "reviewer@example.com",
+                "email",
+                "2026-06-29T13:25:00Z",
+                "FRESH",
+                true,
+                "Latest release bundle delivery receipt matches the current frozen final external-review release bundle.",
+                List.of(new DemoFinalExternalReviewReleaseBundleDeliveryFinalizationVo.Check(
+                        "Frozen final external-review release bundle",
+                        DemoReadinessStatus.READY,
+                        "Frozen final external-review release bundle is ready.",
+                        "No action needed."
+                )),
+                List.of(
+                        "Frozen final external-review release bundle final-external-review-release-bundle-archive-1 is ready.",
+                        "Release bundle delivery receipt final-external-review-release-bundle-delivery-receipt-1 is fresh."
+                ),
+                List.of(
+                        "Download final external-review release bundle delivery finalization report.",
+                        "Download final external-review release bundle delivery receipt final-external-review-release-bundle-delivery-receipt-1."
+                ),
+                "GET /api/demo/final-external-review-release-bundle/delivery-finalization is read-only.",
+                "# PatchPilot Final External Review Release Bundle Delivery Finalization\n\n"
+                        + "- Latest release bundle delivery receipt: `final-external-review-release-bundle-delivery-receipt-1`\n",
+                Instant.parse("2026-06-29T14:00:00Z")
         );
     }
 }

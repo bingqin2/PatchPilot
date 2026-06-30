@@ -276,6 +276,37 @@ export function DemoEvidenceBundlePanel({ bundle, error, onCopyRunbook }: DemoEv
       latestArchivedAt: null,
       downloadActions: ['Archive the READY final external-review release bundle.']
     };
+  const finalExternalReviewReleaseBundleDeliveryFinalization =
+    bundle?.finalExternalReviewReleaseBundleDeliveryFinalization ?? {
+      status: 'NEEDS_ATTENTION' as DemoReadinessStatus,
+      finalized: false,
+      summary: 'No final external-review release bundle delivery finalization is available.',
+      nextAction: 'Deliver the frozen final external-review release bundle and record the delivery receipt.',
+      latestArchiveId: finalExternalReviewReleaseBundleArchiveEvidence.latestArchiveId,
+      latestDeliveryReceiptId: null,
+      latestCertificateArchiveId: finalExternalReviewReleaseBundleArchiveEvidence.latestCertificateArchiveId,
+      latestDeliveryFinalizationArchiveId:
+        finalExternalReviewReleaseBundleArchiveEvidence.latestDeliveryFinalizationArchiveId,
+      latestPackageArchiveId: finalExternalReviewReleaseBundleArchiveEvidence.latestPackageArchiveId,
+      latestPackageDeliveryReceiptId: finalExternalReviewReleaseBundleArchiveEvidence.latestDeliveryReceiptId,
+      latestTaskId: finalExternalReviewReleaseBundleArchiveEvidence.latestTaskId,
+      latestPullRequestUrl: finalExternalReviewReleaseBundleArchiveEvidence.latestPullRequestUrl,
+      latestDeliveryTarget: null,
+      latestDeliveryChannel: null,
+      latestDeliveredAt: null,
+      releaseBundleDeliveryReceiptFreshness: 'MISSING',
+      releaseBundleDeliveryReceiptFresh: false,
+      releaseBundleDeliveryReceiptFreshnessSummary:
+        'No release bundle delivery receipt matches the current frozen release bundle archive.',
+      checks: [],
+      evidenceNotes: [
+        'No final external-review release bundle delivery finalization is available in the top-level evidence bundle.'
+      ],
+      downloadActions: ['Record a release bundle delivery receipt before downloading finalization proof.'],
+      sideEffectContract: 'GET /api/demo/evidence-bundle is read-only and does not mutate tasks, Git, or GitHub.',
+      markdownReport: '',
+      generatedAt: ''
+    };
 
   async function copyRunbook() {
     try {
@@ -907,6 +938,50 @@ export function DemoEvidenceBundlePanel({ bundle, error, onCopyRunbook }: DemoEv
                 <small>No archived final external-review release Pull Request</small>
               )}
               {finalExternalReviewReleaseBundleArchiveEvidence.downloadActions.slice(0, 2).map((action) => (
+                <small key={action}>{action}</small>
+              ))}
+            </div>
+            <div>
+              <span>Final external-review release bundle delivery</span>
+              <strong>
+                {finalExternalReviewReleaseBundleDeliveryFinalization.finalized
+                  ? 'Finalized'
+                  : statusLabel(finalExternalReviewReleaseBundleDeliveryFinalization.status)}
+              </strong>
+              <small>{finalExternalReviewReleaseBundleDeliveryFinalization.summary}</small>
+              <small>{finalExternalReviewReleaseBundleDeliveryFinalization.nextAction}</small>
+              <small>
+                {finalExternalReviewReleaseBundleDeliveryFinalization.latestArchiveId
+                  ?? 'No release bundle archive'}
+              </small>
+              <small>
+                {finalExternalReviewReleaseBundleDeliveryFinalization.latestDeliveryReceiptId
+                  ?? 'No release bundle delivery receipt'}
+              </small>
+              <small>
+                {deliveryFreshnessLabel(
+                  finalExternalReviewReleaseBundleDeliveryFinalization.releaseBundleDeliveryReceiptFreshness
+                )}
+              </small>
+              <small>{finalExternalReviewReleaseBundleDeliveryFinalization.releaseBundleDeliveryReceiptFreshnessSummary}</small>
+              <small>
+                {finalExternalReviewReleaseBundleDeliveryFinalization.latestDeliveryTarget
+                  ? `${finalExternalReviewReleaseBundleDeliveryFinalization.latestDeliveryChannel ?? 'delivery'} - ${finalExternalReviewReleaseBundleDeliveryFinalization.latestDeliveryTarget}`
+                  : 'No final external-review release bundle delivery target'}
+              </small>
+              {finalExternalReviewReleaseBundleDeliveryFinalization.latestDeliveredAt ? (
+                <small>
+                  Delivered {compactDateTime(finalExternalReviewReleaseBundleDeliveryFinalization.latestDeliveredAt)}
+                </small>
+              ) : null}
+              {finalExternalReviewReleaseBundleDeliveryFinalization.latestPullRequestUrl ? (
+                <a href={finalExternalReviewReleaseBundleDeliveryFinalization.latestPullRequestUrl}>
+                  Open final external-review release bundle delivery Pull Request
+                </a>
+              ) : (
+                <small>No final external-review release bundle delivery Pull Request</small>
+              )}
+              {finalExternalReviewReleaseBundleDeliveryFinalization.downloadActions.slice(0, 2).map((action) => (
                 <small key={action}>{action}</small>
               ))}
             </div>

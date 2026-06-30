@@ -12,6 +12,8 @@ import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionEvidenceBu
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewDeliveryCertificateArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewDeliveryCertificateVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewReleaseBundleArchiveVo;
+import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewReleaseBundleDeliveryFinalizationVo;
+import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewReleaseBundleDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewReleaseBundleVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveVo;
@@ -126,6 +128,10 @@ public class DemoReadinessController {
             demoFinalExternalReviewDeliveryCertificateArchiveService;
     private final DemoFinalExternalReviewReleaseBundleService demoFinalExternalReviewReleaseBundleService;
     private final DemoFinalExternalReviewReleaseBundleArchiveService demoFinalExternalReviewReleaseBundleArchiveService;
+    private final DemoFinalExternalReviewReleaseBundleDeliveryReceiptService
+            demoFinalExternalReviewReleaseBundleDeliveryReceiptService;
+    private final DemoFinalExternalReviewReleaseBundleDeliveryFinalizationService
+            demoFinalExternalReviewReleaseBundleDeliveryFinalizationService;
     private final DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
     private final DemoReadinessSnapshotTrendService demoReadinessSnapshotTrendService;
     private final DemoLaunchPreflightService demoLaunchPreflightService;
@@ -620,6 +626,42 @@ public class DemoReadinessController {
         return ApiResponse.ok(demoFinalExternalReviewReleaseBundleArchiveService.listRecentArchives());
     }
 
+    @PostMapping("/final-external-review-release-bundle/delivery-receipts")
+    public ResponseEntity<ApiResponse<DemoFinalExternalReviewReleaseBundleDeliveryReceiptVo>>
+    recordFinalExternalReviewReleaseBundleDeliveryReceipt(
+            @RequestBody DemoFinalExternalReviewReleaseBundleDeliveryReceiptRequestDto request
+    ) {
+        try {
+            DemoFinalExternalReviewReleaseBundleDeliveryReceiptVo receipt =
+                    demoFinalExternalReviewReleaseBundleDeliveryReceiptService.recordDeliveryReceipt(request);
+            operatorSafetyAuditService.recordSafetyAudit(new RecordOperatorSafetyAuditCommand(
+                    "DEMO_FINAL_EXTERNAL_REVIEW_RELEASE_BUNDLE_DELIVERY_RECEIPT_RECORDED",
+                    "DEMO_FINAL_EXTERNAL_REVIEW_RELEASE_BUNDLE_DELIVERY_RECEIPT",
+                    receipt.id(),
+                    TriggerQuarantineScope.REPOSITORY,
+                    "patchpilot/local-demo",
+                    receipt.operator(),
+                    "Recorded final external-review release bundle delivery receipt for "
+                            + receipt.releaseBundleArchiveId()
+            ));
+            return ResponseEntity.ok(ApiResponse.ok(receipt));
+        } catch (IllegalArgumentException | IllegalStateException exception) {
+            return ResponseEntity.badRequest().body(ApiResponse.fail(exception.getMessage()));
+        }
+    }
+
+    @GetMapping("/final-external-review-release-bundle/delivery-receipts")
+    public ApiResponse<List<DemoFinalExternalReviewReleaseBundleDeliveryReceiptVo>>
+    listFinalExternalReviewReleaseBundleDeliveryReceipts() {
+        return ApiResponse.ok(demoFinalExternalReviewReleaseBundleDeliveryReceiptService.listRecentReceipts());
+    }
+
+    @GetMapping("/final-external-review-release-bundle/delivery-finalization")
+    public ApiResponse<DemoFinalExternalReviewReleaseBundleDeliveryFinalizationVo>
+    getFinalExternalReviewReleaseBundleDeliveryFinalization() {
+        return ApiResponse.ok(demoFinalExternalReviewReleaseBundleDeliveryFinalizationService.getFinalizationGate());
+    }
+
     @GetMapping(value = "/handoff-share-center/report/download", produces = "text/markdown;charset=UTF-8")
     public ResponseEntity<String> downloadHandoffShareCenterReport() {
         return markdownAttachment(
@@ -864,6 +906,29 @@ public class DemoReadinessController {
                         archive.report()
                 ))
                 .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @GetMapping(value = "/final-external-review-release-bundle/delivery-receipts/{receiptId}/report/download", produces = "text/markdown;charset=UTF-8")
+    public ResponseEntity<String> downloadFinalExternalReviewReleaseBundleDeliveryReceiptReport(
+            @PathVariable String receiptId
+    ) {
+        return demoFinalExternalReviewReleaseBundleDeliveryReceiptService.findReceipt(receiptId)
+                .map(receipt -> markdownAttachment(
+                        "patchpilot-final-external-review-release-bundle-delivery-receipt-"
+                                + safeFilenamePart(receipt.id()) + ".md",
+                        receipt.markdownReport()
+                ))
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @GetMapping(value = "/final-external-review-release-bundle/delivery-finalization/report/download", produces = "text/markdown;charset=UTF-8")
+    public ResponseEntity<String> downloadFinalExternalReviewReleaseBundleDeliveryFinalizationReport() {
+        return markdownAttachment(
+                "patchpilot-final-external-review-release-bundle-delivery-finalization.md",
+                demoFinalExternalReviewReleaseBundleDeliveryFinalizationService
+                        .getFinalizationGate()
+                        .markdownReport()
+        );
     }
 
     @GetMapping(value = "/final-acceptance-completion-closeout/archives/{archiveId}/report/download", produces = "text/markdown;charset=UTF-8")
