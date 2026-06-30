@@ -12,6 +12,7 @@ import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionEvidenceBu
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewDeliveryCertificateArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewDeliveryCertificateVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewReleaseBundleArchiveVo;
+import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewReleaseBundleDeliveryCertificateVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewReleaseBundleDeliveryFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewReleaseBundleDeliveryReceiptVo;
@@ -135,6 +136,8 @@ public class DemoReadinessController {
             demoFinalExternalReviewReleaseBundleDeliveryFinalizationService;
     private final DemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchiveService
             demoFinalExternalReviewReleaseBundleDeliveryFinalizationArchiveService;
+    private final DemoFinalExternalReviewReleaseBundleDeliveryCertificateService
+            demoFinalExternalReviewReleaseBundleDeliveryCertificateService;
     private final DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
     private final DemoReadinessSnapshotTrendService demoReadinessSnapshotTrendService;
     private final DemoLaunchPreflightService demoLaunchPreflightService;
@@ -698,6 +701,12 @@ public class DemoReadinessController {
         );
     }
 
+    @GetMapping("/final-external-review-release-bundle/delivery-certificate")
+    public ApiResponse<DemoFinalExternalReviewReleaseBundleDeliveryCertificateVo>
+    getFinalExternalReviewReleaseBundleDeliveryCertificate() {
+        return ApiResponse.ok(demoFinalExternalReviewReleaseBundleDeliveryCertificateService.getCertificate());
+    }
+
     @GetMapping(value = "/handoff-share-center/report/download", produces = "text/markdown;charset=UTF-8")
     public ResponseEntity<String> downloadHandoffShareCenterReport() {
         return markdownAttachment(
@@ -978,6 +987,14 @@ public class DemoReadinessController {
                         archive.report()
                 ))
                 .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @GetMapping(value = "/final-external-review-release-bundle/delivery-certificate/report/download", produces = "text/markdown;charset=UTF-8")
+    public ResponseEntity<String> downloadFinalExternalReviewReleaseBundleDeliveryCertificateReport() {
+        return markdownAttachment(
+                "patchpilot-final-external-review-release-bundle-delivery-certificate.md",
+                demoFinalExternalReviewReleaseBundleDeliveryCertificateService.getCertificate().markdownReport()
+        );
     }
 
     @GetMapping(value = "/final-acceptance-completion-closeout/archives/{archiveId}/report/download", produces = "text/markdown;charset=UTF-8")

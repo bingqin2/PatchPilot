@@ -17,6 +17,7 @@ import type {
   DemoFinalExternalReviewEvidencePackage,
   DemoFinalExternalReviewReleaseBundle,
   DemoFinalExternalReviewReleaseBundleArchive,
+  DemoFinalExternalReviewReleaseBundleDeliveryCertificate,
   DemoFinalExternalReviewReleaseBundleDeliveryFinalization,
   DemoFinalExternalReviewReleaseBundleDeliveryReceipt,
   DemoFinalAcceptanceSharePackage,
@@ -677,6 +678,51 @@ const finalExternalReviewReleaseBundleDeliveryFinalization:
     generatedAt: '2026-06-29T12:20:00Z'
   };
 
+const finalExternalReviewReleaseBundleDeliveryCertificate:
+  DemoFinalExternalReviewReleaseBundleDeliveryCertificate = {
+    status: 'READY',
+    certified: true,
+    summary:
+      'Final external-review release bundle delivery is certified from the latest finalized archive.',
+    nextAction:
+      'Share the release bundle delivery certificate report as the terminal reviewer handoff proof.',
+    latestDeliveryFinalizationArchiveId:
+      'final-external-review-release-bundle-delivery-finalization-archive-1',
+    latestReleaseBundleArchiveId: 'final-external-review-release-bundle-archive-1',
+    latestDeliveryReceiptId: 'final-external-review-release-bundle-delivery-receipt-1',
+    latestCertificateArchiveId: 'final-external-review-delivery-certificate-archive-1',
+    latestPackageArchiveId: 'final-external-review-package-archive-1',
+    latestPackageDeliveryReceiptId: 'final-external-review-package-delivery-receipt-1',
+    latestTaskId: 'task-1',
+    latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+    latestDeliveryTarget: 'reviewer@example.com',
+    latestDeliveryChannel: 'email',
+    latestDeliveredAt: '2026-06-29T12:10:00Z',
+    latestArchivedAt: '2026-06-29T12:30:00Z',
+    releaseBundleDeliveryReceiptFreshness: 'FRESH',
+    releaseBundleDeliveryReceiptFresh: true,
+    checks: [
+      {
+        name: 'Final external-review release bundle delivery finalization archive',
+        status: 'READY',
+        summary: 'Latest release bundle delivery finalization archive is finalized.',
+        nextAction: 'No action needed.'
+      }
+    ],
+    evidenceNotes: [
+      'Release bundle delivery finalization archive final-external-review-release-bundle-delivery-finalization-archive-1 is finalized.',
+      'Fresh release bundle delivery receipt final-external-review-release-bundle-delivery-receipt-1 proves the frozen release bundle was delivered.'
+    ],
+    downloadActions: [
+      'Download final external-review release bundle delivery certificate report.',
+      'Download final external-review release bundle delivery finalization archive final-external-review-release-bundle-delivery-finalization-archive-1.'
+    ],
+    sideEffectContract:
+      'GET /api/demo/final-external-review-release-bundle/delivery-certificate is read-only.',
+    markdownReport: '# PatchPilot Final External Review Release Bundle Delivery Certificate',
+    generatedAt: '2026-06-29T12:40:00Z'
+  };
+
 test('shows final demo acceptance status and certificate evidence', () => {
   render(
     <DemoAcceptanceSummaryPanel
@@ -702,6 +748,17 @@ test('shows final demo acceptance status and certificate evidence', () => {
       finalExternalReviewEvidencePackageDeliveryFinalizationArchives={[
         finalExternalReviewEvidencePackageDeliveryFinalizationArchive
       ]}
+      finalExternalReviewReleaseBundle={finalExternalReviewReleaseBundle}
+      finalExternalReviewReleaseBundleArchives={[finalExternalReviewReleaseBundleArchive]}
+      finalExternalReviewReleaseBundleDeliveryReceipts={[
+        finalExternalReviewReleaseBundleDeliveryReceipt
+      ]}
+      finalExternalReviewReleaseBundleDeliveryFinalization={
+        finalExternalReviewReleaseBundleDeliveryFinalization
+      }
+      finalExternalReviewReleaseBundleDeliveryCertificate={
+        finalExternalReviewReleaseBundleDeliveryCertificate
+      }
       error={null}
       sharePackageError={null}
       sharePackageArchiveError={null}
@@ -714,6 +771,7 @@ test('shows final demo acceptance status and certificate evidence', () => {
       completionEvidenceDeliveryFinalizationError={null}
       completionCloseoutError={null}
       finalExternalReviewEvidencePackageDeliveryFinalizationError={null}
+      finalExternalReviewReleaseBundleDeliveryCertificateError={null}
       onDownloadReport={vi.fn()}
       onDownloadSharePackageReport={vi.fn()}
       onArchiveSharePackage={vi.fn()}
@@ -809,6 +867,17 @@ test('shows final demo acceptance status and certificate evidence', () => {
     name:
       'Download final external-review package delivery finalization archive final-external-review-package-delivery-finalization-archive-1'
   })).toBeInTheDocument();
+  expect(within(panel).getByRole('heading', {
+    name: 'Final external-review release bundle delivery certificate'
+  })).toBeInTheDocument();
+  expect(within(panel).getByText(
+    'Final external-review release bundle delivery is certified from the latest finalized archive.'
+  )).toBeInTheDocument();
+  expect(within(panel).getAllByText('final-external-review-release-bundle-delivery-finalization-archive-1'))
+    .not.toHaveLength(0);
+  expect(within(panel).getByText(
+    'Fresh release bundle delivery receipt final-external-review-release-bundle-delivery-receipt-1 proves the frozen release bundle was delivered.'
+  )).toBeInTheDocument();
 });
 
 test('records and downloads final external-review release bundle delivery evidence', async () => {
@@ -821,6 +890,11 @@ test('records and downloads final external-review release bundle delivery eviden
   }));
   const downloadFinalizationReport = vi.fn(async () => new Blob([
     '# PatchPilot Final External Review Release Bundle Delivery Finalization'
+  ], {
+    type: 'text/markdown'
+  }));
+  const downloadCertificateReport = vi.fn(async () => new Blob([
+    '# PatchPilot Final External Review Release Bundle Delivery Certificate'
   ], {
     type: 'text/markdown'
   }));
@@ -864,6 +938,9 @@ test('records and downloads final external-review release bundle delivery eviden
       finalExternalReviewReleaseBundleDeliveryFinalization={
         finalExternalReviewReleaseBundleDeliveryFinalization
       }
+      finalExternalReviewReleaseBundleDeliveryCertificate={
+        finalExternalReviewReleaseBundleDeliveryCertificate
+      }
       error={null}
       sharePackageError={null}
       sharePackageArchiveError={null}
@@ -884,6 +961,7 @@ test('records and downloads final external-review release bundle delivery eviden
       finalExternalReviewReleaseBundleArchiveError={null}
       finalExternalReviewReleaseBundleDeliveryReceiptError={null}
       finalExternalReviewReleaseBundleDeliveryFinalizationError={null}
+      finalExternalReviewReleaseBundleDeliveryCertificateError={null}
       onDownloadReport={vi.fn()}
       onDownloadSharePackageReport={vi.fn()}
       onArchiveSharePackage={vi.fn()}
@@ -914,6 +992,7 @@ test('records and downloads final external-review release bundle delivery eviden
       onCreateFinalExternalReviewReleaseBundleDeliveryReceipt={createReceipt}
       onDownloadFinalExternalReviewReleaseBundleDeliveryReceiptReport={downloadReceiptReport}
       onDownloadFinalExternalReviewReleaseBundleDeliveryFinalizationReport={downloadFinalizationReport}
+      onDownloadFinalExternalReviewReleaseBundleDeliveryCertificateReport={downloadCertificateReport}
     />
   );
 
@@ -947,6 +1026,9 @@ test('records and downloads final external-review release bundle delivery eviden
   await user.click(within(panel).getByRole('button', {
     name: 'Download final external-review release bundle delivery finalization'
   }));
+  await user.click(within(panel).getByRole('button', {
+    name: 'Download final external-review release bundle delivery certificate'
+  }));
 
   expect(createReceipt).toHaveBeenCalledWith({
     deliveryChannel: 'email',
@@ -957,6 +1039,7 @@ test('records and downloads final external-review release bundle delivery eviden
   expect(downloadReceiptReport)
     .toHaveBeenCalledWith('final-external-review-release-bundle-delivery-receipt-1');
   expect(downloadFinalizationReport).toHaveBeenCalledTimes(1);
+  expect(downloadCertificateReport).toHaveBeenCalledTimes(1);
   expect(anchorClick).toHaveBeenCalled();
   expect(revokeObjectUrl).toHaveBeenCalledWith('blob:final-external-review-release-bundle-delivery');
   expect(await within(panel).findByText(
@@ -967,6 +1050,9 @@ test('records and downloads final external-review release bundle delivery eviden
   )).toBeInTheDocument();
   expect(within(panel).getByText(
     'Final external-review release bundle delivery finalization downloaded'
+  )).toBeInTheDocument();
+  expect(within(panel).getByText(
+    'Final external-review release bundle delivery certificate downloaded'
   )).toBeInTheDocument();
 });
 

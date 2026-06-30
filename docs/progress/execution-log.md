@@ -6103,3 +6103,23 @@ Validation so far:
 - `npm test -- --reporter=dot`: passed, 30 test files and 477 tests.
 - `npm run build`: passed with the existing Vite large-chunk warning.
 - `git diff --check`: passed.
+
+## 2026-06-30 - 303 Final release bundle delivery certificate
+
+- Started `303-final-release-bundle-delivery-certificate` to create one read-only terminal certificate for the latest frozen final external-review release-bundle delivery finalization archive.
+- Planned a complete feature slice: backend certificate VO/service, JSON and Markdown download endpoints, final demo acceptance dashboard certificate card, frontend API helpers, App refresh wiring after delivery finalization archive creation, README/product/frontend/architecture docs, and regression tests.
+- Added `DemoFinalExternalReviewReleaseBundleDeliveryCertificateService` and `DemoFinalExternalReviewReleaseBundleDeliveryCertificateVo`, deriving certification from the latest `DemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchiveVo`.
+- Added `GET /api/demo/final-external-review-release-bundle/delivery-certificate` and `GET /api/demo/final-external-review-release-bundle/delivery-certificate/report/download`.
+- Updated the final demo acceptance dashboard with a terminal release-bundle delivery certificate card showing certified status, latest delivery finalization archive, release-bundle archive, delivery receipt freshness, checks, evidence notes, download actions, read-only contract, and Markdown download.
+- Updated frontend API helpers, App data loading, App smoke fixtures, README, product spec, frontend design doc, architecture notes, and added this plan document.
+
+Validation so far:
+
+- `mvn -q -pl PatchPilot -Dtest=DemoFinalExternalReviewReleaseBundleDeliveryCertificateServiceTests,DemoReadinessControllerTests#should_return_final_external_review_release_bundle_delivery_certificate+should_download_final_external_review_release_bundle_delivery_certificate_report test`: first failed on missing VO/service, then passed after backend implementation.
+- `npm test -- --run src/api.test.ts -t "release bundle delivery certificate"`: passed, 2 focused API tests.
+- `npm test -- --run src/dashboard/components/DemoAcceptanceSummaryPanel.test.tsx`: passed, 18 tests.
+- `npm test -- --run src/api.test.ts src/App.test.tsx -t "release bundle delivery certificate|renders operational task dashboard"`: passed, 3 focused API/App tests.
+- `mvn -q -pl PatchPilot test`: passed.
+- `npm test -- --reporter=dot`: passed, 30 test files and 479 tests.
+- `npm run build`: passed with the existing Vite large-chunk warning.
+- `git diff --check`: passed.
