@@ -1633,6 +1633,38 @@ export interface DemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchive
   archivedAt: string;
 }
 
+export interface DemoFinalExternalReviewReleaseBundleDeliveryCertificate {
+  status: DemoReadinessStatus;
+  certified: boolean;
+  summary: string;
+  nextAction: string;
+  latestDeliveryFinalizationArchiveId: string | null;
+  latestReleaseBundleArchiveId: string | null;
+  latestDeliveryReceiptId: string | null;
+  latestCertificateArchiveId: string | null;
+  latestPackageArchiveId: string | null;
+  latestPackageDeliveryReceiptId: string | null;
+  latestTaskId: string | null;
+  latestPullRequestUrl: string | null;
+  latestDeliveryTarget: string | null;
+  latestDeliveryChannel: string | null;
+  latestDeliveredAt: string | null;
+  latestArchivedAt: string | null;
+  releaseBundleDeliveryReceiptFreshness: string;
+  releaseBundleDeliveryReceiptFresh: boolean;
+  checks: Array<{
+    name: string;
+    status: DemoReadinessStatus;
+    summary: string;
+    nextAction: string;
+  }>;
+  evidenceNotes: string[];
+  downloadActions: string[];
+  sideEffectContract: string;
+  markdownReport: string;
+  generatedAt: string;
+}
+
 export interface DemoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveEvidence {
   status: DemoReadinessStatus;
   archived: boolean;

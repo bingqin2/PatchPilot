@@ -63,6 +63,7 @@ import {
   downloadDemoFinalExternalReviewDeliveryCertificateReport,
   downloadDemoFinalExternalReviewReleaseBundleReport,
   downloadDemoFinalExternalReviewReleaseBundleArchiveReport,
+  downloadDemoFinalExternalReviewReleaseBundleDeliveryCertificateReport,
   downloadDemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchiveReport,
   downloadDemoFinalExternalReviewReleaseBundleDeliveryFinalizationReport,
   downloadDemoFinalExternalReviewReleaseBundleDeliveryReceiptReport,
@@ -124,6 +125,7 @@ import {
   getDemoFinalExternalReviewEvidencePackageDeliveryFinalization,
   getDemoFinalExternalReviewDeliveryCertificate,
   getDemoFinalExternalReviewReleaseBundle,
+  getDemoFinalExternalReviewReleaseBundleDeliveryCertificate,
   getDemoFinalExternalReviewReleaseBundleDeliveryFinalization,
   getDemoFinalExternalReviewEvidencePackage,
   getDemoFinalAcceptanceShareFinalization,
@@ -268,6 +270,7 @@ import type {
   DemoFinalExternalReviewDeliveryCertificate,
   DemoFinalExternalReviewReleaseBundle,
   DemoFinalExternalReviewReleaseBundleArchive,
+  DemoFinalExternalReviewReleaseBundleDeliveryCertificate,
   DemoFinalExternalReviewReleaseBundleDeliveryFinalization,
   DemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchive,
   DemoFinalExternalReviewReleaseBundleDeliveryReceipt,
@@ -554,6 +557,14 @@ export default function App() {
   const [
     demoFinalExternalReviewReleaseBundleDeliveryFinalizationArchiveError,
     setDemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchiveError
+  ] = useState<string | null>(null);
+  const [
+    demoFinalExternalReviewReleaseBundleDeliveryCertificate,
+    setDemoFinalExternalReviewReleaseBundleDeliveryCertificate
+  ] = useState<DemoFinalExternalReviewReleaseBundleDeliveryCertificate | null>(null);
+  const [
+    demoFinalExternalReviewReleaseBundleDeliveryCertificateError,
+    setDemoFinalExternalReviewReleaseBundleDeliveryCertificateError
   ] = useState<string | null>(null);
   const [demoReadinessSnapshots, setDemoReadinessSnapshots] = useState<DemoReadinessSnapshotArchive[]>([]);
   const [demoReadinessSnapshotError, setDemoReadinessSnapshotError] = useState<string | null>(null);
@@ -1028,6 +1039,7 @@ export default function App() {
         demoFinalExternalReviewReleaseBundleDeliveryReceiptResult,
         demoFinalExternalReviewReleaseBundleDeliveryFinalizationResult,
         demoFinalExternalReviewReleaseBundleDeliveryFinalizationArchiveResult,
+        demoFinalExternalReviewReleaseBundleDeliveryCertificateResult,
         demoReadinessSnapshotResult,
         demoReadinessSnapshotTrendResult,
         demoSmokeChecklistResult,
@@ -1284,6 +1296,10 @@ export default function App() {
         listDemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchives().then(
           (archives) => ({ archives, error: null as string | null }),
           (caught) => ({ archives: null, error: errorMessage(caught) })
+        ),
+        getDemoFinalExternalReviewReleaseBundleDeliveryCertificate().then(
+          (certificate) => ({ certificate, error: null as string | null }),
+          (caught) => ({ certificate: null, error: errorMessage(caught) })
         ),
         listDemoReadinessSnapshots().then(
           (snapshots) => ({ snapshots, error: null as string | null }),
@@ -1678,6 +1694,14 @@ export default function App() {
       }
       setDemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchiveError(
         demoFinalExternalReviewReleaseBundleDeliveryFinalizationArchiveResult.error
+      );
+      if (demoFinalExternalReviewReleaseBundleDeliveryCertificateResult.certificate) {
+        setDemoFinalExternalReviewReleaseBundleDeliveryCertificate(
+          demoFinalExternalReviewReleaseBundleDeliveryCertificateResult.certificate
+        );
+      }
+      setDemoFinalExternalReviewReleaseBundleDeliveryCertificateError(
+        demoFinalExternalReviewReleaseBundleDeliveryCertificateResult.error
       );
       if (demoReadinessSnapshotResult.snapshots) {
         setDemoReadinessSnapshots(demoReadinessSnapshotResult.snapshots);
@@ -2504,6 +2528,13 @@ export default function App() {
       setDemoFinalExternalReviewReleaseBundleDeliveryFinalizationError(errorMessage(caught));
     }
     try {
+      const certificate = await getDemoFinalExternalReviewReleaseBundleDeliveryCertificate();
+      setDemoFinalExternalReviewReleaseBundleDeliveryCertificate(certificate);
+      setDemoFinalExternalReviewReleaseBundleDeliveryCertificateError(null);
+    } catch (caught) {
+      setDemoFinalExternalReviewReleaseBundleDeliveryCertificateError(errorMessage(caught));
+    }
+    try {
       const evidenceBundle = await getDemoEvidenceBundle();
       setDemoEvidenceBundle(evidenceBundle);
       setDemoEvidenceBundleError(null);
@@ -2516,6 +2547,9 @@ export default function App() {
     archiveId: string
   ) => (
     downloadDemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchiveReport(archiveId)
+  ), []);
+  const handleDownloadDemoFinalExternalReviewReleaseBundleDeliveryCertificateReport = useCallback(() => (
+    downloadDemoFinalExternalReviewReleaseBundleDeliveryCertificateReport()
   ), []);
   const handleArchiveDemoFinalExternalReviewDeliveryCertificate = useCallback(async () => {
     const archive = await archiveDemoFinalExternalReviewDeliveryCertificate();
@@ -3290,6 +3324,9 @@ export default function App() {
         finalExternalReviewReleaseBundleDeliveryFinalizationArchives={
           demoFinalExternalReviewReleaseBundleDeliveryFinalizationArchives
         }
+        finalExternalReviewReleaseBundleDeliveryCertificate={
+          demoFinalExternalReviewReleaseBundleDeliveryCertificate
+        }
         error={demoAcceptanceSummaryError}
         sharePackageError={demoFinalAcceptanceSharePackageError}
         sharePackageArchiveError={demoFinalAcceptanceSharePackageArchiveError}
@@ -3328,6 +3365,9 @@ export default function App() {
         }
         finalExternalReviewReleaseBundleDeliveryFinalizationArchiveError={
           demoFinalExternalReviewReleaseBundleDeliveryFinalizationArchiveError
+        }
+        finalExternalReviewReleaseBundleDeliveryCertificateError={
+          demoFinalExternalReviewReleaseBundleDeliveryCertificateError
         }
         onDownloadReport={handleDownloadDemoAcceptanceSummaryReport}
         onDownloadSharePackageReport={handleDownloadDemoFinalAcceptanceSharePackageReport}
@@ -3405,6 +3445,9 @@ export default function App() {
         }
         onDownloadFinalExternalReviewReleaseBundleDeliveryFinalizationArchiveReport={
           handleDownloadDemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchiveReport
+        }
+        onDownloadFinalExternalReviewReleaseBundleDeliveryCertificateReport={
+          handleDownloadDemoFinalExternalReviewReleaseBundleDeliveryCertificateReport
         }
       />
 

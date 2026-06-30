@@ -1767,6 +1767,51 @@ const demoFinalExternalReviewReleaseBundleDeliveryFinalizationArchive = {
   archivedAt: '2026-06-29T11:15:00Z'
 };
 
+const demoFinalExternalReviewReleaseBundleDeliveryCertificate = {
+  status: 'READY',
+  certified: true,
+  summary:
+    'Final external-review release bundle delivery is certified from the latest finalized archive.',
+  nextAction:
+    'Share the release bundle delivery certificate report as the terminal reviewer handoff proof.',
+  latestDeliveryFinalizationArchiveId:
+    'final-external-review-release-bundle-delivery-finalization-archive-1',
+  latestReleaseBundleArchiveId: 'final-external-review-release-bundle-archive-1',
+  latestDeliveryReceiptId: 'final-external-review-release-bundle-delivery-receipt-1',
+  latestCertificateArchiveId: 'final-external-review-delivery-certificate-archive-1',
+  latestPackageArchiveId: 'final-external-review-package-archive-1',
+  latestPackageDeliveryReceiptId: 'final-external-review-package-delivery-receipt-1',
+  latestTaskId: 'task-1',
+  latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+  latestDeliveryTarget: 'external-review@example.com',
+  latestDeliveryChannel: 'email',
+  latestDeliveredAt: '2026-06-29T10:45:00Z',
+  latestArchivedAt: '2026-06-29T11:15:00Z',
+  releaseBundleDeliveryReceiptFreshness: 'FRESH',
+  releaseBundleDeliveryReceiptFresh: true,
+  checks: [
+    {
+      name: 'Final external-review release bundle delivery finalization archive',
+      status: 'READY',
+      summary: 'Latest release bundle delivery finalization archive is finalized.',
+      nextAction: 'No action needed.'
+    }
+  ],
+  evidenceNotes: [
+    'Release bundle delivery finalization archive final-external-review-release-bundle-delivery-finalization-archive-1 is finalized.',
+    'Fresh release bundle delivery receipt final-external-review-release-bundle-delivery-receipt-1 proves the frozen release bundle was delivered.'
+  ],
+  downloadActions: [
+    'Download final external-review release bundle delivery certificate report.',
+    'Download final external-review release bundle delivery finalization archive final-external-review-release-bundle-delivery-finalization-archive-1.'
+  ],
+  sideEffectContract:
+    'GET /api/demo/final-external-review-release-bundle/delivery-certificate is read-only: it does not create tasks, call the model, run tests, archive records, record receipts, mutate Git, send messages, or write to GitHub.',
+  markdownReport:
+    '# PatchPilot Final External Review Release Bundle Delivery Certificate',
+  generatedAt: '2026-06-29T11:20:00Z'
+};
+
 const demoEvidenceBundle = {
   status: 'NEEDS_ATTENTION',
   summary: 'Demo evidence bundle needs attention.',
@@ -3558,6 +3603,9 @@ beforeEach(() => {
     if (url === '/api/demo/final-external-review-release-bundle/delivery-finalization/archives') {
       return jsonResponse([demoFinalExternalReviewReleaseBundleDeliveryFinalizationArchive]);
     }
+    if (url === '/api/demo/final-external-review-release-bundle/delivery-certificate') {
+      return jsonResponse(demoFinalExternalReviewReleaseBundleDeliveryCertificate);
+    }
     if (url === '/api/demo/final-external-review-release-bundle/report/download') {
       return Promise.resolve({
         ok: true,
@@ -3596,6 +3644,17 @@ beforeEach(() => {
         ok: true,
         status: 200,
         blob: async () => new Blob(['# PatchPilot Final External Review Release Bundle Delivery Finalization'], {
+          type: 'text/markdown;charset=UTF-8'
+        })
+      } as Response);
+    }
+    if (url === '/api/demo/final-external-review-release-bundle/delivery-certificate/report/download') {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        blob: async () => new Blob([
+          '# PatchPilot Final External Review Release Bundle Delivery Certificate'
+        ], {
           type: 'text/markdown;charset=UTF-8'
         })
       } as Response);
@@ -4777,6 +4836,9 @@ test('renders operational task dashboard from backend APIs', async () => {
     expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-external-review-release-bundle/delivery-finalization')
   );
   await waitFor(() =>
+    expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-external-review-release-bundle/delivery-certificate')
+  );
+  await waitFor(() =>
     expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-acceptance-completion-evidence-delivery-receipts')
   );
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/github/credential-readiness'));
@@ -4844,6 +4906,15 @@ test('renders operational task dashboard from backend APIs', async () => {
   })).toBeInTheDocument();
   expect(within(acceptancePanel).getByText(
     'Final external-review release bundle delivery finalization archive is frozen.'
+  )).toBeInTheDocument();
+  expect(within(acceptancePanel).getByRole('heading', {
+    name: 'Final external-review release bundle delivery certificate'
+  })).toBeInTheDocument();
+  expect(within(acceptancePanel).getByText(
+    'Final external-review release bundle delivery is certified from the latest finalized archive.'
+  )).toBeInTheDocument();
+  expect(within(acceptancePanel).getByText(
+    'Fresh release bundle delivery receipt final-external-review-release-bundle-delivery-receipt-1 proves the frozen release bundle was delivered.'
   )).toBeInTheDocument();
   expect(within(acceptancePanel).getByRole('heading', {
     name: 'Final external-review release bundle delivery receipts'
