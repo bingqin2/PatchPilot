@@ -710,6 +710,41 @@ public class DemoRunbookService {
                         .append("- Final reviewer handoff download: ")
                         .append(action)
                         .append("\n"));
+
+        runbook.append("- Final reviewer handoff delivery finalization: `")
+                .append(bundle.finalReviewerHandoffDeliveryFinalization().status())
+                .append("` - ")
+                .append(bundle.finalReviewerHandoffDeliveryFinalization().summary())
+                .append("\n")
+                .append("- Final reviewer handoff delivery finalized: `")
+                .append(bundle.finalReviewerHandoffDeliveryFinalization().finalized())
+                .append("`\n")
+                .append("- Final reviewer handoff delivery receipt: ")
+                .append(valueOrNoneBackticked(bundle.finalReviewerHandoffDeliveryFinalization()
+                        .latestDeliveryReceiptId()))
+                .append("\n")
+                .append("- Final reviewer handoff delivery terminal certificate: ")
+                .append(valueOrNoneBackticked(bundle.finalReviewerHandoffDeliveryFinalization()
+                        .latestCertificateArchiveId()))
+                .append("\n")
+                .append("- Final reviewer handoff delivery release bundle: ")
+                .append(valueOrNoneBackticked(bundle.finalReviewerHandoffDeliveryFinalization()
+                        .latestReleaseBundleArchiveId()))
+                .append("\n")
+                .append("- Final reviewer handoff delivery target: ")
+                .append(finalReviewerHandoffDeliveryTarget(bundle))
+                .append("\n")
+                .append("- Final reviewer handoff delivery receipt freshness: `")
+                .append(bundle.finalReviewerHandoffDeliveryFinalization().handoffDeliveryReceiptFreshness())
+                .append("`\n")
+                .append("- Final reviewer handoff delivery next action: ")
+                .append(bundle.finalReviewerHandoffDeliveryFinalization().nextAction())
+                .append("\n");
+        bundle.finalReviewerHandoffDeliveryFinalization().downloadActions()
+                .forEach(action -> runbook
+                        .append("- Final reviewer handoff delivery finalization download: ")
+                        .append(action)
+                        .append("\n"));
     }
 
     private static void appendEvaluationRunReadiness(
@@ -838,6 +873,18 @@ public class DemoRunbookService {
     private static String finalExternalReviewReleaseDeliveryTarget(DemoEvidenceBundleVo bundle) {
         String target = bundle.finalExternalReviewReleaseBundle().latestDeliveryTarget();
         String channel = bundle.finalExternalReviewReleaseBundle().latestDeliveryChannel();
+        if (target == null || target.isBlank()) {
+            return "none";
+        }
+        if (channel == null || channel.isBlank()) {
+            return target;
+        }
+        return target + " via " + channel;
+    }
+
+    private static String finalReviewerHandoffDeliveryTarget(DemoEvidenceBundleVo bundle) {
+        String target = bundle.finalReviewerHandoffDeliveryFinalization().latestDeliveryTarget();
+        String channel = bundle.finalReviewerHandoffDeliveryFinalization().latestDeliveryChannel();
         if (target == null || target.isBlank()) {
             return "none";
         }

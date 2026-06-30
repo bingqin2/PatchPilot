@@ -96,6 +96,11 @@ import {
   downloadDemoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveReport,
   getDemoFinalReviewerHandoffPackage,
   downloadDemoFinalReviewerHandoffPackageReport,
+  createDemoFinalReviewerHandoffDeliveryReceipt,
+  listDemoFinalReviewerHandoffDeliveryReceipts,
+  downloadDemoFinalReviewerHandoffDeliveryReceiptReport,
+  getDemoFinalReviewerHandoffDeliveryFinalization,
+  downloadDemoFinalReviewerHandoffDeliveryFinalizationReport,
   downloadDemoFinalExternalReviewReleaseBundleDeliveryFinalizationReport,
   archiveDemoFinalExternalReviewReleaseBundleDeliveryFinalization,
   listDemoFinalExternalReviewReleaseBundleDeliveryFinalizationArchives,
@@ -3131,6 +3136,220 @@ test('downloads final reviewer handoff package report through backend API', asyn
   const downloadedReport = await downloadDemoFinalReviewerHandoffPackageReport();
 
   expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-reviewer-handoff-package/report/download');
+  expect(downloadedReport).toBe(reportBlob);
+});
+
+test('records final reviewer handoff delivery receipt through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        id: 'final-reviewer-handoff-delivery-receipt-1',
+        status: 'READY',
+        fresh: true,
+        freshness: 'FRESH',
+        summary: 'Final reviewer handoff delivery receipt is fresh.',
+        nextAction: 'Use this receipt as proof that the final reviewer handoff was delivered.',
+        deliveryChannel: 'email',
+        deliveryTarget: 'reviewer@example.com',
+        operator: 'PatchPilot operator',
+        notes: 'Sent final reviewer handoff package to reviewer.',
+        deliveredAt: '2026-06-29T08:00:00Z',
+        latestCertificateArchiveId: 'final-reviewer-certificate-archive-1',
+        latestDeliveryFinalizationArchiveId:
+          'final-external-review-release-bundle-delivery-finalization-archive-1',
+        latestReleaseBundleArchiveId: 'final-external-review-release-bundle-archive-1',
+        latestReleaseBundleDeliveryReceiptId: 'final-external-review-release-bundle-delivery-receipt-1',
+        latestPackageCertificateArchiveId: 'final-external-review-delivery-certificate-archive-1',
+        latestPackageArchiveId: 'final-external-review-package-archive-1',
+        latestPackageDeliveryReceiptId: 'final-external-review-package-delivery-receipt-1',
+        latestTaskId: 'task-8',
+        latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+        evidenceNotes: ['Final reviewer handoff delivery receipt is fresh.'],
+        downloadActions: [
+          'Download final reviewer handoff delivery receipt final-reviewer-handoff-delivery-receipt-1.'
+        ],
+        sideEffectContract:
+          'POST /api/demo/final-reviewer-handoff-package/delivery-receipts records local evidence only.',
+        markdownReport: '# PatchPilot Final Reviewer Handoff Delivery Receipt',
+        createdAt: '2026-06-29T08:01:00Z'
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const receipt = await createDemoFinalReviewerHandoffDeliveryReceipt({
+    deliveryChannel: 'email',
+    deliveryTarget: ' reviewer@example.com ',
+    operator: ' PatchPilot operator ',
+    notes: 'Sent final reviewer handoff package to reviewer.'
+  });
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-reviewer-handoff-package/delivery-receipts', {
+    method: 'POST',
+    body: JSON.stringify({
+      deliveryChannel: 'email',
+      deliveryTarget: ' reviewer@example.com ',
+      operator: ' PatchPilot operator ',
+      notes: 'Sent final reviewer handoff package to reviewer.'
+    }),
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  });
+  expect(receipt.id).toBe('final-reviewer-handoff-delivery-receipt-1');
+  expect(receipt.latestCertificateArchiveId).toBe('final-reviewer-certificate-archive-1');
+});
+
+test('lists final reviewer handoff delivery receipts through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: [
+        {
+          id: 'final-reviewer-handoff-delivery-receipt-1',
+          status: 'READY',
+          fresh: true,
+          freshness: 'FRESH',
+          summary: 'Final reviewer handoff delivery receipt is fresh.',
+          nextAction: 'Use this receipt as proof that the final reviewer handoff was delivered.',
+          deliveryChannel: 'email',
+          deliveryTarget: 'reviewer@example.com',
+          operator: 'PatchPilot operator',
+          notes: 'Sent final reviewer handoff package to reviewer.',
+          deliveredAt: '2026-06-29T08:00:00Z',
+          latestCertificateArchiveId: 'final-reviewer-certificate-archive-1',
+          latestDeliveryFinalizationArchiveId:
+            'final-external-review-release-bundle-delivery-finalization-archive-1',
+          latestReleaseBundleArchiveId: 'final-external-review-release-bundle-archive-1',
+          latestReleaseBundleDeliveryReceiptId: 'final-external-review-release-bundle-delivery-receipt-1',
+          latestPackageCertificateArchiveId: 'final-external-review-delivery-certificate-archive-1',
+          latestPackageArchiveId: 'final-external-review-package-archive-1',
+          latestPackageDeliveryReceiptId: 'final-external-review-package-delivery-receipt-1',
+          latestTaskId: 'task-8',
+          latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+          evidenceNotes: ['Final reviewer handoff delivery receipt is fresh.'],
+          downloadActions: [
+            'Download final reviewer handoff delivery receipt final-reviewer-handoff-delivery-receipt-1.'
+          ],
+          sideEffectContract:
+            'POST /api/demo/final-reviewer-handoff-package/delivery-receipts records local evidence only.',
+          markdownReport: '# PatchPilot Final Reviewer Handoff Delivery Receipt',
+          createdAt: '2026-06-29T08:01:00Z'
+        }
+      ],
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const receipts = await listDemoFinalReviewerHandoffDeliveryReceipts();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-reviewer-handoff-package/delivery-receipts');
+  expect(receipts[0].id).toBe('final-reviewer-handoff-delivery-receipt-1');
+});
+
+test('downloads final reviewer handoff delivery receipt report through backend API', async () => {
+  const reportBlob = new Blob(['# PatchPilot Final Reviewer Handoff Delivery Receipt'], {
+    type: 'text/markdown;charset=UTF-8'
+  });
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    blob: async () => reportBlob
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const downloadedReport = await downloadDemoFinalReviewerHandoffDeliveryReceiptReport('receipt/1');
+
+  expect(fetchMock).toHaveBeenCalledWith(
+    '/api/demo/final-reviewer-handoff-package/delivery-receipts/receipt%2F1/report/download'
+  );
+  expect(downloadedReport).toBe(reportBlob);
+});
+
+test('loads final reviewer handoff delivery finalization through backend API', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        status: 'READY',
+        finalized: true,
+        summary: 'Final reviewer handoff delivery is finalized with a fresh handoff delivery receipt.',
+        nextAction: 'Use the final reviewer handoff delivery finalization report as the terminal demo closeout record.',
+        latestDeliveryReceiptId: 'final-reviewer-handoff-delivery-receipt-1',
+        latestCertificateArchiveId: 'final-reviewer-certificate-archive-1',
+        latestDeliveryFinalizationArchiveId:
+          'final-external-review-release-bundle-delivery-finalization-archive-1',
+        latestReleaseBundleArchiveId: 'final-external-review-release-bundle-archive-1',
+        latestReleaseBundleDeliveryReceiptId: 'final-external-review-release-bundle-delivery-receipt-1',
+        latestPackageCertificateArchiveId: 'final-external-review-delivery-certificate-archive-1',
+        latestPackageArchiveId: 'final-external-review-package-archive-1',
+        latestPackageDeliveryReceiptId: 'final-external-review-package-delivery-receipt-1',
+        latestTaskId: 'task-8',
+        latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+        latestDeliveryTarget: 'reviewer@example.com',
+        latestDeliveryChannel: 'email',
+        latestDeliveredAt: '2026-06-29T08:00:00Z',
+        handoffDeliveryReceiptFreshness: 'FRESH',
+        handoffDeliveryReceiptFresh: true,
+        handoffDeliveryReceiptFreshnessSummary:
+          'Latest final reviewer handoff delivery receipt matches the current final reviewer handoff package.',
+        checks: [
+          {
+            name: 'Final reviewer handoff delivery receipt',
+            status: 'READY',
+            summary: 'Final reviewer handoff delivery receipt final-reviewer-handoff-delivery-receipt-1 is fresh.',
+            nextAction: 'No action needed.'
+          }
+        ],
+        evidenceNotes: [
+          'Final reviewer handoff delivery receipt final-reviewer-handoff-delivery-receipt-1 is fresh.'
+        ],
+        downloadActions: [
+          'Download final reviewer handoff delivery finalization report.',
+          'Download final reviewer handoff delivery receipt final-reviewer-handoff-delivery-receipt-1.'
+        ],
+        sideEffectContract:
+          'GET /api/demo/final-reviewer-handoff-package/delivery-finalization is read-only.',
+        markdownReport: '# PatchPilot Final Reviewer Handoff Delivery Finalization',
+        generatedAt: '2026-06-29T08:05:00Z'
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const finalization = await getDemoFinalReviewerHandoffDeliveryFinalization();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-reviewer-handoff-package/delivery-finalization');
+  expect(finalization.finalized).toBe(true);
+  expect(finalization.latestDeliveryReceiptId).toBe('final-reviewer-handoff-delivery-receipt-1');
+});
+
+test('downloads final reviewer handoff delivery finalization report through backend API', async () => {
+  const reportBlob = new Blob(['# PatchPilot Final Reviewer Handoff Delivery Finalization'], {
+    type: 'text/markdown;charset=UTF-8'
+  });
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    blob: async () => reportBlob
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const downloadedReport = await downloadDemoFinalReviewerHandoffDeliveryFinalizationReport();
+
+  expect(fetchMock).toHaveBeenCalledWith(
+    '/api/demo/final-reviewer-handoff-package/delivery-finalization/report/download'
+  );
   expect(downloadedReport).toBe(reportBlob);
 });
 

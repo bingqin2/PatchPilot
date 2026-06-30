@@ -21,6 +21,8 @@ import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewReleaseBundleDel
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewReleaseBundleDeliveryFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewReleaseBundleDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewReleaseBundleVo;
+import io.patchpilot.backend.demo.domain.DemoFinalReviewerHandoffDeliveryFinalizationVo;
+import io.patchpilot.backend.demo.domain.DemoFinalReviewerHandoffDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoFinalReviewerHandoffPackageVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveVo;
@@ -276,6 +278,12 @@ class DemoReadinessControllerTests {
 
     @MockitoBean
     private DemoFinalReviewerHandoffPackageService demoFinalReviewerHandoffPackageService;
+
+    @MockitoBean
+    private DemoFinalReviewerHandoffDeliveryReceiptService demoFinalReviewerHandoffDeliveryReceiptService;
+
+    @MockitoBean
+    private DemoFinalReviewerHandoffDeliveryFinalizationService demoFinalReviewerHandoffDeliveryFinalizationService;
 
     @MockitoBean
     private DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
@@ -2003,6 +2011,151 @@ class DemoReadinessControllerTests {
                 .andExpect(content().string(containsString("# PatchPilot Final Reviewer Handoff Package")))
                 .andExpect(content().string(containsString(
                         "final-external-review-release-bundle-delivery-certificate-archive-1"
+	                )));
+    }
+
+    @Test
+    void should_record_final_reviewer_handoff_delivery_receipt_and_record_audit() throws Exception {
+        when(demoFinalReviewerHandoffDeliveryReceiptService.recordDeliveryReceipt(argThat(request ->
+                request.deliveryChannel().equals("email")
+                        && request.deliveryTarget().equals("reviewer@example.com")
+                        && request.operator().equals("local-operator")
+                        && request.notes().equals("Sent final reviewer handoff package and all attachments.")
+                        && request.deliveredAt().equals(Instant.parse("2026-06-30T05:30:00Z"))
+        ))).thenReturn(finalReviewerHandoffDeliveryReceipt());
+
+        mockMvc.perform(post("/api/demo/final-reviewer-handoff-package/delivery-receipts")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "deliveryChannel": "email",
+                                  "deliveryTarget": "reviewer@example.com",
+                                  "operator": "local-operator",
+                                  "notes": "Sent final reviewer handoff package and all attachments.",
+                                  "deliveredAt": "2026-06-30T05:30:00Z"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value("final-reviewer-handoff-delivery-receipt-1"))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.handoffPackageStatus").value("READY"))
+                .andExpect(jsonPath("$.data.latestCertificateArchiveId")
+                        .value("final-external-review-release-bundle-delivery-certificate-archive-1"))
+                .andExpect(jsonPath("$.data.deliveryTarget").value("reviewer@example.com"))
+                .andExpect(jsonPath("$.data.markdownReport").value(containsString(
+                        "# PatchPilot Final Reviewer Handoff Delivery Receipt"
+                )));
+
+        verify(operatorSafetyAuditService).recordSafetyAudit(argThat(command ->
+                command.action().equals("DEMO_FINAL_REVIEWER_HANDOFF_DELIVERY_RECEIPT_RECORDED")
+                        && command.resourceType().equals("DEMO_FINAL_REVIEWER_HANDOFF_DELIVERY_RECEIPT")
+                        && command.resourceId().equals("final-reviewer-handoff-delivery-receipt-1")
+                        && command.operator().equals("local-operator")
+                        && command.reason().contains(
+                        "final-external-review-release-bundle-delivery-certificate-archive-1"
+                )
+        ));
+    }
+
+    @Test
+    void should_reject_final_reviewer_handoff_delivery_receipt_when_package_is_not_ready()
+            throws Exception {
+        when(demoFinalReviewerHandoffDeliveryReceiptService.recordDeliveryReceipt(
+                any(DemoFinalReviewerHandoffDeliveryReceiptRequestDto.class)
+        )).thenThrow(new IllegalStateException("final reviewer handoff package is not ready for delivery"));
+
+        mockMvc.perform(post("/api/demo/final-reviewer-handoff-package/delivery-receipts")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "deliveryChannel": "email",
+                                  "deliveryTarget": "reviewer@example.com",
+                                  "operator": "local-operator"
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message")
+                        .value("final reviewer handoff package is not ready for delivery"));
+    }
+
+    @Test
+    void should_list_final_reviewer_handoff_delivery_receipts() throws Exception {
+        when(demoFinalReviewerHandoffDeliveryReceiptService.listRecentReceipts())
+                .thenReturn(List.of(finalReviewerHandoffDeliveryReceipt()));
+
+        mockMvc.perform(get("/api/demo/final-reviewer-handoff-package/delivery-receipts"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].id").value("final-reviewer-handoff-delivery-receipt-1"))
+                .andExpect(jsonPath("$.data[0].latestCertificateArchiveId")
+                        .value("final-external-review-release-bundle-delivery-certificate-archive-1"));
+    }
+
+    @Test
+    void should_download_final_reviewer_handoff_delivery_receipt_report() throws Exception {
+        when(demoFinalReviewerHandoffDeliveryReceiptService.findReceipt(
+                "final-reviewer-handoff-delivery-receipt-1"
+        )).thenReturn(Optional.of(finalReviewerHandoffDeliveryReceipt()));
+
+        mockMvc.perform(get("/api/demo/final-reviewer-handoff-package/delivery-receipts/final-reviewer-handoff-delivery-receipt-1/report/download"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString(
+                        "patchpilot-final-reviewer-handoff-delivery-receipt-final-reviewer-handoff-delivery-receipt-1.md"
+                )))
+                .andExpect(content().contentType("text/markdown;charset=UTF-8"))
+                .andExpect(content().string(containsString(
+                        "# PatchPilot Final Reviewer Handoff Delivery Receipt"
+                )))
+                .andExpect(content().string(containsString("reviewer@example.com")));
+    }
+
+    @Test
+    void should_return_not_found_when_final_reviewer_handoff_delivery_receipt_is_missing()
+            throws Exception {
+        when(demoFinalReviewerHandoffDeliveryReceiptService.findReceipt("missing-receipt"))
+                .thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/api/demo/final-reviewer-handoff-package/delivery-receipts/missing-receipt/report/download"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void should_return_final_reviewer_handoff_delivery_finalization() throws Exception {
+        when(demoFinalReviewerHandoffDeliveryFinalizationService.getFinalizationGate())
+                .thenReturn(finalReviewerHandoffDeliveryFinalization());
+
+        mockMvc.perform(get("/api/demo/final-reviewer-handoff-package/delivery-finalization"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.finalized").value(true))
+                .andExpect(jsonPath("$.data.latestDeliveryReceiptId")
+                        .value("final-reviewer-handoff-delivery-receipt-1"))
+                .andExpect(jsonPath("$.data.latestCertificateArchiveId")
+                        .value("final-external-review-release-bundle-delivery-certificate-archive-1"))
+                .andExpect(jsonPath("$.data.handoffDeliveryReceiptFreshness").value("FRESH"))
+                .andExpect(jsonPath("$.data.handoffDeliveryReceiptFresh").value(true))
+                .andExpect(jsonPath("$.data.checks[0].name")
+                        .value("Final reviewer handoff delivery receipt"))
+                .andExpect(jsonPath("$.data.sideEffectContract").value(containsString("read-only")));
+    }
+
+    @Test
+    void should_download_final_reviewer_handoff_delivery_finalization_report() throws Exception {
+        when(demoFinalReviewerHandoffDeliveryFinalizationService.getFinalizationGate())
+                .thenReturn(finalReviewerHandoffDeliveryFinalization());
+
+        mockMvc.perform(get("/api/demo/final-reviewer-handoff-package/delivery-finalization/report/download"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString(
+                        "patchpilot-final-reviewer-handoff-delivery-finalization.md"
+                )))
+                .andExpect(content().contentType("text/markdown;charset=UTF-8"))
+                .andExpect(content().string(containsString(
+                        "# PatchPilot Final Reviewer Handoff Delivery Finalization"
                 )));
     }
 
@@ -5700,6 +5853,77 @@ class DemoReadinessControllerTests {
                 "# PatchPilot Final Reviewer Handoff Package\n\n"
                         + "- Terminal certificate archive: `final-external-review-release-bundle-delivery-certificate-archive-1`\n",
                 Instant.parse("2026-06-30T05:00:00Z")
+        );
+    }
+
+    private static DemoFinalReviewerHandoffDeliveryReceiptVo finalReviewerHandoffDeliveryReceipt() {
+        return new DemoFinalReviewerHandoffDeliveryReceiptVo(
+                "final-reviewer-handoff-delivery-receipt-1",
+                DemoReadinessStatus.READY,
+                DemoReadinessStatus.READY,
+                "final-external-review-release-bundle-delivery-certificate-archive-1",
+                "final-external-review-release-bundle-delivery-finalization-archive-1",
+                "final-external-review-release-bundle-archive-1",
+                "final-external-review-release-bundle-delivery-receipt-1",
+                "final-external-review-delivery-certificate-archive-1",
+                "final-external-review-package-archive-1",
+                "final-external-review-package-delivery-receipt-1",
+                "task-1",
+                "https://github.com/bingqin2/PatchPilot/pull/8",
+                "Final reviewer handoff package is ready from the latest terminal delivery certificate archive.",
+                "Send the handoff package report and listed attachments to the external reviewer.",
+                "email",
+                "reviewer@example.com",
+                "local-operator",
+                "Sent final reviewer handoff package and all attachments.",
+                Instant.parse("2026-06-30T05:30:00Z"),
+                Instant.parse("2026-06-30T05:35:00Z"),
+                "# PatchPilot Final Reviewer Handoff Delivery Receipt\n\n"
+                        + "- Terminal certificate archive: `final-external-review-release-bundle-delivery-certificate-archive-1`\n"
+                        + "- Delivery target: `reviewer@example.com`\n"
+        );
+    }
+
+    private static DemoFinalReviewerHandoffDeliveryFinalizationVo finalReviewerHandoffDeliveryFinalization() {
+        return new DemoFinalReviewerHandoffDeliveryFinalizationVo(
+                DemoReadinessStatus.READY,
+                true,
+                "Final reviewer handoff delivery is finalized with a fresh handoff delivery receipt.",
+                "Use the final reviewer handoff delivery finalization report as the terminal demo closeout record.",
+                "final-reviewer-handoff-delivery-receipt-1",
+                "final-external-review-release-bundle-delivery-certificate-archive-1",
+                "final-external-review-release-bundle-delivery-finalization-archive-1",
+                "final-external-review-release-bundle-archive-1",
+                "final-external-review-release-bundle-delivery-receipt-1",
+                "final-external-review-delivery-certificate-archive-1",
+                "final-external-review-package-archive-1",
+                "final-external-review-package-delivery-receipt-1",
+                "task-1",
+                "https://github.com/bingqin2/PatchPilot/pull/8",
+                "reviewer@example.com",
+                "email",
+                "2026-06-30T05:30:00Z",
+                "FRESH",
+                true,
+                "Latest final reviewer handoff delivery receipt matches the current final reviewer handoff package.",
+                List.of(new DemoFinalReviewerHandoffDeliveryFinalizationVo.Check(
+                        "Final reviewer handoff delivery receipt",
+                        DemoReadinessStatus.READY,
+                        "Final reviewer handoff delivery receipt is fresh.",
+                        "No action needed."
+                )),
+                List.of(
+                        "Final reviewer handoff package is ready.",
+                        "Final reviewer handoff delivery receipt final-reviewer-handoff-delivery-receipt-1 is fresh."
+                ),
+                List.of(
+                        "Download final reviewer handoff delivery finalization report.",
+                        "Download final reviewer handoff delivery receipt final-reviewer-handoff-delivery-receipt-1."
+                ),
+                "GET /api/demo/final-reviewer-handoff-package/delivery-finalization is read-only.",
+                "# PatchPilot Final Reviewer Handoff Delivery Finalization\n\n"
+                        + "- Latest handoff delivery receipt: `final-reviewer-handoff-delivery-receipt-1`\n",
+                Instant.parse("2026-06-30T05:40:00Z")
         );
     }
 }

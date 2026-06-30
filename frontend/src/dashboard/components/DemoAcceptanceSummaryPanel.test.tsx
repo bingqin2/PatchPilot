@@ -20,6 +20,9 @@ import type {
   DemoFinalExternalReviewReleaseBundleDeliveryCertificate,
   DemoFinalExternalReviewReleaseBundleDeliveryFinalization,
   DemoFinalExternalReviewReleaseBundleDeliveryReceipt,
+  DemoFinalReviewerHandoffDeliveryFinalization,
+  DemoFinalReviewerHandoffDeliveryReceipt,
+  DemoFinalReviewerHandoffPackage,
   DemoFinalAcceptanceSharePackage,
   DemoFinalAcceptanceSharePackageArchive
 } from '../../types';
@@ -723,6 +726,110 @@ const finalExternalReviewReleaseBundleDeliveryCertificate:
     generatedAt: '2026-06-29T12:40:00Z'
   };
 
+const finalReviewerHandoffPackage: DemoFinalReviewerHandoffPackage = {
+  status: 'READY',
+  readyForReview: true,
+  summary: 'Final reviewer handoff package is ready from the latest terminal delivery certificate archive.',
+  nextAction: 'Share the final reviewer handoff package with the reviewer.',
+  latestCertificateArchiveId: 'final-external-review-release-bundle-delivery-certificate-archive-1',
+  latestDeliveryFinalizationArchiveId: 'final-external-review-release-bundle-delivery-finalization-archive-1',
+  latestReleaseBundleArchiveId: 'final-external-review-release-bundle-archive-1',
+  latestDeliveryReceiptId: 'final-external-review-release-bundle-delivery-receipt-1',
+  latestPackageCertificateArchiveId: 'final-external-review-delivery-certificate-archive-1',
+  latestPackageArchiveId: 'final-external-review-package-archive-1',
+  latestPackageDeliveryReceiptId: 'final-external-review-package-delivery-receipt-1',
+  latestTaskId: 'task-1',
+  latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+  latestDeliveryTarget: 'reviewer@example.com',
+  latestDeliveryChannel: 'email',
+  latestDeliveredAt: '2026-06-29T12:10:00Z',
+  latestArchivedAt: '2026-06-29T12:40:00Z',
+  requiredAttachments: ['Final reviewer handoff package report.'],
+  checks: [
+    {
+      name: 'Terminal delivery certificate archive',
+      status: 'READY',
+      summary: 'Terminal delivery certificate archive is certified.',
+      nextAction: 'No action needed.'
+    }
+  ],
+  evidenceNotes: ['Terminal delivery certificate archive is certified.'],
+  downloadActions: ['Download final reviewer handoff package report.'],
+  sideEffectContract:
+    'GET /api/demo/final-reviewer-handoff-package is read-only.',
+  markdownReport: '# PatchPilot Final Reviewer Handoff Package',
+  generatedAt: '2026-06-29T12:45:00Z'
+};
+
+const finalReviewerHandoffDeliveryReceipt: DemoFinalReviewerHandoffDeliveryReceipt = {
+  id: 'final-reviewer-handoff-delivery-receipt-1',
+  status: 'READY',
+  fresh: true,
+  freshness: 'FRESH',
+  summary: 'Final reviewer handoff package was delivered.',
+  nextAction: 'Use the final reviewer handoff delivery receipt as local proof of delivery.',
+  deliveryChannel: 'email',
+  deliveryTarget: 'reviewer@example.com',
+  operator: 'handoff-captain',
+  notes: 'Sent final reviewer handoff package.',
+  deliveredAt: '2026-06-29T12:50:00Z',
+  latestCertificateArchiveId: 'final-external-review-release-bundle-delivery-certificate-archive-1',
+  latestDeliveryFinalizationArchiveId: 'final-external-review-release-bundle-delivery-finalization-archive-1',
+  latestReleaseBundleArchiveId: 'final-external-review-release-bundle-archive-1',
+  latestReleaseBundleDeliveryReceiptId: 'final-external-review-release-bundle-delivery-receipt-1',
+  latestPackageCertificateArchiveId: 'final-external-review-delivery-certificate-archive-1',
+  latestPackageArchiveId: 'final-external-review-package-archive-1',
+  latestPackageDeliveryReceiptId: 'final-external-review-package-delivery-receipt-1',
+  latestTaskId: 'task-1',
+  latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+  evidenceNotes: ['Final reviewer handoff delivery receipt is fresh.'],
+  downloadActions: ['Download final reviewer handoff delivery receipt report.'],
+  sideEffectContract:
+    'POST /api/demo/final-reviewer-handoff-package/delivery-receipts records local evidence only.',
+  markdownReport: '# PatchPilot Final Reviewer Handoff Delivery Receipt',
+  createdAt: '2026-06-29T12:55:00Z'
+};
+
+const finalReviewerHandoffDeliveryFinalization: DemoFinalReviewerHandoffDeliveryFinalization = {
+  status: 'READY',
+  finalized: true,
+  summary: 'Final reviewer handoff delivery is finalized with a fresh handoff delivery receipt.',
+  nextAction: 'Use the final reviewer handoff delivery finalization report as the terminal demo closeout record.',
+  latestDeliveryReceiptId: 'final-reviewer-handoff-delivery-receipt-1',
+  latestCertificateArchiveId: 'final-external-review-release-bundle-delivery-certificate-archive-1',
+  latestDeliveryFinalizationArchiveId: 'final-external-review-release-bundle-delivery-finalization-archive-1',
+  latestReleaseBundleArchiveId: 'final-external-review-release-bundle-archive-1',
+  latestReleaseBundleDeliveryReceiptId: 'final-external-review-release-bundle-delivery-receipt-1',
+  latestPackageCertificateArchiveId: 'final-external-review-delivery-certificate-archive-1',
+  latestPackageArchiveId: 'final-external-review-package-archive-1',
+  latestPackageDeliveryReceiptId: 'final-external-review-package-delivery-receipt-1',
+  latestTaskId: 'task-1',
+  latestPullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/8',
+  latestDeliveryTarget: 'reviewer@example.com',
+  latestDeliveryChannel: 'email',
+  latestDeliveredAt: '2026-06-29T12:50:00Z',
+  handoffDeliveryReceiptFreshness: 'FRESH',
+  handoffDeliveryReceiptFresh: true,
+  handoffDeliveryReceiptFreshnessSummary:
+    'Latest final reviewer handoff delivery receipt matches the current terminal certificate archive.',
+  checks: [
+    {
+      name: 'Final reviewer handoff delivery receipt',
+      status: 'READY',
+      summary: 'Final reviewer handoff delivery receipt final-reviewer-handoff-delivery-receipt-1 is fresh.',
+      nextAction: 'No action needed.'
+    }
+  ],
+  evidenceNotes: [
+    'Final reviewer handoff delivery receipt final-reviewer-handoff-delivery-receipt-1 is fresh.'
+  ],
+  downloadActions: ['Download final reviewer handoff delivery finalization report.'],
+  sideEffectContract:
+    'GET /api/demo/final-reviewer-handoff-package/delivery-finalization is read-only.',
+  markdownReport: '# PatchPilot Final Reviewer Handoff Delivery Finalization',
+  generatedAt: '2026-06-29T13:00:00Z'
+};
+
 test('shows final demo acceptance status and certificate evidence', () => {
   render(
     <DemoAcceptanceSummaryPanel
@@ -759,6 +866,9 @@ test('shows final demo acceptance status and certificate evidence', () => {
       finalExternalReviewReleaseBundleDeliveryCertificate={
         finalExternalReviewReleaseBundleDeliveryCertificate
       }
+      finalReviewerHandoffPackage={finalReviewerHandoffPackage}
+      finalReviewerHandoffDeliveryReceipts={[finalReviewerHandoffDeliveryReceipt]}
+      finalReviewerHandoffDeliveryFinalization={finalReviewerHandoffDeliveryFinalization}
       error={null}
       sharePackageError={null}
       sharePackageArchiveError={null}
@@ -772,6 +882,8 @@ test('shows final demo acceptance status and certificate evidence', () => {
       completionCloseoutError={null}
       finalExternalReviewEvidencePackageDeliveryFinalizationError={null}
       finalExternalReviewReleaseBundleDeliveryCertificateError={null}
+      finalReviewerHandoffDeliveryReceiptError={null}
+      finalReviewerHandoffDeliveryFinalizationError={null}
       onDownloadReport={vi.fn()}
       onDownloadSharePackageReport={vi.fn()}
       onArchiveSharePackage={vi.fn()}
@@ -792,6 +904,9 @@ test('shows final demo acceptance status and certificate evidence', () => {
       onArchiveFinalExternalReviewEvidencePackage={vi.fn()}
       onDownloadFinalExternalReviewEvidencePackageArchiveReport={vi.fn()}
       onDownloadFinalExternalReviewEvidencePackageDeliveryFinalizationReport={vi.fn()}
+      onCreateFinalReviewerHandoffDeliveryReceipt={vi.fn()}
+      onDownloadFinalReviewerHandoffDeliveryReceiptReport={vi.fn()}
+      onDownloadFinalReviewerHandoffDeliveryFinalizationReport={vi.fn()}
     />
   );
 
@@ -877,6 +992,184 @@ test('shows final demo acceptance status and certificate evidence', () => {
     .not.toHaveLength(0);
   expect(within(panel).getByText(
     'Fresh release bundle delivery receipt final-external-review-release-bundle-delivery-receipt-1 proves the frozen release bundle was delivered.'
+  )).toBeInTheDocument();
+  expect(within(panel).getByRole('heading', {
+    name: 'Final reviewer handoff delivery finalization'
+  })).toBeInTheDocument();
+  expect(within(panel).getByText(
+    'Final reviewer handoff delivery is finalized with a fresh handoff delivery receipt.'
+  )).toBeInTheDocument();
+  expect(within(panel).getAllByText('final-reviewer-handoff-delivery-receipt-1'))
+    .not.toHaveLength(0);
+  expect(within(panel).getByRole('heading', {
+    name: 'Final reviewer handoff delivery receipts'
+  })).toBeInTheDocument();
+  expect(within(panel).getByRole('button', {
+    name: 'Record final reviewer handoff delivery receipt'
+  })).toBeInTheDocument();
+});
+
+test('records and downloads final reviewer handoff delivery evidence', async () => {
+  const user = userEvent.setup();
+  const createReceipt = vi.fn(async () => finalReviewerHandoffDeliveryReceipt);
+  const downloadReceiptReport = vi.fn(async () => new Blob([
+    '# PatchPilot Final Reviewer Handoff Delivery Receipt'
+  ], {
+    type: 'text/markdown'
+  }));
+  const downloadFinalizationReport = vi.fn(async () => new Blob([
+    '# PatchPilot Final Reviewer Handoff Delivery Finalization'
+  ], {
+    type: 'text/markdown'
+  }));
+  const createObjectUrl = vi.fn(() => 'blob:final-reviewer-handoff-delivery');
+  const revokeObjectUrl = vi.fn();
+  const anchorClick = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
+  vi.stubGlobal('URL', {
+    createObjectURL: createObjectUrl,
+    revokeObjectURL: revokeObjectUrl
+  });
+
+  render(
+    <DemoAcceptanceSummaryPanel
+      summary={summary}
+      sharePackage={sharePackage}
+      sharePackageArchives={[sharePackageArchive]}
+      shareDeliveryReceipts={[shareDeliveryReceipt]}
+      shareFinalization={shareFinalization}
+      completionEvidenceBundle={completionEvidenceBundle}
+      completionArchives={[completionArchive]}
+      completionCloseoutArchives={[completionCloseoutArchive]}
+      completionEvidenceDeliveryReceipts={[completionEvidenceDeliveryReceipt]}
+      completionEvidenceDeliveryFinalization={completionEvidenceDeliveryFinalization}
+      completionCloseout={completionCloseout}
+      finalExternalReviewEvidencePackage={finalExternalReviewEvidencePackage}
+      finalExternalReviewEvidencePackageArchives={[finalExternalReviewEvidencePackageArchive]}
+      finalExternalReviewEvidencePackageDeliveryReceipts={[
+        finalExternalReviewEvidencePackageDeliveryReceipt
+      ]}
+      finalExternalReviewEvidencePackageDeliveryFinalization={
+        finalExternalReviewEvidencePackageDeliveryFinalization
+      }
+      finalExternalReviewEvidencePackageDeliveryFinalizationArchives={[
+        finalExternalReviewEvidencePackageDeliveryFinalizationArchive
+      ]}
+      finalExternalReviewReleaseBundle={finalExternalReviewReleaseBundle}
+      finalExternalReviewReleaseBundleArchives={[finalExternalReviewReleaseBundleArchive]}
+      finalExternalReviewReleaseBundleDeliveryReceipts={[
+        finalExternalReviewReleaseBundleDeliveryReceipt
+      ]}
+      finalExternalReviewReleaseBundleDeliveryFinalization={
+        finalExternalReviewReleaseBundleDeliveryFinalization
+      }
+      finalExternalReviewReleaseBundleDeliveryCertificate={
+        finalExternalReviewReleaseBundleDeliveryCertificate
+      }
+      finalReviewerHandoffPackage={finalReviewerHandoffPackage}
+      finalReviewerHandoffDeliveryReceipts={[finalReviewerHandoffDeliveryReceipt]}
+      finalReviewerHandoffDeliveryFinalization={finalReviewerHandoffDeliveryFinalization}
+      error={null}
+      sharePackageError={null}
+      sharePackageArchiveError={null}
+      shareDeliveryReceiptError={null}
+      shareFinalizationError={null}
+      completionEvidenceBundleError={null}
+      completionArchiveError={null}
+      completionCloseoutArchiveError={null}
+      completionEvidenceDeliveryReceiptError={null}
+      completionEvidenceDeliveryFinalizationError={null}
+      completionCloseoutError={null}
+      finalExternalReviewEvidencePackageError={null}
+      finalExternalReviewEvidencePackageArchiveError={null}
+      finalExternalReviewEvidencePackageDeliveryReceiptError={null}
+      finalExternalReviewEvidencePackageDeliveryFinalizationError={null}
+      finalExternalReviewEvidencePackageDeliveryFinalizationArchiveError={null}
+      finalExternalReviewReleaseBundleError={null}
+      finalExternalReviewReleaseBundleArchiveError={null}
+      finalExternalReviewReleaseBundleDeliveryReceiptError={null}
+      finalExternalReviewReleaseBundleDeliveryFinalizationError={null}
+      finalExternalReviewReleaseBundleDeliveryCertificateError={null}
+      finalReviewerHandoffDeliveryReceiptError={null}
+      finalReviewerHandoffDeliveryFinalizationError={null}
+      onDownloadReport={vi.fn()}
+      onDownloadSharePackageReport={vi.fn()}
+      onArchiveSharePackage={vi.fn()}
+      onDownloadSharePackageArchiveReport={vi.fn()}
+      onCreateShareDeliveryReceipt={vi.fn()}
+      onDownloadShareDeliveryReceiptReport={vi.fn()}
+      onDownloadShareFinalizationReport={vi.fn()}
+      onDownloadCompletionEvidenceBundleReport={vi.fn()}
+      onArchiveCompletion={vi.fn()}
+      onDownloadCompletionArchiveReport={vi.fn()}
+      onArchiveCompletionCloseout={vi.fn()}
+      onDownloadCompletionCloseoutArchiveReport={vi.fn()}
+      onCreateCompletionEvidenceDeliveryReceipt={vi.fn()}
+      onDownloadCompletionEvidenceDeliveryReceiptReport={vi.fn()}
+      onDownloadCompletionEvidenceDeliveryFinalizationReport={vi.fn()}
+      onDownloadCompletionCloseoutReport={vi.fn()}
+      onDownloadFinalExternalReviewEvidencePackageReport={vi.fn()}
+      onArchiveFinalExternalReviewEvidencePackage={vi.fn()}
+      onDownloadFinalExternalReviewEvidencePackageArchiveReport={vi.fn()}
+      onCreateFinalExternalReviewEvidencePackageDeliveryReceipt={vi.fn()}
+      onDownloadFinalExternalReviewEvidencePackageDeliveryReceiptReport={vi.fn()}
+      onDownloadFinalExternalReviewEvidencePackageDeliveryFinalizationReport={vi.fn()}
+      onArchiveFinalExternalReviewEvidencePackageDeliveryFinalization={vi.fn()}
+      onDownloadFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveReport={vi.fn()}
+      onDownloadFinalExternalReviewReleaseBundleReport={vi.fn()}
+      onArchiveFinalExternalReviewReleaseBundle={vi.fn()}
+      onDownloadFinalExternalReviewReleaseBundleArchiveReport={vi.fn()}
+      onCreateFinalExternalReviewReleaseBundleDeliveryReceipt={vi.fn()}
+      onDownloadFinalExternalReviewReleaseBundleDeliveryReceiptReport={vi.fn()}
+      onDownloadFinalExternalReviewReleaseBundleDeliveryFinalizationReport={vi.fn()}
+      onDownloadFinalExternalReviewReleaseBundleDeliveryCertificateReport={vi.fn()}
+      onCreateFinalReviewerHandoffDeliveryReceipt={createReceipt}
+      onDownloadFinalReviewerHandoffDeliveryReceiptReport={downloadReceiptReport}
+      onDownloadFinalReviewerHandoffDeliveryFinalizationReport={downloadFinalizationReport}
+    />
+  );
+
+  const panel = screen.getByRole('region', { name: 'Final demo acceptance' });
+  expect(within(panel).getByRole('heading', {
+    name: 'Final reviewer handoff delivery finalization'
+  })).toBeInTheDocument();
+  expect(within(panel).getByText(
+    'Latest final reviewer handoff delivery receipt matches the current terminal certificate archive.'
+  )).toBeInTheDocument();
+
+  await user.selectOptions(within(panel).getByLabelText('Final reviewer handoff delivery channel'), 'email');
+  await user.type(within(panel).getByLabelText('Final reviewer handoff delivery target'), 'reviewer@example.com');
+  await user.type(within(panel).getByLabelText('Final reviewer handoff delivery operator'), 'handoff-captain');
+  await user.type(
+    within(panel).getByLabelText('Final reviewer handoff delivery notes'),
+    'Sent final reviewer handoff package.'
+  );
+  await user.click(within(panel).getByRole('button', {
+    name: 'Record final reviewer handoff delivery receipt'
+  }));
+  await user.click(within(panel).getByRole('button', {
+    name: 'Download final reviewer handoff delivery finalization report'
+  }));
+  await user.click(within(panel).getByRole('button', {
+    name:
+      'Download final reviewer handoff delivery receipt final-reviewer-handoff-delivery-receipt-1'
+  }));
+
+  expect(createReceipt).toHaveBeenCalledWith({
+    deliveryChannel: 'email',
+    deliveryTarget: 'reviewer@example.com',
+    operator: 'handoff-captain',
+    notes: 'Sent final reviewer handoff package.'
+  });
+  expect(downloadFinalizationReport).toHaveBeenCalledTimes(1);
+  expect(downloadReceiptReport).toHaveBeenCalledWith('final-reviewer-handoff-delivery-receipt-1');
+  expect(anchorClick).toHaveBeenCalled();
+  expect(revokeObjectUrl).toHaveBeenCalledWith('blob:final-reviewer-handoff-delivery');
+  expect(await within(panel).findByText('Final reviewer handoff delivery receipt recorded'))
+    .toBeInTheDocument();
+  expect(within(panel).getByText('Final reviewer handoff delivery finalization report downloaded'))
+    .toBeInTheDocument();
+  expect(within(panel).getByText(
+    'Final reviewer handoff delivery receipt final-reviewer-handoff-delivery-receipt-1 downloaded'
   )).toBeInTheDocument();
 });
 

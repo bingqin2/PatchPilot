@@ -26,6 +26,7 @@ import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewReleaseBundleDel
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewReleaseBundleVo;
+import io.patchpilot.backend.demo.domain.DemoFinalReviewerHandoffDeliveryFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoFinalReviewerHandoffPackageVo;
 import io.patchpilot.backend.demo.domain.DemoFinalHandoffReportPackageArchiveEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoFinalHandoffReportPackageArchiveVo;
@@ -122,6 +123,9 @@ public class DemoEvidenceBundleService {
             finalExternalReviewReleaseBundleDeliveryFinalizationArchiveSupplier;
     private final Supplier<List<DemoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveVo>>
             finalExternalReviewReleaseBundleDeliveryCertificateArchiveSupplier;
+    private Supplier<DemoFinalReviewerHandoffDeliveryFinalizationVo>
+            finalReviewerHandoffDeliveryFinalizationSupplier =
+            DemoEvidenceBundleService::compatibilityFinalReviewerHandoffDeliveryFinalization;
     private final Supplier<List<DemoLaunchAcceptanceCloseoutArchiveVo>> launchAcceptanceCloseoutArchiveSupplier;
     private final Supplier<List<DemoLaunchAcceptanceCertificateArchiveVo>> launchAcceptanceCertificateArchiveSupplier;
     private final Supplier<List<FixTaskEvidencePackageAcceptanceCertificateArchiveVo>>
@@ -165,6 +169,7 @@ public class DemoEvidenceBundleService {
                     finalExternalReviewReleaseBundleDeliveryFinalizationArchiveRepository,
             DemoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveRepository
                     finalExternalReviewReleaseBundleDeliveryCertificateArchiveRepository,
+            DemoFinalReviewerHandoffDeliveryFinalizationService demoFinalReviewerHandoffDeliveryFinalizationService,
             DemoLaunchAcceptanceCloseoutArchiveRepository launchAcceptanceCloseoutArchiveRepository,
             DemoLaunchAcceptanceCertificateArchiveRepository launchAcceptanceCertificateArchiveRepository,
             FixTaskEvidencePackageAcceptanceCertificateArchiveRepository taskEvidenceAcceptanceCertificateArchiveRepository,
@@ -214,6 +219,8 @@ public class DemoEvidenceBundleService {
                 () -> finalExternalReviewReleaseBundleDeliveryFinalizationArchiveRepository.listRecentArchives(20),
                 () -> finalExternalReviewReleaseBundleDeliveryCertificateArchiveRepository.listRecentArchives(20)
         );
+        this.finalReviewerHandoffDeliveryFinalizationSupplier =
+                demoFinalReviewerHandoffDeliveryFinalizationService::getFinalizationGate;
     }
 
     DemoEvidenceBundleService(
@@ -852,6 +859,8 @@ public class DemoEvidenceBundleService {
                 );
         DemoFinalReviewerHandoffPackageVo finalReviewerHandoffPackage =
                 finalReviewerHandoffPackageEvidence(finalExternalReviewReleaseBundleDeliveryCertificateArchives);
+        DemoFinalReviewerHandoffDeliveryFinalizationVo finalReviewerHandoffDeliveryFinalization =
+                finalReviewerHandoffDeliveryFinalizationSupplier.get();
 
         DemoAdapterFixtureEvidenceVo adapterFixtureEvidence = adapterFixtureEvidence(fixtures);
         DemoEvaluationRunReadinessEvidenceVo evaluationRunReadinessEvidence = evaluationRunReadinessEvidence(evaluationRunReadiness);
@@ -889,7 +898,8 @@ public class DemoEvidenceBundleService {
                 finalExternalReviewReleaseBundleDeliveryFinalization,
                 finalExternalReviewReleaseBundleDeliveryFinalizationArchiveEvidence,
                 finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence,
-                finalReviewerHandoffPackage
+                finalReviewerHandoffPackage,
+                finalReviewerHandoffDeliveryFinalization
         );
         DemoReadinessStatus status = aggregateStatus(
                 readiness,
@@ -916,7 +926,8 @@ public class DemoEvidenceBundleService {
                 finalExternalReviewReleaseBundleDeliveryFinalization,
                 finalExternalReviewReleaseBundleDeliveryFinalizationArchiveEvidence,
                 finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence,
-                finalReviewerHandoffPackage
+                finalReviewerHandoffPackage,
+                finalReviewerHandoffDeliveryFinalization
         );
 
         return new DemoEvidenceBundleVo(
@@ -983,6 +994,7 @@ public class DemoEvidenceBundleService {
                 finalExternalReviewReleaseBundleDeliveryFinalizationArchiveEvidence,
                 finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence,
                 finalReviewerHandoffPackage,
+                finalReviewerHandoffDeliveryFinalization,
                 handoffShareCenter.deliveryReceiptRecorded(),
                 handoffShareCenter.latestDeliveryReceiptId(),
                 handoffShareCenter.latestDeliveryTarget(),
@@ -2434,6 +2446,43 @@ public class DemoEvidenceBundleService {
         ));
     }
 
+    private static DemoFinalReviewerHandoffDeliveryFinalizationVo
+    compatibilityFinalReviewerHandoffDeliveryFinalization() {
+        return new DemoFinalReviewerHandoffDeliveryFinalizationVo(
+                DemoReadinessStatus.READY,
+                true,
+                "Final reviewer handoff delivery is finalized with compatibility evidence.",
+                "Use the final reviewer handoff delivery finalization report as the terminal demo closeout record.",
+                "final-reviewer-handoff-delivery-receipt-compat",
+                "final-external-review-release-bundle-delivery-certificate-archive-compat",
+                "final-external-review-release-bundle-delivery-finalization-archive-compat",
+                "final-external-review-release-bundle-archive-compat",
+                "final-external-review-release-bundle-delivery-receipt-compat",
+                "final-external-review-delivery-certificate-archive-compat",
+                "final-external-review-package-archive-compat",
+                "final-external-review-package-delivery-receipt-compat",
+                null,
+                null,
+                "reviewer@example.com",
+                "email",
+                Instant.EPOCH.toString(),
+                "FRESH",
+                true,
+                "Latest final reviewer handoff delivery receipt matches the current final reviewer handoff package.",
+                List.of(new DemoFinalReviewerHandoffDeliveryFinalizationVo.Check(
+                        "Final reviewer handoff delivery receipt",
+                        DemoReadinessStatus.READY,
+                        "Compatibility final reviewer handoff delivery receipt is fresh.",
+                        "No action needed."
+                )),
+                List.of("Compatibility final reviewer handoff delivery is finalized."),
+                List.of("Download final reviewer handoff delivery finalization report."),
+                "GET /api/demo/evidence-bundle is read-only and does not mutate tasks, Git, or GitHub.",
+                "# PatchPilot Final Reviewer Handoff Delivery Finalization\n",
+                Instant.EPOCH
+        );
+    }
+
     private static DemoReadinessStatus aggregateStatus(
             DemoReadinessVo readiness,
             DemoSmokeChecklistVo smokeChecklist,
@@ -2465,7 +2514,8 @@ public class DemoEvidenceBundleService {
                     finalExternalReviewReleaseBundleDeliveryFinalizationArchiveEvidence,
             DemoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidenceVo
                     finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence,
-            DemoFinalReviewerHandoffPackageVo finalReviewerHandoffPackage
+            DemoFinalReviewerHandoffPackageVo finalReviewerHandoffPackage,
+            DemoFinalReviewerHandoffDeliveryFinalizationVo finalReviewerHandoffDeliveryFinalization
     ) {
         if (readiness.status() == DemoReadinessStatus.BLOCKED
                 || smokeChecklist.status() == DemoSmokeChecklistStatus.BLOCKED
@@ -2493,6 +2543,8 @@ public class DemoEvidenceBundleService {
                 || finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence.status()
                 == DemoReadinessStatus.BLOCKED
                 || finalReviewerHandoffPackage.status()
+                == DemoReadinessStatus.BLOCKED
+                || finalReviewerHandoffDeliveryFinalization.status()
                 == DemoReadinessStatus.BLOCKED) {
             return DemoReadinessStatus.BLOCKED;
         }
@@ -2527,6 +2579,8 @@ public class DemoEvidenceBundleService {
                 || finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence.status()
                 == DemoReadinessStatus.NEEDS_ATTENTION
                 || finalReviewerHandoffPackage.status()
+                == DemoReadinessStatus.NEEDS_ATTENTION
+                || finalReviewerHandoffDeliveryFinalization.status()
                 == DemoReadinessStatus.NEEDS_ATTENTION) {
             return DemoReadinessStatus.NEEDS_ATTENTION;
         }
@@ -2601,7 +2655,8 @@ public class DemoEvidenceBundleService {
                     finalExternalReviewReleaseBundleDeliveryFinalizationArchiveEvidence,
             DemoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidenceVo
                     finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence,
-            DemoFinalReviewerHandoffPackageVo finalReviewerHandoffPackage
+            DemoFinalReviewerHandoffPackageVo finalReviewerHandoffPackage,
+            DemoFinalReviewerHandoffDeliveryFinalizationVo finalReviewerHandoffDeliveryFinalization
     ) {
         List<String> actions = new ArrayList<>();
         actions.addAll(readiness.nextActions());
@@ -2679,6 +2734,9 @@ public class DemoEvidenceBundleService {
         }
         if (finalReviewerHandoffPackage.status() != DemoReadinessStatus.READY) {
             actions.add(finalReviewerHandoffPackage.nextAction());
+        }
+        if (finalReviewerHandoffDeliveryFinalization.status() != DemoReadinessStatus.READY) {
+            actions.add(finalReviewerHandoffDeliveryFinalization.nextAction());
         }
         List<String> distinctActions = actions.stream()
                 .filter(DemoEvidenceBundleService::hasText)

@@ -527,6 +527,15 @@ class DemoEvidenceBundleServiceTests {
                 .isEqualTo("final-external-review-release-bundle-archive-1");
         assertThat(bundle.finalReviewerHandoffPackage().downloadActions())
                 .contains("Download final reviewer handoff package report.");
+        assertThat(bundle.finalReviewerHandoffDeliveryFinalization().status())
+                .isEqualTo(DemoReadinessStatus.READY);
+        assertThat(bundle.finalReviewerHandoffDeliveryFinalization().finalized()).isTrue();
+        assertThat(bundle.finalReviewerHandoffDeliveryFinalization().latestDeliveryReceiptId())
+                .isEqualTo("final-reviewer-handoff-delivery-receipt-compat");
+        assertThat(bundle.finalReviewerHandoffDeliveryFinalization().handoffDeliveryReceiptFreshness())
+                .isEqualTo("FRESH");
+        assertThat(bundle.finalReviewerHandoffDeliveryFinalization().downloadActions())
+                .contains("Download final reviewer handoff delivery finalization report.");
         assertThat(bundle.handoffShareDeliveryReceiptRecorded()).isFalse();
         assertThat(bundle.handoffShareLatestDeliveryReceiptId()).isNull();
         assertThat(bundle.handoffShareLatestDeliveryTarget()).isNull();
@@ -637,6 +646,12 @@ class DemoEvidenceBundleServiceTests {
         assertThat(bundle.finalExternalReviewReleaseBundleArchiveEvidence().releaseReady()).isTrue();
         assertThat(bundle.finalExternalReviewReleaseBundleDeliveryFinalization().finalized()).isTrue();
         assertThat(bundle.finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence().certified()).isTrue();
+        assertThat(bundle.finalReviewerHandoffDeliveryFinalization().status())
+                .isEqualTo(DemoReadinessStatus.READY);
+        assertThat(bundle.finalReviewerHandoffDeliveryFinalization().finalized()).isTrue();
+        assertThat(bundle.finalReviewerHandoffDeliveryFinalization().latestDeliveryReceiptId())
+                .isEqualTo("final-reviewer-handoff-delivery-receipt-compat");
+        assertThat(bundle.finalReviewerHandoffDeliveryFinalization().handoffDeliveryReceiptFresh()).isTrue();
         assertThat(bundle.nextActions()).containsExactly("Use this evidence bundle as the live demo baseline.");
     }
 

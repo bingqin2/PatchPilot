@@ -18,6 +18,8 @@ import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewReleaseBundleDel
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewReleaseBundleDeliveryFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewReleaseBundleDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewReleaseBundleVo;
+import io.patchpilot.backend.demo.domain.DemoFinalReviewerHandoffDeliveryFinalizationVo;
+import io.patchpilot.backend.demo.domain.DemoFinalReviewerHandoffDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoFinalReviewerHandoffPackageVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewEvidencePackageDeliveryFinalizationArchiveVo;
@@ -143,6 +145,10 @@ public class DemoReadinessController {
     private final DemoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveService
             demoFinalExternalReviewReleaseBundleDeliveryCertificateArchiveService;
     private final DemoFinalReviewerHandoffPackageService demoFinalReviewerHandoffPackageService;
+    private final DemoFinalReviewerHandoffDeliveryReceiptService
+            demoFinalReviewerHandoffDeliveryReceiptService;
+    private final DemoFinalReviewerHandoffDeliveryFinalizationService
+            demoFinalReviewerHandoffDeliveryFinalizationService;
     private final DemoReadinessSnapshotArchiveService demoReadinessSnapshotArchiveService;
     private final DemoReadinessSnapshotTrendService demoReadinessSnapshotTrendService;
     private final DemoLaunchPreflightService demoLaunchPreflightService;
@@ -1053,11 +1059,70 @@ public class DemoReadinessController {
         return ApiResponse.ok(demoFinalReviewerHandoffPackageService.getPackage());
     }
 
+    @PostMapping("/final-reviewer-handoff-package/delivery-receipts")
+    public ResponseEntity<ApiResponse<DemoFinalReviewerHandoffDeliveryReceiptVo>>
+    recordFinalReviewerHandoffDeliveryReceipt(
+            @RequestBody DemoFinalReviewerHandoffDeliveryReceiptRequestDto request
+    ) {
+        try {
+            DemoFinalReviewerHandoffDeliveryReceiptVo receipt =
+                    demoFinalReviewerHandoffDeliveryReceiptService.recordDeliveryReceipt(request);
+            operatorSafetyAuditService.recordSafetyAudit(new RecordOperatorSafetyAuditCommand(
+                    "DEMO_FINAL_REVIEWER_HANDOFF_DELIVERY_RECEIPT_RECORDED",
+                    "DEMO_FINAL_REVIEWER_HANDOFF_DELIVERY_RECEIPT",
+                    receipt.id(),
+                    TriggerQuarantineScope.REPOSITORY,
+                    "patchpilot/local-demo",
+                    receipt.operator(),
+                    "Recorded final reviewer handoff delivery receipt for terminal certificate "
+                            + receipt.latestCertificateArchiveId()
+            ));
+            return ResponseEntity.ok(ApiResponse.ok(receipt));
+        } catch (IllegalArgumentException | IllegalStateException exception) {
+            return ResponseEntity.badRequest().body(ApiResponse.fail(exception.getMessage()));
+        }
+    }
+
+    @GetMapping("/final-reviewer-handoff-package/delivery-receipts")
+    public ApiResponse<List<DemoFinalReviewerHandoffDeliveryReceiptVo>>
+    listFinalReviewerHandoffDeliveryReceipts() {
+        return ApiResponse.ok(demoFinalReviewerHandoffDeliveryReceiptService.listRecentReceipts());
+    }
+
+    @GetMapping("/final-reviewer-handoff-package/delivery-finalization")
+    public ApiResponse<DemoFinalReviewerHandoffDeliveryFinalizationVo>
+    getFinalReviewerHandoffDeliveryFinalization() {
+        return ApiResponse.ok(demoFinalReviewerHandoffDeliveryFinalizationService.getFinalizationGate());
+    }
+
     @GetMapping(value = "/final-reviewer-handoff-package/report/download", produces = "text/markdown;charset=UTF-8")
     public ResponseEntity<String> downloadFinalReviewerHandoffPackageReport() {
         return markdownAttachment(
                 "patchpilot-final-reviewer-handoff-package.md",
                 demoFinalReviewerHandoffPackageService.getPackage().markdownReport()
+        );
+    }
+
+    @GetMapping(value = "/final-reviewer-handoff-package/delivery-receipts/{receiptId}/report/download", produces = "text/markdown;charset=UTF-8")
+    public ResponseEntity<String> downloadFinalReviewerHandoffDeliveryReceiptReport(
+            @PathVariable String receiptId
+    ) {
+        return demoFinalReviewerHandoffDeliveryReceiptService.findReceipt(receiptId)
+                .map(receipt -> markdownAttachment(
+                        "patchpilot-final-reviewer-handoff-delivery-receipt-"
+                                + safeFilenamePart(receipt.id()) + ".md",
+                        receipt.markdownReport()
+                ))
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @GetMapping(value = "/final-reviewer-handoff-package/delivery-finalization/report/download", produces = "text/markdown;charset=UTF-8")
+    public ResponseEntity<String> downloadFinalReviewerHandoffDeliveryFinalizationReport() {
+        return markdownAttachment(
+                "patchpilot-final-reviewer-handoff-delivery-finalization.md",
+                demoFinalReviewerHandoffDeliveryFinalizationService
+                        .getFinalizationGate()
+                        .markdownReport()
         );
     }
 
