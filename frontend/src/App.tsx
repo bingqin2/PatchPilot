@@ -181,6 +181,7 @@ import {
   runEvaluationFixtureBaseline,
   preflightDemoLaunch,
   postDemoLiveLaunchGate,
+  postDemoLiveTriggerLaunchPackage,
   postGitHubTriggerDryRun,
   startExternalExposureSession,
   getGitHubCredentialReadiness,
@@ -357,6 +358,7 @@ import type {
   DemoLaunchCommand,
   DemoLaunchCommandInput,
   DemoLiveLaunchGate,
+  DemoLiveTriggerLaunchPackage,
   DemoLaunchEvidencePackageArchive,
   DemoLaunchEvidencePackage,
   DemoLaunchEvidenceFinalization,
@@ -780,6 +782,10 @@ export default function App() {
   const [demoLiveLaunchGate, setDemoLiveLaunchGate] = useState<DemoLiveLaunchGate | null>(null);
   const [demoLiveLaunchGateError, setDemoLiveLaunchGateError] = useState<string | null>(null);
   const [demoLiveLaunchGatePending, setDemoLiveLaunchGatePending] = useState(false);
+  const [demoLiveTriggerLaunchPackage, setDemoLiveTriggerLaunchPackage] =
+    useState<DemoLiveTriggerLaunchPackage | null>(null);
+  const [demoLiveTriggerLaunchPackageError, setDemoLiveTriggerLaunchPackageError] = useState<string | null>(null);
+  const [demoLiveTriggerLaunchPackagePending, setDemoLiveTriggerLaunchPackagePending] = useState(false);
   const [supportedAdapters, setSupportedAdapters] = useState<SupportedLanguageAdapter[]>([]);
   const [adapterError, setAdapterError] = useState<string | null>(null);
   const [adapterFixtureVerifications, setAdapterFixtureVerifications] = useState<LanguageAdapterFixtureVerification[]>([]);
@@ -3379,6 +3385,8 @@ export default function App() {
   const handleDemoLiveLaunchGate = useCallback(async (input: GitHubTriggerDryRunInput) => {
     setDemoLiveLaunchGatePending(true);
     setDemoLiveLaunchGateError(null);
+    setDemoLiveTriggerLaunchPackage(null);
+    setDemoLiveTriggerLaunchPackageError(null);
     try {
       const result = await postDemoLiveLaunchGate(input);
       setDemoLiveLaunchGate(result);
@@ -3388,6 +3396,21 @@ export default function App() {
       throw caught;
     } finally {
       setDemoLiveLaunchGatePending(false);
+    }
+  }, []);
+
+  const handleDemoLiveTriggerLaunchPackage = useCallback(async (input: GitHubTriggerDryRunInput) => {
+    setDemoLiveTriggerLaunchPackagePending(true);
+    setDemoLiveTriggerLaunchPackageError(null);
+    try {
+      const result = await postDemoLiveTriggerLaunchPackage(input);
+      setDemoLiveTriggerLaunchPackage(result);
+      return result;
+    } catch (caught) {
+      setDemoLiveTriggerLaunchPackageError(errorMessage(caught));
+      throw caught;
+    } finally {
+      setDemoLiveTriggerLaunchPackagePending(false);
     }
   }, []);
 
@@ -4151,6 +4174,10 @@ export default function App() {
         error={demoLiveLaunchGateError}
         pending={demoLiveLaunchGatePending}
         onRunGate={handleDemoLiveLaunchGate}
+        launchPackage={demoLiveTriggerLaunchPackage}
+        launchPackageError={demoLiveTriggerLaunchPackageError}
+        launchPackagePending={demoLiveTriggerLaunchPackagePending}
+        onCreateLaunchPackage={handleDemoLiveTriggerLaunchPackage}
       />
 
       <EndToEndAcceptanceMatrixPanel

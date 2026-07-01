@@ -65,6 +65,7 @@ import type {
   DemoLaunchEvidenceShareDeliveryReceiptInput,
   DemoLaunchCommandInput,
   DemoLiveLaunchGate,
+  DemoLiveTriggerLaunchPackage,
   DemoEndToEndAcceptanceMatrix,
   DemoLaunchPreflight,
   DemoLaunchPreflightInput,
@@ -199,6 +200,16 @@ export async function postGitHubTriggerDryRun(input: GitHubTriggerDryRunInput): 
 
 export async function postDemoLiveLaunchGate(input: GitHubTriggerDryRunInput): Promise<DemoLiveLaunchGate> {
   return postApi<DemoLiveLaunchGate>('/api/demo/live-launch-gate', input);
+}
+
+export async function postDemoLiveTriggerLaunchPackage(
+  input: GitHubTriggerDryRunInput
+): Promise<DemoLiveTriggerLaunchPackage> {
+  return postApi<DemoLiveTriggerLaunchPackage>('/api/demo/live-trigger-launch-package', input);
+}
+
+export async function downloadDemoLiveTriggerLaunchPackageReport(input: GitHubTriggerDryRunInput): Promise<Blob> {
+  return postBlobApi('/api/demo/live-trigger-launch-package/report/download', input);
 }
 
 export async function getDemoEndToEndAcceptanceMatrix(): Promise<DemoEndToEndAcceptanceMatrix> {

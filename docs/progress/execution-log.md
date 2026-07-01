@@ -6493,3 +6493,21 @@ Validation so far:
 - `npm --prefix frontend run build`: passed with the existing Vite large-chunk warning.
 - `git diff --check`: passed.
 - Strict diff secret scan for GitHub, OpenAI-style, Slack, AWS, private-key, and PatchPilot token assignment patterns: no matches.
+
+## 2026-07-02 - 324 Live trigger launch package
+
+- Started `324-live-trigger-launch-package` to create one final read-only launch package before an operator posts a real `/agent fix` GitHub issue comment.
+- Added `POST /api/demo/live-trigger-launch-package` and `POST /api/demo/live-trigger-launch-package/report/download`.
+- The package reuses the exact live launch gate input, combines the current live launch gate with the latest frozen external exposure operator handoff archive, blocks when that archive is missing or not ready, and returns the exact issue URL/comment, archive id, live-gate state, evidence notes, next actions, side-effect contract, and Markdown report.
+- Extended the live launch gate dashboard panel with `Create launch package`, package status/evidence rendering, package error feedback, and Markdown download from the generated package.
+- Updated frontend API helpers, typed payloads, App state/handlers, README, product spec, architecture notes, frontend design notes, and this plan document.
+
+Validation so far:
+
+- `mvn -q -pl PatchPilot -Dtest=DemoLiveTriggerLaunchPackageServiceTests test`: first failed because the launch package service and command did not exist.
+- `npm --prefix frontend test -- --run src/api.test.ts src/dashboard/components/LiveLaunchGatePanel.test.tsx --reporter=dot`: first failed because the launch package API helper and panel controls did not exist; passed after frontend implementation.
+- `mvn -q -pl PatchPilot -Dtest=DemoLiveTriggerLaunchPackageServiceTests,DemoLiveTriggerLaunchPackageControllerTests test`: first failed because the test wiring referenced the wrong command type; passed after fixing the focused controller/service tests.
+- `npm --prefix frontend test -- --run src/App.test.tsx --reporter=dot`: passed after App-level launch package state and handler wiring.
+- `mvn -q -pl PatchPilot test`: passed with existing Lombok/Mockito/Spring test logging.
+- `npm --prefix frontend test -- --reporter=dot`: passed, 35 test files and 532 tests.
+- `npm --prefix frontend run build`: passed with the existing Vite large-chunk warning.

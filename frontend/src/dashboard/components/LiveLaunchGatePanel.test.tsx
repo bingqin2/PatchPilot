@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { DemoLiveLaunchGate } from '../../types';
+import type { DemoLiveLaunchGate, DemoLiveTriggerLaunchPackage } from '../../types';
 import { LiveLaunchGatePanel } from './LiveLaunchGatePanel';
 
 const readyGate: DemoLiveLaunchGate = {
@@ -117,15 +117,49 @@ const readyGate: DemoLiveLaunchGate = {
   markdownReport: '# PatchPilot Live Launch Gate\n\n- Status: READY'
 };
 
+const readyLaunchPackage: DemoLiveTriggerLaunchPackage = {
+  status: 'READY',
+  readyToPost: true,
+  repository: 'bingqin2/PatchPilot',
+  issueNumber: 1,
+  issueUrl: 'https://github.com/bingqin2/PatchPilot/issues/1',
+  triggerUser: 'bingqin2',
+  triggerComment: '/agent fix touch docs/live-package.md',
+  summary: 'PatchPilot is ready for the operator to post the live trigger.',
+  operatorHandoffArchiveId: 'operator-archive-1',
+  operatorHandoffArchiveReady: true,
+  operatorHandoffArchivedAt: '2026-07-02T00:00:00Z',
+  liveLaunchGateStatus: 'READY',
+  liveLaunchGateReady: true,
+  evidenceNotes: ['Latest external exposure operator handoff archive operator-archive-1 is ready.'],
+  nextActions: [
+    'Post `/agent fix touch docs/live-package.md` on https://github.com/bingqin2/PatchPilot/issues/1.',
+    'After GitHub delivers the webhook, watch the task, Pull Request, and launch outcome tracker.'
+  ],
+  sideEffectContract: 'Read-only live trigger launch package: this endpoint does not create tasks.',
+  liveLaunchGate: readyGate,
+  generatedAt: '2026-07-02T00:00:00Z',
+  markdownReport: '# PatchPilot Live Trigger Launch Package\n\n- Status: `READY`'
+};
+
+const baseProps = {
+  error: null,
+  pending: false,
+  onRunGate: vi.fn(),
+  launchPackage: null,
+  launchPackageError: null,
+  launchPackagePending: false,
+  onCreateLaunchPackage: vi.fn()
+};
+
 test('submits exact live launch gate input', async () => {
   const user = userEvent.setup();
   const onRunGate = vi.fn(async () => readyGate);
 
   render(
     <LiveLaunchGatePanel
+      {...baseProps}
       result={null}
-      error={null}
-      pending={false}
       onRunGate={onRunGate}
     />
   );
@@ -154,10 +188,8 @@ test('submits exact live launch gate input', async () => {
 test('renders ready and blocked launch gate results', () => {
   const { rerender } = render(
     <LiveLaunchGatePanel
+      {...baseProps}
       result={readyGate}
-      error={null}
-      pending={false}
-      onRunGate={vi.fn()}
     />
   );
 
@@ -171,6 +203,7 @@ test('renders ready and blocked launch gate results', () => {
 
   rerender(
     <LiveLaunchGatePanel
+      {...baseProps}
       result={{
         ...readyGate,
         status: 'BLOCKED',
@@ -180,9 +213,6 @@ test('renders ready and blocked launch gate results', () => {
           check.name === 'Live trigger dry run' ? { ...check, status: 'BLOCKED' } : check
         )
       }}
-      error={null}
-      pending={false}
-      onRunGate={vi.fn()}
     />
   );
 
@@ -200,14 +230,67 @@ test('copies backend launch gate markdown report', async () => {
 
   render(
     <LiveLaunchGatePanel
+      {...baseProps}
       result={readyGate}
-      error={null}
-      pending={false}
-      onRunGate={vi.fn()}
     />
   );
 
   await user.click(screen.getByRole('button', { name: 'Copy launch gate report' }));
 
   expect(writeText).toHaveBeenCalledWith('# PatchPilot Live Launch Gate\n\n- Status: READY');
+});
+
+test('creates and downloads the final live trigger launch package', async () => {
+  const user = userEvent.setup();
+  const onCreateLaunchPackage = vi.fn(async () => readyLaunchPackage);
+  const anchorClick = vi.fn();
+  const createObjectURL = vi.fn(() => 'blob:launch-package');
+  const revokeObjectURL = vi.fn();
+  vi.stubGlobal('URL', { createObjectURL, revokeObjectURL });
+  vi.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
+    const element = document.createElementNS('http://www.w3.org/1999/xhtml', tagName) as HTMLAnchorElement;
+    if (tagName === 'a') {
+      element.click = anchorClick;
+    }
+    return element;
+  });
+
+  render(
+    <LiveLaunchGatePanel
+      {...baseProps}
+      result={readyGate}
+      launchPackage={readyLaunchPackage}
+      onCreateLaunchPackage={onCreateLaunchPackage}
+    />
+  );
+
+  await user.click(screen.getByRole('button', { name: 'Create live trigger launch package' }));
+  await user.click(screen.getByRole('button', { name: 'Download live trigger launch package' }));
+
+  expect(onCreateLaunchPackage).toHaveBeenCalledWith({
+    repositoryOwner: 'bingqin2',
+    repositoryName: 'PatchPilot',
+    issueNumber: 1,
+    triggerUser: 'bingqin2',
+    triggerComment: '/agent fix touch docs/live-gate.md'
+  });
+  expect(screen.getByText('Live trigger launch package')).toBeInTheDocument();
+  expect(screen.getByText('operator-archive-1')).toBeInTheDocument();
+  expect(screen.getByText('Ready to post live trigger')).toBeInTheDocument();
+  expect(createObjectURL).toHaveBeenCalledWith(expect.any(Blob));
+  expect(anchorClick).toHaveBeenCalled();
+  expect(revokeObjectURL).toHaveBeenCalledWith('blob:launch-package');
+});
+
+test('shows launch package errors', () => {
+  render(
+    <LiveLaunchGatePanel
+      {...baseProps}
+      result={readyGate}
+      launchPackageError="Operator handoff archive is missing"
+    />
+  );
+
+  expect(screen.getByText('Live trigger launch package failed')).toBeInTheDocument();
+  expect(screen.getByText('Operator handoff archive is missing')).toBeInTheDocument();
 });
