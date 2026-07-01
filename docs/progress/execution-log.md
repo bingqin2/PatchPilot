@@ -6310,3 +6310,21 @@ Validation so far:
 - `npm --prefix frontend test -- --reporter=dot`: passed, 31 test files and 501 tests.
 - `npm --prefix frontend run build`: passed with the existing Vite large-chunk warning.
 - `git diff --check`: passed.
+
+## 2026-07-01 - 314 End-to-end acceptance matrix
+
+- Started `314-end-to-end-acceptance-matrix` to give operators one read-only answer for how close PatchPilot is to the final self-hosted issue-to-PR goal.
+- Added `GET /api/demo/end-to-end-acceptance-matrix`, backed by `DemoEndToEndAcceptanceMatrixService`, aggregating live launch gate status, supported language coverage, safety rejection coverage, evaluation baseline/run evidence, recent Pull Request evidence, failed-task evidence, pending-review evidence, and final product gap analysis.
+- Added response rows with category, name, status, evidence, gap, and next action plus aggregate counts, readiness percent, final-demo readiness flag, side-effect contract, and Markdown report.
+- Added the operations dashboard `End-to-end acceptance` panel with matrix counts, row-level evidence, next actions, copyable Markdown report, and local refresh support.
+- Updated frontend API helpers, typed payloads, App loading, App smoke fixtures, README, product spec, and this plan document.
+
+Validation so far:
+
+- `mvn -q -pl PatchPilot -Dtest=DemoEndToEndAcceptanceMatrixServiceTests,DemoReadinessControllerTests test`: first failed because the service, VO records, and endpoint did not exist; passed after backend implementation.
+- `npm --prefix frontend test -- --run src/dashboard/components/EndToEndAcceptanceMatrixPanel.test.tsx src/api.test.ts --reporter=dot`: first failed because the dashboard panel did not exist; API tests passed after adding the endpoint helper.
+- `npm --prefix frontend test -- --run src/dashboard/components/EndToEndAcceptanceMatrixPanel.test.tsx src/api.test.ts src/App.test.tsx --reporter=dot`: first failed because the App smoke assertion matched duplicate summary text; passed after using a count-based assertion. Final result: 3 test files and 313 tests.
+- `mvn -q -pl PatchPilot test`: passed with existing Mockito/Java agent warnings.
+- `npm --prefix frontend test -- --reporter=dot`: passed, 33 test files and 510 tests.
+- `npm --prefix frontend run build`: passed with the existing Vite large-chunk warning.
+- `git diff --check`: passed.

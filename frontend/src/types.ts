@@ -598,6 +598,31 @@ export interface DemoLiveLaunchGate {
   markdownReport: string;
 }
 
+export interface DemoEndToEndAcceptanceMatrixItem {
+  category: string;
+  name: string;
+  status: DemoReadinessStatus;
+  evidence: string;
+  gap: string;
+  nextAction: string;
+}
+
+export interface DemoEndToEndAcceptanceMatrix {
+  status: DemoReadinessStatus;
+  readyForFinalDemo: boolean;
+  readinessPercent: number;
+  readyCount: number;
+  needsAttentionCount: number;
+  blockedCount: number;
+  totalCount: number;
+  summary: string;
+  nextActions: string[];
+  sideEffectContract: string;
+  items: DemoEndToEndAcceptanceMatrixItem[];
+  generatedAt: string;
+  markdownReport: string;
+}
+
 export type GitHubWebhookUrlReadinessStatus = 'READY' | 'NEEDS_ATTENTION';
 
 export interface GitHubWebhookUrlReadiness {

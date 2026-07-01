@@ -104,6 +104,7 @@ import {
   getBackendHealth,
   getConfigurationSummary,
   getDashboardBootstrap,
+  getDemoEndToEndAcceptanceMatrix,
   getDemoEvidenceBundle,
   getDemoHandoffPackage,
   getDemoHandoffReadiness,
@@ -234,6 +235,7 @@ import { LiveLaunchGatePanel } from './dashboard/components/LiveLaunchGatePanel'
 import { DemoLaunchTrackerPanel } from './dashboard/components/DemoLaunchTrackerPanel';
 import { DemoLaunchEvidencePackagePanel } from './dashboard/components/DemoLaunchEvidencePackagePanel';
 import { DemoAcceptanceSummaryPanel } from './dashboard/components/DemoAcceptanceSummaryPanel';
+import { EndToEndAcceptanceMatrixPanel } from './dashboard/components/EndToEndAcceptanceMatrixPanel';
 import { DemoSessionSnapshotPanel } from './dashboard/components/DemoSessionSnapshotPanel';
 import { DemoScriptPanel } from './dashboard/components/DemoScriptPanel';
 import { DemoSmokeChecklistPanel } from './dashboard/components/DemoSmokeChecklistPanel';
@@ -270,6 +272,7 @@ import type {
   CreateTriggerQuarantineInput,
   DemoReadiness,
   DemoAcceptanceSummary,
+  DemoEndToEndAcceptanceMatrix,
   DemoFinalAcceptanceCompletionArchive,
   DemoFinalAcceptanceCompletionCloseoutArchive,
   DemoFinalAcceptanceCompletionCloseout,
@@ -450,6 +453,9 @@ export default function App() {
   const [demoReadinessError, setDemoReadinessError] = useState<string | null>(null);
   const [demoAcceptanceSummary, setDemoAcceptanceSummary] = useState<DemoAcceptanceSummary | null>(null);
   const [demoAcceptanceSummaryError, setDemoAcceptanceSummaryError] = useState<string | null>(null);
+  const [demoEndToEndAcceptanceMatrix, setDemoEndToEndAcceptanceMatrix] =
+    useState<DemoEndToEndAcceptanceMatrix | null>(null);
+  const [demoEndToEndAcceptanceMatrixError, setDemoEndToEndAcceptanceMatrixError] = useState<string | null>(null);
   const [demoFinalAcceptanceSharePackage, setDemoFinalAcceptanceSharePackage] =
     useState<DemoFinalAcceptanceSharePackage | null>(null);
   const [demoFinalAcceptanceSharePackageError, setDemoFinalAcceptanceSharePackageError] = useState<string | null>(null);
@@ -1075,6 +1081,7 @@ export default function App() {
         demoHandoffShareDeliveryReceiptResult,
         demoScriptResult,
         demoReadinessResult,
+        demoEndToEndAcceptanceMatrixResult,
         demoAcceptanceSummaryResult,
         demoFinalAcceptanceSharePackageResult,
         demoFinalAcceptanceSharePackageArchiveResult,
@@ -1266,6 +1273,10 @@ export default function App() {
         getDemoReadiness().then(
           (readiness) => ({ readiness, error: null as string | null }),
           (caught) => ({ readiness: null, error: errorMessage(caught) })
+        ),
+        getDemoEndToEndAcceptanceMatrix().then(
+          (matrix) => ({ matrix, error: null as string | null }),
+          (caught) => ({ matrix: null, error: errorMessage(caught) })
         ),
         getDemoAcceptanceSummary().then(
           (summary) => ({ summary, error: null as string | null }),
@@ -1670,6 +1681,10 @@ export default function App() {
         setDemoReadiness(demoReadinessResult.readiness);
       }
       setDemoReadinessError(demoReadinessResult.error);
+      if (demoEndToEndAcceptanceMatrixResult.matrix) {
+        setDemoEndToEndAcceptanceMatrix(demoEndToEndAcceptanceMatrixResult.matrix);
+      }
+      setDemoEndToEndAcceptanceMatrixError(demoEndToEndAcceptanceMatrixResult.error);
       if (demoAcceptanceSummaryResult.summary) {
         setDemoAcceptanceSummary(demoAcceptanceSummaryResult.summary);
       }
@@ -3242,6 +3257,16 @@ export default function App() {
     }
   }, []);
 
+  const handleRefreshEndToEndAcceptanceMatrix = useCallback(async () => {
+    setDemoEndToEndAcceptanceMatrixError(null);
+    try {
+      const matrix = await getDemoEndToEndAcceptanceMatrix();
+      setDemoEndToEndAcceptanceMatrix(matrix);
+    } catch (caught) {
+      setDemoEndToEndAcceptanceMatrixError(errorMessage(caught));
+    }
+  }, []);
+
   const handleCreateTask = useCallback(async (input: CreateTaskInput) => {
     setCreatingTask(true);
     setCreateTaskStatus(null);
@@ -3818,6 +3843,12 @@ export default function App() {
         error={demoLiveLaunchGateError}
         pending={demoLiveLaunchGatePending}
         onRunGate={handleDemoLiveLaunchGate}
+      />
+
+      <EndToEndAcceptanceMatrixPanel
+        matrix={demoEndToEndAcceptanceMatrix}
+        error={demoEndToEndAcceptanceMatrixError}
+        onRefresh={handleRefreshEndToEndAcceptanceMatrix}
       />
 
       <DemoLaunchTrackerPanel
