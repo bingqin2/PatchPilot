@@ -1,8 +1,9 @@
-import { Copy, RefreshCw } from 'lucide-react';
+import { Archive, Copy, Download, RefreshCw } from 'lucide-react';
 import { useState } from 'react';
 import type {
   DemoReadinessStatus,
   ExternalExposureReadiness,
+  ExternalExposureReadinessArchive,
   ExternalExposureReadinessCheck
 } from '../../types';
 import { compactDateTime } from '../format';
@@ -10,15 +11,25 @@ import { compactDateTime } from '../format';
 interface ExternalExposureReadinessPanelProps {
   readiness: ExternalExposureReadiness | null;
   error: string | null;
+  archives: ExternalExposureReadinessArchive[];
+  archiveError: string | null;
+  onArchiveReadiness: () => Promise<ExternalExposureReadinessArchive>;
+  onDownloadArchiveReport: (archiveId: string) => Promise<Blob>;
   onRefresh: () => Promise<void> | void;
 }
 
 export function ExternalExposureReadinessPanel({
   readiness,
   error,
+  archives,
+  archiveError,
+  onArchiveReadiness,
+  onDownloadArchiveReport,
   onRefresh
 }: ExternalExposureReadinessPanelProps) {
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
+  const [archiveStatus, setArchiveStatus] = useState<string | null>(null);
+  const [downloadStatus, setDownloadStatus] = useState<string | null>(null);
 
   async function copyReport() {
     if (!readiness) {
@@ -29,6 +40,25 @@ export function ExternalExposureReadinessPanel({
       setCopyStatus('Exposure report copied');
     } catch {
       setCopyStatus('Copy failed');
+    }
+  }
+
+  async function archiveReadiness() {
+    try {
+      await onArchiveReadiness();
+      setArchiveStatus('Exposure readiness archived');
+    } catch {
+      setArchiveStatus('Archive failed');
+    }
+  }
+
+  async function downloadArchiveReport(archiveId: string) {
+    try {
+      const report = await onDownloadArchiveReport(archiveId);
+      downloadMarkdown(report, `patchpilot-external-exposure-readiness-${archiveId}.md`);
+      setDownloadStatus('Exposure readiness archive downloaded');
+    } catch {
+      setDownloadStatus('Archive download failed');
     }
   }
 
@@ -46,11 +76,23 @@ export function ExternalExposureReadinessPanel({
               Copy exposure report
             </button>
           ) : null}
+          <button
+            className="secondary-button"
+            type="button"
+            onClick={() => void archiveReadiness()}
+            aria-label="Archive exposure readiness"
+            disabled={!readiness}
+          >
+            <Archive size={16} />
+            Archive
+          </button>
           <button className="secondary-button" type="button" onClick={() => void onRefresh()}>
             <RefreshCw size={16} />
             Refresh exposure gate
           </button>
           {copyStatus ? <span className="copy-status">{copyStatus}</span> : null}
+          {archiveStatus ? <span className="copy-status">{archiveStatus}</span> : null}
+          {downloadStatus ? <span className="copy-status">{downloadStatus}</span> : null}
         </div>
       </div>
 
@@ -66,6 +108,43 @@ export function ExternalExposureReadinessPanel({
       ) : (
         <div className="empty-state">No external exposure readiness loaded.</div>
       )}
+
+      <div className="demo-launch-preflight-actions">
+        <h3>Recent exposure readiness archives</h3>
+        {archiveError ? (
+          <div className="adapter-api-error">
+            <strong>Exposure readiness archive unavailable</strong>
+            <span>{archiveError}</span>
+          </div>
+        ) : null}
+        {archives.length === 0 ? (
+          <p className="empty-state">No exposure readiness archives recorded.</p>
+        ) : (
+          <div className="demo-evidence-records">
+            {archives.map((archive) => (
+              <div key={archive.id}>
+                <span>{archive.id}</span>
+                <strong>{archive.status}</strong>
+                <small>{archive.safeToExpose ? 'Safe to expose' : 'Not safe to expose'}</small>
+                <small>{archive.summary}</small>
+                <small>
+                  {archive.readyCount} ready, {archive.needsAttentionCount} attention, {archive.blockedCount} blocked
+                </small>
+                <small>{compactDateTime(archive.createdAt)}</small>
+                <button
+                  className="secondary-button"
+                  type="button"
+                  onClick={() => void downloadArchiveReport(archive.id)}
+                  aria-label={`Download exposure readiness archive ${archive.id}`}
+                >
+                  <Download size={14} />
+                  Download archive
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </section>
   );
 }
@@ -146,4 +225,16 @@ function statusClass(status: DemoReadinessStatus) {
     return 'blocked';
   }
   return 'attention';
+}
+
+function downloadMarkdown(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.style.display = 'none';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }

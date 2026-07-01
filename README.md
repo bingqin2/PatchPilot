@@ -384,6 +384,17 @@ curl -H "X-PatchPilot-Admin-Token: $PATCHPILOT_ADMIN_TOKEN" \
 
 `BLOCKED` means the backend should not be exposed outside localhost. `NEEDS_ATTENTION` means core exposure blockers are clear, but an abuse-control setting such as trigger allowlists, rate limits, quarantine, review approvers, or generated-diff risk checks should be tightened before inviting external traffic.
 
+Archive the exact readiness result before sharing the temporary URL:
+
+```bash
+curl -X POST -H "X-PatchPilot-Admin-Token: $PATCHPILOT_ADMIN_TOKEN" \
+  http://127.0.0.1:8080/api/security/external-exposure-readiness/archives
+curl -H "X-PatchPilot-Admin-Token: $PATCHPILOT_ADMIN_TOKEN" \
+  http://127.0.0.1:8080/api/security/external-exposure-readiness/archives
+```
+
+The archive endpoints keep PatchPilot-local evidence only. They do not create tasks, call the model, run tests, mutate Git, open Pull Requests, write GitHub comments, or expose secrets.
+
 ## Trigger A Task
 
 Open a GitHub issue in the test repository and comment:

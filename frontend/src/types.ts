@@ -449,6 +449,19 @@ export interface ExternalExposureReadiness {
   markdownReport: string;
 }
 
+export interface ExternalExposureReadinessArchive {
+  id: string;
+  status: DemoReadinessStatus;
+  safeToExpose: boolean;
+  summary: string;
+  readyCount: number;
+  needsAttentionCount: number;
+  blockedCount: number;
+  totalCount: number;
+  createdAt: string;
+  report: string;
+}
+
 export interface DashboardBootstrap {
   adminTokenConfigured: boolean;
   adminTokenBootstrapEnabled: boolean;

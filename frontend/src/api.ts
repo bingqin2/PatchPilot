@@ -89,6 +89,7 @@ import type {
   EvaluationRunPreview,
   EvaluationRunSnapshotArchive,
   ExternalExposureReadiness,
+  ExternalExposureReadinessArchive,
   FixTaskEvidencePackageAcceptanceCertificate,
   FixTaskEvidencePackageAcceptanceCertificateArchive,
   FixTask,
@@ -198,6 +199,18 @@ export async function getDemoEndToEndAcceptanceMatrix(): Promise<DemoEndToEndAcc
 
 export async function getExternalExposureReadiness(): Promise<ExternalExposureReadiness> {
   return getApi<ExternalExposureReadiness>('/api/security/external-exposure-readiness');
+}
+
+export async function archiveExternalExposureReadiness(): Promise<ExternalExposureReadinessArchive> {
+  return postApi<ExternalExposureReadinessArchive>('/api/security/external-exposure-readiness/archives');
+}
+
+export async function listExternalExposureReadinessArchives(): Promise<ExternalExposureReadinessArchive[]> {
+  return getApi<ExternalExposureReadinessArchive[]>('/api/security/external-exposure-readiness/archives');
+}
+
+export async function downloadExternalExposureReadinessArchiveReport(archiveId: string): Promise<Blob> {
+  return getBlobApi(`/api/security/external-exposure-readiness/archives/${encodeURIComponent(archiveId)}/report/download`);
 }
 
 export async function listTasks(options: TaskStatusFilter | ListTasksOptions = 'ALL'): Promise<FixTaskPage> {
