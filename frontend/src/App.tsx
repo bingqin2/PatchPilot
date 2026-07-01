@@ -89,6 +89,7 @@ import {
   downloadDemoSelfHostedLaunchReadinessReport,
   downloadExternalExposureHandoffPackageReport,
   downloadExternalExposureReadinessArchiveReport,
+  downloadExternalExposureSessionReport,
   downloadDemoHandoffShareDeliveryReceiptReport,
   downloadDemoHandoffShareInstructionsReport,
   downloadDemoHandoffShareChecklistReport,
@@ -166,12 +167,14 @@ import {
   getEvaluationRunPreview,
   getExternalExposureHandoffPackage,
   getExternalExposureReadiness,
+  closeExternalExposureSession,
   runAndArchiveEvaluation,
   runAndArchiveEvaluationFixtureBaseline,
   runEvaluationFixtureBaseline,
   preflightDemoLaunch,
   postDemoLiveLaunchGate,
   postGitHubTriggerDryRun,
+  startExternalExposureSession,
   getGitHubCredentialReadiness,
   getGitHubLivePublishPreflight,
   getGitHubPublishPermissionReadiness,
@@ -203,6 +206,7 @@ import {
   listEvaluationRuns,
   listEvaluationRunSnapshots,
   listExternalExposureReadinessArchives,
+  listExternalExposureSessions,
   listLanguageAdapterFixtures,
   listLanguageAdapterRuntimeReadiness,
   listLanguageAdapters,
@@ -283,6 +287,9 @@ import type {
   ExternalExposureHandoffPackage,
   ExternalExposureReadiness,
   ExternalExposureReadinessArchive,
+  ExternalExposureSession,
+  ExternalExposureSessionCloseInput,
+  ExternalExposureSessionInput,
   DemoFinalAcceptanceCompletionArchive,
   DemoFinalAcceptanceCompletionCloseoutArchive,
   DemoFinalAcceptanceCompletionCloseout,
@@ -476,6 +483,8 @@ export default function App() {
     useState<ExternalExposureHandoffPackage | null>(null);
   const [externalExposureHandoffPackageError, setExternalExposureHandoffPackageError] =
     useState<string | null>(null);
+  const [externalExposureSessions, setExternalExposureSessions] = useState<ExternalExposureSession[]>([]);
+  const [externalExposureSessionError, setExternalExposureSessionError] = useState<string | null>(null);
   const [demoFinalAcceptanceSharePackage, setDemoFinalAcceptanceSharePackage] =
     useState<DemoFinalAcceptanceSharePackage | null>(null);
   const [demoFinalAcceptanceSharePackageError, setDemoFinalAcceptanceSharePackageError] = useState<string | null>(null);
@@ -1105,6 +1114,7 @@ export default function App() {
         externalExposureReadinessResult,
         externalExposureReadinessArchiveResult,
         externalExposureHandoffPackageResult,
+        externalExposureSessionResult,
         demoAcceptanceSummaryResult,
         demoFinalAcceptanceSharePackageResult,
         demoFinalAcceptanceSharePackageArchiveResult,
@@ -1312,6 +1322,10 @@ export default function App() {
         getExternalExposureHandoffPackage().then(
           (handoffPackage) => ({ handoffPackage, error: null as string | null }),
           (caught) => ({ handoffPackage: null, error: errorMessage(caught) })
+        ),
+        listExternalExposureSessions().then(
+          (sessions) => ({ sessions, error: null as string | null }),
+          (caught) => ({ sessions: null, error: errorMessage(caught) })
         ),
         getDemoAcceptanceSummary().then(
           (summary) => ({ summary, error: null as string | null }),
@@ -1732,6 +1746,10 @@ export default function App() {
         setExternalExposureHandoffPackage(externalExposureHandoffPackageResult.handoffPackage);
       }
       setExternalExposureHandoffPackageError(externalExposureHandoffPackageResult.error);
+      if (externalExposureSessionResult.sessions) {
+        setExternalExposureSessions(externalExposureSessionResult.sessions);
+      }
+      setExternalExposureSessionError(externalExposureSessionResult.error);
       if (demoAcceptanceSummaryResult.summary) {
         setDemoAcceptanceSummary(demoAcceptanceSummaryResult.summary);
       }
@@ -3354,6 +3372,42 @@ export default function App() {
     []
   );
 
+  const handleStartExternalExposureSession = useCallback(async (input: ExternalExposureSessionInput) => {
+    setExternalExposureSessionError(null);
+    try {
+      const session = await startExternalExposureSession(input);
+      setExternalExposureSessions((current) =>
+        [session, ...current.filter((item) => item.id !== session.id)].slice(0, 50)
+      );
+      return session;
+    } catch (caught) {
+      setExternalExposureSessionError(errorMessage(caught));
+      throw caught;
+    }
+  }, []);
+
+  const handleCloseExternalExposureSession = useCallback(async (
+    sessionId: string,
+    input: ExternalExposureSessionCloseInput
+  ) => {
+    setExternalExposureSessionError(null);
+    try {
+      const session = await closeExternalExposureSession(sessionId, input);
+      setExternalExposureSessions((current) =>
+        [session, ...current.filter((item) => item.id !== session.id)].slice(0, 50)
+      );
+      return session;
+    } catch (caught) {
+      setExternalExposureSessionError(errorMessage(caught));
+      throw caught;
+    }
+  }, []);
+
+  const handleDownloadExternalExposureSessionReport = useCallback(
+    (sessionId: string) => downloadExternalExposureSessionReport(sessionId),
+    []
+  );
+
   const handleCreateTask = useCallback(async (input: CreateTaskInput) => {
     setCreatingTask(true);
     setCreateTaskStatus(null);
@@ -3945,9 +3999,14 @@ export default function App() {
         archiveError={externalExposureReadinessArchiveError}
         handoffPackage={externalExposureHandoffPackage}
         handoffPackageError={externalExposureHandoffPackageError}
+        sessions={externalExposureSessions}
+        sessionError={externalExposureSessionError}
         onArchiveReadiness={handleArchiveExternalExposureReadiness}
         onDownloadArchiveReport={handleDownloadExternalExposureReadinessArchiveReport}
         onDownloadHandoffPackageReport={handleDownloadExternalExposureHandoffPackageReport}
+        onStartSession={handleStartExternalExposureSession}
+        onCloseSession={handleCloseExternalExposureSession}
+        onDownloadSessionReport={handleDownloadExternalExposureSessionReport}
         onRefresh={handleRefreshExternalExposureReadiness}
       />
 

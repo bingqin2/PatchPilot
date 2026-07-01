@@ -91,6 +91,9 @@ import type {
   ExternalExposureHandoffPackage,
   ExternalExposureReadiness,
   ExternalExposureReadinessArchive,
+  ExternalExposureSession,
+  ExternalExposureSessionCloseInput,
+  ExternalExposureSessionInput,
   FixTaskEvidencePackageAcceptanceCertificate,
   FixTaskEvidencePackageAcceptanceCertificateArchive,
   FixTask,
@@ -220,6 +223,30 @@ export async function getExternalExposureHandoffPackage(): Promise<ExternalExpos
 
 export async function downloadExternalExposureHandoffPackageReport(): Promise<Blob> {
   return getBlobApi('/api/security/external-exposure-handoff-package/report/download');
+}
+
+export async function startExternalExposureSession(
+  input: ExternalExposureSessionInput
+): Promise<ExternalExposureSession> {
+  return postApi<ExternalExposureSession>('/api/security/external-exposure-sessions', input);
+}
+
+export async function closeExternalExposureSession(
+  sessionId: string,
+  input: ExternalExposureSessionCloseInput
+): Promise<ExternalExposureSession> {
+  return postApi<ExternalExposureSession>(
+    `/api/security/external-exposure-sessions/${encodeURIComponent(sessionId)}/close`,
+    input
+  );
+}
+
+export async function listExternalExposureSessions(): Promise<ExternalExposureSession[]> {
+  return getApi<ExternalExposureSession[]>('/api/security/external-exposure-sessions');
+}
+
+export async function downloadExternalExposureSessionReport(sessionId: string): Promise<Blob> {
+  return getBlobApi(`/api/security/external-exposure-sessions/${encodeURIComponent(sessionId)}/report/download`);
 }
 
 export async function listTasks(options: TaskStatusFilter | ListTasksOptions = 'ALL'): Promise<FixTaskPage> {

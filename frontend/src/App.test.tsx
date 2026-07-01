@@ -1777,6 +1777,24 @@ const externalExposureHandoffPackage = {
   markdownReport: '# PatchPilot External Exposure Handoff Package'
 };
 
+const externalExposureSession = {
+  id: 'external-exposure-session-1',
+  status: 'ACTIVE',
+  publicUrl: 'https://demo.trycloudflare.com',
+  webhookUrl: 'https://demo.trycloudflare.com/api/github/webhook',
+  purpose: 'Live GitHub webhook smoke test',
+  operator: 'bingqin2',
+  expectedShutdownAt: '2026-07-01T17:00:00Z',
+  notes: 'Keep terminal visible during test.',
+  linkedHandoffStatus: 'READY',
+  linkedReadinessArchiveId: 'external-exposure-archive-1',
+  startedAt: '2026-07-01T15:00:00Z',
+  closedBy: null,
+  closedAt: null,
+  closeNotes: null,
+  markdownReport: '# PatchPilot External Exposure Session'
+};
+
 const demoReadinessSnapshotArchive = {
   id: 'readiness-snapshot-1',
   status: 'NEEDS_ATTENTION',
@@ -3802,6 +3820,32 @@ beforeEach(() => {
         headers: { 'Content-Type': 'text/markdown;charset=UTF-8' }
       });
     }
+    if (url === '/api/security/external-exposure-sessions') {
+      if (init?.method === 'POST') {
+        return jsonResponse({
+          ...externalExposureSession,
+          id: 'external-exposure-session-created',
+          publicUrl: 'https://new-demo.trycloudflare.com',
+          webhookUrl: 'https://new-demo.trycloudflare.com/api/github/webhook',
+          purpose: 'Reviewer live smoke test'
+        });
+      }
+      return jsonResponse([externalExposureSession]);
+    }
+    if (url === '/api/security/external-exposure-sessions/external-exposure-session-1/close') {
+      return jsonResponse({
+        ...externalExposureSession,
+        status: 'CLOSED',
+        closedBy: 'bingqin2',
+        closedAt: '2026-07-01T16:30:00Z',
+        closeNotes: 'Tunnel process stopped.'
+      });
+    }
+    if (url === '/api/security/external-exposure-sessions/external-exposure-session-1/report/download') {
+      return new Response('# PatchPilot External Exposure Session', {
+        headers: { 'Content-Type': 'text/markdown;charset=UTF-8' }
+      });
+    }
     if (url === '/api/tasks/metrics/summary' || url.startsWith('/api/tasks/metrics/summary?')) {
       return jsonResponse({
         totalCount: 3,
@@ -5308,6 +5352,7 @@ test('renders operational task dashboard from backend APIs', async () => {
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/rejected-triggers/summary?limit=100'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/admin-audit-events?limit=20'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/security/external-exposure-handoff-package'));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/security/external-exposure-sessions'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks/task-1/detail'));
   expect(screen.getByText('Pull request opened')).toBeInTheDocument();
   const exposurePanel = screen.getByRole('region', { name: 'External exposure readiness' });
@@ -5321,6 +5366,10 @@ test('renders operational task dashboard from backend APIs', async () => {
     .toBeInTheDocument();
   expect(within(exposurePanel).getByText('Latest archive external-exposure-archive-1 captures NEEDS_ATTENTION readiness evidence.'))
     .toBeInTheDocument();
+  expect(within(exposurePanel).getByText('External exposure sessions')).toBeInTheDocument();
+  expect(within(exposurePanel).getByText('https://demo.trycloudflare.com')).toBeInTheDocument();
+  expect(within(exposurePanel).getByText('Live GitHub webhook smoke test')).toBeInTheDocument();
+  expect(within(exposurePanel).getByText('external-exposure-session-1')).toBeInTheDocument();
   const evidencePanel = screen.getByRole('region', { name: 'Demo evidence bundle' });
   expect(within(evidencePanel).getByText('Webhook setup is ready for GitHub deliveries.')).toBeInTheDocument();
   expect(within(evidencePanel).getByText('https://demo.trycloudflare.com/api/github/webhook')).toBeInTheDocument();

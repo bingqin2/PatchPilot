@@ -406,6 +406,30 @@ curl -OJ -H "X-PatchPilot-Admin-Token: $PATCHPILOT_ADMIN_TOKEN" \
 
 The handoff package is `READY` only when the current exposure gate is safe and the latest archive still matches it. Missing or stale archive evidence blocks or warns before a temporary URL is shared.
 
+When the handoff package is `READY` and the Cloudflare Tunnel is active, record the temporary public URL as an exposure session:
+
+```bash
+curl -X POST -H "X-PatchPilot-Admin-Token: $PATCHPILOT_ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  http://127.0.0.1:8080/api/security/external-exposure-sessions \
+  -d '{"publicUrl":"https://your-temp-url.trycloudflare.com","webhookUrl":"https://your-temp-url.trycloudflare.com/api/github/webhook","purpose":"Live GitHub webhook smoke test","operator":"bingqin2","notes":"Keep the tunnel terminal visible."}'
+curl -H "X-PatchPilot-Admin-Token: $PATCHPILOT_ADMIN_TOKEN" \
+  http://127.0.0.1:8080/api/security/external-exposure-sessions
+```
+
+Close the session after the demo or live test:
+
+```bash
+curl -X POST -H "X-PatchPilot-Admin-Token: $PATCHPILOT_ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  http://127.0.0.1:8080/api/security/external-exposure-sessions/<session-id>/close \
+  -d '{"closedBy":"bingqin2","closeNotes":"Tunnel stopped and GitHub webhook URL removed or rotated."}'
+curl -OJ -H "X-PatchPilot-Admin-Token: $PATCHPILOT_ADMIN_TOKEN" \
+  http://127.0.0.1:8080/api/security/external-exposure-sessions/<session-id>/report/download
+```
+
+Exposure sessions are local evidence records only. They do not probe the public URL, edit GitHub webhook settings, create tasks, call the model, run tests, mutate Git, open Pull Requests, or write GitHub comments.
+
 ## Trigger A Task
 
 Open a GitHub issue in the test repository and comment:

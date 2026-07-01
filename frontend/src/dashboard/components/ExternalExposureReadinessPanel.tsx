@@ -1,11 +1,14 @@
-import { Archive, Copy, Download, RefreshCw } from 'lucide-react';
-import { useState } from 'react';
+import { Archive, Copy, Download, Play, RefreshCw, Square } from 'lucide-react';
+import { useState, type FormEvent } from 'react';
 import type {
   DemoReadinessStatus,
   ExternalExposureHandoffPackage,
   ExternalExposureReadiness,
   ExternalExposureReadinessArchive,
-  ExternalExposureReadinessCheck
+  ExternalExposureReadinessCheck,
+  ExternalExposureSession,
+  ExternalExposureSessionCloseInput,
+  ExternalExposureSessionInput
 } from '../../types';
 import { compactDateTime } from '../format';
 
@@ -16,9 +19,14 @@ interface ExternalExposureReadinessPanelProps {
   archiveError: string | null;
   handoffPackage: ExternalExposureHandoffPackage | null;
   handoffPackageError: string | null;
+  sessions: ExternalExposureSession[];
+  sessionError: string | null;
   onArchiveReadiness: () => Promise<ExternalExposureReadinessArchive>;
   onDownloadArchiveReport: (archiveId: string) => Promise<Blob>;
   onDownloadHandoffPackageReport: () => Promise<Blob>;
+  onStartSession: (input: ExternalExposureSessionInput) => Promise<ExternalExposureSession>;
+  onCloseSession: (sessionId: string, input: ExternalExposureSessionCloseInput) => Promise<ExternalExposureSession>;
+  onDownloadSessionReport: (sessionId: string) => Promise<Blob>;
   onRefresh: () => Promise<void> | void;
 }
 
@@ -29,14 +37,24 @@ export function ExternalExposureReadinessPanel({
   archiveError,
   handoffPackage,
   handoffPackageError,
+  sessions,
+  sessionError,
   onArchiveReadiness,
   onDownloadArchiveReport,
   onDownloadHandoffPackageReport,
+  onStartSession,
+  onCloseSession,
+  onDownloadSessionReport,
   onRefresh
 }: ExternalExposureReadinessPanelProps) {
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
   const [archiveStatus, setArchiveStatus] = useState<string | null>(null);
   const [downloadStatus, setDownloadStatus] = useState<string | null>(null);
+  const [sessionStatus, setSessionStatus] = useState<string | null>(null);
+  const [publicUrl, setPublicUrl] = useState('');
+  const [webhookUrl, setWebhookUrl] = useState('');
+  const [purpose, setPurpose] = useState('');
+  const [operator, setOperator] = useState('');
 
   async function copyReport() {
     if (!readiness) {
@@ -79,6 +97,46 @@ export function ExternalExposureReadinessPanel({
     }
   }
 
+  async function startSession(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    try {
+      await onStartSession({
+        publicUrl,
+        webhookUrl,
+        purpose,
+        operator,
+        expectedShutdownAt: undefined,
+        notes: ''
+      });
+      setSessionStatus('Exposure session started');
+    } catch {
+      setSessionStatus('Exposure session start failed');
+    }
+  }
+
+  async function closeSession(sessionId: string) {
+    try {
+      await onCloseSession(sessionId, {
+        closedBy: operator || 'local-operator',
+        closedAt: undefined,
+        closeNotes: 'Closed from dashboard.'
+      });
+      setSessionStatus('Exposure session closed');
+    } catch {
+      setSessionStatus('Exposure session close failed');
+    }
+  }
+
+  async function downloadSessionReport(sessionId: string) {
+    try {
+      const report = await onDownloadSessionReport(sessionId);
+      downloadMarkdown(report, `patchpilot-external-exposure-session-${sessionId}.md`);
+      setSessionStatus('Exposure session report downloaded');
+    } catch {
+      setSessionStatus('Exposure session download failed');
+    }
+  }
+
   return (
     <section className="panel external-exposure-readiness-panel" aria-label="External exposure readiness">
       <div className="panel-header">
@@ -110,6 +168,7 @@ export function ExternalExposureReadinessPanel({
           {copyStatus ? <span className="copy-status">{copyStatus}</span> : null}
           {archiveStatus ? <span className="copy-status">{archiveStatus}</span> : null}
           {downloadStatus ? <span className="copy-status">{downloadStatus}</span> : null}
+          {sessionStatus ? <span className="copy-status">{sessionStatus}</span> : null}
         </div>
       </div>
 
@@ -130,6 +189,22 @@ export function ExternalExposureReadinessPanel({
         handoffPackage={handoffPackage}
         error={handoffPackageError}
         onDownloadReport={downloadHandoffPackageReport}
+      />
+
+      <ExternalExposureSessionResult
+        sessions={sessions}
+        error={sessionError}
+        publicUrl={publicUrl}
+        webhookUrl={webhookUrl}
+        purpose={purpose}
+        operator={operator}
+        onPublicUrlChange={setPublicUrl}
+        onWebhookUrlChange={setWebhookUrl}
+        onPurposeChange={setPurpose}
+        onOperatorChange={setOperator}
+        onStartSession={startSession}
+        onCloseSession={closeSession}
+        onDownloadSessionReport={downloadSessionReport}
       />
 
       <div className="demo-launch-preflight-actions">
@@ -169,6 +244,138 @@ export function ExternalExposureReadinessPanel({
         )}
       </div>
     </section>
+  );
+}
+
+function ExternalExposureSessionResult({
+  sessions,
+  error,
+  publicUrl,
+  webhookUrl,
+  purpose,
+  operator,
+  onPublicUrlChange,
+  onWebhookUrlChange,
+  onPurposeChange,
+  onOperatorChange,
+  onStartSession,
+  onCloseSession,
+  onDownloadSessionReport
+}: {
+  sessions: ExternalExposureSession[];
+  error: string | null;
+  publicUrl: string;
+  webhookUrl: string;
+  purpose: string;
+  operator: string;
+  onPublicUrlChange: (value: string) => void;
+  onWebhookUrlChange: (value: string) => void;
+  onPurposeChange: (value: string) => void;
+  onOperatorChange: (value: string) => void;
+  onStartSession: (event: FormEvent<HTMLFormElement>) => void;
+  onCloseSession: (sessionId: string) => Promise<void>;
+  onDownloadSessionReport: (sessionId: string) => Promise<void>;
+}) {
+  return (
+    <div className="demo-launch-preflight-actions">
+      <div className="panel-subheader">
+        <div>
+          <h3>External exposure sessions</h3>
+          <p>Record temporary public URL sharing and shutdown evidence.</p>
+        </div>
+      </div>
+
+      {error ? (
+        <div className="adapter-api-error">
+          <strong>External exposure sessions unavailable</strong>
+          <span>{error}</span>
+        </div>
+      ) : null}
+
+      <form className="manual-task-form compact-form" onSubmit={onStartSession}>
+        <label>
+          <span>Temporary public URL</span>
+          <input
+            aria-label="Temporary public URL"
+            value={publicUrl}
+            onChange={(event) => onPublicUrlChange(event.target.value)}
+            placeholder="https://example.trycloudflare.com"
+          />
+        </label>
+        <label>
+          <span>GitHub webhook URL</span>
+          <input
+            aria-label="GitHub webhook URL"
+            value={webhookUrl}
+            onChange={(event) => onWebhookUrlChange(event.target.value)}
+            placeholder="https://example.trycloudflare.com/api/github/webhook"
+          />
+        </label>
+        <label>
+          <span>Exposure purpose</span>
+          <input
+            aria-label="Exposure purpose"
+            value={purpose}
+            onChange={(event) => onPurposeChange(event.target.value)}
+            placeholder="Live GitHub webhook smoke test"
+          />
+        </label>
+        <label>
+          <span>Exposure operator</span>
+          <input
+            aria-label="Exposure operator"
+            value={operator}
+            onChange={(event) => onOperatorChange(event.target.value)}
+            placeholder="bingqin2"
+          />
+        </label>
+        <button className="secondary-button" type="submit">
+          <Play size={14} />
+          Start exposure session
+        </button>
+      </form>
+
+      {sessions.length === 0 ? (
+        <p className="empty-state">No external exposure sessions recorded.</p>
+      ) : (
+        <div className="demo-evidence-records">
+          {sessions.map((session) => (
+            <div key={session.id}>
+              <span>{session.id}</span>
+              <strong>{session.status}</strong>
+              <small>{session.publicUrl}</small>
+              <small>{session.webhookUrl}</small>
+              <small>{session.purpose}</small>
+              <small>
+                Started {compactDateTime(session.startedAt)}
+                {session.closedAt ? ` · Closed ${compactDateTime(session.closedAt)}` : ''}
+              </small>
+              <small>Linked archive {session.linkedReadinessArchiveId ?? 'missing'}</small>
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={() => void onDownloadSessionReport(session.id)}
+                aria-label={`Download exposure session ${session.id}`}
+              >
+                <Download size={14} />
+                Download session
+              </button>
+              {session.status === 'ACTIVE' ? (
+                <button
+                  className="secondary-button"
+                  type="button"
+                  onClick={() => void onCloseSession(session.id)}
+                  aria-label={`Close exposure session ${session.id}`}
+                >
+                  <Square size={14} />
+                  Close session
+                </button>
+              ) : null}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
