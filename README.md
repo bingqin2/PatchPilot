@@ -336,6 +336,23 @@ curl -X POST http://127.0.0.1:8080/api/demo/live-launch-gate \
 
 This endpoint aggregates self-hosted launch readiness, webhook setup readiness, live GitHub publish preflight, and live trigger dry-run evidence into one `READY`, `NEEDS_ATTENTION`, or `BLOCKED` result. It returns checks, concrete next actions, a side-effect contract, and a Markdown report for the exact comment you plan to post. It is read-only: it does not create tasks, enqueue work, record rate-limit usage, mutate Git, create branches, open Pull Requests, write GitHub comments, archive records, or expose tokens. The dashboard `Live launch gate` panel submits the same request and can copy the backend Markdown report.
 
+After the live launch gate is clean and the external exposure operator handoff checklist has been archived, create the final live trigger launch package:
+
+```bash
+curl -X POST http://127.0.0.1:8080/api/demo/live-trigger-launch-package \
+  -H "X-PatchPilot-Admin-Token: $PATCHPILOT_ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "repositoryOwner": "bingqin2",
+    "repositoryName": "PatchPilot",
+    "issueNumber": 1,
+    "triggerUser": "bingqin2",
+    "triggerComment": "/agent fix replace docs/demo.md PatchPilot smoke test"
+  }'
+```
+
+This package combines the live launch gate with the latest frozen external exposure operator handoff archive. It returns a final go/no-go status, the exact GitHub issue URL and comment to post, archive evidence, next actions, side-effect contract, and Markdown report. Use `POST /api/demo/live-trigger-launch-package/report/download` with the same JSON body to download the report. Both endpoints are read-only and do not create tasks, call the model directly, mutate Git, write GitHub comments, open Pull Requests, archive records, or expose secrets.
+
 ## Run With Docker Compose
 
 From the repository root:

@@ -1,19 +1,29 @@
-import { Copy, Rocket } from 'lucide-react';
+import { Copy, Download, PackageCheck, Rocket } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
-import type { DemoLiveLaunchGate, GitHubTriggerDryRunInput } from '../../types';
+import type { DemoLiveLaunchGate, DemoLiveTriggerLaunchPackage, GitHubTriggerDryRunInput } from '../../types';
 
 interface LiveLaunchGatePanelProps {
   result: DemoLiveLaunchGate | null;
   error: string | null;
   pending: boolean;
   onRunGate: (input: GitHubTriggerDryRunInput) => Promise<DemoLiveLaunchGate> | Promise<void> | void;
+  launchPackage: DemoLiveTriggerLaunchPackage | null;
+  launchPackageError: string | null;
+  launchPackagePending: boolean;
+  onCreateLaunchPackage: (
+    input: GitHubTriggerDryRunInput
+  ) => Promise<DemoLiveTriggerLaunchPackage> | Promise<void> | void;
 }
 
 export function LiveLaunchGatePanel({
   result,
   error,
   pending,
-  onRunGate
+  onRunGate,
+  launchPackage,
+  launchPackageError,
+  launchPackagePending,
+  onCreateLaunchPackage
 }: LiveLaunchGatePanelProps) {
   const [repositoryOwner, setRepositoryOwner] = useState('bingqin2');
   const [repositoryName, setRepositoryName] = useState('PatchPilot');
@@ -43,6 +53,18 @@ export function LiveLaunchGatePanel({
     await navigator.clipboard?.writeText(result.markdownReport);
   }
 
+  async function createLaunchPackage() {
+    await onCreateLaunchPackage(input());
+  }
+
+  function downloadLaunchPackage() {
+    if (!launchPackage) {
+      return;
+    }
+    const blob = new Blob([launchPackage.markdownReport], { type: 'text/markdown;charset=UTF-8' });
+    downloadMarkdown(blob, 'patchpilot-live-trigger-launch-package.md');
+  }
+
   return (
     <section className="panel live-launch-gate-panel" aria-label="Live launch gate">
       <div className="panel-header">
@@ -51,10 +73,32 @@ export function LiveLaunchGatePanel({
           <p>Run the final read-only gate before posting a real GitHub issue comment.</p>
         </div>
         {result ? (
-          <button className="secondary-button" type="button" onClick={() => void copyReport()}>
-            <Copy size={16} />
-            Copy launch gate report
-          </button>
+          <div className="demo-readiness-header-meta">
+            <button className="secondary-button" type="button" onClick={() => void copyReport()}>
+              <Copy size={16} />
+              Copy launch gate report
+            </button>
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={() => void createLaunchPackage()}
+              disabled={launchPackagePending}
+              aria-label="Create live trigger launch package"
+            >
+              <PackageCheck size={16} />
+              {launchPackagePending ? 'Creating launch package' : 'Create launch package'}
+            </button>
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={downloadLaunchPackage}
+              disabled={!launchPackage}
+              aria-label="Download live trigger launch package"
+            >
+              <Download size={16} />
+              Download package
+            </button>
+          </div>
         ) : null}
       </div>
 
@@ -124,12 +168,82 @@ export function LiveLaunchGatePanel({
         </div>
       ) : null}
 
+      {launchPackageError ? (
+        <div className="adapter-api-error">
+          <strong>Live trigger launch package failed</strong>
+          <span>{launchPackageError}</span>
+        </div>
+      ) : null}
+
       {result ? (
-        <LiveLaunchGateResult result={result} />
+        <>
+          <LiveLaunchGateResult result={result} />
+          {launchPackage ? <LiveTriggerLaunchPackageResult launchPackage={launchPackage} /> : null}
+        </>
       ) : (
         <div className="empty-state">No live launch gate run yet.</div>
       )}
     </section>
+  );
+}
+
+function LiveTriggerLaunchPackageResult({ launchPackage }: { launchPackage: DemoLiveTriggerLaunchPackage }) {
+  const tone = launchPackage.status === 'READY' ? 'ready' : launchPackage.status === 'BLOCKED' ? 'blocked' : 'attention';
+
+  return (
+    <div className={`demo-launch-preflight-result demo-launch-preflight-result-${tone}`}>
+      <div className="demo-launch-preflight-summary">
+        <span className={`demo-readiness-status demo-readiness-status-${tone}`}>
+          {launchPackage.status}
+        </span>
+        <strong>
+          {launchPackage.readyToPost
+            ? 'Ready to post live trigger'
+            : launchPackage.status === 'BLOCKED'
+              ? 'Live trigger package blocked'
+              : 'Live trigger package needs attention'}
+        </strong>
+        <p>{launchPackage.summary}</p>
+      </div>
+      <div className="demo-launch-preflight-grid">
+        <div>
+          <span>Live trigger launch package</span>
+          <strong>{launchPackage.repository}</strong>
+          <small>{launchPackage.issueUrl}</small>
+        </div>
+        <div>
+          <span>Operator archive</span>
+          <strong>{launchPackage.operatorHandoffArchiveId ?? 'missing'}</strong>
+          <small>{launchPackage.operatorHandoffArchiveReady ? 'ready' : 'not ready'}</small>
+        </div>
+        <div>
+          <span>Live gate</span>
+          <strong>{launchPackage.liveLaunchGateStatus}</strong>
+          <small>{launchPackage.liveLaunchGateReady ? 'ready to post' : 'not ready'}</small>
+        </div>
+        <div>
+          <span>Exact comment</span>
+          <strong>{launchPackage.triggerComment}</strong>
+        </div>
+      </div>
+      <p className="demo-launch-preflight-blocked">{launchPackage.sideEffectContract}</p>
+      <div className="demo-launch-preflight-actions">
+        <h3>Package evidence</h3>
+        <ul>
+          {launchPackage.evidenceNotes.map((note) => (
+            <li key={note}>{note}</li>
+          ))}
+        </ul>
+      </div>
+      <div className="demo-launch-preflight-actions">
+        <h3>Package next actions</h3>
+        <ul>
+          {launchPackage.nextActions.map((action) => (
+            <li key={action}>{action}</li>
+          ))}
+        </ul>
+      </div>
+    </div>
   );
 }
 
@@ -199,4 +313,13 @@ function LiveLaunchGateResult({ result }: { result: DemoLiveLaunchGate }) {
       </div>
     </div>
   );
+}
+
+function downloadMarkdown(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(url);
 }
