@@ -617,6 +617,37 @@ export interface ExternalExposureOperatorHandoffChecklist {
   markdownReport: string;
 }
 
+export interface ExternalExposureOperatorHandoffChecklistArchive {
+  id: string;
+  status: DemoReadinessStatus;
+  readyForNextLiveStep: boolean;
+  summary: string;
+  nextAction: string;
+  repository: string;
+  latestCloseoutArchiveId: string | null;
+  latestSessionId: string | null;
+  latestSessionStatus: 'ACTIVE' | 'CLOSED' | null;
+  publicUrl: string | null;
+  webhookUrl: string | null;
+  handoffStatus: DemoReadinessStatus | null;
+  archiveFreshness: 'CURRENT' | 'MISSING' | 'STALE' | null;
+  livePublishStatus: DemoReadinessStatus | null;
+  livePublishReady: boolean;
+  activeSessionCount: number;
+  readyCount: number;
+  needsAttentionCount: number;
+  blockedCount: number;
+  totalCount: number;
+  nextActions: string[];
+  evidenceNotes: string[];
+  downloadActions: string[];
+  sideEffectContract: string;
+  checks: ExternalExposureOperatorHandoffChecklistCheck[];
+  generatedAt: string;
+  archivedAt: string;
+  report: string;
+}
+
 export interface DashboardBootstrap {
   adminTokenConfigured: boolean;
   adminTokenBootstrapEnabled: boolean;
