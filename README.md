@@ -44,6 +44,7 @@ PatchPilot is not a chatbot and does not auto-merge code. The current target is 
 - Admin-protected live GitHub trigger dry run that evaluates the exact issue comment an operator plans to post, using GitHub issue-comment trigger gates without creating tasks, queue work, rate-limit records, GitHub comments, branches, Pull Requests, or token exposure.
 - Admin-protected live launch gate that combines self-hosted launch readiness, webhook setup readiness, live publish preflight, and live trigger dry-run evidence into one read-only go/no-go result before the operator posts the real GitHub issue comment.
 - End-to-end acceptance matrix that combines the live launch gate, supported language coverage, safety rejection coverage, evaluation evidence, recent Pull Request evidence, failed-task evidence, pending-review evidence, final gap analysis, and copyable Markdown into one read-only final-demo readiness readout.
+- External exposure readiness gate that checks admin-token protection, dashboard token bootstrap, webhook secret, public webhook URL, allowlists, rate limits, quarantine, review approvers, generated-diff risk gating, and copyable Markdown before a local backend is exposed through a temporary public URL.
 - Issue comment status updates for accepted, running, verification, success, and failure states, including best-effort failure feedback creation when the original status comment is missing.
 - Failed and cancelled task retry preflight that explains whether retry is safe, shows sanitized failure context, blocks blind retries when GitHub permissions or repository support must be fixed first, and requires an operator reason before requeueing.
 - Demo readiness gate that summarizes credentials, model provider health, adapter fixtures, adapter runtime executables, evaluation baseline regression evidence, queue health, worker heartbeat readiness, and recent PR evidence before a live smoke run.
@@ -373,6 +374,15 @@ curl -H "X-PatchPilot-Admin-Token: $PATCHPILOT_ADMIN_TOKEN" \
 ```
 
 For private localhost-only dashboard runs, you can set `PATCHPILOT_DASHBOARD_ADMIN_TOKEN_BOOTSTRAP_ENABLED=true` to avoid pasting the token into the browser. Keep this disabled whenever the backend is reachable through the temporary Cloudflare URL.
+
+Before sharing a tunnel URL or posting a live trigger, run the external exposure gate:
+
+```bash
+curl -H "X-PatchPilot-Admin-Token: $PATCHPILOT_ADMIN_TOKEN" \
+  http://127.0.0.1:8080/api/security/external-exposure-readiness
+```
+
+`BLOCKED` means the backend should not be exposed outside localhost. `NEEDS_ATTENTION` means core exposure blockers are clear, but an abuse-control setting such as trigger allowlists, rate limits, quarantine, review approvers, or generated-diff risk checks should be tightened before inviting external traffic.
 
 ## Trigger A Task
 

@@ -6328,3 +6328,21 @@ Validation so far:
 - `npm --prefix frontend test -- --reporter=dot`: passed, 33 test files and 510 tests.
 - `npm --prefix frontend run build`: passed with the existing Vite large-chunk warning.
 - `git diff --check`: passed.
+
+## 2026-07-01 - 315 External exposure readiness gate
+
+- Started `315-external-exposure-readiness-gate` to add one security-focused go/no-go check before a self-hosted backend is exposed through Cloudflare Tunnel or another temporary public URL.
+- Added `GET /api/security/external-exposure-readiness`, backed by `ExternalExposureReadinessService`, aggregating admin-token protection, dashboard token bootstrap state, webhook secret, public webhook URL, trigger user/repository allowlists, trigger rate limits, rejected-trigger quarantine, review approvers, and generated-diff risk gating.
+- Added aggregate status, safe-to-expose flag, ready/warning/blocked counts, per-check summaries, next actions, read-only side-effect contract, generated timestamp, and copyable Markdown report without adding persistent state or exposing secrets.
+- Added the operations dashboard `External exposure readiness` panel with status counts, check cards, next actions, copyable Markdown evidence, refresh support, and App loading.
+- Updated frontend API helpers, typed payloads, App smoke fixtures, README, product spec, and this plan document.
+
+Validation so far:
+
+- `mvn -q -pl PatchPilot -Dtest=ExternalExposureReadinessServiceTests,ExternalExposureReadinessControllerTests test`: first failed because the service, VO records, and controller did not exist; passed after backend implementation.
+- `npm --prefix frontend test -- --run src/api.test.ts src/dashboard/components/ExternalExposureReadinessPanel.test.tsx --reporter=dot`: first failed because the API helper and panel did not exist; passed after frontend implementation.
+- `npm --prefix frontend test -- --run src/api.test.ts src/dashboard/components/ExternalExposureReadinessPanel.test.tsx src/App.test.tsx --reporter=dot`: first failed because the App smoke assertion matched duplicate summary text; passed after using a count-based assertion. Final result: 3 test files and 314 tests.
+- `mvn -q -pl PatchPilot test`: passed with existing Spring/Mockito test logging.
+- `npm --prefix frontend test -- --reporter=dot`: passed, 34 test files and 514 tests.
+- `npm --prefix frontend run build`: passed with the existing Vite large-chunk warning.
+- `git diff --check`: passed.

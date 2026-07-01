@@ -161,6 +161,7 @@ import {
   getEvaluationRunArchiveReadinessSummary,
   getEvaluationSummary,
   getEvaluationRunPreview,
+  getExternalExposureReadiness,
   runAndArchiveEvaluation,
   runAndArchiveEvaluationFixtureBaseline,
   runEvaluationFixtureBaseline,
@@ -236,6 +237,7 @@ import { DemoLaunchTrackerPanel } from './dashboard/components/DemoLaunchTracker
 import { DemoLaunchEvidencePackagePanel } from './dashboard/components/DemoLaunchEvidencePackagePanel';
 import { DemoAcceptanceSummaryPanel } from './dashboard/components/DemoAcceptanceSummaryPanel';
 import { EndToEndAcceptanceMatrixPanel } from './dashboard/components/EndToEndAcceptanceMatrixPanel';
+import { ExternalExposureReadinessPanel } from './dashboard/components/ExternalExposureReadinessPanel';
 import { DemoSessionSnapshotPanel } from './dashboard/components/DemoSessionSnapshotPanel';
 import { DemoScriptPanel } from './dashboard/components/DemoScriptPanel';
 import { DemoSmokeChecklistPanel } from './dashboard/components/DemoSmokeChecklistPanel';
@@ -273,6 +275,7 @@ import type {
   DemoReadiness,
   DemoAcceptanceSummary,
   DemoEndToEndAcceptanceMatrix,
+  ExternalExposureReadiness,
   DemoFinalAcceptanceCompletionArchive,
   DemoFinalAcceptanceCompletionCloseoutArchive,
   DemoFinalAcceptanceCompletionCloseout,
@@ -456,6 +459,8 @@ export default function App() {
   const [demoEndToEndAcceptanceMatrix, setDemoEndToEndAcceptanceMatrix] =
     useState<DemoEndToEndAcceptanceMatrix | null>(null);
   const [demoEndToEndAcceptanceMatrixError, setDemoEndToEndAcceptanceMatrixError] = useState<string | null>(null);
+  const [externalExposureReadiness, setExternalExposureReadiness] = useState<ExternalExposureReadiness | null>(null);
+  const [externalExposureReadinessError, setExternalExposureReadinessError] = useState<string | null>(null);
   const [demoFinalAcceptanceSharePackage, setDemoFinalAcceptanceSharePackage] =
     useState<DemoFinalAcceptanceSharePackage | null>(null);
   const [demoFinalAcceptanceSharePackageError, setDemoFinalAcceptanceSharePackageError] = useState<string | null>(null);
@@ -1082,6 +1087,7 @@ export default function App() {
         demoScriptResult,
         demoReadinessResult,
         demoEndToEndAcceptanceMatrixResult,
+        externalExposureReadinessResult,
         demoAcceptanceSummaryResult,
         demoFinalAcceptanceSharePackageResult,
         demoFinalAcceptanceSharePackageArchiveResult,
@@ -1277,6 +1283,10 @@ export default function App() {
         getDemoEndToEndAcceptanceMatrix().then(
           (matrix) => ({ matrix, error: null as string | null }),
           (caught) => ({ matrix: null, error: errorMessage(caught) })
+        ),
+        getExternalExposureReadiness().then(
+          (readiness) => ({ readiness, error: null as string | null }),
+          (caught) => ({ readiness: null, error: errorMessage(caught) })
         ),
         getDemoAcceptanceSummary().then(
           (summary) => ({ summary, error: null as string | null }),
@@ -1685,6 +1695,10 @@ export default function App() {
         setDemoEndToEndAcceptanceMatrix(demoEndToEndAcceptanceMatrixResult.matrix);
       }
       setDemoEndToEndAcceptanceMatrixError(demoEndToEndAcceptanceMatrixResult.error);
+      if (externalExposureReadinessResult.readiness) {
+        setExternalExposureReadiness(externalExposureReadinessResult.readiness);
+      }
+      setExternalExposureReadinessError(externalExposureReadinessResult.error);
       if (demoAcceptanceSummaryResult.summary) {
         setDemoAcceptanceSummary(demoAcceptanceSummaryResult.summary);
       }
@@ -3267,6 +3281,16 @@ export default function App() {
     }
   }, []);
 
+  const handleRefreshExternalExposureReadiness = useCallback(async () => {
+    setExternalExposureReadinessError(null);
+    try {
+      const readiness = await getExternalExposureReadiness();
+      setExternalExposureReadiness(readiness);
+    } catch (caught) {
+      setExternalExposureReadinessError(errorMessage(caught));
+    }
+  }, []);
+
   const handleCreateTask = useCallback(async (input: CreateTaskInput) => {
     setCreatingTask(true);
     setCreateTaskStatus(null);
@@ -3849,6 +3873,12 @@ export default function App() {
         matrix={demoEndToEndAcceptanceMatrix}
         error={demoEndToEndAcceptanceMatrixError}
         onRefresh={handleRefreshEndToEndAcceptanceMatrix}
+      />
+
+      <ExternalExposureReadinessPanel
+        readiness={externalExposureReadiness}
+        error={externalExposureReadinessError}
+        onRefresh={handleRefreshExternalExposureReadiness}
       />
 
       <DemoLaunchTrackerPanel
