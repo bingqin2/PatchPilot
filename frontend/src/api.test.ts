@@ -8,6 +8,9 @@ import {
   postGitHubTriggerDryRun,
   postDemoLiveLaunchGate,
   postDemoLiveTriggerLaunchPackage,
+  archiveDemoLiveTriggerLaunchPackage,
+  listDemoLiveTriggerLaunchPackageArchives,
+  downloadDemoLiveTriggerLaunchPackageArchiveReport,
   getDemoEndToEndAcceptanceMatrix,
   getExternalExposureReadiness,
   archiveExternalExposureReadiness,
@@ -4826,6 +4829,103 @@ test('creates demo live trigger launch package through backend API without creat
   expect(result.operatorHandoffArchiveId).toBe('operator-archive-1');
   expect(result.markdownReport).toContain('PatchPilot Live Trigger Launch Package');
   expect(result.sideEffectContract).toContain('does not create tasks');
+});
+
+test('archives and downloads demo live trigger launch package reports through backend API', async () => {
+  const fetchMock = vi.fn()
+    .mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        success: true,
+        data: {
+          id: 'launch-package-archive-1',
+          status: 'READY',
+          readyToPost: true,
+          repository: 'bingqin2/PatchPilot',
+          issueNumber: 1,
+          issueUrl: 'https://github.com/bingqin2/PatchPilot/issues/1',
+          triggerUser: 'bingqin2',
+          triggerComment: '/agent fix touch docs/live-package.md',
+          summary: 'PatchPilot is ready for the operator to post the live trigger.',
+          operatorHandoffArchiveId: 'operator-archive-1',
+          operatorHandoffArchiveReady: true,
+          operatorHandoffArchivedAt: '2026-07-02T00:00:00Z',
+          liveLaunchGateStatus: 'READY',
+          liveLaunchGateReady: true,
+          evidenceNotes: ['Latest external exposure operator handoff archive operator-archive-1 is ready.'],
+          nextActions: ['Post `/agent fix touch docs/live-package.md`.'],
+          sideEffectContract: 'Archive creation writes only PatchPilot local archive records.',
+          packageGeneratedAt: '2026-07-02T00:00:00Z',
+          archivedAt: '2026-07-02T00:00:05Z',
+          report: '# PatchPilot Live Trigger Launch Package'
+        },
+        message: null
+      })
+    } as Response)
+    .mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        success: true,
+        data: [
+          {
+            id: 'launch-package-archive-1',
+            status: 'READY',
+            readyToPost: true,
+            repository: 'bingqin2/PatchPilot',
+            issueNumber: 1,
+            issueUrl: 'https://github.com/bingqin2/PatchPilot/issues/1',
+            triggerUser: 'bingqin2',
+            triggerComment: '/agent fix touch docs/live-package.md',
+            summary: 'PatchPilot is ready for the operator to post the live trigger.',
+            operatorHandoffArchiveId: 'operator-archive-1',
+            operatorHandoffArchiveReady: true,
+            operatorHandoffArchivedAt: '2026-07-02T00:00:00Z',
+            liveLaunchGateStatus: 'READY',
+            liveLaunchGateReady: true,
+            evidenceNotes: ['Latest external exposure operator handoff archive operator-archive-1 is ready.'],
+            nextActions: ['Post `/agent fix touch docs/live-package.md`.'],
+            sideEffectContract: 'Archive creation writes only PatchPilot local archive records.',
+            packageGeneratedAt: '2026-07-02T00:00:00Z',
+            archivedAt: '2026-07-02T00:00:05Z',
+            report: '# PatchPilot Live Trigger Launch Package'
+          }
+        ],
+        message: null
+      })
+    } as Response)
+    .mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      blob: async () => new Blob(['# PatchPilot Live Trigger Launch Package'], { type: 'text/markdown' })
+    } as Response);
+  vi.stubGlobal('fetch', fetchMock);
+
+  const input = {
+    repositoryOwner: 'bingqin2',
+    repositoryName: 'PatchPilot',
+    issueNumber: 1,
+    triggerUser: 'bingqin2',
+    triggerComment: '/agent fix touch docs/live-package.md'
+  };
+  const archive = await archiveDemoLiveTriggerLaunchPackage(input);
+  const archives = await listDemoLiveTriggerLaunchPackageArchives();
+  const report = await downloadDemoLiveTriggerLaunchPackageArchiveReport('launch-package-archive-1');
+
+  expect(fetchMock).toHaveBeenNthCalledWith(1, '/api/demo/live-trigger-launch-package/archives', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input)
+  });
+  expect(fetchMock).toHaveBeenNthCalledWith(2, '/api/demo/live-trigger-launch-package/archives');
+  expect(fetchMock).toHaveBeenNthCalledWith(
+    3,
+    '/api/demo/live-trigger-launch-package/archives/launch-package-archive-1/report/download'
+  );
+  expect(archive.id).toBe('launch-package-archive-1');
+  expect(archives).toHaveLength(1);
+  expect(report.type).toBe('text/markdown');
 });
 
 test('runs demo launch preflight through backend API without creating a task', async () => {

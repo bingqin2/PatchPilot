@@ -176,10 +176,13 @@ import {
   getExternalExposureHandoffPackage,
   getExternalExposureReadiness,
   closeExternalExposureSession,
+  archiveDemoLiveTriggerLaunchPackage,
   runAndArchiveEvaluation,
   runAndArchiveEvaluationFixtureBaseline,
   runEvaluationFixtureBaseline,
   preflightDemoLaunch,
+  downloadDemoLiveTriggerLaunchPackageArchiveReport,
+  listDemoLiveTriggerLaunchPackageArchives,
   postDemoLiveLaunchGate,
   postDemoLiveTriggerLaunchPackage,
   postGitHubTriggerDryRun,
@@ -359,6 +362,7 @@ import type {
   DemoLaunchCommandInput,
   DemoLiveLaunchGate,
   DemoLiveTriggerLaunchPackage,
+  DemoLiveTriggerLaunchPackageArchive,
   DemoLaunchEvidencePackageArchive,
   DemoLaunchEvidencePackage,
   DemoLaunchEvidenceFinalization,
@@ -786,6 +790,10 @@ export default function App() {
     useState<DemoLiveTriggerLaunchPackage | null>(null);
   const [demoLiveTriggerLaunchPackageError, setDemoLiveTriggerLaunchPackageError] = useState<string | null>(null);
   const [demoLiveTriggerLaunchPackagePending, setDemoLiveTriggerLaunchPackagePending] = useState(false);
+  const [demoLiveTriggerLaunchPackageArchives, setDemoLiveTriggerLaunchPackageArchives] =
+    useState<DemoLiveTriggerLaunchPackageArchive[]>([]);
+  const [demoLiveTriggerLaunchPackageArchiveError, setDemoLiveTriggerLaunchPackageArchiveError] =
+    useState<string | null>(null);
   const [supportedAdapters, setSupportedAdapters] = useState<SupportedLanguageAdapter[]>([]);
   const [adapterError, setAdapterError] = useState<string | null>(null);
   const [adapterFixtureVerifications, setAdapterFixtureVerifications] = useState<LanguageAdapterFixtureVerification[]>([]);
@@ -1156,6 +1164,7 @@ export default function App() {
         externalExposureCloseoutArchiveResult,
         externalExposureOperatorHandoffChecklistResult,
         externalExposureOperatorHandoffChecklistArchiveResult,
+        demoLiveTriggerLaunchPackageArchiveResult,
         demoAcceptanceSummaryResult,
         demoFinalAcceptanceSharePackageResult,
         demoFinalAcceptanceSharePackageArchiveResult,
@@ -1381,6 +1390,10 @@ export default function App() {
           (caught) => ({ checklist: null, error: errorMessage(caught) })
         ),
         listExternalExposureOperatorHandoffChecklistArchives().then(
+          (archives) => ({ archives, error: null as string | null }),
+          (caught) => ({ archives: null, error: errorMessage(caught) })
+        ),
+        listDemoLiveTriggerLaunchPackageArchives().then(
           (archives) => ({ archives, error: null as string | null }),
           (caught) => ({ archives: null, error: errorMessage(caught) })
         ),
@@ -1825,6 +1838,10 @@ export default function App() {
       setExternalExposureOperatorHandoffChecklistArchiveError(
         externalExposureOperatorHandoffChecklistArchiveResult.error
       );
+      if (demoLiveTriggerLaunchPackageArchiveResult.archives) {
+        setDemoLiveTriggerLaunchPackageArchives(demoLiveTriggerLaunchPackageArchiveResult.archives);
+      }
+      setDemoLiveTriggerLaunchPackageArchiveError(demoLiveTriggerLaunchPackageArchiveResult.error);
       if (demoAcceptanceSummaryResult.summary) {
         setDemoAcceptanceSummary(demoAcceptanceSummaryResult.summary);
       }
@@ -3414,6 +3431,28 @@ export default function App() {
     }
   }, []);
 
+  const handleArchiveDemoLiveTriggerLaunchPackage = useCallback(async (input: GitHubTriggerDryRunInput) => {
+    setDemoLiveTriggerLaunchPackagePending(true);
+    setDemoLiveTriggerLaunchPackageArchiveError(null);
+    try {
+      const archive = await archiveDemoLiveTriggerLaunchPackage(input);
+      setDemoLiveTriggerLaunchPackageArchives((current) =>
+        [archive, ...current.filter((item) => item.id !== archive.id)].slice(0, 20)
+      );
+      return archive;
+    } catch (caught) {
+      setDemoLiveTriggerLaunchPackageArchiveError(errorMessage(caught));
+      throw caught;
+    } finally {
+      setDemoLiveTriggerLaunchPackagePending(false);
+    }
+  }, []);
+
+  const handleDownloadDemoLiveTriggerLaunchPackageArchiveReport = useCallback(
+    (archiveId: string) => downloadDemoLiveTriggerLaunchPackageArchiveReport(archiveId),
+    []
+  );
+
   const handleRefreshEndToEndAcceptanceMatrix = useCallback(async () => {
     setDemoEndToEndAcceptanceMatrixError(null);
     try {
@@ -4178,6 +4217,10 @@ export default function App() {
         launchPackageError={demoLiveTriggerLaunchPackageError}
         launchPackagePending={demoLiveTriggerLaunchPackagePending}
         onCreateLaunchPackage={handleDemoLiveTriggerLaunchPackage}
+        launchPackageArchives={demoLiveTriggerLaunchPackageArchives}
+        launchPackageArchiveError={demoLiveTriggerLaunchPackageArchiveError}
+        onArchiveLaunchPackage={handleArchiveDemoLiveTriggerLaunchPackage}
+        onDownloadLaunchPackageArchiveReport={handleDownloadDemoLiveTriggerLaunchPackageArchiveReport}
       />
 
       <EndToEndAcceptanceMatrixPanel

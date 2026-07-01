@@ -2,6 +2,7 @@ package io.patchpilot.backend.demo;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.patchpilot.backend.demo.domain.DemoLiveLaunchGateVo;
+import io.patchpilot.backend.demo.domain.DemoLiveTriggerLaunchPackageArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoLiveTriggerLaunchPackageCommand;
 import io.patchpilot.backend.demo.domain.DemoLiveTriggerLaunchPackageVo;
 import io.patchpilot.backend.security.AdminApiSecurityFilter;
@@ -17,6 +18,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.springframework.http.HttpHeaders.CONTENT_DISPOSITION;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -56,6 +58,44 @@ class DemoLiveTriggerLaunchPackageControllerTests {
     }
 
     @Test
+    void should_archive_list_and_download_live_trigger_launch_package_report() throws Exception {
+        InMemoryDemoLiveTriggerLaunchPackageArchiveRepository repository =
+                new InMemoryDemoLiveTriggerLaunchPackageArchiveRepository();
+        DemoLiveTriggerLaunchPackageService launchPackageService = launchPackageService();
+        DemoLiveTriggerLaunchPackageArchiveService archiveService =
+                new DemoLiveTriggerLaunchPackageArchiveService(
+                        launchPackageService,
+                        repository,
+                        () -> "launch-package-archive-1",
+                        () -> Instant.parse("2026-07-02T00:00:05Z")
+                );
+        MockMvc mockMvc = mockMvc(launchPackageService, archiveService);
+
+        mockMvc.perform(post("/api/demo/live-trigger-launch-package/archives")
+                        .header("X-PatchPilot-Admin-Token", "test-admin-token")
+                        .contentType(APPLICATION_JSON)
+                        .content(requestJson()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value("launch-package-archive-1"))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.report").value(containsString("PatchPilot Live Trigger Launch Package")))
+                .andExpect(content().string(not(containsString("test-admin-token"))));
+
+        mockMvc.perform(get("/api/demo/live-trigger-launch-package/archives")
+                        .header("X-PatchPilot-Admin-Token", "test-admin-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].id").value("launch-package-archive-1"))
+                .andExpect(jsonPath("$.data[0].triggerComment").value("/agent fix touch docs/live-package.md"));
+
+        mockMvc.perform(get("/api/demo/live-trigger-launch-package/archives/launch-package-archive-1/report/download")
+                        .header("X-PatchPilot-Admin-Token", "test-admin-token"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(CONTENT_DISPOSITION, containsString("patchpilot-live-trigger-launch-package-archive-launch-package-archive-1.md")))
+                .andExpect(content().string(containsString("# PatchPilot Live Trigger Launch Package")));
+    }
+
+    @Test
     void should_reject_invalid_live_trigger_launch_package_request() throws Exception {
         MockMvc mockMvc = mockMvc(launchPackageService());
 
@@ -89,10 +129,25 @@ class DemoLiveTriggerLaunchPackageControllerTests {
     }
 
     private static MockMvc mockMvc(DemoLiveTriggerLaunchPackageService service) {
+        return mockMvc(
+                service,
+                new DemoLiveTriggerLaunchPackageArchiveService(
+                        service,
+                        new InMemoryDemoLiveTriggerLaunchPackageArchiveRepository(),
+                        () -> "launch-package-archive-1",
+                        () -> Instant.parse("2026-07-02T00:00:05Z")
+                )
+        );
+    }
+
+    private static MockMvc mockMvc(
+            DemoLiveTriggerLaunchPackageService service,
+            DemoLiveTriggerLaunchPackageArchiveService archiveService
+    ) {
         AdminApiSecurityProperties properties = new AdminApiSecurityProperties();
         properties.setAdminToken("test-admin-token");
         return MockMvcBuilders
-                .standaloneSetup(new DemoLiveTriggerLaunchPackageController(service))
+                .standaloneSetup(new DemoLiveTriggerLaunchPackageController(service, archiveService))
                 .addFilters(new AdminApiSecurityFilter(properties, new ObjectMapper()))
                 .build();
     }

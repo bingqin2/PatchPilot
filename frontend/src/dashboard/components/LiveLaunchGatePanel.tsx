@@ -1,6 +1,11 @@
-import { Copy, Download, PackageCheck, Rocket } from 'lucide-react';
+import { Archive, Copy, Download, PackageCheck, Rocket } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
-import type { DemoLiveLaunchGate, DemoLiveTriggerLaunchPackage, GitHubTriggerDryRunInput } from '../../types';
+import type {
+  DemoLiveLaunchGate,
+  DemoLiveTriggerLaunchPackage,
+  DemoLiveTriggerLaunchPackageArchive,
+  GitHubTriggerDryRunInput
+} from '../../types';
 
 interface LiveLaunchGatePanelProps {
   result: DemoLiveLaunchGate | null;
@@ -13,6 +18,12 @@ interface LiveLaunchGatePanelProps {
   onCreateLaunchPackage: (
     input: GitHubTriggerDryRunInput
   ) => Promise<DemoLiveTriggerLaunchPackage> | Promise<void> | void;
+  launchPackageArchives: DemoLiveTriggerLaunchPackageArchive[];
+  launchPackageArchiveError: string | null;
+  onArchiveLaunchPackage: (
+    input: GitHubTriggerDryRunInput
+  ) => Promise<DemoLiveTriggerLaunchPackageArchive> | Promise<void> | void;
+  onDownloadLaunchPackageArchiveReport: (archiveId: string) => Promise<Blob>;
 }
 
 export function LiveLaunchGatePanel({
@@ -23,7 +34,11 @@ export function LiveLaunchGatePanel({
   launchPackage,
   launchPackageError,
   launchPackagePending,
-  onCreateLaunchPackage
+  onCreateLaunchPackage,
+  launchPackageArchives,
+  launchPackageArchiveError,
+  onArchiveLaunchPackage,
+  onDownloadLaunchPackageArchiveReport
 }: LiveLaunchGatePanelProps) {
   const [repositoryOwner, setRepositoryOwner] = useState('bingqin2');
   const [repositoryName, setRepositoryName] = useState('PatchPilot');
@@ -57,12 +72,21 @@ export function LiveLaunchGatePanel({
     await onCreateLaunchPackage(input());
   }
 
+  async function archiveLaunchPackage() {
+    await onArchiveLaunchPackage(input());
+  }
+
   function downloadLaunchPackage() {
     if (!launchPackage) {
       return;
     }
     const blob = new Blob([launchPackage.markdownReport], { type: 'text/markdown;charset=UTF-8' });
     downloadMarkdown(blob, 'patchpilot-live-trigger-launch-package.md');
+  }
+
+  async function downloadLaunchPackageArchive(archiveId: string) {
+    const blob = await onDownloadLaunchPackageArchiveReport(archiveId);
+    downloadMarkdown(blob, `patchpilot-live-trigger-launch-package-archive-${archiveId}.md`);
   }
 
   return (
@@ -97,6 +121,16 @@ export function LiveLaunchGatePanel({
             >
               <Download size={16} />
               Download package
+            </button>
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={() => void archiveLaunchPackage()}
+              disabled={launchPackagePending}
+              aria-label="Archive live trigger launch package"
+            >
+              <Archive size={16} />
+              Archive package
             </button>
           </div>
         ) : null}
@@ -175,15 +209,62 @@ export function LiveLaunchGatePanel({
         </div>
       ) : null}
 
+      {launchPackageArchiveError ? (
+        <div className="adapter-api-error">
+          <strong>Live trigger launch package archive failed</strong>
+          <span>{launchPackageArchiveError}</span>
+        </div>
+      ) : null}
+
       {result ? (
         <>
           <LiveLaunchGateResult result={result} />
           {launchPackage ? <LiveTriggerLaunchPackageResult launchPackage={launchPackage} /> : null}
+          <LiveTriggerLaunchPackageArchiveList
+            archives={launchPackageArchives}
+            onDownloadArchive={(archiveId) => void downloadLaunchPackageArchive(archiveId)}
+          />
         </>
       ) : (
         <div className="empty-state">No live launch gate run yet.</div>
       )}
     </section>
+  );
+}
+
+function LiveTriggerLaunchPackageArchiveList({
+  archives,
+  onDownloadArchive
+}: {
+  archives: DemoLiveTriggerLaunchPackageArchive[];
+  onDownloadArchive: (archiveId: string) => void;
+}) {
+  return (
+    <div className="demo-launch-preflight-actions">
+      <h3>Recent launch package archives</h3>
+      {archives.length === 0 ? (
+        <p>No launch package archives recorded.</p>
+      ) : (
+        <ul>
+          {archives.map((archive) => (
+            <li key={archive.id}>
+              <strong>{archive.id}</strong>
+              <span> {archive.status} </span>
+              <span>Archived at {archive.archivedAt}</span>
+              <button
+                className="secondary-button compact-button"
+                type="button"
+                aria-label={`Download launch package archive ${archive.id}`}
+                onClick={() => onDownloadArchive(archive.id)}
+              >
+                <Download size={14} />
+                Download
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
 
