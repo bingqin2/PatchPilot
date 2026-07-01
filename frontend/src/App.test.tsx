@@ -3511,6 +3511,54 @@ beforeEach(() => {
         nextAction: 'Create task is allowed for this trigger.'
       });
     }
+    if (url === '/api/github/trigger-dry-run' && init?.method === 'POST') {
+      return jsonResponse({
+        status: 'WOULD_CREATE_TASK',
+        wouldCreateTask: true,
+        repository: 'bingqin2/PatchPilot',
+        issueNumber: 1,
+        issueUrl: 'https://github.com/bingqin2/PatchPilot/issues/1',
+        triggerUser: 'bingqin2',
+        triggerComment: '/agent fix touch docs/live-trigger-preview.md',
+        summary: 'Live GitHub trigger dry run would create a PatchPilot task.',
+        nextAction: 'Post this /agent fix comment on the GitHub issue when publish preflight is ready.',
+        sideEffectContract: 'Read-only live trigger dry run: this endpoint does not create tasks.',
+        evaluation: {
+          status: 'WOULD_CREATE_TASK',
+          source: 'ISSUE_COMMENT',
+          wouldCreateTask: true,
+          blockedReason: null,
+          blockedCategory: null,
+          safetyDecision: {
+            allowed: true,
+            reason: 'Accepted',
+            category: 'UNKNOWN'
+          },
+          activeTaskDecision: {
+            allowed: true,
+            reason: 'No active task exists for this issue',
+            category: 'UNKNOWN'
+          },
+          quarantineDecision: {
+            allowed: true,
+            reason: 'Trigger quarantine accepted',
+            category: 'UNKNOWN'
+          },
+          rateLimitDecision: {
+            allowed: true,
+            reason: 'Trigger rate limit accepted',
+            category: 'UNKNOWN'
+          },
+          triggerIntentDecision: {
+            allowed: true,
+            reason: 'Model trigger classification accepted',
+            category: 'UNKNOWN'
+          },
+          issueContextLoaded: true,
+          nextAction: 'Create task is allowed for this trigger.'
+        }
+      });
+    }
     if (url === '/api/tasks/metrics/summary' || url.startsWith('/api/tasks/metrics/summary?')) {
       return jsonResponse({
         totalCount: 3,
@@ -6360,6 +6408,57 @@ test('copies manual trigger evaluation evidence from the dashboard', async () =>
   expect(writeText).toHaveBeenCalledWith(
     expect.stringContaining('- Model: `ALLOW` - Model trigger classification accepted')
   );
+});
+
+test('runs live GitHub trigger dry run from the dashboard and copies evidence', async () => {
+  const user = userEvent.setup();
+  const fetchMock = vi.mocked(fetch);
+  const writeText = vi.fn().mockResolvedValue(undefined);
+  Object.defineProperty(navigator, 'clipboard', {
+    configurable: true,
+    value: { writeText }
+  });
+
+  render(<App />);
+
+  const dryRunPanel = await screen.findByRole('region', { name: 'Live trigger dry run' });
+  await user.clear(within(dryRunPanel).getByLabelText('Repository owner'));
+  await user.type(within(dryRunPanel).getByLabelText('Repository owner'), 'bingqin2');
+  await user.clear(within(dryRunPanel).getByLabelText('Repository name'));
+  await user.type(within(dryRunPanel).getByLabelText('Repository name'), 'PatchPilot');
+  await user.clear(within(dryRunPanel).getByLabelText('Issue number'));
+  await user.type(within(dryRunPanel).getByLabelText('Issue number'), '1');
+  await user.clear(within(dryRunPanel).getByLabelText('Trigger user'));
+  await user.type(within(dryRunPanel).getByLabelText('Trigger user'), 'bingqin2');
+  await user.clear(within(dryRunPanel).getByLabelText('GitHub issue comment'));
+  await user.type(
+    within(dryRunPanel).getByLabelText('GitHub issue comment'),
+    '/agent fix touch docs/live-trigger-preview.md'
+  );
+  await user.click(within(dryRunPanel).getByRole('button', { name: 'Run live trigger dry run' }));
+
+  await waitFor(() =>
+    expect(fetchMock).toHaveBeenCalledWith('/api/github/trigger-dry-run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        repositoryOwner: 'bingqin2',
+        repositoryName: 'PatchPilot',
+        issueNumber: 1,
+        triggerUser: 'bingqin2',
+        triggerComment: '/agent fix touch docs/live-trigger-preview.md'
+      })
+    })
+  );
+
+  expect(await within(dryRunPanel).findByText('Would create task')).toBeInTheDocument();
+  expect(within(dryRunPanel).getByText('Read-only live trigger dry run: this endpoint does not create tasks.')).toBeInTheDocument();
+
+  await user.click(within(dryRunPanel).getByRole('button', { name: 'Copy dry-run report' }));
+
+  expect(writeText).toHaveBeenCalledWith(expect.stringContaining('# PatchPilot Live Trigger Dry Run Report'));
+  expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- Status: `WOULD_CREATE_TASK`'));
+  expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- Source: `ISSUE_COMMENT`'));
 });
 
 test('runs repository preflight from the dashboard', async () => {

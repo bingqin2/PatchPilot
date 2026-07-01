@@ -113,6 +113,8 @@ import type {
   GitHubPublishPermissionReadiness,
   GitHubPublishReadiness,
   GitHubRepositoryAccessReadiness,
+  GitHubTriggerDryRun,
+  GitHubTriggerDryRunInput,
   GitHubWebhookSetupReadiness,
   GitHubWebhookUrlReadiness,
   OperatorSafetyAudit,
@@ -177,6 +179,10 @@ export async function createTask(input: CreateTaskInput): Promise<FixTask> {
 
 export async function evaluateTrigger(input: CreateTaskInput): Promise<TriggerEvaluationResult> {
   return postApi<TriggerEvaluationResult>('/api/tasks/evaluate-trigger', input);
+}
+
+export async function postGitHubTriggerDryRun(input: GitHubTriggerDryRunInput): Promise<GitHubTriggerDryRun> {
+  return postApi<GitHubTriggerDryRun>('/api/github/trigger-dry-run', input);
 }
 
 export async function listTasks(options: TaskStatusFilter | ListTasksOptions = 'ALL'): Promise<FixTaskPage> {

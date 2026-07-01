@@ -549,6 +549,28 @@ export interface GitHubLivePublishPreflight {
   checkedAt: string;
 }
 
+export interface GitHubTriggerDryRunInput {
+  repositoryOwner: string;
+  repositoryName: string;
+  issueNumber: number;
+  triggerUser: string;
+  triggerComment: string;
+}
+
+export interface GitHubTriggerDryRun {
+  status: 'WOULD_CREATE_TASK' | 'BLOCKED';
+  wouldCreateTask: boolean;
+  repository: string;
+  issueNumber: number;
+  issueUrl: string;
+  triggerUser: string;
+  triggerComment: string;
+  summary: string;
+  nextAction: string;
+  sideEffectContract: string;
+  evaluation: TriggerEvaluationResult;
+}
+
 export type GitHubWebhookUrlReadinessStatus = 'READY' | 'NEEDS_ATTENTION';
 
 export interface GitHubWebhookUrlReadiness {

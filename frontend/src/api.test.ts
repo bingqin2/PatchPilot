@@ -5,6 +5,7 @@ import {
   createTriggerQuarantine,
   ADMIN_TOKEN_STORAGE_KEY,
   evaluateTrigger,
+  postGitHubTriggerDryRun,
   getDashboardBootstrap,
   getBackendHealth,
   getConfigurationSummary,
@@ -3976,6 +3977,88 @@ test('evaluates trigger without creating manual task through backend API', async
   expect(result.source).toBe('ISSUE_COMMENT');
   expect(result.wouldCreateTask).toBe(true);
   expect(result.triggerIntentDecision?.reason).toBe('Model trigger classification is disabled');
+});
+
+test('runs GitHub trigger dry run through backend API without creating a task', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        status: 'WOULD_CREATE_TASK',
+        wouldCreateTask: true,
+        repository: 'bingqin2/PatchPilot',
+        issueNumber: 1,
+        issueUrl: 'https://github.com/bingqin2/PatchPilot/issues/1',
+        triggerUser: 'bingqin2',
+        triggerComment: '/agent fix touch docs/live-trigger-preview.md',
+        summary: 'Live GitHub trigger dry run would create a PatchPilot task.',
+        nextAction: 'Post this /agent fix comment on the GitHub issue when publish preflight is ready.',
+        sideEffectContract: 'Read-only live trigger dry run: this endpoint does not create tasks.',
+        evaluation: {
+          status: 'WOULD_CREATE_TASK',
+          source: 'ISSUE_COMMENT',
+          wouldCreateTask: true,
+          blockedReason: null,
+          blockedCategory: null,
+          safetyDecision: {
+            allowed: true,
+            reason: 'Accepted',
+            category: 'UNKNOWN'
+          },
+          activeTaskDecision: {
+            allowed: true,
+            reason: 'No active task exists for this issue',
+            category: 'UNKNOWN'
+          },
+          quarantineDecision: {
+            allowed: true,
+            reason: 'Trigger quarantine accepted',
+            category: 'UNKNOWN'
+          },
+          rateLimitDecision: {
+            allowed: true,
+            reason: 'Trigger rate limit accepted',
+            category: 'UNKNOWN'
+          },
+          triggerIntentDecision: {
+            allowed: true,
+            reason: 'Model trigger classification accepted',
+            category: 'UNKNOWN'
+          },
+          issueContextLoaded: true,
+          nextAction: 'Create task is allowed for this trigger.'
+        }
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const result = await postGitHubTriggerDryRun({
+    repositoryOwner: 'bingqin2',
+    repositoryName: 'PatchPilot',
+    issueNumber: 1,
+    triggerUser: 'bingqin2',
+    triggerComment: '/agent fix touch docs/live-trigger-preview.md'
+  });
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/github/trigger-dry-run', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      repositoryOwner: 'bingqin2',
+      repositoryName: 'PatchPilot',
+      issueNumber: 1,
+      triggerUser: 'bingqin2',
+      triggerComment: '/agent fix touch docs/live-trigger-preview.md'
+    })
+  });
+  expect(result.status).toBe('WOULD_CREATE_TASK');
+  expect(result.repository).toBe('bingqin2/PatchPilot');
+  expect(result.evaluation.source).toBe('ISSUE_COMMENT');
+  expect(result.sideEffectContract).toContain('does not create tasks');
 });
 
 test('runs demo launch preflight through backend API without creating a task', async () => {

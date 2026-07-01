@@ -41,6 +41,7 @@ PatchPilot is not a chatbot and does not auto-merge code. The current target is 
 - Admin-protected GitHub publish readiness diagnostic that aggregates credential and repository-access probes into a push/PR readiness result without running `git push` or mutating GitHub.
 - Admin-protected GitHub publish permission readiness diagnostic that reads non-sensitive repository permission booleans and explains whether push, Pull Request creation, and issue feedback are likely to work before a live task mutates GitHub.
 - Admin-protected live GitHub publish preflight that combines publish readiness, publish permissions, and read-only GitHub branch/Pull Request inventory so operators can clear stale `patchpilot/*` branches or open PatchPilot PRs before posting a live `/agent fix`.
+- Admin-protected live GitHub trigger dry run that evaluates the exact issue comment an operator plans to post, using GitHub issue-comment trigger gates without creating tasks, queue work, rate-limit records, GitHub comments, branches, Pull Requests, or token exposure.
 - Issue comment status updates for accepted, running, verification, success, and failure states, including best-effort failure feedback creation when the original status comment is missing.
 - Failed and cancelled task retry preflight that explains whether retry is safe, shows sanitized failure context, blocks blind retries when GitHub permissions or repository support must be fixed first, and requires an operator reason before requeueing.
 - Demo readiness gate that summarizes credentials, model provider health, adapter fixtures, adapter runtime executables, evaluation baseline regression evidence, queue health, worker heartbeat readiness, and recent PR evidence before a live smoke run.
@@ -263,6 +264,23 @@ curl -H "X-PatchPilot-Admin-Token: $PATCHPILOT_ADMIN_TOKEN" \
 
 This preflight aggregates publish readiness, publish permission readiness, existing `patchpilot/*` branches, and open PatchPilot Pull Requests. A `NEEDS_ATTENTION` response usually means the operator should merge, close, or delete stale PatchPilot publish artifacts before posting the live issue comment. The endpoint is read-only: it does not push, create branches, open Pull Requests, write issue comments, create tasks, call the model, or expose token values.
 
+Then dry-run the exact live issue comment through the GitHub trigger gate:
+
+```bash
+curl -X POST http://127.0.0.1:8080/api/github/trigger-dry-run \
+  -H "X-PatchPilot-Admin-Token: $PATCHPILOT_ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "repositoryOwner": "bingqin2",
+    "repositoryName": "PatchPilot",
+    "issueNumber": 1,
+    "triggerUser": "bingqin2",
+    "triggerComment": "/agent fix replace docs/demo.md PatchPilot smoke test"
+  }'
+```
+
+Use this when you want to validate only the live GitHub issue-comment trigger gates before posting on GitHub. It returns `WOULD_CREATE_TASK` or `BLOCKED`, issue URL, issue-context state, safety/active-task/quarantine/rate-limit/model decisions, the read-only side-effect contract, and the next action. It does not create tasks, enqueue work, record rate-limit usage, run Git, create branches, open Pull Requests, write GitHub comments, or expose tokens. The dashboard `Live trigger dry run` panel submits the same request and can copy a Markdown dry-run report.
+
 ## Run With Docker Compose
 
 From the repository root:
@@ -278,7 +296,7 @@ curl http://127.0.0.1:8080/health
 curl -H "X-PatchPilot-Admin-Token: $PATCHPILOT_ADMIN_TOKEN" http://127.0.0.1:8080/api/tasks
 ```
 
-Before posting a live GitHub issue comment, dry-run the exact launch trigger:
+Before posting a live GitHub issue comment, dry-run the exact launch trigger together with demo readiness:
 
 ```bash
 curl -X POST http://127.0.0.1:8080/api/demo/launch-preflight \

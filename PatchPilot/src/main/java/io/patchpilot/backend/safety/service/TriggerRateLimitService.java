@@ -5,9 +5,7 @@ import io.patchpilot.backend.safety.domain.TriggerRateLimitRequest;
 
 public interface TriggerRateLimitService {
 
-    default TriggerRateLimitDecision check(TriggerRateLimitRequest request) {
-        return checkAndRecord(request);
-    }
+    TriggerRateLimitDecision check(TriggerRateLimitRequest request);
 
     TriggerRateLimitDecision checkAndRecord(TriggerRateLimitRequest request);
 }

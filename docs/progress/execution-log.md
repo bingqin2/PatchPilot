@@ -6271,3 +6271,23 @@ Validation so far:
 - `npm --prefix frontend test -- --reporter=dot`: first failed because existing operator setup checklist tests still expected 16 total checks and two publish side-effect paragraphs; passed after updating those assertions to 17 checks and three read-only publish cards. Final result: 30 test files and 496 tests passed.
 - `npm --prefix frontend run build`: passed with the existing Vite large-chunk warning.
 - `git diff --check`: passed.
+
+## 2026-07-01 - 312 Live GitHub trigger dry run
+
+- Started `312-live-trigger-dry-run` to add a lightweight read-only final trigger gate for the exact GitHub issue comment an operator plans to post.
+- Added `POST /api/github/trigger-dry-run`, backed by the existing `TriggerEvaluationService` with forced `ISSUE_COMMENT` source, returning status, issue URL, issue-context state, safety, active-task, quarantine, rate-limit, model-classification decisions, side-effect contract, and next action.
+- Tightened the trigger rate-limit service contract so dry-run callers must use an explicit read-only `check(...)` path instead of accidentally inheriting `checkAndRecord(...)` behavior.
+- Added dashboard `Live trigger dry run` support with typed API helper, App wiring, allowed/blocked decision rendering, and copyable Markdown dry-run evidence.
+- Updated README and product spec so operators can distinguish the lightweight trigger dry run from the broader demo launch preflight.
+
+Validation so far:
+
+- `mvn -q -pl PatchPilot -Dtest=GitHubTriggerDryRunControllerTests test`: first failed because the controller, DTO, and VO did not exist; passed after backend implementation.
+- `mvn -q -pl PatchPilot -Dtest=GitHubTriggerDryRunControllerTests,InMemoryTriggerRateLimitServiceTests,DefaultTriggerEvaluationServiceTests,DefaultManualFixTaskServiceTests,GitHubWebhookServiceTests test`: first exposed test fake implementations that did not implement the now-explicit read-only rate-limit `check(...)` contract; passed after updating those fakes and adding a dry-run no-record assertion.
+- `npm --prefix frontend test -- --run src/api.test.ts src/dashboard/components/LiveTriggerDryRunPanel.test.tsx src/App.test.tsx -t "live trigger dry run|GitHub trigger dry run"`: first failed because the API helper and panel did not exist; passed for the matching API/App tests after frontend implementation.
+- `npm --prefix frontend test -- --run src/dashboard/components/LiveTriggerDryRunPanel.test.tsx --reporter=dot`: first failed on a duplicate blocked-reason text assertion; passed after changing the component test to assert both occurrences.
+- `npm --prefix frontend test -- --run src/api.test.ts src/dashboard/components/LiveTriggerDryRunPanel.test.tsx src/App.test.tsx --reporter=dot`: passed, 3 test files and 310 tests.
+- `mvn -q -pl PatchPilot test`: passed with existing Mockito/Java agent warnings.
+- `npm --prefix frontend test -- --reporter=dot`: passed, 31 test files and 501 tests.
+- `npm --prefix frontend run build`: passed with the existing Vite large-chunk warning.
+- `git diff --check`: passed.
