@@ -6379,3 +6379,23 @@ Validation so far:
 - `npm --prefix frontend test -- --run src/api.test.ts --reporter=dot`: first failed because `getExternalExposureHandoffPackage` and `downloadExternalExposureHandoffPackageReport` were not implemented; passed after API helper implementation.
 - `npm --prefix frontend test -- --run src/dashboard/components/ExternalExposureReadinessPanel.test.tsx --reporter=dot`: first failed because the handoff package section and download button were not rendered; passed after panel implementation and stable assertions.
 - `npm --prefix frontend test -- --run src/api.test.ts src/dashboard/components/ExternalExposureReadinessPanel.test.tsx src/App.test.tsx --reporter=dot`: passed, 3 test files and 319 tests.
+
+## 2026-07-01 - 318 External exposure session tracker
+
+- Started `318-external-exposure-session-tracker` to record the actual lifetime of a temporary public URL after the exposure handoff package is ready.
+- Added `POST /api/security/external-exposure-sessions`, `POST /api/security/external-exposure-sessions/{sessionId}/close`, `GET /api/security/external-exposure-sessions`, and `GET /api/security/external-exposure-sessions/{sessionId}/report/download`.
+- Added in-memory storage for the default profile plus MySQL/Flyway/MyBatis persistence for `local`, `docker`, and `idea` profiles.
+- Session creation captures public URL, GitHub webhook URL, purpose, operator, optional expected shutdown time, notes, linked handoff status, linked readiness archive id, start time, and Markdown evidence. Closing the session records closer, close time, close notes, and refreshed Markdown evidence.
+- Extended the operations dashboard external exposure panel with a session form, active/closed session list, close action, report download action, App loading, API helpers, and smoke-test fixtures.
+- Updated README, product spec, frontend design notes, architecture notes, and this plan document with the session API and no-side-effect contract.
+
+Validation so far:
+
+- `mvn -q -pl PatchPilot -Dtest=ExternalExposureSessionServiceTests,ExternalExposureSessionControllerTests,ExternalExposureSessionConvertTests,ExternalExposureSessionMigrationTests test`: first failed because the session DTOs, VO, service, controller, repository, converter, and migration did not exist; passed after backend implementation.
+- `mvn -q -pl PatchPilot -Dtest=ExternalExposureSessionServiceTests,ExternalExposureSessionControllerTests,ExternalExposureSessionConvertTests,ExternalExposureSessionMigrationTests,MyBatisExternalExposureSessionRepositoryTests test`: passed after adding MyBatis persistence coverage.
+- `npm --prefix frontend test -- --run src/api.test.ts src/dashboard/components/ExternalExposureReadinessPanel.test.tsx --reporter=dot`: first failed because the session API helpers and panel controls did not exist; passed after frontend implementation.
+- `npm --prefix frontend test -- --run src/api.test.ts src/dashboard/components/ExternalExposureReadinessPanel.test.tsx src/App.test.tsx --reporter=dot`: passed, 3 test files and 322 tests.
+- `mvn -q -pl PatchPilot test`: passed with existing Spring/Mockito test logging.
+- `npm --prefix frontend test -- --reporter=dot`: passed, 34 test files and 522 tests.
+- `npm --prefix frontend run build`: passed with the existing Vite large-chunk warning.
+- `git diff --check`: passed.

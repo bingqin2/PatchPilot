@@ -486,6 +486,39 @@ export interface ExternalExposureHandoffPackage {
   markdownReport: string;
 }
 
+export interface ExternalExposureSessionInput {
+  publicUrl: string;
+  webhookUrl: string;
+  purpose: string;
+  operator: string;
+  expectedShutdownAt?: string;
+  notes: string;
+}
+
+export interface ExternalExposureSessionCloseInput {
+  closedBy: string;
+  closedAt?: string;
+  closeNotes: string;
+}
+
+export interface ExternalExposureSession {
+  id: string;
+  status: 'ACTIVE' | 'CLOSED';
+  publicUrl: string;
+  webhookUrl: string;
+  purpose: string;
+  operator: string;
+  expectedShutdownAt: string | null;
+  notes: string;
+  linkedHandoffStatus: string;
+  linkedReadinessArchiveId: string | null;
+  startedAt: string;
+  closedBy: string | null;
+  closedAt: string | null;
+  closeNotes: string | null;
+  markdownReport: string;
+}
+
 export interface DashboardBootstrap {
   adminTokenConfigured: boolean;
   adminTokenBootstrapEnabled: boolean;

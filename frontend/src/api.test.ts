@@ -14,6 +14,10 @@ import {
   downloadExternalExposureReadinessArchiveReport,
   getExternalExposureHandoffPackage,
   downloadExternalExposureHandoffPackageReport,
+  startExternalExposureSession,
+  closeExternalExposureSession,
+  listExternalExposureSessions,
+  downloadExternalExposureSessionReport,
   getDashboardBootstrap,
   getBackendHealth,
   getConfigurationSummary,
@@ -507,6 +511,149 @@ test('downloads external exposure handoff package markdown through backend API',
 
   expect(fetchMock).toHaveBeenCalledWith('/api/security/external-exposure-handoff-package/report/download');
   expect(downloadedReport).toBe(reportBlob);
+});
+
+test('starts external exposure session through backend API', async () => {
+  const session = {
+    id: 'exposure-session-1',
+    status: 'ACTIVE',
+    publicUrl: 'https://demo.trycloudflare.com',
+    webhookUrl: 'https://demo.trycloudflare.com/api/github/webhook',
+    purpose: 'Live GitHub webhook smoke test',
+    operator: 'bingqin2',
+    expectedShutdownAt: '2026-07-01T17:00:00Z',
+    notes: 'Keep terminal visible during test.',
+    linkedHandoffStatus: 'READY',
+    linkedReadinessArchiveId: 'exposure-archive-1',
+    startedAt: '2026-07-01T15:00:00Z',
+    closedBy: null,
+    closedAt: null,
+    closeNotes: null,
+    markdownReport: '# PatchPilot External Exposure Session'
+  };
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: session,
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  await expect(startExternalExposureSession({
+    publicUrl: 'https://demo.trycloudflare.com',
+    webhookUrl: 'https://demo.trycloudflare.com/api/github/webhook',
+    purpose: 'Live GitHub webhook smoke test',
+    operator: 'bingqin2',
+    expectedShutdownAt: '2026-07-01T17:00:00Z',
+    notes: 'Keep terminal visible during test.'
+  })).resolves.toEqual(session);
+  expect(fetchMock).toHaveBeenCalledWith('/api/security/external-exposure-sessions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      publicUrl: 'https://demo.trycloudflare.com',
+      webhookUrl: 'https://demo.trycloudflare.com/api/github/webhook',
+      purpose: 'Live GitHub webhook smoke test',
+      operator: 'bingqin2',
+      expectedShutdownAt: '2026-07-01T17:00:00Z',
+      notes: 'Keep terminal visible during test.'
+    })
+  });
+});
+
+test('closes external exposure session through backend API', async () => {
+  const session = {
+    id: 'exposure-session-1',
+    status: 'CLOSED',
+    publicUrl: 'https://demo.trycloudflare.com',
+    webhookUrl: 'https://demo.trycloudflare.com/api/github/webhook',
+    purpose: 'Live GitHub webhook smoke test',
+    operator: 'bingqin2',
+    expectedShutdownAt: '2026-07-01T17:00:00Z',
+    notes: 'Keep terminal visible during test.',
+    linkedHandoffStatus: 'READY',
+    linkedReadinessArchiveId: 'exposure-archive-1',
+    startedAt: '2026-07-01T15:00:00Z',
+    closedBy: 'bingqin2',
+    closedAt: '2026-07-01T16:30:00Z',
+    closeNotes: 'Tunnel process stopped.',
+    markdownReport: '# PatchPilot External Exposure Session'
+  };
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: session,
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  await expect(closeExternalExposureSession('exposure-session-1', {
+    closedBy: 'bingqin2',
+    closedAt: '2026-07-01T16:30:00Z',
+    closeNotes: 'Tunnel process stopped.'
+  })).resolves.toEqual(session);
+  expect(fetchMock).toHaveBeenCalledWith('/api/security/external-exposure-sessions/exposure-session-1/close', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      closedBy: 'bingqin2',
+      closedAt: '2026-07-01T16:30:00Z',
+      closeNotes: 'Tunnel process stopped.'
+    })
+  });
+});
+
+test('lists and downloads external exposure sessions through backend API', async () => {
+  const session = {
+    id: 'exposure-session-1',
+    status: 'ACTIVE',
+    publicUrl: 'https://demo.trycloudflare.com',
+    webhookUrl: 'https://demo.trycloudflare.com/api/github/webhook',
+    purpose: 'Live GitHub webhook smoke test',
+    operator: 'bingqin2',
+    expectedShutdownAt: '2026-07-01T17:00:00Z',
+    notes: 'Keep terminal visible during test.',
+    linkedHandoffStatus: 'READY',
+    linkedReadinessArchiveId: 'exposure-archive-1',
+    startedAt: '2026-07-01T15:00:00Z',
+    closedBy: null,
+    closedAt: null,
+    closeNotes: null,
+    markdownReport: '# PatchPilot External Exposure Session'
+  };
+  const reportBlob = new Blob(['# PatchPilot External Exposure Session'], {
+    type: 'text/markdown;charset=UTF-8'
+  });
+  const fetchMock = vi.fn(async (url: RequestInfo | URL) => {
+    if (String(url).endsWith('/report/download')) {
+      return {
+        ok: true,
+        status: 200,
+        blob: async () => reportBlob
+      } as Response;
+    }
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({
+        success: true,
+        data: [session],
+        message: null
+      })
+    } as Response;
+  });
+  vi.stubGlobal('fetch', fetchMock);
+
+  await expect(listExternalExposureSessions()).resolves.toEqual([session]);
+  await expect(downloadExternalExposureSessionReport('exposure-session-1')).resolves.toBe(reportBlob);
+  expect(fetchMock).toHaveBeenCalledWith('/api/security/external-exposure-sessions');
+  expect(fetchMock).toHaveBeenCalledWith('/api/security/external-exposure-sessions/exposure-session-1/report/download');
 });
 
 test('loads dashboard bootstrap through backend API without a saved admin token', async () => {

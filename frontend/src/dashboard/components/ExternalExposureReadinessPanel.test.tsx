@@ -3,7 +3,8 @@ import userEvent from '@testing-library/user-event';
 import type {
   ExternalExposureHandoffPackage,
   ExternalExposureReadiness,
-  ExternalExposureReadinessArchive
+  ExternalExposureReadinessArchive,
+  ExternalExposureSession
 } from '../../types';
 import { ExternalExposureReadinessPanel } from './ExternalExposureReadinessPanel';
 
@@ -78,6 +79,26 @@ const handoffPackage: ExternalExposureHandoffPackage = {
   markdownReport: '# PatchPilot External Exposure Handoff Package'
 };
 
+const sessions: ExternalExposureSession[] = [
+  {
+    id: 'exposure-session-1',
+    status: 'ACTIVE',
+    publicUrl: 'https://demo.trycloudflare.com',
+    webhookUrl: 'https://demo.trycloudflare.com/api/github/webhook',
+    purpose: 'Live GitHub webhook smoke test',
+    operator: 'bingqin2',
+    expectedShutdownAt: '2026-07-01T17:00:00Z',
+    notes: 'Keep terminal visible during test.',
+    linkedHandoffStatus: 'READY',
+    linkedReadinessArchiveId: 'exposure-archive-1',
+    startedAt: '2026-07-01T15:00:00Z',
+    closedBy: null,
+    closedAt: null,
+    closeNotes: null,
+    markdownReport: '# PatchPilot External Exposure Session'
+  }
+];
+
 afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
@@ -92,9 +113,14 @@ test('renders exposure readiness status, counts, checks, and next actions', () =
       archiveError={null}
       handoffPackage={handoffPackage}
       handoffPackageError={null}
+      sessions={sessions}
+      sessionError={null}
       onArchiveReadiness={vi.fn()}
       onDownloadArchiveReport={vi.fn()}
       onDownloadHandoffPackageReport={vi.fn()}
+      onStartSession={vi.fn()}
+      onCloseSession={vi.fn()}
+      onDownloadSessionReport={vi.fn()}
       onRefresh={vi.fn()}
     />
   );
@@ -114,6 +140,10 @@ test('renders exposure readiness status, counts, checks, and next actions', () =
   expect(within(panel).getByText('7 ready, 3 attention, 0 blocked')).toBeInTheDocument();
   expect(within(panel).getByText('External exposure handoff package')).toBeInTheDocument();
   expect(within(panel).getByText('External exposure handoff package is ready to share.')).toBeInTheDocument();
+  expect(within(panel).getByText('External exposure sessions')).toBeInTheDocument();
+  expect(within(panel).getByText('https://demo.trycloudflare.com')).toBeInTheDocument();
+  expect(within(panel).getByText('Live GitHub webhook smoke test')).toBeInTheDocument();
+  expect(within(panel).getByText('exposure-session-1')).toBeInTheDocument();
   expect(
     within(panel).getAllByText((_, element) =>
       element?.textContent?.includes('Archive freshness: CURRENT') ?? false
@@ -135,6 +165,12 @@ test('copies, archives, downloads archived markdown, and refreshes the panel', a
   });
   const onDownloadArchiveReport = vi.fn(async () => reportBlob);
   const onDownloadHandoffPackageReport = vi.fn(async () => handoffReportBlob);
+  const onStartSession = vi.fn(async () => sessions[0]);
+  const onCloseSession = vi.fn(async () => ({ ...sessions[0], status: 'CLOSED' as const }));
+  const sessionReportBlob = new Blob(['# PatchPilot External Exposure Session'], {
+    type: 'text/markdown;charset=UTF-8'
+  });
+  const onDownloadSessionReport = vi.fn(async () => sessionReportBlob);
   vi.stubGlobal('navigator', {
     clipboard: { writeText }
   });
@@ -152,9 +188,14 @@ test('copies, archives, downloads archived markdown, and refreshes the panel', a
       archiveError={null}
       handoffPackage={handoffPackage}
       handoffPackageError={null}
+      sessions={sessions}
+      sessionError={null}
       onArchiveReadiness={onArchiveReadiness}
       onDownloadArchiveReport={onDownloadArchiveReport}
       onDownloadHandoffPackageReport={onDownloadHandoffPackageReport}
+      onStartSession={onStartSession}
+      onCloseSession={onCloseSession}
+      onDownloadSessionReport={onDownloadSessionReport}
       onRefresh={onRefresh}
     />
   );
@@ -178,6 +219,38 @@ test('copies, archives, downloads archived markdown, and refreshes the panel', a
   expect(createObjectURL).toHaveBeenCalledWith(handoffReportBlob);
   expect(screen.getByText('Exposure handoff package downloaded')).toBeInTheDocument();
 
+  await user.clear(screen.getByLabelText('Temporary public URL'));
+  await user.type(screen.getByLabelText('Temporary public URL'), 'https://new-demo.trycloudflare.com');
+  await user.clear(screen.getByLabelText('GitHub webhook URL'));
+  await user.type(screen.getByLabelText('GitHub webhook URL'), 'https://new-demo.trycloudflare.com/api/github/webhook');
+  await user.clear(screen.getByLabelText('Exposure purpose'));
+  await user.type(screen.getByLabelText('Exposure purpose'), 'Reviewer live smoke test');
+  await user.clear(screen.getByLabelText('Exposure operator'));
+  await user.type(screen.getByLabelText('Exposure operator'), 'bingqin2');
+  await user.click(screen.getByRole('button', { name: 'Start exposure session' }));
+  expect(onStartSession).toHaveBeenCalledWith({
+    publicUrl: 'https://new-demo.trycloudflare.com',
+    webhookUrl: 'https://new-demo.trycloudflare.com/api/github/webhook',
+    purpose: 'Reviewer live smoke test',
+    operator: 'bingqin2',
+    expectedShutdownAt: undefined,
+    notes: ''
+  });
+  expect(screen.getByText('Exposure session started')).toBeInTheDocument();
+
+  await user.click(screen.getByRole('button', { name: 'Close exposure session exposure-session-1' }));
+  expect(onCloseSession).toHaveBeenCalledWith('exposure-session-1', {
+    closedBy: 'bingqin2',
+    closedAt: undefined,
+    closeNotes: 'Closed from dashboard.'
+  });
+  expect(screen.getByText('Exposure session closed')).toBeInTheDocument();
+
+  await user.click(screen.getByRole('button', { name: 'Download exposure session exposure-session-1' }));
+  expect(onDownloadSessionReport).toHaveBeenCalledWith('exposure-session-1');
+  expect(createObjectURL).toHaveBeenCalledWith(sessionReportBlob);
+  expect(screen.getByText('Exposure session report downloaded')).toBeInTheDocument();
+
   await user.click(screen.getByRole('button', { name: 'Refresh exposure gate' }));
   expect(onRefresh).toHaveBeenCalledTimes(1);
 });
@@ -191,9 +264,14 @@ test('shows empty and error states without hiding refresh', () => {
       archiveError="archive unavailable"
       handoffPackage={null}
       handoffPackageError="handoff unavailable"
+      sessions={[]}
+      sessionError="sessions unavailable"
       onArchiveReadiness={vi.fn()}
       onDownloadArchiveReport={vi.fn()}
       onDownloadHandoffPackageReport={vi.fn()}
+      onStartSession={vi.fn()}
+      onCloseSession={vi.fn()}
+      onDownloadSessionReport={vi.fn()}
       onRefresh={vi.fn()}
     />
   );
@@ -206,6 +284,9 @@ test('shows empty and error states without hiding refresh', () => {
   expect(screen.getByText('External exposure handoff package unavailable')).toBeInTheDocument();
   expect(screen.getByText('handoff unavailable')).toBeInTheDocument();
   expect(screen.getByText('No external exposure handoff package loaded.')).toBeInTheDocument();
+  expect(screen.getByText('External exposure sessions unavailable')).toBeInTheDocument();
+  expect(screen.getByText('sessions unavailable')).toBeInTheDocument();
+  expect(screen.getByText('No external exposure sessions recorded.')).toBeInTheDocument();
   expect(screen.getByRole('button', { name: 'Archive exposure readiness' })).toBeDisabled();
   expect(screen.getByRole('button', { name: 'Refresh exposure gate' })).toBeEnabled();
 });
