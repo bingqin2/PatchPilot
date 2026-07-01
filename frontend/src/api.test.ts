@@ -10,6 +10,9 @@ import {
   postDemoLiveTriggerLaunchPackage,
   postDemoLiveTriggerOutcomeCloseout,
   downloadDemoLiveTriggerOutcomeCloseoutReport,
+  archiveDemoLiveTriggerOutcomeCloseout,
+  listDemoLiveTriggerOutcomeCloseoutArchives,
+  downloadDemoLiveTriggerOutcomeCloseoutArchiveReport,
   archiveDemoLiveTriggerLaunchPackage,
   listDemoLiveTriggerLaunchPackageArchives,
   downloadDemoLiveTriggerLaunchPackageArchiveReport,
@@ -4996,6 +4999,80 @@ test('creates and downloads demo live trigger outcome closeout reports through b
   });
   expect(closeout.status).toBe('READY');
   expect(closeout.pullRequestUrl).toBe('https://github.com/bingqin2/PatchPilot/pull/42');
+  expect(report.type).toBe('text/markdown');
+});
+
+test('archives lists and downloads live trigger outcome closeout archives through backend API', async () => {
+  const archivePayload = {
+    id: 'outcome-closeout-archive-1',
+    status: 'READY',
+    successful: true,
+    repository: 'bingqin2/PatchPilot',
+    issueNumber: 1,
+    issueUrl: 'https://github.com/bingqin2/PatchPilot/issues/1',
+    triggerUser: 'bingqin2',
+    triggerComment: '/agent fix touch docs/live-package.md',
+    launchPackageArchiveId: 'launch-package-archive-1',
+    launchPackageStatus: 'READY',
+    launchPackageArchivedAt: '2026-07-02T00:00:05Z',
+    taskId: 'task-1',
+    taskStatus: 'COMPLETED',
+    failureReason: null,
+    taskCreatedAt: '2026-07-02T00:10:00Z',
+    taskUpdatedAt: '2026-07-02T00:11:00Z',
+    pullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+    webhookDeliveryId: 'delivery-1',
+    webhookDeliveryStatus: 'TASK_CREATED',
+    summary: 'Live trigger completed.',
+    evidenceNotes: ['Task task-1 completed.'],
+    nextActions: ['Review PR.'],
+    sideEffectContract: 'Archive creation writes only PatchPilot local archive records.',
+    closeoutGeneratedAt: '2026-07-02T01:00:00Z',
+    archivedAt: '2026-07-02T01:05:00Z',
+    report: '# PatchPilot Live Trigger Outcome Closeout'
+  };
+  const fetchMock = vi.fn()
+    .mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ success: true, data: archivePayload, message: null })
+    } as Response)
+    .mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ success: true, data: [archivePayload], message: null })
+    } as Response)
+    .mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      blob: async () => new Blob(['archive report'], { type: 'text/markdown' })
+    } as Response);
+  vi.stubGlobal('fetch', fetchMock);
+
+  const input = {
+    repositoryOwner: 'bingqin2',
+    repositoryName: 'PatchPilot',
+    issueNumber: 1,
+    triggerUser: 'bingqin2',
+    triggerComment: '/agent fix touch docs/live-package.md',
+    launchPackageArchiveId: 'launch-package-archive-1'
+  };
+  const archive = await archiveDemoLiveTriggerOutcomeCloseout(input);
+  const archives = await listDemoLiveTriggerOutcomeCloseoutArchives();
+  const report = await downloadDemoLiveTriggerOutcomeCloseoutArchiveReport('outcome-closeout-archive-1');
+
+  expect(fetchMock).toHaveBeenNthCalledWith(1, '/api/demo/live-trigger-outcome-closeout/archives', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input)
+  });
+  expect(fetchMock).toHaveBeenNthCalledWith(2, '/api/demo/live-trigger-outcome-closeout/archives');
+  expect(fetchMock).toHaveBeenNthCalledWith(
+    3,
+    '/api/demo/live-trigger-outcome-closeout/archives/outcome-closeout-archive-1/report/download'
+  );
+  expect(archive.id).toBe('outcome-closeout-archive-1');
+  expect(archives).toHaveLength(1);
   expect(report.type).toBe('text/markdown');
 });
 

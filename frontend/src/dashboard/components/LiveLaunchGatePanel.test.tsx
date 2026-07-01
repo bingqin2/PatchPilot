@@ -4,7 +4,8 @@ import type {
   DemoLiveLaunchGate,
   DemoLiveTriggerLaunchPackage,
   DemoLiveTriggerLaunchPackageArchive,
-  DemoLiveTriggerOutcomeCloseout
+  DemoLiveTriggerOutcomeCloseout,
+  DemoLiveTriggerOutcomeCloseoutArchive
 } from '../../types';
 import { LiveLaunchGatePanel } from './LiveLaunchGatePanel';
 
@@ -199,6 +200,35 @@ const readyOutcomeCloseout: DemoLiveTriggerOutcomeCloseout = {
   markdownReport: '# PatchPilot Live Trigger Outcome Closeout'
 };
 
+const readyOutcomeCloseoutArchive: DemoLiveTriggerOutcomeCloseoutArchive = {
+  id: 'outcome-closeout-archive-1',
+  status: 'READY',
+  successful: true,
+  repository: 'bingqin2/PatchPilot',
+  issueNumber: 1,
+  issueUrl: 'https://github.com/bingqin2/PatchPilot/issues/1',
+  triggerUser: 'bingqin2',
+  triggerComment: '/agent fix touch docs/live-package.md',
+  launchPackageArchiveId: 'launch-package-archive-1',
+  launchPackageStatus: 'READY',
+  launchPackageArchivedAt: '2026-07-02T00:00:05Z',
+  taskId: 'task-1',
+  taskStatus: 'COMPLETED',
+  failureReason: null,
+  taskCreatedAt: '2026-07-02T00:10:00Z',
+  taskUpdatedAt: '2026-07-02T00:11:00Z',
+  pullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+  webhookDeliveryId: 'delivery-1',
+  webhookDeliveryStatus: 'TASK_CREATED',
+  summary: 'Live trigger completed and created Pull Request https://github.com/bingqin2/PatchPilot/pull/42.',
+  evidenceNotes: ['Launch package archive launch-package-archive-1 was used.', 'Task task-1 completed.'],
+  nextActions: ['Review and merge https://github.com/bingqin2/PatchPilot/pull/42.'],
+  sideEffectContract: 'Archive creation writes only PatchPilot local archive records.',
+  closeoutGeneratedAt: '2026-07-02T01:00:00Z',
+  archivedAt: '2026-07-02T01:05:00Z',
+  report: '# PatchPilot Live Trigger Outcome Closeout'
+};
+
 const baseProps = {
   error: null,
   pending: false,
@@ -215,7 +245,11 @@ const baseProps = {
   outcomeCloseoutError: null,
   outcomeCloseoutPending: false,
   onCreateOutcomeCloseout: vi.fn(),
-  onDownloadOutcomeCloseoutReport: vi.fn()
+  onDownloadOutcomeCloseoutReport: vi.fn(),
+  outcomeCloseoutArchives: [] as DemoLiveTriggerOutcomeCloseoutArchive[],
+  outcomeCloseoutArchiveError: null,
+  onArchiveOutcomeCloseout: vi.fn(),
+  onDownloadOutcomeCloseoutArchiveReport: vi.fn()
 };
 
 test('submits exact live launch gate input', async () => {
@@ -473,6 +507,70 @@ test('shows live trigger outcome closeout errors', () => {
 
   expect(screen.getByText('Live trigger outcome closeout failed')).toBeInTheDocument();
   expect(screen.getByText('No matching task found')).toBeInTheDocument();
+});
+
+test('archives and downloads frozen live trigger outcome closeouts', async () => {
+  const user = userEvent.setup();
+  const onArchiveOutcomeCloseout = vi.fn(async () => readyOutcomeCloseoutArchive);
+  const onDownloadOutcomeCloseoutArchiveReport = vi.fn(async () => new Blob(['outcome archive'], { type: 'text/markdown' }));
+  const anchorClick = vi.fn();
+  const createObjectURL = vi.fn(() => 'blob:live-trigger-outcome-archive');
+  const revokeObjectURL = vi.fn();
+  vi.stubGlobal('URL', { createObjectURL, revokeObjectURL });
+  vi.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
+    const element = document.createElementNS('http://www.w3.org/1999/xhtml', tagName) as HTMLAnchorElement;
+    if (tagName === 'a') {
+      element.click = anchorClick;
+    }
+    return element;
+  });
+
+  render(
+    <LiveLaunchGatePanel
+      {...baseProps}
+      result={readyGate}
+      launchPackage={readyLaunchPackage}
+      launchPackageArchives={[readyLaunchPackageArchive]}
+      outcomeCloseout={readyOutcomeCloseout}
+      outcomeCloseoutArchives={[readyOutcomeCloseoutArchive]}
+      onArchiveOutcomeCloseout={onArchiveOutcomeCloseout}
+      onDownloadOutcomeCloseoutArchiveReport={onDownloadOutcomeCloseoutArchiveReport}
+    />
+  );
+
+  await user.click(screen.getByRole('button', { name: 'Archive live trigger outcome closeout' }));
+  await user.click(screen.getByRole('button', { name: 'Download outcome closeout archive outcome-closeout-archive-1' }));
+
+  expect(onArchiveOutcomeCloseout).toHaveBeenCalledWith({
+    repositoryOwner: 'bingqin2',
+    repositoryName: 'PatchPilot',
+    issueNumber: 1,
+    triggerUser: 'bingqin2',
+    triggerComment: '/agent fix touch docs/live-gate.md',
+    launchPackageArchiveId: 'launch-package-archive-1'
+  });
+  const archiveList = screen.getByText('Recent outcome closeout archives').closest('div') as HTMLElement;
+  expect(archiveList).toBeInTheDocument();
+  expect(within(archiveList).getByText('outcome-closeout-archive-1')).toBeInTheDocument();
+  expect(within(archiveList).getByText('Task task-1')).toBeInTheDocument();
+  expect(within(archiveList).getByText('Archived at 2026-07-02T01:05:00Z')).toBeInTheDocument();
+  expect(onDownloadOutcomeCloseoutArchiveReport).toHaveBeenCalledWith('outcome-closeout-archive-1');
+  expect(createObjectURL).toHaveBeenCalledWith(expect.any(Blob));
+  expect(anchorClick).toHaveBeenCalled();
+  expect(revokeObjectURL).toHaveBeenCalledWith('blob:live-trigger-outcome-archive');
+});
+
+test('shows live trigger outcome closeout archive errors', () => {
+  render(
+    <LiveLaunchGatePanel
+      {...baseProps}
+      result={readyGate}
+      outcomeCloseoutArchiveError="Closeout archive write failed"
+    />
+  );
+
+  expect(screen.getByText('Live trigger outcome closeout archive failed')).toBeInTheDocument();
+  expect(screen.getByText('Closeout archive write failed')).toBeInTheDocument();
 });
 
 test('shows launch package errors', () => {

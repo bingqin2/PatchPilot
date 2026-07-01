@@ -5,6 +5,7 @@ import type {
   DemoLiveTriggerLaunchPackage,
   DemoLiveTriggerLaunchPackageArchive,
   DemoLiveTriggerOutcomeCloseout,
+  DemoLiveTriggerOutcomeCloseoutArchive,
   DemoLiveTriggerOutcomeCloseoutInput,
   GitHubTriggerDryRunInput
 } from '../../types';
@@ -33,6 +34,12 @@ interface LiveLaunchGatePanelProps {
     input: DemoLiveTriggerOutcomeCloseoutInput
   ) => Promise<DemoLiveTriggerOutcomeCloseout> | Promise<void> | void;
   onDownloadOutcomeCloseoutReport: (input: DemoLiveTriggerOutcomeCloseoutInput) => Promise<Blob>;
+  outcomeCloseoutArchives: DemoLiveTriggerOutcomeCloseoutArchive[];
+  outcomeCloseoutArchiveError: string | null;
+  onArchiveOutcomeCloseout: (
+    input: DemoLiveTriggerOutcomeCloseoutInput
+  ) => Promise<DemoLiveTriggerOutcomeCloseoutArchive> | Promise<void> | void;
+  onDownloadOutcomeCloseoutArchiveReport: (archiveId: string) => Promise<Blob>;
 }
 
 export function LiveLaunchGatePanel({
@@ -52,7 +59,11 @@ export function LiveLaunchGatePanel({
   outcomeCloseoutError,
   outcomeCloseoutPending,
   onCreateOutcomeCloseout,
-  onDownloadOutcomeCloseoutReport
+  onDownloadOutcomeCloseoutReport,
+  outcomeCloseoutArchives,
+  outcomeCloseoutArchiveError,
+  onArchiveOutcomeCloseout,
+  onDownloadOutcomeCloseoutArchiveReport
 }: LiveLaunchGatePanelProps) {
   const [repositoryOwner, setRepositoryOwner] = useState('bingqin2');
   const [repositoryName, setRepositoryName] = useState('PatchPilot');
@@ -119,6 +130,15 @@ export function LiveLaunchGatePanel({
     downloadMarkdown(blob, 'patchpilot-live-trigger-outcome-closeout.md');
   }
 
+  async function archiveOutcomeCloseout() {
+    await onArchiveOutcomeCloseout(closeoutInput());
+  }
+
+  async function downloadOutcomeCloseoutArchive(archiveId: string) {
+    const blob = await onDownloadOutcomeCloseoutArchiveReport(archiveId);
+    downloadMarkdown(blob, `patchpilot-live-trigger-outcome-closeout-archive-${archiveId}.md`);
+  }
+
   return (
     <section className="panel live-launch-gate-panel" aria-label="Live launch gate">
       <div className="panel-header">
@@ -181,6 +201,16 @@ export function LiveLaunchGatePanel({
             >
               <Download size={16} />
               Download closeout
+            </button>
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={() => void archiveOutcomeCloseout()}
+              disabled={!outcomeCloseout || outcomeCloseoutPending}
+              aria-label="Archive live trigger outcome closeout"
+            >
+              <Archive size={16} />
+              Archive closeout
             </button>
           </div>
         ) : null}
@@ -273,6 +303,13 @@ export function LiveLaunchGatePanel({
         </div>
       ) : null}
 
+      {outcomeCloseoutArchiveError ? (
+        <div className="adapter-api-error">
+          <strong>Live trigger outcome closeout archive failed</strong>
+          <span>{outcomeCloseoutArchiveError}</span>
+        </div>
+      ) : null}
+
       {result ? (
         <>
           <LiveLaunchGateResult result={result} />
@@ -282,6 +319,10 @@ export function LiveLaunchGatePanel({
             onDownloadArchive={(archiveId) => void downloadLaunchPackageArchive(archiveId)}
           />
           {outcomeCloseout ? <LiveTriggerOutcomeCloseoutResult closeout={outcomeCloseout} /> : null}
+          <LiveTriggerOutcomeCloseoutArchiveList
+            archives={outcomeCloseoutArchives}
+            onDownloadArchive={(archiveId) => void downloadOutcomeCloseoutArchive(archiveId)}
+          />
         </>
       ) : (
         <div className="empty-state">No live launch gate run yet.</div>
@@ -313,6 +354,44 @@ function LiveTriggerLaunchPackageArchiveList({
                 className="secondary-button compact-button"
                 type="button"
                 aria-label={`Download launch package archive ${archive.id}`}
+                onClick={() => onDownloadArchive(archive.id)}
+              >
+                <Download size={14} />
+                Download
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function LiveTriggerOutcomeCloseoutArchiveList({
+  archives,
+  onDownloadArchive
+}: {
+  archives: DemoLiveTriggerOutcomeCloseoutArchive[];
+  onDownloadArchive: (archiveId: string) => void;
+}) {
+  return (
+    <div className="demo-launch-preflight-actions">
+      <h3>Recent outcome closeout archives</h3>
+      {archives.length === 0 ? (
+        <p>No outcome closeout archives recorded.</p>
+      ) : (
+        <ul>
+          {archives.map((archive) => (
+            <li key={archive.id}>
+              <strong>{archive.id}</strong>
+              <span> {archive.status} </span>
+              <span>{archive.taskId ? `Task ${archive.taskId}` : 'No matching task'}</span>
+              {archive.pullRequestUrl ? <span> {archive.pullRequestUrl}</span> : null}
+              <span>Archived at {archive.archivedAt}</span>
+              <button
+                className="secondary-button compact-button"
+                type="button"
+                aria-label={`Download outcome closeout archive ${archive.id}`}
                 onClick={() => onDownloadArchive(archive.id)}
               >
                 <Download size={14} />
