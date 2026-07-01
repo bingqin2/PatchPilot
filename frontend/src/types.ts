@@ -924,6 +924,30 @@ export interface DemoLiveTriggerOutcomeCloseoutArchive {
   report: string;
 }
 
+export interface DemoLiveDemoEvidenceBundle {
+  status: DemoReadinessStatus;
+  readyForHandoff: boolean;
+  repository: string | null;
+  issueNumber: number;
+  issueUrl: string | null;
+  triggerUser: string | null;
+  triggerComment: string | null;
+  launchPackageArchiveId: string | null;
+  launchPackageArchivedAt: string | null;
+  outcomeCloseoutArchiveId: string | null;
+  outcomeCloseoutArchivedAt: string | null;
+  taskId: string | null;
+  taskStatus: string | null;
+  pullRequestUrl: string | null;
+  webhookDeliveryId: string | null;
+  summary: string;
+  evidenceNotes: string[];
+  nextActions: string[];
+  sideEffectContract: string;
+  generatedAt: string;
+  markdownReport: string;
+}
+
 export interface DemoEndToEndAcceptanceMatrixItem {
   category: string;
   name: string;

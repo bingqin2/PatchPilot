@@ -4,6 +4,7 @@ import type {
   DemoLiveLaunchGate,
   DemoLiveTriggerLaunchPackage,
   DemoLiveTriggerLaunchPackageArchive,
+  DemoLiveDemoEvidenceBundle,
   DemoLiveTriggerOutcomeCloseout,
   DemoLiveTriggerOutcomeCloseoutArchive
 } from '../../types';
@@ -229,6 +230,30 @@ const readyOutcomeCloseoutArchive: DemoLiveTriggerOutcomeCloseoutArchive = {
   report: '# PatchPilot Live Trigger Outcome Closeout'
 };
 
+const readyLiveDemoEvidenceBundle: DemoLiveDemoEvidenceBundle = {
+  status: 'READY',
+  readyForHandoff: true,
+  repository: 'bingqin2/PatchPilot',
+  issueNumber: 1,
+  issueUrl: 'https://github.com/bingqin2/PatchPilot/issues/1',
+  triggerUser: 'bingqin2',
+  triggerComment: '/agent fix touch docs/live-package.md',
+  launchPackageArchiveId: 'launch-package-archive-1',
+  launchPackageArchivedAt: '2026-07-02T00:00:05Z',
+  outcomeCloseoutArchiveId: 'outcome-closeout-archive-1',
+  outcomeCloseoutArchivedAt: '2026-07-02T01:05:00Z',
+  taskId: 'task-1',
+  taskStatus: 'COMPLETED',
+  pullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+  webhookDeliveryId: 'delivery-1',
+  summary: 'Live demo evidence bundle is ready for handoff.',
+  evidenceNotes: ['Launch package archive launch-package-archive-1 is ready.', 'Outcome closeout archive outcome-closeout-archive-1 is successful.'],
+  nextActions: ['Review and merge https://github.com/bingqin2/PatchPilot/pull/42.'],
+  sideEffectContract: 'Read-only live demo evidence bundle: this endpoint does not mutate GitHub or task state.',
+  generatedAt: '2026-07-02T02:00:00Z',
+  markdownReport: '# PatchPilot Live Demo Evidence Bundle'
+};
+
 const baseProps = {
   error: null,
   pending: false,
@@ -249,7 +274,11 @@ const baseProps = {
   outcomeCloseoutArchives: [] as DemoLiveTriggerOutcomeCloseoutArchive[],
   outcomeCloseoutArchiveError: null,
   onArchiveOutcomeCloseout: vi.fn(),
-  onDownloadOutcomeCloseoutArchiveReport: vi.fn()
+  onDownloadOutcomeCloseoutArchiveReport: vi.fn(),
+  liveDemoEvidenceBundle: null as DemoLiveDemoEvidenceBundle | null,
+  liveDemoEvidenceBundleError: null,
+  onRefreshLiveDemoEvidenceBundle: vi.fn(),
+  onDownloadLiveDemoEvidenceBundleReport: vi.fn()
 };
 
 test('submits exact live launch gate input', async () => {
@@ -571,6 +600,64 @@ test('shows live trigger outcome closeout archive errors', () => {
 
   expect(screen.getByText('Live trigger outcome closeout archive failed')).toBeInTheDocument();
   expect(screen.getByText('Closeout archive write failed')).toBeInTheDocument();
+});
+
+test('renders and downloads final live demo evidence bundle', async () => {
+  const user = userEvent.setup();
+  const onRefreshLiveDemoEvidenceBundle = vi.fn(async () => readyLiveDemoEvidenceBundle);
+  const onDownloadLiveDemoEvidenceBundleReport = vi.fn(async () => new Blob(['bundle report'], { type: 'text/markdown' }));
+  const anchorClick = vi.fn();
+  const createObjectURL = vi.fn(() => 'blob:live-demo-evidence-bundle');
+  const revokeObjectURL = vi.fn();
+  vi.stubGlobal('URL', { createObjectURL, revokeObjectURL });
+  vi.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
+    const element = document.createElementNS('http://www.w3.org/1999/xhtml', tagName) as HTMLAnchorElement;
+    if (tagName === 'a') {
+      element.click = anchorClick;
+    }
+    return element;
+  });
+
+  render(
+    <LiveLaunchGatePanel
+      {...baseProps}
+      result={readyGate}
+      launchPackage={readyLaunchPackage}
+      launchPackageArchives={[readyLaunchPackageArchive]}
+      outcomeCloseout={readyOutcomeCloseout}
+      outcomeCloseoutArchives={[readyOutcomeCloseoutArchive]}
+      liveDemoEvidenceBundle={readyLiveDemoEvidenceBundle}
+      onRefreshLiveDemoEvidenceBundle={onRefreshLiveDemoEvidenceBundle}
+      onDownloadLiveDemoEvidenceBundleReport={onDownloadLiveDemoEvidenceBundleReport}
+    />
+  );
+
+  await user.click(screen.getByRole('button', { name: 'Refresh live demo evidence bundle' }));
+  await user.click(screen.getByRole('button', { name: 'Download live demo evidence bundle' }));
+
+  expect(onRefreshLiveDemoEvidenceBundle).toHaveBeenCalled();
+  expect(screen.getByText('Live demo evidence bundle')).toBeInTheDocument();
+  const bundleSection = screen.getByText('Live demo evidence bundle').closest('.demo-launch-preflight-result') as HTMLElement;
+  expect(within(bundleSection).getByText('Live demo evidence bundle is ready for handoff.')).toBeInTheDocument();
+  expect(within(bundleSection).getByText('Archive outcome-closeout-archive-1')).toBeInTheDocument();
+  expect(within(bundleSection).getByText('PR https://github.com/bingqin2/PatchPilot/pull/42')).toBeInTheDocument();
+  expect(onDownloadLiveDemoEvidenceBundleReport).toHaveBeenCalled();
+  expect(createObjectURL).toHaveBeenCalledWith(expect.any(Blob));
+  expect(anchorClick).toHaveBeenCalled();
+  expect(revokeObjectURL).toHaveBeenCalledWith('blob:live-demo-evidence-bundle');
+});
+
+test('shows live demo evidence bundle errors', () => {
+  render(
+    <LiveLaunchGatePanel
+      {...baseProps}
+      result={readyGate}
+      liveDemoEvidenceBundleError="Outcome closeout archive is missing"
+    />
+  );
+
+  expect(screen.getByText('Live demo evidence bundle failed')).toBeInTheDocument();
+  expect(screen.getByText('Outcome closeout archive is missing')).toBeInTheDocument();
 });
 
 test('shows launch package errors', () => {

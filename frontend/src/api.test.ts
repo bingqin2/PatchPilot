@@ -9,6 +9,8 @@ import {
   postDemoLiveLaunchGate,
   postDemoLiveTriggerLaunchPackage,
   postDemoLiveTriggerOutcomeCloseout,
+  getDemoLiveDemoEvidenceBundle,
+  downloadDemoLiveDemoEvidenceBundleReport,
   downloadDemoLiveTriggerOutcomeCloseoutReport,
   archiveDemoLiveTriggerOutcomeCloseout,
   listDemoLiveTriggerOutcomeCloseoutArchives,
@@ -5073,6 +5075,54 @@ test('archives lists and downloads live trigger outcome closeout archives throug
   );
   expect(archive.id).toBe('outcome-closeout-archive-1');
   expect(archives).toHaveLength(1);
+  expect(report.type).toBe('text/markdown');
+});
+
+test('loads and downloads live demo evidence bundle through backend API', async () => {
+  const bundlePayload = {
+    status: 'READY',
+    readyForHandoff: true,
+    repository: 'bingqin2/PatchPilot',
+    issueNumber: 1,
+    issueUrl: 'https://github.com/bingqin2/PatchPilot/issues/1',
+    triggerUser: 'bingqin2',
+    triggerComment: '/agent fix touch docs/live-package.md',
+    launchPackageArchiveId: 'launch-package-archive-1',
+    launchPackageArchivedAt: '2026-07-02T00:00:05Z',
+    outcomeCloseoutArchiveId: 'outcome-closeout-archive-1',
+    outcomeCloseoutArchivedAt: '2026-07-02T01:05:00Z',
+    taskId: 'task-1',
+    taskStatus: 'COMPLETED',
+    pullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+    webhookDeliveryId: 'delivery-1',
+    summary: 'Live demo evidence bundle is ready for handoff.',
+    evidenceNotes: ['Launch package archive launch-package-archive-1 is ready.'],
+    nextActions: ['Review and merge https://github.com/bingqin2/PatchPilot/pull/42.'],
+    sideEffectContract: 'Read-only live demo evidence bundle: this endpoint does not mutate GitHub or task state.',
+    generatedAt: '2026-07-02T02:00:00Z',
+    markdownReport: '# PatchPilot Live Demo Evidence Bundle'
+  };
+  const fetchMock = vi.fn()
+    .mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ success: true, data: bundlePayload, message: null })
+    } as Response)
+    .mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      blob: async () => new Blob(['bundle report'], { type: 'text/markdown' })
+    } as Response);
+  vi.stubGlobal('fetch', fetchMock);
+
+  const bundle = await getDemoLiveDemoEvidenceBundle();
+  const report = await downloadDemoLiveDemoEvidenceBundleReport();
+
+  expect(fetchMock).toHaveBeenNthCalledWith(1, '/api/demo/live-demo-evidence-bundle');
+  expect(fetchMock).toHaveBeenNthCalledWith(2, '/api/demo/live-demo-evidence-bundle/report/download');
+  expect(bundle.status).toBe('READY');
+  expect(bundle.readyForHandoff).toBe(true);
+  expect(bundle.pullRequestUrl).toBe('https://github.com/bingqin2/PatchPilot/pull/42');
   expect(report.type).toBe('text/markdown');
 });
 

@@ -65,6 +65,7 @@ import type {
   DemoLaunchEvidenceShareDeliveryReceiptInput,
   DemoLaunchCommandInput,
   DemoLiveLaunchGate,
+  DemoLiveDemoEvidenceBundle,
   DemoLiveTriggerLaunchPackage,
   DemoLiveTriggerLaunchPackageArchive,
   DemoLiveTriggerOutcomeCloseout,
@@ -256,6 +257,14 @@ export async function downloadDemoLiveTriggerOutcomeCloseoutArchiveReport(archiv
   return getBlobApi(
     `/api/demo/live-trigger-outcome-closeout/archives/${encodeURIComponent(archiveId)}/report/download`
   );
+}
+
+export async function getDemoLiveDemoEvidenceBundle(): Promise<DemoLiveDemoEvidenceBundle> {
+  return getApi<DemoLiveDemoEvidenceBundle>('/api/demo/live-demo-evidence-bundle');
+}
+
+export async function downloadDemoLiveDemoEvidenceBundleReport(): Promise<Blob> {
+  return getBlobApi('/api/demo/live-demo-evidence-bundle/report/download');
 }
 
 export async function getDemoEndToEndAcceptanceMatrix(): Promise<DemoEndToEndAcceptanceMatrix> {
