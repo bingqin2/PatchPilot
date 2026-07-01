@@ -1,7 +1,8 @@
-import { Archive, ClipboardCheck, Copy, Download, PackageCheck, Rocket } from 'lucide-react';
+import { Archive, ClipboardCheck, Copy, Download, FileCheck2, PackageCheck, RefreshCw, Rocket } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import type {
   DemoLiveLaunchGate,
+  DemoLiveDemoEvidenceBundle,
   DemoLiveTriggerLaunchPackage,
   DemoLiveTriggerLaunchPackageArchive,
   DemoLiveTriggerOutcomeCloseout,
@@ -40,6 +41,10 @@ interface LiveLaunchGatePanelProps {
     input: DemoLiveTriggerOutcomeCloseoutInput
   ) => Promise<DemoLiveTriggerOutcomeCloseoutArchive> | Promise<void> | void;
   onDownloadOutcomeCloseoutArchiveReport: (archiveId: string) => Promise<Blob>;
+  liveDemoEvidenceBundle: DemoLiveDemoEvidenceBundle | null;
+  liveDemoEvidenceBundleError: string | null;
+  onRefreshLiveDemoEvidenceBundle: () => Promise<DemoLiveDemoEvidenceBundle> | Promise<void> | void;
+  onDownloadLiveDemoEvidenceBundleReport: () => Promise<Blob>;
 }
 
 export function LiveLaunchGatePanel({
@@ -63,7 +68,11 @@ export function LiveLaunchGatePanel({
   outcomeCloseoutArchives,
   outcomeCloseoutArchiveError,
   onArchiveOutcomeCloseout,
-  onDownloadOutcomeCloseoutArchiveReport
+  onDownloadOutcomeCloseoutArchiveReport,
+  liveDemoEvidenceBundle,
+  liveDemoEvidenceBundleError,
+  onRefreshLiveDemoEvidenceBundle,
+  onDownloadLiveDemoEvidenceBundleReport
 }: LiveLaunchGatePanelProps) {
   const [repositoryOwner, setRepositoryOwner] = useState('bingqin2');
   const [repositoryName, setRepositoryName] = useState('PatchPilot');
@@ -139,6 +148,15 @@ export function LiveLaunchGatePanel({
     downloadMarkdown(blob, `patchpilot-live-trigger-outcome-closeout-archive-${archiveId}.md`);
   }
 
+  async function refreshLiveDemoEvidenceBundle() {
+    await onRefreshLiveDemoEvidenceBundle();
+  }
+
+  async function downloadLiveDemoEvidenceBundle() {
+    const blob = await onDownloadLiveDemoEvidenceBundleReport();
+    downloadMarkdown(blob, 'patchpilot-live-demo-evidence-bundle.md');
+  }
+
   return (
     <section className="panel live-launch-gate-panel" aria-label="Live launch gate">
       <div className="panel-header">
@@ -211,6 +229,25 @@ export function LiveLaunchGatePanel({
             >
               <Archive size={16} />
               Archive closeout
+            </button>
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={() => void refreshLiveDemoEvidenceBundle()}
+              aria-label="Refresh live demo evidence bundle"
+            >
+              <RefreshCw size={16} />
+              Refresh evidence bundle
+            </button>
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={() => void downloadLiveDemoEvidenceBundle()}
+              disabled={!liveDemoEvidenceBundle}
+              aria-label="Download live demo evidence bundle"
+            >
+              <FileCheck2 size={16} />
+              Download evidence bundle
             </button>
           </div>
         ) : null}
@@ -310,6 +347,13 @@ export function LiveLaunchGatePanel({
         </div>
       ) : null}
 
+      {liveDemoEvidenceBundleError ? (
+        <div className="adapter-api-error">
+          <strong>Live demo evidence bundle failed</strong>
+          <span>{liveDemoEvidenceBundleError}</span>
+        </div>
+      ) : null}
+
       {result ? (
         <>
           <LiveLaunchGateResult result={result} />
@@ -323,11 +367,66 @@ export function LiveLaunchGatePanel({
             archives={outcomeCloseoutArchives}
             onDownloadArchive={(archiveId) => void downloadOutcomeCloseoutArchive(archiveId)}
           />
+          {liveDemoEvidenceBundle ? <LiveDemoEvidenceBundleResult bundle={liveDemoEvidenceBundle} /> : null}
         </>
       ) : (
         <div className="empty-state">No live launch gate run yet.</div>
       )}
     </section>
+  );
+}
+
+function LiveDemoEvidenceBundleResult({ bundle }: { bundle: DemoLiveDemoEvidenceBundle }) {
+  const tone = bundle.status === 'READY' ? 'ready' : bundle.status === 'BLOCKED' ? 'blocked' : 'attention';
+
+  return (
+    <div className={`demo-launch-preflight-result demo-launch-preflight-result-${tone}`}>
+      <div className="demo-launch-preflight-summary">
+        <span className={`demo-readiness-status demo-readiness-status-${tone}`}>
+          {bundle.status}
+        </span>
+        <strong>Live demo evidence bundle</strong>
+        <p>{bundle.summary}</p>
+      </div>
+      <div className="demo-launch-preflight-grid">
+        <div>
+          <span>Launch archive</span>
+          <strong>{bundle.launchPackageArchiveId ? `Archive ${bundle.launchPackageArchiveId}` : 'missing'}</strong>
+          <small>{bundle.launchPackageArchivedAt ?? 'not archived'}</small>
+        </div>
+        <div>
+          <span>Outcome closeout</span>
+          <strong>{bundle.outcomeCloseoutArchiveId ? `Archive ${bundle.outcomeCloseoutArchiveId}` : 'missing'}</strong>
+          <small>{bundle.outcomeCloseoutArchivedAt ?? 'not archived'}</small>
+        </div>
+        <div>
+          <span>Task</span>
+          <strong>{bundle.taskId ? `Task ${bundle.taskId}` : 'missing'}</strong>
+          <small>{bundle.taskStatus ?? 'unknown'}</small>
+        </div>
+        <div>
+          <span>Pull Request</span>
+          <strong>{bundle.pullRequestUrl ? `PR ${bundle.pullRequestUrl}` : 'not created'}</strong>
+        </div>
+      </div>
+      <p className="demo-launch-preflight-blocked">{bundle.sideEffectContract}</p>
+      <div className="demo-launch-preflight-actions">
+        <h3>Bundle evidence</h3>
+        <ul>
+          {bundle.evidenceNotes.map((note) => (
+            <li key={note}>{note}</li>
+          ))}
+        </ul>
+      </div>
+      <div className="demo-launch-preflight-actions">
+        <h3>Bundle next actions</h3>
+        <ul>
+          {bundle.nextActions.map((action) => (
+            <li key={action}>{action}</li>
+          ))}
+        </ul>
+      </div>
+    </div>
   );
 }
 
