@@ -6511,3 +6511,23 @@ Validation so far:
 - `mvn -q -pl PatchPilot test`: passed with existing Lombok/Mockito/Spring test logging.
 - `npm --prefix frontend test -- --reporter=dot`: passed, 35 test files and 532 tests.
 - `npm --prefix frontend run build`: passed with the existing Vite large-chunk warning.
+
+## 2026-07-02 - 325 Live trigger launch package archives
+
+- Started `325-live-trigger-launch-package-archives` to freeze the final live trigger launch package as local operator evidence before posting a real `/agent fix` issue comment.
+- Added backend archive support for live trigger launch packages, including a capped in-memory archive repository, archive service, archive VO, and admin-protected endpoints to create, list, and download archived Markdown reports.
+- Each archive freezes the package status, ready-to-post flag, repository, issue URL, trigger user/comment, operator handoff archive proof, live launch gate proof, evidence notes, next actions, side-effect contract, package generation time, archive time, and report body.
+- Extended the live launch gate dashboard with an `Archive package` action, recent archive history, archive Markdown downloads, archive error feedback, App-level loading, and typed frontend API helpers.
+- Added `docs/plans/325-live-trigger-launch-package-archives.md` with the scope, read-only safety contract, API shape, and validation checklist.
+
+Validation so far:
+
+- `mvn -q -pl PatchPilot -Dtest=DemoLiveTriggerLaunchPackageServiceTests,DemoLiveTriggerLaunchPackageControllerTests test`: first failed because `DemoLiveTriggerLaunchPackageArchiveVo`, archive service, and repository did not exist; passed after backend implementation.
+- `npm --prefix frontend test -- --run src/api.test.ts src/dashboard/components/LiveLaunchGatePanel.test.tsx --reporter=dot`: first failed because archive API helpers, archive button/history, and archive error state were missing; passed after frontend implementation. Focused result: 2 test files and 244 tests.
+- `npm --prefix frontend test -- --run src/App.test.tsx --reporter=dot`: passed after App-level archive loading and handlers were wired. Result: 1 test file and 88 tests.
+- `git diff --check`: passed.
+- `mvn -q -pl PatchPilot test`: passed with existing Lombok/Mockito/Spring test logging.
+- `npm --prefix frontend test -- --reporter=dot`: passed, 35 test files and 535 tests.
+- `npm --prefix frontend run build`: passed with the existing Vite large-chunk warning.
+- `git diff --check`: passed after final documentation updates.
+- Strict diff secret scan for GitHub, OpenAI-style, Slack, AWS, private-key, and PatchPilot token assignment patterns: no matches.

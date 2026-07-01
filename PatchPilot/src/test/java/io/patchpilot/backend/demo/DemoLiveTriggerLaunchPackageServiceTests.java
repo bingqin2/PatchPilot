@@ -3,6 +3,7 @@ package io.patchpilot.backend.demo;
 import io.patchpilot.backend.demo.domain.DemoLiveLaunchGateCheckVo;
 import io.patchpilot.backend.demo.domain.DemoLiveLaunchGateCommand;
 import io.patchpilot.backend.demo.domain.DemoLiveLaunchGateVo;
+import io.patchpilot.backend.demo.domain.DemoLiveTriggerLaunchPackageArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoLiveTriggerLaunchPackageCommand;
 import io.patchpilot.backend.demo.domain.DemoLiveTriggerLaunchPackageVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessStatus;
@@ -83,6 +84,40 @@ class DemoLiveTriggerLaunchPackageServiceTests {
         assertThat(launchPackage.readyToPost()).isFalse();
         assertThat(launchPackage.nextActions())
                 .contains("Rerun the live launch gate and resolve all launch package checks before posting.");
+    }
+
+    @Test
+    void should_archive_frozen_live_trigger_launch_package_snapshot() {
+        DemoLiveTriggerLaunchPackageService launchPackageService = service(
+                liveGate("READY", true),
+                () -> Optional.of(operatorArchive("operator-archive-1", true))
+        );
+        InMemoryDemoLiveTriggerLaunchPackageArchiveRepository repository =
+                new InMemoryDemoLiveTriggerLaunchPackageArchiveRepository();
+        DemoLiveTriggerLaunchPackageArchiveService archiveService =
+                new DemoLiveTriggerLaunchPackageArchiveService(
+                        launchPackageService,
+                        repository,
+                        () -> "launch-package-archive-1",
+                        () -> NOW.plusSeconds(5)
+                );
+
+        DemoLiveTriggerLaunchPackageArchiveVo archive = archiveService.archivePackage(command());
+
+        assertThat(archive.id()).isEqualTo("launch-package-archive-1");
+        assertThat(archive.status()).isEqualTo("READY");
+        assertThat(archive.readyToPost()).isTrue();
+        assertThat(archive.repository()).isEqualTo("bingqin2/PatchPilot");
+        assertThat(archive.issueUrl()).isEqualTo("https://github.com/bingqin2/PatchPilot/issues/1");
+        assertThat(archive.triggerComment()).isEqualTo("/agent fix touch docs/live-package.md");
+        assertThat(archive.operatorHandoffArchiveId()).isEqualTo("operator-archive-1");
+        assertThat(archive.packageGeneratedAt()).isEqualTo(NOW);
+        assertThat(archive.archivedAt()).isEqualTo(NOW.plusSeconds(5));
+        assertThat(archive.report()).contains("# PatchPilot Live Trigger Launch Package");
+        assertThat(repository.listRecentArchives(10))
+                .extracting(DemoLiveTriggerLaunchPackageArchiveVo::id)
+                .containsExactly("launch-package-archive-1");
+        assertThat(archiveService.findArchive("launch-package-archive-1")).contains(archive);
     }
 
     private static DemoLiveTriggerLaunchPackageService service(

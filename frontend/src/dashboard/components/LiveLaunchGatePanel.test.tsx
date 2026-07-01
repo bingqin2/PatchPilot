@@ -1,6 +1,10 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { DemoLiveLaunchGate, DemoLiveTriggerLaunchPackage } from '../../types';
+import type {
+  DemoLiveLaunchGate,
+  DemoLiveTriggerLaunchPackage,
+  DemoLiveTriggerLaunchPackageArchive
+} from '../../types';
 import { LiveLaunchGatePanel } from './LiveLaunchGatePanel';
 
 const readyGate: DemoLiveLaunchGate = {
@@ -142,6 +146,31 @@ const readyLaunchPackage: DemoLiveTriggerLaunchPackage = {
   markdownReport: '# PatchPilot Live Trigger Launch Package\n\n- Status: `READY`'
 };
 
+const readyLaunchPackageArchive: DemoLiveTriggerLaunchPackageArchive = {
+  id: 'launch-package-archive-1',
+  status: 'READY',
+  readyToPost: true,
+  repository: 'bingqin2/PatchPilot',
+  issueNumber: 1,
+  issueUrl: 'https://github.com/bingqin2/PatchPilot/issues/1',
+  triggerUser: 'bingqin2',
+  triggerComment: '/agent fix touch docs/live-package.md',
+  summary: 'PatchPilot is ready for the operator to post the live trigger.',
+  operatorHandoffArchiveId: 'operator-archive-1',
+  operatorHandoffArchiveReady: true,
+  operatorHandoffArchivedAt: '2026-07-02T00:00:00Z',
+  liveLaunchGateStatus: 'READY',
+  liveLaunchGateReady: true,
+  evidenceNotes: ['Latest external exposure operator handoff archive operator-archive-1 is ready.'],
+  nextActions: [
+    'Post `/agent fix touch docs/live-package.md` on https://github.com/bingqin2/PatchPilot/issues/1.'
+  ],
+  sideEffectContract: 'Archive creation writes only PatchPilot local archive records.',
+  packageGeneratedAt: '2026-07-02T00:00:00Z',
+  archivedAt: '2026-07-02T00:00:05Z',
+  report: '# PatchPilot Live Trigger Launch Package\n\n- Status: `READY`'
+};
+
 const baseProps = {
   error: null,
   pending: false,
@@ -149,7 +178,11 @@ const baseProps = {
   launchPackage: null,
   launchPackageError: null,
   launchPackagePending: false,
-  onCreateLaunchPackage: vi.fn()
+  onCreateLaunchPackage: vi.fn(),
+  launchPackageArchives: [] as DemoLiveTriggerLaunchPackageArchive[],
+  launchPackageArchiveError: null,
+  onArchiveLaunchPackage: vi.fn(),
+  onDownloadLaunchPackageArchiveReport: vi.fn()
 };
 
 test('submits exact live launch gate input', async () => {
@@ -280,6 +313,65 @@ test('creates and downloads the final live trigger launch package', async () => 
   expect(createObjectURL).toHaveBeenCalledWith(expect.any(Blob));
   expect(anchorClick).toHaveBeenCalled();
   expect(revokeObjectURL).toHaveBeenCalledWith('blob:launch-package');
+});
+
+test('archives and downloads frozen live trigger launch packages', async () => {
+  const user = userEvent.setup();
+  const onArchiveLaunchPackage = vi.fn(async () => readyLaunchPackageArchive);
+  const onDownloadLaunchPackageArchiveReport = vi.fn(async () => new Blob(['archive report'], { type: 'text/markdown' }));
+  const anchorClick = vi.fn();
+  const createObjectURL = vi.fn(() => 'blob:launch-package-archive');
+  const revokeObjectURL = vi.fn();
+  vi.stubGlobal('URL', { createObjectURL, revokeObjectURL });
+  vi.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
+    const element = document.createElementNS('http://www.w3.org/1999/xhtml', tagName) as HTMLAnchorElement;
+    if (tagName === 'a') {
+      element.click = anchorClick;
+    }
+    return element;
+  });
+
+  render(
+    <LiveLaunchGatePanel
+      {...baseProps}
+      result={readyGate}
+      launchPackage={readyLaunchPackage}
+      launchPackageArchives={[readyLaunchPackageArchive]}
+      onArchiveLaunchPackage={onArchiveLaunchPackage}
+      onDownloadLaunchPackageArchiveReport={onDownloadLaunchPackageArchiveReport}
+    />
+  );
+
+  await user.click(screen.getByRole('button', { name: 'Archive live trigger launch package' }));
+  await user.click(screen.getByRole('button', { name: 'Download launch package archive launch-package-archive-1' }));
+
+  expect(onArchiveLaunchPackage).toHaveBeenCalledWith({
+    repositoryOwner: 'bingqin2',
+    repositoryName: 'PatchPilot',
+    issueNumber: 1,
+    triggerUser: 'bingqin2',
+    triggerComment: '/agent fix touch docs/live-gate.md'
+  });
+  expect(screen.getByText('Recent launch package archives')).toBeInTheDocument();
+  expect(screen.getByText('launch-package-archive-1')).toBeInTheDocument();
+  expect(screen.getByText('Archived at 2026-07-02T00:00:05Z')).toBeInTheDocument();
+  expect(onDownloadLaunchPackageArchiveReport).toHaveBeenCalledWith('launch-package-archive-1');
+  expect(createObjectURL).toHaveBeenCalledWith(expect.any(Blob));
+  expect(anchorClick).toHaveBeenCalled();
+  expect(revokeObjectURL).toHaveBeenCalledWith('blob:launch-package-archive');
+});
+
+test('shows launch package archive errors', () => {
+  render(
+    <LiveLaunchGatePanel
+      {...baseProps}
+      result={readyGate}
+      launchPackageArchiveError="Archive write failed"
+    />
+  );
+
+  expect(screen.getByText('Live trigger launch package archive failed')).toBeInTheDocument();
+  expect(screen.getByText('Archive write failed')).toBeInTheDocument();
 });
 
 test('shows launch package errors', () => {

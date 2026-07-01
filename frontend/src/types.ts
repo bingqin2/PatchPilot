@@ -841,6 +841,29 @@ export interface DemoLiveTriggerLaunchPackage {
   markdownReport: string;
 }
 
+export interface DemoLiveTriggerLaunchPackageArchive {
+  id: string;
+  status: DemoReadinessStatus;
+  readyToPost: boolean;
+  repository: string;
+  issueNumber: number;
+  issueUrl: string;
+  triggerUser: string;
+  triggerComment: string;
+  summary: string;
+  operatorHandoffArchiveId: string | null;
+  operatorHandoffArchiveReady: boolean;
+  operatorHandoffArchivedAt: string | null;
+  liveLaunchGateStatus: DemoReadinessStatus;
+  liveLaunchGateReady: boolean;
+  evidenceNotes: string[];
+  nextActions: string[];
+  sideEffectContract: string;
+  packageGeneratedAt: string;
+  archivedAt: string;
+  report: string;
+}
+
 export interface DemoEndToEndAcceptanceMatrixItem {
   category: string;
   name: string;
