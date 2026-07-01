@@ -182,9 +182,11 @@ import {
   runEvaluationFixtureBaseline,
   preflightDemoLaunch,
   downloadDemoLiveTriggerLaunchPackageArchiveReport,
+  downloadDemoLiveTriggerOutcomeCloseoutReport,
   listDemoLiveTriggerLaunchPackageArchives,
   postDemoLiveLaunchGate,
   postDemoLiveTriggerLaunchPackage,
+  postDemoLiveTriggerOutcomeCloseout,
   postGitHubTriggerDryRun,
   startExternalExposureSession,
   getGitHubCredentialReadiness,
@@ -363,6 +365,8 @@ import type {
   DemoLiveLaunchGate,
   DemoLiveTriggerLaunchPackage,
   DemoLiveTriggerLaunchPackageArchive,
+  DemoLiveTriggerOutcomeCloseout,
+  DemoLiveTriggerOutcomeCloseoutInput,
   DemoLaunchEvidencePackageArchive,
   DemoLaunchEvidencePackage,
   DemoLaunchEvidenceFinalization,
@@ -794,6 +798,10 @@ export default function App() {
     useState<DemoLiveTriggerLaunchPackageArchive[]>([]);
   const [demoLiveTriggerLaunchPackageArchiveError, setDemoLiveTriggerLaunchPackageArchiveError] =
     useState<string | null>(null);
+  const [demoLiveTriggerOutcomeCloseout, setDemoLiveTriggerOutcomeCloseout] =
+    useState<DemoLiveTriggerOutcomeCloseout | null>(null);
+  const [demoLiveTriggerOutcomeCloseoutError, setDemoLiveTriggerOutcomeCloseoutError] = useState<string | null>(null);
+  const [demoLiveTriggerOutcomeCloseoutPending, setDemoLiveTriggerOutcomeCloseoutPending] = useState(false);
   const [supportedAdapters, setSupportedAdapters] = useState<SupportedLanguageAdapter[]>([]);
   const [adapterError, setAdapterError] = useState<string | null>(null);
   const [adapterFixtureVerifications, setAdapterFixtureVerifications] = useState<LanguageAdapterFixtureVerification[]>([]);
@@ -3404,6 +3412,8 @@ export default function App() {
     setDemoLiveLaunchGateError(null);
     setDemoLiveTriggerLaunchPackage(null);
     setDemoLiveTriggerLaunchPackageError(null);
+    setDemoLiveTriggerOutcomeCloseout(null);
+    setDemoLiveTriggerOutcomeCloseoutError(null);
     try {
       const result = await postDemoLiveLaunchGate(input);
       setDemoLiveLaunchGate(result);
@@ -3419,6 +3429,8 @@ export default function App() {
   const handleDemoLiveTriggerLaunchPackage = useCallback(async (input: GitHubTriggerDryRunInput) => {
     setDemoLiveTriggerLaunchPackagePending(true);
     setDemoLiveTriggerLaunchPackageError(null);
+    setDemoLiveTriggerOutcomeCloseout(null);
+    setDemoLiveTriggerOutcomeCloseoutError(null);
     try {
       const result = await postDemoLiveTriggerLaunchPackage(input);
       setDemoLiveTriggerLaunchPackage(result);
@@ -3450,6 +3462,26 @@ export default function App() {
 
   const handleDownloadDemoLiveTriggerLaunchPackageArchiveReport = useCallback(
     (archiveId: string) => downloadDemoLiveTriggerLaunchPackageArchiveReport(archiveId),
+    []
+  );
+
+  const handleDemoLiveTriggerOutcomeCloseout = useCallback(async (input: DemoLiveTriggerOutcomeCloseoutInput) => {
+    setDemoLiveTriggerOutcomeCloseoutPending(true);
+    setDemoLiveTriggerOutcomeCloseoutError(null);
+    try {
+      const closeout = await postDemoLiveTriggerOutcomeCloseout(input);
+      setDemoLiveTriggerOutcomeCloseout(closeout);
+      return closeout;
+    } catch (caught) {
+      setDemoLiveTriggerOutcomeCloseoutError(errorMessage(caught));
+      throw caught;
+    } finally {
+      setDemoLiveTriggerOutcomeCloseoutPending(false);
+    }
+  }, []);
+
+  const handleDownloadDemoLiveTriggerOutcomeCloseoutReport = useCallback(
+    (input: DemoLiveTriggerOutcomeCloseoutInput) => downloadDemoLiveTriggerOutcomeCloseoutReport(input),
     []
   );
 
@@ -4221,6 +4253,11 @@ export default function App() {
         launchPackageArchiveError={demoLiveTriggerLaunchPackageArchiveError}
         onArchiveLaunchPackage={handleArchiveDemoLiveTriggerLaunchPackage}
         onDownloadLaunchPackageArchiveReport={handleDownloadDemoLiveTriggerLaunchPackageArchiveReport}
+        outcomeCloseout={demoLiveTriggerOutcomeCloseout}
+        outcomeCloseoutError={demoLiveTriggerOutcomeCloseoutError}
+        outcomeCloseoutPending={demoLiveTriggerOutcomeCloseoutPending}
+        onCreateOutcomeCloseout={handleDemoLiveTriggerOutcomeCloseout}
+        onDownloadOutcomeCloseoutReport={handleDownloadDemoLiveTriggerOutcomeCloseoutReport}
       />
 
       <EndToEndAcceptanceMatrixPanel

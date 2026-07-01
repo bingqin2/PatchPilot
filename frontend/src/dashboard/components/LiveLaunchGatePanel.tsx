@@ -1,9 +1,11 @@
-import { Archive, Copy, Download, PackageCheck, Rocket } from 'lucide-react';
+import { Archive, ClipboardCheck, Copy, Download, PackageCheck, Rocket } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import type {
   DemoLiveLaunchGate,
   DemoLiveTriggerLaunchPackage,
   DemoLiveTriggerLaunchPackageArchive,
+  DemoLiveTriggerOutcomeCloseout,
+  DemoLiveTriggerOutcomeCloseoutInput,
   GitHubTriggerDryRunInput
 } from '../../types';
 
@@ -24,6 +26,13 @@ interface LiveLaunchGatePanelProps {
     input: GitHubTriggerDryRunInput
   ) => Promise<DemoLiveTriggerLaunchPackageArchive> | Promise<void> | void;
   onDownloadLaunchPackageArchiveReport: (archiveId: string) => Promise<Blob>;
+  outcomeCloseout: DemoLiveTriggerOutcomeCloseout | null;
+  outcomeCloseoutError: string | null;
+  outcomeCloseoutPending: boolean;
+  onCreateOutcomeCloseout: (
+    input: DemoLiveTriggerOutcomeCloseoutInput
+  ) => Promise<DemoLiveTriggerOutcomeCloseout> | Promise<void> | void;
+  onDownloadOutcomeCloseoutReport: (input: DemoLiveTriggerOutcomeCloseoutInput) => Promise<Blob>;
 }
 
 export function LiveLaunchGatePanel({
@@ -38,7 +47,12 @@ export function LiveLaunchGatePanel({
   launchPackageArchives,
   launchPackageArchiveError,
   onArchiveLaunchPackage,
-  onDownloadLaunchPackageArchiveReport
+  onDownloadLaunchPackageArchiveReport,
+  outcomeCloseout,
+  outcomeCloseoutError,
+  outcomeCloseoutPending,
+  onCreateOutcomeCloseout,
+  onDownloadOutcomeCloseoutReport
 }: LiveLaunchGatePanelProps) {
   const [repositoryOwner, setRepositoryOwner] = useState('bingqin2');
   const [repositoryName, setRepositoryName] = useState('PatchPilot');
@@ -53,6 +67,13 @@ export function LiveLaunchGatePanel({
       issueNumber: Number(issueNumber),
       triggerUser: triggerUser.trim(),
       triggerComment: triggerComment.trim()
+    };
+  }
+
+  function closeoutInput(): DemoLiveTriggerOutcomeCloseoutInput {
+    return {
+      ...input(),
+      launchPackageArchiveId: launchPackageArchives[0]?.id ?? null
     };
   }
 
@@ -87,6 +108,15 @@ export function LiveLaunchGatePanel({
   async function downloadLaunchPackageArchive(archiveId: string) {
     const blob = await onDownloadLaunchPackageArchiveReport(archiveId);
     downloadMarkdown(blob, `patchpilot-live-trigger-launch-package-archive-${archiveId}.md`);
+  }
+
+  async function createOutcomeCloseout() {
+    await onCreateOutcomeCloseout(closeoutInput());
+  }
+
+  async function downloadOutcomeCloseout() {
+    const blob = await onDownloadOutcomeCloseoutReport(closeoutInput());
+    downloadMarkdown(blob, 'patchpilot-live-trigger-outcome-closeout.md');
   }
 
   return (
@@ -131,6 +161,26 @@ export function LiveLaunchGatePanel({
             >
               <Archive size={16} />
               Archive package
+            </button>
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={() => void createOutcomeCloseout()}
+              disabled={outcomeCloseoutPending}
+              aria-label="Generate live trigger outcome closeout"
+            >
+              <ClipboardCheck size={16} />
+              {outcomeCloseoutPending ? 'Generating closeout' : 'Generate outcome closeout'}
+            </button>
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={() => void downloadOutcomeCloseout()}
+              disabled={!outcomeCloseout}
+              aria-label="Download live trigger outcome closeout"
+            >
+              <Download size={16} />
+              Download closeout
             </button>
           </div>
         ) : null}
@@ -216,6 +266,13 @@ export function LiveLaunchGatePanel({
         </div>
       ) : null}
 
+      {outcomeCloseoutError ? (
+        <div className="adapter-api-error">
+          <strong>Live trigger outcome closeout failed</strong>
+          <span>{outcomeCloseoutError}</span>
+        </div>
+      ) : null}
+
       {result ? (
         <>
           <LiveLaunchGateResult result={result} />
@@ -224,6 +281,7 @@ export function LiveLaunchGatePanel({
             archives={launchPackageArchives}
             onDownloadArchive={(archiveId) => void downloadLaunchPackageArchive(archiveId)}
           />
+          {outcomeCloseout ? <LiveTriggerOutcomeCloseoutResult closeout={outcomeCloseout} /> : null}
         </>
       ) : (
         <div className="empty-state">No live launch gate run yet.</div>
@@ -264,6 +322,61 @@ function LiveTriggerLaunchPackageArchiveList({
           ))}
         </ul>
       )}
+    </div>
+  );
+}
+
+function LiveTriggerOutcomeCloseoutResult({ closeout }: { closeout: DemoLiveTriggerOutcomeCloseout }) {
+  const tone = closeout.status === 'READY' ? 'ready' : closeout.status === 'BLOCKED' ? 'blocked' : 'attention';
+
+  return (
+    <div className={`demo-launch-preflight-result demo-launch-preflight-result-${tone}`}>
+      <div className="demo-launch-preflight-summary">
+        <span className={`demo-readiness-status demo-readiness-status-${tone}`}>
+          {closeout.status}
+        </span>
+        <strong>Live trigger outcome closeout</strong>
+        <p>{closeout.summary}</p>
+      </div>
+      <div className="demo-launch-preflight-grid">
+        <div>
+          <span>Launch package archive</span>
+          <strong>{closeout.launchPackageArchiveId ?? 'missing'}</strong>
+          <small>{closeout.launchPackageStatus ?? 'unknown'}</small>
+        </div>
+        <div>
+          <span>Task</span>
+          <strong>{closeout.taskId ? `Task ${closeout.taskId}` : 'No matching task'}</strong>
+          <small>{closeout.taskStatus ?? 'unknown'}</small>
+        </div>
+        <div>
+          <span>Webhook delivery</span>
+          <strong>{closeout.webhookDeliveryId ?? 'missing'}</strong>
+          <small>{closeout.webhookDeliveryStatus ?? 'unknown'}</small>
+        </div>
+        <div>
+          <span>Pull Request</span>
+          <strong>{closeout.pullRequestUrl ?? 'not created'}</strong>
+        </div>
+      </div>
+      {closeout.failureReason ? <p className="demo-launch-preflight-blocked">{closeout.failureReason}</p> : null}
+      <p className="demo-launch-preflight-blocked">{closeout.sideEffectContract}</p>
+      <div className="demo-launch-preflight-actions">
+        <h3>Outcome evidence</h3>
+        <ul>
+          {closeout.evidenceNotes.map((note) => (
+            <li key={note}>{note}</li>
+          ))}
+        </ul>
+      </div>
+      <div className="demo-launch-preflight-actions">
+        <h3>Outcome next actions</h3>
+        <ul>
+          {closeout.nextActions.map((action) => (
+            <li key={action}>{action}</li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }

@@ -778,6 +778,10 @@ export interface GitHubTriggerDryRunInput {
   triggerComment: string;
 }
 
+export interface DemoLiveTriggerOutcomeCloseoutInput extends GitHubTriggerDryRunInput {
+  launchPackageArchiveId?: string | null;
+}
+
 export interface GitHubTriggerDryRun {
   status: 'WOULD_CREATE_TASK' | 'BLOCKED';
   wouldCreateTask: boolean;
@@ -862,6 +866,33 @@ export interface DemoLiveTriggerLaunchPackageArchive {
   packageGeneratedAt: string;
   archivedAt: string;
   report: string;
+}
+
+export interface DemoLiveTriggerOutcomeCloseout {
+  status: DemoReadinessStatus;
+  successful: boolean;
+  repository: string;
+  issueNumber: number;
+  issueUrl: string;
+  triggerUser: string;
+  triggerComment: string;
+  launchPackageArchiveId: string | null;
+  launchPackageStatus: DemoReadinessStatus | null;
+  launchPackageArchivedAt: string | null;
+  taskId: string | null;
+  taskStatus: string | null;
+  failureReason: string | null;
+  taskCreatedAt: string | null;
+  taskUpdatedAt: string | null;
+  pullRequestUrl: string | null;
+  webhookDeliveryId: string | null;
+  webhookDeliveryStatus: string | null;
+  summary: string;
+  evidenceNotes: string[];
+  nextActions: string[];
+  sideEffectContract: string;
+  generatedAt: string;
+  markdownReport: string;
 }
 
 export interface DemoEndToEndAcceptanceMatrixItem {
