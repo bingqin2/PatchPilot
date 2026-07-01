@@ -44,7 +44,7 @@ PatchPilot is not a chatbot and does not auto-merge code. The current target is 
 - Admin-protected live GitHub trigger dry run that evaluates the exact issue comment an operator plans to post, using GitHub issue-comment trigger gates without creating tasks, queue work, rate-limit records, GitHub comments, branches, Pull Requests, or token exposure.
 - Admin-protected live launch gate that combines self-hosted launch readiness, webhook setup readiness, live publish preflight, and live trigger dry-run evidence into one read-only go/no-go result before the operator posts the real GitHub issue comment.
 - End-to-end acceptance matrix that combines the live launch gate, supported language coverage, safety rejection coverage, evaluation evidence, recent Pull Request evidence, failed-task evidence, pending-review evidence, final gap analysis, and copyable Markdown into one read-only final-demo readiness readout.
-- External exposure readiness gate that checks admin-token protection, dashboard token bootstrap, webhook secret, public webhook URL, allowlists, rate limits, quarantine, review approvers, generated-diff risk gating, and copyable Markdown before a local backend is exposed through a temporary public URL.
+- External exposure readiness, archive, handoff, session, and closeout gates that check safety controls before a temporary public URL is shared, preserve local evidence, track the active public URL lifetime, and confirm the exposure was closed before the demo is treated as complete.
 - Issue comment status updates for accepted, running, verification, success, and failure states, including best-effort failure feedback creation when the original status comment is missing.
 - Failed and cancelled task retry preflight that explains whether retry is safe, shows sanitized failure context, blocks blind retries when GitHub permissions or repository support must be fixed first, and requires an operator reason before requeueing.
 - Demo readiness gate that summarizes credentials, model provider health, adapter fixtures, adapter runtime executables, evaluation baseline regression evidence, queue health, worker heartbeat readiness, and recent PR evidence before a live smoke run.
@@ -160,6 +160,17 @@ The webhook secret must match the GitHub webhook configuration. `PATCHPILOT_GITH
 `PATCHPILOT_DEMO_REPOSITORY_OWNER` and `PATCHPILOT_DEMO_REPOSITORY_NAME` identify the repository used by `/api/demo/readiness` to prove the configured GitHub token can read the live demo target before you trigger `/agent fix`.
 `PATCHPILOT_DASHBOARD_ADMIN_TOKEN_BOOTSTRAP_ENABLED` is a local-only convenience flag. Keep it `false` by default. When set to `true`, `GET /api/dashboard/bootstrap` can return the configured admin token so the React dashboard can store it in the current browser before loading protected APIs. Do not enable it for Cloudflare Tunnel URLs, shared networks, or public demos.
 `PATCHPILOT_DASHBOARD_BASE_URL` is optional. When set, GitHub issue status comments and generated Pull Request bodies include `Dashboard: <base-url>/tasks/{taskId}` so maintainers can jump from GitHub feedback to the matching task detail page. Leave it empty for local-only runs where the dashboard is not reachable by issue reviewers.
+
+Before sharing a temporary public URL, use the exposure gate sequence: load readiness, archive the current readiness result, inspect the handoff package, create a session when the URL is shared, close that session after stopping the tunnel or rotating/removing the GitHub webhook URL, then verify the closeout gate:
+
+```bash
+curl -H "X-PatchPilot-Admin-Token: $PATCHPILOT_ADMIN_TOKEN" \
+  http://127.0.0.1:8080/api/security/external-exposure-closeout
+curl -OJ -H "X-PatchPilot-Admin-Token: $PATCHPILOT_ADMIN_TOKEN" \
+  http://127.0.0.1:8080/api/security/external-exposure-closeout/report/download
+```
+
+The closeout gate is read-only. `READY` requires the latest exposure session to be closed with closer, close time, close notes, linked readiness archive evidence, and a ready handoff package.
 
 Local repository preflight is limited to configured backend-local root directories:
 

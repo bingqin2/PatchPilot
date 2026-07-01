@@ -14,6 +14,8 @@ import {
   downloadExternalExposureReadinessArchiveReport,
   getExternalExposureHandoffPackage,
   downloadExternalExposureHandoffPackageReport,
+  getExternalExposureCloseout,
+  downloadExternalExposureCloseoutReport,
   startExternalExposureSession,
   closeExternalExposureSession,
   listExternalExposureSessions,
@@ -511,6 +513,65 @@ test('downloads external exposure handoff package markdown through backend API',
 
   expect(fetchMock).toHaveBeenCalledWith('/api/security/external-exposure-handoff-package/report/download');
   expect(downloadedReport).toBe(reportBlob);
+});
+
+test('fetches and downloads external exposure closeout through backend API', async () => {
+  const closeout = {
+    status: 'READY',
+    closeoutReady: true,
+    summary: 'External exposure session is closed with complete local evidence.',
+    nextAction: 'Keep the closeout report with the demo evidence bundle.',
+    latestSessionId: 'exposure-session-1',
+    latestSessionStatus: 'CLOSED',
+    publicUrl: 'https://demo.trycloudflare.com',
+    webhookUrl: 'https://demo.trycloudflare.com/api/github/webhook',
+    purpose: 'Live GitHub webhook smoke test',
+    operator: 'bingqin2',
+    startedAt: '2026-07-01T15:00:00Z',
+    closedBy: 'bingqin2',
+    closedAt: '2026-07-01T16:30:00Z',
+    closeNotes: 'Tunnel process stopped.',
+    linkedReadinessArchiveId: 'exposure-archive-1',
+    handoffStatus: 'READY',
+    archiveFreshness: 'CURRENT',
+    readyCount: 4,
+    needsAttentionCount: 0,
+    blockedCount: 0,
+    totalCount: 4,
+    nextActions: ['Keep the closeout report with the demo evidence bundle.'],
+    evidenceNotes: ['Latest session exposure-session-1 is CLOSED.'],
+    downloadActions: ['GET /api/security/external-exposure-closeout/report/download'],
+    sideEffectContract: 'GET /api/security/external-exposure-closeout is read-only.',
+    generatedAt: '2026-07-01T18:00:00Z',
+    markdownReport: '# PatchPilot External Exposure Closeout'
+  };
+  const reportBlob = new Blob(['# PatchPilot External Exposure Closeout'], {
+    type: 'text/markdown;charset=UTF-8'
+  });
+  const fetchMock = vi.fn(async (url: RequestInfo | URL) => {
+    if (String(url).endsWith('/report/download')) {
+      return {
+        ok: true,
+        status: 200,
+        blob: async () => reportBlob
+      } as Response;
+    }
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({
+        success: true,
+        data: closeout,
+        message: null
+      })
+    } as Response;
+  });
+  vi.stubGlobal('fetch', fetchMock);
+
+  await expect(getExternalExposureCloseout()).resolves.toEqual(closeout);
+  await expect(downloadExternalExposureCloseoutReport()).resolves.toBe(reportBlob);
+  expect(fetchMock).toHaveBeenCalledWith('/api/security/external-exposure-closeout');
+  expect(fetchMock).toHaveBeenCalledWith('/api/security/external-exposure-closeout/report/download');
 });
 
 test('starts external exposure session through backend API', async () => {

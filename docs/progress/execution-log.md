@@ -6399,3 +6399,21 @@ Validation so far:
 - `npm --prefix frontend test -- --reporter=dot`: passed, 34 test files and 522 tests.
 - `npm --prefix frontend run build`: passed with the existing Vite large-chunk warning.
 - `git diff --check`: passed.
+
+## 2026-07-01 - 319 External exposure closeout gate
+
+- Started `319-external-exposure-closeout-gate` to add one final read-only closeout gate after a temporary public URL demo or smoke test.
+- Added `GET /api/security/external-exposure-closeout` and `GET /api/security/external-exposure-closeout/report/download`, backed by `ExternalExposureCloseoutService`.
+- The closeout gate reports `BLOCKED` while the latest exposure session is still active, `NEEDS_ATTENTION` when close evidence or handoff readiness is incomplete, and `READY` only when the latest session is closed with closer, close time, close notes, linked readiness archive evidence, and a ready handoff package.
+- Extended the operations dashboard external exposure panel with a closeout section, evidence notes, next actions, side-effect contract, Markdown report download, App loading, API helpers, and smoke-test fixtures.
+- Updated README, product spec, frontend design notes, architecture notes, and this plan document with the closeout API and no-side-effect contract.
+
+Validation so far:
+
+- `mvn -q -pl PatchPilot -Dtest=ExternalExposureCloseoutServiceTests,ExternalExposureCloseoutControllerTests test`: first failed because the closeout VO, service, and controller did not exist; passed after backend implementation.
+- `npm --prefix frontend test -- --run src/api.test.ts src/dashboard/components/ExternalExposureReadinessPanel.test.tsx --reporter=dot`: first failed because the closeout API helper and panel section did not exist; then failed on duplicate session id test assertions after the UI rendered both session and closeout evidence; passed after stable assertions.
+- `npm --prefix frontend test -- --run src/api.test.ts src/dashboard/components/ExternalExposureReadinessPanel.test.tsx src/App.test.tsx --reporter=dot`: first failed because the App smoke assertion matched duplicate session id evidence; passed after using a count-based assertion. Final focused result: 3 test files and 323 tests.
+- `mvn -q -pl PatchPilot test`: passed with existing Spring/Mockito test logging.
+- `npm --prefix frontend test -- --reporter=dot`: passed, 34 test files and 523 tests.
+- `npm --prefix frontend run build`: passed with the existing Vite large-chunk warning.
+- `git diff --check`: passed.
