@@ -1,8 +1,8 @@
-package io.patchpilot.backend.github.webhook;
+package io.patchpilot.backend.demo;
 
 import io.patchpilot.backend.common.response.ApiResponse;
-import io.patchpilot.backend.github.webhook.domain.GitHubTriggerDryRunCommand;
-import io.patchpilot.backend.github.webhook.domain.GitHubTriggerDryRunVo;
+import io.patchpilot.backend.demo.domain.DemoLiveLaunchGateCommand;
+import io.patchpilot.backend.demo.domain.DemoLiveLaunchGateVo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -11,24 +11,24 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/github/trigger-dry-run")
+@RequestMapping("/api/demo/live-launch-gate")
 @RequiredArgsConstructor
-public class GitHubTriggerDryRunController {
+public class DemoLiveLaunchGateController {
 
-    private final GitHubTriggerDryRunService gitHubTriggerDryRunService;
+    private final DemoLiveLaunchGateService demoLiveLaunchGateService;
 
     @PostMapping
-    public ResponseEntity<ApiResponse<GitHubTriggerDryRunVo>> dryRun(
-            @RequestBody GitHubTriggerDryRunRequestDto request
+    public ResponseEntity<ApiResponse<DemoLiveLaunchGateVo>> getGate(
+            @RequestBody DemoLiveLaunchGateRequestDto request
     ) {
         try {
-            return ResponseEntity.ok(ApiResponse.ok(gitHubTriggerDryRunService.dryRun(toCommand(request))));
+            return ResponseEntity.ok(ApiResponse.ok(demoLiveLaunchGateService.getGate(toCommand(request))));
         } catch (IllegalArgumentException exception) {
             return ResponseEntity.badRequest().body(ApiResponse.fail(exception.getMessage()));
         }
     }
 
-    static GitHubTriggerDryRunCommand toCommand(GitHubTriggerDryRunRequestDto request) {
+    private static DemoLiveLaunchGateCommand toCommand(DemoLiveLaunchGateRequestDto request) {
         if (request == null) {
             throw new IllegalArgumentException("request body is required");
         }
@@ -42,7 +42,7 @@ public class GitHubTriggerDryRunController {
         if (!triggerComment.equals("/agent fix") && !triggerComment.startsWith("/agent fix ")) {
             throw new IllegalArgumentException("triggerComment must start with /agent fix");
         }
-        return new GitHubTriggerDryRunCommand(
+        return new DemoLiveLaunchGateCommand(
                 repositoryOwner,
                 repositoryName,
                 request.issueNumber(),

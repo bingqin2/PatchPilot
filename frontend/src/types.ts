@@ -571,6 +571,33 @@ export interface GitHubTriggerDryRun {
   evaluation: TriggerEvaluationResult;
 }
 
+export interface DemoLiveLaunchGateCheck {
+  name: string;
+  status: DemoReadinessStatus;
+  message: string;
+  action: string;
+}
+
+export interface DemoLiveLaunchGate {
+  status: DemoReadinessStatus;
+  readyToPost: boolean;
+  repository: string;
+  issueNumber: number;
+  issueUrl: string;
+  triggerUser: string;
+  triggerComment: string;
+  summary: string;
+  nextActions: string[];
+  sideEffectContract: string;
+  launchReadiness: DemoSelfHostedLaunchReadiness;
+  webhookSetup: GitHubWebhookSetupReadiness;
+  livePublishPreflight: GitHubLivePublishPreflight;
+  triggerDryRun: GitHubTriggerDryRun;
+  checks: DemoLiveLaunchGateCheck[];
+  generatedAt: string;
+  markdownReport: string;
+}
+
 export type GitHubWebhookUrlReadinessStatus = 'READY' | 'NEEDS_ATTENTION';
 
 export interface GitHubWebhookUrlReadiness {

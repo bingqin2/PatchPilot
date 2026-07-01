@@ -222,7 +222,7 @@ class GitHubTriggerDryRunControllerTests {
         AdminApiSecurityProperties properties = new AdminApiSecurityProperties();
         properties.setAdminToken("test-admin-token");
         return MockMvcBuilders
-                .standaloneSetup(new GitHubTriggerDryRunController(triggerEvaluationService))
+                .standaloneSetup(new GitHubTriggerDryRunController(new GitHubTriggerDryRunService(triggerEvaluationService)))
                 .addFilters(new AdminApiSecurityFilter(properties, new ObjectMapper()))
                 .build();
     }

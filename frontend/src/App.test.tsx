@@ -3559,6 +3559,114 @@ beforeEach(() => {
         }
       });
     }
+    if (url === '/api/demo/live-launch-gate' && init?.method === 'POST') {
+      return jsonResponse({
+        status: 'READY',
+        readyToPost: true,
+        repository: 'bingqin2/PatchPilot',
+        issueNumber: 1,
+        issueUrl: 'https://github.com/bingqin2/PatchPilot/issues/1',
+        triggerUser: 'bingqin2',
+        triggerComment: '/agent fix touch docs/live-gate.md',
+        summary: 'PatchPilot is ready for a live /agent fix launch.',
+        nextActions: [
+          'Post the exact /agent fix comment on the GitHub issue and watch webhook delivery, task execution, and Pull Request creation.'
+        ],
+        sideEffectContract: 'Read-only live launch gate: this endpoint does not create tasks.',
+        launchReadiness: {
+          status: 'READY',
+          readyToLaunch: true,
+          summary: 'Self-hosted PatchPilot is ready for a controlled issue-to-PR launch.',
+          checks: [
+            {
+              name: 'runtime',
+              status: 'READY',
+              message: 'Runtime is ready.',
+              action: 'No action needed.'
+            }
+          ],
+          nextActions: [],
+          generatedAt: '2026-07-01T10:00:00Z',
+          markdownReport: '# Self-hosted launch readiness'
+        },
+        webhookSetup: githubWebhookSetupReadiness,
+        livePublishPreflight: githubLivePublishPreflight,
+        triggerDryRun: {
+          status: 'WOULD_CREATE_TASK',
+          wouldCreateTask: true,
+          repository: 'bingqin2/PatchPilot',
+          issueNumber: 1,
+          issueUrl: 'https://github.com/bingqin2/PatchPilot/issues/1',
+          triggerUser: 'bingqin2',
+          triggerComment: '/agent fix touch docs/live-gate.md',
+          summary: 'Live GitHub trigger dry run would create a PatchPilot task.',
+          nextAction: 'Post this /agent fix comment on the GitHub issue when publish preflight is ready.',
+          sideEffectContract: 'Read-only live trigger dry run: this endpoint does not create tasks.',
+          evaluation: {
+            status: 'WOULD_CREATE_TASK',
+            source: 'ISSUE_COMMENT',
+            wouldCreateTask: true,
+            blockedReason: null,
+            blockedCategory: null,
+            safetyDecision: {
+              allowed: true,
+              reason: 'Accepted',
+              category: 'UNKNOWN'
+            },
+            activeTaskDecision: {
+              allowed: true,
+              reason: 'No active task exists for this issue',
+              category: 'UNKNOWN'
+            },
+            quarantineDecision: {
+              allowed: true,
+              reason: 'Trigger quarantine accepted',
+              category: 'UNKNOWN'
+            },
+            rateLimitDecision: {
+              allowed: true,
+              reason: 'Trigger rate limit accepted',
+              category: 'UNKNOWN'
+            },
+            triggerIntentDecision: {
+              allowed: true,
+              reason: 'Model trigger classification accepted',
+              category: 'UNKNOWN'
+            },
+            issueContextLoaded: true,
+            nextAction: 'Create task is allowed for this trigger.'
+          }
+        },
+        checks: [
+          {
+            name: 'Self-hosted launch readiness',
+            status: 'READY',
+            message: 'Self-hosted launch readiness is READY',
+            action: 'Ready.'
+          },
+          {
+            name: 'Webhook setup',
+            status: 'READY',
+            message: 'Webhook setup is READY',
+            action: 'Ready.'
+          },
+          {
+            name: 'Live GitHub publish preflight',
+            status: 'READY',
+            message: 'Live publish preflight is READY',
+            action: 'Live publish is ready.'
+          },
+          {
+            name: 'Live trigger dry run',
+            status: 'READY',
+            message: 'Live GitHub trigger dry run would create a PatchPilot task.',
+            action: 'Post this /agent fix comment on the GitHub issue when publish preflight is ready.'
+          }
+        ],
+        generatedAt: '2026-07-01T10:00:00Z',
+        markdownReport: '# PatchPilot Live Launch Gate\n\n- Status: READY'
+      });
+    }
     if (url === '/api/tasks/metrics/summary' || url.startsWith('/api/tasks/metrics/summary?')) {
       return jsonResponse({
         totalCount: 3,
@@ -6459,6 +6567,56 @@ test('runs live GitHub trigger dry run from the dashboard and copies evidence', 
   expect(writeText).toHaveBeenCalledWith(expect.stringContaining('# PatchPilot Live Trigger Dry Run Report'));
   expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- Status: `WOULD_CREATE_TASK`'));
   expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- Source: `ISSUE_COMMENT`'));
+});
+
+test('runs live launch gate from the dashboard and copies backend evidence', async () => {
+  const user = userEvent.setup();
+  const fetchMock = vi.mocked(fetch);
+  const writeText = vi.fn().mockResolvedValue(undefined);
+  Object.defineProperty(navigator, 'clipboard', {
+    configurable: true,
+    value: { writeText }
+  });
+
+  render(<App />);
+
+  const launchGatePanel = await screen.findByRole('region', { name: 'Live launch gate' });
+  await user.clear(within(launchGatePanel).getByLabelText('Repository owner'));
+  await user.type(within(launchGatePanel).getByLabelText('Repository owner'), 'bingqin2');
+  await user.clear(within(launchGatePanel).getByLabelText('Repository name'));
+  await user.type(within(launchGatePanel).getByLabelText('Repository name'), 'PatchPilot');
+  await user.clear(within(launchGatePanel).getByLabelText('Issue number'));
+  await user.type(within(launchGatePanel).getByLabelText('Issue number'), '1');
+  await user.clear(within(launchGatePanel).getByLabelText('Trigger user'));
+  await user.type(within(launchGatePanel).getByLabelText('Trigger user'), 'bingqin2');
+  await user.clear(within(launchGatePanel).getByLabelText('GitHub issue comment'));
+  await user.type(
+    within(launchGatePanel).getByLabelText('GitHub issue comment'),
+    '/agent fix touch docs/live-gate.md'
+  );
+  await user.click(within(launchGatePanel).getByRole('button', { name: 'Run live launch gate' }));
+
+  await waitFor(() =>
+    expect(fetchMock).toHaveBeenCalledWith('/api/demo/live-launch-gate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        repositoryOwner: 'bingqin2',
+        repositoryName: 'PatchPilot',
+        issueNumber: 1,
+        triggerUser: 'bingqin2',
+        triggerComment: '/agent fix touch docs/live-gate.md'
+      })
+    })
+  );
+
+  expect(await within(launchGatePanel).findByText('Ready to post')).toBeInTheDocument();
+  expect(within(launchGatePanel).getByText('PatchPilot is ready for a live /agent fix launch.')).toBeInTheDocument();
+
+  await user.click(within(launchGatePanel).getByRole('button', { name: 'Copy launch gate report' }));
+
+  expect(writeText).toHaveBeenCalledWith(expect.stringContaining('# PatchPilot Live Launch Gate'));
+  expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- Status: READY'));
 });
 
 test('runs repository preflight from the dashboard', async () => {

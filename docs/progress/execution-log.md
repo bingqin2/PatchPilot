@@ -6232,6 +6232,25 @@ Validation:
 - `npm --prefix frontend run build`: passed with the existing Vite large-chunk warning.
 - `git diff --check`: passed.
 
+## 2026-07-01 - 313 Live launch gate
+
+- Started `313-live-launch-gate` to make the final step before a real GitHub `/agent fix` comment one read-only go/no-go result instead of separate readiness panels.
+- Refactored live trigger dry-run conversion into `GitHubTriggerDryRunService` so the new launch gate reuses the same `ISSUE_COMMENT` trigger evaluation behavior as `/api/github/trigger-dry-run`.
+- Added `POST /api/demo/live-launch-gate`, combining self-hosted launch readiness, webhook setup readiness, live GitHub publish preflight, and live trigger dry-run evidence into one `READY`, `NEEDS_ATTENTION`, or `BLOCKED` package.
+- Added dashboard `Live launch gate` support with typed API helper, App wiring, aggregated checks, next actions, side-effect contract, and copyable backend Markdown report.
+- Updated README, product spec, and this plan document with the final pre-GitHub-comment launch gate.
+
+Validation:
+
+- `mvn -pl PatchPilot -Dtest=DemoLiveLaunchGateServiceTests,DemoLiveLaunchGateControllerTests test`: first failed because the service, controller, command, and VO did not exist.
+- `mvn -pl PatchPilot -Dtest=DemoLiveLaunchGateServiceTests,DemoLiveLaunchGateControllerTests,GitHubTriggerDryRunControllerTests test`: first failed because `List.getFirst()` is a Java 21 API; passed after replacing it with Java 17-compatible `get(0)`.
+- `npm test -- --run src/dashboard/components/LiveLaunchGatePanel.test.tsx src/api.test.ts src/App.test.tsx`: first failed because the panel and App wiring did not exist, then failed because the App fetch mock referenced a missing fixture; passed after adding the component, App handler, and live launch gate mock.
+- `mvn -q -pl PatchPilot test`: first failed because Spring could not choose the `DemoLiveLaunchGateService` production constructor after the test-only constructor was added; passed after marking the production constructor with `@Autowired`.
+- `mvn -q -pl PatchPilot -Dtest=DemoLiveLaunchGateServiceTests,DemoLiveLaunchGateControllerTests,GitHubWebhookControllerTests,ConfigurationControllerTests,AdminApiSecurityFilterTests,TaskControllerTests test`: passed.
+- `mvn -q -pl PatchPilot test`: passed with existing Mockito/Java agent warnings.
+- `npm --prefix frontend test -- --reporter=dot`: passed, 32 test files and 506 tests.
+- `npm --prefix frontend run build`: passed with the existing Vite large-chunk warning.
+
 ## 2026-06-30 - 307 Final reviewer handoff delivery
 
 - Started `307-final-reviewer-handoff-delivery` to close the demo evidence chain after the final reviewer handoff package is ready.
