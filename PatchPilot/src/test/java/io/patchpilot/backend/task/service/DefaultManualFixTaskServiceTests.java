@@ -513,6 +513,12 @@ class DefaultManualFixTaskServiceTests {
         }
 
         @Override
+        public TriggerRateLimitDecision check(TriggerRateLimitRequest request) {
+            this.request = request;
+            return decision;
+        }
+
+        @Override
         public TriggerRateLimitDecision checkAndRecord(TriggerRateLimitRequest request) {
             this.request = request;
             return decision;
