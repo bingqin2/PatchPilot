@@ -895,6 +895,35 @@ export interface DemoLiveTriggerOutcomeCloseout {
   markdownReport: string;
 }
 
+export interface DemoLiveTriggerOutcomeCloseoutArchive {
+  id: string;
+  status: DemoReadinessStatus;
+  successful: boolean;
+  repository: string;
+  issueNumber: number;
+  issueUrl: string;
+  triggerUser: string;
+  triggerComment: string;
+  launchPackageArchiveId: string | null;
+  launchPackageStatus: DemoReadinessStatus | null;
+  launchPackageArchivedAt: string | null;
+  taskId: string | null;
+  taskStatus: string | null;
+  failureReason: string | null;
+  taskCreatedAt: string | null;
+  taskUpdatedAt: string | null;
+  pullRequestUrl: string | null;
+  webhookDeliveryId: string | null;
+  webhookDeliveryStatus: string | null;
+  summary: string;
+  evidenceNotes: string[];
+  nextActions: string[];
+  sideEffectContract: string;
+  closeoutGeneratedAt: string;
+  archivedAt: string;
+  report: string;
+}
+
 export interface DemoEndToEndAcceptanceMatrixItem {
   category: string;
   name: string;

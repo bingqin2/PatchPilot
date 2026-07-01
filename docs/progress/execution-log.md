@@ -6549,3 +6549,20 @@ Validation so far:
 - `npm --prefix frontend test -- --reporter=dot`: passed, 35 test files and 538 tests.
 - `npm --prefix frontend run build`: passed with the existing Vite large-chunk warning.
 - `git diff --check`: passed.
+
+## 2026-07-02 - 327 Live trigger outcome closeout archives
+
+- Started `327-live-trigger-outcome-closeout-archives` to freeze a live trigger outcome closeout after a real `/agent fix` issue-comment run.
+- Added backend archive support for live trigger outcome closeouts, including a capped in-memory archive repository, archive service, archive VO, and admin-protected endpoints to create, list, and download archived Markdown reports.
+- Each archive freezes the closeout status, success flag, repository, issue URL, trigger user/comment, launch package archive proof, task status, failure reason, webhook delivery, Pull Request URL, evidence notes, next actions, side-effect contract, closeout generation time, archive time, and report body.
+- Extended the live launch gate dashboard with `Archive closeout`, recent outcome archive history, archive Markdown downloads, archive error feedback, App-level loading, and typed frontend API helpers.
+- Added `docs/plans/327-live-trigger-outcome-closeout-archives.md` with the scope, safety contract, API shape, and validation checklist.
+
+Validation so far:
+
+- `mvn -pl PatchPilot -Dtest=DemoLiveTriggerOutcomeCloseoutArchiveServiceTests,DemoLiveTriggerOutcomeCloseoutControllerTests test`: first failed because `DemoLiveTriggerOutcomeCloseoutArchiveVo` did not exist; passed after backend implementation. Focused result: 6 tests.
+- `npm --prefix frontend test -- --run src/api.test.ts src/dashboard/components/LiveLaunchGatePanel.test.tsx`: first failed because the archive API helper, archive button/history, and archive error state were missing; passed after frontend implementation. Focused result: 2 test files and 250 tests.
+- `npm --prefix frontend run build`: passed with the existing Vite large-chunk warning.
+- `mvn -pl PatchPilot test`: passed, 1394 tests.
+- `npm --prefix frontend test -- --reporter=dot`: passed, 35 test files and 541 tests.
+- `git diff --check`: passed.

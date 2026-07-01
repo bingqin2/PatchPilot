@@ -68,6 +68,7 @@ import type {
   DemoLiveTriggerLaunchPackage,
   DemoLiveTriggerLaunchPackageArchive,
   DemoLiveTriggerOutcomeCloseout,
+  DemoLiveTriggerOutcomeCloseoutArchive,
   DemoLiveTriggerOutcomeCloseoutInput,
   DemoEndToEndAcceptanceMatrix,
   DemoLaunchPreflight,
@@ -239,6 +240,22 @@ export async function downloadDemoLiveTriggerOutcomeCloseoutReport(
   input: DemoLiveTriggerOutcomeCloseoutInput
 ): Promise<Blob> {
   return postBlobApi('/api/demo/live-trigger-outcome-closeout/report/download', input);
+}
+
+export async function archiveDemoLiveTriggerOutcomeCloseout(
+  input: DemoLiveTriggerOutcomeCloseoutInput
+): Promise<DemoLiveTriggerOutcomeCloseoutArchive> {
+  return postApi<DemoLiveTriggerOutcomeCloseoutArchive>('/api/demo/live-trigger-outcome-closeout/archives', input);
+}
+
+export async function listDemoLiveTriggerOutcomeCloseoutArchives(): Promise<DemoLiveTriggerOutcomeCloseoutArchive[]> {
+  return getApi<DemoLiveTriggerOutcomeCloseoutArchive[]>('/api/demo/live-trigger-outcome-closeout/archives');
+}
+
+export async function downloadDemoLiveTriggerOutcomeCloseoutArchiveReport(archiveId: string): Promise<Blob> {
+  return getBlobApi(
+    `/api/demo/live-trigger-outcome-closeout/archives/${encodeURIComponent(archiveId)}/report/download`
+  );
 }
 
 export async function getDemoEndToEndAcceptanceMatrix(): Promise<DemoEndToEndAcceptanceMatrix> {

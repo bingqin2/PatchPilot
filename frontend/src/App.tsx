@@ -176,13 +176,16 @@ import {
   getExternalExposureHandoffPackage,
   getExternalExposureReadiness,
   closeExternalExposureSession,
+  archiveDemoLiveTriggerOutcomeCloseout,
   archiveDemoLiveTriggerLaunchPackage,
   runAndArchiveEvaluation,
   runAndArchiveEvaluationFixtureBaseline,
   runEvaluationFixtureBaseline,
   preflightDemoLaunch,
   downloadDemoLiveTriggerLaunchPackageArchiveReport,
+  downloadDemoLiveTriggerOutcomeCloseoutArchiveReport,
   downloadDemoLiveTriggerOutcomeCloseoutReport,
+  listDemoLiveTriggerOutcomeCloseoutArchives,
   listDemoLiveTriggerLaunchPackageArchives,
   postDemoLiveLaunchGate,
   postDemoLiveTriggerLaunchPackage,
@@ -366,6 +369,7 @@ import type {
   DemoLiveTriggerLaunchPackage,
   DemoLiveTriggerLaunchPackageArchive,
   DemoLiveTriggerOutcomeCloseout,
+  DemoLiveTriggerOutcomeCloseoutArchive,
   DemoLiveTriggerOutcomeCloseoutInput,
   DemoLaunchEvidencePackageArchive,
   DemoLaunchEvidencePackage,
@@ -802,6 +806,10 @@ export default function App() {
     useState<DemoLiveTriggerOutcomeCloseout | null>(null);
   const [demoLiveTriggerOutcomeCloseoutError, setDemoLiveTriggerOutcomeCloseoutError] = useState<string | null>(null);
   const [demoLiveTriggerOutcomeCloseoutPending, setDemoLiveTriggerOutcomeCloseoutPending] = useState(false);
+  const [demoLiveTriggerOutcomeCloseoutArchives, setDemoLiveTriggerOutcomeCloseoutArchives] =
+    useState<DemoLiveTriggerOutcomeCloseoutArchive[]>([]);
+  const [demoLiveTriggerOutcomeCloseoutArchiveError, setDemoLiveTriggerOutcomeCloseoutArchiveError] =
+    useState<string | null>(null);
   const [supportedAdapters, setSupportedAdapters] = useState<SupportedLanguageAdapter[]>([]);
   const [adapterError, setAdapterError] = useState<string | null>(null);
   const [adapterFixtureVerifications, setAdapterFixtureVerifications] = useState<LanguageAdapterFixtureVerification[]>([]);
@@ -1173,6 +1181,7 @@ export default function App() {
         externalExposureOperatorHandoffChecklistResult,
         externalExposureOperatorHandoffChecklistArchiveResult,
         demoLiveTriggerLaunchPackageArchiveResult,
+        demoLiveTriggerOutcomeCloseoutArchiveResult,
         demoAcceptanceSummaryResult,
         demoFinalAcceptanceSharePackageResult,
         demoFinalAcceptanceSharePackageArchiveResult,
@@ -1402,6 +1411,10 @@ export default function App() {
           (caught) => ({ archives: null, error: errorMessage(caught) })
         ),
         listDemoLiveTriggerLaunchPackageArchives().then(
+          (archives) => ({ archives, error: null as string | null }),
+          (caught) => ({ archives: null, error: errorMessage(caught) })
+        ),
+        listDemoLiveTriggerOutcomeCloseoutArchives().then(
           (archives) => ({ archives, error: null as string | null }),
           (caught) => ({ archives: null, error: errorMessage(caught) })
         ),
@@ -1850,6 +1863,10 @@ export default function App() {
         setDemoLiveTriggerLaunchPackageArchives(demoLiveTriggerLaunchPackageArchiveResult.archives);
       }
       setDemoLiveTriggerLaunchPackageArchiveError(demoLiveTriggerLaunchPackageArchiveResult.error);
+      if (demoLiveTriggerOutcomeCloseoutArchiveResult.archives) {
+        setDemoLiveTriggerOutcomeCloseoutArchives(demoLiveTriggerOutcomeCloseoutArchiveResult.archives);
+      }
+      setDemoLiveTriggerOutcomeCloseoutArchiveError(demoLiveTriggerOutcomeCloseoutArchiveResult.error);
       if (demoAcceptanceSummaryResult.summary) {
         setDemoAcceptanceSummary(demoAcceptanceSummaryResult.summary);
       }
@@ -3468,6 +3485,7 @@ export default function App() {
   const handleDemoLiveTriggerOutcomeCloseout = useCallback(async (input: DemoLiveTriggerOutcomeCloseoutInput) => {
     setDemoLiveTriggerOutcomeCloseoutPending(true);
     setDemoLiveTriggerOutcomeCloseoutError(null);
+    setDemoLiveTriggerOutcomeCloseoutArchiveError(null);
     try {
       const closeout = await postDemoLiveTriggerOutcomeCloseout(input);
       setDemoLiveTriggerOutcomeCloseout(closeout);
@@ -3482,6 +3500,28 @@ export default function App() {
 
   const handleDownloadDemoLiveTriggerOutcomeCloseoutReport = useCallback(
     (input: DemoLiveTriggerOutcomeCloseoutInput) => downloadDemoLiveTriggerOutcomeCloseoutReport(input),
+    []
+  );
+
+  const handleArchiveDemoLiveTriggerOutcomeCloseout = useCallback(async (input: DemoLiveTriggerOutcomeCloseoutInput) => {
+    setDemoLiveTriggerOutcomeCloseoutPending(true);
+    setDemoLiveTriggerOutcomeCloseoutArchiveError(null);
+    try {
+      const archive = await archiveDemoLiveTriggerOutcomeCloseout(input);
+      setDemoLiveTriggerOutcomeCloseoutArchives((current) =>
+        [archive, ...current.filter((item) => item.id !== archive.id)].slice(0, 20)
+      );
+      return archive;
+    } catch (caught) {
+      setDemoLiveTriggerOutcomeCloseoutArchiveError(errorMessage(caught));
+      throw caught;
+    } finally {
+      setDemoLiveTriggerOutcomeCloseoutPending(false);
+    }
+  }, []);
+
+  const handleDownloadDemoLiveTriggerOutcomeCloseoutArchiveReport = useCallback(
+    (archiveId: string) => downloadDemoLiveTriggerOutcomeCloseoutArchiveReport(archiveId),
     []
   );
 
@@ -4258,6 +4298,10 @@ export default function App() {
         outcomeCloseoutPending={demoLiveTriggerOutcomeCloseoutPending}
         onCreateOutcomeCloseout={handleDemoLiveTriggerOutcomeCloseout}
         onDownloadOutcomeCloseoutReport={handleDownloadDemoLiveTriggerOutcomeCloseoutReport}
+        outcomeCloseoutArchives={demoLiveTriggerOutcomeCloseoutArchives}
+        outcomeCloseoutArchiveError={demoLiveTriggerOutcomeCloseoutArchiveError}
+        onArchiveOutcomeCloseout={handleArchiveDemoLiveTriggerOutcomeCloseout}
+        onDownloadOutcomeCloseoutArchiveReport={handleDownloadDemoLiveTriggerOutcomeCloseoutArchiveReport}
       />
 
       <EndToEndAcceptanceMatrixPanel

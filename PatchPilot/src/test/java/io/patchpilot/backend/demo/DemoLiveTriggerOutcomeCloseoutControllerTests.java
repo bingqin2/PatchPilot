@@ -16,6 +16,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.springframework.http.HttpHeaders.CONTENT_DISPOSITION;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -57,6 +58,38 @@ class DemoLiveTriggerOutcomeCloseoutControllerTests {
     }
 
     @Test
+    void should_archive_list_and_download_live_trigger_outcome_closeout_reports() throws Exception {
+        MockMvc mockMvc = mockMvc();
+
+        mockMvc.perform(post("/api/demo/live-trigger-outcome-closeout/archives")
+                        .header("X-PatchPilot-Admin-Token", "test-admin-token")
+                        .contentType(APPLICATION_JSON)
+                        .content(requestJson()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value("outcome-closeout-archive-1"))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.taskId").value("task-1"))
+                .andExpect(jsonPath("$.data.pullRequestUrl").value("https://github.com/bingqin2/PatchPilot/pull/42"))
+                .andExpect(jsonPath("$.data.report").value(containsString("PatchPilot Live Trigger Outcome Closeout")))
+                .andExpect(jsonPath("$.data.sideEffectContract").value(containsString("Archive creation writes only PatchPilot local archive records")));
+
+        mockMvc.perform(get("/api/demo/live-trigger-outcome-closeout/archives")
+                        .header("X-PatchPilot-Admin-Token", "test-admin-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].id").value("outcome-closeout-archive-1"))
+                .andExpect(jsonPath("$.data[0].taskId").value("task-1"));
+
+        mockMvc.perform(get("/api/demo/live-trigger-outcome-closeout/archives/outcome-closeout-archive-1/report/download")
+                        .header("X-PatchPilot-Admin-Token", "test-admin-token"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(CONTENT_DISPOSITION, containsString("patchpilot-live-trigger-outcome-closeout-archive-outcome-closeout-archive-1.md")))
+                .andExpect(content().string(containsString("# PatchPilot Live Trigger Outcome Closeout")))
+                .andExpect(content().string(containsString("https://github.com/bingqin2/PatchPilot/pull/42")));
+    }
+
+    @Test
     void should_reject_invalid_live_trigger_outcome_closeout_request() throws Exception {
         MockMvc mockMvc = mockMvc();
 
@@ -92,8 +125,17 @@ class DemoLiveTriggerOutcomeCloseoutControllerTests {
     private static MockMvc mockMvc() {
         AdminApiSecurityProperties properties = new AdminApiSecurityProperties();
         properties.setAdminToken("test-admin-token");
+        StubOutcomeCloseoutService closeoutService = new StubOutcomeCloseoutService();
         return MockMvcBuilders
-                .standaloneSetup(new DemoLiveTriggerOutcomeCloseoutController(new StubOutcomeCloseoutService()))
+                .standaloneSetup(new DemoLiveTriggerOutcomeCloseoutController(
+                        closeoutService,
+                        new DemoLiveTriggerOutcomeCloseoutArchiveService(
+                                closeoutService,
+                                new InMemoryDemoLiveTriggerOutcomeCloseoutArchiveRepository(),
+                                () -> "outcome-closeout-archive-1",
+                                () -> Instant.parse("2026-07-02T01:05:00Z")
+                        )
+                ))
                 .addFilters(new AdminApiSecurityFilter(properties, new ObjectMapper()))
                 .build();
     }
