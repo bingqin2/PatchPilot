@@ -1828,6 +1828,38 @@ const externalExposureCloseout = {
   markdownReport: '# PatchPilot External Exposure Closeout'
 };
 
+const externalExposureCloseoutArchive = {
+  id: 'external-exposure-closeout-archive-1',
+  status: 'READY',
+  closeoutReady: true,
+  summary: 'External exposure closeout archive is ready for reviewer handoff.',
+  nextAction: 'Keep archived closeout evidence with the demo bundle.',
+  latestSessionId: 'external-exposure-session-1',
+  latestSessionStatus: 'CLOSED',
+  publicUrl: 'https://demo.trycloudflare.com',
+  webhookUrl: 'https://demo.trycloudflare.com/api/github/webhook',
+  purpose: 'Live GitHub webhook smoke test',
+  operator: 'bingqin2',
+  startedAt: '2026-07-01T15:00:00Z',
+  closedBy: 'bingqin2',
+  closedAt: '2026-07-01T16:30:00Z',
+  closeNotes: 'Tunnel process stopped.',
+  linkedReadinessArchiveId: 'external-exposure-archive-1',
+  handoffStatus: 'READY',
+  archiveFreshness: 'CURRENT',
+  readyCount: 4,
+  needsAttentionCount: 0,
+  blockedCount: 0,
+  totalCount: 4,
+  nextActions: ['Keep archived closeout evidence with the demo bundle.'],
+  evidenceNotes: ['Latest session external-exposure-session-1 is CLOSED.'],
+  downloadActions: ['GET /api/security/external-exposure-closeout/report/download'],
+  sideEffectContract: 'GET /api/security/external-exposure-closeout is read-only.',
+  generatedAt: '2026-07-01T18:00:00Z',
+  archivedAt: '2026-07-01T18:05:00Z',
+  report: '# PatchPilot External Exposure Closeout Archive'
+};
+
 const demoReadinessSnapshotArchive = {
   id: 'readiness-snapshot-1',
   status: 'NEEDS_ATTENTION',
@@ -3861,6 +3893,23 @@ beforeEach(() => {
         headers: { 'Content-Type': 'text/markdown;charset=UTF-8' }
       });
     }
+    if (url === '/api/security/external-exposure-closeout/archives') {
+      if (init?.method === 'POST') {
+        return jsonResponse({
+          ...externalExposureCloseoutArchive,
+          id: 'external-exposure-closeout-archive-created'
+        });
+      }
+      return jsonResponse([externalExposureCloseoutArchive]);
+    }
+    if (
+      url ===
+      '/api/security/external-exposure-closeout/archives/external-exposure-closeout-archive-1/report/download'
+    ) {
+      return new Response('# PatchPilot External Exposure Closeout Archive', {
+        headers: { 'Content-Type': 'text/markdown;charset=UTF-8' }
+      });
+    }
     if (url === '/api/security/external-exposure-sessions') {
       if (init?.method === 'POST') {
         return jsonResponse({
@@ -5395,6 +5444,7 @@ test('renders operational task dashboard from backend APIs', async () => {
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/security/external-exposure-handoff-package'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/security/external-exposure-sessions'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/security/external-exposure-closeout'));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/security/external-exposure-closeout/archives'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks/task-1/detail'));
   expect(screen.getByText('Pull request opened')).toBeInTheDocument();
   const exposurePanel = screen.getByRole('region', { name: 'External exposure readiness' });
@@ -5415,6 +5465,10 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(within(exposurePanel).getByText('External exposure closeout')).toBeInTheDocument();
   expect(within(exposurePanel).getByText('External exposure is still active.')).toBeInTheDocument();
   expect(within(exposurePanel).getByText('Latest session external-exposure-session-1 is ACTIVE.'))
+    .toBeInTheDocument();
+  expect(within(exposurePanel).getByText('Recent exposure closeout archives')).toBeInTheDocument();
+  expect(within(exposurePanel).getByText('external-exposure-closeout-archive-1')).toBeInTheDocument();
+  expect(within(exposurePanel).getByText('External exposure closeout archive is ready for reviewer handoff.'))
     .toBeInTheDocument();
   const evidencePanel = screen.getByRole('region', { name: 'Demo evidence bundle' });
   expect(within(evidencePanel).getByText('Webhook setup is ready for GitHub deliveries.')).toBeInTheDocument();

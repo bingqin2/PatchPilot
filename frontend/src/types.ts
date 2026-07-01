@@ -549,6 +549,38 @@ export interface ExternalExposureCloseout {
   markdownReport: string;
 }
 
+export interface ExternalExposureCloseoutArchive {
+  id: string;
+  status: DemoReadinessStatus;
+  closeoutReady: boolean;
+  summary: string;
+  nextAction: string;
+  latestSessionId: string | null;
+  latestSessionStatus: 'ACTIVE' | 'CLOSED' | null;
+  publicUrl: string | null;
+  webhookUrl: string | null;
+  purpose: string | null;
+  operator: string | null;
+  startedAt: string | null;
+  closedBy: string | null;
+  closedAt: string | null;
+  closeNotes: string | null;
+  linkedReadinessArchiveId: string | null;
+  handoffStatus: DemoReadinessStatus | null;
+  archiveFreshness: 'CURRENT' | 'MISSING' | 'STALE' | null;
+  readyCount: number;
+  needsAttentionCount: number;
+  blockedCount: number;
+  totalCount: number;
+  nextActions: string[];
+  evidenceNotes: string[];
+  downloadActions: string[];
+  sideEffectContract: string;
+  generatedAt: string;
+  archivedAt: string;
+  report: string;
+}
+
 export interface DashboardBootstrap {
   adminTokenConfigured: boolean;
   adminTokenBootstrapEnabled: boolean;

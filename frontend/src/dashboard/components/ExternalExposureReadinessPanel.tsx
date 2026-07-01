@@ -3,6 +3,7 @@ import { useState, type FormEvent } from 'react';
 import type {
   DemoReadinessStatus,
   ExternalExposureCloseout,
+  ExternalExposureCloseoutArchive,
   ExternalExposureHandoffPackage,
   ExternalExposureReadiness,
   ExternalExposureReadinessArchive,
@@ -24,9 +25,13 @@ interface ExternalExposureReadinessPanelProps {
   sessionError: string | null;
   closeout: ExternalExposureCloseout | null;
   closeoutError: string | null;
+  closeoutArchives: ExternalExposureCloseoutArchive[];
+  closeoutArchiveError: string | null;
   onArchiveReadiness: () => Promise<ExternalExposureReadinessArchive>;
   onDownloadArchiveReport: (archiveId: string) => Promise<Blob>;
   onDownloadHandoffPackageReport: () => Promise<Blob>;
+  onArchiveCloseout: () => Promise<ExternalExposureCloseoutArchive>;
+  onDownloadCloseoutArchiveReport: (archiveId: string) => Promise<Blob>;
   onStartSession: (input: ExternalExposureSessionInput) => Promise<ExternalExposureSession>;
   onCloseSession: (sessionId: string, input: ExternalExposureSessionCloseInput) => Promise<ExternalExposureSession>;
   onDownloadSessionReport: (sessionId: string) => Promise<Blob>;
@@ -45,9 +50,13 @@ export function ExternalExposureReadinessPanel({
   sessionError,
   closeout,
   closeoutError,
+  closeoutArchives,
+  closeoutArchiveError,
   onArchiveReadiness,
   onDownloadArchiveReport,
   onDownloadHandoffPackageReport,
+  onArchiveCloseout,
+  onDownloadCloseoutArchiveReport,
   onStartSession,
   onCloseSession,
   onDownloadSessionReport,
@@ -154,6 +163,25 @@ export function ExternalExposureReadinessPanel({
     }
   }
 
+  async function archiveCloseout() {
+    try {
+      await onArchiveCloseout();
+      setArchiveStatus('Exposure closeout archived');
+    } catch {
+      setArchiveStatus('Closeout archive failed');
+    }
+  }
+
+  async function downloadCloseoutArchiveReport(archiveId: string) {
+    try {
+      const report = await onDownloadCloseoutArchiveReport(archiveId);
+      downloadMarkdown(report, `patchpilot-external-exposure-closeout-${archiveId}.md`);
+      setDownloadStatus('Exposure closeout archive downloaded');
+    } catch {
+      setDownloadStatus('Closeout archive download failed');
+    }
+  }
+
   return (
     <section className="panel external-exposure-readiness-panel" aria-label="External exposure readiness">
       <div className="panel-header">
@@ -227,7 +255,14 @@ export function ExternalExposureReadinessPanel({
       <ExternalExposureCloseoutResult
         closeout={closeout}
         error={closeoutError}
+        onArchiveCloseout={archiveCloseout}
         onDownloadReport={downloadCloseoutReport}
+      />
+
+      <ExternalExposureCloseoutArchiveResult
+        archives={closeoutArchives}
+        error={closeoutArchiveError}
+        onDownloadReport={downloadCloseoutArchiveReport}
       />
 
       <div className="demo-launch-preflight-actions">
@@ -405,10 +440,12 @@ function ExternalExposureSessionResult({
 function ExternalExposureCloseoutResult({
   closeout,
   error,
+  onArchiveCloseout,
   onDownloadReport
 }: {
   closeout: ExternalExposureCloseout | null;
   error: string | null;
+  onArchiveCloseout: () => Promise<void>;
   onDownloadReport: () => Promise<void>;
 }) {
   return (
@@ -418,16 +455,28 @@ function ExternalExposureCloseoutResult({
           <h3>External exposure closeout</h3>
           <p>{closeout?.summary ?? 'Loading exposure shutdown evidence'}</p>
         </div>
-        <button
-          className="secondary-button"
-          type="button"
-          onClick={() => void onDownloadReport()}
-          aria-label="Download exposure closeout report"
-          disabled={!closeout}
-        >
-          <Download size={14} />
-          Download closeout
-        </button>
+        <div className="demo-readiness-header-meta">
+          <button
+            className="secondary-button"
+            type="button"
+            onClick={() => void onArchiveCloseout()}
+            aria-label="Archive exposure closeout"
+            disabled={!closeout}
+          >
+            <Archive size={14} />
+            Archive closeout
+          </button>
+          <button
+            className="secondary-button"
+            type="button"
+            onClick={() => void onDownloadReport()}
+            aria-label="Download exposure closeout report"
+            disabled={!closeout}
+          >
+            <Download size={14} />
+            Download closeout
+          </button>
+        </div>
       </div>
 
       {error ? (
@@ -510,6 +559,58 @@ function ExternalExposureCloseoutResult({
         </div>
       ) : (
         <p className="empty-state">No external exposure closeout loaded.</p>
+      )}
+    </div>
+  );
+}
+
+function ExternalExposureCloseoutArchiveResult({
+  archives,
+  error,
+  onDownloadReport
+}: {
+  archives: ExternalExposureCloseoutArchive[];
+  error: string | null;
+  onDownloadReport: (archiveId: string) => Promise<void>;
+}) {
+  return (
+    <div className="demo-launch-preflight-actions">
+      <h3>Recent exposure closeout archives</h3>
+      {error ? (
+        <div className="adapter-api-error">
+          <strong>Exposure closeout archive unavailable</strong>
+          <span>{error}</span>
+        </div>
+      ) : null}
+      {archives.length === 0 ? (
+        <p className="empty-state">No external exposure closeout archives recorded.</p>
+      ) : (
+        <div className="demo-evidence-records">
+          {archives.map((archive) => (
+            <div key={archive.id}>
+              <span>{archive.id}</span>
+              <strong>{archive.status}</strong>
+              <small>{archive.closeoutReady ? 'Closeout archived' : 'Closeout incomplete'}</small>
+              <small>{archive.summary}</small>
+              <small>
+                {archive.readyCount} ready, {archive.needsAttentionCount} attention, {archive.blockedCount} blocked
+              </small>
+              <small>
+                Archived session {archive.latestSessionId ?? 'missing'} status {archive.latestSessionStatus ?? 'missing'}
+              </small>
+              <small>Archived {compactDateTime(archive.archivedAt)}</small>
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={() => void onDownloadReport(archive.id)}
+                aria-label={`Download exposure closeout archive ${archive.id}`}
+              >
+                <Download size={14} />
+                Download closeout archive
+              </button>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );
