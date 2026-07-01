@@ -7,6 +7,7 @@ import {
   evaluateTrigger,
   postGitHubTriggerDryRun,
   postDemoLiveLaunchGate,
+  getDemoEndToEndAcceptanceMatrix,
   getDashboardBootstrap,
   getBackendHealth,
   getConfigurationSummary,
@@ -280,6 +281,55 @@ test('creates manual task through backend API', async () => {
   });
   expect(task.id).toBe('manual-task-1');
   expect(task.status).toBe('PENDING');
+});
+
+test('loads demo end-to-end acceptance matrix through backend API', async () => {
+  const matrix = {
+    status: 'READY',
+    readyForFinalDemo: true,
+    readinessPercent: 100,
+    readyCount: 2,
+    needsAttentionCount: 0,
+    blockedCount: 0,
+    totalCount: 2,
+    summary: 'PatchPilot is ready for a final issue-to-PR demo.',
+    nextActions: ['Run the live launch gate before posting a real trigger.'],
+    sideEffectContract:
+      'GET /api/demo/end-to-end-acceptance-matrix is read-only and does not mutate GitHub.',
+    items: [
+      {
+        category: 'Launch',
+        name: 'Live launch gate',
+        status: 'READY',
+        evidence: 'Live launch gate is READY.',
+        gap: 'No launch gate gap.',
+        nextAction: 'No action needed.'
+      },
+      {
+        category: 'Recent Pull Request evidence',
+        name: 'Completed issue-to-PR task',
+        status: 'READY',
+        evidence: 'Task task-1 produced https://github.com/bingqin2/PatchPilot/pull/42.',
+        gap: 'No recent PR gap.',
+        nextAction: 'No action needed.'
+      }
+    ],
+    generatedAt: '2026-07-01T12:00:00Z',
+    markdownReport: '# PatchPilot End-to-End Acceptance Matrix'
+  };
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: matrix,
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  await expect(getDemoEndToEndAcceptanceMatrix()).resolves.toEqual(matrix);
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/end-to-end-acceptance-matrix');
 });
 
 test('loads dashboard bootstrap through backend API without a saved admin token', async () => {

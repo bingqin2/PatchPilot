@@ -1671,6 +1671,43 @@ const demoReadiness = {
   nextActions: ['Run one controlled issue-to-PR smoke task before a live demo.']
 };
 
+const demoEndToEndAcceptanceMatrix = {
+  status: 'NEEDS_ATTENTION',
+  readyForFinalDemo: false,
+  readinessPercent: 78,
+  readyCount: 7,
+  needsAttentionCount: 2,
+  blockedCount: 0,
+  totalCount: 9,
+  summary: 'PatchPilot is close to final demo readiness, with two remaining gaps.',
+  nextActions: [
+    'Close the pending review task before a public demo.',
+    'Run one fresh live launch gate before posting the trigger.'
+  ],
+  sideEffectContract:
+    'GET /api/demo/end-to-end-acceptance-matrix is read-only: it does not create tasks, call the model, run tests, mutate Git, create branches, create pull requests, post comments, archive records, or write to GitHub.',
+  items: [
+    {
+      category: 'Launch',
+      name: 'Live launch gate',
+      status: 'READY',
+      evidence: 'Live launch gate is READY for bingqin2/PatchPilot#1.',
+      gap: 'No launch gate gap.',
+      nextAction: 'No action needed.'
+    },
+    {
+      category: 'Pending review safety',
+      name: 'Generated diff risk review',
+      status: 'NEEDS_ATTENTION',
+      evidence: 'One generated diff is waiting for operator review.',
+      gap: 'Resolve the pending review before final demo.',
+      nextAction: 'Approve or reject the pending review task.'
+    }
+  ],
+  generatedAt: '2026-07-01T12:00:00Z',
+  markdownReport: '# PatchPilot End-to-End Acceptance Matrix'
+};
+
 const demoReadinessSnapshotArchive = {
   id: 'readiness-snapshot-1',
   status: 'NEEDS_ATTENTION',
@@ -3667,6 +3704,9 @@ beforeEach(() => {
         markdownReport: '# PatchPilot Live Launch Gate\n\n- Status: READY'
       });
     }
+    if (url === '/api/demo/end-to-end-acceptance-matrix') {
+      return jsonResponse(demoEndToEndAcceptanceMatrix);
+    }
     if (url === '/api/tasks/metrics/summary' || url.startsWith('/api/tasks/metrics/summary?')) {
       return jsonResponse({
         totalCount: 3,
@@ -4857,6 +4897,12 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(within(demoReadinessPanel).getByText('+2 ready / -1 warning / -1 blocked')).toBeInTheDocument();
   expect(within(demoReadinessPanel).getByText('readiness-snapshot-1')).toBeInTheDocument();
   expect(within(demoReadinessPanel).getByText('6 ready / 1 warning / 0 blocked')).toBeInTheDocument();
+  const acceptanceMatrixPanel = screen.getByRole('region', { name: 'End-to-end acceptance matrix' });
+  expect(within(acceptanceMatrixPanel).getByRole('heading', { name: 'End-to-end acceptance' })).toBeInTheDocument();
+  expect(within(acceptanceMatrixPanel).getAllByText('PatchPilot is close to final demo readiness, with two remaining gaps.')).toHaveLength(2);
+  expect(within(acceptanceMatrixPanel).getByText('78%')).toBeInTheDocument();
+  expect(within(acceptanceMatrixPanel).getByText('Generated diff risk review')).toBeInTheDocument();
+  expect(within(acceptanceMatrixPanel).getByText('Close the pending review task before a public demo.')).toBeInTheDocument();
   const smokeChecklistPanel = screen.getByRole('region', { name: 'Live demo smoke checklist' });
   expect(within(smokeChecklistPanel).getByRole('heading', { name: 'Live demo smoke checklist' })).toBeInTheDocument();
   expect(within(smokeChecklistPanel).getByText('Live demo smoke checklist needs attention.')).toBeInTheDocument();
@@ -6962,6 +7008,9 @@ test('shows manual task creation failures without clearing the form', async () =
     }
     if (url === '/api/demo/smoke-checklist') {
       return jsonResponse(demoSmokeChecklist);
+    }
+    if (url === '/api/demo/end-to-end-acceptance-matrix') {
+      return jsonResponse(demoEndToEndAcceptanceMatrix);
     }
     if (url === '/health') {
       return jsonResponse({

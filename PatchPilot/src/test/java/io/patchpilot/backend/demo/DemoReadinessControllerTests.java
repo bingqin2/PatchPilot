@@ -6,6 +6,8 @@ import io.patchpilot.backend.demo.domain.DemoReadinessVo;
 import io.patchpilot.backend.demo.domain.DemoAcceptanceSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
+import io.patchpilot.backend.demo.domain.DemoEndToEndAcceptanceMatrixItemVo;
+import io.patchpilot.backend.demo.domain.DemoEndToEndAcceptanceMatrixVo;
 import io.patchpilot.backend.demo.domain.DemoEvaluationRunReadinessEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionCloseoutArchiveVo;
@@ -296,6 +298,9 @@ class DemoReadinessControllerTests {
 
     @MockitoBean
     private DemoLaunchCommandService demoLaunchCommandService;
+
+    @MockitoBean
+    private DemoEndToEndAcceptanceMatrixService demoEndToEndAcceptanceMatrixService;
 
     @MockitoBean
     private OperatorSafetyAuditService operatorSafetyAuditService;
@@ -2767,6 +2772,22 @@ class DemoReadinessControllerTests {
                 .andExpect(jsonPath("$.data.checks[2].action").value("Investigate newly failed fixture cases before using the baseline as demo evidence."))
                 .andExpect(jsonPath("$.data.nextActions[0]").value("Run one controlled issue-to-PR smoke task before a live demo."))
                 .andExpect(jsonPath("$.data.nextActions[1]").value("Investigate newly failed fixture cases before using the baseline as demo evidence."));
+    }
+
+    @Test
+    void should_return_end_to_end_acceptance_matrix() throws Exception {
+        when(demoEndToEndAcceptanceMatrixService.getMatrix()).thenReturn(endToEndAcceptanceMatrix());
+
+        mockMvc.perform(get("/api/demo/end-to-end-acceptance-matrix"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.readyForFinalDemo").value(true))
+                .andExpect(jsonPath("$.data.readinessPercent").value(100))
+                .andExpect(jsonPath("$.data.items[0].category").value("Launch"))
+                .andExpect(jsonPath("$.data.items[0].status").value("READY"))
+                .andExpect(jsonPath("$.data.nextActions[0]").value("Run the live launch gate."))
+                .andExpect(jsonPath("$.data.markdownReport").value(containsString("# PatchPilot End-to-End Acceptance Matrix")));
     }
 
     @Test
@@ -5924,6 +5945,31 @@ class DemoReadinessControllerTests {
                 "# PatchPilot Final Reviewer Handoff Delivery Finalization\n\n"
                         + "- Latest handoff delivery receipt: `final-reviewer-handoff-delivery-receipt-1`\n",
                 Instant.parse("2026-06-30T05:40:00Z")
+        );
+    }
+
+    private static DemoEndToEndAcceptanceMatrixVo endToEndAcceptanceMatrix() {
+        return new DemoEndToEndAcceptanceMatrixVo(
+                "READY",
+                true,
+                100,
+                1,
+                0,
+                0,
+                1,
+                "PatchPilot has enough launch, language, safety, evaluation, and recent PR evidence for a final self-hosted demo.",
+                List.of("Run the live launch gate."),
+                "GET /api/demo/end-to-end-acceptance-matrix is read-only.",
+                List.of(new DemoEndToEndAcceptanceMatrixItemVo(
+                        "Launch",
+                        "Live launch gate",
+                        "READY",
+                        "Live launch gate is ready.",
+                        "No launch gate gap.",
+                        "Run the live launch gate."
+                )),
+                Instant.parse("2026-07-01T12:00:00Z"),
+                "# PatchPilot End-to-End Acceptance Matrix\n\n- Status: READY\n"
         );
     }
 }

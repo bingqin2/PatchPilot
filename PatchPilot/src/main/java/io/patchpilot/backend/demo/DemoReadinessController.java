@@ -2,6 +2,7 @@ package io.patchpilot.backend.demo;
 
 import io.patchpilot.backend.common.response.ApiResponse;
 import io.patchpilot.backend.demo.domain.DemoAcceptanceSummaryVo;
+import io.patchpilot.backend.demo.domain.DemoEndToEndAcceptanceMatrixVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionCloseoutArchiveVo;
@@ -153,6 +154,7 @@ public class DemoReadinessController {
     private final DemoReadinessSnapshotTrendService demoReadinessSnapshotTrendService;
     private final DemoLaunchPreflightService demoLaunchPreflightService;
     private final DemoLaunchCommandService demoLaunchCommandService;
+    private final DemoEndToEndAcceptanceMatrixService demoEndToEndAcceptanceMatrixService;
     private final OperatorSafetyAuditService operatorSafetyAuditService;
 
     @GetMapping("/readiness")
@@ -190,6 +192,11 @@ public class DemoReadinessController {
     @GetMapping("/evidence-bundle")
     public ApiResponse<DemoEvidenceBundleVo> getEvidenceBundle() {
         return ApiResponse.ok(demoEvidenceBundleService.getEvidenceBundle());
+    }
+
+    @GetMapping("/end-to-end-acceptance-matrix")
+    public ApiResponse<DemoEndToEndAcceptanceMatrixVo> getEndToEndAcceptanceMatrix() {
+        return ApiResponse.ok(demoEndToEndAcceptanceMatrixService.getMatrix());
     }
 
     @GetMapping("/runbook")

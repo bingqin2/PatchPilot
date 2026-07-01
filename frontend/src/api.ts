@@ -65,6 +65,7 @@ import type {
   DemoLaunchEvidenceShareDeliveryReceiptInput,
   DemoLaunchCommandInput,
   DemoLiveLaunchGate,
+  DemoEndToEndAcceptanceMatrix,
   DemoLaunchPreflight,
   DemoLaunchPreflightInput,
   DemoReadiness,
@@ -188,6 +189,10 @@ export async function postGitHubTriggerDryRun(input: GitHubTriggerDryRunInput): 
 
 export async function postDemoLiveLaunchGate(input: GitHubTriggerDryRunInput): Promise<DemoLiveLaunchGate> {
   return postApi<DemoLiveLaunchGate>('/api/demo/live-launch-gate', input);
+}
+
+export async function getDemoEndToEndAcceptanceMatrix(): Promise<DemoEndToEndAcceptanceMatrix> {
+  return getApi<DemoEndToEndAcceptanceMatrix>('/api/demo/end-to-end-acceptance-matrix');
 }
 
 export async function listTasks(options: TaskStatusFilter | ListTasksOptions = 'ALL'): Promise<FixTaskPage> {
