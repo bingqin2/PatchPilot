@@ -4,6 +4,7 @@ import io.patchpilot.backend.demo.domain.DemoAdapterFixtureEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleSummaryVo;
 import io.patchpilot.backend.demo.domain.DemoEvaluationRunReadinessEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoEvidenceBundleVo;
+import io.patchpilot.backend.demo.domain.DemoExternalExposureCloseoutArchiveEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionCloseoutArchiveEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceCompletionCloseoutVo;
 import io.patchpilot.backend.demo.domain.DemoFinalAcceptanceShareFinalizationVo;
@@ -18,6 +19,8 @@ import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewReleaseBundleDel
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewReleaseBundleDeliveryFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoFinalExternalReviewReleaseBundleVo;
 import io.patchpilot.backend.demo.domain.DemoFinalHandoffReportPackageArchiveEvidenceVo;
+import io.patchpilot.backend.demo.domain.DemoFinalReviewerHandoffDeliveryFinalizationVo;
+import io.patchpilot.backend.demo.domain.DemoFinalReviewerHandoffPackageVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchAcceptanceCertificateEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoLaunchAcceptanceCloseoutEvidenceVo;
 import io.patchpilot.backend.demo.domain.DemoReadinessCheckVo;
@@ -79,6 +82,15 @@ class DemoRunbookServiceTests {
                 .contains("- Launch acceptance closeout receipt: `launch-delivery-receipt-1`")
                 .contains("- Launch acceptance closeout next action: Use the archived launch acceptance closeout as the final launch evidence record.")
                 .contains("- Launch acceptance closeout download: Download launch acceptance closeout archive launch-closeout-archive-1.")
+                .contains("- External exposure closeout archive: `READY` - Latest external exposure closeout archive proves the temporary public URL session is closed.")
+                .contains("- External exposure closeout archive id: `external-exposure-closeout-archive-1`")
+                .contains("- External exposure closeout session: `external-exposure-session-1`")
+                .contains("- External exposure closeout public URL: https://temporary.trycloudflare.com")
+                .contains("- External exposure closeout webhook URL: https://temporary.trycloudflare.com/api/github/webhook")
+                .contains("- External exposure closeout readiness archive: `external-exposure-readiness-archive-1`")
+                .contains("- External exposure closeout archive freshness: `CURRENT`")
+                .contains("- External exposure closeout archive next action: Use the archived external exposure closeout as public URL shutdown proof.")
+                .contains("- External exposure closeout archive download: Download external exposure closeout archive external-exposure-closeout-archive-1.")
                 .contains("- Launch acceptance certificate: `READY` - Latest launch acceptance certificate archive is certified and ready.")
                 .contains("- Launch acceptance certificate archive: `launch-certificate-archive-1`")
                 .contains("- Launch acceptance certificate closeout archive: `launch-closeout-archive-1`")
@@ -419,6 +431,9 @@ class DemoRunbookServiceTests {
                 finalExternalReviewReleaseBundleDeliveryFinalization(),
                 finalExternalReviewReleaseBundleDeliveryFinalizationArchiveEvidence(),
                 finalExternalReviewReleaseBundleDeliveryCertificateArchiveEvidence(),
+                finalReviewerHandoffPackage(),
+                finalReviewerHandoffDeliveryFinalization(),
+                externalExposureCloseoutArchiveEvidence(),
                 true,
                 "delivery-receipt-1",
                 "Demo reviewer",
@@ -575,6 +590,32 @@ class DemoRunbookServiceTests {
                         "Download final acceptance completion closeout archive final-acceptance-completion-closeout-archive-1.",
                         "Download linked final acceptance completion archive final-acceptance-completion-archive-1."
                 )
+        );
+    }
+
+    private static DemoExternalExposureCloseoutArchiveEvidenceVo externalExposureCloseoutArchiveEvidence() {
+        return new DemoExternalExposureCloseoutArchiveEvidenceVo(
+                DemoReadinessStatus.READY,
+                true,
+                true,
+                "Latest external exposure closeout archive proves the temporary public URL session is closed.",
+                "Use the archived external exposure closeout as public URL shutdown proof.",
+                1,
+                "external-exposure-closeout-archive-1",
+                "external-exposure-session-1",
+                "CLOSED",
+                "https://temporary.trycloudflare.com",
+                "https://temporary.trycloudflare.com/api/github/webhook",
+                "external-exposure-readiness-archive-1",
+                "READY",
+                "CURRENT",
+                Instant.parse("2026-06-29T06:00:00Z"),
+                List.of("Temporary public URL session external-exposure-session-1 is closed."),
+                List.of(
+                        "Download external exposure closeout archive external-exposure-closeout-archive-1.",
+                        "Download linked external exposure readiness archive external-exposure-readiness-archive-1."
+                ),
+                "External exposure closeout archive is read-only."
         );
     }
 
@@ -878,6 +919,76 @@ class DemoRunbookServiceTests {
                         "Download final external-review release bundle delivery certificate archive final-external-review-release-bundle-delivery-certificate-archive-1.",
                         "Download final external-review release bundle delivery finalization archive final-external-review-release-bundle-delivery-finalization-archive-1."
                 )
+        );
+    }
+
+    private static DemoFinalReviewerHandoffPackageVo finalReviewerHandoffPackage() {
+        return new DemoFinalReviewerHandoffPackageVo(
+                DemoReadinessStatus.READY,
+                true,
+                "Final reviewer handoff package is ready.",
+                "Download and send the final reviewer handoff package.",
+                "final-external-review-release-bundle-delivery-certificate-archive-compat",
+                "final-external-review-release-bundle-delivery-finalization-archive-compat",
+                "final-external-review-release-bundle-archive-compat",
+                "final-external-review-release-bundle-delivery-receipt-compat",
+                "final-external-review-delivery-certificate-archive-compat",
+                "final-external-review-package-archive-compat",
+                "final-external-review-package-delivery-receipt-compat",
+                "task-2",
+                "https://github.com/bingqin2/PatchPilot/pull/42",
+                "reviewer@example.com",
+                "email",
+                "2026-06-29T06:20:00Z",
+                Instant.parse("2026-06-29T06:25:00Z"),
+                List.of("Final reviewer handoff package report."),
+                List.of(new DemoFinalReviewerHandoffPackageVo.Check(
+                        "Final reviewer handoff",
+                        DemoReadinessStatus.READY,
+                        "Final reviewer handoff package is ready.",
+                        "No action needed."
+                )),
+                List.of("Final reviewer handoff package is ready."),
+                List.of("Download final reviewer handoff package report."),
+                "GET /api/demo/final-reviewer-handoff-package is read-only.",
+                "# PatchPilot Final Reviewer Handoff Package",
+                Instant.parse("2026-06-29T06:26:00Z")
+        );
+    }
+
+    private static DemoFinalReviewerHandoffDeliveryFinalizationVo finalReviewerHandoffDeliveryFinalization() {
+        return new DemoFinalReviewerHandoffDeliveryFinalizationVo(
+                DemoReadinessStatus.READY,
+                true,
+                "Final reviewer handoff delivery is finalized with compatibility evidence.",
+                "Use the final reviewer handoff delivery finalization report as the terminal demo closeout record.",
+                "final-reviewer-handoff-delivery-receipt-compat",
+                "final-external-review-release-bundle-delivery-certificate-archive-compat",
+                "final-external-review-release-bundle-delivery-finalization-archive-compat",
+                "final-external-review-release-bundle-archive-compat",
+                "final-external-review-release-bundle-delivery-receipt-compat",
+                "final-external-review-delivery-certificate-archive-compat",
+                "final-external-review-package-archive-compat",
+                "final-external-review-package-delivery-receipt-compat",
+                "task-2",
+                "https://github.com/bingqin2/PatchPilot/pull/42",
+                "reviewer@example.com",
+                "email",
+                "2026-06-29T06:30:00Z",
+                "FRESH",
+                true,
+                "Latest final reviewer handoff delivery receipt matches the terminal handoff package.",
+                List.of(new DemoFinalReviewerHandoffDeliveryFinalizationVo.Check(
+                        "Final reviewer handoff delivery receipt",
+                        DemoReadinessStatus.READY,
+                        "Final reviewer handoff delivery receipt is fresh.",
+                        "No action needed."
+                )),
+                List.of("Final reviewer handoff delivery receipt is fresh."),
+                List.of("Download final reviewer handoff delivery finalization report."),
+                "GET /api/demo/final-reviewer-handoff-package/delivery-finalization is read-only.",
+                "# PatchPilot Final Reviewer Handoff Delivery Finalization",
+                Instant.parse("2026-06-29T06:35:00Z")
         );
     }
 }

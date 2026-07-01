@@ -1618,6 +1618,27 @@ export interface DemoFinalAcceptanceCompletionCloseoutArchiveEvidence {
   downloadActions: string[];
 }
 
+export interface DemoExternalExposureCloseoutArchiveEvidence {
+  status: DemoReadinessStatus;
+  archived: boolean;
+  closeoutReady: boolean;
+  summary: string;
+  nextAction: string;
+  archiveCount: number;
+  latestArchiveId: string | null;
+  latestSessionId: string | null;
+  latestSessionStatus: string | null;
+  publicUrl: string | null;
+  webhookUrl: string | null;
+  linkedReadinessArchiveId: string | null;
+  handoffStatus: DemoReadinessStatus | null;
+  archiveFreshness: string | null;
+  latestArchivedAt: string | null;
+  evidenceNotes: string[];
+  downloadActions: string[];
+  sideEffectContract: string;
+}
+
 export interface DemoFinalExternalReviewEvidencePackageArchiveEvidence {
   status: DemoReadinessStatus;
   archived: boolean;
@@ -2257,6 +2278,7 @@ export interface DemoEvidenceBundle {
   finalAcceptanceShareFinalization: DemoFinalAcceptanceShareFinalization;
   finalAcceptanceCompletionCloseoutEvidence: DemoFinalAcceptanceCompletionCloseout;
   finalAcceptanceCompletionCloseoutArchiveEvidence: DemoFinalAcceptanceCompletionCloseoutArchiveEvidence;
+  externalExposureCloseoutArchiveEvidence?: DemoExternalExposureCloseoutArchiveEvidence;
   finalExternalReviewEvidencePackage?: DemoFinalExternalReviewEvidencePackage;
   finalExternalReviewEvidencePackageArchiveEvidence?: DemoFinalExternalReviewEvidencePackageArchiveEvidence;
   finalExternalReviewEvidencePackageDeliveryReceiptEvidence?:
