@@ -6531,3 +6531,21 @@ Validation so far:
 - `npm --prefix frontend run build`: passed with the existing Vite large-chunk warning.
 - `git diff --check`: passed after final documentation updates.
 - Strict diff secret scan for GitHub, OpenAI-style, Slack, AWS, private-key, and PatchPilot token assignment patterns: no matches.
+
+## 2026-07-02 - 326 Live trigger outcome closeout
+
+- Started `326-live-trigger-outcome-closeout` to close the loop after an operator posts a real `/agent fix` GitHub issue comment.
+- Added `POST /api/demo/live-trigger-outcome-closeout` and `POST /api/demo/live-trigger-outcome-closeout/report/download`.
+- The closeout is read-only and correlates the exact repository, issue, trigger user, trigger comment, optional launch package archive id, latest launch package archive, and newest matching `FixTaskVo`.
+- The backend classifies outcomes as `READY` when a matching task completed with a Pull Request URL, `NEEDS_ATTENTION` when a matching task exists but failed, was cancelled, is still active, or has no PR, and `BLOCKED` when the launch package archive or matching task is missing.
+- Extended the live launch gate dashboard with `Generate outcome closeout`, `Download closeout`, closeout error feedback, task/webhook/PR evidence rendering, outcome evidence notes, and next actions.
+- Added `docs/plans/326-live-trigger-outcome-closeout.md` with the scope, API shape, safety contract, and verification checklist.
+
+Validation so far:
+
+- `mvn -pl PatchPilot -Dtest=DemoLiveTriggerOutcomeCloseoutServiceTests,DemoLiveTriggerOutcomeCloseoutControllerTests test`: first failed because the closeout command, VO, service, and controller did not exist; passed after backend implementation.
+- `npm --prefix frontend test -- --run src/api.test.ts src/dashboard/components/LiveLaunchGatePanel.test.tsx`: first failed because the closeout API helper and dashboard controls did not exist; passed after frontend implementation. Focused result: 2 test files and 247 tests.
+- `mvn -pl PatchPilot test`: passed, 1392 tests.
+- `npm --prefix frontend test -- --reporter=dot`: passed, 35 test files and 538 tests.
+- `npm --prefix frontend run build`: passed with the existing Vite large-chunk warning.
+- `git diff --check`: passed.

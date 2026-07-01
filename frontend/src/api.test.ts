@@ -8,6 +8,8 @@ import {
   postGitHubTriggerDryRun,
   postDemoLiveLaunchGate,
   postDemoLiveTriggerLaunchPackage,
+  postDemoLiveTriggerOutcomeCloseout,
+  downloadDemoLiveTriggerOutcomeCloseoutReport,
   archiveDemoLiveTriggerLaunchPackage,
   listDemoLiveTriggerLaunchPackageArchives,
   downloadDemoLiveTriggerLaunchPackageArchiveReport,
@@ -4925,6 +4927,75 @@ test('archives and downloads demo live trigger launch package reports through ba
   );
   expect(archive.id).toBe('launch-package-archive-1');
   expect(archives).toHaveLength(1);
+  expect(report.type).toBe('text/markdown');
+});
+
+test('creates and downloads demo live trigger outcome closeout reports through backend API', async () => {
+  const fetchMock = vi.fn()
+    .mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        success: true,
+        data: {
+          status: 'READY',
+          successful: true,
+          repository: 'bingqin2/PatchPilot',
+          issueNumber: 1,
+          issueUrl: 'https://github.com/bingqin2/PatchPilot/issues/1',
+          triggerUser: 'bingqin2',
+          triggerComment: '/agent fix touch docs/live-outcome.md',
+          launchPackageArchiveId: 'launch-package-archive-1',
+          launchPackageStatus: 'READY',
+          launchPackageArchivedAt: '2026-07-02T00:00:05Z',
+          taskId: 'task-1',
+          taskStatus: 'COMPLETED',
+          failureReason: null,
+          taskCreatedAt: '2026-07-02T00:10:00Z',
+          taskUpdatedAt: '2026-07-02T00:11:00Z',
+          pullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+          webhookDeliveryId: 'delivery-1',
+          webhookDeliveryStatus: 'TASK_CREATED',
+          summary: 'Live trigger completed and created Pull Request.',
+          evidenceNotes: ['Task task-1 completed.'],
+          nextActions: ['Review and merge https://github.com/bingqin2/PatchPilot/pull/42.'],
+          sideEffectContract: 'Read-only live trigger outcome closeout: this endpoint does not mutate GitHub or task state.',
+          generatedAt: '2026-07-02T01:00:00Z',
+          markdownReport: '# PatchPilot Live Trigger Outcome Closeout'
+        },
+        message: null
+      })
+    } as Response)
+    .mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      blob: async () => new Blob(['# PatchPilot Live Trigger Outcome Closeout'], { type: 'text/markdown' })
+    } as Response);
+  vi.stubGlobal('fetch', fetchMock);
+
+  const input = {
+    repositoryOwner: 'bingqin2',
+    repositoryName: 'PatchPilot',
+    issueNumber: 1,
+    triggerUser: 'bingqin2',
+    triggerComment: '/agent fix touch docs/live-outcome.md',
+    launchPackageArchiveId: 'launch-package-archive-1'
+  };
+  const closeout = await postDemoLiveTriggerOutcomeCloseout(input);
+  const report = await downloadDemoLiveTriggerOutcomeCloseoutReport(input);
+
+  expect(fetchMock).toHaveBeenNthCalledWith(1, '/api/demo/live-trigger-outcome-closeout', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input)
+  });
+  expect(fetchMock).toHaveBeenNthCalledWith(2, '/api/demo/live-trigger-outcome-closeout/report/download', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input)
+  });
+  expect(closeout.status).toBe('READY');
+  expect(closeout.pullRequestUrl).toBe('https://github.com/bingqin2/PatchPilot/pull/42');
   expect(report.type).toBe('text/markdown');
 });
 

@@ -67,6 +67,8 @@ import type {
   DemoLiveLaunchGate,
   DemoLiveTriggerLaunchPackage,
   DemoLiveTriggerLaunchPackageArchive,
+  DemoLiveTriggerOutcomeCloseout,
+  DemoLiveTriggerOutcomeCloseoutInput,
   DemoEndToEndAcceptanceMatrix,
   DemoLaunchPreflight,
   DemoLaunchPreflightInput,
@@ -225,6 +227,18 @@ export async function listDemoLiveTriggerLaunchPackageArchives(): Promise<DemoLi
 
 export async function downloadDemoLiveTriggerLaunchPackageArchiveReport(archiveId: string): Promise<Blob> {
   return getBlobApi(`/api/demo/live-trigger-launch-package/archives/${encodeURIComponent(archiveId)}/report/download`);
+}
+
+export async function postDemoLiveTriggerOutcomeCloseout(
+  input: DemoLiveTriggerOutcomeCloseoutInput
+): Promise<DemoLiveTriggerOutcomeCloseout> {
+  return postApi<DemoLiveTriggerOutcomeCloseout>('/api/demo/live-trigger-outcome-closeout', input);
+}
+
+export async function downloadDemoLiveTriggerOutcomeCloseoutReport(
+  input: DemoLiveTriggerOutcomeCloseoutInput
+): Promise<Blob> {
+  return postBlobApi('/api/demo/live-trigger-outcome-closeout/report/download', input);
 }
 
 export async function getDemoEndToEndAcceptanceMatrix(): Promise<DemoEndToEndAcceptanceMatrix> {
