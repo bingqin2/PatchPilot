@@ -88,6 +88,7 @@ import type {
   EvaluationRunArchiveReadinessSummary,
   EvaluationRunPreview,
   EvaluationRunSnapshotArchive,
+  ExternalExposureReadiness,
   FixTaskEvidencePackageAcceptanceCertificate,
   FixTaskEvidencePackageAcceptanceCertificateArchive,
   FixTask,
@@ -193,6 +194,10 @@ export async function postDemoLiveLaunchGate(input: GitHubTriggerDryRunInput): P
 
 export async function getDemoEndToEndAcceptanceMatrix(): Promise<DemoEndToEndAcceptanceMatrix> {
   return getApi<DemoEndToEndAcceptanceMatrix>('/api/demo/end-to-end-acceptance-matrix');
+}
+
+export async function getExternalExposureReadiness(): Promise<ExternalExposureReadiness> {
+  return getApi<ExternalExposureReadiness>('/api/security/external-exposure-readiness');
 }
 
 export async function listTasks(options: TaskStatusFilter | ListTasksOptions = 'ALL'): Promise<FixTaskPage> {

@@ -1708,6 +1708,38 @@ const demoEndToEndAcceptanceMatrix = {
   markdownReport: '# PatchPilot End-to-End Acceptance Matrix'
 };
 
+const externalExposureReadiness = {
+  status: 'NEEDS_ATTENTION',
+  safeToExpose: false,
+  readyCount: 8,
+  needsAttentionCount: 2,
+  blockedCount: 0,
+  totalCount: 10,
+  summary: 'PatchPilot needs more safeguards before public exposure.',
+  nextActions: [
+    'Configure PATCHPILOT_ALLOWED_TRIGGER_USERS before inviting external trigger traffic.',
+    'Configure PATCHPILOT_ALLOWED_REPOSITORIES before accepting external repository traffic.'
+  ],
+  sideEffectContract:
+    'GET /api/security/external-exposure-readiness is read-only: it does not create tasks, call the model, mutate GitHub, or expose secrets.',
+  checks: [
+    {
+      name: 'Admin API token',
+      status: 'READY',
+      summary: 'Admin API token is configured.',
+      nextAction: 'No action needed.'
+    },
+    {
+      name: 'Trigger user allowlist',
+      status: 'NEEDS_ATTENTION',
+      summary: 'Trigger user allowlist is open.',
+      nextAction: 'Configure PATCHPILOT_ALLOWED_TRIGGER_USERS before inviting external trigger traffic.'
+    }
+  ],
+  generatedAt: '2026-07-01T12:00:00Z',
+  markdownReport: '# PatchPilot External Exposure Readiness'
+};
+
 const demoReadinessSnapshotArchive = {
   id: 'readiness-snapshot-1',
   status: 'NEEDS_ATTENTION',
@@ -3707,6 +3739,9 @@ beforeEach(() => {
     if (url === '/api/demo/end-to-end-acceptance-matrix') {
       return jsonResponse(demoEndToEndAcceptanceMatrix);
     }
+    if (url === '/api/security/external-exposure-readiness') {
+      return jsonResponse(externalExposureReadiness);
+    }
     if (url === '/api/tasks/metrics/summary' || url.startsWith('/api/tasks/metrics/summary?')) {
       return jsonResponse({
         totalCount: 3,
@@ -5162,6 +5197,7 @@ test('renders operational task dashboard from backend APIs', async () => {
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/handoff-share-delivery-receipts'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/script'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/readiness'));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/security/external-exposure-readiness'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/acceptance-summary'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-acceptance-share-package'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/demo/final-acceptance-share-package/archives'));
@@ -5212,6 +5248,10 @@ test('renders operational task dashboard from backend APIs', async () => {
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/admin-audit-events?limit=20'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks/task-1/detail'));
   expect(screen.getByText('Pull request opened')).toBeInTheDocument();
+  const exposurePanel = screen.getByRole('region', { name: 'External exposure readiness' });
+  expect(within(exposurePanel).getAllByText('PatchPilot needs more safeguards before public exposure.'))
+    .toHaveLength(2);
+  expect(within(exposurePanel).getByText('Trigger user allowlist')).toBeInTheDocument();
   const evidencePanel = screen.getByRole('region', { name: 'Demo evidence bundle' });
   expect(within(evidencePanel).getByText('Webhook setup is ready for GitHub deliveries.')).toBeInTheDocument();
   expect(within(evidencePanel).getByText('https://demo.trycloudflare.com/api/github/webhook')).toBeInTheDocument();

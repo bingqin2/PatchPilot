@@ -8,6 +8,7 @@ import {
   postGitHubTriggerDryRun,
   postDemoLiveLaunchGate,
   getDemoEndToEndAcceptanceMatrix,
+  getExternalExposureReadiness,
   getDashboardBootstrap,
   getBackendHealth,
   getConfigurationSummary,
@@ -330,6 +331,43 @@ test('loads demo end-to-end acceptance matrix through backend API', async () => 
 
   await expect(getDemoEndToEndAcceptanceMatrix()).resolves.toEqual(matrix);
   expect(fetchMock).toHaveBeenCalledWith('/api/demo/end-to-end-acceptance-matrix');
+});
+
+test('loads external exposure readiness through backend API', async () => {
+  const readiness = {
+    status: 'BLOCKED',
+    safeToExpose: false,
+    readyCount: 6,
+    needsAttentionCount: 2,
+    blockedCount: 2,
+    totalCount: 10,
+    summary: 'PatchPilot is blocked from safe public exposure.',
+    nextActions: ['Configure PATCHPILOT_ADMIN_TOKEN before exposing PatchPilot outside localhost.'],
+    sideEffectContract: 'GET /api/security/external-exposure-readiness is read-only and does not expose secrets.',
+    checks: [
+      {
+        name: 'Admin API token',
+        status: 'BLOCKED',
+        summary: 'Admin API token is missing.',
+        nextAction: 'Configure PATCHPILOT_ADMIN_TOKEN before exposing PatchPilot outside localhost.'
+      }
+    ],
+    generatedAt: '2026-07-01T12:00:00Z',
+    markdownReport: '# PatchPilot External Exposure Readiness'
+  };
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: readiness,
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  await expect(getExternalExposureReadiness()).resolves.toEqual(readiness);
+  expect(fetchMock).toHaveBeenCalledWith('/api/security/external-exposure-readiness');
 });
 
 test('loads dashboard bootstrap through backend API without a saved admin token', async () => {

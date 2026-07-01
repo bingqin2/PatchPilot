@@ -427,6 +427,28 @@ export interface ConfigurationSummary {
   repositoryPreflightAllowedRootDirs: string[];
 }
 
+export interface ExternalExposureReadinessCheck {
+  name: string;
+  status: DemoReadinessStatus;
+  summary: string;
+  nextAction: string;
+}
+
+export interface ExternalExposureReadiness {
+  status: DemoReadinessStatus;
+  safeToExpose: boolean;
+  readyCount: number;
+  needsAttentionCount: number;
+  blockedCount: number;
+  totalCount: number;
+  summary: string;
+  nextActions: string[];
+  sideEffectContract: string;
+  checks: ExternalExposureReadinessCheck[];
+  generatedAt: string;
+  markdownReport: string;
+}
+
 export interface DashboardBootstrap {
   adminTokenConfigured: boolean;
   adminTokenBootstrapEnabled: boolean;
