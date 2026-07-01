@@ -1,6 +1,7 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type {
+  ExternalExposureCloseout,
   ExternalExposureHandoffPackage,
   ExternalExposureReadiness,
   ExternalExposureReadinessArchive,
@@ -99,6 +100,36 @@ const sessions: ExternalExposureSession[] = [
   }
 ];
 
+const closeout: ExternalExposureCloseout = {
+  status: 'READY',
+  closeoutReady: true,
+  summary: 'External exposure session is closed with complete local evidence.',
+  nextAction: 'Keep the closeout report with the demo evidence bundle.',
+  latestSessionId: 'exposure-session-1',
+  latestSessionStatus: 'CLOSED',
+  publicUrl: 'https://demo.trycloudflare.com',
+  webhookUrl: 'https://demo.trycloudflare.com/api/github/webhook',
+  purpose: 'Live GitHub webhook smoke test',
+  operator: 'bingqin2',
+  startedAt: '2026-07-01T15:00:00Z',
+  closedBy: 'bingqin2',
+  closedAt: '2026-07-01T16:30:00Z',
+  closeNotes: 'Tunnel process stopped.',
+  linkedReadinessArchiveId: 'exposure-archive-1',
+  handoffStatus: 'READY',
+  archiveFreshness: 'CURRENT',
+  readyCount: 4,
+  needsAttentionCount: 0,
+  blockedCount: 0,
+  totalCount: 4,
+  nextActions: ['Keep the closeout report with the demo evidence bundle.'],
+  evidenceNotes: ['Latest session exposure-session-1 is CLOSED.'],
+  downloadActions: ['GET /api/security/external-exposure-closeout/report/download'],
+  sideEffectContract: 'GET /api/security/external-exposure-closeout is read-only.',
+  generatedAt: '2026-07-01T18:00:00Z',
+  markdownReport: '# PatchPilot External Exposure Closeout'
+};
+
 afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
@@ -115,12 +146,15 @@ test('renders exposure readiness status, counts, checks, and next actions', () =
       handoffPackageError={null}
       sessions={sessions}
       sessionError={null}
+      closeout={closeout}
+      closeoutError={null}
       onArchiveReadiness={vi.fn()}
       onDownloadArchiveReport={vi.fn()}
       onDownloadHandoffPackageReport={vi.fn()}
       onStartSession={vi.fn()}
       onCloseSession={vi.fn()}
       onDownloadSessionReport={vi.fn()}
+      onDownloadCloseoutReport={vi.fn()}
       onRefresh={vi.fn()}
     />
   );
@@ -143,7 +177,11 @@ test('renders exposure readiness status, counts, checks, and next actions', () =
   expect(within(panel).getByText('External exposure sessions')).toBeInTheDocument();
   expect(within(panel).getByText('https://demo.trycloudflare.com')).toBeInTheDocument();
   expect(within(panel).getByText('Live GitHub webhook smoke test')).toBeInTheDocument();
-  expect(within(panel).getByText('exposure-session-1')).toBeInTheDocument();
+  expect(within(panel).getAllByText('exposure-session-1').length).toBeGreaterThanOrEqual(2);
+  expect(within(panel).getByText('External exposure closeout')).toBeInTheDocument();
+  expect(within(panel).getByText('External exposure session is closed with complete local evidence.')).toBeInTheDocument();
+  expect(within(panel).getByText('Closeout complete')).toBeInTheDocument();
+  expect(within(panel).getByText('Latest session exposure-session-1 is CLOSED.')).toBeInTheDocument();
   expect(
     within(panel).getAllByText((_, element) =>
       element?.textContent?.includes('Archive freshness: CURRENT') ?? false
@@ -165,6 +203,10 @@ test('copies, archives, downloads archived markdown, and refreshes the panel', a
   });
   const onDownloadArchiveReport = vi.fn(async () => reportBlob);
   const onDownloadHandoffPackageReport = vi.fn(async () => handoffReportBlob);
+  const closeoutReportBlob = new Blob(['# PatchPilot External Exposure Closeout'], {
+    type: 'text/markdown;charset=UTF-8'
+  });
+  const onDownloadCloseoutReport = vi.fn(async () => closeoutReportBlob);
   const onStartSession = vi.fn(async () => sessions[0]);
   const onCloseSession = vi.fn(async () => ({ ...sessions[0], status: 'CLOSED' as const }));
   const sessionReportBlob = new Blob(['# PatchPilot External Exposure Session'], {
@@ -190,12 +232,15 @@ test('copies, archives, downloads archived markdown, and refreshes the panel', a
       handoffPackageError={null}
       sessions={sessions}
       sessionError={null}
+      closeout={closeout}
+      closeoutError={null}
       onArchiveReadiness={onArchiveReadiness}
       onDownloadArchiveReport={onDownloadArchiveReport}
       onDownloadHandoffPackageReport={onDownloadHandoffPackageReport}
       onStartSession={onStartSession}
       onCloseSession={onCloseSession}
       onDownloadSessionReport={onDownloadSessionReport}
+      onDownloadCloseoutReport={onDownloadCloseoutReport}
       onRefresh={onRefresh}
     />
   );
@@ -218,6 +263,11 @@ test('copies, archives, downloads archived markdown, and refreshes the panel', a
   expect(onDownloadHandoffPackageReport).toHaveBeenCalledTimes(1);
   expect(createObjectURL).toHaveBeenCalledWith(handoffReportBlob);
   expect(screen.getByText('Exposure handoff package downloaded')).toBeInTheDocument();
+
+  await user.click(screen.getByRole('button', { name: 'Download exposure closeout report' }));
+  expect(onDownloadCloseoutReport).toHaveBeenCalledTimes(1);
+  expect(createObjectURL).toHaveBeenCalledWith(closeoutReportBlob);
+  expect(screen.getByText('Exposure closeout report downloaded')).toBeInTheDocument();
 
   await user.clear(screen.getByLabelText('Temporary public URL'));
   await user.type(screen.getByLabelText('Temporary public URL'), 'https://new-demo.trycloudflare.com');
@@ -266,12 +316,15 @@ test('shows empty and error states without hiding refresh', () => {
       handoffPackageError="handoff unavailable"
       sessions={[]}
       sessionError="sessions unavailable"
+      closeout={null}
+      closeoutError="closeout unavailable"
       onArchiveReadiness={vi.fn()}
       onDownloadArchiveReport={vi.fn()}
       onDownloadHandoffPackageReport={vi.fn()}
       onStartSession={vi.fn()}
       onCloseSession={vi.fn()}
       onDownloadSessionReport={vi.fn()}
+      onDownloadCloseoutReport={vi.fn()}
       onRefresh={vi.fn()}
     />
   );
@@ -287,6 +340,9 @@ test('shows empty and error states without hiding refresh', () => {
   expect(screen.getByText('External exposure sessions unavailable')).toBeInTheDocument();
   expect(screen.getByText('sessions unavailable')).toBeInTheDocument();
   expect(screen.getByText('No external exposure sessions recorded.')).toBeInTheDocument();
+  expect(screen.getByText('External exposure closeout unavailable')).toBeInTheDocument();
+  expect(screen.getByText('closeout unavailable')).toBeInTheDocument();
+  expect(screen.getByText('No external exposure closeout loaded.')).toBeInTheDocument();
   expect(screen.getByRole('button', { name: 'Archive exposure readiness' })).toBeDisabled();
   expect(screen.getByRole('button', { name: 'Refresh exposure gate' })).toBeEnabled();
 });

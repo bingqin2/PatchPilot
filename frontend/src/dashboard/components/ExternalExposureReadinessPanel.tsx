@@ -2,6 +2,7 @@ import { Archive, Copy, Download, Play, RefreshCw, Square } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import type {
   DemoReadinessStatus,
+  ExternalExposureCloseout,
   ExternalExposureHandoffPackage,
   ExternalExposureReadiness,
   ExternalExposureReadinessArchive,
@@ -21,12 +22,15 @@ interface ExternalExposureReadinessPanelProps {
   handoffPackageError: string | null;
   sessions: ExternalExposureSession[];
   sessionError: string | null;
+  closeout: ExternalExposureCloseout | null;
+  closeoutError: string | null;
   onArchiveReadiness: () => Promise<ExternalExposureReadinessArchive>;
   onDownloadArchiveReport: (archiveId: string) => Promise<Blob>;
   onDownloadHandoffPackageReport: () => Promise<Blob>;
   onStartSession: (input: ExternalExposureSessionInput) => Promise<ExternalExposureSession>;
   onCloseSession: (sessionId: string, input: ExternalExposureSessionCloseInput) => Promise<ExternalExposureSession>;
   onDownloadSessionReport: (sessionId: string) => Promise<Blob>;
+  onDownloadCloseoutReport: () => Promise<Blob>;
   onRefresh: () => Promise<void> | void;
 }
 
@@ -39,12 +43,15 @@ export function ExternalExposureReadinessPanel({
   handoffPackageError,
   sessions,
   sessionError,
+  closeout,
+  closeoutError,
   onArchiveReadiness,
   onDownloadArchiveReport,
   onDownloadHandoffPackageReport,
   onStartSession,
   onCloseSession,
   onDownloadSessionReport,
+  onDownloadCloseoutReport,
   onRefresh
 }: ExternalExposureReadinessPanelProps) {
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
@@ -137,6 +144,16 @@ export function ExternalExposureReadinessPanel({
     }
   }
 
+  async function downloadCloseoutReport() {
+    try {
+      const report = await onDownloadCloseoutReport();
+      downloadMarkdown(report, 'patchpilot-external-exposure-closeout.md');
+      setDownloadStatus('Exposure closeout report downloaded');
+    } catch {
+      setDownloadStatus('Exposure closeout download failed');
+    }
+  }
+
   return (
     <section className="panel external-exposure-readiness-panel" aria-label="External exposure readiness">
       <div className="panel-header">
@@ -205,6 +222,12 @@ export function ExternalExposureReadinessPanel({
         onStartSession={startSession}
         onCloseSession={closeSession}
         onDownloadSessionReport={downloadSessionReport}
+      />
+
+      <ExternalExposureCloseoutResult
+        closeout={closeout}
+        error={closeoutError}
+        onDownloadReport={downloadCloseoutReport}
       />
 
       <div className="demo-launch-preflight-actions">
@@ -374,6 +397,119 @@ function ExternalExposureSessionResult({
             </div>
           ))}
         </div>
+      )}
+    </div>
+  );
+}
+
+function ExternalExposureCloseoutResult({
+  closeout,
+  error,
+  onDownloadReport
+}: {
+  closeout: ExternalExposureCloseout | null;
+  error: string | null;
+  onDownloadReport: () => Promise<void>;
+}) {
+  return (
+    <div className="demo-launch-preflight-actions">
+      <div className="panel-subheader">
+        <div>
+          <h3>External exposure closeout</h3>
+          <p>{closeout?.summary ?? 'Loading exposure shutdown evidence'}</p>
+        </div>
+        <button
+          className="secondary-button"
+          type="button"
+          onClick={() => void onDownloadReport()}
+          aria-label="Download exposure closeout report"
+          disabled={!closeout}
+        >
+          <Download size={14} />
+          Download closeout
+        </button>
+      </div>
+
+      {error ? (
+        <div className="adapter-api-error">
+          <strong>External exposure closeout unavailable</strong>
+          <span>{error}</span>
+        </div>
+      ) : null}
+
+      {closeout ? (
+        <div className={`demo-launch-preflight-result demo-launch-preflight-result-${statusClass(closeout.status)}`}>
+          <div className="demo-launch-preflight-summary">
+            <span className={`demo-readiness-status demo-readiness-status-${statusClass(closeout.status)}`}>
+              {closeout.status}
+            </span>
+            <strong>{closeout.closeoutReady ? 'Closeout complete' : 'Closeout incomplete'}</strong>
+            <p>{closeout.nextAction}</p>
+            <small>
+              Generated {compactDateTime(closeout.generatedAt)} · {closeout.totalCount} checks
+            </small>
+          </div>
+
+          <div className="demo-launch-preflight-grid">
+            <div>
+              <span>Latest session</span>
+              <strong>{closeout.latestSessionId ?? 'Missing'}</strong>
+            </div>
+            <div>
+              <span>Session status</span>
+              <strong>{closeout.latestSessionStatus ?? 'Missing'}</strong>
+            </div>
+            <div>
+              <span>Linked archive</span>
+              <strong>{closeout.linkedReadinessArchiveId ?? 'Missing'}</strong>
+            </div>
+            <div>
+              <span>Handoff</span>
+              <strong>{closeout.handoffStatus ?? 'Missing'}</strong>
+            </div>
+          </div>
+
+          <div className="demo-launch-preflight-grid">
+            <div>
+              <span>Ready</span>
+              <strong>{closeout.readyCount} ready</strong>
+            </div>
+            <div>
+              <span>Needs attention</span>
+              <strong>{closeout.needsAttentionCount} warning</strong>
+            </div>
+            <div>
+              <span>Blocked</span>
+              <strong>{closeout.blockedCount} blocked</strong>
+            </div>
+            <div>
+              <span>Archive freshness</span>
+              <strong>{closeout.archiveFreshness ?? 'Missing'}</strong>
+            </div>
+          </div>
+
+          <p className="demo-launch-preflight-blocked">{closeout.sideEffectContract}</p>
+
+          <div className="demo-evidence-records">
+            {closeout.evidenceNotes.map((note) => (
+              <div key={note}>
+                <span>Evidence</span>
+                <small>{note}</small>
+              </div>
+            ))}
+          </div>
+
+          <div className="demo-launch-preflight-actions">
+            <h4>Next actions</h4>
+            <ul>
+              {closeout.nextActions.map((action) => (
+                <li key={action}>{action}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      ) : (
+        <p className="empty-state">No external exposure closeout loaded.</p>
       )}
     </div>
   );
