@@ -1,19 +1,31 @@
-import { Download, RefreshCw } from 'lucide-react';
+import { Archive, Download, RefreshCw } from 'lucide-react';
 import { useState } from 'react';
-import type { DemoReadinessStatus, ExternalExposureOperatorHandoffChecklist } from '../../types';
+import type {
+  DemoReadinessStatus,
+  ExternalExposureOperatorHandoffChecklist,
+  ExternalExposureOperatorHandoffChecklistArchive
+} from '../../types';
 import { compactDateTime } from '../format';
 
 interface ExternalExposureOperatorHandoffChecklistPanelProps {
   checklist: ExternalExposureOperatorHandoffChecklist | null;
+  archives: ExternalExposureOperatorHandoffChecklistArchive[];
   error: string | null;
+  archiveError: string | null;
   onDownloadReport: () => Promise<Blob>;
+  onArchiveChecklist: () => Promise<ExternalExposureOperatorHandoffChecklistArchive>;
+  onDownloadArchiveReport: (archiveId: string) => Promise<Blob>;
   onRefresh: () => Promise<void> | void;
 }
 
 export function ExternalExposureOperatorHandoffChecklistPanel({
   checklist,
+  archives,
   error,
+  archiveError,
   onDownloadReport,
+  onArchiveChecklist,
+  onDownloadArchiveReport,
   onRefresh
 }: ExternalExposureOperatorHandoffChecklistPanelProps) {
   const [downloadStatus, setDownloadStatus] = useState<string | null>(null);
@@ -25,6 +37,25 @@ export function ExternalExposureOperatorHandoffChecklistPanel({
       setDownloadStatus('Exposure handoff checklist downloaded');
     } catch {
       setDownloadStatus('Exposure handoff checklist download failed');
+    }
+  }
+
+  async function archiveChecklist() {
+    try {
+      await onArchiveChecklist();
+      setDownloadStatus('Exposure handoff checklist archived');
+    } catch {
+      setDownloadStatus('Exposure handoff checklist archive failed');
+    }
+  }
+
+  async function downloadArchiveReport(archiveId: string) {
+    try {
+      const report = await onDownloadArchiveReport(archiveId);
+      downloadMarkdown(report, `patchpilot-external-exposure-operator-handoff-checklist-${archiveId}.md`);
+      setDownloadStatus('Exposure handoff checklist archive downloaded');
+    } catch {
+      setDownloadStatus('Exposure handoff checklist archive download failed');
     }
   }
 
@@ -52,6 +83,16 @@ export function ExternalExposureOperatorHandoffChecklistPanel({
           <button
             className="secondary-button"
             type="button"
+            onClick={() => void archiveChecklist()}
+            disabled={!checklist}
+            aria-label="Archive exposure handoff checklist"
+          >
+            <Archive size={16} />
+            Archive
+          </button>
+          <button
+            className="secondary-button"
+            type="button"
             onClick={() => void onRefresh()}
             aria-label="Refresh exposure handoff checklist"
           >
@@ -66,6 +107,13 @@ export function ExternalExposureOperatorHandoffChecklistPanel({
         <div className="adapter-api-error">
           <strong>External exposure handoff checklist unavailable</strong>
           <span>{error}</span>
+        </div>
+      ) : null}
+
+      {archiveError ? (
+        <div className="adapter-api-error">
+          <strong>Exposure handoff checklist archives unavailable</strong>
+          <span>{archiveError}</span>
         </div>
       ) : null}
 
@@ -136,6 +184,34 @@ export function ExternalExposureOperatorHandoffChecklistPanel({
           <ListBlock title="Evidence notes" items={checklist.evidenceNotes} />
           <ListBlock title="Next actions" items={checklist.nextActions} />
           <ListBlock title="Download actions" items={checklist.downloadActions} />
+          <div className="demo-launch-preflight-actions">
+            <h3>Recent checklist archives</h3>
+            {archives.length > 0 ? (
+              <div className="demo-evidence-records">
+                {archives.map((archive) => (
+                  <div key={archive.id}>
+                    <span>{archive.readyForNextLiveStep ? 'Ready archive' : blockedLabel(archive.status)}</span>
+                    <strong>{archive.id}</strong>
+                    <small>Archived {compactDateTime(archive.archivedAt)}</small>
+                    <small>
+                      Closeout {archive.latestCloseoutArchiveId ?? 'missing'} · publish{' '}
+                      {archive.livePublishStatus ?? 'missing'}
+                    </small>
+                    <button
+                      className="text-button"
+                      type="button"
+                      onClick={() => void downloadArchiveReport(archive.id)}
+                      aria-label={`Download exposure handoff checklist archive ${archive.id}`}
+                    >
+                      Download archive
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="empty-state">No external exposure handoff checklist archives recorded.</div>
+            )}
+          </div>
           <small>{checklist.sideEffectContract}</small>
         </>
       ) : (

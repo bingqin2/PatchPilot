@@ -185,9 +185,16 @@ curl -H "X-PatchPilot-Admin-Token: $PATCHPILOT_ADMIN_TOKEN" \
   http://127.0.0.1:8080/api/security/external-exposure-operator-handoff-checklist
 curl -OJ -H "X-PatchPilot-Admin-Token: $PATCHPILOT_ADMIN_TOKEN" \
   http://127.0.0.1:8080/api/security/external-exposure-operator-handoff-checklist/report/download
+curl -X POST -H "X-PatchPilot-Admin-Token: $PATCHPILOT_ADMIN_TOKEN" \
+  http://127.0.0.1:8080/api/security/external-exposure-operator-handoff-checklist/archives
+curl -H "X-PatchPilot-Admin-Token: $PATCHPILOT_ADMIN_TOKEN" \
+  http://127.0.0.1:8080/api/security/external-exposure-operator-handoff-checklist/archives
+curl -OJ -H "X-PatchPilot-Admin-Token: $PATCHPILOT_ADMIN_TOKEN" \
+  http://127.0.0.1:8080/api/security/external-exposure-operator-handoff-checklist/archives/<archiveId>/report/download
 ```
 
 The checklist is read-only over the latest closeout archive, current handoff package, active exposure sessions, and live GitHub publish preflight for the configured demo repository. It does not create tasks, call the model, probe public URLs, mutate Git or GitHub, archive records, or expose secrets.
+Checklist archive creation is a PatchPilot-local evidence write only. It freezes the currently visible handoff checklist so the go/no-go decision can be reopened after runtime state changes, and it still does not create tasks, call the model, probe public URLs, mutate Git or GitHub, or expose secrets.
 
 Local repository preflight is limited to configured backend-local root directories:
 

@@ -26,6 +26,7 @@ import {
   archiveEvaluationRunSnapshot,
   archiveExternalExposureCloseout,
   archiveExternalExposureReadiness,
+  archiveExternalExposureOperatorHandoffChecklist,
   cancelTask,
   composeDemoLaunchCommand,
   createDemoFinalAcceptanceCompletionEvidenceDeliveryReceipt,
@@ -90,6 +91,7 @@ import {
   downloadDemoSelfHostedLaunchReadinessReport,
   downloadExternalExposureCloseoutReport,
   downloadExternalExposureCloseoutArchiveReport,
+  downloadExternalExposureOperatorHandoffChecklistArchiveReport,
   downloadExternalExposureOperatorHandoffChecklistReport,
   downloadExternalExposureHandoffPackageReport,
   downloadExternalExposureReadinessArchiveReport,
@@ -213,6 +215,7 @@ import {
   listEvaluationRunSnapshots,
   listExternalExposureReadinessArchives,
   listExternalExposureCloseoutArchives,
+  listExternalExposureOperatorHandoffChecklistArchives,
   listExternalExposureSessions,
   listLanguageAdapterFixtures,
   listLanguageAdapterRuntimeReadiness,
@@ -296,6 +299,7 @@ import type {
   ExternalExposureCloseoutArchive,
   ExternalExposureHandoffPackage,
   ExternalExposureOperatorHandoffChecklist,
+  ExternalExposureOperatorHandoffChecklistArchive,
   ExternalExposureReadiness,
   ExternalExposureReadinessArchive,
   ExternalExposureSession,
@@ -506,6 +510,12 @@ export default function App() {
     useState<ExternalExposureOperatorHandoffChecklist | null>(null);
   const [externalExposureOperatorHandoffChecklistError, setExternalExposureOperatorHandoffChecklistError] =
     useState<string | null>(null);
+  const [externalExposureOperatorHandoffChecklistArchives, setExternalExposureOperatorHandoffChecklistArchives] =
+    useState<ExternalExposureOperatorHandoffChecklistArchive[]>([]);
+  const [
+    externalExposureOperatorHandoffChecklistArchiveError,
+    setExternalExposureOperatorHandoffChecklistArchiveError
+  ] = useState<string | null>(null);
   const [demoFinalAcceptanceSharePackage, setDemoFinalAcceptanceSharePackage] =
     useState<DemoFinalAcceptanceSharePackage | null>(null);
   const [demoFinalAcceptanceSharePackageError, setDemoFinalAcceptanceSharePackageError] = useState<string | null>(null);
@@ -1139,6 +1149,7 @@ export default function App() {
         externalExposureCloseoutResult,
         externalExposureCloseoutArchiveResult,
         externalExposureOperatorHandoffChecklistResult,
+        externalExposureOperatorHandoffChecklistArchiveResult,
         demoAcceptanceSummaryResult,
         demoFinalAcceptanceSharePackageResult,
         demoFinalAcceptanceSharePackageArchiveResult,
@@ -1362,6 +1373,10 @@ export default function App() {
         getExternalExposureOperatorHandoffChecklist().then(
           (checklist) => ({ checklist, error: null as string | null }),
           (caught) => ({ checklist: null, error: errorMessage(caught) })
+        ),
+        listExternalExposureOperatorHandoffChecklistArchives().then(
+          (archives) => ({ archives, error: null as string | null }),
+          (caught) => ({ archives: null, error: errorMessage(caught) })
         ),
         getDemoAcceptanceSummary().then(
           (summary) => ({ summary, error: null as string | null }),
@@ -1798,6 +1813,12 @@ export default function App() {
         setExternalExposureOperatorHandoffChecklist(externalExposureOperatorHandoffChecklistResult.checklist);
       }
       setExternalExposureOperatorHandoffChecklistError(externalExposureOperatorHandoffChecklistResult.error);
+      if (externalExposureOperatorHandoffChecklistArchiveResult.archives) {
+        setExternalExposureOperatorHandoffChecklistArchives(externalExposureOperatorHandoffChecklistArchiveResult.archives);
+      }
+      setExternalExposureOperatorHandoffChecklistArchiveError(
+        externalExposureOperatorHandoffChecklistArchiveResult.error
+      );
       if (demoAcceptanceSummaryResult.summary) {
         setDemoAcceptanceSummary(demoAcceptanceSummaryResult.summary);
       }
@@ -3387,6 +3408,7 @@ export default function App() {
     setExternalExposureCloseoutError(null);
     setExternalExposureCloseoutArchiveError(null);
     setExternalExposureOperatorHandoffChecklistError(null);
+    setExternalExposureOperatorHandoffChecklistArchiveError(null);
     try {
       const readiness = await getExternalExposureReadiness();
       setExternalExposureReadiness(readiness);
@@ -3400,20 +3422,27 @@ export default function App() {
       setExternalExposureCloseoutArchives(closeoutArchives);
       const checklist = await getExternalExposureOperatorHandoffChecklist();
       setExternalExposureOperatorHandoffChecklist(checklist);
+      const checklistArchives = await listExternalExposureOperatorHandoffChecklistArchives();
+      setExternalExposureOperatorHandoffChecklistArchives(checklistArchives);
     } catch (caught) {
       setExternalExposureReadinessError(errorMessage(caught));
       setExternalExposureCloseoutError(errorMessage(caught));
       setExternalExposureOperatorHandoffChecklistError(errorMessage(caught));
+      setExternalExposureOperatorHandoffChecklistArchiveError(errorMessage(caught));
     }
   }, []);
 
   const handleRefreshExternalExposureOperatorHandoffChecklist = useCallback(async () => {
     setExternalExposureOperatorHandoffChecklistError(null);
+    setExternalExposureOperatorHandoffChecklistArchiveError(null);
     try {
       const checklist = await getExternalExposureOperatorHandoffChecklist();
       setExternalExposureOperatorHandoffChecklist(checklist);
+      const archives = await listExternalExposureOperatorHandoffChecklistArchives();
+      setExternalExposureOperatorHandoffChecklistArchives(archives);
     } catch (caught) {
       setExternalExposureOperatorHandoffChecklistError(errorMessage(caught));
+      setExternalExposureOperatorHandoffChecklistArchiveError(errorMessage(caught));
     }
   }, []);
 
@@ -3474,6 +3503,25 @@ export default function App() {
 
   const handleDownloadExternalExposureOperatorHandoffChecklistReport = useCallback(
     () => downloadExternalExposureOperatorHandoffChecklistReport(),
+    []
+  );
+
+  const handleArchiveExternalExposureOperatorHandoffChecklist = useCallback(async () => {
+    setExternalExposureOperatorHandoffChecklistArchiveError(null);
+    try {
+      const archive = await archiveExternalExposureOperatorHandoffChecklist();
+      setExternalExposureOperatorHandoffChecklistArchives((current) =>
+        [archive, ...current.filter((item) => item.id !== archive.id)].slice(0, 20)
+      );
+      return archive;
+    } catch (caught) {
+      setExternalExposureOperatorHandoffChecklistArchiveError(errorMessage(caught));
+      throw caught;
+    }
+  }, []);
+
+  const handleDownloadExternalExposureOperatorHandoffChecklistArchiveReport = useCallback(
+    (archiveId: string) => downloadExternalExposureOperatorHandoffChecklistArchiveReport(archiveId),
     []
   );
 
@@ -4138,8 +4186,12 @@ export default function App() {
 
       <ExternalExposureOperatorHandoffChecklistPanel
         checklist={externalExposureOperatorHandoffChecklist}
+        archives={externalExposureOperatorHandoffChecklistArchives}
         error={externalExposureOperatorHandoffChecklistError}
+        archiveError={externalExposureOperatorHandoffChecklistArchiveError}
         onDownloadReport={handleDownloadExternalExposureOperatorHandoffChecklistReport}
+        onArchiveChecklist={handleArchiveExternalExposureOperatorHandoffChecklist}
+        onDownloadArchiveReport={handleDownloadExternalExposureOperatorHandoffChecklistArchiveReport}
         onRefresh={handleRefreshExternalExposureOperatorHandoffChecklist}
       />
 

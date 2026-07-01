@@ -92,6 +92,7 @@ import type {
   ExternalExposureCloseout,
   ExternalExposureCloseoutArchive,
   ExternalExposureOperatorHandoffChecklist,
+  ExternalExposureOperatorHandoffChecklistArchive,
   ExternalExposureReadiness,
   ExternalExposureReadinessArchive,
   ExternalExposureSession,
@@ -258,6 +259,26 @@ export async function getExternalExposureOperatorHandoffChecklist(): Promise<Ext
 
 export async function downloadExternalExposureOperatorHandoffChecklistReport(): Promise<Blob> {
   return getBlobApi('/api/security/external-exposure-operator-handoff-checklist/report/download');
+}
+
+export async function archiveExternalExposureOperatorHandoffChecklist(): Promise<ExternalExposureOperatorHandoffChecklistArchive> {
+  return postApi<ExternalExposureOperatorHandoffChecklistArchive>(
+    '/api/security/external-exposure-operator-handoff-checklist/archives'
+  );
+}
+
+export async function listExternalExposureOperatorHandoffChecklistArchives(): Promise<ExternalExposureOperatorHandoffChecklistArchive[]> {
+  return getApi<ExternalExposureOperatorHandoffChecklistArchive[]>(
+    '/api/security/external-exposure-operator-handoff-checklist/archives'
+  );
+}
+
+export async function downloadExternalExposureOperatorHandoffChecklistArchiveReport(
+  archiveId: string
+): Promise<Blob> {
+  return getBlobApi(
+    `/api/security/external-exposure-operator-handoff-checklist/archives/${encodeURIComponent(archiveId)}/report/download`
+  );
 }
 
 export async function startExternalExposureSession(

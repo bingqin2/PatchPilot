@@ -6474,3 +6474,22 @@ Validation so far:
 - `mvn -q -pl PatchPilot test`: passed with existing Spring/Mockito test logging.
 - `npm --prefix frontend test -- --reporter=dot`: passed, 35 test files and 528 tests.
 - `npm --prefix frontend run build`: passed with the existing Vite large-chunk warning.
+
+## 2026-07-02 - 323 External exposure operator handoff archives
+
+- Started `323-external-exposure-operator-handoff-archives` to freeze the current external exposure operator handoff checklist as local evidence before the next live `/agent fix` trigger.
+- Added `POST /api/security/external-exposure-operator-handoff-checklist/archives`, `GET /api/security/external-exposure-operator-handoff-checklist/archives`, and `GET /api/security/external-exposure-operator-handoff-checklist/archives/{archiveId}/report/download`.
+- Added process-local capped archive storage and an archive service that copies the current checklist status, go/no-go flag, closeout/session/public URL/webhook URL/live-publish evidence, check counts, evidence notes, next actions, side-effect contract, generated time, archived time, and Markdown report.
+- Extended the external exposure operator handoff checklist dashboard panel with an `Archive` action, recent frozen checklist history, archived Markdown downloads, archive error feedback, and App loading/refresh wiring.
+- Updated README, product spec, architecture notes, frontend design notes, and this plan document with the checklist archive scope and no-side-effect contract.
+
+Validation so far:
+
+- `mvn -q -pl PatchPilot -Dtest=ExternalExposureOperatorHandoffChecklistArchiveServiceTests,ExternalExposureOperatorHandoffChecklistControllerTests test`: first failed because the archive VO, repository, service, and controller endpoints did not exist; passed after backend implementation.
+- `npm --prefix frontend test -- --run src/api.test.ts src/dashboard/components/ExternalExposureOperatorHandoffChecklistPanel.test.tsx --reporter=dot`: first failed because the archive API helpers, archive button, archive history, and archive error state were missing; passed after frontend implementation. Focused result: 2 test files and 238 tests.
+- `npm --prefix frontend test -- --run src/App.test.tsx --reporter=dot`: passed after App-level archive loading and handlers were wired. Result: 1 test file and 88 tests.
+- `mvn -q -pl PatchPilot test`: passed with existing Lombok/Mockito/Spring test logging.
+- `npm --prefix frontend test -- --reporter=dot`: passed, 35 test files and 529 tests.
+- `npm --prefix frontend run build`: passed with the existing Vite large-chunk warning.
+- `git diff --check`: passed.
+- Strict diff secret scan for GitHub, OpenAI-style, Slack, AWS, private-key, and PatchPilot token assignment patterns: no matches.

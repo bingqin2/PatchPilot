@@ -21,6 +21,9 @@ import {
   downloadExternalExposureCloseoutArchiveReport,
   getExternalExposureOperatorHandoffChecklist,
   downloadExternalExposureOperatorHandoffChecklistReport,
+  archiveExternalExposureOperatorHandoffChecklist,
+  listExternalExposureOperatorHandoffChecklistArchives,
+  downloadExternalExposureOperatorHandoffChecklistArchiveReport,
   startExternalExposureSession,
   closeExternalExposureSession,
   listExternalExposureSessions,
@@ -710,6 +713,82 @@ test('gets and downloads external exposure operator handoff checklist through ba
   await expect(downloadExternalExposureOperatorHandoffChecklistReport()).resolves.toBe(reportBlob);
   expect(fetchMock).toHaveBeenCalledWith('/api/security/external-exposure-operator-handoff-checklist');
   expect(fetchMock).toHaveBeenCalledWith('/api/security/external-exposure-operator-handoff-checklist/report/download');
+});
+
+test('archives, lists, and downloads external exposure operator handoff checklist archives through backend API', async () => {
+  const archive = {
+    id: 'operator-handoff-archive-1',
+    status: 'READY',
+    readyForNextLiveStep: true,
+    summary: 'External exposure evidence is closed and ready for the next live step.',
+    nextAction:
+      'Post the prepared /agent fix comment only after confirming the GitHub webhook payload URL still points to the intended backend.',
+    repository: 'bingqin2/PatchPilot',
+    latestCloseoutArchiveId: 'closeout-archive-1',
+    latestSessionId: 'exposure-session-1',
+    latestSessionStatus: 'CLOSED',
+    publicUrl: 'https://demo.trycloudflare.com',
+    webhookUrl: 'https://demo.trycloudflare.com/api/github/webhook',
+    handoffStatus: 'READY',
+    archiveFreshness: 'CURRENT',
+    livePublishStatus: 'READY',
+    livePublishReady: true,
+    activeSessionCount: 0,
+    readyCount: 4,
+    needsAttentionCount: 0,
+    blockedCount: 0,
+    totalCount: 4,
+    nextActions: [
+      'Post the prepared /agent fix comment only after confirming the GitHub webhook payload URL still points to the intended backend.'
+    ],
+    evidenceNotes: ['Latest closeout archive closeout-archive-1 is READY.'],
+    downloadActions: ['GET /api/security/external-exposure-operator-handoff-checklist/report/download'],
+    sideEffectContract: 'GET /api/security/external-exposure-operator-handoff-checklist is read-only.',
+    checks: [
+      {
+        name: 'Closeout archive',
+        status: 'READY',
+        summary: 'Latest closeout archive closeout-archive-1 is READY.',
+        nextAction: 'Ready.'
+      }
+    ],
+    generatedAt: '2026-07-01T19:00:00Z',
+    archivedAt: '2026-07-01T19:05:00Z',
+    report: '# PatchPilot External Exposure Operator Handoff Checklist'
+  };
+  const reportBlob = new Blob(['# PatchPilot External Exposure Operator Handoff Checklist'], {
+    type: 'text/markdown;charset=UTF-8'
+  });
+  const fetchMock = vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
+    if (String(url).endsWith('/report/download')) {
+      return {
+        ok: true,
+        status: 200,
+        blob: async () => reportBlob
+      } as Response;
+    }
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({
+        success: true,
+        data: init?.method === 'POST' ? archive : [archive],
+        message: null
+      })
+    } as Response;
+  });
+  vi.stubGlobal('fetch', fetchMock);
+
+  await expect(archiveExternalExposureOperatorHandoffChecklist()).resolves.toEqual(archive);
+  await expect(listExternalExposureOperatorHandoffChecklistArchives()).resolves.toEqual([archive]);
+  await expect(downloadExternalExposureOperatorHandoffChecklistArchiveReport('operator/archive 1')).resolves.toBe(reportBlob);
+  expect(fetchMock).toHaveBeenCalledWith('/api/security/external-exposure-operator-handoff-checklist/archives', {
+    method: 'POST'
+  });
+  expect(fetchMock).toHaveBeenCalledWith('/api/security/external-exposure-operator-handoff-checklist/archives');
+  expect(fetchMock).toHaveBeenCalledWith(
+    '/api/security/external-exposure-operator-handoff-checklist/archives/operator%2Farchive%201/report/download'
+  );
 });
 
 test('starts external exposure session through backend API', async () => {
