@@ -6456,3 +6456,21 @@ Validation so far:
 - `npm --prefix frontend run build`: passed with the existing Vite large-chunk warning.
 - `git diff --check`: passed.
 - Unstaged diff secret scan for GitHub, OpenAI, Slack, Google, private-key, and PatchPilot token patterns: no matches.
+
+## 2026-07-01 - 322 External exposure operator handoff checklist
+
+- Started `322-external-exposure-operator-handoff-checklist` to provide one post-closeout operator checklist before the next live `/agent fix` trigger.
+- Added `GET /api/security/external-exposure-operator-handoff-checklist` and `GET /api/security/external-exposure-operator-handoff-checklist/report/download`, backed by `ExternalExposureOperatorHandoffChecklistService`.
+- The checklist aggregates latest closeout archive proof, current exposure handoff package state, active exposure session count, and live GitHub publish preflight for the configured demo repository into `READY`, `NEEDS_ATTENTION`, or `BLOCKED` checks.
+- Extended the operations dashboard with `ExternalExposureOperatorHandoffChecklistPanel`, typed API helpers, App loading/refresh wiring, evidence notes, next actions, side-effect contract, and Markdown report download.
+- Updated README, product spec, architecture notes, frontend design notes, and this plan document with the operator handoff checklist scope and read-only contract.
+
+Validation so far:
+
+- `mvn -q -pl PatchPilot -Dtest=ExternalExposureOperatorHandoffChecklistServiceTests,ExternalExposureOperatorHandoffChecklistControllerTests test`: first failed because the checklist VO, service, and controller did not exist; passed after backend implementation.
+- `npm --prefix frontend test -- --run src/api.test.ts src/dashboard/components/ExternalExposureOperatorHandoffChecklistPanel.test.tsx --reporter=dot`: first failed because the API helpers and dashboard panel did not exist; passed after frontend implementation.
+- `npm --prefix frontend test -- --run src/App.test.tsx -t "renders operational task dashboard" --reporter=dot`: passed after App-level loading and render wiring.
+- `mvn -q -pl PatchPilot -Dtest=ExternalExposureOperatorHandoffChecklistServiceTests test`: first failed because `READY` status with false readiness flags was treated as ready; passed after requiring both the status and readiness flags for closeout archive, handoff package, and live publish checks.
+- `mvn -q -pl PatchPilot test`: passed with existing Spring/Mockito test logging.
+- `npm --prefix frontend test -- --reporter=dot`: passed, 35 test files and 528 tests.
+- `npm --prefix frontend run build`: passed with the existing Vite large-chunk warning.
