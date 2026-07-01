@@ -12,6 +12,8 @@ import {
   archiveExternalExposureReadiness,
   listExternalExposureReadinessArchives,
   downloadExternalExposureReadinessArchiveReport,
+  getExternalExposureHandoffPackage,
+  downloadExternalExposureHandoffPackageReport,
   getDashboardBootstrap,
   getBackendHealth,
   getConfigurationSummary,
@@ -448,6 +450,62 @@ test('downloads archived external exposure readiness markdown through backend AP
   const downloadedReport = await downloadExternalExposureReadinessArchiveReport('exposure-archive-1');
 
   expect(fetchMock).toHaveBeenCalledWith('/api/security/external-exposure-readiness/archives/exposure-archive-1/report/download');
+  expect(downloadedReport).toBe(reportBlob);
+});
+
+test('fetches external exposure handoff package through backend API', async () => {
+  const handoffPackage = {
+    status: 'READY',
+    handoffReady: true,
+    summary: 'External exposure handoff package is ready to share.',
+    nextAction: 'Start the temporary tunnel, share the current payload URL, and monitor webhook deliveries.',
+    readinessStatus: 'READY',
+    readinessSafeToExpose: true,
+    readinessReadyCount: 10,
+    readinessNeedsAttentionCount: 0,
+    readinessBlockedCount: 0,
+    readinessTotalCount: 10,
+    latestArchiveId: 'exposure-archive-1',
+    latestArchiveStatus: 'READY',
+    latestArchiveSafeToExpose: true,
+    latestArchiveCreatedAt: '2026-07-01T13:30:00Z',
+    archiveFreshness: 'CURRENT',
+    nextActions: ['Start the temporary tunnel and keep monitoring.'],
+    evidenceNotes: ['Latest archive exposure-archive-1 captures READY readiness evidence.'],
+    downloadActions: ['GET /api/security/external-exposure-handoff-package/report/download'],
+    sideEffectContract: 'GET /api/security/external-exposure-handoff-package is read-only.',
+    generatedAt: '2026-07-01T14:00:00Z',
+    markdownReport: '# PatchPilot External Exposure Handoff Package'
+  };
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: handoffPackage,
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  await expect(getExternalExposureHandoffPackage()).resolves.toEqual(handoffPackage);
+  expect(fetchMock).toHaveBeenCalledWith('/api/security/external-exposure-handoff-package');
+});
+
+test('downloads external exposure handoff package markdown through backend API', async () => {
+  const reportBlob = new Blob(['# PatchPilot External Exposure Handoff Package'], {
+    type: 'text/markdown;charset=UTF-8'
+  });
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    blob: async () => reportBlob
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const downloadedReport = await downloadExternalExposureHandoffPackageReport();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/security/external-exposure-handoff-package/report/download');
   expect(downloadedReport).toBe(reportBlob);
 });
 

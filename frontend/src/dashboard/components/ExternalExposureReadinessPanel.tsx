@@ -2,6 +2,7 @@ import { Archive, Copy, Download, RefreshCw } from 'lucide-react';
 import { useState } from 'react';
 import type {
   DemoReadinessStatus,
+  ExternalExposureHandoffPackage,
   ExternalExposureReadiness,
   ExternalExposureReadinessArchive,
   ExternalExposureReadinessCheck
@@ -13,8 +14,11 @@ interface ExternalExposureReadinessPanelProps {
   error: string | null;
   archives: ExternalExposureReadinessArchive[];
   archiveError: string | null;
+  handoffPackage: ExternalExposureHandoffPackage | null;
+  handoffPackageError: string | null;
   onArchiveReadiness: () => Promise<ExternalExposureReadinessArchive>;
   onDownloadArchiveReport: (archiveId: string) => Promise<Blob>;
+  onDownloadHandoffPackageReport: () => Promise<Blob>;
   onRefresh: () => Promise<void> | void;
 }
 
@@ -23,8 +27,11 @@ export function ExternalExposureReadinessPanel({
   error,
   archives,
   archiveError,
+  handoffPackage,
+  handoffPackageError,
   onArchiveReadiness,
   onDownloadArchiveReport,
+  onDownloadHandoffPackageReport,
   onRefresh
 }: ExternalExposureReadinessPanelProps) {
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
@@ -59,6 +66,16 @@ export function ExternalExposureReadinessPanel({
       setDownloadStatus('Exposure readiness archive downloaded');
     } catch {
       setDownloadStatus('Archive download failed');
+    }
+  }
+
+  async function downloadHandoffPackageReport() {
+    try {
+      const report = await onDownloadHandoffPackageReport();
+      downloadMarkdown(report, 'patchpilot-external-exposure-handoff-package.md');
+      setDownloadStatus('Exposure handoff package downloaded');
+    } catch {
+      setDownloadStatus('Handoff package download failed');
     }
   }
 
@@ -108,6 +125,12 @@ export function ExternalExposureReadinessPanel({
       ) : (
         <div className="empty-state">No external exposure readiness loaded.</div>
       )}
+
+      <ExternalExposureHandoffPackageResult
+        handoffPackage={handoffPackage}
+        error={handoffPackageError}
+        onDownloadReport={downloadHandoffPackageReport}
+      />
 
       <div className="demo-launch-preflight-actions">
         <h3>Recent exposure readiness archives</h3>
@@ -200,6 +223,97 @@ function ExternalExposureReadinessResult({ readiness }: { readiness: ExternalExp
           ))}
         </ul>
       </div>
+    </div>
+  );
+}
+
+function ExternalExposureHandoffPackageResult({
+  handoffPackage,
+  error,
+  onDownloadReport
+}: {
+  handoffPackage: ExternalExposureHandoffPackage | null;
+  error: string | null;
+  onDownloadReport: () => Promise<void>;
+}) {
+  return (
+    <div className="demo-launch-preflight-actions">
+      <div className="panel-subheader">
+        <div>
+          <h3>External exposure handoff package</h3>
+          <p>{handoffPackage?.summary ?? 'Loading shareable exposure handoff evidence'}</p>
+        </div>
+        <button
+          className="secondary-button"
+          type="button"
+          onClick={() => void onDownloadReport()}
+          aria-label="Download exposure handoff package"
+          disabled={!handoffPackage}
+        >
+          <Download size={14} />
+          Download handoff
+        </button>
+      </div>
+
+      {error ? (
+        <div className="adapter-api-error">
+          <strong>External exposure handoff package unavailable</strong>
+          <span>{error}</span>
+        </div>
+      ) : null}
+
+      {handoffPackage ? (
+        <div className={`demo-launch-preflight-result demo-launch-preflight-result-${statusClass(handoffPackage.status)}`}>
+          <div className="demo-launch-preflight-summary">
+            <span className={`demo-readiness-status demo-readiness-status-${statusClass(handoffPackage.status)}`}>
+              {handoffPackage.status}
+            </span>
+            <strong>{handoffPackage.handoffReady ? 'Ready to share' : 'Not ready to share'}</strong>
+            <p>{handoffPackage.nextAction}</p>
+            <small>
+              Generated {compactDateTime(handoffPackage.generatedAt)} · Archive freshness: {handoffPackage.archiveFreshness}
+            </small>
+          </div>
+
+          <div className="demo-launch-preflight-grid">
+            <div>
+              <span>Current readiness</span>
+              <strong>{handoffPackage.readinessStatus}</strong>
+            </div>
+            <div>
+              <span>Current safety</span>
+              <strong>{handoffPackage.readinessSafeToExpose ? 'Safe to expose' : 'Not safe to expose'}</strong>
+            </div>
+            <div>
+              <span>Latest archive</span>
+              <strong>{handoffPackage.latestArchiveId ?? 'Missing'}</strong>
+            </div>
+            <div>
+              <span>Archived safety</span>
+              <strong>
+                {handoffPackage.latestArchiveSafeToExpose === null
+                  ? 'No archive'
+                  : handoffPackage.latestArchiveSafeToExpose
+                    ? 'Safe to expose'
+                    : 'Not safe to expose'}
+              </strong>
+            </div>
+          </div>
+
+          <p className="demo-launch-preflight-blocked">{handoffPackage.sideEffectContract}</p>
+
+          <div className="demo-evidence-records">
+            {handoffPackage.evidenceNotes.map((note) => (
+              <div key={note}>
+                <span>Evidence</span>
+                <small>{note}</small>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <p className="empty-state">No external exposure handoff package loaded.</p>
+      )}
     </div>
   );
 }

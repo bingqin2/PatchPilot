@@ -462,6 +462,30 @@ export interface ExternalExposureReadinessArchive {
   report: string;
 }
 
+export interface ExternalExposureHandoffPackage {
+  status: DemoReadinessStatus;
+  handoffReady: boolean;
+  summary: string;
+  nextAction: string;
+  readinessStatus: DemoReadinessStatus;
+  readinessSafeToExpose: boolean;
+  readinessReadyCount: number;
+  readinessNeedsAttentionCount: number;
+  readinessBlockedCount: number;
+  readinessTotalCount: number;
+  latestArchiveId: string | null;
+  latestArchiveStatus: DemoReadinessStatus | null;
+  latestArchiveSafeToExpose: boolean | null;
+  latestArchiveCreatedAt: string | null;
+  archiveFreshness: 'CURRENT' | 'MISSING' | 'STALE';
+  nextActions: string[];
+  evidenceNotes: string[];
+  downloadActions: string[];
+  sideEffectContract: string;
+  generatedAt: string;
+  markdownReport: string;
+}
+
 export interface DashboardBootstrap {
   adminTokenConfigured: boolean;
   adminTokenBootstrapEnabled: boolean;
