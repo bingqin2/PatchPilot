@@ -6346,3 +6346,21 @@ Validation so far:
 - `npm --prefix frontend test -- --reporter=dot`: passed, 34 test files and 514 tests.
 - `npm --prefix frontend run build`: passed with the existing Vite large-chunk warning.
 - `git diff --check`: passed.
+
+## 2026-07-01 - 316 External exposure readiness archives
+
+- Started `316-external-exposure-readiness-archives` to preserve the external exposure readiness gate as local evidence before a temporary public URL is shared.
+- Added `POST /api/security/external-exposure-readiness/archives`, `GET /api/security/external-exposure-readiness/archives`, and `GET /api/security/external-exposure-readiness/archives/{archiveId}/report/download`.
+- Added an in-memory archive repository for the default profile plus MySQL/Flyway/MyBatis persistence for `local`, `docker`, and `idea` profiles.
+- Extended the operations dashboard external exposure panel with an archive action, recent archive history, archived count summary, and Markdown report downloads.
+- Updated frontend API helpers, typed payloads, App loading, App smoke fixtures, README, product spec, frontend design notes, architecture notes, and this plan document.
+
+Validation:
+
+- `mvn -q -pl PatchPilot -Dtest=ExternalExposureReadinessArchiveServiceTests,ExternalExposureReadinessArchiveControllerTests test`: first failed because the archive VO, service, repository, and controller did not exist; passed after backend implementation.
+- `mvn -q -pl PatchPilot -Dtest=ExternalExposureReadinessArchiveServiceTests,ExternalExposureReadinessArchiveControllerTests,MyBatisExternalExposureReadinessArchiveRepositoryTests,ExternalExposureReadinessArchiveMigrationTests test`: passed after adding MyBatis persistence and migration coverage.
+- `npm --prefix frontend test -- --run src/api.test.ts src/dashboard/components/ExternalExposureReadinessPanel.test.tsx src/App.test.tsx --reporter=dot`: first failed because the App did not load archive history and the panel test matched duplicate safety text; passed after App wiring and test selector fixes. Final focused result: 3 test files and 317 tests.
+- `mvn -q -pl PatchPilot test`: passed with existing Spring/Mockito test logging.
+- `npm --prefix frontend test -- --reporter=dot`: passed, 34 test files and 517 tests.
+- `npm --prefix frontend run build`: passed with the existing Vite large-chunk warning.
+- `git diff --check`: passed.

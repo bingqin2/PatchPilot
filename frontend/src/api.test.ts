@@ -9,6 +9,9 @@ import {
   postDemoLiveLaunchGate,
   getDemoEndToEndAcceptanceMatrix,
   getExternalExposureReadiness,
+  archiveExternalExposureReadiness,
+  listExternalExposureReadinessArchives,
+  downloadExternalExposureReadinessArchiveReport,
   getDashboardBootstrap,
   getBackendHealth,
   getConfigurationSummary,
@@ -368,6 +371,84 @@ test('loads external exposure readiness through backend API', async () => {
 
   await expect(getExternalExposureReadiness()).resolves.toEqual(readiness);
   expect(fetchMock).toHaveBeenCalledWith('/api/security/external-exposure-readiness');
+});
+
+test('archives external exposure readiness through backend API', async () => {
+  const archive = {
+    id: 'exposure-archive-1',
+    status: 'NEEDS_ATTENTION',
+    safeToExpose: false,
+    summary: 'PatchPilot needs more safeguards before public exposure.',
+    readyCount: 7,
+    needsAttentionCount: 3,
+    blockedCount: 0,
+    totalCount: 10,
+    createdAt: '2026-07-01T13:30:00Z',
+    report: '# PatchPilot External Exposure Readiness'
+  };
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: archive,
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  await expect(archiveExternalExposureReadiness()).resolves.toEqual(archive);
+  expect(fetchMock).toHaveBeenCalledWith('/api/security/external-exposure-readiness/archives', {
+    method: 'POST'
+  });
+});
+
+test('lists external exposure readiness archives through backend API', async () => {
+  const archive = {
+    id: 'exposure-archive-1',
+    status: 'READY',
+    safeToExpose: true,
+    summary: 'PatchPilot is configured for controlled temporary public exposure.',
+    readyCount: 10,
+    needsAttentionCount: 0,
+    blockedCount: 0,
+    totalCount: 10,
+    createdAt: '2026-07-01T13:30:00Z',
+    report: '# PatchPilot External Exposure Readiness'
+  };
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: [archive],
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const archives = await listExternalExposureReadinessArchives();
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/security/external-exposure-readiness/archives');
+  expect(archives[0].id).toBe('exposure-archive-1');
+  expect(archives[0].safeToExpose).toBe(true);
+});
+
+test('downloads archived external exposure readiness markdown through backend API', async () => {
+  const reportBlob = new Blob(['# PatchPilot External Exposure Readiness'], {
+    type: 'text/markdown;charset=UTF-8'
+  });
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    blob: async () => reportBlob
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const downloadedReport = await downloadExternalExposureReadinessArchiveReport('exposure-archive-1');
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/security/external-exposure-readiness/archives/exposure-archive-1/report/download');
+  expect(downloadedReport).toBe(reportBlob);
 });
 
 test('loads dashboard bootstrap through backend API without a saved admin token', async () => {
