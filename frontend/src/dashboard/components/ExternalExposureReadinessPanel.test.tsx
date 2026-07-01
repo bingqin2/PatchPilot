@@ -1,6 +1,10 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { ExternalExposureReadiness, ExternalExposureReadinessArchive } from '../../types';
+import type {
+  ExternalExposureHandoffPackage,
+  ExternalExposureReadiness,
+  ExternalExposureReadinessArchive
+} from '../../types';
 import { ExternalExposureReadinessPanel } from './ExternalExposureReadinessPanel';
 
 const readiness: ExternalExposureReadiness = {
@@ -50,6 +54,30 @@ const archives: ExternalExposureReadinessArchive[] = [
   }
 ];
 
+const handoffPackage: ExternalExposureHandoffPackage = {
+  status: 'READY',
+  handoffReady: true,
+  summary: 'External exposure handoff package is ready to share.',
+  nextAction: 'Start the temporary tunnel, share the current payload URL, and monitor webhook deliveries.',
+  readinessStatus: 'READY',
+  readinessSafeToExpose: true,
+  readinessReadyCount: 10,
+  readinessNeedsAttentionCount: 0,
+  readinessBlockedCount: 0,
+  readinessTotalCount: 10,
+  latestArchiveId: 'exposure-archive-1',
+  latestArchiveStatus: 'READY',
+  latestArchiveSafeToExpose: true,
+  latestArchiveCreatedAt: '2026-07-01T13:30:00Z',
+  archiveFreshness: 'CURRENT',
+  nextActions: ['Start the temporary tunnel and keep monitoring.'],
+  evidenceNotes: ['Latest archive exposure-archive-1 captures READY readiness evidence.'],
+  downloadActions: ['GET /api/security/external-exposure-handoff-package/report/download'],
+  sideEffectContract: 'GET /api/security/external-exposure-handoff-package is read-only.',
+  generatedAt: '2026-07-01T14:00:00Z',
+  markdownReport: '# PatchPilot External Exposure Handoff Package'
+};
+
 afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
@@ -62,8 +90,11 @@ test('renders exposure readiness status, counts, checks, and next actions', () =
       error={null}
       archives={archives}
       archiveError={null}
+      handoffPackage={handoffPackage}
+      handoffPackageError={null}
       onArchiveReadiness={vi.fn()}
       onDownloadArchiveReport={vi.fn()}
+      onDownloadHandoffPackageReport={vi.fn()}
       onRefresh={vi.fn()}
     />
   );
@@ -79,8 +110,16 @@ test('renders exposure readiness status, counts, checks, and next actions', () =
   expect(within(panel).getAllByText('Configure PATCHPILOT_ADMIN_TOKEN before exposing PatchPilot outside localhost.'))
     .toHaveLength(2);
   expect(within(panel).getByText('Recent exposure readiness archives')).toBeInTheDocument();
-  expect(within(panel).getByText('exposure-archive-1')).toBeInTheDocument();
+  expect(within(panel).getAllByText('exposure-archive-1').length).toBeGreaterThanOrEqual(2);
   expect(within(panel).getByText('7 ready, 3 attention, 0 blocked')).toBeInTheDocument();
+  expect(within(panel).getByText('External exposure handoff package')).toBeInTheDocument();
+  expect(within(panel).getByText('External exposure handoff package is ready to share.')).toBeInTheDocument();
+  expect(
+    within(panel).getAllByText((_, element) =>
+      element?.textContent?.includes('Archive freshness: CURRENT') ?? false
+    ).length
+  ).toBeGreaterThan(0);
+  expect(within(panel).getByText('Latest archive exposure-archive-1 captures READY readiness evidence.')).toBeInTheDocument();
 });
 
 test('copies, archives, downloads archived markdown, and refreshes the panel', async () => {
@@ -91,7 +130,11 @@ test('copies, archives, downloads archived markdown, and refreshes the panel', a
   const reportBlob = new Blob(['# PatchPilot External Exposure Readiness Archive'], {
     type: 'text/markdown;charset=UTF-8'
   });
+  const handoffReportBlob = new Blob(['# PatchPilot External Exposure Handoff Package'], {
+    type: 'text/markdown;charset=UTF-8'
+  });
   const onDownloadArchiveReport = vi.fn(async () => reportBlob);
+  const onDownloadHandoffPackageReport = vi.fn(async () => handoffReportBlob);
   vi.stubGlobal('navigator', {
     clipboard: { writeText }
   });
@@ -107,8 +150,11 @@ test('copies, archives, downloads archived markdown, and refreshes the panel', a
       error={null}
       archives={archives}
       archiveError={null}
+      handoffPackage={handoffPackage}
+      handoffPackageError={null}
       onArchiveReadiness={onArchiveReadiness}
       onDownloadArchiveReport={onDownloadArchiveReport}
+      onDownloadHandoffPackageReport={onDownloadHandoffPackageReport}
       onRefresh={onRefresh}
     />
   );
@@ -127,6 +173,11 @@ test('copies, archives, downloads archived markdown, and refreshes the panel', a
   expect(revokeObjectURL).toHaveBeenCalledWith(objectUrl);
   expect(screen.getByText('Exposure readiness archive downloaded')).toBeInTheDocument();
 
+  await user.click(screen.getByRole('button', { name: 'Download exposure handoff package' }));
+  expect(onDownloadHandoffPackageReport).toHaveBeenCalledTimes(1);
+  expect(createObjectURL).toHaveBeenCalledWith(handoffReportBlob);
+  expect(screen.getByText('Exposure handoff package downloaded')).toBeInTheDocument();
+
   await user.click(screen.getByRole('button', { name: 'Refresh exposure gate' }));
   expect(onRefresh).toHaveBeenCalledTimes(1);
 });
@@ -138,8 +189,11 @@ test('shows empty and error states without hiding refresh', () => {
       error="backend unavailable"
       archives={[]}
       archiveError="archive unavailable"
+      handoffPackage={null}
+      handoffPackageError="handoff unavailable"
       onArchiveReadiness={vi.fn()}
       onDownloadArchiveReport={vi.fn()}
+      onDownloadHandoffPackageReport={vi.fn()}
       onRefresh={vi.fn()}
     />
   );
@@ -149,6 +203,9 @@ test('shows empty and error states without hiding refresh', () => {
   expect(screen.getByText('No external exposure readiness loaded.')).toBeInTheDocument();
   expect(screen.getByText('Exposure readiness archive unavailable')).toBeInTheDocument();
   expect(screen.getByText('archive unavailable')).toBeInTheDocument();
+  expect(screen.getByText('External exposure handoff package unavailable')).toBeInTheDocument();
+  expect(screen.getByText('handoff unavailable')).toBeInTheDocument();
+  expect(screen.getByText('No external exposure handoff package loaded.')).toBeInTheDocument();
   expect(screen.getByRole('button', { name: 'Archive exposure readiness' })).toBeDisabled();
   expect(screen.getByRole('button', { name: 'Refresh exposure gate' })).toBeEnabled();
 });

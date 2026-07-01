@@ -87,6 +87,7 @@ import {
   downloadDemoLaunchEvidenceShareCenterReport,
   downloadDemoSelfHostedLaunchReadinessArchiveReport,
   downloadDemoSelfHostedLaunchReadinessReport,
+  downloadExternalExposureHandoffPackageReport,
   downloadExternalExposureReadinessArchiveReport,
   downloadDemoHandoffShareDeliveryReceiptReport,
   downloadDemoHandoffShareInstructionsReport,
@@ -163,6 +164,7 @@ import {
   getEvaluationRunArchiveReadinessSummary,
   getEvaluationSummary,
   getEvaluationRunPreview,
+  getExternalExposureHandoffPackage,
   getExternalExposureReadiness,
   runAndArchiveEvaluation,
   runAndArchiveEvaluationFixtureBaseline,
@@ -278,6 +280,7 @@ import type {
   DemoReadiness,
   DemoAcceptanceSummary,
   DemoEndToEndAcceptanceMatrix,
+  ExternalExposureHandoffPackage,
   ExternalExposureReadiness,
   ExternalExposureReadinessArchive,
   DemoFinalAcceptanceCompletionArchive,
@@ -468,6 +471,10 @@ export default function App() {
   const [externalExposureReadinessArchives, setExternalExposureReadinessArchives] =
     useState<ExternalExposureReadinessArchive[]>([]);
   const [externalExposureReadinessArchiveError, setExternalExposureReadinessArchiveError] =
+    useState<string | null>(null);
+  const [externalExposureHandoffPackage, setExternalExposureHandoffPackage] =
+    useState<ExternalExposureHandoffPackage | null>(null);
+  const [externalExposureHandoffPackageError, setExternalExposureHandoffPackageError] =
     useState<string | null>(null);
   const [demoFinalAcceptanceSharePackage, setDemoFinalAcceptanceSharePackage] =
     useState<DemoFinalAcceptanceSharePackage | null>(null);
@@ -1097,6 +1104,7 @@ export default function App() {
         demoEndToEndAcceptanceMatrixResult,
         externalExposureReadinessResult,
         externalExposureReadinessArchiveResult,
+        externalExposureHandoffPackageResult,
         demoAcceptanceSummaryResult,
         demoFinalAcceptanceSharePackageResult,
         demoFinalAcceptanceSharePackageArchiveResult,
@@ -1300,6 +1308,10 @@ export default function App() {
         listExternalExposureReadinessArchives().then(
           (archives) => ({ archives, error: null as string | null }),
           (caught) => ({ archives: null, error: errorMessage(caught) })
+        ),
+        getExternalExposureHandoffPackage().then(
+          (handoffPackage) => ({ handoffPackage, error: null as string | null }),
+          (caught) => ({ handoffPackage: null, error: errorMessage(caught) })
         ),
         getDemoAcceptanceSummary().then(
           (summary) => ({ summary, error: null as string | null }),
@@ -1716,6 +1728,10 @@ export default function App() {
         setExternalExposureReadinessArchives(externalExposureReadinessArchiveResult.archives);
       }
       setExternalExposureReadinessArchiveError(externalExposureReadinessArchiveResult.error);
+      if (externalExposureHandoffPackageResult.handoffPackage) {
+        setExternalExposureHandoffPackage(externalExposureHandoffPackageResult.handoffPackage);
+      }
+      setExternalExposureHandoffPackageError(externalExposureHandoffPackageResult.error);
       if (demoAcceptanceSummaryResult.summary) {
         setDemoAcceptanceSummary(demoAcceptanceSummaryResult.summary);
       }
@@ -3300,9 +3316,12 @@ export default function App() {
 
   const handleRefreshExternalExposureReadiness = useCallback(async () => {
     setExternalExposureReadinessError(null);
+    setExternalExposureHandoffPackageError(null);
     try {
       const readiness = await getExternalExposureReadiness();
       setExternalExposureReadiness(readiness);
+      const handoffPackage = await getExternalExposureHandoffPackage();
+      setExternalExposureHandoffPackage(handoffPackage);
     } catch (caught) {
       setExternalExposureReadinessError(errorMessage(caught));
     }
@@ -3310,11 +3329,14 @@ export default function App() {
 
   const handleArchiveExternalExposureReadiness = useCallback(async () => {
     setExternalExposureReadinessArchiveError(null);
+    setExternalExposureHandoffPackageError(null);
     try {
       const archive = await archiveExternalExposureReadiness();
       setExternalExposureReadinessArchives((current) =>
         [archive, ...current.filter((item) => item.id !== archive.id)].slice(0, 20)
       );
+      const handoffPackage = await getExternalExposureHandoffPackage();
+      setExternalExposureHandoffPackage(handoffPackage);
       return archive;
     } catch (caught) {
       setExternalExposureReadinessArchiveError(errorMessage(caught));
@@ -3324,6 +3346,11 @@ export default function App() {
 
   const handleDownloadExternalExposureReadinessArchiveReport = useCallback(
     (archiveId: string) => downloadExternalExposureReadinessArchiveReport(archiveId),
+    []
+  );
+
+  const handleDownloadExternalExposureHandoffPackageReport = useCallback(
+    () => downloadExternalExposureHandoffPackageReport(),
     []
   );
 
@@ -3916,8 +3943,11 @@ export default function App() {
         error={externalExposureReadinessError}
         archives={externalExposureReadinessArchives}
         archiveError={externalExposureReadinessArchiveError}
+        handoffPackage={externalExposureHandoffPackage}
+        handoffPackageError={externalExposureHandoffPackageError}
         onArchiveReadiness={handleArchiveExternalExposureReadiness}
         onDownloadArchiveReport={handleDownloadExternalExposureReadinessArchiveReport}
+        onDownloadHandoffPackageReport={handleDownloadExternalExposureHandoffPackageReport}
         onRefresh={handleRefreshExternalExposureReadiness}
       />
 

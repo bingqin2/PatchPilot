@@ -6364,3 +6364,18 @@ Validation:
 - `npm --prefix frontend test -- --reporter=dot`: passed, 34 test files and 517 tests.
 - `npm --prefix frontend run build`: passed with the existing Vite large-chunk warning.
 - `git diff --check`: passed.
+
+## 2026-07-01 - 317 External exposure handoff package
+
+- Started `317-external-exposure-handoff-package` to turn the current external exposure gate plus latest archived evidence into one read-only package before a temporary public URL is shared.
+- Added `GET /api/security/external-exposure-handoff-package` and `GET /api/security/external-exposure-handoff-package/report/download`, backed by `ExternalExposureHandoffPackageService`.
+- The handoff package reports `READY`, `NEEDS_ATTENTION`, or `BLOCKED`, whether the latest archive is `CURRENT`, `MISSING`, or `STALE`, evidence notes, download actions, next actions, and a Markdown report without creating tasks, calling the model, probing the network, mutating Git, writing GitHub comments, opening Pull Requests, archiving records, or exposing secrets.
+- Extended the operations dashboard external exposure panel with a handoff package section, archive freshness, evidence notes, and Markdown report download. The panel refreshes the handoff package after readiness refreshes and after a new readiness archive is created.
+- Updated frontend API helpers, typed payloads, App loading, App smoke fixtures, README, product spec, frontend design notes, architecture notes, and this plan document.
+
+Validation so far:
+
+- `mvn -q -pl PatchPilot -Dtest=ExternalExposureHandoffPackageServiceTests,ExternalExposureHandoffPackageControllerTests test`: first failed because the handoff package VO, service, and controller did not exist; passed after backend implementation.
+- `npm --prefix frontend test -- --run src/api.test.ts --reporter=dot`: first failed because `getExternalExposureHandoffPackage` and `downloadExternalExposureHandoffPackageReport` were not implemented; passed after API helper implementation.
+- `npm --prefix frontend test -- --run src/dashboard/components/ExternalExposureReadinessPanel.test.tsx --reporter=dot`: first failed because the handoff package section and download button were not rendered; passed after panel implementation and stable assertions.
+- `npm --prefix frontend test -- --run src/api.test.ts src/dashboard/components/ExternalExposureReadinessPanel.test.tsx src/App.test.tsx --reporter=dot`: passed, 3 test files and 319 tests.

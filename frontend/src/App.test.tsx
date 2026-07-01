@@ -1753,6 +1753,30 @@ const externalExposureReadinessArchive = {
   report: '# PatchPilot External Exposure Readiness Archive'
 };
 
+const externalExposureHandoffPackage = {
+  status: 'NEEDS_ATTENTION',
+  handoffReady: false,
+  summary: 'External exposure handoff package needs a fresh readiness archive.',
+  nextAction: 'Refresh the external exposure readiness archive so the handoff package matches the current gate.',
+  readinessStatus: 'NEEDS_ATTENTION',
+  readinessSafeToExpose: false,
+  readinessReadyCount: 8,
+  readinessNeedsAttentionCount: 2,
+  readinessBlockedCount: 0,
+  readinessTotalCount: 10,
+  latestArchiveId: 'external-exposure-archive-1',
+  latestArchiveStatus: 'NEEDS_ATTENTION',
+  latestArchiveSafeToExpose: false,
+  latestArchiveCreatedAt: '2026-07-01T13:00:00Z',
+  archiveFreshness: 'CURRENT',
+  nextActions: ['Refresh the external exposure readiness archive so the handoff package matches the current gate.'],
+  evidenceNotes: ['Latest archive external-exposure-archive-1 captures NEEDS_ATTENTION readiness evidence.'],
+  downloadActions: ['GET /api/security/external-exposure-handoff-package/report/download'],
+  sideEffectContract: 'GET /api/security/external-exposure-handoff-package is read-only.',
+  generatedAt: '2026-07-01T14:00:00Z',
+  markdownReport: '# PatchPilot External Exposure Handoff Package'
+};
+
 const demoReadinessSnapshotArchive = {
   id: 'readiness-snapshot-1',
   status: 'NEEDS_ATTENTION',
@@ -3770,6 +3794,14 @@ beforeEach(() => {
         headers: { 'Content-Type': 'text/markdown;charset=UTF-8' }
       });
     }
+    if (url === '/api/security/external-exposure-handoff-package') {
+      return jsonResponse(externalExposureHandoffPackage);
+    }
+    if (url === '/api/security/external-exposure-handoff-package/report/download') {
+      return new Response('# PatchPilot External Exposure Handoff Package', {
+        headers: { 'Content-Type': 'text/markdown;charset=UTF-8' }
+      });
+    }
     if (url === '/api/tasks/metrics/summary' || url.startsWith('/api/tasks/metrics/summary?')) {
       return jsonResponse({
         totalCount: 3,
@@ -5275,6 +5307,7 @@ test('renders operational task dashboard from backend APIs', async () => {
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/rejected-triggers?limit=20'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/rejected-triggers/summary?limit=100'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/admin-audit-events?limit=20'));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/security/external-exposure-handoff-package'));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tasks/task-1/detail'));
   expect(screen.getByText('Pull request opened')).toBeInTheDocument();
   const exposurePanel = screen.getByRole('region', { name: 'External exposure readiness' });
@@ -5282,7 +5315,12 @@ test('renders operational task dashboard from backend APIs', async () => {
     .toHaveLength(2);
   expect(within(exposurePanel).getByText('Trigger user allowlist')).toBeInTheDocument();
   expect(within(exposurePanel).getByText('Recent exposure readiness archives')).toBeInTheDocument();
-  expect(within(exposurePanel).getByText('external-exposure-archive-1')).toBeInTheDocument();
+  expect(within(exposurePanel).getAllByText('external-exposure-archive-1').length).toBeGreaterThanOrEqual(2);
+  expect(within(exposurePanel).getByText('External exposure handoff package')).toBeInTheDocument();
+  expect(within(exposurePanel).getByText('External exposure handoff package needs a fresh readiness archive.'))
+    .toBeInTheDocument();
+  expect(within(exposurePanel).getByText('Latest archive external-exposure-archive-1 captures NEEDS_ATTENTION readiness evidence.'))
+    .toBeInTheDocument();
   const evidencePanel = screen.getByRole('region', { name: 'Demo evidence bundle' });
   expect(within(evidencePanel).getByText('Webhook setup is ready for GitHub deliveries.')).toBeInTheDocument();
   expect(within(evidencePanel).getByText('https://demo.trycloudflare.com/api/github/webhook')).toBeInTheDocument();

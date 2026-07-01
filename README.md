@@ -395,6 +395,17 @@ curl -H "X-PatchPilot-Admin-Token: $PATCHPILOT_ADMIN_TOKEN" \
 
 The archive endpoints keep PatchPilot-local evidence only. They do not create tasks, call the model, run tests, mutate Git, open Pull Requests, write GitHub comments, or expose secrets.
 
+After archiving, download the read-only external exposure handoff package before sharing the URL:
+
+```bash
+curl -H "X-PatchPilot-Admin-Token: $PATCHPILOT_ADMIN_TOKEN" \
+  http://127.0.0.1:8080/api/security/external-exposure-handoff-package
+curl -OJ -H "X-PatchPilot-Admin-Token: $PATCHPILOT_ADMIN_TOKEN" \
+  http://127.0.0.1:8080/api/security/external-exposure-handoff-package/report/download
+```
+
+The handoff package is `READY` only when the current exposure gate is safe and the latest archive still matches it. Missing or stale archive evidence blocks or warns before a temporary URL is shared.
+
 ## Trigger A Task
 
 Open a GitHub issue in the test repository and comment:

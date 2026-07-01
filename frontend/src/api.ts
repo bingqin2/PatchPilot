@@ -88,6 +88,7 @@ import type {
   EvaluationRunArchiveReadinessSummary,
   EvaluationRunPreview,
   EvaluationRunSnapshotArchive,
+  ExternalExposureHandoffPackage,
   ExternalExposureReadiness,
   ExternalExposureReadinessArchive,
   FixTaskEvidencePackageAcceptanceCertificate,
@@ -211,6 +212,14 @@ export async function listExternalExposureReadinessArchives(): Promise<ExternalE
 
 export async function downloadExternalExposureReadinessArchiveReport(archiveId: string): Promise<Blob> {
   return getBlobApi(`/api/security/external-exposure-readiness/archives/${encodeURIComponent(archiveId)}/report/download`);
+}
+
+export async function getExternalExposureHandoffPackage(): Promise<ExternalExposureHandoffPackage> {
+  return getApi<ExternalExposureHandoffPackage>('/api/security/external-exposure-handoff-package');
+}
+
+export async function downloadExternalExposureHandoffPackageReport(): Promise<Blob> {
+  return getBlobApi('/api/security/external-exposure-handoff-package/report/download');
 }
 
 export async function listTasks(options: TaskStatusFilter | ListTasksOptions = 'ALL'): Promise<FixTaskPage> {
