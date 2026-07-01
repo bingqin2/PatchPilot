@@ -6436,3 +6436,23 @@ Validation so far:
 - `npm --prefix frontend test -- --reporter=dot`: passed, 34 test files and 524 tests.
 - `npm --prefix frontend run build`: passed with the existing Vite large-chunk warning.
 - `git diff --check`: passed.
+
+## 2026-07-01 - 321 External exposure closeout archive evidence bundle
+
+- Started `321-external-exposure-closeout-archive-evidence-bundle` to promote the latest frozen external exposure closeout archive into the first demo evidence readout and copied runbook.
+- Added `DemoExternalExposureCloseoutArchiveEvidenceVo` and wired `DemoEvidenceBundleService` to project the latest `ExternalExposureCloseoutArchiveVo` into status, archived/closeout-ready flags, archive id, session id/status, public URL, webhook URL, linked readiness archive id, handoff status, archive freshness, evidence notes, download actions, and side-effect contract.
+- Updated aggregate demo evidence readiness and next actions so a missing or blocked external exposure closeout archive prevents the bundle from reporting fully ready.
+- Updated `DemoRunbookService` so copied runbooks include the external exposure closeout archive id, session, public URL, webhook URL, linked readiness archive, freshness, next action, and download actions.
+- Updated the dashboard evidence bundle panel with an external exposure closeout archive card plus legacy-response fallback guidance, and updated product/frontend/architecture docs.
+
+Validation so far:
+
+- `mvn -q -pl PatchPilot -Dtest=DemoEvidenceBundleServiceTests,DemoRunbookServiceTests test`: first failed because the top-level evidence bundle did not expose external exposure closeout archive proof and the runbook did not export it; passed after backend aggregation and runbook implementation.
+- `npm --prefix frontend test -- src/dashboard/components/DemoEvidenceBundlePanel.test.tsx --reporter=dot`: first failed because the new card introduced a second `Closed archive` label; passed after switching the assertion to count-based matching. Final focused result: 1 test file and 4 tests.
+- `mvn -q -pl PatchPilot test`: passed with existing Spring/Mockito test logging.
+- `npm --prefix frontend test -- src/App.test.tsx -t "renders operational task dashboard" --reporter=dot`: first failed because the existing App-level smoke test had a 20s per-test timeout while the current full-dashboard flow now completes in about 27s; passed after raising that smoke-test budget to 60s.
+- `npm --prefix frontend test -- src/App.test.tsx --reporter=dot`: passed after setting the Vitest default timeout to 20s for App-level integration tests; final result: 1 test file and 88 tests.
+- `npm --prefix frontend test -- --reporter=dot`: passed, 34 test files and 524 tests.
+- `npm --prefix frontend run build`: passed with the existing Vite large-chunk warning.
+- `git diff --check`: passed.
+- Unstaged diff secret scan for GitHub, OpenAI, Slack, Google, private-key, and PatchPilot token patterns: no matches.

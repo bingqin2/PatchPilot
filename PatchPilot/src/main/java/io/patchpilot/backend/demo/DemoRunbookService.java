@@ -142,6 +142,38 @@ public class DemoRunbookService {
                         .append(action)
                         .append("\n"));
 
+        runbook.append("- External exposure closeout archive: `")
+                .append(bundle.externalExposureCloseoutArchiveEvidence().status())
+                .append("` - ")
+                .append(bundle.externalExposureCloseoutArchiveEvidence().summary())
+                .append("\n")
+                .append("- External exposure closeout archive id: ")
+                .append(valueOrNoneBackticked(bundle.externalExposureCloseoutArchiveEvidence().latestArchiveId()))
+                .append("\n")
+                .append("- External exposure closeout session: ")
+                .append(valueOrNoneBackticked(bundle.externalExposureCloseoutArchiveEvidence().latestSessionId()))
+                .append("\n")
+                .append("- External exposure closeout public URL: ")
+                .append(valueOrNone(bundle.externalExposureCloseoutArchiveEvidence().publicUrl()))
+                .append("\n")
+                .append("- External exposure closeout webhook URL: ")
+                .append(valueOrNone(bundle.externalExposureCloseoutArchiveEvidence().webhookUrl()))
+                .append("\n")
+                .append("- External exposure closeout readiness archive: ")
+                .append(valueOrNoneBackticked(bundle.externalExposureCloseoutArchiveEvidence().linkedReadinessArchiveId()))
+                .append("\n")
+                .append("- External exposure closeout archive freshness: `")
+                .append(bundle.externalExposureCloseoutArchiveEvidence().archiveFreshness())
+                .append("`\n")
+                .append("- External exposure closeout archive next action: ")
+                .append(bundle.externalExposureCloseoutArchiveEvidence().nextAction())
+                .append("\n");
+        bundle.externalExposureCloseoutArchiveEvidence().downloadActions()
+                .forEach(action -> runbook
+                        .append("- External exposure closeout archive download: ")
+                        .append(action)
+                        .append("\n"));
+
         runbook.append("- Launch acceptance certificate: `")
                 .append(bundle.launchAcceptanceCertificateEvidence().status())
                 .append("` - ")

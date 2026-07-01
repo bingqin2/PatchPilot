@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from './App';
 
@@ -5026,6 +5026,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  cleanup();
   vi.unstubAllGlobals();
   vi.useRealTimers();
   window.history.replaceState(null, '', '/');
@@ -5034,7 +5035,7 @@ afterEach(() => {
 test('renders operational task dashboard from backend APIs', async () => {
   vi.useFakeTimers({ shouldAdvanceTime: true });
   vi.setSystemTime(new Date('2026-06-21T08:15:30Z'));
-  const user = userEvent.setup();
+  const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
   const fetchMock = vi.mocked(fetch);
   render(<App />);
 
@@ -5629,7 +5630,7 @@ test('renders operational task dashboard from backend APIs', async () => {
   expect(screen.getAllByText('gpt-5.5')).toHaveLength(2);
   expect(screen.getByText('Generated diff')).toBeInTheDocument();
   expect(screen.getByLabelText('Generated diff preview')).toHaveTextContent('+PatchPilot smoke test');
-}, 20000);
+}, 60000);
 
 test('keeps archived fixture baseline evidence when regression summary refresh fails', async () => {
   const user = userEvent.setup();

@@ -353,6 +353,29 @@ const bundle: DemoEvidenceBundle = {
       'Download linked final acceptance completion archive final-acceptance-completion-archive-1.'
     ]
   },
+  externalExposureCloseoutArchiveEvidence: {
+    status: 'READY',
+    archived: true,
+    closeoutReady: true,
+    summary: 'Latest external exposure closeout archive proves the temporary public URL session is closed.',
+    nextAction: 'Use the archived external exposure closeout as public URL shutdown proof.',
+    archiveCount: 1,
+    latestArchiveId: 'external-exposure-closeout-archive-1',
+    latestSessionId: 'external-exposure-session-1',
+    latestSessionStatus: 'CLOSED',
+    publicUrl: 'https://temporary.trycloudflare.com',
+    webhookUrl: 'https://temporary.trycloudflare.com/api/github/webhook',
+    linkedReadinessArchiveId: 'external-exposure-readiness-archive-1',
+    handoffStatus: 'READY',
+    archiveFreshness: 'CURRENT',
+    latestArchivedAt: '2026-06-29T06:00:00Z',
+    evidenceNotes: ['Temporary public URL session external-exposure-session-1 is closed.'],
+    downloadActions: [
+      'Download external exposure closeout archive external-exposure-closeout-archive-1.',
+      'Download linked external exposure readiness archive external-exposure-readiness-archive-1.'
+    ],
+    sideEffectContract: 'External exposure closeout archive is read-only.'
+  },
   finalExternalReviewEvidencePackage: {
     status: 'READY',
     readyForExternalReview: true,
@@ -856,7 +879,7 @@ test('summarizes demo evidence bundle for operators', async () => {
   expect(within(panel).getByText('Download final acceptance completion closeout report.')).toBeInTheDocument();
   expect(within(panel).getByText('Download final acceptance completion evidence bundle.')).toBeInTheDocument();
   expect(within(panel).getByText('Final acceptance completion closeout archive')).toBeInTheDocument();
-  expect(within(panel).getByText('Closed archive')).toBeInTheDocument();
+  expect(within(panel).getAllByText('Closed archive').length).toBeGreaterThanOrEqual(1);
   expect(within(panel).getByText('Latest final acceptance completion closeout archive is closed and ready.')).toBeInTheDocument();
   expect(
     within(panel).getByText('Use the archived final acceptance completion closeout as the frozen external-review completion record.')
@@ -875,6 +898,28 @@ test('summarizes demo evidence bundle for operators', async () => {
   ).toBeGreaterThanOrEqual(1);
   expect(
     within(panel).getByText('Download linked final acceptance completion archive final-acceptance-completion-archive-1.')
+  ).toBeInTheDocument();
+  expect(within(panel).getByText('External exposure closeout archive')).toBeInTheDocument();
+  expect(within(panel).getAllByText('Closed archive').length).toBeGreaterThanOrEqual(2);
+  expect(
+    within(panel).getByText('Latest external exposure closeout archive proves the temporary public URL session is closed.')
+  ).toBeInTheDocument();
+  expect(
+    within(panel).getByText('Use the archived external exposure closeout as public URL shutdown proof.')
+  ).toBeInTheDocument();
+  expect(within(panel).getByText('1 external exposure closeout archives')).toBeInTheDocument();
+  expect(within(panel).getByText('external-exposure-closeout-archive-1')).toBeInTheDocument();
+  expect(within(panel).getByText('Session external-exposure-session-1')).toBeInTheDocument();
+  expect(within(panel).getByText('CLOSED')).toBeInTheDocument();
+  expect(within(panel).getByText('https://temporary.trycloudflare.com')).toBeInTheDocument();
+  expect(within(panel).getByText('https://temporary.trycloudflare.com/api/github/webhook')).toBeInTheDocument();
+  expect(within(panel).getByText('external-exposure-readiness-archive-1')).toBeInTheDocument();
+  expect(within(panel).getByText('CURRENT')).toBeInTheDocument();
+  expect(
+    within(panel).getByText('Download external exposure closeout archive external-exposure-closeout-archive-1.')
+  ).toBeInTheDocument();
+  expect(
+    within(panel).getByText('Download linked external exposure readiness archive external-exposure-readiness-archive-1.')
   ).toBeInTheDocument();
   expect(within(panel).getByText('Final external-review evidence package')).toBeInTheDocument();
   expect(within(panel).getByText('Ready for external review')).toBeInTheDocument();
@@ -1135,6 +1180,7 @@ test('renders missing certificate evidence for legacy bundle responses', () => {
     finalAcceptanceShareFinalization: undefined,
     finalAcceptanceCompletionCloseoutEvidence: undefined,
     finalAcceptanceCompletionCloseoutArchiveEvidence: undefined,
+    externalExposureCloseoutArchiveEvidence: undefined,
     finalExternalReviewEvidencePackage: undefined,
     finalExternalReviewEvidencePackageArchiveEvidence: undefined,
     finalExternalReviewEvidencePackageDeliveryReceiptEvidence: undefined,
@@ -1184,6 +1230,14 @@ test('renders missing certificate evidence for legacy bundle responses', () => {
   expect(screen.getAllByText('Archive the final acceptance completion closeout after it is READY and closed.').length)
     .toBeGreaterThanOrEqual(1);
   expect(screen.getByText('No archived final acceptance completion Pull Request')).toBeInTheDocument();
+  expect(screen.getByText('External exposure closeout archive')).toBeInTheDocument();
+  expect(screen.getByText('No external exposure closeout archive is available.')).toBeInTheDocument();
+  expect(
+    screen.getByText('Archive the external exposure closeout after the temporary public URL session is closed.')
+  ).toBeInTheDocument();
+  expect(screen.getByText('No external exposure session')).toBeInTheDocument();
+  expect(screen.getByText('No public URL snapshot')).toBeInTheDocument();
+  expect(screen.getByText('No webhook URL snapshot')).toBeInTheDocument();
   expect(screen.getByText('Final external-review evidence package')).toBeInTheDocument();
   expect(screen.getByText('Final external-review evidence package is not available in the top-level evidence bundle.'))
     .toBeInTheDocument();

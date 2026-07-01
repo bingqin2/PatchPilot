@@ -125,6 +125,31 @@ export function DemoEvidenceBundlePanel({
     latestArchivedAt: null,
     downloadActions: ['Archive the final acceptance completion closeout after it is READY and closed.']
   };
+  const externalExposureCloseoutArchiveEvidence = bundle?.externalExposureCloseoutArchiveEvidence ?? {
+    status: 'NEEDS_ATTENTION' as DemoReadinessStatus,
+    archived: false,
+    closeoutReady: false,
+    summary: 'No external exposure closeout archive is available.',
+    nextAction: 'Archive the external exposure closeout after the temporary public URL session is closed.',
+    archiveCount: 0,
+    latestArchiveId: null,
+    latestSessionId: null,
+    latestSessionStatus: null,
+    publicUrl: null,
+    webhookUrl: null,
+    linkedReadinessArchiveId: null,
+    handoffStatus: null,
+    archiveFreshness: 'MISSING',
+    latestArchivedAt: null,
+    evidenceNotes: [
+      'No archived external exposure closeout evidence is available in the top-level bundle.'
+    ],
+    downloadActions: [
+      'Archive the external exposure closeout before using the evidence bundle as public URL shutdown proof.'
+    ],
+    sideEffectContract:
+      'GET /api/demo/evidence-bundle is read-only and does not mutate tasks, Git, GitHub, or public exposure.'
+  };
   const finalExternalReviewEvidencePackage = bundle?.finalExternalReviewEvidencePackage ?? {
     status: 'NEEDS_ATTENTION' as DemoReadinessStatus,
     readyForExternalReview: false,
@@ -738,6 +763,37 @@ export function DemoEvidenceBundlePanel({
                 <small>Archived {compactDateTime(finalAcceptanceCompletionCloseoutArchiveEvidence.latestArchivedAt)}</small>
               ) : null}
               {finalAcceptanceCompletionCloseoutArchiveEvidence.downloadActions.slice(0, 2).map((action) => (
+                <small key={action}>{action}</small>
+              ))}
+            </div>
+            <div>
+              <span>External exposure closeout archive</span>
+              <strong>
+                {externalExposureCloseoutArchiveEvidence.closeoutReady
+                  ? 'Closed archive'
+                  : statusLabel(externalExposureCloseoutArchiveEvidence.status)}
+              </strong>
+              <small>{externalExposureCloseoutArchiveEvidence.summary}</small>
+              <small>{externalExposureCloseoutArchiveEvidence.nextAction}</small>
+              <small>{externalExposureCloseoutArchiveEvidence.archiveCount} external exposure closeout archives</small>
+              <small>{externalExposureCloseoutArchiveEvidence.latestArchiveId ?? 'No external exposure closeout archive'}</small>
+              <small>
+                {externalExposureCloseoutArchiveEvidence.latestSessionId
+                  ? `Session ${externalExposureCloseoutArchiveEvidence.latestSessionId}`
+                  : 'No external exposure session'}
+              </small>
+              <small>{externalExposureCloseoutArchiveEvidence.latestSessionStatus ?? 'No external exposure session status'}</small>
+              <small>{externalExposureCloseoutArchiveEvidence.publicUrl ?? 'No public URL snapshot'}</small>
+              <small>{externalExposureCloseoutArchiveEvidence.webhookUrl ?? 'No webhook URL snapshot'}</small>
+              <small>
+                {externalExposureCloseoutArchiveEvidence.linkedReadinessArchiveId
+                  ?? 'No linked external exposure readiness archive'}
+              </small>
+              <small>{externalExposureCloseoutArchiveEvidence.archiveFreshness ?? 'MISSING'}</small>
+              {externalExposureCloseoutArchiveEvidence.latestArchivedAt ? (
+                <small>Archived {compactDateTime(externalExposureCloseoutArchiveEvidence.latestArchivedAt)}</small>
+              ) : null}
+              {externalExposureCloseoutArchiveEvidence.downloadActions.slice(0, 2).map((action) => (
                 <small key={action}>{action}</small>
               ))}
             </div>

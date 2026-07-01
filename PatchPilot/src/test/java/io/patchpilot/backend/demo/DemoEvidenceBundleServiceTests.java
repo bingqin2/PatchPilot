@@ -43,6 +43,7 @@ import io.patchpilot.backend.safety.domain.RejectedTriggerAuditSummaryVo;
 import io.patchpilot.backend.safety.domain.RejectedTriggerCountVo;
 import io.patchpilot.backend.safety.domain.TriggerQuarantineScope;
 import io.patchpilot.backend.safety.domain.TriggerQuarantineVo;
+import io.patchpilot.backend.security.exposure.domain.ExternalExposureCloseoutArchiveVo;
 import io.patchpilot.backend.task.domain.enums.FixTaskStatus;
 import io.patchpilot.backend.task.domain.vo.FixTaskEvidencePackageAcceptanceCertificateArchiveVo;
 import io.patchpilot.backend.task.domain.vo.FixTaskQueueSummaryVo;
@@ -328,6 +329,29 @@ class DemoEvidenceBundleServiceTests {
                 "Download final acceptance completion closeout archive final-acceptance-completion-closeout-archive-1.",
                 "Download linked final acceptance completion archive final-acceptance-completion-archive-1.",
                 "Download final acceptance completion evidence delivery receipt final-acceptance-completion-evidence-delivery-receipt-1."
+        );
+        assertThat(bundle.externalExposureCloseoutArchiveEvidence().status()).isEqualTo(DemoReadinessStatus.READY);
+        assertThat(bundle.externalExposureCloseoutArchiveEvidence().archived()).isTrue();
+        assertThat(bundle.externalExposureCloseoutArchiveEvidence().closeoutReady()).isTrue();
+        assertThat(bundle.externalExposureCloseoutArchiveEvidence().summary())
+                .isEqualTo("Latest external exposure closeout archive proves the temporary public URL session is closed.");
+        assertThat(bundle.externalExposureCloseoutArchiveEvidence().nextAction())
+                .isEqualTo("Use the archived external exposure closeout as public URL shutdown proof.");
+        assertThat(bundle.externalExposureCloseoutArchiveEvidence().archiveCount()).isEqualTo(1);
+        assertThat(bundle.externalExposureCloseoutArchiveEvidence().latestArchiveId())
+                .isEqualTo("external-exposure-closeout-archive-compat");
+        assertThat(bundle.externalExposureCloseoutArchiveEvidence().latestSessionId())
+                .isEqualTo("external-exposure-session-compat");
+        assertThat(bundle.externalExposureCloseoutArchiveEvidence().publicUrl())
+                .isEqualTo("https://example.trycloudflare.com");
+        assertThat(bundle.externalExposureCloseoutArchiveEvidence().webhookUrl())
+                .isEqualTo("https://example.trycloudflare.com/api/github/webhook");
+        assertThat(bundle.externalExposureCloseoutArchiveEvidence().linkedReadinessArchiveId())
+                .isEqualTo("external-exposure-readiness-archive-compat");
+        assertThat(bundle.externalExposureCloseoutArchiveEvidence().archiveFreshness()).isEqualTo("CURRENT");
+        assertThat(bundle.externalExposureCloseoutArchiveEvidence().downloadActions()).containsExactly(
+                "Download external exposure closeout archive external-exposure-closeout-archive-compat.",
+                "Download linked external exposure readiness archive external-exposure-readiness-archive-compat."
         );
         assertThat(bundle.finalExternalReviewEvidencePackage().status()).isEqualTo(DemoReadinessStatus.READY);
         assertThat(bundle.finalExternalReviewEvidencePackage().readyForExternalReview()).isTrue();
@@ -653,6 +677,67 @@ class DemoEvidenceBundleServiceTests {
                 .isEqualTo("final-reviewer-handoff-delivery-receipt-compat");
         assertThat(bundle.finalReviewerHandoffDeliveryFinalization().handoffDeliveryReceiptFresh()).isTrue();
         assertThat(bundle.nextActions()).containsExactly("Use this evidence bundle as the live demo baseline.");
+    }
+
+    @Test
+    void should_require_external_exposure_closeout_archive_before_reporting_bundle_ready() {
+        DemoEvidenceBundleService service = new DemoEvidenceBundleService(
+                () -> readiness(DemoReadinessStatus.READY, List.of()),
+                () -> smokeChecklist(DemoSmokeChecklistStatus.READY, List.of()),
+                DemoEvidenceBundleServiceTests::configuration,
+                () -> List.of(fixture("java-maven", "PASS")),
+                FixTaskQueueSummaryVo::empty,
+                () -> List.of(task("task-1", FixTaskStatus.COMPLETED, "https://github.com/bingqin2/PatchPilot/pull/42")),
+                () -> List.of(webhookDelivery("delivery-1", WebhookDeliveryDiagnosticStatus.TASK_CREATED, "task-1")),
+                DemoEvidenceBundleServiceTests::webhookSetupReadiness,
+                () -> rejectedTriggerSummary(0),
+                List::of,
+                DemoEvidenceBundleServiceTests::evaluationRunReadiness,
+                DemoEvidenceBundleServiceTests::handoffPackageArchiveSummary,
+                DemoEvidenceBundleServiceTests::deliveredHandoffShareCenter,
+                DemoEvidenceBundleServiceTests::handoffFinalizationReady,
+                DemoEvidenceBundleServiceTests::launchEvidenceShareCenter,
+                DemoEvidenceBundleServiceTests::launchEvidenceFinalizationReady,
+                DemoEvidenceBundleServiceTests::finalAcceptanceShareFinalizationReady,
+                DemoEvidenceBundleServiceTests::finalAcceptanceCompletionCloseoutReady,
+                () -> List.of(launchAcceptanceCloseoutArchive(DemoReadinessStatus.READY, true)),
+                () -> List.of(launchAcceptanceCertificateArchive(DemoReadinessStatus.READY, true)),
+                () -> List.of(taskEvidenceAcceptanceCertificateArchive("READY", true)),
+                () -> List.of(finalHandoffReportPackageArchive(DemoReadinessStatus.READY, true)),
+                () -> List.of(finalAcceptanceCompletionCloseoutArchive(DemoReadinessStatus.READY, true)),
+                DemoEvidenceBundleServiceTests::finalExternalReviewEvidencePackageReady,
+                () -> List.of(finalExternalReviewEvidencePackageArchive(DemoReadinessStatus.READY, true)),
+                () -> List.of(finalExternalReviewEvidencePackageDeliveryReceipt()),
+                DemoEvidenceBundleServiceTests::finalExternalReviewEvidencePackageDeliveryFinalizationReady,
+                () -> List.of(finalExternalReviewEvidencePackageDeliveryFinalizationArchive()),
+                DemoEvidenceBundleServiceTests::finalExternalReviewReleaseBundleReady,
+                () -> List.of(finalExternalReviewReleaseBundleArchive()),
+                DemoEvidenceBundleServiceTests::finalExternalReviewReleaseBundleDeliveryFinalizationReady,
+                () -> List.of(finalExternalReviewReleaseBundleDeliveryFinalizationArchive()),
+                () -> List.of(finalExternalReviewReleaseBundleDeliveryCertificateArchive()),
+                List::of
+        );
+
+        DemoEvidenceBundleVo bundle = service.getEvidenceBundle();
+
+        assertThat(bundle.status()).isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
+        assertThat(bundle.summary()).isEqualTo("Demo evidence bundle needs attention.");
+        assertThat(bundle.externalExposureCloseoutArchiveEvidence().status())
+                .isEqualTo(DemoReadinessStatus.NEEDS_ATTENTION);
+        assertThat(bundle.externalExposureCloseoutArchiveEvidence().archived()).isFalse();
+        assertThat(bundle.externalExposureCloseoutArchiveEvidence().closeoutReady()).isFalse();
+        assertThat(bundle.externalExposureCloseoutArchiveEvidence().summary())
+                .isEqualTo("No external exposure closeout archive is available.");
+        assertThat(bundle.externalExposureCloseoutArchiveEvidence().nextAction())
+                .isEqualTo("Archive the external exposure closeout after the temporary public URL session is closed.");
+        assertThat(bundle.externalExposureCloseoutArchiveEvidence().archiveCount()).isZero();
+        assertThat(bundle.externalExposureCloseoutArchiveEvidence().archiveFreshness()).isEqualTo("MISSING");
+        assertThat(bundle.externalExposureCloseoutArchiveEvidence().downloadActions()).containsExactly(
+                "Archive the external exposure closeout before using the evidence bundle as public URL shutdown proof."
+        );
+        assertThat(bundle.nextActions()).containsExactly(
+                "Archive the external exposure closeout after the temporary public URL session is closed."
+        );
     }
 
     @Test
