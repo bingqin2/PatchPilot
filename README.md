@@ -44,7 +44,7 @@ PatchPilot is not a chatbot and does not auto-merge code. The current target is 
 - Admin-protected live GitHub trigger dry run that evaluates the exact issue comment an operator plans to post, using GitHub issue-comment trigger gates without creating tasks, queue work, rate-limit records, GitHub comments, branches, Pull Requests, or token exposure.
 - Admin-protected live launch gate that combines self-hosted launch readiness, webhook setup readiness, live publish preflight, and live trigger dry-run evidence into one read-only go/no-go result before the operator posts the real GitHub issue comment.
 - End-to-end acceptance matrix that combines the live launch gate, supported language coverage, safety rejection coverage, evaluation evidence, recent Pull Request evidence, failed-task evidence, pending-review evidence, final gap analysis, and copyable Markdown into one read-only final-demo readiness readout.
-- External exposure readiness, archive, handoff, session, and closeout gates that check safety controls before a temporary public URL is shared, preserve local evidence, track the active public URL lifetime, and confirm the exposure was closed before the demo is treated as complete.
+- External exposure readiness, archive, handoff, session, closeout, and closeout archive gates that check safety controls before a temporary public URL is shared, preserve local evidence, track the active public URL lifetime, confirm the exposure was closed, and freeze the shutdown proof before the demo is treated as complete.
 - Issue comment status updates for accepted, running, verification, success, and failure states, including best-effort failure feedback creation when the original status comment is missing.
 - Failed and cancelled task retry preflight that explains whether retry is safe, shows sanitized failure context, blocks blind retries when GitHub permissions or repository support must be fixed first, and requires an operator reason before requeueing.
 - Demo readiness gate that summarizes credentials, model provider health, adapter fixtures, adapter runtime executables, evaluation baseline regression evidence, queue health, worker heartbeat readiness, and recent PR evidence before a live smoke run.
@@ -168,9 +168,15 @@ curl -H "X-PatchPilot-Admin-Token: $PATCHPILOT_ADMIN_TOKEN" \
   http://127.0.0.1:8080/api/security/external-exposure-closeout
 curl -OJ -H "X-PatchPilot-Admin-Token: $PATCHPILOT_ADMIN_TOKEN" \
   http://127.0.0.1:8080/api/security/external-exposure-closeout/report/download
+curl -X POST -H "X-PatchPilot-Admin-Token: $PATCHPILOT_ADMIN_TOKEN" \
+  http://127.0.0.1:8080/api/security/external-exposure-closeout/archives
+curl -H "X-PatchPilot-Admin-Token: $PATCHPILOT_ADMIN_TOKEN" \
+  http://127.0.0.1:8080/api/security/external-exposure-closeout/archives
+curl -OJ -H "X-PatchPilot-Admin-Token: $PATCHPILOT_ADMIN_TOKEN" \
+  http://127.0.0.1:8080/api/security/external-exposure-closeout/archives/<archiveId>/report/download
 ```
 
-The closeout gate is read-only. `READY` requires the latest exposure session to be closed with closer, close time, close notes, linked readiness archive evidence, and a ready handoff package.
+The closeout gate is read-only. `READY` requires the latest exposure session to be closed with closer, close time, close notes, linked readiness archive evidence, and a ready handoff package. Closeout archive creation is a PatchPilot-local evidence write only: it freezes the current closeout report for later review and does not probe the public URL, edit GitHub, create tasks, call the model, run tests, mutate Git, or send messages.
 
 Local repository preflight is limited to configured backend-local root directories:
 

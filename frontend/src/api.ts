@@ -90,6 +90,7 @@ import type {
   EvaluationRunSnapshotArchive,
   ExternalExposureHandoffPackage,
   ExternalExposureCloseout,
+  ExternalExposureCloseoutArchive,
   ExternalExposureReadiness,
   ExternalExposureReadinessArchive,
   ExternalExposureSession,
@@ -232,6 +233,20 @@ export async function getExternalExposureCloseout(): Promise<ExternalExposureClo
 
 export async function downloadExternalExposureCloseoutReport(): Promise<Blob> {
   return getBlobApi('/api/security/external-exposure-closeout/report/download');
+}
+
+export async function archiveExternalExposureCloseout(): Promise<ExternalExposureCloseoutArchive> {
+  return postApi<ExternalExposureCloseoutArchive>('/api/security/external-exposure-closeout/archives');
+}
+
+export async function listExternalExposureCloseoutArchives(): Promise<ExternalExposureCloseoutArchive[]> {
+  return getApi<ExternalExposureCloseoutArchive[]>('/api/security/external-exposure-closeout/archives');
+}
+
+export async function downloadExternalExposureCloseoutArchiveReport(archiveId: string): Promise<Blob> {
+  return getBlobApi(
+    `/api/security/external-exposure-closeout/archives/${encodeURIComponent(archiveId)}/report/download`
+  );
 }
 
 export async function startExternalExposureSession(

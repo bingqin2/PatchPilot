@@ -24,6 +24,7 @@ import {
   archiveDemoSelfHostedLaunchReadiness,
   archiveDemoSession,
   archiveEvaluationRunSnapshot,
+  archiveExternalExposureCloseout,
   archiveExternalExposureReadiness,
   cancelTask,
   composeDemoLaunchCommand,
@@ -88,6 +89,7 @@ import {
   downloadDemoSelfHostedLaunchReadinessArchiveReport,
   downloadDemoSelfHostedLaunchReadinessReport,
   downloadExternalExposureCloseoutReport,
+  downloadExternalExposureCloseoutArchiveReport,
   downloadExternalExposureHandoffPackageReport,
   downloadExternalExposureReadinessArchiveReport,
   downloadExternalExposureSessionReport,
@@ -208,6 +210,7 @@ import {
   listEvaluationRuns,
   listEvaluationRunSnapshots,
   listExternalExposureReadinessArchives,
+  listExternalExposureCloseoutArchives,
   listExternalExposureSessions,
   listLanguageAdapterFixtures,
   listLanguageAdapterRuntimeReadiness,
@@ -287,6 +290,7 @@ import type {
   DemoAcceptanceSummary,
   DemoEndToEndAcceptanceMatrix,
   ExternalExposureCloseout,
+  ExternalExposureCloseoutArchive,
   ExternalExposureHandoffPackage,
   ExternalExposureReadiness,
   ExternalExposureReadinessArchive,
@@ -490,6 +494,10 @@ export default function App() {
   const [externalExposureSessionError, setExternalExposureSessionError] = useState<string | null>(null);
   const [externalExposureCloseout, setExternalExposureCloseout] = useState<ExternalExposureCloseout | null>(null);
   const [externalExposureCloseoutError, setExternalExposureCloseoutError] = useState<string | null>(null);
+  const [externalExposureCloseoutArchives, setExternalExposureCloseoutArchives] =
+    useState<ExternalExposureCloseoutArchive[]>([]);
+  const [externalExposureCloseoutArchiveError, setExternalExposureCloseoutArchiveError] =
+    useState<string | null>(null);
   const [demoFinalAcceptanceSharePackage, setDemoFinalAcceptanceSharePackage] =
     useState<DemoFinalAcceptanceSharePackage | null>(null);
   const [demoFinalAcceptanceSharePackageError, setDemoFinalAcceptanceSharePackageError] = useState<string | null>(null);
@@ -1121,6 +1129,7 @@ export default function App() {
         externalExposureHandoffPackageResult,
         externalExposureSessionResult,
         externalExposureCloseoutResult,
+        externalExposureCloseoutArchiveResult,
         demoAcceptanceSummaryResult,
         demoFinalAcceptanceSharePackageResult,
         demoFinalAcceptanceSharePackageArchiveResult,
@@ -1336,6 +1345,10 @@ export default function App() {
         getExternalExposureCloseout().then(
           (closeout) => ({ closeout, error: null as string | null }),
           (caught) => ({ closeout: null, error: errorMessage(caught) })
+        ),
+        listExternalExposureCloseoutArchives().then(
+          (archives) => ({ archives, error: null as string | null }),
+          (caught) => ({ archives: null, error: errorMessage(caught) })
         ),
         getDemoAcceptanceSummary().then(
           (summary) => ({ summary, error: null as string | null }),
@@ -1764,6 +1777,10 @@ export default function App() {
         setExternalExposureCloseout(externalExposureCloseoutResult.closeout);
       }
       setExternalExposureCloseoutError(externalExposureCloseoutResult.error);
+      if (externalExposureCloseoutArchiveResult.archives) {
+        setExternalExposureCloseoutArchives(externalExposureCloseoutArchiveResult.archives);
+      }
+      setExternalExposureCloseoutArchiveError(externalExposureCloseoutArchiveResult.error);
       if (demoAcceptanceSummaryResult.summary) {
         setDemoAcceptanceSummary(demoAcceptanceSummaryResult.summary);
       }
@@ -3348,15 +3365,21 @@ export default function App() {
 
   const handleRefreshExternalExposureReadiness = useCallback(async () => {
     setExternalExposureReadinessError(null);
+    setExternalExposureReadinessArchiveError(null);
     setExternalExposureHandoffPackageError(null);
     setExternalExposureCloseoutError(null);
+    setExternalExposureCloseoutArchiveError(null);
     try {
       const readiness = await getExternalExposureReadiness();
       setExternalExposureReadiness(readiness);
+      const readinessArchives = await listExternalExposureReadinessArchives();
+      setExternalExposureReadinessArchives(readinessArchives);
       const handoffPackage = await getExternalExposureHandoffPackage();
       setExternalExposureHandoffPackage(handoffPackage);
       const closeout = await getExternalExposureCloseout();
       setExternalExposureCloseout(closeout);
+      const closeoutArchives = await listExternalExposureCloseoutArchives();
+      setExternalExposureCloseoutArchives(closeoutArchives);
     } catch (caught) {
       setExternalExposureReadinessError(errorMessage(caught));
       setExternalExposureCloseoutError(errorMessage(caught));
@@ -3396,6 +3419,25 @@ export default function App() {
 
   const handleDownloadExternalExposureCloseoutReport = useCallback(
     () => downloadExternalExposureCloseoutReport(),
+    []
+  );
+
+  const handleArchiveExternalExposureCloseout = useCallback(async () => {
+    setExternalExposureCloseoutArchiveError(null);
+    try {
+      const archive = await archiveExternalExposureCloseout();
+      setExternalExposureCloseoutArchives((current) =>
+        [archive, ...current.filter((item) => item.id !== archive.id)].slice(0, 20)
+      );
+      return archive;
+    } catch (caught) {
+      setExternalExposureCloseoutArchiveError(errorMessage(caught));
+      throw caught;
+    }
+  }, []);
+
+  const handleDownloadExternalExposureCloseoutArchiveReport = useCallback(
+    (archiveId: string) => downloadExternalExposureCloseoutArchiveReport(archiveId),
     []
   );
 
@@ -4044,9 +4086,13 @@ export default function App() {
         sessionError={externalExposureSessionError}
         closeout={externalExposureCloseout}
         closeoutError={externalExposureCloseoutError}
+        closeoutArchives={externalExposureCloseoutArchives}
+        closeoutArchiveError={externalExposureCloseoutArchiveError}
         onArchiveReadiness={handleArchiveExternalExposureReadiness}
         onDownloadArchiveReport={handleDownloadExternalExposureReadinessArchiveReport}
         onDownloadHandoffPackageReport={handleDownloadExternalExposureHandoffPackageReport}
+        onArchiveCloseout={handleArchiveExternalExposureCloseout}
+        onDownloadCloseoutArchiveReport={handleDownloadExternalExposureCloseoutArchiveReport}
         onDownloadCloseoutReport={handleDownloadExternalExposureCloseoutReport}
         onStartSession={handleStartExternalExposureSession}
         onCloseSession={handleCloseExternalExposureSession}

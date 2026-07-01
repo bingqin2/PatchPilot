@@ -6417,3 +6417,22 @@ Validation so far:
 - `npm --prefix frontend test -- --reporter=dot`: passed, 34 test files and 523 tests.
 - `npm --prefix frontend run build`: passed with the existing Vite large-chunk warning.
 - `git diff --check`: passed.
+
+## 2026-07-01 - 320 External exposure closeout archives
+
+- Started `320-external-exposure-closeout-archives` to freeze the exact external exposure closeout proof after a temporary public URL session is shut down.
+- Added `POST /api/security/external-exposure-closeout/archives`, `GET /api/security/external-exposure-closeout/archives`, and `GET /api/security/external-exposure-closeout/archives/{archiveId}/report/download`.
+- Added default in-memory closeout archive storage plus MySQL/Flyway/MyBatis persistence for `local`, `docker`, and `idea` profiles.
+- Archive records freeze closeout status, ready flag, latest session proof, public/webhook URL metadata, linked readiness archive, handoff status, archive freshness, counts, generated/archived times, evidence notes, next actions, download actions, side-effect contract, and Markdown report.
+- Extended the operations dashboard external exposure panel with an `Archive closeout` action, recent closeout archive history, archived count/status details, and frozen Markdown downloads.
+- Updated frontend API helpers, typed payloads, App loading/refresh wiring, App smoke fixtures, README, product spec, frontend design notes, architecture notes, and this plan document.
+
+Validation so far:
+
+- `mvn -q -pl PatchPilot -Dtest=ExternalExposureCloseoutArchiveServiceTests,ExternalExposureCloseoutControllerTests,ExternalExposureCloseoutArchiveConvertTests,ExternalExposureCloseoutArchiveMigrationTests,MyBatisExternalExposureCloseoutArchiveRepositoryTests test`: first failed because the closeout archive VO, service, repository, mapper, converter, migration, and controller endpoints did not exist; passed after backend implementation.
+- `npm --prefix frontend test -- --run src/api.test.ts src/dashboard/components/ExternalExposureReadinessPanel.test.tsx --reporter=dot`: first failed because `archiveExternalExposureCloseout` was missing and the panel had no closeout archive controls or empty/error states; passed after frontend implementation.
+- `npm --prefix frontend test -- --run src/api.test.ts src/dashboard/components/ExternalExposureReadinessPanel.test.tsx src/App.test.tsx --reporter=dot`: first failed because closeout archive list text duplicated current closeout evidence text; passed after using distinct archive row wording. Final focused result: 3 test files and 324 tests.
+- `mvn -q -pl PatchPilot test`: passed with existing Spring/Mockito test logging.
+- `npm --prefix frontend test -- --reporter=dot`: passed, 34 test files and 524 tests.
+- `npm --prefix frontend run build`: passed with the existing Vite large-chunk warning.
+- `git diff --check`: passed.
