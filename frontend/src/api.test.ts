@@ -6,6 +6,7 @@ import {
   ADMIN_TOKEN_STORAGE_KEY,
   evaluateTrigger,
   postGitHubTriggerDryRun,
+  postDemoLiveLaunchGate,
   getDashboardBootstrap,
   getBackendHealth,
   getConfigurationSummary,
@@ -4058,6 +4059,60 @@ test('runs GitHub trigger dry run through backend API without creating a task', 
   expect(result.status).toBe('WOULD_CREATE_TASK');
   expect(result.repository).toBe('bingqin2/PatchPilot');
   expect(result.evaluation.source).toBe('ISSUE_COMMENT');
+  expect(result.sideEffectContract).toContain('does not create tasks');
+});
+
+test('runs demo live launch gate through backend API without creating a task', async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        status: 'READY',
+        readyToPost: true,
+        repository: 'bingqin2/PatchPilot',
+        issueNumber: 1,
+        issueUrl: 'https://github.com/bingqin2/PatchPilot/issues/1',
+        triggerUser: 'bingqin2',
+        triggerComment: '/agent fix touch docs/live-gate.md',
+        summary: 'PatchPilot is ready for a live /agent fix launch.',
+        nextActions: ['Post the exact /agent fix comment on the GitHub issue and watch webhook delivery, task execution, and Pull Request creation.'],
+        sideEffectContract: 'Read-only live launch gate: this endpoint does not create tasks.',
+        launchReadiness: null,
+        webhookSetup: null,
+        livePublishPreflight: null,
+        triggerDryRun: null,
+        checks: [],
+        generatedAt: '2026-07-01T10:00:00Z',
+        markdownReport: '# PatchPilot Live Launch Gate'
+      },
+      message: null
+    })
+  } as Response));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const result = await postDemoLiveLaunchGate({
+    repositoryOwner: 'bingqin2',
+    repositoryName: 'PatchPilot',
+    issueNumber: 1,
+    triggerUser: 'bingqin2',
+    triggerComment: '/agent fix touch docs/live-gate.md'
+  });
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/demo/live-launch-gate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      repositoryOwner: 'bingqin2',
+      repositoryName: 'PatchPilot',
+      issueNumber: 1,
+      triggerUser: 'bingqin2',
+      triggerComment: '/agent fix touch docs/live-gate.md'
+    })
+  });
+  expect(result.status).toBe('READY');
+  expect(result.readyToPost).toBe(true);
   expect(result.sideEffectContract).toContain('does not create tasks');
 });
 

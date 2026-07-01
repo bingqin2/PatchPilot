@@ -164,6 +164,7 @@ import {
   runAndArchiveEvaluationFixtureBaseline,
   runEvaluationFixtureBaseline,
   preflightDemoLaunch,
+  postDemoLiveLaunchGate,
   postGitHubTriggerDryRun,
   getGitHubCredentialReadiness,
   getGitHubLivePublishPreflight,
@@ -229,6 +230,7 @@ import { DemoEvidenceBundlePanel } from './dashboard/components/DemoEvidenceBund
 import { DemoLaunchCommandPanel } from './dashboard/components/DemoLaunchCommandPanel';
 import { DemoLaunchPreflightPanel } from './dashboard/components/DemoLaunchPreflightPanel';
 import { LiveTriggerDryRunPanel } from './dashboard/components/LiveTriggerDryRunPanel';
+import { LiveLaunchGatePanel } from './dashboard/components/LiveLaunchGatePanel';
 import { DemoLaunchTrackerPanel } from './dashboard/components/DemoLaunchTrackerPanel';
 import { DemoLaunchEvidencePackagePanel } from './dashboard/components/DemoLaunchEvidencePackagePanel';
 import { DemoAcceptanceSummaryPanel } from './dashboard/components/DemoAcceptanceSummaryPanel';
@@ -319,6 +321,7 @@ import type {
   DemoLaunchAcceptanceCloseoutArchive,
   DemoLaunchCommand,
   DemoLaunchCommandInput,
+  DemoLiveLaunchGate,
   DemoLaunchEvidencePackageArchive,
   DemoLaunchEvidencePackage,
   DemoLaunchEvidenceFinalization,
@@ -708,6 +711,9 @@ export default function App() {
   const [gitHubTriggerDryRun, setGitHubTriggerDryRun] = useState<GitHubTriggerDryRun | null>(null);
   const [gitHubTriggerDryRunError, setGitHubTriggerDryRunError] = useState<string | null>(null);
   const [gitHubTriggerDryRunPending, setGitHubTriggerDryRunPending] = useState(false);
+  const [demoLiveLaunchGate, setDemoLiveLaunchGate] = useState<DemoLiveLaunchGate | null>(null);
+  const [demoLiveLaunchGateError, setDemoLiveLaunchGateError] = useState<string | null>(null);
+  const [demoLiveLaunchGatePending, setDemoLiveLaunchGatePending] = useState(false);
   const [supportedAdapters, setSupportedAdapters] = useState<SupportedLanguageAdapter[]>([]);
   const [adapterError, setAdapterError] = useState<string | null>(null);
   const [adapterFixtureVerifications, setAdapterFixtureVerifications] = useState<LanguageAdapterFixtureVerification[]>([]);
@@ -3221,6 +3227,21 @@ export default function App() {
     }
   }, []);
 
+  const handleDemoLiveLaunchGate = useCallback(async (input: GitHubTriggerDryRunInput) => {
+    setDemoLiveLaunchGatePending(true);
+    setDemoLiveLaunchGateError(null);
+    try {
+      const result = await postDemoLiveLaunchGate(input);
+      setDemoLiveLaunchGate(result);
+      return result;
+    } catch (caught) {
+      setDemoLiveLaunchGateError(errorMessage(caught));
+      throw caught;
+    } finally {
+      setDemoLiveLaunchGatePending(false);
+    }
+  }, []);
+
   const handleCreateTask = useCallback(async (input: CreateTaskInput) => {
     setCreatingTask(true);
     setCreateTaskStatus(null);
@@ -3790,6 +3811,13 @@ export default function App() {
         error={gitHubTriggerDryRunError}
         pending={gitHubTriggerDryRunPending}
         onDryRun={handleGitHubTriggerDryRun}
+      />
+
+      <LiveLaunchGatePanel
+        result={demoLiveLaunchGate}
+        error={demoLiveLaunchGateError}
+        pending={demoLiveLaunchGatePending}
+        onRunGate={handleDemoLiveLaunchGate}
       />
 
       <DemoLaunchTrackerPanel

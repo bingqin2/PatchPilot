@@ -64,6 +64,7 @@ import type {
   DemoLaunchEvidenceShareDeliveryReceipt,
   DemoLaunchEvidenceShareDeliveryReceiptInput,
   DemoLaunchCommandInput,
+  DemoLiveLaunchGate,
   DemoLaunchPreflight,
   DemoLaunchPreflightInput,
   DemoReadiness,
@@ -183,6 +184,10 @@ export async function evaluateTrigger(input: CreateTaskInput): Promise<TriggerEv
 
 export async function postGitHubTriggerDryRun(input: GitHubTriggerDryRunInput): Promise<GitHubTriggerDryRun> {
   return postApi<GitHubTriggerDryRun>('/api/github/trigger-dry-run', input);
+}
+
+export async function postDemoLiveLaunchGate(input: GitHubTriggerDryRunInput): Promise<DemoLiveLaunchGate> {
+  return postApi<DemoLiveLaunchGate>('/api/demo/live-launch-gate', input);
 }
 
 export async function listTasks(options: TaskStatusFilter | ListTasksOptions = 'ALL'): Promise<FixTaskPage> {
