@@ -231,6 +231,7 @@ The current implementation target is local self-hosted development first. Hosted
 - Future model benchmark runs should record model, prompt version, repository revision, success metrics, failure categories, cost, latency, and a copyable Markdown report.
 - Dashboard and API surfaces should make model usage, tool usage, retrieval evidence, evaluation results, budget state, and safety decisions inspectable without exposing secrets.
 - A self-hosted operator should not rely on a temporary public URL until the external exposure readiness gate is not `BLOCKED`; `NEEDS_ATTENTION` must explain which abuse-control setting remains open before external traffic is invited.
+- After a temporary public URL is closed, a self-hosted operator should be able to inspect and download one read-only external exposure operator handoff checklist before posting the next live `/agent fix` trigger. The checklist must aggregate the latest closeout archive, current handoff package, active exposure session count, and live GitHub publish preflight for the configured demo repository into `READY`, `NEEDS_ATTENTION`, or `BLOCKED` checks, next actions, evidence notes, download actions, generated time, and a Markdown report without creating tasks, calling the model, running tests, probing public URLs, mutating Git, archiving records, sending messages, editing GitHub, opening Pull Requests, writing comments, or exposing secrets.
 
 ### Agent Workflow
 
@@ -406,6 +407,7 @@ MVP frontend scope:
 - Evaluate a pasted GitHub webhook payload before redelivery and see whether the temporary URL, webhook secret, event type, action, and `/agent fix` comment shape look correct.
 - Inspect webhook setup readiness before a live trigger and see whether the secret, public payload URL, and latest delivery state are ready, blocked, or need redelivery attention.
 - Run the live launch gate before posting a real GitHub issue comment and see the final aggregated `READY`, `NEEDS_ATTENTION`, or `BLOCKED` decision, with self-hosted launch readiness, webhook setup, live publish preflight, live trigger dry-run checks, next actions, and a copyable Markdown report.
+- Inspect and download an external exposure operator handoff checklist after a temporary URL closeout so the latest frozen shutdown proof, handoff package, active session state, and GitHub publish preflight agree before the next live `/agent fix` trigger.
 - Inspect and copy a single adapter readiness report covering supported languages, allowlisted verification commands, fixture pass rate, and fixture failures.
 - Inspect and copy a read-only evaluation case catalog, readiness summary, fixture-readiness report, and run preview covering supported Java/Maven, Node/npm, Python/pytest, Go, unsafe-trigger rejection, and vague-trigger rejection scenarios.
 - Copy a Markdown repository preflight report after checking a local path so supported and unsupported repository evidence can be shared before task creation.

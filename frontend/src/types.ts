@@ -581,6 +581,42 @@ export interface ExternalExposureCloseoutArchive {
   report: string;
 }
 
+export interface ExternalExposureOperatorHandoffChecklistCheck {
+  name: string;
+  status: DemoReadinessStatus;
+  summary: string;
+  nextAction: string;
+}
+
+export interface ExternalExposureOperatorHandoffChecklist {
+  status: DemoReadinessStatus;
+  readyForNextLiveStep: boolean;
+  summary: string;
+  nextAction: string;
+  repository: string;
+  latestCloseoutArchiveId: string | null;
+  latestSessionId: string | null;
+  latestSessionStatus: 'ACTIVE' | 'CLOSED' | null;
+  publicUrl: string | null;
+  webhookUrl: string | null;
+  handoffStatus: DemoReadinessStatus | null;
+  archiveFreshness: 'CURRENT' | 'MISSING' | 'STALE' | null;
+  livePublishStatus: DemoReadinessStatus | null;
+  livePublishReady: boolean;
+  activeSessionCount: number;
+  readyCount: number;
+  needsAttentionCount: number;
+  blockedCount: number;
+  totalCount: number;
+  nextActions: string[];
+  evidenceNotes: string[];
+  downloadActions: string[];
+  sideEffectContract: string;
+  checks: ExternalExposureOperatorHandoffChecklistCheck[];
+  generatedAt: string;
+  markdownReport: string;
+}
+
 export interface DashboardBootstrap {
   adminTokenConfigured: boolean;
   adminTokenBootstrapEnabled: boolean;
