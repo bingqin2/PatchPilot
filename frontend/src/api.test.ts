@@ -16,6 +16,9 @@ import {
   downloadDemoLiveDemoEvidenceBundleArchiveReport,
   getDemoLiveDemoHandoffPackage,
   downloadDemoLiveDemoHandoffPackageReport,
+  createDemoLiveDemoHandoffDeliveryReceipt,
+  listDemoLiveDemoHandoffDeliveryReceipts,
+  downloadDemoLiveDemoHandoffDeliveryReceiptReport,
   downloadDemoLiveTriggerOutcomeCloseoutReport,
   archiveDemoLiveTriggerOutcomeCloseout,
   listDemoLiveTriggerOutcomeCloseoutArchives,
@@ -5237,6 +5240,81 @@ test('loads and downloads live demo handoff package through backend API', async 
   expect(handoffPackage.readyForReview).toBe(true);
   expect(handoffPackage.evidenceBundleArchiveId).toBe('live-demo-evidence-bundle-archive-1');
   expect(handoffPackage.pullRequestUrl).toBe('https://github.com/bingqin2/PatchPilot/pull/42');
+  expect(report.type).toBe('text/markdown');
+});
+
+test('records, lists, and downloads live demo handoff delivery receipts through backend API', async () => {
+  const receiptPayload = {
+    id: 'live-demo-handoff-delivery-receipt-1',
+    status: 'READY',
+    handoffPackageStatus: 'READY',
+    evidenceBundleArchiveId: 'live-demo-evidence-bundle-archive-1',
+    repository: 'bingqin2/PatchPilot',
+    issueNumber: 1,
+    issueUrl: 'https://github.com/bingqin2/PatchPilot/issues/1',
+    triggerUser: 'bingqin2',
+    triggerComment: '/agent fix touch docs/live-package.md',
+    taskId: 'task-1',
+    taskStatus: 'COMPLETED',
+    pullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+    webhookDeliveryId: 'delivery-1',
+    summary: 'Live demo handoff package delivery receipt is recorded.',
+    deliveryChannel: 'github-comment',
+    deliveryTarget: 'https://github.com/bingqin2/PatchPilot/pull/42',
+    operator: 'local-operator',
+    notes: 'Sent the live demo handoff package to the reviewer.',
+    deliveredAt: '2026-07-02T04:55:00Z',
+    createdAt: '2026-07-02T05:00:00Z',
+    markdownReport: '# PatchPilot Live Demo Handoff Delivery Receipt'
+  };
+  const fetchMock = vi.fn()
+    .mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ success: true, data: receiptPayload, message: null })
+    } as Response)
+    .mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ success: true, data: [receiptPayload], message: null })
+    } as Response)
+    .mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      blob: async () => new Blob(['receipt'], { type: 'text/markdown' })
+    } as Response);
+  vi.stubGlobal('fetch', fetchMock);
+
+  const receipt = await createDemoLiveDemoHandoffDeliveryReceipt({
+    deliveryChannel: 'github-comment',
+    deliveryTarget: 'https://github.com/bingqin2/PatchPilot/pull/42',
+    operator: 'local-operator',
+    notes: 'Sent the live demo handoff package to the reviewer.',
+    deliveredAt: '2026-07-02T04:55:00Z'
+  });
+  const receipts = await listDemoLiveDemoHandoffDeliveryReceipts();
+  const report = await downloadDemoLiveDemoHandoffDeliveryReceiptReport('live-demo-handoff-delivery-receipt-1');
+
+  expect(fetchMock).toHaveBeenNthCalledWith(
+    1,
+    '/api/demo/live-demo-handoff-package/delivery-receipts',
+    expect.objectContaining({
+      body: JSON.stringify({
+        deliveryChannel: 'github-comment',
+        deliveryTarget: 'https://github.com/bingqin2/PatchPilot/pull/42',
+        operator: 'local-operator',
+        notes: 'Sent the live demo handoff package to the reviewer.',
+        deliveredAt: '2026-07-02T04:55:00Z'
+      })
+    })
+  );
+  expect(fetchMock).toHaveBeenNthCalledWith(2, '/api/demo/live-demo-handoff-package/delivery-receipts');
+  expect(fetchMock).toHaveBeenNthCalledWith(
+    3,
+    '/api/demo/live-demo-handoff-package/delivery-receipts/live-demo-handoff-delivery-receipt-1/report/download'
+  );
+  expect(receipt.id).toBe('live-demo-handoff-delivery-receipt-1');
+  expect(receipts[0].evidenceBundleArchiveId).toBe('live-demo-evidence-bundle-archive-1');
   expect(report.type).toBe('text/markdown');
 });
 

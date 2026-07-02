@@ -7,6 +7,7 @@ import type {
   DemoLiveDemoEvidenceBundle,
   DemoLiveDemoEvidenceBundleArchive,
   DemoLiveDemoHandoffPackage,
+  DemoLiveDemoHandoffDeliveryReceipt,
   DemoLiveTriggerOutcomeCloseout,
   DemoLiveTriggerOutcomeCloseoutArchive
 } from '../../types';
@@ -308,6 +309,30 @@ const readyLiveDemoHandoffPackage: DemoLiveDemoHandoffPackage = {
   markdownReport: '# PatchPilot Live Demo Handoff Package'
 };
 
+const readyLiveDemoHandoffDeliveryReceipt: DemoLiveDemoHandoffDeliveryReceipt = {
+  id: 'live-demo-handoff-delivery-receipt-1',
+  status: 'READY',
+  handoffPackageStatus: 'READY',
+  evidenceBundleArchiveId: 'live-demo-evidence-bundle-archive-1',
+  repository: 'bingqin2/PatchPilot',
+  issueNumber: 1,
+  issueUrl: 'https://github.com/bingqin2/PatchPilot/issues/1',
+  triggerUser: 'bingqin2',
+  triggerComment: '/agent fix touch docs/live-package.md',
+  taskId: 'task-1',
+  taskStatus: 'COMPLETED',
+  pullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+  webhookDeliveryId: 'delivery-1',
+  summary: 'Live demo handoff package delivery receipt is recorded.',
+  deliveryChannel: 'github-comment',
+  deliveryTarget: 'https://github.com/bingqin2/PatchPilot/pull/42',
+  operator: 'local-operator',
+  notes: 'Sent the live demo handoff package to the reviewer.',
+  deliveredAt: '2026-07-02T04:55:00Z',
+  createdAt: '2026-07-02T05:00:00Z',
+  markdownReport: '# PatchPilot Live Demo Handoff Delivery Receipt'
+};
+
 const baseProps = {
   error: null,
   pending: false,
@@ -340,7 +365,11 @@ const baseProps = {
   liveDemoHandoffPackage: null as DemoLiveDemoHandoffPackage | null,
   liveDemoHandoffPackageError: null,
   onRefreshLiveDemoHandoffPackage: vi.fn(),
-  onDownloadLiveDemoHandoffPackageReport: vi.fn()
+  onDownloadLiveDemoHandoffPackageReport: vi.fn(),
+  liveDemoHandoffDeliveryReceipts: [] as DemoLiveDemoHandoffDeliveryReceipt[],
+  liveDemoHandoffDeliveryReceiptError: null,
+  onRecordLiveDemoHandoffDeliveryReceipt: vi.fn(),
+  onDownloadLiveDemoHandoffDeliveryReceiptReport: vi.fn()
 };
 
 test('submits exact live launch gate input', async () => {
@@ -839,6 +868,76 @@ test('shows live demo handoff package errors', () => {
 
   expect(screen.getByText('Live demo handoff package failed')).toBeInTheDocument();
   expect(screen.getByText('Evidence bundle archive is missing')).toBeInTheDocument();
+});
+
+test('records and downloads live demo handoff delivery receipts', async () => {
+  const user = userEvent.setup();
+  const onRecordLiveDemoHandoffDeliveryReceipt = vi.fn(async () => readyLiveDemoHandoffDeliveryReceipt);
+  const onDownloadLiveDemoHandoffDeliveryReceiptReport = vi.fn(async () =>
+    new Blob(['receipt'], { type: 'text/markdown' })
+  );
+  const anchorClick = vi.fn();
+  const createObjectURL = vi.fn(() => 'blob:live-demo-handoff-delivery-receipt');
+  const revokeObjectURL = vi.fn();
+  vi.stubGlobal('URL', { createObjectURL, revokeObjectURL });
+  vi.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
+    const element = document.createElementNS('http://www.w3.org/1999/xhtml', tagName) as HTMLAnchorElement;
+    if (tagName === 'a') {
+      element.click = anchorClick;
+    }
+    return element;
+  });
+
+  render(
+    <LiveLaunchGatePanel
+      {...baseProps}
+      result={readyGate}
+      liveDemoHandoffPackage={readyLiveDemoHandoffPackage}
+      liveDemoHandoffDeliveryReceipts={[readyLiveDemoHandoffDeliveryReceipt]}
+      onRecordLiveDemoHandoffDeliveryReceipt={onRecordLiveDemoHandoffDeliveryReceipt}
+      onDownloadLiveDemoHandoffDeliveryReceiptReport={onDownloadLiveDemoHandoffDeliveryReceiptReport}
+    />
+  );
+
+  await user.clear(screen.getByLabelText('Live demo handoff delivery target'));
+  await user.type(
+    screen.getByLabelText('Live demo handoff delivery target'),
+    'https://github.com/bingqin2/PatchPilot/pull/42'
+  );
+  await user.click(screen.getByRole('button', { name: 'Record live demo handoff delivery receipt' }));
+  await user.click(screen.getByRole('button', {
+    name: 'Download live demo handoff delivery receipt live-demo-handoff-delivery-receipt-1'
+  }));
+
+  expect(onRecordLiveDemoHandoffDeliveryReceipt).toHaveBeenCalledWith({
+    deliveryChannel: 'github-comment',
+    deliveryTarget: 'https://github.com/bingqin2/PatchPilot/pull/42',
+    operator: 'local-operator',
+    notes: 'Sent the live demo handoff package to the reviewer.',
+    deliveredAt: expect.any(String)
+  });
+  expect(screen.getByText('Live demo handoff delivery receipts')).toBeInTheDocument();
+  expect(screen.getByText('live-demo-handoff-delivery-receipt-1')).toBeInTheDocument();
+  expect(screen.getByText('github-comment')).toBeInTheDocument();
+  expect(screen.getByText('https://github.com/bingqin2/PatchPilot/pull/42')).toBeInTheDocument();
+  expect(onDownloadLiveDemoHandoffDeliveryReceiptReport)
+    .toHaveBeenCalledWith('live-demo-handoff-delivery-receipt-1');
+  expect(createObjectURL).toHaveBeenCalledWith(expect.any(Blob));
+  expect(anchorClick).toHaveBeenCalled();
+  expect(revokeObjectURL).toHaveBeenCalledWith('blob:live-demo-handoff-delivery-receipt');
+});
+
+test('shows live demo handoff delivery receipt errors', () => {
+  render(
+    <LiveLaunchGatePanel
+      {...baseProps}
+      result={readyGate}
+      liveDemoHandoffDeliveryReceiptError="Delivery receipt write failed"
+    />
+  );
+
+  expect(screen.getByText('Live demo handoff delivery receipt failed')).toBeInTheDocument();
+  expect(screen.getByText('Delivery receipt write failed')).toBeInTheDocument();
 });
 
 test('shows launch package errors', () => {

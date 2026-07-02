@@ -1,6 +1,7 @@
 package io.patchpilot.backend.demo;
 
 import io.patchpilot.backend.common.response.ApiResponse;
+import io.patchpilot.backend.demo.domain.DemoLiveDemoHandoffDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoLiveDemoHandoffPackageVo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ContentDisposition;
@@ -8,10 +9,14 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/demo/live-demo-handoff-package")
@@ -19,6 +24,7 @@ import java.nio.charset.StandardCharsets;
 public class DemoLiveDemoHandoffPackageController {
 
     private final DemoLiveDemoHandoffPackageService service;
+    private final DemoLiveDemoHandoffDeliveryReceiptService receiptService;
 
     @GetMapping
     public ApiResponse<DemoLiveDemoHandoffPackageVo> getPackage() {
@@ -38,5 +44,38 @@ public class DemoLiveDemoHandoffPackageController {
                                 .toString()
                 )
                 .body(body);
+    }
+
+    @PostMapping("/delivery-receipts")
+    public ApiResponse<DemoLiveDemoHandoffDeliveryReceiptVo> recordDeliveryReceipt(
+            @RequestBody DemoLiveDemoHandoffDeliveryReceiptRequestDto request
+    ) {
+        return ApiResponse.ok(receiptService.recordDeliveryReceipt(request));
+    }
+
+    @GetMapping("/delivery-receipts")
+    public ApiResponse<List<DemoLiveDemoHandoffDeliveryReceiptVo>> listDeliveryReceipts() {
+        return ApiResponse.ok(receiptService.listRecentReceipts());
+    }
+
+    @GetMapping("/delivery-receipts/{receiptId}/report/download")
+    public ResponseEntity<byte[]> downloadDeliveryReceiptReport(@PathVariable String receiptId) {
+        return receiptService.findReceipt(receiptId)
+                .map(receipt -> ResponseEntity.ok()
+                        .contentType(MediaType.parseMediaType("text/markdown;charset=UTF-8"))
+                        .header(
+                                HttpHeaders.CONTENT_DISPOSITION,
+                                ContentDisposition.attachment()
+                                        .filename(
+                                                "patchpilot-live-demo-handoff-delivery-receipt-"
+                                                        + receipt.id()
+                                                        + ".md",
+                                                StandardCharsets.UTF_8
+                                        )
+                                        .build()
+                                        .toString()
+                        )
+                        .body(receipt.markdownReport().getBytes(StandardCharsets.UTF_8)))
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 }

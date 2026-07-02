@@ -32,6 +32,7 @@ import {
   createDemoFinalAcceptanceCompletionEvidenceDeliveryReceipt,
   createDemoFinalExternalReviewEvidencePackageDeliveryReceipt,
   createDemoFinalExternalReviewReleaseBundleDeliveryReceipt,
+  createDemoLiveDemoHandoffDeliveryReceipt,
   createDemoFinalReviewerHandoffDeliveryReceipt,
   createDemoFinalAcceptanceShareDeliveryReceipt,
   createDemoHandoffShareDeliveryReceipt,
@@ -189,10 +190,12 @@ import {
   downloadDemoLiveDemoEvidenceBundleArchiveReport,
   downloadDemoLiveDemoEvidenceBundleReport,
   downloadDemoLiveDemoHandoffPackageReport,
+  downloadDemoLiveDemoHandoffDeliveryReceiptReport,
   downloadDemoLiveTriggerLaunchPackageArchiveReport,
   downloadDemoLiveTriggerOutcomeCloseoutArchiveReport,
   downloadDemoLiveTriggerOutcomeCloseoutReport,
   listDemoLiveTriggerOutcomeCloseoutArchives,
+  listDemoLiveDemoHandoffDeliveryReceipts,
   listDemoLiveTriggerLaunchPackageArchives,
   postDemoLiveLaunchGate,
   postDemoLiveTriggerLaunchPackage,
@@ -375,6 +378,8 @@ import type {
   DemoLiveLaunchGate,
   DemoLiveDemoEvidenceBundle,
   DemoLiveDemoEvidenceBundleArchive,
+  DemoLiveDemoHandoffDeliveryReceipt,
+  DemoLiveDemoHandoffDeliveryReceiptInput,
   DemoLiveDemoHandoffPackage,
   DemoLiveTriggerLaunchPackage,
   DemoLiveTriggerLaunchPackageArchive,
@@ -832,6 +837,10 @@ export default function App() {
     useState<DemoLiveDemoHandoffPackage | null>(null);
   const [demoLiveDemoHandoffPackageError, setDemoLiveDemoHandoffPackageError] =
     useState<string | null>(null);
+  const [demoLiveDemoHandoffDeliveryReceipts, setDemoLiveDemoHandoffDeliveryReceipts] =
+    useState<DemoLiveDemoHandoffDeliveryReceipt[]>([]);
+  const [demoLiveDemoHandoffDeliveryReceiptError, setDemoLiveDemoHandoffDeliveryReceiptError] =
+    useState<string | null>(null);
   const [supportedAdapters, setSupportedAdapters] = useState<SupportedLanguageAdapter[]>([]);
   const [adapterError, setAdapterError] = useState<string | null>(null);
   const [adapterFixtureVerifications, setAdapterFixtureVerifications] = useState<LanguageAdapterFixtureVerification[]>([]);
@@ -1207,6 +1216,7 @@ export default function App() {
         demoLiveDemoEvidenceBundleResult,
         demoLiveDemoEvidenceBundleArchiveResult,
         demoLiveDemoHandoffPackageResult,
+        demoLiveDemoHandoffDeliveryReceiptResult,
         demoAcceptanceSummaryResult,
         demoFinalAcceptanceSharePackageResult,
         demoFinalAcceptanceSharePackageArchiveResult,
@@ -1454,6 +1464,10 @@ export default function App() {
         getDemoLiveDemoHandoffPackage().then(
           (handoffPackage) => ({ handoffPackage, error: null as string | null }),
           (caught) => ({ handoffPackage: null, error: errorMessage(caught) })
+        ),
+        listDemoLiveDemoHandoffDeliveryReceipts().then(
+          (receipts) => ({ receipts, error: null as string | null }),
+          (caught) => ({ receipts: null, error: errorMessage(caught) })
         ),
         getDemoAcceptanceSummary().then(
           (summary) => ({ summary, error: null as string | null }),
@@ -1916,6 +1930,10 @@ export default function App() {
         setDemoLiveDemoHandoffPackage(demoLiveDemoHandoffPackageResult.handoffPackage);
       }
       setDemoLiveDemoHandoffPackageError(demoLiveDemoHandoffPackageResult.error);
+      if (demoLiveDemoHandoffDeliveryReceiptResult.receipts) {
+        setDemoLiveDemoHandoffDeliveryReceipts(demoLiveDemoHandoffDeliveryReceiptResult.receipts);
+      }
+      setDemoLiveDemoHandoffDeliveryReceiptError(demoLiveDemoHandoffDeliveryReceiptResult.error);
       if (demoAcceptanceSummaryResult.summary) {
         setDemoAcceptanceSummary(demoAcceptanceSummaryResult.summary);
       }
@@ -3485,6 +3503,7 @@ export default function App() {
     setDemoLiveDemoEvidenceBundleArchiveError(null);
     setDemoLiveDemoHandoffPackage(null);
     setDemoLiveDemoHandoffPackageError(null);
+    setDemoLiveDemoHandoffDeliveryReceiptError(null);
     try {
       const result = await postDemoLiveLaunchGate(input);
       setDemoLiveLaunchGate(result);
@@ -3507,6 +3526,7 @@ export default function App() {
     setDemoLiveDemoEvidenceBundleArchiveError(null);
     setDemoLiveDemoHandoffPackage(null);
     setDemoLiveDemoHandoffPackageError(null);
+    setDemoLiveDemoHandoffDeliveryReceiptError(null);
     try {
       const result = await postDemoLiveTriggerLaunchPackage(input);
       setDemoLiveTriggerLaunchPackage(result);
@@ -3531,6 +3551,7 @@ export default function App() {
       setDemoLiveDemoEvidenceBundleArchiveError(null);
       setDemoLiveDemoHandoffPackage(null);
       setDemoLiveDemoHandoffPackageError(null);
+      setDemoLiveDemoHandoffDeliveryReceiptError(null);
       return archive;
     } catch (caught) {
       setDemoLiveTriggerLaunchPackageArchiveError(errorMessage(caught));
@@ -3580,6 +3601,7 @@ export default function App() {
       setDemoLiveDemoEvidenceBundleArchiveError(null);
       setDemoLiveDemoHandoffPackage(null);
       setDemoLiveDemoHandoffPackageError(null);
+      setDemoLiveDemoHandoffDeliveryReceiptError(null);
       return archive;
     } catch (caught) {
       setDemoLiveTriggerOutcomeCloseoutArchiveError(errorMessage(caught));
@@ -3601,6 +3623,7 @@ export default function App() {
       setDemoLiveDemoEvidenceBundle(bundle);
       setDemoLiveDemoHandoffPackage(null);
       setDemoLiveDemoHandoffPackageError(null);
+      setDemoLiveDemoHandoffDeliveryReceiptError(null);
       return bundle;
     } catch (caught) {
       setDemoLiveDemoEvidenceBundleError(errorMessage(caught));
@@ -3616,6 +3639,7 @@ export default function App() {
   const handleArchiveDemoLiveDemoEvidenceBundle = useCallback(async () => {
     setDemoLiveDemoEvidenceBundleArchiveError(null);
     setDemoLiveDemoHandoffPackageError(null);
+    setDemoLiveDemoHandoffDeliveryReceiptError(null);
     try {
       const archive = await archiveDemoLiveDemoEvidenceBundle();
       setDemoLiveDemoEvidenceBundleArchives((current) =>
@@ -3637,6 +3661,7 @@ export default function App() {
 
   const handleRefreshDemoLiveDemoHandoffPackage = useCallback(async () => {
     setDemoLiveDemoHandoffPackageError(null);
+    setDemoLiveDemoHandoffDeliveryReceiptError(null);
     try {
       const handoffPackage = await getDemoLiveDemoHandoffPackage();
       setDemoLiveDemoHandoffPackage(handoffPackage);
@@ -3649,6 +3674,28 @@ export default function App() {
 
   const handleDownloadDemoLiveDemoHandoffPackageReport = useCallback(
     () => downloadDemoLiveDemoHandoffPackageReport(),
+    []
+  );
+
+  const handleRecordDemoLiveDemoHandoffDeliveryReceipt = useCallback(
+    async (input: DemoLiveDemoHandoffDeliveryReceiptInput) => {
+      setDemoLiveDemoHandoffDeliveryReceiptError(null);
+      try {
+        const receipt = await createDemoLiveDemoHandoffDeliveryReceipt(input);
+        setDemoLiveDemoHandoffDeliveryReceipts((current) =>
+          [receipt, ...current.filter((item) => item.id !== receipt.id)].slice(0, 20)
+        );
+        return receipt;
+      } catch (caught) {
+        setDemoLiveDemoHandoffDeliveryReceiptError(errorMessage(caught));
+        throw caught;
+      }
+    },
+    []
+  );
+
+  const handleDownloadDemoLiveDemoHandoffDeliveryReceiptReport = useCallback(
+    (receiptId: string) => downloadDemoLiveDemoHandoffDeliveryReceiptReport(receiptId),
     []
   );
 
@@ -4441,6 +4488,10 @@ export default function App() {
         liveDemoHandoffPackageError={demoLiveDemoHandoffPackageError}
         onRefreshLiveDemoHandoffPackage={handleRefreshDemoLiveDemoHandoffPackage}
         onDownloadLiveDemoHandoffPackageReport={handleDownloadDemoLiveDemoHandoffPackageReport}
+        liveDemoHandoffDeliveryReceipts={demoLiveDemoHandoffDeliveryReceipts}
+        liveDemoHandoffDeliveryReceiptError={demoLiveDemoHandoffDeliveryReceiptError}
+        onRecordLiveDemoHandoffDeliveryReceipt={handleRecordDemoLiveDemoHandoffDeliveryReceipt}
+        onDownloadLiveDemoHandoffDeliveryReceiptReport={handleDownloadDemoLiveDemoHandoffDeliveryReceiptReport}
       />
 
       <EndToEndAcceptanceMatrixPanel

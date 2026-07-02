@@ -71,8 +71,14 @@ class DemoLiveDemoHandoffPackageControllerTests {
                 repository,
                 () -> Instant.parse("2026-07-02T04:00:00Z")
         );
+        DemoLiveDemoHandoffDeliveryReceiptService receiptService = new DemoLiveDemoHandoffDeliveryReceiptService(
+                service::createPackage,
+                new InMemoryDemoLiveDemoHandoffDeliveryReceiptRepository(),
+                () -> "live-demo-handoff-delivery-receipt-1",
+                () -> Instant.parse("2026-07-02T05:00:00Z")
+        );
         return MockMvcBuilders
-                .standaloneSetup(new DemoLiveDemoHandoffPackageController(service))
+                .standaloneSetup(new DemoLiveDemoHandoffPackageController(service, receiptService))
                 .addFilters(new AdminApiSecurityFilter(properties, new ObjectMapper()))
                 .build();
     }
