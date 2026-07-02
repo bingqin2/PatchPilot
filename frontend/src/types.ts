@@ -1163,6 +1163,45 @@ export interface DemoLiveDemoArtifactChainReport {
   markdownReport: string;
 }
 
+export interface DemoLiveDemoReplayPackageSection {
+  name: string;
+  status: DemoReadinessStatus;
+  summary: string;
+  action: string;
+}
+
+export interface DemoLiveDemoReplayPackageEvidenceLink {
+  label: string;
+  url: string;
+  description: string;
+}
+
+export interface DemoLiveDemoReplayPackage {
+  status: DemoReadinessStatus;
+  replayReady: boolean;
+  summary: string;
+  nextAction: string;
+  artifactChainStatus: DemoReadinessStatus;
+  launchPackageArchiveId: string | null;
+  outcomeCloseoutArchiveId: string | null;
+  evidenceBundleArchiveId: string | null;
+  handoffFinalizationArchiveId: string | null;
+  completionCertificateArchiveId: string | null;
+  repository: string | null;
+  issueNumber: number;
+  issueUrl: string | null;
+  taskId: string | null;
+  taskStatus: string | null;
+  pullRequestUrl: string | null;
+  sections: DemoLiveDemoReplayPackageSection[];
+  evidenceLinks: DemoLiveDemoReplayPackageEvidenceLink[];
+  replaySteps: string[];
+  downloadActions: string[];
+  sideEffectContract: string;
+  generatedAt: string;
+  markdownReport: string;
+}
+
 export interface DemoEndToEndAcceptanceMatrixItem {
   category: string;
   name: string;

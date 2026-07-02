@@ -8,6 +8,7 @@ import io.patchpilot.backend.demo.domain.DemoLiveDemoHandoffDeliveryFinalization
 import io.patchpilot.backend.demo.domain.DemoLiveDemoHandoffDeliveryFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoLiveDemoHandoffDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoLiveDemoHandoffPackageVo;
+import io.patchpilot.backend.demo.domain.DemoLiveDemoReplayPackageVo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
@@ -35,6 +36,7 @@ public class DemoLiveDemoHandoffPackageController {
     private final DemoLiveDemoCompletionCertificateService completionCertificateService;
     private final DemoLiveDemoCompletionCertificateArchiveService completionCertificateArchiveService;
     private final DemoLiveDemoArtifactChainReportService artifactChainReportService;
+    private final DemoLiveDemoReplayPackageService replayPackageService;
 
     @GetMapping
     public ApiResponse<DemoLiveDemoHandoffPackageVo> getPackage() {
@@ -221,6 +223,32 @@ public class DemoLiveDemoHandoffPackageController {
                         ContentDisposition.attachment()
                                 .filename(
                                         "patchpilot-live-demo-artifact-chain-report.md",
+                                        StandardCharsets.UTF_8
+                                )
+                                .build()
+                                .toString()
+                )
+                .body(body);
+    }
+
+    @GetMapping("/replay-package")
+    public ApiResponse<DemoLiveDemoReplayPackageVo> getReplayPackage() {
+        return ApiResponse.ok(replayPackageService.getPackage());
+    }
+
+    @GetMapping("/replay-package/download")
+    public ResponseEntity<byte[]> downloadReplayPackage() {
+        byte[] body = replayPackageService
+                .getPackage()
+                .markdownReport()
+                .getBytes(StandardCharsets.UTF_8);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("text/markdown;charset=UTF-8"))
+                .header(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        ContentDisposition.attachment()
+                                .filename(
+                                        "patchpilot-live-demo-replay-package.md",
                                         StandardCharsets.UTF_8
                                 )
                                 .build()

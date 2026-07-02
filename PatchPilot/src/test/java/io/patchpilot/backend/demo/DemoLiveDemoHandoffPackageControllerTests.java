@@ -82,6 +82,37 @@ class DemoLiveDemoHandoffPackageControllerTests {
     }
 
     @Test
+    void should_return_and_download_live_demo_replay_package() throws Exception {
+        MockMvc mockMvc = mockMvcWithArtifactChain();
+
+        mockMvc.perform(get("/api/demo/live-demo-handoff-package/replay-package")
+                        .header("X-PatchPilot-Admin-Token", "test-admin-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.replayReady").value(true))
+                .andExpect(jsonPath("$.data.artifactChainStatus").value("READY"))
+                .andExpect(jsonPath("$.data.completionCertificateArchiveId")
+                        .value("live-demo-completion-certificate-archive-1"))
+                .andExpect(jsonPath("$.data.sections[0].name").value("Open the live demo issue"))
+                .andExpect(jsonPath("$.data.evidenceLinks[1].url")
+                        .value("https://github.com/bingqin2/PatchPilot/pull/42"))
+                .andExpect(jsonPath("$.data.markdownReport")
+                        .value(containsString("PatchPilot Live Demo Replay Package")));
+
+        mockMvc.perform(get("/api/demo/live-demo-handoff-package/replay-package/download")
+                        .header("X-PatchPilot-Admin-Token", "test-admin-token"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(
+                        CONTENT_DISPOSITION,
+                        containsString("patchpilot-live-demo-replay-package.md")
+                ))
+                .andExpect(content().string(containsString("# PatchPilot Live Demo Replay Package")))
+                .andExpect(content().string(containsString("live-demo-completion-certificate-archive-1")))
+                .andExpect(content().string(containsString("https://github.com/bingqin2/PatchPilot/pull/42")));
+    }
+
+    @Test
     void should_require_admin_token_for_live_demo_handoff_package() throws Exception {
         MockMvc mockMvc = mockMvc();
 
@@ -138,6 +169,8 @@ class DemoLiveDemoHandoffPackageControllerTests {
                         new InMemoryDemoLiveDemoHandoffDeliveryFinalizationArchiveRepository(),
                         new InMemoryDemoLiveDemoCompletionCertificateArchiveRepository()
                 );
+        DemoLiveDemoReplayPackageService replayPackageService =
+                new DemoLiveDemoReplayPackageService(artifactChainReportService);
         return MockMvcBuilders
                 .standaloneSetup(new DemoLiveDemoHandoffPackageController(
                         service,
@@ -146,7 +179,8 @@ class DemoLiveDemoHandoffPackageControllerTests {
                         archiveService,
                         completionCertificateService,
                         completionCertificateArchiveService,
-                        artifactChainReportService
+                        artifactChainReportService,
+                        replayPackageService
                 ))
                 .addFilters(new AdminApiSecurityFilter(properties, new ObjectMapper()))
                 .build();
@@ -183,6 +217,11 @@ class DemoLiveDemoHandoffPackageControllerTests {
                         finalizationRepository,
                         completionRepository,
                         java.time.Clock.fixed(Instant.parse("2026-07-02T10:00:00Z"), java.time.ZoneOffset.UTC)
+                );
+        DemoLiveDemoReplayPackageService replayPackageService =
+                new DemoLiveDemoReplayPackageService(
+                        artifactChainReportService,
+                        java.time.Clock.fixed(Instant.parse("2026-07-02T11:00:00Z"), java.time.ZoneOffset.UTC)
                 );
 
         DemoLiveDemoHandoffPackageService service = new DemoLiveDemoHandoffPackageService(
@@ -224,7 +263,8 @@ class DemoLiveDemoHandoffPackageControllerTests {
                         archiveService,
                         completionCertificateService,
                         completionCertificateArchiveService,
-                        artifactChainReportService
+                        artifactChainReportService,
+                        replayPackageService
                 ))
                 .addFilters(new AdminApiSecurityFilter(properties, new ObjectMapper()))
                 .build();

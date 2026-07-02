@@ -13,6 +13,7 @@ import type {
   DemoLiveDemoCompletionCertificate,
   DemoLiveDemoCompletionCertificateArchive,
   DemoLiveDemoArtifactChainReport,
+  DemoLiveDemoReplayPackage,
   DemoLiveTriggerOutcomeCloseout,
   DemoLiveTriggerOutcomeCloseoutArchive
 } from '../../types';
@@ -487,6 +488,59 @@ const readyLiveDemoArtifactChainReport: DemoLiveDemoArtifactChainReport = {
   markdownReport: '# PatchPilot Live Demo Artifact Chain Report'
 };
 
+const readyLiveDemoReplayPackage: DemoLiveDemoReplayPackage = {
+  status: 'READY',
+  replayReady: true,
+  summary: 'PatchPilot live demo replay package is ready for reviewer walkthrough.',
+  nextAction: 'Share the replay package with reviewers.',
+  artifactChainStatus: 'READY',
+  launchPackageArchiveId: 'launch-package-archive-1',
+  outcomeCloseoutArchiveId: 'outcome-closeout-archive-1',
+  evidenceBundleArchiveId: 'live-demo-evidence-bundle-archive-1',
+  handoffFinalizationArchiveId: 'live-demo-handoff-delivery-finalization-archive-1',
+  completionCertificateArchiveId: 'live-demo-completion-certificate-archive-1',
+  repository: 'bingqin2/PatchPilot',
+  issueNumber: 1,
+  issueUrl: 'https://github.com/bingqin2/PatchPilot/issues/1',
+  taskId: 'task-1',
+  taskStatus: 'COMPLETED',
+  pullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+  sections: [
+    {
+      name: 'Open the live demo issue',
+      status: 'READY',
+      summary: 'GitHub issue evidence is present.',
+      action: 'Open the GitHub issue and confirm the original /agent trigger comment.'
+    },
+    {
+      name: 'Inspect the generated Pull Request',
+      status: 'READY',
+      summary: 'Pull Request evidence is present.',
+      action: 'Open the generated Pull Request and inspect the changed files.'
+    }
+  ],
+  evidenceLinks: [
+    {
+      label: 'GitHub issue',
+      url: 'https://github.com/bingqin2/PatchPilot/issues/1',
+      description: 'Original live demo trigger context.'
+    },
+    {
+      label: 'Generated Pull Request',
+      url: 'https://github.com/bingqin2/PatchPilot/pull/42',
+      description: 'Review generated code changes.'
+    }
+  ],
+  replaySteps: [
+    'Open the GitHub issue and confirm the original /agent trigger comment.',
+    'Open the generated Pull Request and inspect the changed files.'
+  ],
+  downloadActions: ['Download live demo replay package.'],
+  sideEffectContract: 'GET /api/demo/live-demo-handoff-package/replay-package is read-only.',
+  generatedAt: '2026-07-02T11:00:00Z',
+  markdownReport: '# PatchPilot Live Demo Replay Package'
+};
+
 const baseProps = {
   error: null,
   pending: false,
@@ -543,7 +597,11 @@ const baseProps = {
   liveDemoArtifactChainReport: null as DemoLiveDemoArtifactChainReport | null,
   liveDemoArtifactChainReportError: null,
   onRefreshLiveDemoArtifactChainReport: vi.fn(),
-  onDownloadLiveDemoArtifactChainReport: vi.fn()
+  onDownloadLiveDemoArtifactChainReport: vi.fn(),
+  liveDemoReplayPackage: null as DemoLiveDemoReplayPackage | null,
+  liveDemoReplayPackageError: null,
+  onRefreshLiveDemoReplayPackage: vi.fn(),
+  onDownloadLiveDemoReplayPackage: vi.fn()
 };
 
 test('submits exact live launch gate input', async () => {
@@ -1377,6 +1435,69 @@ test('shows live demo artifact chain report errors', () => {
 
   expect(screen.getByText('Live demo artifact chain report failed')).toBeInTheDocument();
   expect(screen.getByText('Artifact chain report failed')).toBeInTheDocument();
+});
+
+test('refreshes and downloads live demo replay packages', async () => {
+  const user = userEvent.setup();
+  const onRefreshLiveDemoReplayPackage = vi.fn(async () => readyLiveDemoReplayPackage);
+  const onDownloadLiveDemoReplayPackage = vi.fn(
+    async () => new Blob(['replay package'], { type: 'text/markdown' })
+  );
+  const anchorClick = vi.fn();
+  const createObjectURL = vi.fn(() => 'blob:live-demo-replay-package');
+  const revokeObjectURL = vi.fn();
+  vi.stubGlobal('URL', { createObjectURL, revokeObjectURL });
+  vi.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
+    const element = document.createElementNS('http://www.w3.org/1999/xhtml', tagName) as HTMLAnchorElement;
+    if (tagName === 'a') {
+      element.click = anchorClick;
+    }
+    return element;
+  });
+
+  render(
+    <LiveLaunchGatePanel
+      {...baseProps}
+      result={readyGate}
+      liveDemoReplayPackage={readyLiveDemoReplayPackage}
+      onRefreshLiveDemoReplayPackage={onRefreshLiveDemoReplayPackage}
+      onDownloadLiveDemoReplayPackage={onDownloadLiveDemoReplayPackage}
+    />
+  );
+
+  await user.click(screen.getByRole('button', { name: 'Refresh live demo replay package' }));
+  await user.click(screen.getByRole('button', { name: 'Download live demo replay package' }));
+
+  const replayPanel = screen
+    .getByText('Live demo replay package')
+    .closest('.demo-launch-preflight-result');
+  expect(replayPanel).not.toBeNull();
+  const replayQueries = within(replayPanel as HTMLElement);
+  expect(replayQueries.getByText('PatchPilot live demo replay package is ready for reviewer walkthrough.'))
+    .toBeInTheDocument();
+  expect(replayQueries.getByText('Open the live demo issue')).toBeInTheDocument();
+  expect(replayQueries.getByText('Inspect the generated Pull Request')).toBeInTheDocument();
+  expect(replayQueries.getByText('Generated Pull Request')).toBeInTheDocument();
+  expect(replayQueries.getAllByText('https://github.com/bingqin2/PatchPilot/pull/42').length)
+    .toBeGreaterThan(0);
+  expect(onRefreshLiveDemoReplayPackage).toHaveBeenCalledTimes(1);
+  expect(onDownloadLiveDemoReplayPackage).toHaveBeenCalledTimes(1);
+  expect(createObjectURL).toHaveBeenCalledWith(expect.any(Blob));
+  expect(anchorClick).toHaveBeenCalled();
+  expect(revokeObjectURL).toHaveBeenCalledWith('blob:live-demo-replay-package');
+});
+
+test('shows live demo replay package errors', () => {
+  render(
+    <LiveLaunchGatePanel
+      {...baseProps}
+      result={readyGate}
+      liveDemoReplayPackageError="Replay package failed"
+    />
+  );
+
+  expect(screen.getByText('Live demo replay package failed')).toBeInTheDocument();
+  expect(screen.getByText('Replay package failed')).toBeInTheDocument();
 });
 
 test('shows launch package errors', () => {

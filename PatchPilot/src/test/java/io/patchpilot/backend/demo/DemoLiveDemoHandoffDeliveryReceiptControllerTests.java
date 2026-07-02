@@ -117,6 +117,8 @@ class DemoLiveDemoHandoffDeliveryReceiptControllerTests {
                         new InMemoryDemoLiveDemoHandoffDeliveryFinalizationArchiveRepository(),
                         new InMemoryDemoLiveDemoCompletionCertificateArchiveRepository()
                 );
+        DemoLiveDemoReplayPackageService replayPackageService =
+                new DemoLiveDemoReplayPackageService(artifactChainReportService);
         return MockMvcBuilders
                 .standaloneSetup(new DemoLiveDemoHandoffPackageController(
                         packageService,
@@ -125,7 +127,8 @@ class DemoLiveDemoHandoffDeliveryReceiptControllerTests {
                         archiveService,
                         completionCertificateService,
                         completionCertificateArchiveService,
-                        artifactChainReportService
+                        artifactChainReportService,
+                        replayPackageService
                 ))
                 .addFilters(new AdminApiSecurityFilter(properties, new ObjectMapper()))
                 .build();

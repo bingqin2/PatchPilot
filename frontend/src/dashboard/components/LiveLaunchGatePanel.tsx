@@ -3,6 +3,7 @@ import { useState, type FormEvent } from 'react';
 import type {
   DemoLiveLaunchGate,
   DemoLiveDemoArtifactChainReport,
+  DemoLiveDemoReplayPackage,
   DemoLiveDemoCompletionCertificate,
   DemoLiveDemoCompletionCertificateArchive,
   DemoLiveDemoEvidenceBundle,
@@ -93,6 +94,10 @@ interface LiveLaunchGatePanelProps {
   onRefreshLiveDemoArtifactChainReport:
     () => Promise<DemoLiveDemoArtifactChainReport> | Promise<void> | void;
   onDownloadLiveDemoArtifactChainReport: () => Promise<Blob>;
+  liveDemoReplayPackage: DemoLiveDemoReplayPackage | null;
+  liveDemoReplayPackageError: string | null;
+  onRefreshLiveDemoReplayPackage: () => Promise<DemoLiveDemoReplayPackage> | Promise<void> | void;
+  onDownloadLiveDemoReplayPackage: () => Promise<Blob>;
 }
 
 export function LiveLaunchGatePanel({
@@ -152,7 +157,11 @@ export function LiveLaunchGatePanel({
   liveDemoArtifactChainReport,
   liveDemoArtifactChainReportError,
   onRefreshLiveDemoArtifactChainReport,
-  onDownloadLiveDemoArtifactChainReport
+  onDownloadLiveDemoArtifactChainReport,
+  liveDemoReplayPackage,
+  liveDemoReplayPackageError,
+  onRefreshLiveDemoReplayPackage,
+  onDownloadLiveDemoReplayPackage
 }: LiveLaunchGatePanelProps) {
   const [repositoryOwner, setRepositoryOwner] = useState('bingqin2');
   const [repositoryName, setRepositoryName] = useState('PatchPilot');
@@ -325,6 +334,15 @@ export function LiveLaunchGatePanel({
   async function downloadLiveDemoArtifactChainReport() {
     const blob = await onDownloadLiveDemoArtifactChainReport();
     downloadMarkdown(blob, 'patchpilot-live-demo-artifact-chain-report.md');
+  }
+
+  async function refreshLiveDemoReplayPackage() {
+    await onRefreshLiveDemoReplayPackage();
+  }
+
+  async function downloadLiveDemoReplayPackage() {
+    const blob = await onDownloadLiveDemoReplayPackage();
+    downloadMarkdown(blob, 'patchpilot-live-demo-replay-package.md');
   }
 
   return (
@@ -525,6 +543,25 @@ export function LiveLaunchGatePanel({
               <FileCheck2 size={16} />
               Download artifact chain
             </button>
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={() => void refreshLiveDemoReplayPackage()}
+              aria-label="Refresh live demo replay package"
+            >
+              <RefreshCw size={16} />
+              Refresh replay package
+            </button>
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={() => void downloadLiveDemoReplayPackage()}
+              disabled={!liveDemoReplayPackage}
+              aria-label="Download live demo replay package"
+            >
+              <FileCheck2 size={16} />
+              Download replay package
+            </button>
           </div>
         ) : null}
       </div>
@@ -686,6 +723,13 @@ export function LiveLaunchGatePanel({
         </div>
       ) : null}
 
+      {liveDemoReplayPackageError ? (
+        <div className="adapter-api-error">
+          <strong>Live demo replay package failed</strong>
+          <span>{liveDemoReplayPackageError}</span>
+        </div>
+      ) : null}
+
       {result ? (
         <>
           <LiveLaunchGateResult result={result} />
@@ -740,11 +784,96 @@ export function LiveLaunchGatePanel({
           {liveDemoArtifactChainReport ? (
             <LiveDemoArtifactChainReportResult report={liveDemoArtifactChainReport} />
           ) : null}
+          {liveDemoReplayPackage ? (
+            <LiveDemoReplayPackageResult replayPackage={liveDemoReplayPackage} />
+          ) : null}
         </>
       ) : (
         <div className="empty-state">No live launch gate run yet.</div>
       )}
     </section>
+  );
+}
+
+function LiveDemoReplayPackageResult({ replayPackage }: { replayPackage: DemoLiveDemoReplayPackage }) {
+  const tone =
+    replayPackage.status === 'READY' ? 'ready' : replayPackage.status === 'BLOCKED' ? 'blocked' : 'attention';
+
+  return (
+    <div className={`demo-launch-preflight-result demo-launch-preflight-result-${tone}`}>
+      <div className="demo-launch-preflight-summary">
+        <span className={`demo-readiness-status demo-readiness-status-${tone}`}>
+          {replayPackage.status}
+        </span>
+        <strong>Live demo replay package</strong>
+        <p>{replayPackage.summary}</p>
+      </div>
+      <div className="demo-launch-preflight-grid">
+        <div>
+          <span>Artifact chain</span>
+          <strong>{replayPackage.artifactChainStatus}</strong>
+          <small>{replayPackage.completionCertificateArchiveId ?? 'completion certificate missing'}</small>
+        </div>
+        <div>
+          <span>Repository</span>
+          <strong>{replayPackage.repository ?? 'missing'}</strong>
+          <small>{replayPackage.issueUrl ?? 'issue missing'}</small>
+        </div>
+        <div>
+          <span>Task</span>
+          <strong>{replayPackage.taskId ?? 'missing'}</strong>
+          <small>{replayPackage.taskStatus ?? 'status missing'}</small>
+        </div>
+        <div>
+          <span>Pull Request</span>
+          <strong>{replayPackage.pullRequestUrl ?? 'missing'}</strong>
+          <small>{replayPackage.replayReady ? 'Replay ready' : 'Replay blocked'}</small>
+        </div>
+      </div>
+      <p className="demo-launch-preflight-blocked">{replayPackage.sideEffectContract}</p>
+      <div className="demo-launch-preflight-actions">
+        <h3>Replay walkthrough</h3>
+        <ul>
+          {replayPackage.sections.map((section) => (
+            <li key={section.name}>
+              <strong>{section.name}</strong>
+              <span>{section.status}</span>
+              <span>{section.summary}</span>
+              <small>{section.action}</small>
+            </li>
+          ))}
+        </ul>
+      </div>
+      <div className="demo-launch-preflight-actions">
+        <h3>Evidence links</h3>
+        <ul>
+          {replayPackage.evidenceLinks.map((link) => (
+            <li key={`${link.label}-${link.url}`}>
+              <strong>{link.label}</strong>
+              <span>{link.url}</span>
+              <small>{link.description}</small>
+            </li>
+          ))}
+        </ul>
+      </div>
+      <div className="demo-launch-preflight-actions">
+        <h3>Replay steps</h3>
+        <ul>
+          {replayPackage.replaySteps.map((step) => (
+            <li key={step}>{step}</li>
+          ))}
+        </ul>
+      </div>
+      <div className="demo-launch-preflight-actions">
+        <h3>Replay downloads</h3>
+        <ul>
+          {replayPackage.downloadActions.map((action) => (
+            <li key={action}>{action}</li>
+          ))}
+        </ul>
+      </div>
+      <p className="demo-launch-preflight-blocked">Next action: {replayPackage.nextAction}</p>
+    </div>
   );
 }
 

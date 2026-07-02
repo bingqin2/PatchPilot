@@ -6494,6 +6494,26 @@ Validation so far:
 - `git diff --check`: passed.
 - Strict diff secret scan for GitHub, OpenAI-style, Slack, AWS, private-key, and PatchPilot token assignment patterns: no matches.
 
+## 2026-07-02 - 336 Live demo replay package
+
+- Started `336-live-demo-replay-package` to turn the final live demo artifact chain into a read-only reviewer walkthrough package.
+- Added backend replay package support that derives replay readiness from the latest artifact chain report, including status, evidence links, reviewer walkthrough sections, replay steps, download actions, side-effect contract, generated time, and Markdown output.
+- Added admin-protected JSON and Markdown download endpoints under `/api/demo/live-demo-handoff-package/replay-package`.
+- Extended the live launch gate dashboard with replay package refresh/download controls, result rendering, error feedback, typed frontend API helpers, App-level loading, and stale replay state clearing when upstream artifacts change.
+- Added `docs/plans/336-live-demo-replay-package.md` with the scope, status model, read-only safety contract, and validation checklist.
+
+Validation so far:
+
+- `mvn -pl PatchPilot -Dtest=DemoLiveDemoReplayPackageServiceTests,DemoLiveDemoHandoffPackageControllerTests test -q`: first failed because `DemoLiveDemoReplayPackageVo` and `DemoLiveDemoReplayPackageService` did not exist; passed after backend implementation.
+- `npm --prefix frontend test -- --run src/api.test.ts src/dashboard/components/LiveLaunchGatePanel.test.tsx --reporter=dot`: first failed because `getDemoLiveDemoReplayPackage`, replay package controls, and replay package error rendering did not exist; passed after frontend implementation. Focused result: 2 test files and 277 tests.
+- `npm --prefix frontend test -- --run src/App.test.tsx --reporter=dot`: passed after App-level replay package loading, clearing, refresh, and download handlers were wired. Result: 1 test file and 88 tests.
+- `mvn -pl PatchPilot -Dtest=DemoLiveDemoReplayPackageServiceTests,DemoLiveDemoHandoffPackageControllerTests,DemoLiveDemoArtifactChainReportServiceTests test -q`: passed after simplifying the test helper for launch-only artifact-chain seeding.
+- `mvn -pl PatchPilot test`: passed, 1437 tests.
+- `npm --prefix frontend test -- --reporter=dot`: passed, 35 test files and 568 tests.
+- `npm --prefix frontend run build`: passed with the existing Vite large-chunk warning.
+- `git diff --check`: passed.
+- Strict diff secret scan for GitHub, OpenAI-style, Slack, AWS, private-key, and PatchPilot token assignment patterns: no matches.
+
 ## 2026-07-02 - 334 Live demo completion certificate
 
 - Started `334-live-demo-completion-certificate` to turn the frozen `READY` live demo handoff delivery finalization archive into a terminal reviewer-facing completion certificate.
