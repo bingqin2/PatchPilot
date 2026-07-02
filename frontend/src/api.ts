@@ -68,6 +68,8 @@ import type {
   DemoLiveDemoEvidenceBundle,
   DemoLiveDemoEvidenceBundleArchive,
   DemoLiveDemoHandoffPackage,
+  DemoLiveDemoHandoffDeliveryReceipt,
+  DemoLiveDemoHandoffDeliveryReceiptInput,
   DemoLiveTriggerLaunchPackage,
   DemoLiveTriggerLaunchPackageArchive,
   DemoLiveTriggerOutcomeCloseout,
@@ -287,6 +289,25 @@ export async function getDemoLiveDemoHandoffPackage(): Promise<DemoLiveDemoHando
 
 export async function downloadDemoLiveDemoHandoffPackageReport(): Promise<Blob> {
   return getBlobApi('/api/demo/live-demo-handoff-package/report/download');
+}
+
+export async function createDemoLiveDemoHandoffDeliveryReceipt(
+  input: DemoLiveDemoHandoffDeliveryReceiptInput
+): Promise<DemoLiveDemoHandoffDeliveryReceipt> {
+  return postApi<DemoLiveDemoHandoffDeliveryReceipt>(
+    '/api/demo/live-demo-handoff-package/delivery-receipts',
+    input
+  );
+}
+
+export async function listDemoLiveDemoHandoffDeliveryReceipts(): Promise<DemoLiveDemoHandoffDeliveryReceipt[]> {
+  return getApi<DemoLiveDemoHandoffDeliveryReceipt[]>('/api/demo/live-demo-handoff-package/delivery-receipts');
+}
+
+export async function downloadDemoLiveDemoHandoffDeliveryReceiptReport(receiptId: string): Promise<Blob> {
+  return getBlobApi(
+    `/api/demo/live-demo-handoff-package/delivery-receipts/${encodeURIComponent(receiptId)}/report/download`
+  );
 }
 
 export async function getDemoEndToEndAcceptanceMatrix(): Promise<DemoEndToEndAcceptanceMatrix> {

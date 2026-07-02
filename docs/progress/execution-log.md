@@ -6624,3 +6624,23 @@ Validation so far:
 - `npm --prefix frontend run build`: passed with the existing Vite large-chunk warning.
 - `git diff --check`: passed.
 - Strict diff secret scan for GitHub, OpenAI-style, Slack, AWS, private-key, and PatchPilot token assignment patterns: no matches.
+
+## 2026-07-02 - 331 Live demo handoff delivery receipts
+
+- Started `331-live-demo-handoff-delivery-receipts` to record local proof that the final live demo handoff package was delivered to a reviewer.
+- Added backend delivery receipt support for the live demo handoff package, including a capped in-memory receipt repository, receipt service, receipt VO, request DTO, and admin-protected endpoints to create, list, and download receipt Markdown reports.
+- Each receipt captures the handoff package status, evidence bundle archive id, repository, issue URL, trigger user/comment, task status, Pull Request URL, webhook delivery id, delivery channel, delivery target, operator, notes, delivered time, created time, and report body.
+- The backend rejects receipt creation unless the current live demo handoff package is `READY`, ready for review, and linked to an evidence bundle archive.
+- Extended the live launch gate dashboard with receipt input fields, `Record live demo handoff delivery receipt`, recent receipt history, per-receipt downloads, App-level loading, typed API helpers, and delivery receipt error feedback.
+- Added `docs/plans/331-live-demo-handoff-delivery-receipts.md` with the scope, safety contract, API shape, and validation checklist.
+
+Validation so far:
+
+- `mvn -pl PatchPilot -Dtest=DemoLiveDemoHandoffDeliveryReceiptServiceTests,DemoLiveDemoHandoffDeliveryReceiptControllerTests,DemoLiveDemoHandoffPackageControllerTests test -q`: first failed because the delivery receipt VO and request DTO did not exist; passed after backend implementation.
+- `npm --prefix frontend test -- --run src/api.test.ts src/dashboard/components/LiveLaunchGatePanel.test.tsx --reporter=dot`: first failed because the API helper and dashboard controls did not exist; passed after frontend implementation. Focused result: 2 test files and 262 tests.
+- `npm --prefix frontend test -- --run src/App.test.tsx --reporter=dot`: passed after App-level receipt loading and handlers were wired. Result: 1 test file and 88 tests.
+- `mvn -pl PatchPilot test`: passed, 1414 tests.
+- `npm --prefix frontend test -- --reporter=dot`: passed, 35 test files and 553 tests.
+- `npm --prefix frontend run build`: passed with the existing Vite large-chunk warning.
+- `git diff --check`: passed.
+- Strict diff secret scan for GitHub, OpenAI-style, Slack, AWS, private-key, and PatchPilot token assignment patterns: no matches.

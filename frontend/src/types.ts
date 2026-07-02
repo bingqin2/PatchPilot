@@ -996,6 +996,38 @@ export interface DemoLiveDemoHandoffPackage {
   markdownReport: string;
 }
 
+export interface DemoLiveDemoHandoffDeliveryReceiptInput {
+  deliveryChannel: string;
+  deliveryTarget: string;
+  operator: string;
+  notes: string;
+  deliveredAt?: string;
+}
+
+export interface DemoLiveDemoHandoffDeliveryReceipt {
+  id: string;
+  status: DemoReadinessStatus;
+  handoffPackageStatus: DemoReadinessStatus;
+  evidenceBundleArchiveId: string | null;
+  repository: string | null;
+  issueNumber: number;
+  issueUrl: string | null;
+  triggerUser: string | null;
+  triggerComment: string | null;
+  taskId: string | null;
+  taskStatus: string | null;
+  pullRequestUrl: string | null;
+  webhookDeliveryId: string | null;
+  summary: string;
+  deliveryChannel: string;
+  deliveryTarget: string;
+  operator: string;
+  notes: string;
+  deliveredAt: string;
+  createdAt: string;
+  markdownReport: string;
+}
+
 export interface DemoEndToEndAcceptanceMatrixItem {
   category: string;
   name: string;

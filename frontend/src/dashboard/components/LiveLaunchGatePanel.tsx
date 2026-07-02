@@ -4,6 +4,8 @@ import type {
   DemoLiveLaunchGate,
   DemoLiveDemoEvidenceBundle,
   DemoLiveDemoEvidenceBundleArchive,
+  DemoLiveDemoHandoffDeliveryReceipt,
+  DemoLiveDemoHandoffDeliveryReceiptInput,
   DemoLiveDemoHandoffPackage,
   DemoLiveTriggerLaunchPackage,
   DemoLiveTriggerLaunchPackageArchive,
@@ -55,6 +57,12 @@ interface LiveLaunchGatePanelProps {
   liveDemoHandoffPackageError: string | null;
   onRefreshLiveDemoHandoffPackage: () => Promise<DemoLiveDemoHandoffPackage> | Promise<void> | void;
   onDownloadLiveDemoHandoffPackageReport: () => Promise<Blob>;
+  liveDemoHandoffDeliveryReceipts: DemoLiveDemoHandoffDeliveryReceipt[];
+  liveDemoHandoffDeliveryReceiptError: string | null;
+  onRecordLiveDemoHandoffDeliveryReceipt: (
+    input: DemoLiveDemoHandoffDeliveryReceiptInput
+  ) => Promise<DemoLiveDemoHandoffDeliveryReceipt> | Promise<void> | void;
+  onDownloadLiveDemoHandoffDeliveryReceiptReport: (receiptId: string) => Promise<Blob>;
 }
 
 export function LiveLaunchGatePanel({
@@ -90,13 +98,25 @@ export function LiveLaunchGatePanel({
   liveDemoHandoffPackage,
   liveDemoHandoffPackageError,
   onRefreshLiveDemoHandoffPackage,
-  onDownloadLiveDemoHandoffPackageReport
+  onDownloadLiveDemoHandoffPackageReport,
+  liveDemoHandoffDeliveryReceipts,
+  liveDemoHandoffDeliveryReceiptError,
+  onRecordLiveDemoHandoffDeliveryReceipt,
+  onDownloadLiveDemoHandoffDeliveryReceiptReport
 }: LiveLaunchGatePanelProps) {
   const [repositoryOwner, setRepositoryOwner] = useState('bingqin2');
   const [repositoryName, setRepositoryName] = useState('PatchPilot');
   const [issueNumber, setIssueNumber] = useState('1');
   const [triggerUser, setTriggerUser] = useState('bingqin2');
   const [triggerComment, setTriggerComment] = useState('/agent fix touch docs/live-gate.md');
+  const [handoffDeliveryChannel, setHandoffDeliveryChannel] = useState('github-comment');
+  const [handoffDeliveryTarget, setHandoffDeliveryTarget] = useState(
+    'https://github.com/bingqin2/PatchPilot/pull/42'
+  );
+  const [handoffDeliveryOperator, setHandoffDeliveryOperator] = useState('local-operator');
+  const [handoffDeliveryNotes, setHandoffDeliveryNotes] = useState(
+    'Sent the live demo handoff package to the reviewer.'
+  );
 
   function input(): GitHubTriggerDryRunInput {
     return {
@@ -191,6 +211,25 @@ export function LiveLaunchGatePanel({
   async function downloadLiveDemoHandoffPackage() {
     const blob = await onDownloadLiveDemoHandoffPackageReport();
     downloadMarkdown(blob, 'patchpilot-live-demo-handoff-package.md');
+  }
+
+  function handoffDeliveryReceiptInput(): DemoLiveDemoHandoffDeliveryReceiptInput {
+    return {
+      deliveryChannel: handoffDeliveryChannel.trim(),
+      deliveryTarget: handoffDeliveryTarget.trim(),
+      operator: handoffDeliveryOperator.trim(),
+      notes: handoffDeliveryNotes.trim(),
+      deliveredAt: new Date().toISOString()
+    };
+  }
+
+  async function recordLiveDemoHandoffDeliveryReceipt() {
+    await onRecordLiveDemoHandoffDeliveryReceipt(handoffDeliveryReceiptInput());
+  }
+
+  async function downloadLiveDemoHandoffDeliveryReceipt(receiptId: string) {
+    const blob = await onDownloadLiveDemoHandoffDeliveryReceiptReport(receiptId);
+    downloadMarkdown(blob, `patchpilot-live-demo-handoff-delivery-receipt-${receiptId}.md`);
   }
 
   return (
@@ -433,6 +472,13 @@ export function LiveLaunchGatePanel({
         </div>
       ) : null}
 
+      {liveDemoHandoffDeliveryReceiptError ? (
+        <div className="adapter-api-error">
+          <strong>Live demo handoff delivery receipt failed</strong>
+          <span>{liveDemoHandoffDeliveryReceiptError}</span>
+        </div>
+      ) : null}
+
       {result ? (
         <>
           <LiveLaunchGateResult result={result} />
@@ -454,6 +500,22 @@ export function LiveLaunchGatePanel({
           {liveDemoHandoffPackage ? (
             <LiveDemoHandoffPackageResult handoffPackage={liveDemoHandoffPackage} />
           ) : null}
+          <LiveDemoHandoffDeliveryReceiptRecorder
+            deliveryChannel={handoffDeliveryChannel}
+            deliveryTarget={handoffDeliveryTarget}
+            operator={handoffDeliveryOperator}
+            notes={handoffDeliveryNotes}
+            disabled={!liveDemoHandoffPackage?.readyForReview}
+            onDeliveryChannelChange={setHandoffDeliveryChannel}
+            onDeliveryTargetChange={setHandoffDeliveryTarget}
+            onOperatorChange={setHandoffDeliveryOperator}
+            onNotesChange={setHandoffDeliveryNotes}
+            onRecord={() => void recordLiveDemoHandoffDeliveryReceipt()}
+          />
+          <LiveDemoHandoffDeliveryReceiptList
+            receipts={liveDemoHandoffDeliveryReceipts}
+            onDownloadReceipt={(receiptId) => void downloadLiveDemoHandoffDeliveryReceipt(receiptId)}
+          />
         </>
       ) : (
         <div className="empty-state">No live launch gate run yet.</div>
@@ -533,6 +595,128 @@ function LiveDemoHandoffPackageResult({ handoffPackage }: { handoffPackage: Demo
           </ul>
         )}
       </div>
+    </div>
+  );
+}
+
+function LiveDemoHandoffDeliveryReceiptRecorder({
+  deliveryChannel,
+  deliveryTarget,
+  operator,
+  notes,
+  disabled,
+  onDeliveryChannelChange,
+  onDeliveryTargetChange,
+  onOperatorChange,
+  onNotesChange,
+  onRecord
+}: {
+  deliveryChannel: string;
+  deliveryTarget: string;
+  operator: string;
+  notes: string;
+  disabled: boolean;
+  onDeliveryChannelChange: (value: string) => void;
+  onDeliveryTargetChange: (value: string) => void;
+  onOperatorChange: (value: string) => void;
+  onNotesChange: (value: string) => void;
+  onRecord: () => void;
+}) {
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    onRecord();
+  }
+
+  return (
+    <div className="demo-launch-preflight-actions">
+      <h3>Record live demo handoff delivery</h3>
+      <form
+        className="demo-launch-preflight-form"
+        aria-label="Live demo handoff delivery receipt form"
+        onSubmit={submit}
+      >
+        <label htmlFor="live-demo-handoff-delivery-channel">
+          Live demo handoff delivery channel
+          <input
+            id="live-demo-handoff-delivery-channel"
+            value={deliveryChannel}
+            onChange={(event) => onDeliveryChannelChange(event.target.value)}
+            required
+          />
+        </label>
+        <label htmlFor="live-demo-handoff-delivery-target">
+          Live demo handoff delivery target
+          <input
+            id="live-demo-handoff-delivery-target"
+            value={deliveryTarget}
+            onChange={(event) => onDeliveryTargetChange(event.target.value)}
+            required
+          />
+        </label>
+        <label htmlFor="live-demo-handoff-delivery-operator">
+          Live demo handoff delivery operator
+          <input
+            id="live-demo-handoff-delivery-operator"
+            value={operator}
+            onChange={(event) => onOperatorChange(event.target.value)}
+            required
+          />
+        </label>
+        <label className="demo-launch-comment" htmlFor="live-demo-handoff-delivery-notes">
+          Live demo handoff delivery notes
+          <input
+            id="live-demo-handoff-delivery-notes"
+            value={notes}
+            onChange={(event) => onNotesChange(event.target.value)}
+          />
+        </label>
+        <button
+          className="secondary-button"
+          type="submit"
+          disabled={disabled || deliveryTarget.trim().length === 0 || deliveryChannel.trim().length === 0}
+        >
+          <ClipboardCheck size={16} />
+          Record live demo handoff delivery receipt
+        </button>
+      </form>
+    </div>
+  );
+}
+
+function LiveDemoHandoffDeliveryReceiptList({
+  receipts,
+  onDownloadReceipt
+}: {
+  receipts: DemoLiveDemoHandoffDeliveryReceipt[];
+  onDownloadReceipt: (receiptId: string) => void;
+}) {
+  return (
+    <div className="demo-launch-preflight-actions">
+      <h3>Live demo handoff delivery receipts</h3>
+      {receipts.length === 0 ? (
+        <p>No live demo handoff delivery receipts recorded.</p>
+      ) : (
+        <ul>
+          {receipts.map((receipt) => (
+            <li key={receipt.id}>
+              <strong>{receipt.id}</strong>
+              <span> {receipt.status} </span>
+              <span>{receipt.deliveryChannel}</span>
+              <span> {receipt.deliveryTarget}</span>
+              <span>Delivered at {receipt.deliveredAt}</span>
+              <button
+                className="secondary-button compact-button"
+                type="button"
+                aria-label={`Download live demo handoff delivery receipt ${receipt.id}`}
+                onClick={() => onDownloadReceipt(receipt.id)}
+              >
+                <Download size={14} />
+                Download
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
