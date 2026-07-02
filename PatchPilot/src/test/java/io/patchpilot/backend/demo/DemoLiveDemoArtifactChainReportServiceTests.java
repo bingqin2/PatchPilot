@@ -292,6 +292,12 @@ class DemoLiveDemoArtifactChainReportServiceTests {
         private RepositoriesAccessor() {
         }
 
+        static void seedLaunchArchive(
+                DemoLiveTriggerLaunchPackageArchiveRepository launchRepository
+        ) {
+            launchRepository.save(launchArchive());
+        }
+
         static void seedReadyArchives(
                 DemoLiveTriggerLaunchPackageArchiveRepository launchRepository,
                 DemoLiveTriggerOutcomeCloseoutArchiveRepository closeoutRepository,

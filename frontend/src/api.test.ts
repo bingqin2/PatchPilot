@@ -31,6 +31,8 @@ import {
   downloadDemoLiveDemoCompletionCertificateArchiveReport,
   getDemoLiveDemoArtifactChainReport,
   downloadDemoLiveDemoArtifactChainReport,
+  getDemoLiveDemoReplayPackage,
+  downloadDemoLiveDemoReplayPackage,
   downloadDemoLiveTriggerOutcomeCloseoutReport,
   archiveDemoLiveTriggerOutcomeCloseout,
   listDemoLiveTriggerOutcomeCloseoutArchives,
@@ -5634,6 +5636,75 @@ test('loads and downloads live demo artifact chain reports through backend API',
   );
   expect(report.complete).toBe(true);
   expect(report.completionCertificateArchiveId).toBe('live-demo-completion-certificate-archive-1');
+  expect(markdown.type).toBe('text/markdown');
+});
+
+test('loads and downloads live demo replay packages through backend API', async () => {
+  const replayPackagePayload = {
+    status: 'READY',
+    replayReady: true,
+    summary: 'PatchPilot live demo replay package is ready for reviewer walkthrough.',
+    nextAction: 'Share the replay package with reviewers.',
+    artifactChainStatus: 'READY',
+    launchPackageArchiveId: 'launch-package-archive-1',
+    outcomeCloseoutArchiveId: 'outcome-closeout-archive-1',
+    evidenceBundleArchiveId: 'live-demo-evidence-bundle-archive-1',
+    handoffFinalizationArchiveId: 'live-demo-handoff-delivery-finalization-archive-1',
+    completionCertificateArchiveId: 'live-demo-completion-certificate-archive-1',
+    repository: 'bingqin2/PatchPilot',
+    issueNumber: 1,
+    issueUrl: 'https://github.com/bingqin2/PatchPilot/issues/1',
+    taskId: 'task-1',
+    taskStatus: 'COMPLETED',
+    pullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+    sections: [
+      {
+        name: 'Open the live demo issue',
+        status: 'READY',
+        summary: 'GitHub issue evidence is present.',
+        action: 'Open the GitHub issue and confirm the original /agent trigger comment.'
+      }
+    ],
+    evidenceLinks: [
+      {
+        label: 'Generated Pull Request',
+        url: 'https://github.com/bingqin2/PatchPilot/pull/42',
+        description: 'Review generated code changes.'
+      }
+    ],
+    replaySteps: ['Open the generated Pull Request and inspect the changed files.'],
+    downloadActions: ['Download live demo replay package.'],
+    sideEffectContract: 'GET /api/demo/live-demo-handoff-package/replay-package is read-only.',
+    generatedAt: '2026-07-02T11:00:00Z',
+    markdownReport: '# PatchPilot Live Demo Replay Package'
+  };
+  const fetchMock = vi.fn()
+    .mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ success: true, data: replayPackagePayload, message: null })
+    } as Response)
+    .mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      blob: async () => new Blob(['replay package'], { type: 'text/markdown' })
+    } as Response);
+  vi.stubGlobal('fetch', fetchMock);
+
+  const replayPackage = await getDemoLiveDemoReplayPackage();
+  const markdown = await downloadDemoLiveDemoReplayPackage();
+
+  expect(fetchMock).toHaveBeenNthCalledWith(
+    1,
+    '/api/demo/live-demo-handoff-package/replay-package'
+  );
+  expect(fetchMock).toHaveBeenNthCalledWith(
+    2,
+    '/api/demo/live-demo-handoff-package/replay-package/download'
+  );
+  expect(replayPackage.replayReady).toBe(true);
+  expect(replayPackage.completionCertificateArchiveId).toBe('live-demo-completion-certificate-archive-1');
+  expect(replayPackage.evidenceLinks[0].label).toBe('Generated Pull Request');
   expect(markdown.type).toBe('text/markdown');
 });
 
