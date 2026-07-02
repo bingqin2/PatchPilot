@@ -6705,3 +6705,26 @@ Validation so far:
 - `npm --prefix frontend run build`: passed with the existing Vite large-chunk warning.
 - `git diff --check`: passed.
 - Strict diff secret scan for GitHub, OpenAI-style, Slack, AWS, private-key, and PatchPilot token assignment patterns: no matches.
+
+## 2026-07-02 - 335 Live demo artifact chain report
+
+- Started `335-live-demo-artifact-chain-report` to make the final live demo proof chain auditable after completion certificate archival.
+- Added a backend read-only artifact chain report that reads the latest local launch package archive, outcome closeout archive, evidence bundle archive, handoff finalization archive, and completion certificate archive.
+- The report marks the chain `READY` only when all five artifacts exist, are ready/finalized/certified as appropriate, and all archive id references line up from launch package through completion certificate.
+- The report marks the chain `BLOCKED` when required archives are missing and `NEEDS_ATTENTION` when archive references or readiness states are inconsistent.
+- Added admin-protected JSON and Markdown download endpoints under `/api/demo/live-demo-handoff-package/artifact-chain-report`.
+- Extended the live launch gate dashboard with artifact chain refresh/download controls, result rendering, error feedback, typed frontend API helpers, App-level loading, and automatic refresh after completion certificate archival.
+- Added `docs/plans/335-live-demo-artifact-chain-report.md` with the scope, status model, read-only safety contract, and validation checklist.
+
+Validation so far:
+
+- `mvn -pl PatchPilot -Dtest=DemoLiveDemoArtifactChainReportServiceTests,DemoLiveDemoHandoffPackageControllerTests test -q`: first failed because `DemoLiveDemoArtifactChainReportVo` and `DemoLiveDemoArtifactChainReportService` did not exist.
+- `npm --prefix frontend test -- --run src/api.test.ts src/dashboard/components/LiveLaunchGatePanel.test.tsx --reporter=dot`: first failed because `getDemoLiveDemoArtifactChainReport` and the panel controls did not exist.
+- `mvn -pl PatchPilot -Dtest=DemoLiveDemoArtifactChainReportServiceTests,DemoLiveDemoHandoffPackageControllerTests,DemoLiveDemoHandoffDeliveryReceiptControllerTests,DemoLiveDemoHandoffDeliveryFinalizationControllerTests test -q`: passed after backend implementation.
+- `npm --prefix frontend test -- --run src/api.test.ts src/dashboard/components/LiveLaunchGatePanel.test.tsx --reporter=dot`: passed after frontend implementation. Focused result: 2 test files and 274 tests.
+- `npm --prefix frontend test -- --run src/App.test.tsx --reporter=dot`: passed after App-level artifact-chain loading, clearing, refresh, and download handlers were wired. Result: 1 test file and 88 tests.
+- `mvn -pl PatchPilot test`: passed, 1434 tests.
+- `npm --prefix frontend test -- --reporter=dot`: passed, 35 test files and 565 tests.
+- `npm --prefix frontend run build`: passed with the existing Vite large-chunk warning.
+- `git diff --check`: passed.
+- Strict diff secret scan for GitHub, OpenAI-style, Slack, AWS, private-key, and PatchPilot token assignment patterns: no matches.

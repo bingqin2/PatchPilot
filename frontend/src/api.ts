@@ -65,6 +65,7 @@ import type {
   DemoLaunchEvidenceShareDeliveryReceiptInput,
   DemoLaunchCommandInput,
   DemoLiveLaunchGate,
+  DemoLiveDemoArtifactChainReport,
   DemoLiveDemoCompletionCertificate,
   DemoLiveDemoCompletionCertificateArchive,
   DemoLiveDemoEvidenceBundle,
@@ -373,6 +374,14 @@ export async function downloadDemoLiveDemoCompletionCertificateArchiveReport(
   return getBlobApi(
     `/api/demo/live-demo-handoff-package/completion-certificate/archives/${encodeURIComponent(archiveId)}/report/download`
   );
+}
+
+export async function getDemoLiveDemoArtifactChainReport(): Promise<DemoLiveDemoArtifactChainReport> {
+  return getApi<DemoLiveDemoArtifactChainReport>('/api/demo/live-demo-handoff-package/artifact-chain-report');
+}
+
+export async function downloadDemoLiveDemoArtifactChainReport(): Promise<Blob> {
+  return getBlobApi('/api/demo/live-demo-handoff-package/artifact-chain-report/download');
 }
 
 export async function getDemoEndToEndAcceptanceMatrix(): Promise<DemoEndToEndAcceptanceMatrix> {

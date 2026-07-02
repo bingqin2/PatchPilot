@@ -12,6 +12,7 @@ import type {
   DemoLiveDemoHandoffDeliveryFinalizationArchive,
   DemoLiveDemoCompletionCertificate,
   DemoLiveDemoCompletionCertificateArchive,
+  DemoLiveDemoArtifactChainReport,
   DemoLiveTriggerOutcomeCloseout,
   DemoLiveTriggerOutcomeCloseoutArchive
 } from '../../types';
@@ -439,6 +440,53 @@ const readyLiveDemoCompletionCertificateArchive: DemoLiveDemoCompletionCertifica
   report: '# PatchPilot Live Demo Completion Certificate'
 };
 
+const readyLiveDemoArtifactChainReport: DemoLiveDemoArtifactChainReport = {
+  status: 'READY',
+  complete: true,
+  summary: 'PatchPilot live demo artifact chain is complete and consistent.',
+  nextAction: 'Share the live demo artifact chain report with reviewers.',
+  launchPackageArchiveId: 'launch-package-archive-1',
+  outcomeCloseoutArchiveId: 'outcome-closeout-archive-1',
+  evidenceBundleArchiveId: 'live-demo-evidence-bundle-archive-1',
+  handoffFinalizationArchiveId: 'live-demo-handoff-delivery-finalization-archive-1',
+  completionCertificateArchiveId: 'live-demo-completion-certificate-archive-1',
+  repository: 'bingqin2/PatchPilot',
+  issueNumber: 1,
+  issueUrl: 'https://github.com/bingqin2/PatchPilot/issues/1',
+  taskId: 'task-1',
+  taskStatus: 'COMPLETED',
+  pullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+  steps: [
+    {
+      name: 'Live trigger launch package archive',
+      status: 'READY',
+      artifactId: 'launch-package-archive-1',
+      summary: 'Launch package archive is ready.',
+      nextAction: 'Continue.'
+    },
+    {
+      name: 'Live demo completion certificate archive',
+      status: 'READY',
+      artifactId: 'live-demo-completion-certificate-archive-1',
+      summary: 'Completion certificate archive is certified.',
+      nextAction: 'Share report.'
+    }
+  ],
+  checks: [
+    {
+      name: 'Evidence bundle references launch package',
+      status: 'READY',
+      summary: 'Evidence bundle references the launch package archive.',
+      nextAction: 'Continue.'
+    }
+  ],
+  evidenceNotes: ['Completion certificate archive closes the same evidence bundle.'],
+  downloadActions: ['Download live demo artifact chain report.'],
+  sideEffectContract: 'GET /api/demo/live-demo-handoff-package/artifact-chain-report is read-only.',
+  generatedAt: '2026-07-02T10:00:00Z',
+  markdownReport: '# PatchPilot Live Demo Artifact Chain Report'
+};
+
 const baseProps = {
   error: null,
   pending: false,
@@ -491,7 +539,11 @@ const baseProps = {
   liveDemoCompletionCertificateArchives: [] as DemoLiveDemoCompletionCertificateArchive[],
   liveDemoCompletionCertificateArchiveError: null,
   onArchiveLiveDemoCompletionCertificate: vi.fn(),
-  onDownloadLiveDemoCompletionCertificateArchiveReport: vi.fn()
+  onDownloadLiveDemoCompletionCertificateArchiveReport: vi.fn(),
+  liveDemoArtifactChainReport: null as DemoLiveDemoArtifactChainReport | null,
+  liveDemoArtifactChainReportError: null,
+  onRefreshLiveDemoArtifactChainReport: vi.fn(),
+  onDownloadLiveDemoArtifactChainReport: vi.fn()
 };
 
 test('submits exact live launch gate input', async () => {
@@ -1262,6 +1314,69 @@ test('shows live demo completion certificate errors', () => {
   expect(screen.getByText('Completion certificate refresh failed')).toBeInTheDocument();
   expect(screen.getByText('Live demo completion certificate archive failed')).toBeInTheDocument();
   expect(screen.getByText('Completion certificate archive failed')).toBeInTheDocument();
+});
+
+test('refreshes and downloads live demo artifact chain reports', async () => {
+  const user = userEvent.setup();
+  const onRefreshLiveDemoArtifactChainReport = vi.fn(async () => readyLiveDemoArtifactChainReport);
+  const onDownloadLiveDemoArtifactChainReport = vi.fn(
+    async () => new Blob(['artifact chain report'], { type: 'text/markdown' })
+  );
+  const anchorClick = vi.fn();
+  const createObjectURL = vi.fn(() => 'blob:live-demo-artifact-chain-report');
+  const revokeObjectURL = vi.fn();
+  vi.stubGlobal('URL', { createObjectURL, revokeObjectURL });
+  vi.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
+    const element = document.createElementNS('http://www.w3.org/1999/xhtml', tagName) as HTMLAnchorElement;
+    if (tagName === 'a') {
+      element.click = anchorClick;
+    }
+    return element;
+  });
+
+  render(
+    <LiveLaunchGatePanel
+      {...baseProps}
+      result={readyGate}
+      liveDemoArtifactChainReport={readyLiveDemoArtifactChainReport}
+      onRefreshLiveDemoArtifactChainReport={onRefreshLiveDemoArtifactChainReport}
+      onDownloadLiveDemoArtifactChainReport={onDownloadLiveDemoArtifactChainReport}
+    />
+  );
+
+  await user.click(screen.getByRole('button', { name: 'Refresh live demo artifact chain report' }));
+  await user.click(screen.getByRole('button', { name: 'Download live demo artifact chain report' }));
+
+  const chainPanel = screen
+    .getByText('Live demo artifact chain report')
+    .closest('.demo-launch-preflight-result');
+  expect(chainPanel).not.toBeNull();
+  const chainQueries = within(chainPanel as HTMLElement);
+  expect(chainQueries.getByText('PatchPilot live demo artifact chain is complete and consistent.'))
+    .toBeInTheDocument();
+  expect(chainQueries.getAllByText('launch-package-archive-1').length).toBeGreaterThan(0);
+  expect(chainQueries.getAllByText('live-demo-completion-certificate-archive-1').length).toBeGreaterThan(0);
+  expect(chainQueries.getByText('Evidence bundle references launch package')).toBeInTheDocument();
+  expect(chainQueries.getByText('Completion certificate archive closes the same evidence bundle.'))
+    .toBeInTheDocument();
+  expect(onRefreshLiveDemoArtifactChainReport).toHaveBeenCalledTimes(1);
+  expect(onDownloadLiveDemoArtifactChainReport).toHaveBeenCalledTimes(1);
+  expect(createObjectURL).toHaveBeenCalledWith(expect.any(Blob));
+  expect(anchorClick).toHaveBeenCalled();
+  expect(revokeObjectURL).toHaveBeenCalledWith('blob:live-demo-artifact-chain-report');
+});
+
+test('shows live demo artifact chain report errors', () => {
+  render(
+    <LiveLaunchGatePanel
+      {...baseProps}
+      result={readyGate}
+      liveDemoArtifactChainReportError="Artifact chain report failed"
+    />
+  );
+
+  expect(screen.getByText('Live demo artifact chain report failed')).toBeInTheDocument();
+  expect(screen.getByText('Artifact chain report failed')).toBeInTheDocument();
 });
 
 test('shows launch package errors', () => {

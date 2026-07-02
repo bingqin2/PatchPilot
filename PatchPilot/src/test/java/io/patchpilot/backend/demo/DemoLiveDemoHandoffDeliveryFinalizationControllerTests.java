@@ -240,6 +240,14 @@ class DemoLiveDemoHandoffDeliveryFinalizationControllerTests {
                         () -> "live-demo-completion-certificate-archive-1",
                         () -> Instant.parse("2026-07-02T09:00:00Z")
                 );
+        DemoLiveDemoArtifactChainReportService artifactChainReportService =
+                new DemoLiveDemoArtifactChainReportService(
+                        new InMemoryDemoLiveTriggerLaunchPackageArchiveRepository(),
+                        new InMemoryDemoLiveTriggerOutcomeCloseoutArchiveRepository(),
+                        archiveRepository,
+                        new InMemoryDemoLiveDemoHandoffDeliveryFinalizationArchiveRepository(),
+                        new InMemoryDemoLiveDemoCompletionCertificateArchiveRepository()
+                );
         MockMvc mockMvc = MockMvcBuilders
                 .standaloneSetup(new DemoLiveDemoHandoffPackageController(
                         packageService,
@@ -247,7 +255,8 @@ class DemoLiveDemoHandoffDeliveryFinalizationControllerTests {
                         finalizationService,
                         archiveService,
                         completionCertificateService,
-                        completionCertificateArchiveService
+                        completionCertificateArchiveService,
+                        artifactChainReportService
                 ))
                 .addFilters(new AdminApiSecurityFilter(properties, new ObjectMapper()))
                 .build();

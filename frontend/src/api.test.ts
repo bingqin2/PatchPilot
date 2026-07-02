@@ -29,6 +29,8 @@ import {
   archiveDemoLiveDemoCompletionCertificate,
   listDemoLiveDemoCompletionCertificateArchives,
   downloadDemoLiveDemoCompletionCertificateArchiveReport,
+  getDemoLiveDemoArtifactChainReport,
+  downloadDemoLiveDemoArtifactChainReport,
   downloadDemoLiveTriggerOutcomeCloseoutReport,
   archiveDemoLiveTriggerOutcomeCloseout,
   listDemoLiveTriggerOutcomeCloseoutArchives,
@@ -5564,6 +5566,75 @@ test('loads, downloads, archives, lists, and downloads live demo completion cert
   expect(archive.id).toBe('live-demo-completion-certificate-archive-1');
   expect(archives[0].latestDeliveryReceiptId).toBe('live-demo-handoff-delivery-receipt-1');
   expect(archiveReport.type).toBe('text/markdown');
+});
+
+test('loads and downloads live demo artifact chain reports through backend API', async () => {
+  const reportPayload = {
+    status: 'READY',
+    complete: true,
+    summary: 'PatchPilot live demo artifact chain is complete and consistent.',
+    nextAction: 'Share the live demo artifact chain report with reviewers.',
+    launchPackageArchiveId: 'launch-package-archive-1',
+    outcomeCloseoutArchiveId: 'outcome-closeout-archive-1',
+    evidenceBundleArchiveId: 'live-demo-evidence-bundle-archive-1',
+    handoffFinalizationArchiveId: 'live-demo-handoff-delivery-finalization-archive-1',
+    completionCertificateArchiveId: 'live-demo-completion-certificate-archive-1',
+    repository: 'bingqin2/PatchPilot',
+    issueNumber: 1,
+    issueUrl: 'https://github.com/bingqin2/PatchPilot/issues/1',
+    taskId: 'task-1',
+    taskStatus: 'COMPLETED',
+    pullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+    steps: [
+      {
+        name: 'Live trigger launch package archive',
+        status: 'READY',
+        artifactId: 'launch-package-archive-1',
+        summary: 'Launch package archive is ready.',
+        nextAction: 'Continue.'
+      }
+    ],
+    checks: [
+      {
+        name: 'Evidence bundle references launch package',
+        status: 'READY',
+        summary: 'Evidence bundle references the launch package archive.',
+        nextAction: 'Continue.'
+      }
+    ],
+    evidenceNotes: ['Completion certificate archive closes the same evidence bundle.'],
+    downloadActions: ['Download live demo artifact chain report.'],
+    sideEffectContract: 'GET /api/demo/live-demo-handoff-package/artifact-chain-report is read-only.',
+    generatedAt: '2026-07-02T10:00:00Z',
+    markdownReport: '# PatchPilot Live Demo Artifact Chain Report'
+  };
+  const fetchMock = vi.fn()
+    .mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ success: true, data: reportPayload, message: null })
+    } as Response)
+    .mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      blob: async () => new Blob(['artifact chain'], { type: 'text/markdown' })
+    } as Response);
+  vi.stubGlobal('fetch', fetchMock);
+
+  const report = await getDemoLiveDemoArtifactChainReport();
+  const markdown = await downloadDemoLiveDemoArtifactChainReport();
+
+  expect(fetchMock).toHaveBeenNthCalledWith(
+    1,
+    '/api/demo/live-demo-handoff-package/artifact-chain-report'
+  );
+  expect(fetchMock).toHaveBeenNthCalledWith(
+    2,
+    '/api/demo/live-demo-handoff-package/artifact-chain-report/download'
+  );
+  expect(report.complete).toBe(true);
+  expect(report.completionCertificateArchiveId).toBe('live-demo-completion-certificate-archive-1');
+  expect(markdown.type).toBe('text/markdown');
 });
 
 test('runs demo launch preflight through backend API without creating a task', async () => {

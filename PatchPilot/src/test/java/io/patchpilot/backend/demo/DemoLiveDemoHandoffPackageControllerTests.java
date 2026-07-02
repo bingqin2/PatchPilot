@@ -51,6 +51,37 @@ class DemoLiveDemoHandoffPackageControllerTests {
     }
 
     @Test
+    void should_return_and_download_live_demo_artifact_chain_report() throws Exception {
+        MockMvc mockMvc = mockMvcWithArtifactChain();
+
+        mockMvc.perform(get("/api/demo/live-demo-handoff-package/artifact-chain-report")
+                        .header("X-PatchPilot-Admin-Token", "test-admin-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.complete").value(true))
+                .andExpect(jsonPath("$.data.launchPackageArchiveId").value("launch-package-archive-1"))
+                .andExpect(jsonPath("$.data.outcomeCloseoutArchiveId").value("outcome-closeout-archive-1"))
+                .andExpect(jsonPath("$.data.evidenceBundleArchiveId").value("live-demo-evidence-bundle-archive-1"))
+                .andExpect(jsonPath("$.data.handoffFinalizationArchiveId")
+                        .value("live-demo-handoff-delivery-finalization-archive-1"))
+                .andExpect(jsonPath("$.data.completionCertificateArchiveId")
+                        .value("live-demo-completion-certificate-archive-1"))
+                .andExpect(jsonPath("$.data.markdownReport")
+                        .value(containsString("PatchPilot Live Demo Artifact Chain Report")));
+
+        mockMvc.perform(get("/api/demo/live-demo-handoff-package/artifact-chain-report/download")
+                        .header("X-PatchPilot-Admin-Token", "test-admin-token"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(
+                        CONTENT_DISPOSITION,
+                        containsString("patchpilot-live-demo-artifact-chain-report.md")
+                ))
+                .andExpect(content().string(containsString("# PatchPilot Live Demo Artifact Chain Report")))
+                .andExpect(content().string(containsString("live-demo-completion-certificate-archive-1")));
+    }
+
+    @Test
     void should_require_admin_token_for_live_demo_handoff_package() throws Exception {
         MockMvc mockMvc = mockMvc();
 
@@ -99,6 +130,14 @@ class DemoLiveDemoHandoffPackageControllerTests {
                         completionCertificateService,
                         new InMemoryDemoLiveDemoCompletionCertificateArchiveRepository()
                 );
+        DemoLiveDemoArtifactChainReportService artifactChainReportService =
+                new DemoLiveDemoArtifactChainReportService(
+                        new InMemoryDemoLiveTriggerLaunchPackageArchiveRepository(),
+                        new InMemoryDemoLiveTriggerOutcomeCloseoutArchiveRepository(),
+                        repository,
+                        new InMemoryDemoLiveDemoHandoffDeliveryFinalizationArchiveRepository(),
+                        new InMemoryDemoLiveDemoCompletionCertificateArchiveRepository()
+                );
         return MockMvcBuilders
                 .standaloneSetup(new DemoLiveDemoHandoffPackageController(
                         service,
@@ -106,7 +145,86 @@ class DemoLiveDemoHandoffPackageControllerTests {
                         finalizationService,
                         archiveService,
                         completionCertificateService,
-                        completionCertificateArchiveService
+                        completionCertificateArchiveService,
+                        artifactChainReportService
+                ))
+                .addFilters(new AdminApiSecurityFilter(properties, new ObjectMapper()))
+                .build();
+    }
+
+    private static MockMvc mockMvcWithArtifactChain() {
+        AdminApiSecurityProperties properties = new AdminApiSecurityProperties();
+        properties.setAdminToken("test-admin-token");
+
+        InMemoryDemoLiveTriggerLaunchPackageArchiveRepository launchRepository =
+                new InMemoryDemoLiveTriggerLaunchPackageArchiveRepository();
+        InMemoryDemoLiveTriggerOutcomeCloseoutArchiveRepository closeoutRepository =
+                new InMemoryDemoLiveTriggerOutcomeCloseoutArchiveRepository();
+        InMemoryDemoLiveDemoEvidenceBundleArchiveRepository evidenceRepository =
+                new InMemoryDemoLiveDemoEvidenceBundleArchiveRepository();
+        InMemoryDemoLiveDemoHandoffDeliveryFinalizationArchiveRepository finalizationRepository =
+                new InMemoryDemoLiveDemoHandoffDeliveryFinalizationArchiveRepository();
+        InMemoryDemoLiveDemoCompletionCertificateArchiveRepository completionRepository =
+                new InMemoryDemoLiveDemoCompletionCertificateArchiveRepository();
+
+        DemoLiveDemoArtifactChainReportServiceTests.RepositoriesAccessor.seedReadyArchives(
+                launchRepository,
+                closeoutRepository,
+                evidenceRepository,
+                finalizationRepository,
+                completionRepository
+        );
+
+        DemoLiveDemoArtifactChainReportService artifactChainReportService =
+                new DemoLiveDemoArtifactChainReportService(
+                        launchRepository,
+                        closeoutRepository,
+                        evidenceRepository,
+                        finalizationRepository,
+                        completionRepository,
+                        java.time.Clock.fixed(Instant.parse("2026-07-02T10:00:00Z"), java.time.ZoneOffset.UTC)
+                );
+
+        DemoLiveDemoHandoffPackageService service = new DemoLiveDemoHandoffPackageService(
+                evidenceRepository,
+                () -> Instant.parse("2026-07-02T04:00:00Z")
+        );
+        DemoLiveDemoHandoffDeliveryReceiptService receiptService = new DemoLiveDemoHandoffDeliveryReceiptService(
+                service::createPackage,
+                new InMemoryDemoLiveDemoHandoffDeliveryReceiptRepository(),
+                () -> "live-demo-handoff-delivery-receipt-1",
+                () -> Instant.parse("2026-07-02T05:00:00Z")
+        );
+        DemoLiveDemoHandoffDeliveryFinalizationService finalizationService =
+                new DemoLiveDemoHandoffDeliveryFinalizationService(
+                        service::createPackage,
+                        List::of,
+                        java.time.Clock.systemUTC()
+                );
+        DemoLiveDemoHandoffDeliveryFinalizationArchiveService archiveService =
+                new DemoLiveDemoHandoffDeliveryFinalizationArchiveService(
+                        finalizationService,
+                        finalizationRepository
+                );
+        DemoLiveDemoCompletionCertificateService completionCertificateService =
+                new DemoLiveDemoCompletionCertificateService(
+                        archiveService::listRecentArchives,
+                        java.time.Clock.systemUTC()
+                );
+        DemoLiveDemoCompletionCertificateArchiveService completionCertificateArchiveService =
+                new DemoLiveDemoCompletionCertificateArchiveService(
+                        completionCertificateService,
+                        completionRepository
+                );
+        return MockMvcBuilders
+                .standaloneSetup(new DemoLiveDemoHandoffPackageController(
+                        service,
+                        receiptService,
+                        finalizationService,
+                        archiveService,
+                        completionCertificateService,
+                        completionCertificateArchiveService,
+                        artifactChainReportService
                 ))
                 .addFilters(new AdminApiSecurityFilter(properties, new ObjectMapper()))
                 .build();
