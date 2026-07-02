@@ -1,6 +1,7 @@
 package io.patchpilot.backend.demo;
 
 import io.patchpilot.backend.common.response.ApiResponse;
+import io.patchpilot.backend.demo.domain.DemoLiveDemoArtifactChainReportVo;
 import io.patchpilot.backend.demo.domain.DemoLiveDemoCompletionCertificateArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoLiveDemoCompletionCertificateVo;
 import io.patchpilot.backend.demo.domain.DemoLiveDemoHandoffDeliveryFinalizationArchiveVo;
@@ -33,6 +34,7 @@ public class DemoLiveDemoHandoffPackageController {
     private final DemoLiveDemoHandoffDeliveryFinalizationArchiveService finalizationArchiveService;
     private final DemoLiveDemoCompletionCertificateService completionCertificateService;
     private final DemoLiveDemoCompletionCertificateArchiveService completionCertificateArchiveService;
+    private final DemoLiveDemoArtifactChainReportService artifactChainReportService;
 
     @GetMapping
     public ApiResponse<DemoLiveDemoHandoffPackageVo> getPackage() {
@@ -199,5 +201,31 @@ public class DemoLiveDemoHandoffPackageController {
                         )
                         .body(archive.report().getBytes(StandardCharsets.UTF_8)))
                 .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/artifact-chain-report")
+    public ApiResponse<DemoLiveDemoArtifactChainReportVo> getArtifactChainReport() {
+        return ApiResponse.ok(artifactChainReportService.getReport());
+    }
+
+    @GetMapping("/artifact-chain-report/download")
+    public ResponseEntity<byte[]> downloadArtifactChainReport() {
+        byte[] body = artifactChainReportService
+                .getReport()
+                .markdownReport()
+                .getBytes(StandardCharsets.UTF_8);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("text/markdown;charset=UTF-8"))
+                .header(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        ContentDisposition.attachment()
+                                .filename(
+                                        "patchpilot-live-demo-artifact-chain-report.md",
+                                        StandardCharsets.UTF_8
+                                )
+                                .build()
+                                .toString()
+                )
+                .body(body);
     }
 }

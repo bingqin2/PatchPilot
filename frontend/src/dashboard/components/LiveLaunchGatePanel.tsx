@@ -2,6 +2,7 @@ import { Archive, ClipboardCheck, Copy, Download, FileCheck2, PackageCheck, Refr
 import { useState, type FormEvent } from 'react';
 import type {
   DemoLiveLaunchGate,
+  DemoLiveDemoArtifactChainReport,
   DemoLiveDemoCompletionCertificate,
   DemoLiveDemoCompletionCertificateArchive,
   DemoLiveDemoEvidenceBundle,
@@ -87,6 +88,11 @@ interface LiveLaunchGatePanelProps {
   onArchiveLiveDemoCompletionCertificate:
     () => Promise<DemoLiveDemoCompletionCertificateArchive> | Promise<void> | void;
   onDownloadLiveDemoCompletionCertificateArchiveReport: (archiveId: string) => Promise<Blob>;
+  liveDemoArtifactChainReport: DemoLiveDemoArtifactChainReport | null;
+  liveDemoArtifactChainReportError: string | null;
+  onRefreshLiveDemoArtifactChainReport:
+    () => Promise<DemoLiveDemoArtifactChainReport> | Promise<void> | void;
+  onDownloadLiveDemoArtifactChainReport: () => Promise<Blob>;
 }
 
 export function LiveLaunchGatePanel({
@@ -142,7 +148,11 @@ export function LiveLaunchGatePanel({
   liveDemoCompletionCertificateArchives,
   liveDemoCompletionCertificateArchiveError,
   onArchiveLiveDemoCompletionCertificate,
-  onDownloadLiveDemoCompletionCertificateArchiveReport
+  onDownloadLiveDemoCompletionCertificateArchiveReport,
+  liveDemoArtifactChainReport,
+  liveDemoArtifactChainReportError,
+  onRefreshLiveDemoArtifactChainReport,
+  onDownloadLiveDemoArtifactChainReport
 }: LiveLaunchGatePanelProps) {
   const [repositoryOwner, setRepositoryOwner] = useState('bingqin2');
   const [repositoryName, setRepositoryName] = useState('PatchPilot');
@@ -306,6 +316,15 @@ export function LiveLaunchGatePanel({
   async function downloadLiveDemoCompletionCertificateArchive(archiveId: string) {
     const blob = await onDownloadLiveDemoCompletionCertificateArchiveReport(archiveId);
     downloadMarkdown(blob, `patchpilot-live-demo-completion-certificate-archive-${archiveId}.md`);
+  }
+
+  async function refreshLiveDemoArtifactChainReport() {
+    await onRefreshLiveDemoArtifactChainReport();
+  }
+
+  async function downloadLiveDemoArtifactChainReport() {
+    const blob = await onDownloadLiveDemoArtifactChainReport();
+    downloadMarkdown(blob, 'patchpilot-live-demo-artifact-chain-report.md');
   }
 
   return (
@@ -487,6 +506,25 @@ export function LiveLaunchGatePanel({
               <Archive size={16} />
               Archive completion certificate
             </button>
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={() => void refreshLiveDemoArtifactChainReport()}
+              aria-label="Refresh live demo artifact chain report"
+            >
+              <RefreshCw size={16} />
+              Refresh artifact chain
+            </button>
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={() => void downloadLiveDemoArtifactChainReport()}
+              disabled={!liveDemoArtifactChainReport}
+              aria-label="Download live demo artifact chain report"
+            >
+              <FileCheck2 size={16} />
+              Download artifact chain
+            </button>
           </div>
         ) : null}
       </div>
@@ -641,6 +679,13 @@ export function LiveLaunchGatePanel({
         </div>
       ) : null}
 
+      {liveDemoArtifactChainReportError ? (
+        <div className="adapter-api-error">
+          <strong>Live demo artifact chain report failed</strong>
+          <span>{liveDemoArtifactChainReportError}</span>
+        </div>
+      ) : null}
+
       {result ? (
         <>
           <LiveLaunchGateResult result={result} />
@@ -692,11 +737,97 @@ export function LiveLaunchGatePanel({
             archives={liveDemoCompletionCertificateArchives}
             onDownloadArchive={(archiveId) => void downloadLiveDemoCompletionCertificateArchive(archiveId)}
           />
+          {liveDemoArtifactChainReport ? (
+            <LiveDemoArtifactChainReportResult report={liveDemoArtifactChainReport} />
+          ) : null}
         </>
       ) : (
         <div className="empty-state">No live launch gate run yet.</div>
       )}
     </section>
+  );
+}
+
+function LiveDemoArtifactChainReportResult({ report }: { report: DemoLiveDemoArtifactChainReport }) {
+  const tone =
+    report.status === 'READY' ? 'ready' : report.status === 'BLOCKED' ? 'blocked' : 'attention';
+
+  return (
+    <div className={`demo-launch-preflight-result demo-launch-preflight-result-${tone}`}>
+      <div className="demo-launch-preflight-summary">
+        <span className={`demo-readiness-status demo-readiness-status-${tone}`}>
+          {report.status}
+        </span>
+        <strong>Live demo artifact chain report</strong>
+        <p>{report.summary}</p>
+      </div>
+      <div className="demo-launch-preflight-grid">
+        <div>
+          <span>Launch archive</span>
+          <strong>{report.launchPackageArchiveId ?? 'missing'}</strong>
+          <small>{report.repository ?? 'repository missing'}</small>
+        </div>
+        <div>
+          <span>Outcome archive</span>
+          <strong>{report.outcomeCloseoutArchiveId ?? 'missing'}</strong>
+          <small>{report.taskId ? `Task ${report.taskId}` : 'No matching task'}</small>
+        </div>
+        <div>
+          <span>Evidence archive</span>
+          <strong>{report.evidenceBundleArchiveId ?? 'missing'}</strong>
+          <small>{report.taskStatus ?? 'status missing'}</small>
+        </div>
+        <div>
+          <span>Completion archive</span>
+          <strong>{report.completionCertificateArchiveId ?? 'missing'}</strong>
+          <small>{report.pullRequestUrl ?? 'Pull Request missing'}</small>
+        </div>
+      </div>
+      <p className="demo-launch-preflight-blocked">{report.sideEffectContract}</p>
+      <div className="demo-launch-preflight-actions">
+        <h3>Artifact chain steps</h3>
+        <ul>
+          {report.steps.map((step) => (
+            <li key={`${step.name}-${step.artifactId ?? 'missing'}`}>
+              <strong>{step.name}</strong>
+              <span>{step.status}</span>
+              <span>{step.artifactId ?? 'missing'}</span>
+              <small>{step.summary}</small>
+            </li>
+          ))}
+        </ul>
+      </div>
+      <div className="demo-launch-preflight-actions">
+        <h3>Consistency checks</h3>
+        <ul>
+          {report.checks.map((check) => (
+            <li key={check.name}>
+              <strong>{check.name}</strong>
+              <span>{check.status}</span>
+              <span>{check.summary}</span>
+              <small>{check.nextAction}</small>
+            </li>
+          ))}
+        </ul>
+      </div>
+      <div className="demo-launch-preflight-actions">
+        <h3>Artifact chain evidence</h3>
+        <ul>
+          {report.evidenceNotes.map((note) => (
+            <li key={note}>{note}</li>
+          ))}
+        </ul>
+      </div>
+      <div className="demo-launch-preflight-actions">
+        <h3>Artifact chain downloads</h3>
+        <ul>
+          {report.downloadActions.map((action) => (
+            <li key={action}>{action}</li>
+          ))}
+        </ul>
+      </div>
+      <p className="demo-launch-preflight-blocked">Next action: {report.nextAction}</p>
+    </div>
   );
 }
 

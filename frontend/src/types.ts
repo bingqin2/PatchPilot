@@ -1123,6 +1123,46 @@ export interface DemoLiveDemoCompletionCertificateArchive extends DemoLiveDemoCo
   report: string;
 }
 
+export interface DemoLiveDemoArtifactChainReportStep {
+  name: string;
+  status: DemoReadinessStatus;
+  artifactId: string | null;
+  summary: string;
+  nextAction: string;
+}
+
+export interface DemoLiveDemoArtifactChainReportCheck {
+  name: string;
+  status: DemoReadinessStatus;
+  summary: string;
+  nextAction: string;
+}
+
+export interface DemoLiveDemoArtifactChainReport {
+  status: DemoReadinessStatus;
+  complete: boolean;
+  summary: string;
+  nextAction: string;
+  launchPackageArchiveId: string | null;
+  outcomeCloseoutArchiveId: string | null;
+  evidenceBundleArchiveId: string | null;
+  handoffFinalizationArchiveId: string | null;
+  completionCertificateArchiveId: string | null;
+  repository: string | null;
+  issueNumber: number;
+  issueUrl: string | null;
+  taskId: string | null;
+  taskStatus: string | null;
+  pullRequestUrl: string | null;
+  steps: DemoLiveDemoArtifactChainReportStep[];
+  checks: DemoLiveDemoArtifactChainReportCheck[];
+  evidenceNotes: string[];
+  downloadActions: string[];
+  sideEffectContract: string;
+  generatedAt: string;
+  markdownReport: string;
+}
+
 export interface DemoEndToEndAcceptanceMatrixItem {
   category: string;
   name: string;
