@@ -6,6 +6,7 @@ import type {
   DemoLiveTriggerLaunchPackageArchive,
   DemoLiveDemoEvidenceBundle,
   DemoLiveDemoEvidenceBundleArchive,
+  DemoLiveDemoHandoffPackage,
   DemoLiveTriggerOutcomeCloseout,
   DemoLiveTriggerOutcomeCloseoutArchive
 } from '../../types';
@@ -281,6 +282,32 @@ const readyLiveDemoEvidenceBundleArchive: DemoLiveDemoEvidenceBundleArchive = {
   report: '# PatchPilot Live Demo Evidence Bundle Archive'
 };
 
+const readyLiveDemoHandoffPackage: DemoLiveDemoHandoffPackage = {
+  status: 'READY',
+  readyForReview: true,
+  evidenceBundleArchiveId: 'live-demo-evidence-bundle-archive-1',
+  repository: 'bingqin2/PatchPilot',
+  issueNumber: 1,
+  issueUrl: 'https://github.com/bingqin2/PatchPilot/issues/1',
+  triggerUser: 'bingqin2',
+  triggerComment: '/agent fix touch docs/live-package.md',
+  taskId: 'task-1',
+  taskStatus: 'COMPLETED',
+  pullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+  webhookDeliveryId: 'delivery-1',
+  summary: 'Live demo handoff package is ready for reviewer handoff.',
+  reviewChecklist: [
+    'Open the Pull Request and review the files changed.',
+    'Confirm the evidence bundle archive live-demo-evidence-bundle-archive-1 matches the issue and task.',
+    'Merge or close the Pull Request according to repository policy.'
+  ],
+  deliveryInstructions: ['Share this handoff package and archived evidence report with the reviewer.'],
+  evidenceNotes: ['Launch package archive launch-package-archive-1 is ready.'],
+  sideEffectContract: 'read-only live demo handoff package',
+  generatedAt: '2026-07-02T04:00:00Z',
+  markdownReport: '# PatchPilot Live Demo Handoff Package'
+};
+
 const baseProps = {
   error: null,
   pending: false,
@@ -309,7 +336,11 @@ const baseProps = {
   liveDemoEvidenceBundleArchives: [] as DemoLiveDemoEvidenceBundleArchive[],
   liveDemoEvidenceBundleArchiveError: null,
   onArchiveLiveDemoEvidenceBundle: vi.fn(),
-  onDownloadLiveDemoEvidenceBundleArchiveReport: vi.fn()
+  onDownloadLiveDemoEvidenceBundleArchiveReport: vi.fn(),
+  liveDemoHandoffPackage: null as DemoLiveDemoHandoffPackage | null,
+  liveDemoHandoffPackageError: null,
+  onRefreshLiveDemoHandoffPackage: vi.fn(),
+  onDownloadLiveDemoHandoffPackageReport: vi.fn()
 };
 
 test('submits exact live launch gate input', async () => {
@@ -749,6 +780,65 @@ test('shows live demo evidence bundle archive errors', () => {
 
   expect(screen.getByText('Live demo evidence bundle archive failed')).toBeInTheDocument();
   expect(screen.getByText('Bundle archive write failed')).toBeInTheDocument();
+});
+
+test('renders and downloads live demo reviewer handoff package', async () => {
+  const user = userEvent.setup();
+  const onRefreshLiveDemoHandoffPackage = vi.fn(async () => readyLiveDemoHandoffPackage);
+  const onDownloadLiveDemoHandoffPackageReport = vi.fn(async () =>
+    new Blob(['handoff package'], { type: 'text/markdown' })
+  );
+  const anchorClick = vi.fn();
+  const createObjectURL = vi.fn(() => 'blob:live-demo-handoff-package');
+  const revokeObjectURL = vi.fn();
+  vi.stubGlobal('URL', { createObjectURL, revokeObjectURL });
+  vi.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
+    const element = document.createElementNS('http://www.w3.org/1999/xhtml', tagName) as HTMLAnchorElement;
+    if (tagName === 'a') {
+      element.click = anchorClick;
+    }
+    return element;
+  });
+
+  render(
+    <LiveLaunchGatePanel
+      {...baseProps}
+      result={readyGate}
+      liveDemoEvidenceBundleArchives={[readyLiveDemoEvidenceBundleArchive]}
+      liveDemoHandoffPackage={readyLiveDemoHandoffPackage}
+      onRefreshLiveDemoHandoffPackage={onRefreshLiveDemoHandoffPackage}
+      onDownloadLiveDemoHandoffPackageReport={onDownloadLiveDemoHandoffPackageReport}
+    />
+  );
+
+  await user.click(screen.getByRole('button', { name: 'Refresh live demo handoff package' }));
+  await user.click(screen.getByRole('button', { name: 'Download live demo handoff package' }));
+
+  expect(onRefreshLiveDemoHandoffPackage).toHaveBeenCalled();
+  expect(screen.getByText('Live demo handoff package')).toBeInTheDocument();
+  const packageSection = screen.getByText('Live demo handoff package').closest('.demo-launch-preflight-result') as HTMLElement;
+  expect(within(packageSection).getByText('Live demo handoff package is ready for reviewer handoff.')).toBeInTheDocument();
+  expect(within(packageSection).getByText('Archive live-demo-evidence-bundle-archive-1')).toBeInTheDocument();
+  expect(within(packageSection).getByText('PR https://github.com/bingqin2/PatchPilot/pull/42')).toBeInTheDocument();
+  expect(within(packageSection).getByText('Open the Pull Request and review the files changed.')).toBeInTheDocument();
+  expect(within(packageSection).getByText('Share this handoff package and archived evidence report with the reviewer.')).toBeInTheDocument();
+  expect(onDownloadLiveDemoHandoffPackageReport).toHaveBeenCalled();
+  expect(createObjectURL).toHaveBeenCalledWith(expect.any(Blob));
+  expect(anchorClick).toHaveBeenCalled();
+  expect(revokeObjectURL).toHaveBeenCalledWith('blob:live-demo-handoff-package');
+});
+
+test('shows live demo handoff package errors', () => {
+  render(
+    <LiveLaunchGatePanel
+      {...baseProps}
+      result={readyGate}
+      liveDemoHandoffPackageError="Evidence bundle archive is missing"
+    />
+  );
+
+  expect(screen.getByText('Live demo handoff package failed')).toBeInTheDocument();
+  expect(screen.getByText('Evidence bundle archive is missing')).toBeInTheDocument();
 });
 
 test('shows launch package errors', () => {

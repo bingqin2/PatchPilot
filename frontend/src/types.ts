@@ -974,6 +974,28 @@ export interface DemoLiveDemoEvidenceBundleArchive {
   report: string;
 }
 
+export interface DemoLiveDemoHandoffPackage {
+  status: DemoReadinessStatus;
+  readyForReview: boolean;
+  evidenceBundleArchiveId: string | null;
+  repository: string | null;
+  issueNumber: number;
+  issueUrl: string | null;
+  triggerUser: string | null;
+  triggerComment: string | null;
+  taskId: string | null;
+  taskStatus: string | null;
+  pullRequestUrl: string | null;
+  webhookDeliveryId: string | null;
+  summary: string;
+  reviewChecklist: string[];
+  deliveryInstructions: string[];
+  evidenceNotes: string[];
+  sideEffectContract: string;
+  generatedAt: string;
+  markdownReport: string;
+}
+
 export interface DemoEndToEndAcceptanceMatrixItem {
   category: string;
   name: string;
