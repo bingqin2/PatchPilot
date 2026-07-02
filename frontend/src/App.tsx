@@ -33,6 +33,7 @@ import {
   createDemoFinalExternalReviewEvidencePackageDeliveryReceipt,
   createDemoFinalExternalReviewReleaseBundleDeliveryReceipt,
   createDemoLiveDemoHandoffDeliveryReceipt,
+  createDemoLiveDemoReviewerDeliveryCenterDeliveryReceipt,
   createDemoFinalReviewerHandoffDeliveryReceipt,
   createDemoFinalAcceptanceShareDeliveryReceipt,
   createDemoHandoffShareDeliveryReceipt,
@@ -161,6 +162,7 @@ import {
   archiveDemoLiveDemoEvidenceBundle,
   archiveDemoLiveDemoHandoffDeliveryFinalization,
   listDemoLiveDemoReviewerDeliveryCenterArchives,
+  listDemoLiveDemoReviewerDeliveryCenterDeliveryReceipts,
   listDemoLiveDemoCompletionCertificateArchives,
   listDemoLiveDemoEvidenceBundleArchives,
   listDemoLiveDemoHandoffDeliveryFinalizationArchives,
@@ -204,6 +206,7 @@ import {
   downloadDemoLiveDemoReplayPackage,
   downloadDemoLiveDemoReviewerDeliveryCenter,
   downloadDemoLiveDemoReviewerDeliveryCenterArchiveReport,
+  downloadDemoLiveDemoReviewerDeliveryCenterDeliveryReceiptReport,
   downloadDemoLiveDemoCompletionCertificateArchiveReport,
   downloadDemoLiveDemoCompletionCertificateReport,
   downloadDemoLiveDemoHandoffDeliveryFinalizationArchiveReport,
@@ -399,6 +402,8 @@ import type {
   DemoLiveDemoReplayPackage,
   DemoLiveDemoReviewerDeliveryCenter,
   DemoLiveDemoReviewerDeliveryCenterArchive,
+  DemoLiveDemoReviewerDeliveryCenterDeliveryReceipt,
+  DemoLiveDemoReviewerDeliveryCenterDeliveryReceiptInput,
   DemoLiveDemoCompletionCertificate,
   DemoLiveDemoCompletionCertificateArchive,
   DemoLiveDemoEvidenceBundle,
@@ -900,6 +905,14 @@ export default function App() {
     useState<DemoLiveDemoReviewerDeliveryCenterArchive[]>([]);
   const [demoLiveDemoReviewerDeliveryCenterArchiveError, setDemoLiveDemoReviewerDeliveryCenterArchiveError] =
     useState<string | null>(null);
+  const [
+    demoLiveDemoReviewerDeliveryCenterDeliveryReceipts,
+    setDemoLiveDemoReviewerDeliveryCenterDeliveryReceipts
+  ] = useState<DemoLiveDemoReviewerDeliveryCenterDeliveryReceipt[]>([]);
+  const [
+    demoLiveDemoReviewerDeliveryCenterDeliveryReceiptError,
+    setDemoLiveDemoReviewerDeliveryCenterDeliveryReceiptError
+  ] = useState<string | null>(null);
   const [supportedAdapters, setSupportedAdapters] = useState<SupportedLanguageAdapter[]>([]);
   const [adapterError, setAdapterError] = useState<string | null>(null);
   const [adapterFixtureVerifications, setAdapterFixtureVerifications] = useState<LanguageAdapterFixtureVerification[]>([]);
@@ -1284,6 +1297,7 @@ export default function App() {
         demoLiveDemoReplayPackageResult,
         demoLiveDemoReviewerDeliveryCenterResult,
         demoLiveDemoReviewerDeliveryCenterArchiveResult,
+        demoLiveDemoReviewerDeliveryCenterDeliveryReceiptResult,
         demoAcceptanceSummaryResult,
         demoFinalAcceptanceSharePackageResult,
         demoFinalAcceptanceSharePackageArchiveResult,
@@ -1567,6 +1581,10 @@ export default function App() {
         listDemoLiveDemoReviewerDeliveryCenterArchives().then(
           (archives) => ({ archives, error: null as string | null }),
           (caught) => ({ archives: null, error: errorMessage(caught) })
+        ),
+        listDemoLiveDemoReviewerDeliveryCenterDeliveryReceipts().then(
+          (receipts) => ({ receipts, error: null as string | null }),
+          (caught) => ({ receipts: null, error: errorMessage(caught) })
         ),
         getDemoAcceptanceSummary().then(
           (summary) => ({ summary, error: null as string | null }),
@@ -2069,6 +2087,14 @@ export default function App() {
         setDemoLiveDemoReviewerDeliveryCenterArchives(demoLiveDemoReviewerDeliveryCenterArchiveResult.archives);
       }
       setDemoLiveDemoReviewerDeliveryCenterArchiveError(demoLiveDemoReviewerDeliveryCenterArchiveResult.error);
+      if (demoLiveDemoReviewerDeliveryCenterDeliveryReceiptResult.receipts) {
+        setDemoLiveDemoReviewerDeliveryCenterDeliveryReceipts(
+          demoLiveDemoReviewerDeliveryCenterDeliveryReceiptResult.receipts
+        );
+      }
+      setDemoLiveDemoReviewerDeliveryCenterDeliveryReceiptError(
+        demoLiveDemoReviewerDeliveryCenterDeliveryReceiptResult.error
+      );
       if (demoAcceptanceSummaryResult.summary) {
         setDemoAcceptanceSummary(demoAcceptanceSummaryResult.summary);
       }
@@ -4047,14 +4073,17 @@ export default function App() {
   const handleArchiveDemoLiveDemoReviewerDeliveryCenter = useCallback(async () => {
     setDemoLiveDemoReviewerDeliveryCenterArchiveError(null);
     setDemoLiveDemoReviewerDeliveryCenterError(null);
+    setDemoLiveDemoReviewerDeliveryCenterDeliveryReceiptError(null);
     try {
       const archive = await archiveDemoLiveDemoReviewerDeliveryCenter();
-      const [archives, deliveryCenter] = await Promise.all([
+      const [archives, deliveryCenter, receipts] = await Promise.all([
         listDemoLiveDemoReviewerDeliveryCenterArchives(),
-        getDemoLiveDemoReviewerDeliveryCenter()
+        getDemoLiveDemoReviewerDeliveryCenter(),
+        listDemoLiveDemoReviewerDeliveryCenterDeliveryReceipts()
       ]);
       setDemoLiveDemoReviewerDeliveryCenterArchives(archives);
       setDemoLiveDemoReviewerDeliveryCenter(deliveryCenter);
+      setDemoLiveDemoReviewerDeliveryCenterDeliveryReceipts(receipts);
       return archive;
     } catch (caught) {
       setDemoLiveDemoReviewerDeliveryCenterArchiveError(errorMessage(caught));
@@ -4064,6 +4093,27 @@ export default function App() {
 
   const handleDownloadDemoLiveDemoReviewerDeliveryCenterArchiveReport = useCallback(
     (archiveId: string) => downloadDemoLiveDemoReviewerDeliveryCenterArchiveReport(archiveId),
+    []
+  );
+
+  const handleRecordDemoLiveDemoReviewerDeliveryCenterDeliveryReceipt = useCallback(
+    async (input: DemoLiveDemoReviewerDeliveryCenterDeliveryReceiptInput) => {
+      setDemoLiveDemoReviewerDeliveryCenterDeliveryReceiptError(null);
+      try {
+        const receipt = await createDemoLiveDemoReviewerDeliveryCenterDeliveryReceipt(input);
+        const receipts = await listDemoLiveDemoReviewerDeliveryCenterDeliveryReceipts();
+        setDemoLiveDemoReviewerDeliveryCenterDeliveryReceipts(receipts);
+        return receipt;
+      } catch (caught) {
+        setDemoLiveDemoReviewerDeliveryCenterDeliveryReceiptError(errorMessage(caught));
+        throw caught;
+      }
+    },
+    []
+  );
+
+  const handleDownloadDemoLiveDemoReviewerDeliveryCenterDeliveryReceiptReport = useCallback(
+    (receiptId: string) => downloadDemoLiveDemoReviewerDeliveryCenterDeliveryReceiptReport(receiptId),
     []
   );
 
@@ -4897,6 +4947,18 @@ export default function App() {
         onArchiveLiveDemoReviewerDeliveryCenter={handleArchiveDemoLiveDemoReviewerDeliveryCenter}
         onDownloadLiveDemoReviewerDeliveryCenterArchiveReport={
           handleDownloadDemoLiveDemoReviewerDeliveryCenterArchiveReport
+        }
+        liveDemoReviewerDeliveryCenterDeliveryReceipts={
+          demoLiveDemoReviewerDeliveryCenterDeliveryReceipts
+        }
+        liveDemoReviewerDeliveryCenterDeliveryReceiptError={
+          demoLiveDemoReviewerDeliveryCenterDeliveryReceiptError
+        }
+        onRecordLiveDemoReviewerDeliveryCenterDeliveryReceipt={
+          handleRecordDemoLiveDemoReviewerDeliveryCenterDeliveryReceipt
+        }
+        onDownloadLiveDemoReviewerDeliveryCenterDeliveryReceiptReport={
+          handleDownloadDemoLiveDemoReviewerDeliveryCenterDeliveryReceiptReport
         }
       />
 

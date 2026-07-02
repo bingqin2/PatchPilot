@@ -1243,6 +1243,35 @@ export interface DemoLiveDemoReviewerDeliveryCenterArchive extends DemoLiveDemoR
   report: string;
 }
 
+export interface DemoLiveDemoReviewerDeliveryCenterDeliveryReceiptInput {
+  deliveryChannel: string;
+  deliveryTarget: string;
+  operator: string;
+  notes: string;
+  deliveredAt?: string;
+}
+
+export interface DemoLiveDemoReviewerDeliveryCenterDeliveryReceipt {
+  id: string;
+  status: DemoReadinessStatus;
+  reviewerDeliveryCenterArchiveId: string;
+  reviewerDeliveryCenterStatus: DemoReadinessStatus;
+  repository: string | null;
+  issueNumber: number;
+  issueUrl: string | null;
+  taskId: string | null;
+  taskStatus: string | null;
+  pullRequestUrl: string | null;
+  summary: string;
+  deliveryChannel: string;
+  deliveryTarget: string;
+  operator: string;
+  notes: string;
+  deliveredAt: string;
+  createdAt: string;
+  markdownReport: string;
+}
+
 export interface DemoEndToEndAcceptanceMatrixItem {
   category: string;
   name: string;

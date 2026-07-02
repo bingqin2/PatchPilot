@@ -265,6 +265,13 @@ class DemoLiveDemoHandoffDeliveryFinalizationControllerTests {
                         () -> "live-demo-reviewer-delivery-center-archive-1",
                         () -> Instant.parse("2026-07-02T13:00:00Z")
                 );
+        DemoLiveDemoReviewerDeliveryCenterDeliveryReceiptService reviewerDeliveryCenterDeliveryReceiptService =
+                new DemoLiveDemoReviewerDeliveryCenterDeliveryReceiptService(
+                        () -> reviewerDeliveryCenterArchiveService.listRecentArchives(),
+                        new InMemoryDemoLiveDemoReviewerDeliveryCenterDeliveryReceiptRepository(),
+                        () -> "live-demo-reviewer-delivery-center-delivery-receipt-1",
+                        () -> Instant.parse("2026-07-02T14:00:00Z")
+                );
         MockMvc mockMvc = MockMvcBuilders
                 .standaloneSetup(new DemoLiveDemoHandoffPackageController(
                         packageService,
@@ -276,7 +283,8 @@ class DemoLiveDemoHandoffDeliveryFinalizationControllerTests {
                         artifactChainReportService,
                         replayPackageService,
                         reviewerDeliveryCenterService,
-                        reviewerDeliveryCenterArchiveService
+                        reviewerDeliveryCenterArchiveService,
+                        reviewerDeliveryCenterDeliveryReceiptService
                 ))
                 .addFilters(new AdminApiSecurityFilter(properties, new ObjectMapper()))
                 .build();
