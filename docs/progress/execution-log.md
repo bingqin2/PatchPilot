@@ -6494,6 +6494,26 @@ Validation so far:
 - `git diff --check`: passed.
 - Strict diff secret scan for GitHub, OpenAI-style, Slack, AWS, private-key, and PatchPilot token assignment patterns: no matches.
 
+## 2026-07-02 - 330 Live demo handoff package
+
+- Started `330-live-demo-handoff-package` to turn the latest archived live demo evidence bundle into a reviewer-facing final handoff artifact.
+- Added backend handoff package support with a domain VO, read-only service, and admin-protected JSON and Markdown download endpoints.
+- The package classifies `READY` only when the latest evidence bundle archive is ready for handoff; missing archives produce `BLOCKED`, and non-ready archives produce `NEEDS_ATTENTION`.
+- The generated package includes the evidence bundle archive id, repository, issue, trigger user/comment, task status, webhook delivery, Pull Request URL, review checklist, delivery instructions, evidence notes, generated timestamp, side-effect contract, and Markdown report.
+- Extended the live launch gate dashboard with `Refresh handoff package`, `Download handoff package`, handoff package error feedback, App-level loading, typed API helpers, and package evidence rendering.
+- Added `docs/plans/330-live-demo-handoff-package.md` with the scope, safety contract, API shape, frontend contract, and validation checklist.
+
+Validation so far:
+
+- `mvn -pl PatchPilot -Dtest=DemoLiveDemoHandoffPackageServiceTests,DemoLiveDemoHandoffPackageControllerTests test`: first failed because `DemoLiveDemoHandoffPackageVo` did not exist; passed after backend implementation.
+- `npm --prefix frontend test -- --run src/api.test.ts src/dashboard/components/LiveLaunchGatePanel.test.tsx --reporter=dot`: first failed because the handoff package API helper and dashboard controls did not exist; passed after frontend implementation. Focused result: 2 test files and 259 tests.
+- `npm --prefix frontend test -- --run src/App.test.tsx --reporter=dot`: passed after App-level handoff package loading and handlers were wired. Result: 1 test file and 88 tests.
+- `mvn -pl PatchPilot test`: passed, 1409 tests.
+- `npm --prefix frontend test -- --reporter=dot`: passed, 35 test files and 550 tests.
+- `npm --prefix frontend run build`: passed with the existing Vite large-chunk warning.
+- `git diff --check`: passed.
+- Strict diff secret scan for GitHub, OpenAI-style, Slack, AWS, private-key, and PatchPilot token assignment patterns: no new matches.
+
 ## 2026-07-02 - 324 Live trigger launch package
 
 - Started `324-live-trigger-launch-package` to create one final read-only launch package before an operator posts a real `/agent fix` GitHub issue comment.

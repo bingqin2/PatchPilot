@@ -14,6 +14,8 @@ import {
   archiveDemoLiveDemoEvidenceBundle,
   listDemoLiveDemoEvidenceBundleArchives,
   downloadDemoLiveDemoEvidenceBundleArchiveReport,
+  getDemoLiveDemoHandoffPackage,
+  downloadDemoLiveDemoHandoffPackageReport,
   downloadDemoLiveTriggerOutcomeCloseoutReport,
   archiveDemoLiveTriggerOutcomeCloseout,
   listDemoLiveTriggerOutcomeCloseoutArchives,
@@ -5188,6 +5190,53 @@ test('archives and downloads live demo evidence bundle snapshots through backend
   expect(archive.id).toBe('live-demo-evidence-bundle-archive-1');
   expect(archive.readyForHandoff).toBe(true);
   expect(archives).toHaveLength(1);
+  expect(report.type).toBe('text/markdown');
+});
+
+test('loads and downloads live demo handoff package through backend API', async () => {
+  const packagePayload = {
+    status: 'READY',
+    readyForReview: true,
+    evidenceBundleArchiveId: 'live-demo-evidence-bundle-archive-1',
+    repository: 'bingqin2/PatchPilot',
+    issueNumber: 1,
+    issueUrl: 'https://github.com/bingqin2/PatchPilot/issues/1',
+    triggerUser: 'bingqin2',
+    triggerComment: '/agent fix touch docs/live-package.md',
+    taskId: 'task-1',
+    taskStatus: 'COMPLETED',
+    pullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+    webhookDeliveryId: 'delivery-1',
+    summary: 'Live demo handoff package is ready for reviewer handoff.',
+    reviewChecklist: ['Open the Pull Request and review the files changed.'],
+    deliveryInstructions: ['Share this handoff package and archived evidence report with the reviewer.'],
+    evidenceNotes: ['Launch package archive launch-package-archive-1 is ready.'],
+    sideEffectContract: 'read-only live demo handoff package',
+    generatedAt: '2026-07-02T04:00:00Z',
+    markdownReport: '# PatchPilot Live Demo Handoff Package'
+  };
+  const fetchMock = vi.fn()
+    .mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ success: true, data: packagePayload, message: null })
+    } as Response)
+    .mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      blob: async () => new Blob(['handoff package'], { type: 'text/markdown' })
+    } as Response);
+  vi.stubGlobal('fetch', fetchMock);
+
+  const handoffPackage = await getDemoLiveDemoHandoffPackage();
+  const report = await downloadDemoLiveDemoHandoffPackageReport();
+
+  expect(fetchMock).toHaveBeenNthCalledWith(1, '/api/demo/live-demo-handoff-package');
+  expect(fetchMock).toHaveBeenNthCalledWith(2, '/api/demo/live-demo-handoff-package/report/download');
+  expect(handoffPackage.status).toBe('READY');
+  expect(handoffPackage.readyForReview).toBe(true);
+  expect(handoffPackage.evidenceBundleArchiveId).toBe('live-demo-evidence-bundle-archive-1');
+  expect(handoffPackage.pullRequestUrl).toBe('https://github.com/bingqin2/PatchPilot/pull/42');
   expect(report.type).toBe('text/markdown');
 });
 

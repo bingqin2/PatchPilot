@@ -4,6 +4,7 @@ import type {
   DemoLiveLaunchGate,
   DemoLiveDemoEvidenceBundle,
   DemoLiveDemoEvidenceBundleArchive,
+  DemoLiveDemoHandoffPackage,
   DemoLiveTriggerLaunchPackage,
   DemoLiveTriggerLaunchPackageArchive,
   DemoLiveTriggerOutcomeCloseout,
@@ -50,6 +51,10 @@ interface LiveLaunchGatePanelProps {
   liveDemoEvidenceBundleArchiveError: string | null;
   onArchiveLiveDemoEvidenceBundle: () => Promise<DemoLiveDemoEvidenceBundleArchive> | Promise<void> | void;
   onDownloadLiveDemoEvidenceBundleArchiveReport: (archiveId: string) => Promise<Blob>;
+  liveDemoHandoffPackage: DemoLiveDemoHandoffPackage | null;
+  liveDemoHandoffPackageError: string | null;
+  onRefreshLiveDemoHandoffPackage: () => Promise<DemoLiveDemoHandoffPackage> | Promise<void> | void;
+  onDownloadLiveDemoHandoffPackageReport: () => Promise<Blob>;
 }
 
 export function LiveLaunchGatePanel({
@@ -81,7 +86,11 @@ export function LiveLaunchGatePanel({
   liveDemoEvidenceBundleArchives,
   liveDemoEvidenceBundleArchiveError,
   onArchiveLiveDemoEvidenceBundle,
-  onDownloadLiveDemoEvidenceBundleArchiveReport
+  onDownloadLiveDemoEvidenceBundleArchiveReport,
+  liveDemoHandoffPackage,
+  liveDemoHandoffPackageError,
+  onRefreshLiveDemoHandoffPackage,
+  onDownloadLiveDemoHandoffPackageReport
 }: LiveLaunchGatePanelProps) {
   const [repositoryOwner, setRepositoryOwner] = useState('bingqin2');
   const [repositoryName, setRepositoryName] = useState('PatchPilot');
@@ -173,6 +182,15 @@ export function LiveLaunchGatePanel({
   async function downloadLiveDemoEvidenceBundleArchive(archiveId: string) {
     const blob = await onDownloadLiveDemoEvidenceBundleArchiveReport(archiveId);
     downloadMarkdown(blob, `patchpilot-live-demo-evidence-bundle-archive-${archiveId}.md`);
+  }
+
+  async function refreshLiveDemoHandoffPackage() {
+    await onRefreshLiveDemoHandoffPackage();
+  }
+
+  async function downloadLiveDemoHandoffPackage() {
+    const blob = await onDownloadLiveDemoHandoffPackageReport();
+    downloadMarkdown(blob, 'patchpilot-live-demo-handoff-package.md');
   }
 
   return (
@@ -276,6 +294,25 @@ export function LiveLaunchGatePanel({
             >
               <Archive size={16} />
               Archive evidence bundle
+            </button>
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={() => void refreshLiveDemoHandoffPackage()}
+              aria-label="Refresh live demo handoff package"
+            >
+              <RefreshCw size={16} />
+              Refresh handoff package
+            </button>
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={() => void downloadLiveDemoHandoffPackage()}
+              disabled={!liveDemoHandoffPackage}
+              aria-label="Download live demo handoff package"
+            >
+              <FileCheck2 size={16} />
+              Download handoff package
             </button>
           </div>
         ) : null}
@@ -389,6 +426,13 @@ export function LiveLaunchGatePanel({
         </div>
       ) : null}
 
+      {liveDemoHandoffPackageError ? (
+        <div className="adapter-api-error">
+          <strong>Live demo handoff package failed</strong>
+          <span>{liveDemoHandoffPackageError}</span>
+        </div>
+      ) : null}
+
       {result ? (
         <>
           <LiveLaunchGateResult result={result} />
@@ -407,11 +451,89 @@ export function LiveLaunchGatePanel({
             archives={liveDemoEvidenceBundleArchives}
             onDownloadArchive={(archiveId) => void downloadLiveDemoEvidenceBundleArchive(archiveId)}
           />
+          {liveDemoHandoffPackage ? (
+            <LiveDemoHandoffPackageResult handoffPackage={liveDemoHandoffPackage} />
+          ) : null}
         </>
       ) : (
         <div className="empty-state">No live launch gate run yet.</div>
       )}
     </section>
+  );
+}
+
+function LiveDemoHandoffPackageResult({ handoffPackage }: { handoffPackage: DemoLiveDemoHandoffPackage }) {
+  const tone =
+    handoffPackage.status === 'READY' ? 'ready' : handoffPackage.status === 'BLOCKED' ? 'blocked' : 'attention';
+
+  return (
+    <div className={`demo-launch-preflight-result demo-launch-preflight-result-${tone}`}>
+      <div className="demo-launch-preflight-summary">
+        <span className={`demo-readiness-status demo-readiness-status-${tone}`}>
+          {handoffPackage.status}
+        </span>
+        <strong>Live demo handoff package</strong>
+        <p>{handoffPackage.summary}</p>
+      </div>
+      <div className="demo-launch-preflight-grid">
+        <div>
+          <span>Evidence archive</span>
+          <strong>
+            {handoffPackage.evidenceBundleArchiveId
+              ? `Archive ${handoffPackage.evidenceBundleArchiveId}`
+              : 'missing'}
+          </strong>
+          <small>{handoffPackage.repository ?? 'repository missing'}</small>
+        </div>
+        <div>
+          <span>Task</span>
+          <strong>{handoffPackage.taskId ? `Task ${handoffPackage.taskId}` : 'missing'}</strong>
+          <small>{handoffPackage.taskStatus ?? 'unknown'}</small>
+        </div>
+        <div>
+          <span>Pull Request</span>
+          <strong>{handoffPackage.pullRequestUrl ? `PR ${handoffPackage.pullRequestUrl}` : 'not created'}</strong>
+        </div>
+        <div>
+          <span>Webhook</span>
+          <strong>{handoffPackage.webhookDeliveryId ?? 'missing'}</strong>
+          <small>Generated {handoffPackage.generatedAt}</small>
+        </div>
+      </div>
+      <p className="demo-launch-preflight-blocked">{handoffPackage.sideEffectContract}</p>
+      <div className="demo-launch-preflight-actions">
+        <h3>Review checklist</h3>
+        {handoffPackage.reviewChecklist.length === 0 ? (
+          <p>No review checklist available.</p>
+        ) : (
+          <ul>
+            {handoffPackage.reviewChecklist.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        )}
+      </div>
+      <div className="demo-launch-preflight-actions">
+        <h3>Delivery instructions</h3>
+        <ul>
+          {handoffPackage.deliveryInstructions.map((instruction) => (
+            <li key={instruction}>{instruction}</li>
+          ))}
+        </ul>
+      </div>
+      <div className="demo-launch-preflight-actions">
+        <h3>Evidence notes</h3>
+        {handoffPackage.evidenceNotes.length === 0 ? (
+          <p>No evidence notes recorded.</p>
+        ) : (
+          <ul>
+            {handoffPackage.evidenceNotes.map((note) => (
+              <li key={note}>{note}</li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
   );
 }
 
