@@ -1091,6 +1091,38 @@ export interface DemoLiveDemoHandoffDeliveryFinalizationArchive {
   report: string;
 }
 
+export interface DemoLiveDemoCompletionCertificate {
+  status: DemoReadinessStatus;
+  certified: boolean;
+  summary: string;
+  nextAction: string;
+  latestFinalizationArchiveId: string | null;
+  latestDeliveryReceiptId: string | null;
+  evidenceBundleArchiveId: string | null;
+  repository: string | null;
+  issueNumber: number;
+  issueUrl: string | null;
+  taskId: string | null;
+  taskStatus: string | null;
+  pullRequestUrl: string | null;
+  latestDeliveryTarget: string | null;
+  latestDeliveryChannel: string | null;
+  latestDeliveredAt: string | null;
+  deliveryReceiptFreshness: string;
+  latestFinalizationGeneratedAt: string | null;
+  latestFinalizationArchivedAt: string | null;
+  generatedAt: string;
+  downloadActions: string[];
+  sideEffectContract: string;
+  markdownReport: string;
+}
+
+export interface DemoLiveDemoCompletionCertificateArchive extends DemoLiveDemoCompletionCertificate {
+  id: string;
+  archivedAt: string;
+  report: string;
+}
+
 export interface DemoEndToEndAcceptanceMatrixItem {
   category: string;
   name: string;

@@ -65,6 +65,8 @@ import type {
   DemoLaunchEvidenceShareDeliveryReceiptInput,
   DemoLaunchCommandInput,
   DemoLiveLaunchGate,
+  DemoLiveDemoCompletionCertificate,
+  DemoLiveDemoCompletionCertificateArchive,
   DemoLiveDemoEvidenceBundle,
   DemoLiveDemoEvidenceBundleArchive,
   DemoLiveDemoHandoffPackage,
@@ -341,6 +343,35 @@ export async function downloadDemoLiveDemoHandoffDeliveryFinalizationArchiveRepo
 ): Promise<Blob> {
   return getBlobApi(
     `/api/demo/live-demo-handoff-package/delivery-finalization/archives/${encodeURIComponent(archiveId)}/report/download`
+  );
+}
+
+export async function getDemoLiveDemoCompletionCertificate(): Promise<DemoLiveDemoCompletionCertificate> {
+  return getApi<DemoLiveDemoCompletionCertificate>('/api/demo/live-demo-handoff-package/completion-certificate');
+}
+
+export async function downloadDemoLiveDemoCompletionCertificateReport(): Promise<Blob> {
+  return getBlobApi('/api/demo/live-demo-handoff-package/completion-certificate/report/download');
+}
+
+export async function archiveDemoLiveDemoCompletionCertificate(): Promise<DemoLiveDemoCompletionCertificateArchive> {
+  return postApi<DemoLiveDemoCompletionCertificateArchive>(
+    '/api/demo/live-demo-handoff-package/completion-certificate/archives'
+  );
+}
+
+export async function listDemoLiveDemoCompletionCertificateArchives():
+  Promise<DemoLiveDemoCompletionCertificateArchive[]> {
+  return getApi<DemoLiveDemoCompletionCertificateArchive[]>(
+    '/api/demo/live-demo-handoff-package/completion-certificate/archives'
+  );
+}
+
+export async function downloadDemoLiveDemoCompletionCertificateArchiveReport(
+  archiveId: string
+): Promise<Blob> {
+  return getBlobApi(
+    `/api/demo/live-demo-handoff-package/completion-certificate/archives/${encodeURIComponent(archiveId)}/report/download`
   );
 }
 

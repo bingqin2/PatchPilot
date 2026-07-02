@@ -6494,6 +6494,26 @@ Validation so far:
 - `git diff --check`: passed.
 - Strict diff secret scan for GitHub, OpenAI-style, Slack, AWS, private-key, and PatchPilot token assignment patterns: no matches.
 
+## 2026-07-02 - 334 Live demo completion certificate
+
+- Started `334-live-demo-completion-certificate` to turn the frozen `READY` live demo handoff delivery finalization archive into a terminal reviewer-facing completion certificate.
+- Added backend completion certificate support with a read-only certificate service, certificate VO, admin-protected local archive service, capped in-memory archive repository, archive VO, and JSON/Markdown endpoints.
+- The certificate is `READY` and certified only when the latest handoff finalization archive is ready, finalized, and backed by a fresh delivery receipt.
+- Each certificate summarizes the finalization archive, delivery receipt, evidence bundle archive, repository and issue metadata, task and PR metadata, delivery target/channel, freshness, download actions, side-effect contract, and Markdown report.
+- Extended the live launch gate dashboard with certificate refresh, report download, archive creation, recent certificate archive history, per-archive downloads, App-level loading, and typed frontend API helpers.
+- Added `docs/plans/334-live-demo-completion-certificate.md` with the scope, safety contract, API shape, and validation checklist.
+
+Validation so far:
+
+- `mvn -pl PatchPilot -Dtest=DemoLiveDemoCompletionCertificateServiceTests,DemoLiveDemoHandoffDeliveryFinalizationControllerTests,DemoLiveDemoHandoffPackageControllerTests,DemoLiveDemoHandoffDeliveryReceiptControllerTests test -q`: passed after backend implementation.
+- `npm --prefix frontend test -- --run src/api.test.ts src/dashboard/components/LiveLaunchGatePanel.test.tsx --reporter=dot`: first failed because the completion certificate API helper, dashboard controls, result rendering, archive history, and error banners were missing; passed after frontend implementation. Focused result: 2 test files and 271 tests.
+- `npm --prefix frontend test -- --run src/App.test.tsx --reporter=dot`: passed after App-level certificate loading and handlers were wired. Result: 1 test file and 88 tests.
+- `mvn -pl PatchPilot test`: passed, 1430 tests.
+- `npm --prefix frontend test -- --reporter=dot`: passed, 35 test files and 562 tests.
+- `npm --prefix frontend run build`: passed with the existing Vite large-chunk warning.
+- `git diff --check`: passed.
+- Strict changed-file secret scan for GitHub, OpenAI-style, Slack, AWS, private-key, and PatchPilot token assignment patterns: no matches.
+
 ## 2026-07-02 - 332 Live demo handoff delivery finalization
 
 - Started `332-live-demo-handoff-delivery-finalization` to prove the latest live demo handoff delivery receipt matches the current reviewer handoff package.

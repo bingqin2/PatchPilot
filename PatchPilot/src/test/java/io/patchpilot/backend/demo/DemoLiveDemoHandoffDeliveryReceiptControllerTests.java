@@ -99,12 +99,24 @@ class DemoLiveDemoHandoffDeliveryReceiptControllerTests {
                         finalizationService,
                         new InMemoryDemoLiveDemoHandoffDeliveryFinalizationArchiveRepository()
                 );
+        DemoLiveDemoCompletionCertificateService completionCertificateService =
+                new DemoLiveDemoCompletionCertificateService(
+                        archiveService::listRecentArchives,
+                        java.time.Clock.systemUTC()
+                );
+        DemoLiveDemoCompletionCertificateArchiveService completionCertificateArchiveService =
+                new DemoLiveDemoCompletionCertificateArchiveService(
+                        completionCertificateService,
+                        new InMemoryDemoLiveDemoCompletionCertificateArchiveRepository()
+                );
         return MockMvcBuilders
                 .standaloneSetup(new DemoLiveDemoHandoffPackageController(
                         packageService,
                         receiptService,
                         finalizationService,
-                        archiveService
+                        archiveService,
+                        completionCertificateService,
+                        completionCertificateArchiveService
                 ))
                 .addFilters(new AdminApiSecurityFilter(properties, new ObjectMapper()))
                 .build();

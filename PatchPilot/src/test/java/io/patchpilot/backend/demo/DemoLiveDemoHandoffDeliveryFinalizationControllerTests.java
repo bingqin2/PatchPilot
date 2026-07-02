@@ -107,6 +107,74 @@ class DemoLiveDemoHandoffDeliveryFinalizationControllerTests {
     }
 
     @Test
+    void should_return_archive_list_and_download_live_demo_completion_certificates() throws Exception {
+        TestControllerFixture fixture = controllerFixture();
+        MockMvc mockMvc = fixture.mockMvc();
+        fixture.archiveService().archiveFinalization();
+
+        mockMvc.perform(get("/api/demo/live-demo-handoff-package/completion-certificate")
+                        .header("X-PatchPilot-Admin-Token", "test-admin-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.certified").value(true))
+                .andExpect(jsonPath("$.data.latestFinalizationArchiveId")
+                        .value("live-demo-handoff-delivery-finalization-archive-1"))
+                .andExpect(jsonPath("$.data.latestDeliveryReceiptId")
+                        .value("live-demo-handoff-delivery-receipt-1"))
+                .andExpect(jsonPath("$.data.evidenceBundleArchiveId")
+                        .value("live-demo-evidence-bundle-archive-1"));
+
+        mockMvc.perform(get("/api/demo/live-demo-handoff-package/completion-certificate/report/download")
+                        .header("X-PatchPilot-Admin-Token", "test-admin-token"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(
+                        CONTENT_DISPOSITION,
+                        containsString("patchpilot-live-demo-completion-certificate.md")
+                ))
+                .andExpect(content().string(containsString(
+                        "# PatchPilot Live Demo Completion Certificate"
+                )))
+                .andExpect(content().string(containsString(
+                        "live-demo-handoff-delivery-finalization-archive-1"
+                )));
+
+        mockMvc.perform(post("/api/demo/live-demo-handoff-package/completion-certificate/archives")
+                        .header("X-PatchPilot-Admin-Token", "test-admin-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value("live-demo-completion-certificate-archive-1"))
+                .andExpect(jsonPath("$.data.certified").value(true))
+                .andExpect(jsonPath("$.data.latestFinalizationArchiveId")
+                        .value("live-demo-handoff-delivery-finalization-archive-1"));
+
+        mockMvc.perform(get("/api/demo/live-demo-handoff-package/completion-certificate/archives")
+                        .header("X-PatchPilot-Admin-Token", "test-admin-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].id").value("live-demo-completion-certificate-archive-1"));
+
+        mockMvc.perform(get(
+                        "/api/demo/live-demo-handoff-package/completion-certificate/archives/{archiveId}/report/download",
+                        "live-demo-completion-certificate-archive-1"
+                ).header("X-PatchPilot-Admin-Token", "test-admin-token"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(
+                        CONTENT_DISPOSITION,
+                        containsString(
+                                "patchpilot-live-demo-completion-certificate-archive-"
+                                        + "live-demo-completion-certificate-archive-1.md"
+                        )
+                ))
+                .andExpect(content().string(containsString(
+                        "# PatchPilot Live Demo Completion Certificate"
+                )));
+
+        mockMvc.perform(get(
+                        "/api/demo/live-demo-handoff-package/completion-certificate/archives/{archiveId}/report/download",
+                        "missing-archive"
+                ).header("X-PatchPilot-Admin-Token", "test-admin-token"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
     void should_require_admin_token_for_live_demo_handoff_delivery_finalization() throws Exception {
         MockMvc mockMvc = mockMvc();
 
@@ -160,12 +228,26 @@ class DemoLiveDemoHandoffDeliveryFinalizationControllerTests {
                         () -> "live-demo-handoff-delivery-finalization-archive-1",
                         () -> Instant.parse("2026-07-02T07:00:00Z")
                 );
+        DemoLiveDemoCompletionCertificateService completionCertificateService =
+                new DemoLiveDemoCompletionCertificateService(
+                        archiveService::listRecentArchives,
+                        Clock.fixed(Instant.parse("2026-07-02T08:00:00Z"), ZoneOffset.UTC)
+                );
+        DemoLiveDemoCompletionCertificateArchiveService completionCertificateArchiveService =
+                new DemoLiveDemoCompletionCertificateArchiveService(
+                        completionCertificateService::getCertificate,
+                        new InMemoryDemoLiveDemoCompletionCertificateArchiveRepository(),
+                        () -> "live-demo-completion-certificate-archive-1",
+                        () -> Instant.parse("2026-07-02T09:00:00Z")
+                );
         MockMvc mockMvc = MockMvcBuilders
                 .standaloneSetup(new DemoLiveDemoHandoffPackageController(
                         packageService,
                         receiptService,
                         finalizationService,
-                        archiveService
+                        archiveService,
+                        completionCertificateService,
+                        completionCertificateArchiveService
                 ))
                 .addFilters(new AdminApiSecurityFilter(properties, new ObjectMapper()))
                 .build();

@@ -2,6 +2,8 @@ import { Archive, ClipboardCheck, Copy, Download, FileCheck2, PackageCheck, Refr
 import { useState, type FormEvent } from 'react';
 import type {
   DemoLiveLaunchGate,
+  DemoLiveDemoCompletionCertificate,
+  DemoLiveDemoCompletionCertificateArchive,
   DemoLiveDemoEvidenceBundle,
   DemoLiveDemoEvidenceBundleArchive,
   DemoLiveDemoHandoffDeliveryFinalization,
@@ -75,6 +77,16 @@ interface LiveLaunchGatePanelProps {
   onArchiveLiveDemoHandoffDeliveryFinalization:
     () => Promise<DemoLiveDemoHandoffDeliveryFinalizationArchive> | Promise<void> | void;
   onDownloadLiveDemoHandoffDeliveryFinalizationArchiveReport: (archiveId: string) => Promise<Blob>;
+  liveDemoCompletionCertificate: DemoLiveDemoCompletionCertificate | null;
+  liveDemoCompletionCertificateError: string | null;
+  onRefreshLiveDemoCompletionCertificate:
+    () => Promise<DemoLiveDemoCompletionCertificate> | Promise<void> | void;
+  onDownloadLiveDemoCompletionCertificateReport: () => Promise<Blob>;
+  liveDemoCompletionCertificateArchives: DemoLiveDemoCompletionCertificateArchive[];
+  liveDemoCompletionCertificateArchiveError: string | null;
+  onArchiveLiveDemoCompletionCertificate:
+    () => Promise<DemoLiveDemoCompletionCertificateArchive> | Promise<void> | void;
+  onDownloadLiveDemoCompletionCertificateArchiveReport: (archiveId: string) => Promise<Blob>;
 }
 
 export function LiveLaunchGatePanel({
@@ -122,7 +134,15 @@ export function LiveLaunchGatePanel({
   liveDemoHandoffDeliveryFinalizationArchives,
   liveDemoHandoffDeliveryFinalizationArchiveError,
   onArchiveLiveDemoHandoffDeliveryFinalization,
-  onDownloadLiveDemoHandoffDeliveryFinalizationArchiveReport
+  onDownloadLiveDemoHandoffDeliveryFinalizationArchiveReport,
+  liveDemoCompletionCertificate,
+  liveDemoCompletionCertificateError,
+  onRefreshLiveDemoCompletionCertificate,
+  onDownloadLiveDemoCompletionCertificateReport,
+  liveDemoCompletionCertificateArchives,
+  liveDemoCompletionCertificateArchiveError,
+  onArchiveLiveDemoCompletionCertificate,
+  onDownloadLiveDemoCompletionCertificateArchiveReport
 }: LiveLaunchGatePanelProps) {
   const [repositoryOwner, setRepositoryOwner] = useState('bingqin2');
   const [repositoryName, setRepositoryName] = useState('PatchPilot');
@@ -268,6 +288,24 @@ export function LiveLaunchGatePanel({
   async function downloadLiveDemoHandoffDeliveryFinalizationArchive(archiveId: string) {
     const blob = await onDownloadLiveDemoHandoffDeliveryFinalizationArchiveReport(archiveId);
     downloadMarkdown(blob, `patchpilot-live-demo-handoff-delivery-finalization-archive-${archiveId}.md`);
+  }
+
+  async function refreshLiveDemoCompletionCertificate() {
+    await onRefreshLiveDemoCompletionCertificate();
+  }
+
+  async function downloadLiveDemoCompletionCertificate() {
+    const blob = await onDownloadLiveDemoCompletionCertificateReport();
+    downloadMarkdown(blob, 'patchpilot-live-demo-completion-certificate.md');
+  }
+
+  async function archiveLiveDemoCompletionCertificate() {
+    await onArchiveLiveDemoCompletionCertificate();
+  }
+
+  async function downloadLiveDemoCompletionCertificateArchive(archiveId: string) {
+    const blob = await onDownloadLiveDemoCompletionCertificateArchiveReport(archiveId);
+    downloadMarkdown(blob, `patchpilot-live-demo-completion-certificate-archive-${archiveId}.md`);
   }
 
   return (
@@ -420,6 +458,35 @@ export function LiveLaunchGatePanel({
               <Archive size={16} />
               Archive handoff finalization
             </button>
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={() => void refreshLiveDemoCompletionCertificate()}
+              aria-label="Refresh live demo completion certificate"
+            >
+              <RefreshCw size={16} />
+              Refresh completion certificate
+            </button>
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={() => void downloadLiveDemoCompletionCertificate()}
+              disabled={!liveDemoCompletionCertificate}
+              aria-label="Download live demo completion certificate"
+            >
+              <FileCheck2 size={16} />
+              Download completion certificate
+            </button>
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={() => void archiveLiveDemoCompletionCertificate()}
+              disabled={!liveDemoCompletionCertificate?.certified}
+              aria-label="Archive live demo completion certificate"
+            >
+              <Archive size={16} />
+              Archive completion certificate
+            </button>
           </div>
         ) : null}
       </div>
@@ -560,6 +627,20 @@ export function LiveLaunchGatePanel({
         </div>
       ) : null}
 
+      {liveDemoCompletionCertificateError ? (
+        <div className="adapter-api-error">
+          <strong>Live demo completion certificate failed</strong>
+          <span>{liveDemoCompletionCertificateError}</span>
+        </div>
+      ) : null}
+
+      {liveDemoCompletionCertificateArchiveError ? (
+        <div className="adapter-api-error">
+          <strong>Live demo completion certificate archive failed</strong>
+          <span>{liveDemoCompletionCertificateArchiveError}</span>
+        </div>
+      ) : null}
+
       {result ? (
         <>
           <LiveLaunchGateResult result={result} />
@@ -603,6 +684,13 @@ export function LiveLaunchGatePanel({
           <LiveDemoHandoffDeliveryFinalizationArchiveList
             archives={liveDemoHandoffDeliveryFinalizationArchives}
             onDownloadArchive={(archiveId) => void downloadLiveDemoHandoffDeliveryFinalizationArchive(archiveId)}
+          />
+          {liveDemoCompletionCertificate ? (
+            <LiveDemoCompletionCertificateResult certificate={liveDemoCompletionCertificate} />
+          ) : null}
+          <LiveDemoCompletionCertificateArchiveList
+            archives={liveDemoCompletionCertificateArchives}
+            onDownloadArchive={(archiveId) => void downloadLiveDemoCompletionCertificateArchive(archiveId)}
           />
         </>
       ) : (
@@ -683,6 +771,59 @@ function LiveDemoHandoffDeliveryFinalizationResult({
         </ul>
       </div>
       <p className="demo-launch-preflight-blocked">Next action: {finalization.nextAction}</p>
+    </div>
+  );
+}
+
+function LiveDemoCompletionCertificateResult({
+  certificate
+}: {
+  certificate: DemoLiveDemoCompletionCertificate;
+}) {
+  const tone =
+    certificate.status === 'READY' ? 'ready' : certificate.status === 'BLOCKED' ? 'blocked' : 'attention';
+
+  return (
+    <div className={`demo-launch-preflight-result demo-launch-preflight-result-${tone}`}>
+      <div className="demo-launch-preflight-summary">
+        <span className={`demo-readiness-status demo-readiness-status-${tone}`}>
+          {certificate.status}
+        </span>
+        <strong>Live demo completion certificate</strong>
+        <p>{certificate.summary}</p>
+      </div>
+      <div className="demo-launch-preflight-grid">
+        <div>
+          <span>Handoff archive</span>
+          <strong>{certificate.latestFinalizationArchiveId ?? 'missing'}</strong>
+          <small>{certificate.latestFinalizationArchivedAt ?? 'not archived'}</small>
+        </div>
+        <div>
+          <span>Delivery receipt</span>
+          <strong>{certificate.latestDeliveryReceiptId ?? 'missing'}</strong>
+          <small>{certificate.deliveryReceiptFreshness}</small>
+        </div>
+        <div>
+          <span>Evidence archive</span>
+          <strong>{certificate.evidenceBundleArchiveId ?? 'missing'}</strong>
+          <small>{certificate.repository ?? 'repository missing'}</small>
+        </div>
+        <div>
+          <span>Pull Request</span>
+          <strong>{certificate.pullRequestUrl ?? 'not created'}</strong>
+          <small>{certificate.taskId ? `Task ${certificate.taskId}` : 'No matching task'}</small>
+        </div>
+      </div>
+      <p className="demo-launch-preflight-blocked">{certificate.sideEffectContract}</p>
+      <div className="demo-launch-preflight-actions">
+        <h3>Completion certificate downloads</h3>
+        <ul>
+          {certificate.downloadActions.map((action) => (
+            <li key={action}>{action}</li>
+          ))}
+        </ul>
+      </div>
+      <p className="demo-launch-preflight-blocked">Next action: {certificate.nextAction}</p>
     </div>
   );
 }
@@ -947,6 +1088,44 @@ function LiveDemoHandoffDeliveryFinalizationArchiveList({
                 className="secondary-button compact-button"
                 type="button"
                 aria-label={`Download live demo handoff delivery finalization archive ${archive.id}`}
+                onClick={() => onDownloadArchive(archive.id)}
+              >
+                <Download size={14} />
+                Download
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function LiveDemoCompletionCertificateArchiveList({
+  archives,
+  onDownloadArchive
+}: {
+  archives: DemoLiveDemoCompletionCertificateArchive[];
+  onDownloadArchive: (archiveId: string) => void;
+}) {
+  return (
+    <div className="demo-launch-preflight-actions">
+      <h3>Recent live demo completion certificate archives</h3>
+      {archives.length === 0 ? (
+        <p>No live demo completion certificate archives recorded.</p>
+      ) : (
+        <ul>
+          {archives.map((archive) => (
+            <li key={archive.id}>
+              <strong>{archive.id}</strong>
+              <span> {archive.status} </span>
+              <span>{archive.latestFinalizationArchiveId ?? 'No handoff finalization archive'}</span>
+              <span>{archive.latestDeliveryReceiptId ?? 'No delivery receipt'}</span>
+              <span>Archived at {archive.archivedAt}</span>
+              <button
+                className="secondary-button compact-button"
+                type="button"
+                aria-label={`Download live demo completion certificate archive ${archive.id}`}
                 onClick={() => onDownloadArchive(archive.id)}
               >
                 <Download size={14} />
