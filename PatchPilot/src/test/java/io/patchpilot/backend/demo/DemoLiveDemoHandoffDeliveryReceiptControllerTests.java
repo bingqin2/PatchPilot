@@ -119,6 +119,14 @@ class DemoLiveDemoHandoffDeliveryReceiptControllerTests {
                 );
         DemoLiveDemoReplayPackageService replayPackageService =
                 new DemoLiveDemoReplayPackageService(artifactChainReportService);
+        DemoLiveDemoReviewerDeliveryCenterService reviewerDeliveryCenterService =
+                new DemoLiveDemoReviewerDeliveryCenterService(
+                        packageService::createPackage,
+                        artifactChainReportService::getReport,
+                        completionCertificateService::getCertificate,
+                        replayPackageService::getPackage,
+                        java.time.Clock.fixed(Instant.parse("2026-07-02T12:00:00Z"), java.time.ZoneOffset.UTC)
+                );
         return MockMvcBuilders
                 .standaloneSetup(new DemoLiveDemoHandoffPackageController(
                         packageService,
@@ -128,7 +136,8 @@ class DemoLiveDemoHandoffDeliveryReceiptControllerTests {
                         completionCertificateService,
                         completionCertificateArchiveService,
                         artifactChainReportService,
-                        replayPackageService
+                        replayPackageService,
+                        reviewerDeliveryCenterService
                 ))
                 .addFilters(new AdminApiSecurityFilter(properties, new ObjectMapper()))
                 .build();

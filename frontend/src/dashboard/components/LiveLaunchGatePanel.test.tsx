@@ -14,6 +14,7 @@ import type {
   DemoLiveDemoCompletionCertificateArchive,
   DemoLiveDemoArtifactChainReport,
   DemoLiveDemoReplayPackage,
+  DemoLiveDemoReviewerDeliveryCenter,
   DemoLiveTriggerOutcomeCloseout,
   DemoLiveTriggerOutcomeCloseoutArchive
 } from '../../types';
@@ -541,6 +542,50 @@ const readyLiveDemoReplayPackage: DemoLiveDemoReplayPackage = {
   markdownReport: '# PatchPilot Live Demo Replay Package'
 };
 
+const readyLiveDemoReviewerDeliveryCenter: DemoLiveDemoReviewerDeliveryCenter = {
+  status: 'READY',
+  deliverable: true,
+  summary: 'PatchPilot live demo reviewer delivery center is ready.',
+  nextAction: 'Send the replay package and final evidence links to reviewers.',
+  repository: 'bingqin2/PatchPilot',
+  issueNumber: 1,
+  issueUrl: 'https://github.com/bingqin2/PatchPilot/issues/1',
+  taskId: 'task-1',
+  taskStatus: 'COMPLETED',
+  pullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+  readinessCards: [
+    {
+      name: 'Reviewer handoff package',
+      status: 'READY',
+      ready: true,
+      summary: 'Live demo handoff package is ready for reviewer handoff.',
+      nextAction: 'Share this handoff package and archived evidence report with the reviewer.'
+    },
+    {
+      name: 'Replay package',
+      status: 'READY',
+      ready: true,
+      summary: 'PatchPilot live demo replay package is ready for reviewer walkthrough.',
+      nextAction: 'Share the replay package with reviewers.'
+    }
+  ],
+  blockers: [],
+  evidenceLinks: [
+    {
+      label: 'Generated Pull Request',
+      url: 'https://github.com/bingqin2/PatchPilot/pull/42',
+      description: 'Generated code review target.'
+    }
+  ],
+  downloadActions: [
+    'Download live demo reviewer delivery center.',
+    'Download live demo replay package.'
+  ],
+  sideEffectContract: 'GET /api/demo/live-demo-handoff-package/reviewer-delivery-center is read-only.',
+  generatedAt: '2026-07-02T12:00:00Z',
+  markdownReport: '# PatchPilot Live Demo Reviewer Delivery Center'
+};
+
 const baseProps = {
   error: null,
   pending: false,
@@ -601,7 +646,11 @@ const baseProps = {
   liveDemoReplayPackage: null as DemoLiveDemoReplayPackage | null,
   liveDemoReplayPackageError: null,
   onRefreshLiveDemoReplayPackage: vi.fn(),
-  onDownloadLiveDemoReplayPackage: vi.fn()
+  onDownloadLiveDemoReplayPackage: vi.fn(),
+  liveDemoReviewerDeliveryCenter: null as DemoLiveDemoReviewerDeliveryCenter | null,
+  liveDemoReviewerDeliveryCenterError: null,
+  onRefreshLiveDemoReviewerDeliveryCenter: vi.fn(),
+  onDownloadLiveDemoReviewerDeliveryCenter: vi.fn()
 };
 
 test('submits exact live launch gate input', async () => {
@@ -1498,6 +1547,78 @@ test('shows live demo replay package errors', () => {
 
   expect(screen.getByText('Live demo replay package failed')).toBeInTheDocument();
   expect(screen.getByText('Replay package failed')).toBeInTheDocument();
+});
+
+test('refreshes and downloads live demo reviewer delivery centers', async () => {
+  const user = userEvent.setup();
+  const onRefreshLiveDemoReviewerDeliveryCenter = vi.fn(async () => readyLiveDemoReviewerDeliveryCenter);
+  const onDownloadLiveDemoReviewerDeliveryCenter = vi.fn(
+    async () => new Blob(['delivery center'], { type: 'text/markdown' })
+  );
+  const anchorClick = vi.fn();
+  const createObjectURL = vi.fn(() => 'blob:live-demo-reviewer-delivery-center');
+  const revokeObjectURL = vi.fn();
+  vi.stubGlobal('URL', { createObjectURL, revokeObjectURL });
+  vi.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
+    const element = document.createElementNS('http://www.w3.org/1999/xhtml', tagName) as HTMLAnchorElement;
+    if (tagName === 'a') {
+      element.click = anchorClick;
+    }
+    return element;
+  });
+
+  render(
+    <LiveLaunchGatePanel
+      {...baseProps}
+      result={readyGate}
+      liveDemoReviewerDeliveryCenter={readyLiveDemoReviewerDeliveryCenter}
+      onRefreshLiveDemoReviewerDeliveryCenter={onRefreshLiveDemoReviewerDeliveryCenter}
+      onDownloadLiveDemoReviewerDeliveryCenter={onDownloadLiveDemoReviewerDeliveryCenter}
+    />
+  );
+
+  await user.click(screen.getByRole('button', { name: 'Refresh live demo reviewer delivery center' }));
+  await user.click(screen.getByRole('button', { name: 'Download live demo reviewer delivery center' }));
+
+  const deliveryCenterPanel = screen
+    .getByText('Live demo reviewer delivery center')
+    .closest('.demo-launch-preflight-result');
+  expect(deliveryCenterPanel).not.toBeNull();
+  const deliveryCenterQueries = within(deliveryCenterPanel as HTMLElement);
+  expect(deliveryCenterQueries.getByText('PatchPilot live demo reviewer delivery center is ready.'))
+    .toBeInTheDocument();
+  expect(deliveryCenterQueries.getByText('Reviewer handoff package')).toBeInTheDocument();
+  expect(deliveryCenterQueries.getByText('Replay package')).toBeInTheDocument();
+  expect(deliveryCenterQueries.getByText('Generated Pull Request')).toBeInTheDocument();
+  expect(deliveryCenterQueries.getByText('Download live demo reviewer delivery center.'))
+    .toBeInTheDocument();
+  expect(onRefreshLiveDemoReviewerDeliveryCenter).toHaveBeenCalledTimes(1);
+  expect(onDownloadLiveDemoReviewerDeliveryCenter).toHaveBeenCalledTimes(1);
+  expect(createObjectURL).toHaveBeenCalledWith(expect.any(Blob));
+  expect(anchorClick).toHaveBeenCalled();
+  expect(revokeObjectURL).toHaveBeenCalledWith('blob:live-demo-reviewer-delivery-center');
+});
+
+test('shows live demo reviewer delivery center blockers and errors', () => {
+  render(
+    <LiveLaunchGatePanel
+      {...baseProps}
+      result={readyGate}
+      liveDemoReviewerDeliveryCenter={{
+        ...readyLiveDemoReviewerDeliveryCenter,
+        status: 'BLOCKED',
+        deliverable: false,
+        summary: 'PatchPilot live demo reviewer delivery center is blocked.',
+        blockers: ['Artifact chain is BLOCKED: missing completion certificate archive.']
+      }}
+      liveDemoReviewerDeliveryCenterError="Reviewer delivery center failed"
+    />
+  );
+
+  expect(screen.getByText('Live demo reviewer delivery center failed')).toBeInTheDocument();
+  expect(screen.getByText('Reviewer delivery center failed')).toBeInTheDocument();
+  expect(screen.getByText('Artifact chain is BLOCKED: missing completion certificate archive.'))
+    .toBeInTheDocument();
 });
 
 test('shows launch package errors', () => {

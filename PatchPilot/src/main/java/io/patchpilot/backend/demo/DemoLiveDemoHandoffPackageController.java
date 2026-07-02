@@ -9,6 +9,7 @@ import io.patchpilot.backend.demo.domain.DemoLiveDemoHandoffDeliveryFinalization
 import io.patchpilot.backend.demo.domain.DemoLiveDemoHandoffDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoLiveDemoHandoffPackageVo;
 import io.patchpilot.backend.demo.domain.DemoLiveDemoReplayPackageVo;
+import io.patchpilot.backend.demo.domain.DemoLiveDemoReviewerDeliveryCenterVo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
@@ -37,6 +38,7 @@ public class DemoLiveDemoHandoffPackageController {
     private final DemoLiveDemoCompletionCertificateArchiveService completionCertificateArchiveService;
     private final DemoLiveDemoArtifactChainReportService artifactChainReportService;
     private final DemoLiveDemoReplayPackageService replayPackageService;
+    private final DemoLiveDemoReviewerDeliveryCenterService reviewerDeliveryCenterService;
 
     @GetMapping
     public ApiResponse<DemoLiveDemoHandoffPackageVo> getPackage() {
@@ -249,6 +251,32 @@ public class DemoLiveDemoHandoffPackageController {
                         ContentDisposition.attachment()
                                 .filename(
                                         "patchpilot-live-demo-replay-package.md",
+                                        StandardCharsets.UTF_8
+                                )
+                                .build()
+                                .toString()
+                )
+                .body(body);
+    }
+
+    @GetMapping("/reviewer-delivery-center")
+    public ApiResponse<DemoLiveDemoReviewerDeliveryCenterVo> getReviewerDeliveryCenter() {
+        return ApiResponse.ok(reviewerDeliveryCenterService.getCenter());
+    }
+
+    @GetMapping("/reviewer-delivery-center/download")
+    public ResponseEntity<byte[]> downloadReviewerDeliveryCenter() {
+        byte[] body = reviewerDeliveryCenterService
+                .getCenter()
+                .markdownReport()
+                .getBytes(StandardCharsets.UTF_8);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("text/markdown;charset=UTF-8"))
+                .header(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        ContentDisposition.attachment()
+                                .filename(
+                                        "patchpilot-live-demo-reviewer-delivery-center.md",
                                         StandardCharsets.UTF_8
                                 )
                                 .build()

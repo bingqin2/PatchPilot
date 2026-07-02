@@ -1202,6 +1202,40 @@ export interface DemoLiveDemoReplayPackage {
   markdownReport: string;
 }
 
+export interface DemoLiveDemoReviewerDeliveryCenterReadinessCard {
+  name: string;
+  status: DemoReadinessStatus;
+  ready: boolean;
+  summary: string;
+  nextAction: string;
+}
+
+export interface DemoLiveDemoReviewerDeliveryCenterEvidenceLink {
+  label: string;
+  url: string;
+  description: string;
+}
+
+export interface DemoLiveDemoReviewerDeliveryCenter {
+  status: DemoReadinessStatus;
+  deliverable: boolean;
+  summary: string;
+  nextAction: string;
+  repository: string | null;
+  issueNumber: number;
+  issueUrl: string | null;
+  taskId: string | null;
+  taskStatus: string | null;
+  pullRequestUrl: string | null;
+  readinessCards: DemoLiveDemoReviewerDeliveryCenterReadinessCard[];
+  blockers: string[];
+  evidenceLinks: DemoLiveDemoReviewerDeliveryCenterEvidenceLink[];
+  downloadActions: string[];
+  sideEffectContract: string;
+  generatedAt: string;
+  markdownReport: string;
+}
+
 export interface DemoEndToEndAcceptanceMatrixItem {
   category: string;
   name: string;
