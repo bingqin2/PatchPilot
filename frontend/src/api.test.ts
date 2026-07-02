@@ -24,6 +24,11 @@ import {
   archiveDemoLiveDemoHandoffDeliveryFinalization,
   listDemoLiveDemoHandoffDeliveryFinalizationArchives,
   downloadDemoLiveDemoHandoffDeliveryFinalizationArchiveReport,
+  getDemoLiveDemoCompletionCertificate,
+  downloadDemoLiveDemoCompletionCertificateReport,
+  archiveDemoLiveDemoCompletionCertificate,
+  listDemoLiveDemoCompletionCertificateArchives,
+  downloadDemoLiveDemoCompletionCertificateArchiveReport,
   downloadDemoLiveTriggerOutcomeCloseoutReport,
   archiveDemoLiveTriggerOutcomeCloseout,
   listDemoLiveTriggerOutcomeCloseoutArchives,
@@ -5461,6 +5466,104 @@ test('archives, lists, and downloads live demo handoff delivery finalization arc
   expect(archive.id).toBe('live-demo-handoff-delivery-finalization-archive-1');
   expect(archives[0].latestDeliveryReceiptId).toBe('live-demo-handoff-delivery-receipt-1');
   expect(report.type).toBe('text/markdown');
+});
+
+test('loads, downloads, archives, lists, and downloads live demo completion certificates through backend API', async () => {
+  const certificatePayload = {
+    status: 'READY',
+    certified: true,
+    summary: 'PatchPilot live demo is certified from the latest handoff finalization archive.',
+    nextAction: 'Share the live demo completion certificate with reviewers.',
+    latestFinalizationArchiveId: 'live-demo-handoff-delivery-finalization-archive-1',
+    latestDeliveryReceiptId: 'live-demo-handoff-delivery-receipt-1',
+    evidenceBundleArchiveId: 'live-demo-evidence-bundle-archive-1',
+    repository: 'bingqin2/PatchPilot',
+    issueNumber: 1,
+    issueUrl: 'https://github.com/bingqin2/PatchPilot/issues/1',
+    taskId: 'task-1',
+    taskStatus: 'COMPLETED',
+    pullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+    latestDeliveryTarget: 'https://github.com/bingqin2/PatchPilot/pull/42',
+    latestDeliveryChannel: 'github-comment',
+    latestDeliveredAt: '2026-07-02T04:55:00Z',
+    deliveryReceiptFreshness: 'FRESH',
+    latestFinalizationGeneratedAt: '2026-07-02T06:00:00Z',
+    latestFinalizationArchivedAt: '2026-07-02T07:00:00Z',
+    generatedAt: '2026-07-02T08:00:00Z',
+    downloadActions: ['Download live demo completion certificate.'],
+    sideEffectContract: 'GET /api/demo/live-demo-handoff-package/completion-certificate is read-only.',
+    markdownReport: '# PatchPilot Live Demo Completion Certificate'
+  };
+  const archivePayload = {
+    id: 'live-demo-completion-certificate-archive-1',
+    ...certificatePayload,
+    archivedAt: '2026-07-02T09:00:00Z',
+    report: '# PatchPilot Live Demo Completion Certificate'
+  };
+  const fetchMock = vi.fn()
+    .mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ success: true, data: certificatePayload, message: null })
+    } as Response)
+    .mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      blob: async () => new Blob(['certificate'], { type: 'text/markdown' })
+    } as Response)
+    .mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ success: true, data: archivePayload, message: null })
+    } as Response)
+    .mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ success: true, data: [archivePayload], message: null })
+    } as Response)
+    .mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      blob: async () => new Blob(['archive'], { type: 'text/markdown' })
+    } as Response);
+  vi.stubGlobal('fetch', fetchMock);
+
+  const certificate = await getDemoLiveDemoCompletionCertificate();
+  const certificateReport = await downloadDemoLiveDemoCompletionCertificateReport();
+  const archive = await archiveDemoLiveDemoCompletionCertificate();
+  const archives = await listDemoLiveDemoCompletionCertificateArchives();
+  const archiveReport = await downloadDemoLiveDemoCompletionCertificateArchiveReport(
+    'live-demo-completion-certificate-archive-1'
+  );
+
+  expect(fetchMock).toHaveBeenNthCalledWith(
+    1,
+    '/api/demo/live-demo-handoff-package/completion-certificate'
+  );
+  expect(fetchMock).toHaveBeenNthCalledWith(
+    2,
+    '/api/demo/live-demo-handoff-package/completion-certificate/report/download'
+  );
+  expect(fetchMock).toHaveBeenNthCalledWith(
+    3,
+    '/api/demo/live-demo-handoff-package/completion-certificate/archives',
+    { method: 'POST' }
+  );
+  expect(fetchMock).toHaveBeenNthCalledWith(
+    4,
+    '/api/demo/live-demo-handoff-package/completion-certificate/archives'
+  );
+  expect(fetchMock).toHaveBeenNthCalledWith(
+    5,
+    '/api/demo/live-demo-handoff-package/completion-certificate/archives/live-demo-completion-certificate-archive-1/report/download'
+  );
+  expect(certificate.certified).toBe(true);
+  expect(certificate.latestFinalizationArchiveId)
+    .toBe('live-demo-handoff-delivery-finalization-archive-1');
+  expect(certificateReport.type).toBe('text/markdown');
+  expect(archive.id).toBe('live-demo-completion-certificate-archive-1');
+  expect(archives[0].latestDeliveryReceiptId).toBe('live-demo-handoff-delivery-receipt-1');
+  expect(archiveReport.type).toBe('text/markdown');
 });
 
 test('runs demo launch preflight through backend API without creating a task', async () => {

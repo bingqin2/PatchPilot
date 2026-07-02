@@ -1,6 +1,8 @@
 package io.patchpilot.backend.demo;
 
 import io.patchpilot.backend.common.response.ApiResponse;
+import io.patchpilot.backend.demo.domain.DemoLiveDemoCompletionCertificateArchiveVo;
+import io.patchpilot.backend.demo.domain.DemoLiveDemoCompletionCertificateVo;
 import io.patchpilot.backend.demo.domain.DemoLiveDemoHandoffDeliveryFinalizationArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoLiveDemoHandoffDeliveryFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoLiveDemoHandoffDeliveryReceiptVo;
@@ -29,6 +31,8 @@ public class DemoLiveDemoHandoffPackageController {
     private final DemoLiveDemoHandoffDeliveryReceiptService receiptService;
     private final DemoLiveDemoHandoffDeliveryFinalizationService finalizationService;
     private final DemoLiveDemoHandoffDeliveryFinalizationArchiveService finalizationArchiveService;
+    private final DemoLiveDemoCompletionCertificateService completionCertificateService;
+    private final DemoLiveDemoCompletionCertificateArchiveService completionCertificateArchiveService;
 
     @GetMapping
     public ApiResponse<DemoLiveDemoHandoffPackageVo> getPackage() {
@@ -129,6 +133,63 @@ public class DemoLiveDemoHandoffPackageController {
                                 ContentDisposition.attachment()
                                         .filename(
                                                 "patchpilot-live-demo-handoff-delivery-finalization-archive-"
+                                                        + archive.id()
+                                                        + ".md",
+                                                StandardCharsets.UTF_8
+                                        )
+                                        .build()
+                                        .toString()
+                        )
+                        .body(archive.report().getBytes(StandardCharsets.UTF_8)))
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/completion-certificate")
+    public ApiResponse<DemoLiveDemoCompletionCertificateVo> getCompletionCertificate() {
+        return ApiResponse.ok(completionCertificateService.getCertificate());
+    }
+
+    @GetMapping("/completion-certificate/report/download")
+    public ResponseEntity<byte[]> downloadCompletionCertificateReport() {
+        byte[] body = completionCertificateService
+                .getCertificate()
+                .markdownReport()
+                .getBytes(StandardCharsets.UTF_8);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("text/markdown;charset=UTF-8"))
+                .header(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        ContentDisposition.attachment()
+                                .filename(
+                                        "patchpilot-live-demo-completion-certificate.md",
+                                        StandardCharsets.UTF_8
+                                )
+                                .build()
+                                .toString()
+                )
+                .body(body);
+    }
+
+    @PostMapping("/completion-certificate/archives")
+    public ApiResponse<DemoLiveDemoCompletionCertificateArchiveVo> archiveCompletionCertificate() {
+        return ApiResponse.ok(completionCertificateArchiveService.archiveCurrentCertificate());
+    }
+
+    @GetMapping("/completion-certificate/archives")
+    public ApiResponse<List<DemoLiveDemoCompletionCertificateArchiveVo>> listCompletionCertificateArchives() {
+        return ApiResponse.ok(completionCertificateArchiveService.listRecentArchives());
+    }
+
+    @GetMapping("/completion-certificate/archives/{archiveId}/report/download")
+    public ResponseEntity<byte[]> downloadCompletionCertificateArchiveReport(@PathVariable String archiveId) {
+        return completionCertificateArchiveService.findArchive(archiveId)
+                .map(archive -> ResponseEntity.ok()
+                        .contentType(MediaType.parseMediaType("text/markdown;charset=UTF-8"))
+                        .header(
+                                HttpHeaders.CONTENT_DISPOSITION,
+                                ContentDisposition.attachment()
+                                        .filename(
+                                                "patchpilot-live-demo-completion-certificate-archive-"
                                                         + archive.id()
                                                         + ".md",
                                                 StandardCharsets.UTF_8

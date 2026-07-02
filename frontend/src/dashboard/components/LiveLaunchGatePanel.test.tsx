@@ -10,6 +10,8 @@ import type {
   DemoLiveDemoHandoffDeliveryReceipt,
   DemoLiveDemoHandoffDeliveryFinalization,
   DemoLiveDemoHandoffDeliveryFinalizationArchive,
+  DemoLiveDemoCompletionCertificate,
+  DemoLiveDemoCompletionCertificateArchive,
   DemoLiveTriggerOutcomeCloseout,
   DemoLiveTriggerOutcomeCloseoutArchive
 } from '../../types';
@@ -404,6 +406,39 @@ const readyLiveDemoHandoffDeliveryFinalizationArchive: DemoLiveDemoHandoffDelive
   report: '# PatchPilot Live Demo Handoff Delivery Finalization Archive'
 };
 
+const readyLiveDemoCompletionCertificate: DemoLiveDemoCompletionCertificate = {
+  status: 'READY',
+  certified: true,
+  summary: 'PatchPilot live demo is certified from the latest handoff finalization archive.',
+  nextAction: 'Share the live demo completion certificate with reviewers.',
+  latestFinalizationArchiveId: 'live-demo-handoff-delivery-finalization-archive-1',
+  latestDeliveryReceiptId: 'live-demo-handoff-delivery-receipt-1',
+  evidenceBundleArchiveId: 'live-demo-evidence-bundle-archive-1',
+  repository: 'bingqin2/PatchPilot',
+  issueNumber: 1,
+  issueUrl: 'https://github.com/bingqin2/PatchPilot/issues/1',
+  taskId: 'task-1',
+  taskStatus: 'COMPLETED',
+  pullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+  latestDeliveryTarget: 'https://github.com/bingqin2/PatchPilot/pull/42',
+  latestDeliveryChannel: 'github-comment',
+  latestDeliveredAt: '2026-07-02T04:55:00Z',
+  deliveryReceiptFreshness: 'FRESH',
+  latestFinalizationGeneratedAt: '2026-07-02T06:00:00Z',
+  latestFinalizationArchivedAt: '2026-07-02T07:00:00Z',
+  generatedAt: '2026-07-02T08:00:00Z',
+  downloadActions: ['Download live demo completion certificate.'],
+  sideEffectContract: 'GET /api/demo/live-demo-handoff-package/completion-certificate is read-only.',
+  markdownReport: '# PatchPilot Live Demo Completion Certificate'
+};
+
+const readyLiveDemoCompletionCertificateArchive: DemoLiveDemoCompletionCertificateArchive = {
+  id: 'live-demo-completion-certificate-archive-1',
+  ...readyLiveDemoCompletionCertificate,
+  archivedAt: '2026-07-02T09:00:00Z',
+  report: '# PatchPilot Live Demo Completion Certificate'
+};
+
 const baseProps = {
   error: null,
   pending: false,
@@ -448,7 +483,15 @@ const baseProps = {
   liveDemoHandoffDeliveryFinalizationArchives: [] as DemoLiveDemoHandoffDeliveryFinalizationArchive[],
   liveDemoHandoffDeliveryFinalizationArchiveError: null,
   onArchiveLiveDemoHandoffDeliveryFinalization: vi.fn(),
-  onDownloadLiveDemoHandoffDeliveryFinalizationArchiveReport: vi.fn()
+  onDownloadLiveDemoHandoffDeliveryFinalizationArchiveReport: vi.fn(),
+  liveDemoCompletionCertificate: null as DemoLiveDemoCompletionCertificate | null,
+  liveDemoCompletionCertificateError: null,
+  onRefreshLiveDemoCompletionCertificate: vi.fn(),
+  onDownloadLiveDemoCompletionCertificateReport: vi.fn(),
+  liveDemoCompletionCertificateArchives: [] as DemoLiveDemoCompletionCertificateArchive[],
+  liveDemoCompletionCertificateArchiveError: null,
+  onArchiveLiveDemoCompletionCertificate: vi.fn(),
+  onDownloadLiveDemoCompletionCertificateArchiveReport: vi.fn()
 };
 
 test('submits exact live launch gate input', async () => {
@@ -1143,6 +1186,82 @@ test('shows live demo handoff delivery finalization archive errors', () => {
 
   expect(screen.getByText('Live demo handoff delivery finalization archive failed')).toBeInTheDocument();
   expect(screen.getByText('Delivery finalization archive failed')).toBeInTheDocument();
+});
+
+test('refreshes, downloads, archives, and downloads live demo completion certificates', async () => {
+  const user = userEvent.setup();
+  const onRefreshLiveDemoCompletionCertificate = vi.fn(async () => readyLiveDemoCompletionCertificate);
+  const onDownloadLiveDemoCompletionCertificateReport = vi.fn(
+    async () => new Blob(['completion certificate'], { type: 'text/markdown' })
+  );
+  const onArchiveLiveDemoCompletionCertificate = vi.fn(async () => readyLiveDemoCompletionCertificateArchive);
+  const onDownloadLiveDemoCompletionCertificateArchiveReport = vi.fn(
+    async () => new Blob(['completion certificate archive'], { type: 'text/markdown' })
+  );
+  const anchorClick = vi.fn();
+  const createObjectURL = vi.fn()
+    .mockReturnValueOnce('blob:live-demo-completion-certificate')
+    .mockReturnValueOnce('blob:live-demo-completion-certificate-archive');
+  const revokeObjectURL = vi.fn();
+  vi.stubGlobal('URL', { createObjectURL, revokeObjectURL });
+  vi.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
+    const element = document.createElementNS('http://www.w3.org/1999/xhtml', tagName) as HTMLAnchorElement;
+    if (tagName === 'a') {
+      element.click = anchorClick;
+    }
+    return element;
+  });
+
+  render(
+    <LiveLaunchGatePanel
+      {...baseProps}
+      result={readyGate}
+      liveDemoCompletionCertificate={readyLiveDemoCompletionCertificate}
+      liveDemoCompletionCertificateArchives={[readyLiveDemoCompletionCertificateArchive]}
+      onRefreshLiveDemoCompletionCertificate={onRefreshLiveDemoCompletionCertificate}
+      onDownloadLiveDemoCompletionCertificateReport={onDownloadLiveDemoCompletionCertificateReport}
+      onArchiveLiveDemoCompletionCertificate={onArchiveLiveDemoCompletionCertificate}
+      onDownloadLiveDemoCompletionCertificateArchiveReport={onDownloadLiveDemoCompletionCertificateArchiveReport}
+    />
+  );
+
+  await user.click(screen.getByRole('button', { name: 'Refresh live demo completion certificate' }));
+  await user.click(screen.getByRole('button', { name: 'Download live demo completion certificate' }));
+  await user.click(screen.getByRole('button', { name: 'Archive live demo completion certificate' }));
+  await user.click(screen.getByRole('button', {
+    name: 'Download live demo completion certificate archive live-demo-completion-certificate-archive-1'
+  }));
+
+  expect(screen.getByText('Live demo completion certificate')).toBeInTheDocument();
+  expect(screen.getByText('Recent live demo completion certificate archives')).toBeInTheDocument();
+  expect(screen.getByText('live-demo-completion-certificate-archive-1')).toBeInTheDocument();
+  expect(screen.getAllByText('live-demo-handoff-delivery-finalization-archive-1').length)
+    .toBeGreaterThan(0);
+  expect(onRefreshLiveDemoCompletionCertificate).toHaveBeenCalledTimes(1);
+  expect(onDownloadLiveDemoCompletionCertificateReport).toHaveBeenCalledTimes(1);
+  expect(onArchiveLiveDemoCompletionCertificate).toHaveBeenCalledTimes(1);
+  expect(onDownloadLiveDemoCompletionCertificateArchiveReport)
+    .toHaveBeenCalledWith('live-demo-completion-certificate-archive-1');
+  expect(createObjectURL).toHaveBeenCalledWith(expect.any(Blob));
+  expect(anchorClick).toHaveBeenCalledTimes(2);
+  expect(revokeObjectURL).toHaveBeenCalledWith('blob:live-demo-completion-certificate');
+  expect(revokeObjectURL).toHaveBeenCalledWith('blob:live-demo-completion-certificate-archive');
+});
+
+test('shows live demo completion certificate errors', () => {
+  render(
+    <LiveLaunchGatePanel
+      {...baseProps}
+      result={readyGate}
+      liveDemoCompletionCertificateError="Completion certificate refresh failed"
+      liveDemoCompletionCertificateArchiveError="Completion certificate archive failed"
+    />
+  );
+
+  expect(screen.getByText('Live demo completion certificate failed')).toBeInTheDocument();
+  expect(screen.getByText('Completion certificate refresh failed')).toBeInTheDocument();
+  expect(screen.getByText('Live demo completion certificate archive failed')).toBeInTheDocument();
+  expect(screen.getByText('Completion certificate archive failed')).toBeInTheDocument();
 });
 
 test('shows launch package errors', () => {

@@ -40,6 +40,7 @@ import {
   createTaskEvidencePackageShareDeliveryReceipt,
   createTask,
   createTriggerQuarantine,
+  archiveDemoLiveDemoCompletionCertificate,
   downloadDemoSessionArchiveReport,
   downloadDemoHandoffPackageArchiveReport,
   downloadDemoHandoffPackageArchiveSummaryReport,
@@ -149,11 +150,13 @@ import {
   getDemoFinalExternalReviewEvidencePackage,
   getDemoFinalAcceptanceShareFinalization,
   getDemoFinalAcceptanceSharePackage,
+  getDemoLiveDemoCompletionCertificate,
   getDemoLiveDemoEvidenceBundle,
   getDemoLiveDemoHandoffDeliveryFinalization,
   getDemoLiveDemoHandoffPackage,
   archiveDemoLiveDemoEvidenceBundle,
   archiveDemoLiveDemoHandoffDeliveryFinalization,
+  listDemoLiveDemoCompletionCertificateArchives,
   listDemoLiveDemoEvidenceBundleArchives,
   listDemoLiveDemoHandoffDeliveryFinalizationArchives,
   getDemoReadinessSnapshotTrend,
@@ -192,6 +195,8 @@ import {
   preflightDemoLaunch,
   downloadDemoLiveDemoEvidenceBundleArchiveReport,
   downloadDemoLiveDemoEvidenceBundleReport,
+  downloadDemoLiveDemoCompletionCertificateArchiveReport,
+  downloadDemoLiveDemoCompletionCertificateReport,
   downloadDemoLiveDemoHandoffDeliveryFinalizationArchiveReport,
   downloadDemoLiveDemoHandoffDeliveryFinalizationReport,
   downloadDemoLiveDemoHandoffPackageReport,
@@ -381,6 +386,8 @@ import type {
   DemoLaunchCommand,
   DemoLaunchCommandInput,
   DemoLiveLaunchGate,
+  DemoLiveDemoCompletionCertificate,
+  DemoLiveDemoCompletionCertificateArchive,
   DemoLiveDemoEvidenceBundle,
   DemoLiveDemoEvidenceBundleArchive,
   DemoLiveDemoHandoffDeliveryFinalization,
@@ -856,6 +863,14 @@ export default function App() {
     useState<DemoLiveDemoHandoffDeliveryFinalizationArchive[]>([]);
   const [demoLiveDemoHandoffDeliveryFinalizationArchiveError, setDemoLiveDemoHandoffDeliveryFinalizationArchiveError] =
     useState<string | null>(null);
+  const [demoLiveDemoCompletionCertificate, setDemoLiveDemoCompletionCertificate] =
+    useState<DemoLiveDemoCompletionCertificate | null>(null);
+  const [demoLiveDemoCompletionCertificateError, setDemoLiveDemoCompletionCertificateError] =
+    useState<string | null>(null);
+  const [demoLiveDemoCompletionCertificateArchives, setDemoLiveDemoCompletionCertificateArchives] =
+    useState<DemoLiveDemoCompletionCertificateArchive[]>([]);
+  const [demoLiveDemoCompletionCertificateArchiveError, setDemoLiveDemoCompletionCertificateArchiveError] =
+    useState<string | null>(null);
   const [supportedAdapters, setSupportedAdapters] = useState<SupportedLanguageAdapter[]>([]);
   const [adapterError, setAdapterError] = useState<string | null>(null);
   const [adapterFixtureVerifications, setAdapterFixtureVerifications] = useState<LanguageAdapterFixtureVerification[]>([]);
@@ -1234,6 +1249,8 @@ export default function App() {
         demoLiveDemoHandoffDeliveryReceiptResult,
         demoLiveDemoHandoffDeliveryFinalizationResult,
         demoLiveDemoHandoffDeliveryFinalizationArchiveResult,
+        demoLiveDemoCompletionCertificateResult,
+        demoLiveDemoCompletionCertificateArchiveResult,
         demoAcceptanceSummaryResult,
         demoFinalAcceptanceSharePackageResult,
         demoFinalAcceptanceSharePackageArchiveResult,
@@ -1491,6 +1508,14 @@ export default function App() {
           (caught) => ({ finalization: null, error: errorMessage(caught) })
         ),
         listDemoLiveDemoHandoffDeliveryFinalizationArchives().then(
+          (archives) => ({ archives, error: null as string | null }),
+          (caught) => ({ archives: null, error: errorMessage(caught) })
+        ),
+        getDemoLiveDemoCompletionCertificate().then(
+          (certificate) => ({ certificate, error: null as string | null }),
+          (caught) => ({ certificate: null, error: errorMessage(caught) })
+        ),
+        listDemoLiveDemoCompletionCertificateArchives().then(
           (archives) => ({ archives, error: null as string | null }),
           (caught) => ({ archives: null, error: errorMessage(caught) })
         ),
@@ -1971,6 +1996,14 @@ export default function App() {
       setDemoLiveDemoHandoffDeliveryFinalizationArchiveError(
         demoLiveDemoHandoffDeliveryFinalizationArchiveResult.error
       );
+      if (demoLiveDemoCompletionCertificateResult.certificate) {
+        setDemoLiveDemoCompletionCertificate(demoLiveDemoCompletionCertificateResult.certificate);
+      }
+      setDemoLiveDemoCompletionCertificateError(demoLiveDemoCompletionCertificateResult.error);
+      if (demoLiveDemoCompletionCertificateArchiveResult.archives) {
+        setDemoLiveDemoCompletionCertificateArchives(demoLiveDemoCompletionCertificateArchiveResult.archives);
+      }
+      setDemoLiveDemoCompletionCertificateArchiveError(demoLiveDemoCompletionCertificateArchiveResult.error);
       if (demoAcceptanceSummaryResult.summary) {
         setDemoAcceptanceSummary(demoAcceptanceSummaryResult.summary);
       }
@@ -3544,6 +3577,9 @@ export default function App() {
     setDemoLiveDemoHandoffDeliveryFinalization(null);
     setDemoLiveDemoHandoffDeliveryFinalizationError(null);
     setDemoLiveDemoHandoffDeliveryFinalizationArchiveError(null);
+    setDemoLiveDemoCompletionCertificate(null);
+    setDemoLiveDemoCompletionCertificateError(null);
+    setDemoLiveDemoCompletionCertificateArchiveError(null);
     try {
       const result = await postDemoLiveLaunchGate(input);
       setDemoLiveLaunchGate(result);
@@ -3570,6 +3606,9 @@ export default function App() {
     setDemoLiveDemoHandoffDeliveryFinalization(null);
     setDemoLiveDemoHandoffDeliveryFinalizationError(null);
     setDemoLiveDemoHandoffDeliveryFinalizationArchiveError(null);
+    setDemoLiveDemoCompletionCertificate(null);
+    setDemoLiveDemoCompletionCertificateError(null);
+    setDemoLiveDemoCompletionCertificateArchiveError(null);
     try {
       const result = await postDemoLiveTriggerLaunchPackage(input);
       setDemoLiveTriggerLaunchPackage(result);
@@ -3597,6 +3636,9 @@ export default function App() {
       setDemoLiveDemoHandoffDeliveryReceiptError(null);
       setDemoLiveDemoHandoffDeliveryFinalization(null);
       setDemoLiveDemoHandoffDeliveryFinalizationError(null);
+      setDemoLiveDemoCompletionCertificate(null);
+      setDemoLiveDemoCompletionCertificateError(null);
+      setDemoLiveDemoCompletionCertificateArchiveError(null);
       return archive;
     } catch (caught) {
       setDemoLiveTriggerLaunchPackageArchiveError(errorMessage(caught));
@@ -3649,6 +3691,9 @@ export default function App() {
       setDemoLiveDemoHandoffDeliveryReceiptError(null);
       setDemoLiveDemoHandoffDeliveryFinalization(null);
       setDemoLiveDemoHandoffDeliveryFinalizationError(null);
+      setDemoLiveDemoCompletionCertificate(null);
+      setDemoLiveDemoCompletionCertificateError(null);
+      setDemoLiveDemoCompletionCertificateArchiveError(null);
       return archive;
     } catch (caught) {
       setDemoLiveTriggerOutcomeCloseoutArchiveError(errorMessage(caught));
@@ -3673,6 +3718,9 @@ export default function App() {
       setDemoLiveDemoHandoffDeliveryReceiptError(null);
       setDemoLiveDemoHandoffDeliveryFinalization(null);
       setDemoLiveDemoHandoffDeliveryFinalizationError(null);
+      setDemoLiveDemoCompletionCertificate(null);
+      setDemoLiveDemoCompletionCertificateError(null);
+      setDemoLiveDemoCompletionCertificateArchiveError(null);
       return bundle;
     } catch (caught) {
       setDemoLiveDemoEvidenceBundleError(errorMessage(caught));
@@ -3691,6 +3739,9 @@ export default function App() {
     setDemoLiveDemoHandoffDeliveryReceiptError(null);
     setDemoLiveDemoHandoffDeliveryFinalization(null);
     setDemoLiveDemoHandoffDeliveryFinalizationError(null);
+    setDemoLiveDemoCompletionCertificate(null);
+    setDemoLiveDemoCompletionCertificateError(null);
+    setDemoLiveDemoCompletionCertificateArchiveError(null);
     try {
       const archive = await archiveDemoLiveDemoEvidenceBundle();
       setDemoLiveDemoEvidenceBundleArchives((current) =>
@@ -3715,6 +3766,9 @@ export default function App() {
     setDemoLiveDemoHandoffDeliveryReceiptError(null);
     setDemoLiveDemoHandoffDeliveryFinalization(null);
     setDemoLiveDemoHandoffDeliveryFinalizationError(null);
+    setDemoLiveDemoCompletionCertificate(null);
+    setDemoLiveDemoCompletionCertificateError(null);
+    setDemoLiveDemoCompletionCertificateArchiveError(null);
     try {
       const handoffPackage = await getDemoLiveDemoHandoffPackage();
       setDemoLiveDemoHandoffPackage(handoffPackage);
@@ -3735,6 +3789,9 @@ export default function App() {
       setDemoLiveDemoHandoffDeliveryReceiptError(null);
       setDemoLiveDemoHandoffDeliveryFinalizationError(null);
       setDemoLiveDemoHandoffDeliveryFinalizationArchiveError(null);
+      setDemoLiveDemoCompletionCertificate(null);
+      setDemoLiveDemoCompletionCertificateError(null);
+      setDemoLiveDemoCompletionCertificateArchiveError(null);
       try {
         const receipt = await createDemoLiveDemoHandoffDeliveryReceipt(input);
         setDemoLiveDemoHandoffDeliveryReceipts((current) =>
@@ -3759,6 +3816,9 @@ export default function App() {
   const handleRefreshDemoLiveDemoHandoffDeliveryFinalization = useCallback(async () => {
     setDemoLiveDemoHandoffDeliveryFinalizationError(null);
     setDemoLiveDemoHandoffDeliveryFinalizationArchiveError(null);
+    setDemoLiveDemoCompletionCertificate(null);
+    setDemoLiveDemoCompletionCertificateError(null);
+    setDemoLiveDemoCompletionCertificateArchiveError(null);
     try {
       const finalization = await getDemoLiveDemoHandoffDeliveryFinalization();
       setDemoLiveDemoHandoffDeliveryFinalization(finalization);
@@ -3781,6 +3841,9 @@ export default function App() {
       setDemoLiveDemoHandoffDeliveryFinalizationArchives((current) =>
         [archive, ...current.filter((item) => item.id !== archive.id)].slice(0, 20)
       );
+      setDemoLiveDemoCompletionCertificateError(null);
+      const certificate = await getDemoLiveDemoCompletionCertificate();
+      setDemoLiveDemoCompletionCertificate(certificate);
       return archive;
     } catch (caught) {
       setDemoLiveDemoHandoffDeliveryFinalizationArchiveError(errorMessage(caught));
@@ -3790,6 +3853,43 @@ export default function App() {
 
   const handleDownloadDemoLiveDemoHandoffDeliveryFinalizationArchiveReport = useCallback(
     (archiveId: string) => downloadDemoLiveDemoHandoffDeliveryFinalizationArchiveReport(archiveId),
+    []
+  );
+
+  const handleRefreshDemoLiveDemoCompletionCertificate = useCallback(async () => {
+    setDemoLiveDemoCompletionCertificateError(null);
+    setDemoLiveDemoCompletionCertificateArchiveError(null);
+    try {
+      const certificate = await getDemoLiveDemoCompletionCertificate();
+      setDemoLiveDemoCompletionCertificate(certificate);
+      return certificate;
+    } catch (caught) {
+      setDemoLiveDemoCompletionCertificateError(errorMessage(caught));
+      throw caught;
+    }
+  }, []);
+
+  const handleDownloadDemoLiveDemoCompletionCertificateReport = useCallback(
+    () => downloadDemoLiveDemoCompletionCertificateReport(),
+    []
+  );
+
+  const handleArchiveDemoLiveDemoCompletionCertificate = useCallback(async () => {
+    setDemoLiveDemoCompletionCertificateArchiveError(null);
+    try {
+      const archive = await archiveDemoLiveDemoCompletionCertificate();
+      setDemoLiveDemoCompletionCertificateArchives((current) =>
+        [archive, ...current.filter((item) => item.id !== archive.id)].slice(0, 20)
+      );
+      return archive;
+    } catch (caught) {
+      setDemoLiveDemoCompletionCertificateArchiveError(errorMessage(caught));
+      throw caught;
+    }
+  }, []);
+
+  const handleDownloadDemoLiveDemoCompletionCertificateArchiveReport = useCallback(
+    (archiveId: string) => downloadDemoLiveDemoCompletionCertificateArchiveReport(archiveId),
     []
   );
 
@@ -4595,6 +4695,16 @@ export default function App() {
         onArchiveLiveDemoHandoffDeliveryFinalization={handleArchiveDemoLiveDemoHandoffDeliveryFinalization}
         onDownloadLiveDemoHandoffDeliveryFinalizationArchiveReport={
           handleDownloadDemoLiveDemoHandoffDeliveryFinalizationArchiveReport
+        }
+        liveDemoCompletionCertificate={demoLiveDemoCompletionCertificate}
+        liveDemoCompletionCertificateError={demoLiveDemoCompletionCertificateError}
+        onRefreshLiveDemoCompletionCertificate={handleRefreshDemoLiveDemoCompletionCertificate}
+        onDownloadLiveDemoCompletionCertificateReport={handleDownloadDemoLiveDemoCompletionCertificateReport}
+        liveDemoCompletionCertificateArchives={demoLiveDemoCompletionCertificateArchives}
+        liveDemoCompletionCertificateArchiveError={demoLiveDemoCompletionCertificateArchiveError}
+        onArchiveLiveDemoCompletionCertificate={handleArchiveDemoLiveDemoCompletionCertificate}
+        onDownloadLiveDemoCompletionCertificateArchiveReport={
+          handleDownloadDemoLiveDemoCompletionCertificateArchiveReport
         }
       />
 
