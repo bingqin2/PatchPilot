@@ -68,6 +68,7 @@ import type {
   DemoLiveDemoEvidenceBundle,
   DemoLiveDemoEvidenceBundleArchive,
   DemoLiveDemoHandoffPackage,
+  DemoLiveDemoHandoffDeliveryFinalizationArchive,
   DemoLiveDemoHandoffDeliveryFinalization,
   DemoLiveDemoHandoffDeliveryReceipt,
   DemoLiveDemoHandoffDeliveryReceiptInput,
@@ -319,6 +320,28 @@ export async function getDemoLiveDemoHandoffDeliveryFinalization(): Promise<Demo
 
 export async function downloadDemoLiveDemoHandoffDeliveryFinalizationReport(): Promise<Blob> {
   return getBlobApi('/api/demo/live-demo-handoff-package/delivery-finalization/report/download');
+}
+
+export async function archiveDemoLiveDemoHandoffDeliveryFinalization():
+  Promise<DemoLiveDemoHandoffDeliveryFinalizationArchive> {
+  return postApi<DemoLiveDemoHandoffDeliveryFinalizationArchive>(
+    '/api/demo/live-demo-handoff-package/delivery-finalization/archives'
+  );
+}
+
+export async function listDemoLiveDemoHandoffDeliveryFinalizationArchives():
+  Promise<DemoLiveDemoHandoffDeliveryFinalizationArchive[]> {
+  return getApi<DemoLiveDemoHandoffDeliveryFinalizationArchive[]>(
+    '/api/demo/live-demo-handoff-package/delivery-finalization/archives'
+  );
+}
+
+export async function downloadDemoLiveDemoHandoffDeliveryFinalizationArchiveReport(
+  archiveId: string
+): Promise<Blob> {
+  return getBlobApi(
+    `/api/demo/live-demo-handoff-package/delivery-finalization/archives/${encodeURIComponent(archiveId)}/report/download`
+  );
 }
 
 export async function getDemoEndToEndAcceptanceMatrix(): Promise<DemoEndToEndAcceptanceMatrix> {

@@ -5,6 +5,7 @@ import type {
   DemoLiveDemoEvidenceBundle,
   DemoLiveDemoEvidenceBundleArchive,
   DemoLiveDemoHandoffDeliveryFinalization,
+  DemoLiveDemoHandoffDeliveryFinalizationArchive,
   DemoLiveDemoHandoffDeliveryReceipt,
   DemoLiveDemoHandoffDeliveryReceiptInput,
   DemoLiveDemoHandoffPackage,
@@ -69,6 +70,11 @@ interface LiveLaunchGatePanelProps {
   onRefreshLiveDemoHandoffDeliveryFinalization:
     () => Promise<DemoLiveDemoHandoffDeliveryFinalization> | Promise<void> | void;
   onDownloadLiveDemoHandoffDeliveryFinalizationReport: () => Promise<Blob>;
+  liveDemoHandoffDeliveryFinalizationArchives: DemoLiveDemoHandoffDeliveryFinalizationArchive[];
+  liveDemoHandoffDeliveryFinalizationArchiveError: string | null;
+  onArchiveLiveDemoHandoffDeliveryFinalization:
+    () => Promise<DemoLiveDemoHandoffDeliveryFinalizationArchive> | Promise<void> | void;
+  onDownloadLiveDemoHandoffDeliveryFinalizationArchiveReport: (archiveId: string) => Promise<Blob>;
 }
 
 export function LiveLaunchGatePanel({
@@ -112,7 +118,11 @@ export function LiveLaunchGatePanel({
   liveDemoHandoffDeliveryFinalization,
   liveDemoHandoffDeliveryFinalizationError,
   onRefreshLiveDemoHandoffDeliveryFinalization,
-  onDownloadLiveDemoHandoffDeliveryFinalizationReport
+  onDownloadLiveDemoHandoffDeliveryFinalizationReport,
+  liveDemoHandoffDeliveryFinalizationArchives,
+  liveDemoHandoffDeliveryFinalizationArchiveError,
+  onArchiveLiveDemoHandoffDeliveryFinalization,
+  onDownloadLiveDemoHandoffDeliveryFinalizationArchiveReport
 }: LiveLaunchGatePanelProps) {
   const [repositoryOwner, setRepositoryOwner] = useState('bingqin2');
   const [repositoryName, setRepositoryName] = useState('PatchPilot');
@@ -249,6 +259,15 @@ export function LiveLaunchGatePanel({
   async function downloadLiveDemoHandoffDeliveryFinalization() {
     const blob = await onDownloadLiveDemoHandoffDeliveryFinalizationReport();
     downloadMarkdown(blob, 'patchpilot-live-demo-handoff-delivery-finalization.md');
+  }
+
+  async function archiveLiveDemoHandoffDeliveryFinalization() {
+    await onArchiveLiveDemoHandoffDeliveryFinalization();
+  }
+
+  async function downloadLiveDemoHandoffDeliveryFinalizationArchive(archiveId: string) {
+    const blob = await onDownloadLiveDemoHandoffDeliveryFinalizationArchiveReport(archiveId);
+    downloadMarkdown(blob, `patchpilot-live-demo-handoff-delivery-finalization-archive-${archiveId}.md`);
   }
 
   return (
@@ -391,6 +410,16 @@ export function LiveLaunchGatePanel({
               <FileCheck2 size={16} />
               Download handoff finalization
             </button>
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={() => void archiveLiveDemoHandoffDeliveryFinalization()}
+              disabled={!liveDemoHandoffDeliveryFinalization?.finalized}
+              aria-label="Archive live demo handoff delivery finalization"
+            >
+              <Archive size={16} />
+              Archive handoff finalization
+            </button>
           </div>
         ) : null}
       </div>
@@ -524,6 +553,13 @@ export function LiveLaunchGatePanel({
         </div>
       ) : null}
 
+      {liveDemoHandoffDeliveryFinalizationArchiveError ? (
+        <div className="adapter-api-error">
+          <strong>Live demo handoff delivery finalization archive failed</strong>
+          <span>{liveDemoHandoffDeliveryFinalizationArchiveError}</span>
+        </div>
+      ) : null}
+
       {result ? (
         <>
           <LiveLaunchGateResult result={result} />
@@ -564,6 +600,10 @@ export function LiveLaunchGatePanel({
           {liveDemoHandoffDeliveryFinalization ? (
             <LiveDemoHandoffDeliveryFinalizationResult finalization={liveDemoHandoffDeliveryFinalization} />
           ) : null}
+          <LiveDemoHandoffDeliveryFinalizationArchiveList
+            archives={liveDemoHandoffDeliveryFinalizationArchives}
+            onDownloadArchive={(archiveId) => void downloadLiveDemoHandoffDeliveryFinalizationArchive(archiveId)}
+          />
         </>
       ) : (
         <div className="empty-state">No live launch gate run yet.</div>
@@ -869,6 +909,44 @@ function LiveDemoEvidenceBundleArchiveList({
                 className="secondary-button compact-button"
                 type="button"
                 aria-label={`Download live demo evidence bundle archive ${archive.id}`}
+                onClick={() => onDownloadArchive(archive.id)}
+              >
+                <Download size={14} />
+                Download
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function LiveDemoHandoffDeliveryFinalizationArchiveList({
+  archives,
+  onDownloadArchive
+}: {
+  archives: DemoLiveDemoHandoffDeliveryFinalizationArchive[];
+  onDownloadArchive: (archiveId: string) => void;
+}) {
+  return (
+    <div className="demo-launch-preflight-actions">
+      <h3>Recent live demo handoff delivery finalization archives</h3>
+      {archives.length === 0 ? (
+        <p>No live demo handoff delivery finalization archives recorded.</p>
+      ) : (
+        <ul>
+          {archives.map((archive) => (
+            <li key={archive.id}>
+              <strong>{archive.id}</strong>
+              <span> {archive.status} </span>
+              <span>{archive.latestDeliveryReceiptId ?? 'No delivery receipt'}</span>
+              <span>{archive.deliveryReceiptFreshness}</span>
+              <span>Archived at {archive.archivedAt}</span>
+              <button
+                className="secondary-button compact-button"
+                type="button"
+                aria-label={`Download live demo handoff delivery finalization archive ${archive.id}`}
                 onClick={() => onDownloadArchive(archive.id)}
               >
                 <Download size={14} />

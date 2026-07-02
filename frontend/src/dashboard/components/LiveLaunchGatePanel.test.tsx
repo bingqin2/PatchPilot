@@ -9,6 +9,7 @@ import type {
   DemoLiveDemoHandoffPackage,
   DemoLiveDemoHandoffDeliveryReceipt,
   DemoLiveDemoHandoffDeliveryFinalization,
+  DemoLiveDemoHandoffDeliveryFinalizationArchive,
   DemoLiveTriggerOutcomeCloseout,
   DemoLiveTriggerOutcomeCloseoutArchive
 } from '../../types';
@@ -374,6 +375,35 @@ const readyLiveDemoHandoffDeliveryFinalization: DemoLiveDemoHandoffDeliveryFinal
   generatedAt: '2026-07-02T06:00:00Z'
 };
 
+const readyLiveDemoHandoffDeliveryFinalizationArchive: DemoLiveDemoHandoffDeliveryFinalizationArchive = {
+  id: 'live-demo-handoff-delivery-finalization-archive-1',
+  status: 'READY',
+  finalized: true,
+  summary: 'Live demo handoff delivery is finalized with a fresh delivery receipt.',
+  nextAction: 'Use this finalization report as the live demo reviewer handoff completion proof.',
+  latestDeliveryReceiptId: 'live-demo-handoff-delivery-receipt-1',
+  evidenceBundleArchiveId: 'live-demo-evidence-bundle-archive-1',
+  repository: 'bingqin2/PatchPilot',
+  issueNumber: 1,
+  issueUrl: 'https://github.com/bingqin2/PatchPilot/issues/1',
+  taskId: 'task-1',
+  taskStatus: 'COMPLETED',
+  pullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+  latestDeliveryTarget: 'https://github.com/bingqin2/PatchPilot/pull/42',
+  latestDeliveryChannel: 'github-comment',
+  latestDeliveredAt: '2026-07-02T04:55:00Z',
+  deliveryReceiptFreshness: 'FRESH',
+  deliveryReceiptFresh: true,
+  deliveryReceiptFreshnessSummary: 'Latest live demo handoff delivery receipt matches the current handoff package.',
+  checks: readyLiveDemoHandoffDeliveryFinalization.checks,
+  evidenceNotes: readyLiveDemoHandoffDeliveryFinalization.evidenceNotes,
+  downloadActions: ['Download live demo handoff delivery finalization archive report.'],
+  sideEffectContract: 'Archive creation writes only PatchPilot local archive records.',
+  finalizationGeneratedAt: '2026-07-02T06:00:00Z',
+  archivedAt: '2026-07-02T07:00:00Z',
+  report: '# PatchPilot Live Demo Handoff Delivery Finalization Archive'
+};
+
 const baseProps = {
   error: null,
   pending: false,
@@ -414,7 +444,11 @@ const baseProps = {
   liveDemoHandoffDeliveryFinalization: null as DemoLiveDemoHandoffDeliveryFinalization | null,
   liveDemoHandoffDeliveryFinalizationError: null,
   onRefreshLiveDemoHandoffDeliveryFinalization: vi.fn(),
-  onDownloadLiveDemoHandoffDeliveryFinalizationReport: vi.fn()
+  onDownloadLiveDemoHandoffDeliveryFinalizationReport: vi.fn(),
+  liveDemoHandoffDeliveryFinalizationArchives: [] as DemoLiveDemoHandoffDeliveryFinalizationArchive[],
+  liveDemoHandoffDeliveryFinalizationArchiveError: null,
+  onArchiveLiveDemoHandoffDeliveryFinalization: vi.fn(),
+  onDownloadLiveDemoHandoffDeliveryFinalizationArchiveReport: vi.fn()
 };
 
 test('submits exact live launch gate input', async () => {
@@ -1036,6 +1070,55 @@ test('refreshes and downloads live demo handoff delivery finalization', async ()
   expect(revokeObjectURL).toHaveBeenCalledWith('blob:live-demo-handoff-delivery-finalization');
 });
 
+test('archives and downloads live demo handoff delivery finalization archives', async () => {
+  const user = userEvent.setup();
+  const onArchiveLiveDemoHandoffDeliveryFinalization = vi.fn(
+    async () => readyLiveDemoHandoffDeliveryFinalizationArchive
+  );
+  const onDownloadLiveDemoHandoffDeliveryFinalizationArchiveReport = vi.fn(
+    async () => new Blob(['finalization archive'], { type: 'text/markdown' })
+  );
+  const anchorClick = vi.fn();
+  const createObjectURL = vi.fn(() => 'blob:live-demo-handoff-delivery-finalization-archive');
+  const revokeObjectURL = vi.fn();
+  vi.stubGlobal('URL', { createObjectURL, revokeObjectURL });
+  vi.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
+    const element = document.createElementNS('http://www.w3.org/1999/xhtml', tagName) as HTMLAnchorElement;
+    if (tagName === 'a') {
+      element.click = anchorClick;
+    }
+    return element;
+  });
+
+  render(
+    <LiveLaunchGatePanel
+      {...baseProps}
+      result={readyGate}
+      liveDemoHandoffDeliveryFinalization={readyLiveDemoHandoffDeliveryFinalization}
+      liveDemoHandoffDeliveryFinalizationArchives={[readyLiveDemoHandoffDeliveryFinalizationArchive]}
+      onArchiveLiveDemoHandoffDeliveryFinalization={onArchiveLiveDemoHandoffDeliveryFinalization}
+      onDownloadLiveDemoHandoffDeliveryFinalizationArchiveReport={
+        onDownloadLiveDemoHandoffDeliveryFinalizationArchiveReport
+      }
+    />
+  );
+
+  await user.click(screen.getByRole('button', { name: 'Archive live demo handoff delivery finalization' }));
+  await user.click(screen.getByRole('button', {
+    name: 'Download live demo handoff delivery finalization archive live-demo-handoff-delivery-finalization-archive-1'
+  }));
+
+  expect(screen.getByText('Recent live demo handoff delivery finalization archives')).toBeInTheDocument();
+  expect(screen.getByText('live-demo-handoff-delivery-finalization-archive-1')).toBeInTheDocument();
+  expect(screen.getAllByText('live-demo-handoff-delivery-receipt-1').length).toBeGreaterThan(0);
+  expect(onArchiveLiveDemoHandoffDeliveryFinalization).toHaveBeenCalledTimes(1);
+  expect(onDownloadLiveDemoHandoffDeliveryFinalizationArchiveReport)
+    .toHaveBeenCalledWith('live-demo-handoff-delivery-finalization-archive-1');
+  expect(createObjectURL).toHaveBeenCalledWith(expect.any(Blob));
+  expect(anchorClick).toHaveBeenCalled();
+  expect(revokeObjectURL).toHaveBeenCalledWith('blob:live-demo-handoff-delivery-finalization-archive');
+});
+
 test('shows live demo handoff delivery finalization errors', () => {
   render(
     <LiveLaunchGatePanel
@@ -1047,6 +1130,19 @@ test('shows live demo handoff delivery finalization errors', () => {
 
   expect(screen.getByText('Live demo handoff delivery finalization failed')).toBeInTheDocument();
   expect(screen.getByText('Delivery finalization refresh failed')).toBeInTheDocument();
+});
+
+test('shows live demo handoff delivery finalization archive errors', () => {
+  render(
+    <LiveLaunchGatePanel
+      {...baseProps}
+      result={readyGate}
+      liveDemoHandoffDeliveryFinalizationArchiveError="Delivery finalization archive failed"
+    />
+  );
+
+  expect(screen.getByText('Live demo handoff delivery finalization archive failed')).toBeInTheDocument();
+  expect(screen.getByText('Delivery finalization archive failed')).toBeInTheDocument();
 });
 
 test('shows launch package errors', () => {

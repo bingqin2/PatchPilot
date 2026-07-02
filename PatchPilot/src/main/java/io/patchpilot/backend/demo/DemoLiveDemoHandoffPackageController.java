@@ -1,6 +1,7 @@
 package io.patchpilot.backend.demo;
 
 import io.patchpilot.backend.common.response.ApiResponse;
+import io.patchpilot.backend.demo.domain.DemoLiveDemoHandoffDeliveryFinalizationArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoLiveDemoHandoffDeliveryFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoLiveDemoHandoffDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoLiveDemoHandoffPackageVo;
@@ -27,6 +28,7 @@ public class DemoLiveDemoHandoffPackageController {
     private final DemoLiveDemoHandoffPackageService service;
     private final DemoLiveDemoHandoffDeliveryReceiptService receiptService;
     private final DemoLiveDemoHandoffDeliveryFinalizationService finalizationService;
+    private final DemoLiveDemoHandoffDeliveryFinalizationArchiveService finalizationArchiveService;
 
     @GetMapping
     public ApiResponse<DemoLiveDemoHandoffPackageVo> getPackage() {
@@ -105,5 +107,36 @@ public class DemoLiveDemoHandoffPackageController {
                                 .toString()
                 )
                 .body(body);
+    }
+
+    @PostMapping("/delivery-finalization/archives")
+    public ApiResponse<DemoLiveDemoHandoffDeliveryFinalizationArchiveVo> archiveDeliveryFinalization() {
+        return ApiResponse.ok(finalizationArchiveService.archiveFinalization());
+    }
+
+    @GetMapping("/delivery-finalization/archives")
+    public ApiResponse<List<DemoLiveDemoHandoffDeliveryFinalizationArchiveVo>> listDeliveryFinalizationArchives() {
+        return ApiResponse.ok(finalizationArchiveService.listRecentArchives());
+    }
+
+    @GetMapping("/delivery-finalization/archives/{archiveId}/report/download")
+    public ResponseEntity<byte[]> downloadDeliveryFinalizationArchiveReport(@PathVariable String archiveId) {
+        return finalizationArchiveService.findArchive(archiveId)
+                .map(archive -> ResponseEntity.ok()
+                        .contentType(MediaType.parseMediaType("text/markdown;charset=UTF-8"))
+                        .header(
+                                HttpHeaders.CONTENT_DISPOSITION,
+                                ContentDisposition.attachment()
+                                        .filename(
+                                                "patchpilot-live-demo-handoff-delivery-finalization-archive-"
+                                                        + archive.id()
+                                                        + ".md",
+                                                StandardCharsets.UTF_8
+                                        )
+                                        .build()
+                                        .toString()
+                        )
+                        .body(archive.report().getBytes(StandardCharsets.UTF_8)))
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 }

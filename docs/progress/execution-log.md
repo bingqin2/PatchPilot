@@ -6664,3 +6664,24 @@ Validation so far:
 - `npm --prefix frontend run build`: passed with the existing Vite large-chunk warning.
 - `git diff --check`: passed.
 - Strict diff secret scan for GitHub, OpenAI-style, Slack, AWS, private-key, and PatchPilot token assignment patterns: no matches.
+
+## 2026-07-02 - 333 Live demo handoff delivery finalization archives
+
+- Started `333-live-demo-handoff-delivery-finalization-archives` to freeze a `READY` live demo handoff delivery finalization as immutable local reviewer evidence.
+- Added backend archive support for live demo handoff delivery finalizations, including a capped in-memory archive repository, archive service, archive VO, and admin-protected endpoints to create, list, and download archived Markdown reports.
+- Each archive freezes the finalization status, delivery receipt id, evidence bundle archive id, repository and issue metadata, task status, Pull Request URL, delivery target/channel, receipt freshness, checks, evidence notes, download actions, side-effect contract, finalization generation time, archive time, and report body.
+- The backend rejects archive creation unless the current handoff delivery finalization is `READY` and finalized.
+- Extended the live launch gate dashboard with `Archive handoff finalization`, recent handoff finalization archive history, per-archive Markdown downloads, archive error feedback, App-level loading, and typed frontend API helpers.
+- Added `docs/plans/333-live-demo-handoff-delivery-finalization-archives.md` with the scope, local-only safety contract, API shape, and validation checklist.
+
+Validation so far:
+
+- `mvn -pl PatchPilot -Dtest=DemoLiveDemoHandoffDeliveryFinalizationArchiveServiceTests,DemoLiveDemoHandoffDeliveryFinalizationControllerTests test -q`: first failed because the archive VO, service, and repository did not exist; passed after backend implementation in the broader focused backend run.
+- `npm --prefix frontend test -- --run src/api.test.ts src/dashboard/components/LiveLaunchGatePanel.test.tsx --reporter=dot`: first failed because the archive API helper, archive button/history, and archive error state were missing; passed after frontend implementation. Focused result: 2 test files and 268 tests.
+- `npm --prefix frontend test -- --run src/App.test.tsx --reporter=dot`: passed after App-level archive loading and handlers were wired. Result: 1 test file and 88 tests.
+- `mvn -pl PatchPilot -Dtest=DemoLiveDemoHandoffDeliveryFinalizationArchiveServiceTests,DemoLiveDemoHandoffDeliveryFinalizationControllerTests,DemoLiveDemoHandoffPackageControllerTests,DemoLiveDemoHandoffDeliveryReceiptControllerTests test -q`: passed.
+- `mvn -pl PatchPilot test`: passed, 1424 tests.
+- `npm --prefix frontend test -- --reporter=dot`: passed, 35 test files and 559 tests.
+- `npm --prefix frontend run build`: passed with the existing Vite large-chunk warning.
+- `git diff --check`: passed.
+- Strict diff secret scan for GitHub, OpenAI-style, Slack, AWS, private-key, and PatchPilot token assignment patterns: no matches.

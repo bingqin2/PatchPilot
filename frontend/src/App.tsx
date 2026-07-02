@@ -153,7 +153,9 @@ import {
   getDemoLiveDemoHandoffDeliveryFinalization,
   getDemoLiveDemoHandoffPackage,
   archiveDemoLiveDemoEvidenceBundle,
+  archiveDemoLiveDemoHandoffDeliveryFinalization,
   listDemoLiveDemoEvidenceBundleArchives,
+  listDemoLiveDemoHandoffDeliveryFinalizationArchives,
   getDemoReadinessSnapshotTrend,
   getDemoSmokeChecklist,
   listDemoFinalHandoffReportPackageArchives,
@@ -190,6 +192,7 @@ import {
   preflightDemoLaunch,
   downloadDemoLiveDemoEvidenceBundleArchiveReport,
   downloadDemoLiveDemoEvidenceBundleReport,
+  downloadDemoLiveDemoHandoffDeliveryFinalizationArchiveReport,
   downloadDemoLiveDemoHandoffDeliveryFinalizationReport,
   downloadDemoLiveDemoHandoffPackageReport,
   downloadDemoLiveDemoHandoffDeliveryReceiptReport,
@@ -381,6 +384,7 @@ import type {
   DemoLiveDemoEvidenceBundle,
   DemoLiveDemoEvidenceBundleArchive,
   DemoLiveDemoHandoffDeliveryFinalization,
+  DemoLiveDemoHandoffDeliveryFinalizationArchive,
   DemoLiveDemoHandoffDeliveryReceipt,
   DemoLiveDemoHandoffDeliveryReceiptInput,
   DemoLiveDemoHandoffPackage,
@@ -848,6 +852,10 @@ export default function App() {
     useState<DemoLiveDemoHandoffDeliveryFinalization | null>(null);
   const [demoLiveDemoHandoffDeliveryFinalizationError, setDemoLiveDemoHandoffDeliveryFinalizationError] =
     useState<string | null>(null);
+  const [demoLiveDemoHandoffDeliveryFinalizationArchives, setDemoLiveDemoHandoffDeliveryFinalizationArchives] =
+    useState<DemoLiveDemoHandoffDeliveryFinalizationArchive[]>([]);
+  const [demoLiveDemoHandoffDeliveryFinalizationArchiveError, setDemoLiveDemoHandoffDeliveryFinalizationArchiveError] =
+    useState<string | null>(null);
   const [supportedAdapters, setSupportedAdapters] = useState<SupportedLanguageAdapter[]>([]);
   const [adapterError, setAdapterError] = useState<string | null>(null);
   const [adapterFixtureVerifications, setAdapterFixtureVerifications] = useState<LanguageAdapterFixtureVerification[]>([]);
@@ -1225,6 +1233,7 @@ export default function App() {
         demoLiveDemoHandoffPackageResult,
         demoLiveDemoHandoffDeliveryReceiptResult,
         demoLiveDemoHandoffDeliveryFinalizationResult,
+        demoLiveDemoHandoffDeliveryFinalizationArchiveResult,
         demoAcceptanceSummaryResult,
         demoFinalAcceptanceSharePackageResult,
         demoFinalAcceptanceSharePackageArchiveResult,
@@ -1480,6 +1489,10 @@ export default function App() {
         getDemoLiveDemoHandoffDeliveryFinalization().then(
           (finalization) => ({ finalization, error: null as string | null }),
           (caught) => ({ finalization: null, error: errorMessage(caught) })
+        ),
+        listDemoLiveDemoHandoffDeliveryFinalizationArchives().then(
+          (archives) => ({ archives, error: null as string | null }),
+          (caught) => ({ archives: null, error: errorMessage(caught) })
         ),
         getDemoAcceptanceSummary().then(
           (summary) => ({ summary, error: null as string | null }),
@@ -1950,6 +1963,14 @@ export default function App() {
         setDemoLiveDemoHandoffDeliveryFinalization(demoLiveDemoHandoffDeliveryFinalizationResult.finalization);
       }
       setDemoLiveDemoHandoffDeliveryFinalizationError(demoLiveDemoHandoffDeliveryFinalizationResult.error);
+      if (demoLiveDemoHandoffDeliveryFinalizationArchiveResult.archives) {
+        setDemoLiveDemoHandoffDeliveryFinalizationArchives(
+          demoLiveDemoHandoffDeliveryFinalizationArchiveResult.archives
+        );
+      }
+      setDemoLiveDemoHandoffDeliveryFinalizationArchiveError(
+        demoLiveDemoHandoffDeliveryFinalizationArchiveResult.error
+      );
       if (demoAcceptanceSummaryResult.summary) {
         setDemoAcceptanceSummary(demoAcceptanceSummaryResult.summary);
       }
@@ -3522,6 +3543,7 @@ export default function App() {
     setDemoLiveDemoHandoffDeliveryReceiptError(null);
     setDemoLiveDemoHandoffDeliveryFinalization(null);
     setDemoLiveDemoHandoffDeliveryFinalizationError(null);
+    setDemoLiveDemoHandoffDeliveryFinalizationArchiveError(null);
     try {
       const result = await postDemoLiveLaunchGate(input);
       setDemoLiveLaunchGate(result);
@@ -3547,6 +3569,7 @@ export default function App() {
     setDemoLiveDemoHandoffDeliveryReceiptError(null);
     setDemoLiveDemoHandoffDeliveryFinalization(null);
     setDemoLiveDemoHandoffDeliveryFinalizationError(null);
+    setDemoLiveDemoHandoffDeliveryFinalizationArchiveError(null);
     try {
       const result = await postDemoLiveTriggerLaunchPackage(input);
       setDemoLiveTriggerLaunchPackage(result);
@@ -3711,6 +3734,7 @@ export default function App() {
     async (input: DemoLiveDemoHandoffDeliveryReceiptInput) => {
       setDemoLiveDemoHandoffDeliveryReceiptError(null);
       setDemoLiveDemoHandoffDeliveryFinalizationError(null);
+      setDemoLiveDemoHandoffDeliveryFinalizationArchiveError(null);
       try {
         const receipt = await createDemoLiveDemoHandoffDeliveryReceipt(input);
         setDemoLiveDemoHandoffDeliveryReceipts((current) =>
@@ -3734,6 +3758,7 @@ export default function App() {
 
   const handleRefreshDemoLiveDemoHandoffDeliveryFinalization = useCallback(async () => {
     setDemoLiveDemoHandoffDeliveryFinalizationError(null);
+    setDemoLiveDemoHandoffDeliveryFinalizationArchiveError(null);
     try {
       const finalization = await getDemoLiveDemoHandoffDeliveryFinalization();
       setDemoLiveDemoHandoffDeliveryFinalization(finalization);
@@ -3746,6 +3771,25 @@ export default function App() {
 
   const handleDownloadDemoLiveDemoHandoffDeliveryFinalizationReport = useCallback(
     () => downloadDemoLiveDemoHandoffDeliveryFinalizationReport(),
+    []
+  );
+
+  const handleArchiveDemoLiveDemoHandoffDeliveryFinalization = useCallback(async () => {
+    setDemoLiveDemoHandoffDeliveryFinalizationArchiveError(null);
+    try {
+      const archive = await archiveDemoLiveDemoHandoffDeliveryFinalization();
+      setDemoLiveDemoHandoffDeliveryFinalizationArchives((current) =>
+        [archive, ...current.filter((item) => item.id !== archive.id)].slice(0, 20)
+      );
+      return archive;
+    } catch (caught) {
+      setDemoLiveDemoHandoffDeliveryFinalizationArchiveError(errorMessage(caught));
+      throw caught;
+    }
+  }, []);
+
+  const handleDownloadDemoLiveDemoHandoffDeliveryFinalizationArchiveReport = useCallback(
+    (archiveId: string) => downloadDemoLiveDemoHandoffDeliveryFinalizationArchiveReport(archiveId),
     []
   );
 
@@ -4546,6 +4590,12 @@ export default function App() {
         liveDemoHandoffDeliveryFinalizationError={demoLiveDemoHandoffDeliveryFinalizationError}
         onRefreshLiveDemoHandoffDeliveryFinalization={handleRefreshDemoLiveDemoHandoffDeliveryFinalization}
         onDownloadLiveDemoHandoffDeliveryFinalizationReport={handleDownloadDemoLiveDemoHandoffDeliveryFinalizationReport}
+        liveDemoHandoffDeliveryFinalizationArchives={demoLiveDemoHandoffDeliveryFinalizationArchives}
+        liveDemoHandoffDeliveryFinalizationArchiveError={demoLiveDemoHandoffDeliveryFinalizationArchiveError}
+        onArchiveLiveDemoHandoffDeliveryFinalization={handleArchiveDemoLiveDemoHandoffDeliveryFinalization}
+        onDownloadLiveDemoHandoffDeliveryFinalizationArchiveReport={
+          handleDownloadDemoLiveDemoHandoffDeliveryFinalizationArchiveReport
+        }
       />
 
       <EndToEndAcceptanceMatrixPanel

@@ -84,8 +84,18 @@ class DemoLiveDemoHandoffPackageControllerTests {
                         List::of,
                         java.time.Clock.systemUTC()
                 );
+        DemoLiveDemoHandoffDeliveryFinalizationArchiveService archiveService =
+                new DemoLiveDemoHandoffDeliveryFinalizationArchiveService(
+                        finalizationService,
+                        new InMemoryDemoLiveDemoHandoffDeliveryFinalizationArchiveRepository()
+                );
         return MockMvcBuilders
-                .standaloneSetup(new DemoLiveDemoHandoffPackageController(service, receiptService, finalizationService))
+                .standaloneSetup(new DemoLiveDemoHandoffPackageController(
+                        service,
+                        receiptService,
+                        finalizationService,
+                        archiveService
+                ))
                 .addFilters(new AdminApiSecurityFilter(properties, new ObjectMapper()))
                 .build();
     }
