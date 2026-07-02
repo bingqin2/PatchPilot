@@ -4,6 +4,7 @@ import type {
   DemoLiveLaunchGate,
   DemoLiveDemoEvidenceBundle,
   DemoLiveDemoEvidenceBundleArchive,
+  DemoLiveDemoHandoffDeliveryFinalization,
   DemoLiveDemoHandoffDeliveryReceipt,
   DemoLiveDemoHandoffDeliveryReceiptInput,
   DemoLiveDemoHandoffPackage,
@@ -63,6 +64,11 @@ interface LiveLaunchGatePanelProps {
     input: DemoLiveDemoHandoffDeliveryReceiptInput
   ) => Promise<DemoLiveDemoHandoffDeliveryReceipt> | Promise<void> | void;
   onDownloadLiveDemoHandoffDeliveryReceiptReport: (receiptId: string) => Promise<Blob>;
+  liveDemoHandoffDeliveryFinalization: DemoLiveDemoHandoffDeliveryFinalization | null;
+  liveDemoHandoffDeliveryFinalizationError: string | null;
+  onRefreshLiveDemoHandoffDeliveryFinalization:
+    () => Promise<DemoLiveDemoHandoffDeliveryFinalization> | Promise<void> | void;
+  onDownloadLiveDemoHandoffDeliveryFinalizationReport: () => Promise<Blob>;
 }
 
 export function LiveLaunchGatePanel({
@@ -102,7 +108,11 @@ export function LiveLaunchGatePanel({
   liveDemoHandoffDeliveryReceipts,
   liveDemoHandoffDeliveryReceiptError,
   onRecordLiveDemoHandoffDeliveryReceipt,
-  onDownloadLiveDemoHandoffDeliveryReceiptReport
+  onDownloadLiveDemoHandoffDeliveryReceiptReport,
+  liveDemoHandoffDeliveryFinalization,
+  liveDemoHandoffDeliveryFinalizationError,
+  onRefreshLiveDemoHandoffDeliveryFinalization,
+  onDownloadLiveDemoHandoffDeliveryFinalizationReport
 }: LiveLaunchGatePanelProps) {
   const [repositoryOwner, setRepositoryOwner] = useState('bingqin2');
   const [repositoryName, setRepositoryName] = useState('PatchPilot');
@@ -232,6 +242,15 @@ export function LiveLaunchGatePanel({
     downloadMarkdown(blob, `patchpilot-live-demo-handoff-delivery-receipt-${receiptId}.md`);
   }
 
+  async function refreshLiveDemoHandoffDeliveryFinalization() {
+    await onRefreshLiveDemoHandoffDeliveryFinalization();
+  }
+
+  async function downloadLiveDemoHandoffDeliveryFinalization() {
+    const blob = await onDownloadLiveDemoHandoffDeliveryFinalizationReport();
+    downloadMarkdown(blob, 'patchpilot-live-demo-handoff-delivery-finalization.md');
+  }
+
   return (
     <section className="panel live-launch-gate-panel" aria-label="Live launch gate">
       <div className="panel-header">
@@ -352,6 +371,25 @@ export function LiveLaunchGatePanel({
             >
               <FileCheck2 size={16} />
               Download handoff package
+            </button>
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={() => void refreshLiveDemoHandoffDeliveryFinalization()}
+              aria-label="Refresh live demo handoff delivery finalization"
+            >
+              <RefreshCw size={16} />
+              Refresh handoff finalization
+            </button>
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={() => void downloadLiveDemoHandoffDeliveryFinalization()}
+              disabled={!liveDemoHandoffDeliveryFinalization}
+              aria-label="Download live demo handoff delivery finalization"
+            >
+              <FileCheck2 size={16} />
+              Download handoff finalization
             </button>
           </div>
         ) : null}
@@ -479,6 +517,13 @@ export function LiveLaunchGatePanel({
         </div>
       ) : null}
 
+      {liveDemoHandoffDeliveryFinalizationError ? (
+        <div className="adapter-api-error">
+          <strong>Live demo handoff delivery finalization failed</strong>
+          <span>{liveDemoHandoffDeliveryFinalizationError}</span>
+        </div>
+      ) : null}
+
       {result ? (
         <>
           <LiveLaunchGateResult result={result} />
@@ -516,11 +561,89 @@ export function LiveLaunchGatePanel({
             receipts={liveDemoHandoffDeliveryReceipts}
             onDownloadReceipt={(receiptId) => void downloadLiveDemoHandoffDeliveryReceipt(receiptId)}
           />
+          {liveDemoHandoffDeliveryFinalization ? (
+            <LiveDemoHandoffDeliveryFinalizationResult finalization={liveDemoHandoffDeliveryFinalization} />
+          ) : null}
         </>
       ) : (
         <div className="empty-state">No live launch gate run yet.</div>
       )}
     </section>
+  );
+}
+
+function LiveDemoHandoffDeliveryFinalizationResult({
+  finalization
+}: {
+  finalization: DemoLiveDemoHandoffDeliveryFinalization;
+}) {
+  const tone =
+    finalization.status === 'READY' ? 'ready' : finalization.status === 'BLOCKED' ? 'blocked' : 'attention';
+
+  return (
+    <div className={`demo-launch-preflight-result demo-launch-preflight-result-${tone}`}>
+      <div className="demo-launch-preflight-summary">
+        <span className={`demo-readiness-status demo-readiness-status-${tone}`}>
+          {finalization.status}
+        </span>
+        <strong>Live demo handoff delivery finalization</strong>
+        <p>{finalization.summary}</p>
+      </div>
+      <div className="demo-launch-preflight-grid">
+        <div>
+          <span>Delivery receipt</span>
+          <strong>{finalization.latestDeliveryReceiptId ?? 'missing'}</strong>
+          <small>{finalization.deliveryReceiptFreshness}</small>
+        </div>
+        <div>
+          <span>Evidence archive</span>
+          <strong>{finalization.evidenceBundleArchiveId ?? 'missing'}</strong>
+          <small>{finalization.repository ?? 'repository missing'}</small>
+        </div>
+        <div>
+          <span>Delivery target</span>
+          <strong>{finalization.latestDeliveryTarget ?? 'missing'}</strong>
+          <small>{finalization.latestDeliveryChannel ?? 'channel missing'}</small>
+        </div>
+        <div>
+          <span>Pull Request</span>
+          <strong>{finalization.pullRequestUrl ?? 'not created'}</strong>
+          <small>{finalization.taskId ? `Task ${finalization.taskId}` : 'No matching task'}</small>
+        </div>
+      </div>
+      <p className="demo-launch-preflight-blocked">{finalization.deliveryReceiptFreshnessSummary}</p>
+      <p className="demo-launch-preflight-blocked">{finalization.sideEffectContract}</p>
+      <div className="demo-launch-preflight-actions">
+        <h3>Finalization checks</h3>
+        <ul>
+          {finalization.checks.map((check) => (
+            <li key={check.name}>
+              <strong>{check.name}</strong>
+              <span>{check.status}</span>
+              <span>{check.summary}</span>
+              <small>{check.nextAction}</small>
+            </li>
+          ))}
+        </ul>
+      </div>
+      <div className="demo-launch-preflight-actions">
+        <h3>Finalization evidence</h3>
+        <ul>
+          {finalization.evidenceNotes.map((note) => (
+            <li key={note}>{note}</li>
+          ))}
+        </ul>
+      </div>
+      <div className="demo-launch-preflight-actions">
+        <h3>Finalization downloads</h3>
+        <ul>
+          {finalization.downloadActions.map((action) => (
+            <li key={action}>{action}</li>
+          ))}
+        </ul>
+      </div>
+      <p className="demo-launch-preflight-blocked">Next action: {finalization.nextAction}</p>
+    </div>
   );
 }
 

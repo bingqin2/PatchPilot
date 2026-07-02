@@ -1,6 +1,7 @@
 package io.patchpilot.backend.demo;
 
 import io.patchpilot.backend.common.response.ApiResponse;
+import io.patchpilot.backend.demo.domain.DemoLiveDemoHandoffDeliveryFinalizationVo;
 import io.patchpilot.backend.demo.domain.DemoLiveDemoHandoffDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoLiveDemoHandoffPackageVo;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ public class DemoLiveDemoHandoffPackageController {
 
     private final DemoLiveDemoHandoffPackageService service;
     private final DemoLiveDemoHandoffDeliveryReceiptService receiptService;
+    private final DemoLiveDemoHandoffDeliveryFinalizationService finalizationService;
 
     @GetMapping
     public ApiResponse<DemoLiveDemoHandoffPackageVo> getPackage() {
@@ -77,5 +79,31 @@ public class DemoLiveDemoHandoffPackageController {
                         )
                         .body(receipt.markdownReport().getBytes(StandardCharsets.UTF_8)))
                 .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/delivery-finalization")
+    public ApiResponse<DemoLiveDemoHandoffDeliveryFinalizationVo> getDeliveryFinalization() {
+        return ApiResponse.ok(finalizationService.getFinalizationGate());
+    }
+
+    @GetMapping("/delivery-finalization/report/download")
+    public ResponseEntity<byte[]> downloadDeliveryFinalizationReport() {
+        byte[] body = finalizationService
+                .getFinalizationGate()
+                .markdownReport()
+                .getBytes(StandardCharsets.UTF_8);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("text/markdown;charset=UTF-8"))
+                .header(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        ContentDisposition.attachment()
+                                .filename(
+                                        "patchpilot-live-demo-handoff-delivery-finalization.md",
+                                        StandardCharsets.UTF_8
+                                )
+                                .build()
+                                .toString()
+                )
+                .body(body);
     }
 }

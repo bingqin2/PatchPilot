@@ -19,6 +19,8 @@ import {
   createDemoLiveDemoHandoffDeliveryReceipt,
   listDemoLiveDemoHandoffDeliveryReceipts,
   downloadDemoLiveDemoHandoffDeliveryReceiptReport,
+  getDemoLiveDemoHandoffDeliveryFinalization,
+  downloadDemoLiveDemoHandoffDeliveryFinalizationReport,
   downloadDemoLiveTriggerOutcomeCloseoutReport,
   archiveDemoLiveTriggerOutcomeCloseout,
   listDemoLiveTriggerOutcomeCloseoutArchives,
@@ -5315,6 +5317,69 @@ test('records, lists, and downloads live demo handoff delivery receipts through 
   );
   expect(receipt.id).toBe('live-demo-handoff-delivery-receipt-1');
   expect(receipts[0].evidenceBundleArchiveId).toBe('live-demo-evidence-bundle-archive-1');
+  expect(report.type).toBe('text/markdown');
+});
+
+test('loads and downloads live demo handoff delivery finalization through backend API', async () => {
+  const finalizationPayload = {
+    status: 'READY',
+    finalized: true,
+    summary: 'Live demo handoff delivery is finalized with a fresh delivery receipt.',
+    nextAction: 'Use this finalization report as the live demo reviewer handoff completion proof.',
+    latestDeliveryReceiptId: 'live-demo-handoff-delivery-receipt-1',
+    evidenceBundleArchiveId: 'live-demo-evidence-bundle-archive-1',
+    repository: 'bingqin2/PatchPilot',
+    issueNumber: 1,
+    issueUrl: 'https://github.com/bingqin2/PatchPilot/issues/1',
+    taskId: 'task-1',
+    taskStatus: 'COMPLETED',
+    pullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+    latestDeliveryTarget: 'https://github.com/bingqin2/PatchPilot/pull/42',
+    latestDeliveryChannel: 'github-comment',
+    latestDeliveredAt: '2026-07-02T04:55:00Z',
+    deliveryReceiptFreshness: 'FRESH',
+    deliveryReceiptFresh: true,
+    deliveryReceiptFreshnessSummary:
+      'Latest live demo handoff delivery receipt matches the current handoff package.',
+    checks: [{
+      name: 'Live demo handoff package',
+      status: 'READY',
+      summary: 'Live demo handoff package is ready.',
+      nextAction: 'No action needed.'
+    }],
+    evidenceNotes: ['Live demo handoff package is ready.'],
+    downloadActions: ['Download live demo handoff delivery finalization report.'],
+    sideEffectContract: 'GET /api/demo/live-demo-handoff-package/delivery-finalization is read-only.',
+    markdownReport: '# PatchPilot Live Demo Handoff Delivery Finalization',
+    generatedAt: '2026-07-02T06:00:00Z'
+  };
+  const fetchMock = vi.fn()
+    .mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ success: true, data: finalizationPayload, message: null })
+    } as Response)
+    .mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      blob: async () => new Blob(['finalization'], { type: 'text/markdown' })
+    } as Response);
+  vi.stubGlobal('fetch', fetchMock);
+
+  const finalization = await getDemoLiveDemoHandoffDeliveryFinalization();
+  const report = await downloadDemoLiveDemoHandoffDeliveryFinalizationReport();
+
+  expect(fetchMock).toHaveBeenNthCalledWith(
+    1,
+    '/api/demo/live-demo-handoff-package/delivery-finalization'
+  );
+  expect(fetchMock).toHaveBeenNthCalledWith(
+    2,
+    '/api/demo/live-demo-handoff-package/delivery-finalization/report/download'
+  );
+  expect(finalization.status).toBe('READY');
+  expect(finalization.latestDeliveryReceiptId).toBe('live-demo-handoff-delivery-receipt-1');
+  expect(finalization.deliveryReceiptFreshness).toBe('FRESH');
   expect(report.type).toBe('text/markdown');
 });
 

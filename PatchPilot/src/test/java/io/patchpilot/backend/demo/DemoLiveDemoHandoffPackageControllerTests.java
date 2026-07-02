@@ -8,6 +8,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.time.Instant;
+import java.util.List;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.springframework.http.HttpHeaders.CONTENT_DISPOSITION;
@@ -77,8 +78,14 @@ class DemoLiveDemoHandoffPackageControllerTests {
                 () -> "live-demo-handoff-delivery-receipt-1",
                 () -> Instant.parse("2026-07-02T05:00:00Z")
         );
+        DemoLiveDemoHandoffDeliveryFinalizationService finalizationService =
+                new DemoLiveDemoHandoffDeliveryFinalizationService(
+                        service::createPackage,
+                        List::of,
+                        java.time.Clock.systemUTC()
+                );
         return MockMvcBuilders
-                .standaloneSetup(new DemoLiveDemoHandoffPackageController(service, receiptService))
+                .standaloneSetup(new DemoLiveDemoHandoffPackageController(service, receiptService, finalizationService))
                 .addFilters(new AdminApiSecurityFilter(properties, new ObjectMapper()))
                 .build();
     }
