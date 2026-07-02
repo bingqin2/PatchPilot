@@ -948,6 +948,32 @@ export interface DemoLiveDemoEvidenceBundle {
   markdownReport: string;
 }
 
+export interface DemoLiveDemoEvidenceBundleArchive {
+  id: string;
+  status: DemoReadinessStatus;
+  readyForHandoff: boolean;
+  repository: string | null;
+  issueNumber: number;
+  issueUrl: string | null;
+  triggerUser: string | null;
+  triggerComment: string | null;
+  launchPackageArchiveId: string | null;
+  launchPackageArchivedAt: string | null;
+  outcomeCloseoutArchiveId: string | null;
+  outcomeCloseoutArchivedAt: string | null;
+  taskId: string | null;
+  taskStatus: string | null;
+  pullRequestUrl: string | null;
+  webhookDeliveryId: string | null;
+  summary: string;
+  evidenceNotes: string[];
+  nextActions: string[];
+  sideEffectContract: string;
+  bundleGeneratedAt: string;
+  archivedAt: string;
+  report: string;
+}
+
 export interface DemoEndToEndAcceptanceMatrixItem {
   category: string;
   name: string;

@@ -11,6 +11,9 @@ import {
   postDemoLiveTriggerOutcomeCloseout,
   getDemoLiveDemoEvidenceBundle,
   downloadDemoLiveDemoEvidenceBundleReport,
+  archiveDemoLiveDemoEvidenceBundle,
+  listDemoLiveDemoEvidenceBundleArchives,
+  downloadDemoLiveDemoEvidenceBundleArchiveReport,
   downloadDemoLiveTriggerOutcomeCloseoutReport,
   archiveDemoLiveTriggerOutcomeCloseout,
   listDemoLiveTriggerOutcomeCloseoutArchives,
@@ -5123,6 +5126,68 @@ test('loads and downloads live demo evidence bundle through backend API', async 
   expect(bundle.status).toBe('READY');
   expect(bundle.readyForHandoff).toBe(true);
   expect(bundle.pullRequestUrl).toBe('https://github.com/bingqin2/PatchPilot/pull/42');
+  expect(report.type).toBe('text/markdown');
+});
+
+test('archives and downloads live demo evidence bundle snapshots through backend API', async () => {
+  const archivePayload = {
+    id: 'live-demo-evidence-bundle-archive-1',
+    status: 'READY',
+    readyForHandoff: true,
+    repository: 'bingqin2/PatchPilot',
+    issueNumber: 1,
+    issueUrl: 'https://github.com/bingqin2/PatchPilot/issues/1',
+    triggerUser: 'bingqin2',
+    triggerComment: '/agent fix touch docs/live-package.md',
+    launchPackageArchiveId: 'launch-package-archive-1',
+    launchPackageArchivedAt: '2026-07-02T00:00:05Z',
+    outcomeCloseoutArchiveId: 'outcome-closeout-archive-1',
+    outcomeCloseoutArchivedAt: '2026-07-02T01:05:00Z',
+    taskId: 'task-1',
+    taskStatus: 'COMPLETED',
+    pullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+    webhookDeliveryId: 'delivery-1',
+    summary: 'Live demo evidence bundle is ready for handoff.',
+    evidenceNotes: ['Launch package archive launch-package-archive-1 is ready.'],
+    nextActions: ['Review and merge https://github.com/bingqin2/PatchPilot/pull/42.'],
+    sideEffectContract: 'Archive creation writes only PatchPilot local archive records.',
+    bundleGeneratedAt: '2026-07-02T02:00:00Z',
+    archivedAt: '2026-07-02T03:00:00Z',
+    report: '# PatchPilot Live Demo Evidence Bundle Archive'
+  };
+  const fetchMock = vi.fn()
+    .mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ success: true, data: archivePayload, message: null })
+    } as Response)
+    .mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ success: true, data: [archivePayload], message: null })
+    } as Response)
+    .mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      blob: async () => new Blob(['bundle archive report'], { type: 'text/markdown' })
+    } as Response);
+  vi.stubGlobal('fetch', fetchMock);
+
+  const archive = await archiveDemoLiveDemoEvidenceBundle();
+  const archives = await listDemoLiveDemoEvidenceBundleArchives();
+  const report = await downloadDemoLiveDemoEvidenceBundleArchiveReport('live-demo-evidence-bundle-archive-1');
+
+  expect(fetchMock).toHaveBeenNthCalledWith(1, '/api/demo/live-demo-evidence-bundle/archives', {
+    method: 'POST'
+  });
+  expect(fetchMock).toHaveBeenNthCalledWith(2, '/api/demo/live-demo-evidence-bundle/archives');
+  expect(fetchMock).toHaveBeenNthCalledWith(
+    3,
+    '/api/demo/live-demo-evidence-bundle/archives/live-demo-evidence-bundle-archive-1/report/download'
+  );
+  expect(archive.id).toBe('live-demo-evidence-bundle-archive-1');
+  expect(archive.readyForHandoff).toBe(true);
+  expect(archives).toHaveLength(1);
   expect(report.type).toBe('text/markdown');
 });
 

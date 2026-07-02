@@ -149,6 +149,8 @@ import {
   getDemoFinalAcceptanceShareFinalization,
   getDemoFinalAcceptanceSharePackage,
   getDemoLiveDemoEvidenceBundle,
+  archiveDemoLiveDemoEvidenceBundle,
+  listDemoLiveDemoEvidenceBundleArchives,
   getDemoReadinessSnapshotTrend,
   getDemoSmokeChecklist,
   listDemoFinalHandoffReportPackageArchives,
@@ -183,6 +185,7 @@ import {
   runAndArchiveEvaluationFixtureBaseline,
   runEvaluationFixtureBaseline,
   preflightDemoLaunch,
+  downloadDemoLiveDemoEvidenceBundleArchiveReport,
   downloadDemoLiveDemoEvidenceBundleReport,
   downloadDemoLiveTriggerLaunchPackageArchiveReport,
   downloadDemoLiveTriggerOutcomeCloseoutArchiveReport,
@@ -369,6 +372,7 @@ import type {
   DemoLaunchCommandInput,
   DemoLiveLaunchGate,
   DemoLiveDemoEvidenceBundle,
+  DemoLiveDemoEvidenceBundleArchive,
   DemoLiveTriggerLaunchPackage,
   DemoLiveTriggerLaunchPackageArchive,
   DemoLiveTriggerOutcomeCloseout,
@@ -817,6 +821,10 @@ export default function App() {
     useState<DemoLiveDemoEvidenceBundle | null>(null);
   const [demoLiveDemoEvidenceBundleError, setDemoLiveDemoEvidenceBundleError] =
     useState<string | null>(null);
+  const [demoLiveDemoEvidenceBundleArchives, setDemoLiveDemoEvidenceBundleArchives] =
+    useState<DemoLiveDemoEvidenceBundleArchive[]>([]);
+  const [demoLiveDemoEvidenceBundleArchiveError, setDemoLiveDemoEvidenceBundleArchiveError] =
+    useState<string | null>(null);
   const [supportedAdapters, setSupportedAdapters] = useState<SupportedLanguageAdapter[]>([]);
   const [adapterError, setAdapterError] = useState<string | null>(null);
   const [adapterFixtureVerifications, setAdapterFixtureVerifications] = useState<LanguageAdapterFixtureVerification[]>([]);
@@ -1190,6 +1198,7 @@ export default function App() {
         demoLiveTriggerLaunchPackageArchiveResult,
         demoLiveTriggerOutcomeCloseoutArchiveResult,
         demoLiveDemoEvidenceBundleResult,
+        demoLiveDemoEvidenceBundleArchiveResult,
         demoAcceptanceSummaryResult,
         demoFinalAcceptanceSharePackageResult,
         demoFinalAcceptanceSharePackageArchiveResult,
@@ -1429,6 +1438,10 @@ export default function App() {
         getDemoLiveDemoEvidenceBundle().then(
           (bundle) => ({ bundle, error: null as string | null }),
           (caught) => ({ bundle: null, error: errorMessage(caught) })
+        ),
+        listDemoLiveDemoEvidenceBundleArchives().then(
+          (archives) => ({ archives, error: null as string | null }),
+          (caught) => ({ archives: null, error: errorMessage(caught) })
         ),
         getDemoAcceptanceSummary().then(
           (summary) => ({ summary, error: null as string | null }),
@@ -1883,6 +1896,10 @@ export default function App() {
         setDemoLiveDemoEvidenceBundle(demoLiveDemoEvidenceBundleResult.bundle);
       }
       setDemoLiveDemoEvidenceBundleError(demoLiveDemoEvidenceBundleResult.error);
+      if (demoLiveDemoEvidenceBundleArchiveResult.archives) {
+        setDemoLiveDemoEvidenceBundleArchives(demoLiveDemoEvidenceBundleArchiveResult.archives);
+      }
+      setDemoLiveDemoEvidenceBundleArchiveError(demoLiveDemoEvidenceBundleArchiveResult.error);
       if (demoAcceptanceSummaryResult.summary) {
         setDemoAcceptanceSummary(demoAcceptanceSummaryResult.summary);
       }
@@ -3449,6 +3466,7 @@ export default function App() {
     setDemoLiveTriggerOutcomeCloseoutError(null);
     setDemoLiveDemoEvidenceBundle(null);
     setDemoLiveDemoEvidenceBundleError(null);
+    setDemoLiveDemoEvidenceBundleArchiveError(null);
     try {
       const result = await postDemoLiveLaunchGate(input);
       setDemoLiveLaunchGate(result);
@@ -3468,6 +3486,7 @@ export default function App() {
     setDemoLiveTriggerOutcomeCloseoutError(null);
     setDemoLiveDemoEvidenceBundle(null);
     setDemoLiveDemoEvidenceBundleError(null);
+    setDemoLiveDemoEvidenceBundleArchiveError(null);
     try {
       const result = await postDemoLiveTriggerLaunchPackage(input);
       setDemoLiveTriggerLaunchPackage(result);
@@ -3489,6 +3508,7 @@ export default function App() {
         [archive, ...current.filter((item) => item.id !== archive.id)].slice(0, 20)
       );
       setDemoLiveDemoEvidenceBundle(null);
+      setDemoLiveDemoEvidenceBundleArchiveError(null);
       return archive;
     } catch (caught) {
       setDemoLiveTriggerLaunchPackageArchiveError(errorMessage(caught));
@@ -3535,6 +3555,7 @@ export default function App() {
       setDemoLiveDemoEvidenceBundleError(null);
       const bundle = await getDemoLiveDemoEvidenceBundle();
       setDemoLiveDemoEvidenceBundle(bundle);
+      setDemoLiveDemoEvidenceBundleArchiveError(null);
       return archive;
     } catch (caught) {
       setDemoLiveTriggerOutcomeCloseoutArchiveError(errorMessage(caught));
@@ -3563,6 +3584,25 @@ export default function App() {
 
   const handleDownloadDemoLiveDemoEvidenceBundleReport = useCallback(
     () => downloadDemoLiveDemoEvidenceBundleReport(),
+    []
+  );
+
+  const handleArchiveDemoLiveDemoEvidenceBundle = useCallback(async () => {
+    setDemoLiveDemoEvidenceBundleArchiveError(null);
+    try {
+      const archive = await archiveDemoLiveDemoEvidenceBundle();
+      setDemoLiveDemoEvidenceBundleArchives((current) =>
+        [archive, ...current.filter((item) => item.id !== archive.id)].slice(0, 20)
+      );
+      return archive;
+    } catch (caught) {
+      setDemoLiveDemoEvidenceBundleArchiveError(errorMessage(caught));
+      throw caught;
+    }
+  }, []);
+
+  const handleDownloadDemoLiveDemoEvidenceBundleArchiveReport = useCallback(
+    (archiveId: string) => downloadDemoLiveDemoEvidenceBundleArchiveReport(archiveId),
     []
   );
 
@@ -4347,6 +4387,10 @@ export default function App() {
         liveDemoEvidenceBundleError={demoLiveDemoEvidenceBundleError}
         onRefreshLiveDemoEvidenceBundle={handleRefreshDemoLiveDemoEvidenceBundle}
         onDownloadLiveDemoEvidenceBundleReport={handleDownloadDemoLiveDemoEvidenceBundleReport}
+        liveDemoEvidenceBundleArchives={demoLiveDemoEvidenceBundleArchives}
+        liveDemoEvidenceBundleArchiveError={demoLiveDemoEvidenceBundleArchiveError}
+        onArchiveLiveDemoEvidenceBundle={handleArchiveDemoLiveDemoEvidenceBundle}
+        onDownloadLiveDemoEvidenceBundleArchiveReport={handleDownloadDemoLiveDemoEvidenceBundleArchiveReport}
       />
 
       <EndToEndAcceptanceMatrixPanel

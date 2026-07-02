@@ -5,6 +5,7 @@ import type {
   DemoLiveTriggerLaunchPackage,
   DemoLiveTriggerLaunchPackageArchive,
   DemoLiveDemoEvidenceBundle,
+  DemoLiveDemoEvidenceBundleArchive,
   DemoLiveTriggerOutcomeCloseout,
   DemoLiveTriggerOutcomeCloseoutArchive
 } from '../../types';
@@ -254,6 +255,32 @@ const readyLiveDemoEvidenceBundle: DemoLiveDemoEvidenceBundle = {
   markdownReport: '# PatchPilot Live Demo Evidence Bundle'
 };
 
+const readyLiveDemoEvidenceBundleArchive: DemoLiveDemoEvidenceBundleArchive = {
+  id: 'live-demo-evidence-bundle-archive-1',
+  status: 'READY',
+  readyForHandoff: true,
+  repository: 'bingqin2/PatchPilot',
+  issueNumber: 1,
+  issueUrl: 'https://github.com/bingqin2/PatchPilot/issues/1',
+  triggerUser: 'bingqin2',
+  triggerComment: '/agent fix touch docs/live-package.md',
+  launchPackageArchiveId: 'launch-package-archive-1',
+  launchPackageArchivedAt: '2026-07-02T00:00:05Z',
+  outcomeCloseoutArchiveId: 'outcome-closeout-archive-1',
+  outcomeCloseoutArchivedAt: '2026-07-02T01:05:00Z',
+  taskId: 'task-1',
+  taskStatus: 'COMPLETED',
+  pullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+  webhookDeliveryId: 'delivery-1',
+  summary: 'Live demo evidence bundle is ready for handoff.',
+  evidenceNotes: ['Launch package archive launch-package-archive-1 is ready.'],
+  nextActions: ['Review and merge https://github.com/bingqin2/PatchPilot/pull/42.'],
+  sideEffectContract: 'Archive creation writes only PatchPilot local archive records.',
+  bundleGeneratedAt: '2026-07-02T02:00:00Z',
+  archivedAt: '2026-07-02T03:00:00Z',
+  report: '# PatchPilot Live Demo Evidence Bundle Archive'
+};
+
 const baseProps = {
   error: null,
   pending: false,
@@ -278,7 +305,11 @@ const baseProps = {
   liveDemoEvidenceBundle: null as DemoLiveDemoEvidenceBundle | null,
   liveDemoEvidenceBundleError: null,
   onRefreshLiveDemoEvidenceBundle: vi.fn(),
-  onDownloadLiveDemoEvidenceBundleReport: vi.fn()
+  onDownloadLiveDemoEvidenceBundleReport: vi.fn(),
+  liveDemoEvidenceBundleArchives: [] as DemoLiveDemoEvidenceBundleArchive[],
+  liveDemoEvidenceBundleArchiveError: null,
+  onArchiveLiveDemoEvidenceBundle: vi.fn(),
+  onDownloadLiveDemoEvidenceBundleArchiveReport: vi.fn()
 };
 
 test('submits exact live launch gate input', async () => {
@@ -658,6 +689,66 @@ test('shows live demo evidence bundle errors', () => {
 
   expect(screen.getByText('Live demo evidence bundle failed')).toBeInTheDocument();
   expect(screen.getByText('Outcome closeout archive is missing')).toBeInTheDocument();
+});
+
+test('archives and downloads final live demo evidence bundle snapshots', async () => {
+  const user = userEvent.setup();
+  const onArchiveLiveDemoEvidenceBundle = vi.fn(async () => readyLiveDemoEvidenceBundleArchive);
+  const onDownloadLiveDemoEvidenceBundleArchiveReport = vi.fn(async () =>
+    new Blob(['bundle archive report'], { type: 'text/markdown' })
+  );
+  const anchorClick = vi.fn();
+  const createObjectURL = vi.fn(() => 'blob:live-demo-evidence-bundle-archive');
+  const revokeObjectURL = vi.fn();
+  vi.stubGlobal('URL', { createObjectURL, revokeObjectURL });
+  vi.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
+    const element = document.createElementNS('http://www.w3.org/1999/xhtml', tagName) as HTMLAnchorElement;
+    if (tagName === 'a') {
+      element.click = anchorClick;
+    }
+    return element;
+  });
+
+  render(
+    <LiveLaunchGatePanel
+      {...baseProps}
+      result={readyGate}
+      liveDemoEvidenceBundle={readyLiveDemoEvidenceBundle}
+      liveDemoEvidenceBundleArchives={[readyLiveDemoEvidenceBundleArchive]}
+      onArchiveLiveDemoEvidenceBundle={onArchiveLiveDemoEvidenceBundle}
+      onDownloadLiveDemoEvidenceBundleArchiveReport={onDownloadLiveDemoEvidenceBundleArchiveReport}
+    />
+  );
+
+  await user.click(screen.getByRole('button', { name: 'Archive live demo evidence bundle' }));
+  await user.click(screen.getByRole('button', {
+    name: 'Download live demo evidence bundle archive live-demo-evidence-bundle-archive-1'
+  }));
+
+  expect(onArchiveLiveDemoEvidenceBundle).toHaveBeenCalled();
+  const archiveList = screen.getByText('Recent live demo evidence bundle archives').closest('div') as HTMLElement;
+  expect(archiveList).toBeInTheDocument();
+  expect(within(archiveList).getByText('live-demo-evidence-bundle-archive-1')).toBeInTheDocument();
+  expect(within(archiveList).getByText('Task task-1')).toBeInTheDocument();
+  expect(within(archiveList).getByText('https://github.com/bingqin2/PatchPilot/pull/42')).toBeInTheDocument();
+  expect(within(archiveList).getByText('Archived at 2026-07-02T03:00:00Z')).toBeInTheDocument();
+  expect(onDownloadLiveDemoEvidenceBundleArchiveReport).toHaveBeenCalledWith('live-demo-evidence-bundle-archive-1');
+  expect(createObjectURL).toHaveBeenCalledWith(expect.any(Blob));
+  expect(anchorClick).toHaveBeenCalled();
+  expect(revokeObjectURL).toHaveBeenCalledWith('blob:live-demo-evidence-bundle-archive');
+});
+
+test('shows live demo evidence bundle archive errors', () => {
+  render(
+    <LiveLaunchGatePanel
+      {...baseProps}
+      result={readyGate}
+      liveDemoEvidenceBundleArchiveError="Bundle archive write failed"
+    />
+  );
+
+  expect(screen.getByText('Live demo evidence bundle archive failed')).toBeInTheDocument();
+  expect(screen.getByText('Bundle archive write failed')).toBeInTheDocument();
 });
 
 test('shows launch package errors', () => {
