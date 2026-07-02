@@ -1028,6 +1028,40 @@ export interface DemoLiveDemoHandoffDeliveryReceipt {
   markdownReport: string;
 }
 
+export interface DemoLiveDemoHandoffDeliveryFinalizationCheck {
+  name: string;
+  status: DemoReadinessStatus;
+  summary: string;
+  nextAction: string;
+}
+
+export interface DemoLiveDemoHandoffDeliveryFinalization {
+  status: DemoReadinessStatus;
+  finalized: boolean;
+  summary: string;
+  nextAction: string;
+  latestDeliveryReceiptId: string | null;
+  evidenceBundleArchiveId: string | null;
+  repository: string | null;
+  issueNumber: number;
+  issueUrl: string | null;
+  taskId: string | null;
+  taskStatus: string | null;
+  pullRequestUrl: string | null;
+  latestDeliveryTarget: string | null;
+  latestDeliveryChannel: string | null;
+  latestDeliveredAt: string | null;
+  deliveryReceiptFreshness: string;
+  deliveryReceiptFresh: boolean;
+  deliveryReceiptFreshnessSummary: string;
+  checks: DemoLiveDemoHandoffDeliveryFinalizationCheck[];
+  evidenceNotes: string[];
+  downloadActions: string[];
+  sideEffectContract: string;
+  markdownReport: string;
+  generatedAt: string;
+}
+
 export interface DemoEndToEndAcceptanceMatrixItem {
   category: string;
   name: string;

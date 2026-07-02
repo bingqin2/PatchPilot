@@ -4,67 +4,59 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.patchpilot.backend.security.AdminApiSecurityFilter;
 import io.patchpilot.backend.security.config.AdminApiSecurityProperties;
 import org.junit.jupiter.api.Test;
-import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import java.time.Clock;
 import java.time.Instant;
-import java.util.List;
+import java.time.ZoneOffset;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.springframework.http.HttpHeaders.CONTENT_DISPOSITION;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-class DemoLiveDemoHandoffDeliveryReceiptControllerTests {
+class DemoLiveDemoHandoffDeliveryFinalizationControllerTests {
 
     @Test
-    void should_record_list_and_download_admin_protected_delivery_receipts() throws Exception {
+    void should_return_and_download_admin_protected_live_demo_handoff_delivery_finalization() throws Exception {
         MockMvc mockMvc = mockMvc();
 
-        mockMvc.perform(post("/api/demo/live-demo-handoff-package/delivery-receipts")
-                        .header("X-PatchPilot-Admin-Token", "test-admin-token")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                  "deliveryChannel": "github-comment",
-                                  "deliveryTarget": "https://github.com/bingqin2/PatchPilot/pull/42",
-                                  "operator": "local-operator",
-                                  "notes": "Sent the live demo handoff package to the reviewer.",
-                                  "deliveredAt": "2026-07-02T04:55:00Z"
-                                }
-                                """))
+        mockMvc.perform(get("/api/demo/live-demo-handoff-package/delivery-finalization")
+                        .header("X-PatchPilot-Admin-Token", "test-admin-token"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.id").value("live-demo-handoff-delivery-receipt-1"))
                 .andExpect(jsonPath("$.data.status").value("READY"))
-                .andExpect(jsonPath("$.data.evidenceBundleArchiveId").value("live-demo-evidence-bundle-archive-1"))
-                .andExpect(jsonPath("$.data.deliveryTarget").value("https://github.com/bingqin2/PatchPilot/pull/42"))
+                .andExpect(jsonPath("$.data.finalized").value(true))
+                .andExpect(jsonPath("$.data.latestDeliveryReceiptId")
+                        .value("live-demo-handoff-delivery-receipt-1"))
+                .andExpect(jsonPath("$.data.evidenceBundleArchiveId")
+                        .value("live-demo-evidence-bundle-archive-1"))
+                .andExpect(jsonPath("$.data.deliveryReceiptFreshness").value("FRESH"))
+                .andExpect(jsonPath("$.data.checks[0].name").value("Live demo handoff package"))
                 .andExpect(content().string(org.hamcrest.Matchers.not(containsString("test-admin-token"))));
 
-        mockMvc.perform(get("/api/demo/live-demo-handoff-package/delivery-receipts")
+        mockMvc.perform(get("/api/demo/live-demo-handoff-package/delivery-finalization/report/download")
                         .header("X-PatchPilot-Admin-Token", "test-admin-token"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data[0].id").value("live-demo-handoff-delivery-receipt-1"))
-                .andExpect(jsonPath("$.data[0].pullRequestUrl").value("https://github.com/bingqin2/PatchPilot/pull/42"));
-
-        mockMvc.perform(get("/api/demo/live-demo-handoff-package/delivery-receipts/live-demo-handoff-delivery-receipt-1/report/download")
-                        .header("X-PatchPilot-Admin-Token", "test-admin-token"))
-                .andExpect(status().isOk())
-                .andExpect(header().string(CONTENT_DISPOSITION, containsString("patchpilot-live-demo-handoff-delivery-receipt-live-demo-handoff-delivery-receipt-1.md")))
-                .andExpect(content().string(containsString("# PatchPilot Live Demo Handoff Delivery Receipt")))
-                .andExpect(content().string(containsString("live-demo-evidence-bundle-archive-1")));
+                .andExpect(header().string(
+                        CONTENT_DISPOSITION,
+                        containsString("patchpilot-live-demo-handoff-delivery-finalization.md")
+                ))
+                .andExpect(content().string(containsString(
+                        "# PatchPilot Live Demo Handoff Delivery Finalization"
+                )))
+                .andExpect(content().string(containsString("live-demo-handoff-delivery-receipt-1")));
     }
 
     @Test
-    void should_require_admin_token_for_delivery_receipts() throws Exception {
+    void should_require_admin_token_for_live_demo_handoff_delivery_finalization() throws Exception {
         MockMvc mockMvc = mockMvc();
 
-        mockMvc.perform(get("/api/demo/live-demo-handoff-package/delivery-receipts"))
+        mockMvc.perform(get("/api/demo/live-demo-handoff-package/delivery-finalization"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.message").value("Admin token is required"));
@@ -82,17 +74,26 @@ class DemoLiveDemoHandoffDeliveryReceiptControllerTests {
                 archiveRepository,
                 () -> Instant.parse("2026-07-02T04:00:00Z")
         );
+        InMemoryDemoLiveDemoHandoffDeliveryReceiptRepository receiptRepository =
+                new InMemoryDemoLiveDemoHandoffDeliveryReceiptRepository();
         DemoLiveDemoHandoffDeliveryReceiptService receiptService = new DemoLiveDemoHandoffDeliveryReceiptService(
                 packageService::createPackage,
-                new InMemoryDemoLiveDemoHandoffDeliveryReceiptRepository(),
+                receiptRepository,
                 () -> "live-demo-handoff-delivery-receipt-1",
                 () -> Instant.parse("2026-07-02T05:00:00Z")
         );
+        receiptService.recordDeliveryReceipt(new DemoLiveDemoHandoffDeliveryReceiptRequestDto(
+                "github-comment",
+                "https://github.com/bingqin2/PatchPilot/pull/42",
+                "local-operator",
+                "Sent the live demo handoff package to the reviewer.",
+                Instant.parse("2026-07-02T04:55:00Z")
+        ));
         DemoLiveDemoHandoffDeliveryFinalizationService finalizationService =
                 new DemoLiveDemoHandoffDeliveryFinalizationService(
                         packageService::createPackage,
-                        List::of,
-                        java.time.Clock.systemUTC()
+                        () -> receiptRepository.listRecentReceipts(1),
+                        Clock.fixed(Instant.parse("2026-07-02T06:00:00Z"), ZoneOffset.UTC)
                 );
         return MockMvcBuilders
                 .standaloneSetup(new DemoLiveDemoHandoffPackageController(
