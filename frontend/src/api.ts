@@ -69,6 +69,8 @@ import type {
   DemoLiveDemoReplayPackage,
   DemoLiveDemoReviewerDeliveryCenter,
   DemoLiveDemoReviewerDeliveryCenterArchive,
+  DemoLiveDemoReviewerDeliveryCenterDeliveryReceipt,
+  DemoLiveDemoReviewerDeliveryCenterDeliveryReceiptInput,
   DemoLiveDemoCompletionCertificate,
   DemoLiveDemoCompletionCertificateArchive,
   DemoLiveDemoEvidenceBundle,
@@ -424,6 +426,30 @@ export async function downloadDemoLiveDemoReviewerDeliveryCenterArchiveReport(
 ): Promise<Blob> {
   return getBlobApi(
     `/api/demo/live-demo-handoff-package/reviewer-delivery-center/archives/${encodeURIComponent(archiveId)}/report/download`
+  );
+}
+
+export async function createDemoLiveDemoReviewerDeliveryCenterDeliveryReceipt(
+  input: DemoLiveDemoReviewerDeliveryCenterDeliveryReceiptInput
+): Promise<DemoLiveDemoReviewerDeliveryCenterDeliveryReceipt> {
+  return postApi<DemoLiveDemoReviewerDeliveryCenterDeliveryReceipt>(
+    '/api/demo/live-demo-handoff-package/reviewer-delivery-center/delivery-receipts',
+    input
+  );
+}
+
+export async function listDemoLiveDemoReviewerDeliveryCenterDeliveryReceipts():
+  Promise<DemoLiveDemoReviewerDeliveryCenterDeliveryReceipt[]> {
+  return getApi<DemoLiveDemoReviewerDeliveryCenterDeliveryReceipt[]>(
+    '/api/demo/live-demo-handoff-package/reviewer-delivery-center/delivery-receipts'
+  );
+}
+
+export async function downloadDemoLiveDemoReviewerDeliveryCenterDeliveryReceiptReport(
+  receiptId: string
+): Promise<Blob> {
+  return getBlobApi(
+    `/api/demo/live-demo-handoff-package/reviewer-delivery-center/delivery-receipts/${encodeURIComponent(receiptId)}/report/download`
   );
 }
 

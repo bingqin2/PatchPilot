@@ -10,6 +10,7 @@ import io.patchpilot.backend.demo.domain.DemoLiveDemoHandoffDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoLiveDemoHandoffPackageVo;
 import io.patchpilot.backend.demo.domain.DemoLiveDemoReplayPackageVo;
 import io.patchpilot.backend.demo.domain.DemoLiveDemoReviewerDeliveryCenterArchiveVo;
+import io.patchpilot.backend.demo.domain.DemoLiveDemoReviewerDeliveryCenterDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoLiveDemoReviewerDeliveryCenterVo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ContentDisposition;
@@ -41,6 +42,7 @@ public class DemoLiveDemoHandoffPackageController {
     private final DemoLiveDemoReplayPackageService replayPackageService;
     private final DemoLiveDemoReviewerDeliveryCenterService reviewerDeliveryCenterService;
     private final DemoLiveDemoReviewerDeliveryCenterArchiveService reviewerDeliveryCenterArchiveService;
+    private final DemoLiveDemoReviewerDeliveryCenterDeliveryReceiptService reviewerDeliveryCenterDeliveryReceiptService;
 
     @GetMapping
     public ApiResponse<DemoLiveDemoHandoffPackageVo> getPackage() {
@@ -315,6 +317,40 @@ public class DemoLiveDemoHandoffPackageController {
                                         .toString()
                         )
                         .body(archive.report().getBytes(StandardCharsets.UTF_8)))
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/reviewer-delivery-center/delivery-receipts")
+    public ApiResponse<DemoLiveDemoReviewerDeliveryCenterDeliveryReceiptVo> recordReviewerDeliveryCenterDeliveryReceipt(
+            @RequestBody DemoLiveDemoReviewerDeliveryCenterDeliveryReceiptRequestDto request
+    ) {
+        return ApiResponse.ok(reviewerDeliveryCenterDeliveryReceiptService.recordDeliveryReceipt(request));
+    }
+
+    @GetMapping("/reviewer-delivery-center/delivery-receipts")
+    public ApiResponse<List<DemoLiveDemoReviewerDeliveryCenterDeliveryReceiptVo>>
+            listReviewerDeliveryCenterDeliveryReceipts() {
+        return ApiResponse.ok(reviewerDeliveryCenterDeliveryReceiptService.listRecentReceipts());
+    }
+
+    @GetMapping("/reviewer-delivery-center/delivery-receipts/{receiptId}/report/download")
+    public ResponseEntity<byte[]> downloadReviewerDeliveryCenterDeliveryReceiptReport(@PathVariable String receiptId) {
+        return reviewerDeliveryCenterDeliveryReceiptService.findReceipt(receiptId)
+                .map(receipt -> ResponseEntity.ok()
+                        .contentType(MediaType.parseMediaType("text/markdown;charset=UTF-8"))
+                        .header(
+                                HttpHeaders.CONTENT_DISPOSITION,
+                                ContentDisposition.attachment()
+                                        .filename(
+                                                "patchpilot-live-demo-reviewer-delivery-center-delivery-receipt-"
+                                                        + receipt.id()
+                                                        + ".md",
+                                                StandardCharsets.UTF_8
+                                        )
+                                        .build()
+                                        .toString()
+                        )
+                        .body(receipt.markdownReport().getBytes(StandardCharsets.UTF_8)))
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 }

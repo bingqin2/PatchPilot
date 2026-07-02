@@ -6792,3 +6792,24 @@ Validation so far:
 - `npm --prefix frontend run build`: passed with the existing Vite large-chunk warning.
 - `git diff --check`: passed.
 - Strict diff and new-file secret scans for GitHub, OpenAI-style, Slack, AWS, private-key, and PatchPilot token assignment patterns: no matches.
+
+## 2026-07-02 - 339 Live demo reviewer delivery center delivery receipts
+
+- Started `339-live-demo-reviewer-delivery-center-delivery-receipts` to record local proof that a frozen reviewer delivery center archive has been delivered to the reviewer.
+- Added backend delivery receipt support for reviewer delivery center archives, including a request DTO, receipt VO, capped in-memory repository, receipt service, and admin-protected endpoints to record, list, and download Markdown receipt reports.
+- Receipt creation requires a `READY` and deliverable reviewer delivery center archive and records archive id, repository and issue metadata, task status, Pull Request URL, delivery channel, target, operator, notes, delivered time, created time, and local-only side-effect contract.
+- Extended the live launch gate dashboard with reviewer delivery receipt form fields, recent receipt history, per-receipt Markdown downloads, App-level loading/refresh wiring, and error feedback.
+- Added `docs/plans/339-live-demo-reviewer-delivery-center-delivery-receipts.md` with the scope, local-only safety contract, and validation checklist.
+
+Validation so far:
+
+- `mvn -pl PatchPilot -Dtest=DemoLiveDemoReviewerDeliveryCenterDeliveryReceiptServiceTests test -q`: first failed because `DemoLiveDemoReviewerDeliveryCenterDeliveryReceiptVo` did not exist.
+- `npm --prefix frontend test -- --run src/api.test.ts src/dashboard/components/LiveLaunchGatePanel.test.tsx --reporter=dot`: first failed because the reviewer delivery receipt API helper, form, and error state did not exist.
+- `mvn -pl PatchPilot -Dtest=DemoLiveDemoReviewerDeliveryCenterDeliveryReceiptServiceTests,DemoLiveDemoHandoffPackageControllerTests,DemoLiveDemoHandoffDeliveryReceiptControllerTests,DemoLiveDemoHandoffDeliveryFinalizationControllerTests test -q`: passed after backend implementation.
+- `npm --prefix frontend test -- --run src/api.test.ts src/dashboard/components/LiveLaunchGatePanel.test.tsx --reporter=dot`: passed after frontend implementation. Focused result: 2 test files and 282 tests.
+- `npm --prefix frontend test -- --run src/App.test.tsx --reporter=dot`: passed after App-level receipt loading and handlers were wired. Result: 1 test file and 88 tests.
+- `mvn -pl PatchPilot test`: passed, 1448 tests.
+- `npm --prefix frontend test -- --reporter=dot`: passed, 35 test files and 573 tests.
+- `npm --prefix frontend run build`: passed with the existing Vite large-chunk warning.
+- `git diff --check`: passed.
+- Strict diff secret scan for GitHub, OpenAI-style, Slack, AWS, private-key, and PatchPilot token assignment patterns: no matches.

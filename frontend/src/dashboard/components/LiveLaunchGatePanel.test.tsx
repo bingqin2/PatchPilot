@@ -16,6 +16,7 @@ import type {
   DemoLiveDemoReplayPackage,
   DemoLiveDemoReviewerDeliveryCenter,
   DemoLiveDemoReviewerDeliveryCenterArchive,
+  DemoLiveDemoReviewerDeliveryCenterDeliveryReceipt,
   DemoLiveTriggerOutcomeCloseout,
   DemoLiveTriggerOutcomeCloseoutArchive
 } from '../../types';
@@ -595,6 +596,28 @@ const readyLiveDemoReviewerDeliveryCenterArchive: DemoLiveDemoReviewerDeliveryCe
   report: '# PatchPilot Live Demo Reviewer Delivery Center Archive'
 };
 
+const readyLiveDemoReviewerDeliveryCenterDeliveryReceipt:
+  DemoLiveDemoReviewerDeliveryCenterDeliveryReceipt = {
+    id: 'live-demo-reviewer-delivery-center-delivery-receipt-1',
+    status: 'READY',
+    reviewerDeliveryCenterArchiveId: 'live-demo-reviewer-delivery-center-archive-1',
+    reviewerDeliveryCenterStatus: 'READY',
+    repository: 'bingqin2/PatchPilot',
+    issueNumber: 1,
+    issueUrl: 'https://github.com/bingqin2/PatchPilot/issues/1',
+    taskId: 'task-1',
+    taskStatus: 'COMPLETED',
+    pullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+    summary: 'Live demo reviewer delivery center delivery receipt is recorded.',
+    deliveryChannel: 'github-comment',
+    deliveryTarget: 'https://github.com/bingqin2/PatchPilot/pull/42#issuecomment-1',
+    operator: 'local-operator',
+    notes: 'Sent frozen delivery center to reviewer.',
+    deliveredAt: '2026-07-02T13:55:00Z',
+    createdAt: '2026-07-02T14:00:00Z',
+    markdownReport: '# PatchPilot Live Demo Reviewer Delivery Center Delivery Receipt'
+  };
+
 const baseProps = {
   error: null,
   pending: false,
@@ -663,7 +686,11 @@ const baseProps = {
   liveDemoReviewerDeliveryCenterArchives: [] as DemoLiveDemoReviewerDeliveryCenterArchive[],
   liveDemoReviewerDeliveryCenterArchiveError: null,
   onArchiveLiveDemoReviewerDeliveryCenter: vi.fn(),
-  onDownloadLiveDemoReviewerDeliveryCenterArchiveReport: vi.fn()
+  onDownloadLiveDemoReviewerDeliveryCenterArchiveReport: vi.fn(),
+  liveDemoReviewerDeliveryCenterDeliveryReceipts: [] as DemoLiveDemoReviewerDeliveryCenterDeliveryReceipt[],
+  liveDemoReviewerDeliveryCenterDeliveryReceiptError: null,
+  onRecordLiveDemoReviewerDeliveryCenterDeliveryReceipt: vi.fn(),
+  onDownloadLiveDemoReviewerDeliveryCenterDeliveryReceiptReport: vi.fn()
 };
 
 test('submits exact live launch gate input', async () => {
@@ -1662,6 +1689,77 @@ test('archives and downloads live demo reviewer delivery center archives', async
   expect(revokeObjectURL).toHaveBeenCalledWith('blob:live-demo-reviewer-delivery-center-archive');
 });
 
+test('records and downloads live demo reviewer delivery center delivery receipts', async () => {
+  const user = userEvent.setup();
+  const onRecordLiveDemoReviewerDeliveryCenterDeliveryReceipt = vi.fn(
+    async () => readyLiveDemoReviewerDeliveryCenterDeliveryReceipt
+  );
+  const onDownloadLiveDemoReviewerDeliveryCenterDeliveryReceiptReport = vi.fn(
+    async () => new Blob(['delivery center receipt'], { type: 'text/markdown' })
+  );
+  const anchorClick = vi.fn();
+  const createObjectURL = vi.fn(() => 'blob:live-demo-reviewer-delivery-center-receipt');
+  const revokeObjectURL = vi.fn();
+  vi.stubGlobal('URL', { createObjectURL, revokeObjectURL });
+  vi.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
+    const element = document.createElementNS('http://www.w3.org/1999/xhtml', tagName) as HTMLAnchorElement;
+    if (tagName === 'a') {
+      element.click = anchorClick;
+    }
+    return element;
+  });
+
+  render(
+    <LiveLaunchGatePanel
+      {...baseProps}
+      result={readyGate}
+      liveDemoReviewerDeliveryCenter={readyLiveDemoReviewerDeliveryCenter}
+      liveDemoReviewerDeliveryCenterArchives={[readyLiveDemoReviewerDeliveryCenterArchive]}
+      liveDemoReviewerDeliveryCenterDeliveryReceipts={[
+        readyLiveDemoReviewerDeliveryCenterDeliveryReceipt
+      ]}
+      onRecordLiveDemoReviewerDeliveryCenterDeliveryReceipt={
+        onRecordLiveDemoReviewerDeliveryCenterDeliveryReceipt
+      }
+      onDownloadLiveDemoReviewerDeliveryCenterDeliveryReceiptReport={
+        onDownloadLiveDemoReviewerDeliveryCenterDeliveryReceiptReport
+      }
+    />
+  );
+
+  await user.clear(screen.getByLabelText('Reviewer delivery target'));
+  await user.type(
+    screen.getByLabelText('Reviewer delivery target'),
+    'https://github.com/bingqin2/PatchPilot/pull/42#issuecomment-1'
+  );
+  await user.click(screen.getByRole('button', {
+    name: 'Record live demo reviewer delivery center delivery receipt'
+  }));
+  await user.click(screen.getByRole('button', {
+    name: 'Download live demo reviewer delivery center delivery receipt live-demo-reviewer-delivery-center-delivery-receipt-1'
+  }));
+
+  expect(screen.getByText('Recent live demo reviewer delivery center delivery receipts'))
+    .toBeInTheDocument();
+  expect(screen.getByText('live-demo-reviewer-delivery-center-delivery-receipt-1'))
+    .toBeInTheDocument();
+  expect(screen.getAllByText('live-demo-reviewer-delivery-center-archive-1').length)
+    .toBeGreaterThan(0);
+  expect(screen.getByText('Delivered at 2026-07-02T13:55:00Z')).toBeInTheDocument();
+  expect(onRecordLiveDemoReviewerDeliveryCenterDeliveryReceipt).toHaveBeenCalledWith({
+    deliveryChannel: 'github-comment',
+    deliveryTarget: 'https://github.com/bingqin2/PatchPilot/pull/42#issuecomment-1',
+    operator: 'local-operator',
+    notes: 'Sent the frozen live demo reviewer delivery center to the reviewer.',
+    deliveredAt: expect.any(String)
+  });
+  expect(onDownloadLiveDemoReviewerDeliveryCenterDeliveryReceiptReport)
+    .toHaveBeenCalledWith('live-demo-reviewer-delivery-center-delivery-receipt-1');
+  expect(createObjectURL).toHaveBeenCalledWith(expect.any(Blob));
+  expect(anchorClick).toHaveBeenCalled();
+  expect(revokeObjectURL).toHaveBeenCalledWith('blob:live-demo-reviewer-delivery-center-receipt');
+});
+
 test('shows live demo reviewer delivery center blockers and errors', () => {
   render(
     <LiveLaunchGatePanel
@@ -1676,6 +1774,7 @@ test('shows live demo reviewer delivery center blockers and errors', () => {
       }}
       liveDemoReviewerDeliveryCenterError="Reviewer delivery center failed"
       liveDemoReviewerDeliveryCenterArchiveError="Reviewer delivery center archive failed"
+      liveDemoReviewerDeliveryCenterDeliveryReceiptError="Reviewer delivery center delivery receipt failed"
     />
   );
 
@@ -1683,6 +1782,9 @@ test('shows live demo reviewer delivery center blockers and errors', () => {
   expect(screen.getByText('Reviewer delivery center failed')).toBeInTheDocument();
   expect(screen.getByText('Live demo reviewer delivery center archive failed')).toBeInTheDocument();
   expect(screen.getByText('Reviewer delivery center archive failed')).toBeInTheDocument();
+  expect(screen.getByText('Live demo reviewer delivery center delivery receipt failed'))
+    .toBeInTheDocument();
+  expect(screen.getByText('Reviewer delivery center delivery receipt failed')).toBeInTheDocument();
   expect(screen.getByText('Artifact chain is BLOCKED: missing completion certificate archive.'))
     .toBeInTheDocument();
 });

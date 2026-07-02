@@ -38,6 +38,9 @@ import {
   archiveDemoLiveDemoReviewerDeliveryCenter,
   listDemoLiveDemoReviewerDeliveryCenterArchives,
   downloadDemoLiveDemoReviewerDeliveryCenterArchiveReport,
+  createDemoLiveDemoReviewerDeliveryCenterDeliveryReceipt,
+  listDemoLiveDemoReviewerDeliveryCenterDeliveryReceipts,
+  downloadDemoLiveDemoReviewerDeliveryCenterDeliveryReceiptReport,
   downloadDemoLiveTriggerOutcomeCloseoutReport,
   archiveDemoLiveTriggerOutcomeCloseout,
   listDemoLiveTriggerOutcomeCloseoutArchives,
@@ -5713,7 +5716,7 @@ test('loads and downloads live demo replay packages through backend API', async 
   expect(markdown.type).toBe('text/markdown');
 });
 
-test('loads downloads archives lists and downloads live demo reviewer delivery center through backend API', async () => {
+test('loads downloads archives receipts and downloads live demo reviewer delivery center through backend API', async () => {
   const deliveryCenterPayload = {
     status: 'READY',
     deliverable: true,
@@ -5754,6 +5757,26 @@ test('loads downloads archives lists and downloads live demo reviewer delivery c
     archivedAt: '2026-07-02T13:00:00Z',
     report: '# PatchPilot Live Demo Reviewer Delivery Center Archive'
   };
+  const receiptPayload = {
+    id: 'live-demo-reviewer-delivery-center-delivery-receipt-1',
+    status: 'READY',
+    reviewerDeliveryCenterArchiveId: 'live-demo-reviewer-delivery-center-archive-1',
+    reviewerDeliveryCenterStatus: 'READY',
+    repository: 'bingqin2/PatchPilot',
+    issueNumber: 1,
+    issueUrl: 'https://github.com/bingqin2/PatchPilot/issues/1',
+    taskId: 'task-1',
+    taskStatus: 'COMPLETED',
+    pullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+    summary: 'Live demo reviewer delivery center delivery receipt is recorded.',
+    deliveryChannel: 'github-comment',
+    deliveryTarget: 'https://github.com/bingqin2/PatchPilot/pull/42#issuecomment-1',
+    operator: 'local-operator',
+    notes: 'Sent frozen delivery center to reviewer.',
+    deliveredAt: '2026-07-02T13:55:00Z',
+    createdAt: '2026-07-02T14:00:00Z',
+    markdownReport: '# PatchPilot Live Demo Reviewer Delivery Center Delivery Receipt'
+  };
   const fetchMock = vi.fn()
     .mockResolvedValueOnce({
       ok: true,
@@ -5779,6 +5802,21 @@ test('loads downloads archives lists and downloads live demo reviewer delivery c
       ok: true,
       status: 200,
       blob: async () => new Blob(['delivery center archive'], { type: 'text/markdown' })
+    } as Response)
+    .mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ success: true, data: receiptPayload, message: null })
+    } as Response)
+    .mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ success: true, data: [receiptPayload], message: null })
+    } as Response)
+    .mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      blob: async () => new Blob(['delivery center receipt'], { type: 'text/markdown' })
     } as Response);
   vi.stubGlobal('fetch', fetchMock);
 
@@ -5788,6 +5826,17 @@ test('loads downloads archives lists and downloads live demo reviewer delivery c
   const archives = await listDemoLiveDemoReviewerDeliveryCenterArchives();
   const archiveReport = await downloadDemoLiveDemoReviewerDeliveryCenterArchiveReport(
     'live-demo-reviewer-delivery-center-archive-1'
+  );
+  const receipt = await createDemoLiveDemoReviewerDeliveryCenterDeliveryReceipt({
+    deliveryChannel: 'github-comment',
+    deliveryTarget: 'https://github.com/bingqin2/PatchPilot/pull/42#issuecomment-1',
+    operator: 'local-operator',
+    notes: 'Sent frozen delivery center to reviewer.',
+    deliveredAt: '2026-07-02T13:55:00Z'
+  });
+  const receipts = await listDemoLiveDemoReviewerDeliveryCenterDeliveryReceipts();
+  const receiptReport = await downloadDemoLiveDemoReviewerDeliveryCenterDeliveryReceiptReport(
+    'live-demo-reviewer-delivery-center-delivery-receipt-1'
   );
 
   expect(fetchMock).toHaveBeenNthCalledWith(
@@ -5811,6 +5860,29 @@ test('loads downloads archives lists and downloads live demo reviewer delivery c
     5,
     '/api/demo/live-demo-handoff-package/reviewer-delivery-center/archives/live-demo-reviewer-delivery-center-archive-1/report/download'
   );
+  expect(fetchMock).toHaveBeenNthCalledWith(
+    6,
+    '/api/demo/live-demo-handoff-package/reviewer-delivery-center/delivery-receipts',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        deliveryChannel: 'github-comment',
+        deliveryTarget: 'https://github.com/bingqin2/PatchPilot/pull/42#issuecomment-1',
+        operator: 'local-operator',
+        notes: 'Sent frozen delivery center to reviewer.',
+        deliveredAt: '2026-07-02T13:55:00Z'
+      })
+    }
+  );
+  expect(fetchMock).toHaveBeenNthCalledWith(
+    7,
+    '/api/demo/live-demo-handoff-package/reviewer-delivery-center/delivery-receipts'
+  );
+  expect(fetchMock).toHaveBeenNthCalledWith(
+    8,
+    '/api/demo/live-demo-handoff-package/reviewer-delivery-center/delivery-receipts/live-demo-reviewer-delivery-center-delivery-receipt-1/report/download'
+  );
   expect(deliveryCenter.deliverable).toBe(true);
   expect(deliveryCenter.readinessCards[0].name).toBe('Replay package');
   expect(deliveryCenter.evidenceLinks[0].url).toBe('https://github.com/bingqin2/PatchPilot/pull/42');
@@ -5818,6 +5890,10 @@ test('loads downloads archives lists and downloads live demo reviewer delivery c
   expect(archive.id).toBe('live-demo-reviewer-delivery-center-archive-1');
   expect(archives[0].pullRequestUrl).toBe('https://github.com/bingqin2/PatchPilot/pull/42');
   expect(archiveReport.type).toBe('text/markdown');
+  expect(receipt.reviewerDeliveryCenterArchiveId).toBe('live-demo-reviewer-delivery-center-archive-1');
+  expect(receipts[0].deliveryTarget)
+    .toBe('https://github.com/bingqin2/PatchPilot/pull/42#issuecomment-1');
+  expect(receiptReport.type).toBe('text/markdown');
 });
 
 test('runs demo launch preflight through backend API without creating a task', async () => {

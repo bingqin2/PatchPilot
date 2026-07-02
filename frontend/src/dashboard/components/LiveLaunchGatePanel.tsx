@@ -6,6 +6,8 @@ import type {
   DemoLiveDemoReplayPackage,
   DemoLiveDemoReviewerDeliveryCenter,
   DemoLiveDemoReviewerDeliveryCenterArchive,
+  DemoLiveDemoReviewerDeliveryCenterDeliveryReceipt,
+  DemoLiveDemoReviewerDeliveryCenterDeliveryReceiptInput,
   DemoLiveDemoCompletionCertificate,
   DemoLiveDemoCompletionCertificateArchive,
   DemoLiveDemoEvidenceBundle,
@@ -110,6 +112,12 @@ interface LiveLaunchGatePanelProps {
   onArchiveLiveDemoReviewerDeliveryCenter:
     () => Promise<DemoLiveDemoReviewerDeliveryCenterArchive> | Promise<void> | void;
   onDownloadLiveDemoReviewerDeliveryCenterArchiveReport: (archiveId: string) => Promise<Blob>;
+  liveDemoReviewerDeliveryCenterDeliveryReceipts: DemoLiveDemoReviewerDeliveryCenterDeliveryReceipt[];
+  liveDemoReviewerDeliveryCenterDeliveryReceiptError: string | null;
+  onRecordLiveDemoReviewerDeliveryCenterDeliveryReceipt: (
+    input: DemoLiveDemoReviewerDeliveryCenterDeliveryReceiptInput
+  ) => Promise<DemoLiveDemoReviewerDeliveryCenterDeliveryReceipt> | Promise<void> | void;
+  onDownloadLiveDemoReviewerDeliveryCenterDeliveryReceiptReport: (receiptId: string) => Promise<Blob>;
 }
 
 export function LiveLaunchGatePanel({
@@ -181,7 +189,11 @@ export function LiveLaunchGatePanel({
   liveDemoReviewerDeliveryCenterArchives,
   liveDemoReviewerDeliveryCenterArchiveError,
   onArchiveLiveDemoReviewerDeliveryCenter,
-  onDownloadLiveDemoReviewerDeliveryCenterArchiveReport
+  onDownloadLiveDemoReviewerDeliveryCenterArchiveReport,
+  liveDemoReviewerDeliveryCenterDeliveryReceipts,
+  liveDemoReviewerDeliveryCenterDeliveryReceiptError,
+  onRecordLiveDemoReviewerDeliveryCenterDeliveryReceipt,
+  onDownloadLiveDemoReviewerDeliveryCenterDeliveryReceiptReport
 }: LiveLaunchGatePanelProps) {
   const [repositoryOwner, setRepositoryOwner] = useState('bingqin2');
   const [repositoryName, setRepositoryName] = useState('PatchPilot');
@@ -195,6 +207,14 @@ export function LiveLaunchGatePanel({
   const [handoffDeliveryOperator, setHandoffDeliveryOperator] = useState('local-operator');
   const [handoffDeliveryNotes, setHandoffDeliveryNotes] = useState(
     'Sent the live demo handoff package to the reviewer.'
+  );
+  const [reviewerDeliveryChannel, setReviewerDeliveryChannel] = useState('github-comment');
+  const [reviewerDeliveryTarget, setReviewerDeliveryTarget] = useState(
+    'https://github.com/bingqin2/PatchPilot/pull/42#issuecomment-1'
+  );
+  const [reviewerDeliveryOperator, setReviewerDeliveryOperator] = useState('local-operator');
+  const [reviewerDeliveryNotes, setReviewerDeliveryNotes] = useState(
+    'Sent the frozen live demo reviewer delivery center to the reviewer.'
   );
 
   function input(): GitHubTriggerDryRunInput {
@@ -381,6 +401,25 @@ export function LiveLaunchGatePanel({
   async function downloadLiveDemoReviewerDeliveryCenterArchive(archiveId: string) {
     const blob = await onDownloadLiveDemoReviewerDeliveryCenterArchiveReport(archiveId);
     downloadMarkdown(blob, `patchpilot-live-demo-reviewer-delivery-center-archive-${archiveId}.md`);
+  }
+
+  function reviewerDeliveryReceiptInput(): DemoLiveDemoReviewerDeliveryCenterDeliveryReceiptInput {
+    return {
+      deliveryChannel: reviewerDeliveryChannel.trim(),
+      deliveryTarget: reviewerDeliveryTarget.trim(),
+      operator: reviewerDeliveryOperator.trim(),
+      notes: reviewerDeliveryNotes.trim(),
+      deliveredAt: new Date().toISOString()
+    };
+  }
+
+  async function recordLiveDemoReviewerDeliveryCenterDeliveryReceipt() {
+    await onRecordLiveDemoReviewerDeliveryCenterDeliveryReceipt(reviewerDeliveryReceiptInput());
+  }
+
+  async function downloadLiveDemoReviewerDeliveryCenterDeliveryReceipt(receiptId: string) {
+    const blob = await onDownloadLiveDemoReviewerDeliveryCenterDeliveryReceiptReport(receiptId);
+    downloadMarkdown(blob, `patchpilot-live-demo-reviewer-delivery-center-delivery-receipt-${receiptId}.md`);
   }
 
   return (
@@ -811,6 +850,13 @@ export function LiveLaunchGatePanel({
         </div>
       ) : null}
 
+      {liveDemoReviewerDeliveryCenterDeliveryReceiptError ? (
+        <div className="adapter-api-error">
+          <strong>Live demo reviewer delivery center delivery receipt failed</strong>
+          <span>{liveDemoReviewerDeliveryCenterDeliveryReceiptError}</span>
+        </div>
+      ) : null}
+
       {result ? (
         <>
           {liveDemoReviewerDeliveryCenter ? (
@@ -819,6 +865,23 @@ export function LiveLaunchGatePanel({
           <LiveDemoReviewerDeliveryCenterArchiveList
             archives={liveDemoReviewerDeliveryCenterArchives}
             onDownloadArchive={(archiveId) => void downloadLiveDemoReviewerDeliveryCenterArchive(archiveId)}
+          />
+          <LiveDemoReviewerDeliveryCenterDeliveryReceiptRecorder
+            deliveryChannel={reviewerDeliveryChannel}
+            deliveryTarget={reviewerDeliveryTarget}
+            operator={reviewerDeliveryOperator}
+            notes={reviewerDeliveryNotes}
+            disabled={liveDemoReviewerDeliveryCenterArchives.length === 0}
+            onDeliveryChannelChange={setReviewerDeliveryChannel}
+            onDeliveryTargetChange={setReviewerDeliveryTarget}
+            onOperatorChange={setReviewerDeliveryOperator}
+            onNotesChange={setReviewerDeliveryNotes}
+            onRecord={() => void recordLiveDemoReviewerDeliveryCenterDeliveryReceipt()}
+          />
+          <LiveDemoReviewerDeliveryCenterDeliveryReceiptList
+            receipts={liveDemoReviewerDeliveryCenterDeliveryReceipts}
+            onDownloadReceipt={(receiptId) =>
+              void downloadLiveDemoReviewerDeliveryCenterDeliveryReceipt(receiptId)}
           />
           <LiveLaunchGateResult result={result} />
           {launchPackage ? <LiveTriggerLaunchPackageResult launchPackage={launchPackage} /> : null}
@@ -1594,6 +1657,130 @@ function LiveDemoReviewerDeliveryCenterArchiveList({
                 type="button"
                 aria-label={`Download live demo reviewer delivery center archive ${archive.id}`}
                 onClick={() => onDownloadArchive(archive.id)}
+              >
+                <Download size={14} />
+                Download
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function LiveDemoReviewerDeliveryCenterDeliveryReceiptRecorder({
+  deliveryChannel,
+  deliveryTarget,
+  operator,
+  notes,
+  disabled,
+  onDeliveryChannelChange,
+  onDeliveryTargetChange,
+  onOperatorChange,
+  onNotesChange,
+  onRecord
+}: {
+  deliveryChannel: string;
+  deliveryTarget: string;
+  operator: string;
+  notes: string;
+  disabled: boolean;
+  onDeliveryChannelChange: (value: string) => void;
+  onDeliveryTargetChange: (value: string) => void;
+  onOperatorChange: (value: string) => void;
+  onNotesChange: (value: string) => void;
+  onRecord: () => void;
+}) {
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    onRecord();
+  }
+
+  return (
+    <div className="demo-launch-preflight-actions">
+      <h3>Record reviewer delivery center delivery</h3>
+      <form
+        className="demo-launch-preflight-form"
+        aria-label="Live demo reviewer delivery center delivery receipt form"
+        onSubmit={submit}
+      >
+        <label htmlFor="live-demo-reviewer-delivery-center-delivery-channel">
+          Reviewer delivery channel
+          <input
+            id="live-demo-reviewer-delivery-center-delivery-channel"
+            value={deliveryChannel}
+            onChange={(event) => onDeliveryChannelChange(event.target.value)}
+            required
+          />
+        </label>
+        <label htmlFor="live-demo-reviewer-delivery-center-delivery-target">
+          Reviewer delivery target
+          <input
+            id="live-demo-reviewer-delivery-center-delivery-target"
+            value={deliveryTarget}
+            onChange={(event) => onDeliveryTargetChange(event.target.value)}
+            required
+          />
+        </label>
+        <label htmlFor="live-demo-reviewer-delivery-center-delivery-operator">
+          Reviewer delivery operator
+          <input
+            id="live-demo-reviewer-delivery-center-delivery-operator"
+            value={operator}
+            onChange={(event) => onOperatorChange(event.target.value)}
+            required
+          />
+        </label>
+        <label className="demo-launch-comment" htmlFor="live-demo-reviewer-delivery-center-delivery-notes">
+          Reviewer delivery notes
+          <input
+            id="live-demo-reviewer-delivery-center-delivery-notes"
+            value={notes}
+            onChange={(event) => onNotesChange(event.target.value)}
+          />
+        </label>
+        <button
+          className="secondary-button"
+          type="submit"
+          disabled={disabled || deliveryTarget.trim().length === 0 || deliveryChannel.trim().length === 0}
+          aria-label="Record live demo reviewer delivery center delivery receipt"
+        >
+          <ClipboardCheck size={16} />
+          Record reviewer delivery receipt
+        </button>
+      </form>
+    </div>
+  );
+}
+
+function LiveDemoReviewerDeliveryCenterDeliveryReceiptList({
+  receipts,
+  onDownloadReceipt
+}: {
+  receipts: DemoLiveDemoReviewerDeliveryCenterDeliveryReceipt[];
+  onDownloadReceipt: (receiptId: string) => void;
+}) {
+  return (
+    <div className="demo-launch-preflight-actions">
+      <h3>Recent live demo reviewer delivery center delivery receipts</h3>
+      {receipts.length === 0 ? (
+        <p>No live demo reviewer delivery center delivery receipts recorded.</p>
+      ) : (
+        <ul>
+          {receipts.map((receipt) => (
+            <li key={receipt.id}>
+              <strong>{receipt.id}</strong>
+              <span> {receipt.status} </span>
+              <span>{receipt.reviewerDeliveryCenterArchiveId}</span>
+              <span>{receipt.deliveryChannel}</span>
+              <span>{receipt.deliveryTarget}</span>
+              <span>Delivered at {receipt.deliveredAt}</span>
+              <button
+                className="secondary-button compact-button"
+                type="button"
+                aria-label={`Download live demo reviewer delivery center delivery receipt ${receipt.id}`}
+                onClick={() => onDownloadReceipt(receipt.id)}
               >
                 <Download size={14} />
                 Download

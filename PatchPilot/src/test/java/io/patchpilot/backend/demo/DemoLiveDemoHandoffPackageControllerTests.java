@@ -183,6 +183,66 @@ class DemoLiveDemoHandoffPackageControllerTests {
     }
 
     @Test
+    void should_record_list_and_download_live_demo_reviewer_delivery_center_delivery_receipts() throws Exception {
+        MockMvc mockMvc = mockMvcWithArtifactChain();
+
+        mockMvc.perform(post("/api/demo/live-demo-handoff-package/reviewer-delivery-center/archives")
+                        .header("X-PatchPilot-Admin-Token", "test-admin-token"))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/demo/live-demo-handoff-package/reviewer-delivery-center/delivery-receipts")
+                        .header("X-PatchPilot-Admin-Token", "test-admin-token")
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "deliveryChannel": "github-comment",
+                                  "deliveryTarget": "https://github.com/bingqin2/PatchPilot/pull/42#issuecomment-1",
+                                  "operator": "local-operator",
+                                  "notes": "Sent frozen delivery center to reviewer.",
+                                  "deliveredAt": "2026-07-02T13:55:00Z"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id")
+                        .value("live-demo-reviewer-delivery-center-delivery-receipt-1"))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.reviewerDeliveryCenterArchiveId")
+                        .value("live-demo-reviewer-delivery-center-archive-1"))
+                .andExpect(jsonPath("$.data.deliveryTarget")
+                        .value("https://github.com/bingqin2/PatchPilot/pull/42#issuecomment-1"))
+                .andExpect(jsonPath("$.data.markdownReport")
+                        .value(containsString("PatchPilot Live Demo Reviewer Delivery Center Delivery Receipt")));
+
+        mockMvc.perform(get("/api/demo/live-demo-handoff-package/reviewer-delivery-center/delivery-receipts")
+                        .header("X-PatchPilot-Admin-Token", "test-admin-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].id")
+                        .value("live-demo-reviewer-delivery-center-delivery-receipt-1"))
+                .andExpect(jsonPath("$.data[0].reviewerDeliveryCenterArchiveId")
+                        .value("live-demo-reviewer-delivery-center-archive-1"));
+
+        mockMvc.perform(get(
+                        "/api/demo/live-demo-handoff-package/reviewer-delivery-center/delivery-receipts/"
+                                + "live-demo-reviewer-delivery-center-delivery-receipt-1/report/download"
+                )
+                        .header("X-PatchPilot-Admin-Token", "test-admin-token"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(
+                        CONTENT_DISPOSITION,
+                        containsString("patchpilot-live-demo-reviewer-delivery-center-delivery-receipt-")
+                ))
+                .andExpect(content().string(
+                        containsString("# PatchPilot Live Demo Reviewer Delivery Center Delivery Receipt")
+                ))
+                .andExpect(content().string(containsString("live-demo-reviewer-delivery-center-archive-1")))
+                .andExpect(content().string(
+                        containsString("https://github.com/bingqin2/PatchPilot/pull/42#issuecomment-1")
+                ));
+    }
+
+    @Test
     void should_require_admin_token_for_live_demo_handoff_package() throws Exception {
         MockMvc mockMvc = mockMvc();
 
@@ -256,6 +316,13 @@ class DemoLiveDemoHandoffPackageControllerTests {
                         () -> "live-demo-reviewer-delivery-center-archive-1",
                         () -> Instant.parse("2026-07-02T13:00:00Z")
                 );
+        DemoLiveDemoReviewerDeliveryCenterDeliveryReceiptService reviewerDeliveryCenterDeliveryReceiptService =
+                new DemoLiveDemoReviewerDeliveryCenterDeliveryReceiptService(
+                        () -> reviewerDeliveryCenterArchiveService.listRecentArchives(),
+                        new InMemoryDemoLiveDemoReviewerDeliveryCenterDeliveryReceiptRepository(),
+                        () -> "live-demo-reviewer-delivery-center-delivery-receipt-1",
+                        () -> Instant.parse("2026-07-02T14:00:00Z")
+                );
         return MockMvcBuilders
                 .standaloneSetup(new DemoLiveDemoHandoffPackageController(
                         service,
@@ -267,7 +334,8 @@ class DemoLiveDemoHandoffPackageControllerTests {
                         artifactChainReportService,
                         replayPackageService,
                         reviewerDeliveryCenterService,
-                        reviewerDeliveryCenterArchiveService
+                        reviewerDeliveryCenterArchiveService,
+                        reviewerDeliveryCenterDeliveryReceiptService
                 ))
                 .addFilters(new AdminApiSecurityFilter(properties, new ObjectMapper()))
                 .build();
@@ -357,6 +425,13 @@ class DemoLiveDemoHandoffPackageControllerTests {
                         () -> "live-demo-reviewer-delivery-center-archive-1",
                         () -> Instant.parse("2026-07-02T13:00:00Z")
                 );
+        DemoLiveDemoReviewerDeliveryCenterDeliveryReceiptService reviewerDeliveryCenterDeliveryReceiptService =
+                new DemoLiveDemoReviewerDeliveryCenterDeliveryReceiptService(
+                        () -> reviewerDeliveryCenterArchiveService.listRecentArchives(),
+                        new InMemoryDemoLiveDemoReviewerDeliveryCenterDeliveryReceiptRepository(),
+                        () -> "live-demo-reviewer-delivery-center-delivery-receipt-1",
+                        () -> Instant.parse("2026-07-02T14:00:00Z")
+                );
         return MockMvcBuilders
                 .standaloneSetup(new DemoLiveDemoHandoffPackageController(
                         service,
@@ -368,7 +443,8 @@ class DemoLiveDemoHandoffPackageControllerTests {
                         artifactChainReportService,
                         replayPackageService,
                         reviewerDeliveryCenterService,
-                        reviewerDeliveryCenterArchiveService
+                        reviewerDeliveryCenterArchiveService,
+                        reviewerDeliveryCenterDeliveryReceiptService
                 ))
                 .addFilters(new AdminApiSecurityFilter(properties, new ObjectMapper()))
                 .build();
