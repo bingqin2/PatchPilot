@@ -3,6 +3,7 @@ import { useState, type FormEvent } from 'react';
 import type {
   DemoLiveLaunchGate,
   DemoLiveDemoEvidenceBundle,
+  DemoLiveDemoEvidenceBundleArchive,
   DemoLiveTriggerLaunchPackage,
   DemoLiveTriggerLaunchPackageArchive,
   DemoLiveTriggerOutcomeCloseout,
@@ -45,6 +46,10 @@ interface LiveLaunchGatePanelProps {
   liveDemoEvidenceBundleError: string | null;
   onRefreshLiveDemoEvidenceBundle: () => Promise<DemoLiveDemoEvidenceBundle> | Promise<void> | void;
   onDownloadLiveDemoEvidenceBundleReport: () => Promise<Blob>;
+  liveDemoEvidenceBundleArchives: DemoLiveDemoEvidenceBundleArchive[];
+  liveDemoEvidenceBundleArchiveError: string | null;
+  onArchiveLiveDemoEvidenceBundle: () => Promise<DemoLiveDemoEvidenceBundleArchive> | Promise<void> | void;
+  onDownloadLiveDemoEvidenceBundleArchiveReport: (archiveId: string) => Promise<Blob>;
 }
 
 export function LiveLaunchGatePanel({
@@ -72,7 +77,11 @@ export function LiveLaunchGatePanel({
   liveDemoEvidenceBundle,
   liveDemoEvidenceBundleError,
   onRefreshLiveDemoEvidenceBundle,
-  onDownloadLiveDemoEvidenceBundleReport
+  onDownloadLiveDemoEvidenceBundleReport,
+  liveDemoEvidenceBundleArchives,
+  liveDemoEvidenceBundleArchiveError,
+  onArchiveLiveDemoEvidenceBundle,
+  onDownloadLiveDemoEvidenceBundleArchiveReport
 }: LiveLaunchGatePanelProps) {
   const [repositoryOwner, setRepositoryOwner] = useState('bingqin2');
   const [repositoryName, setRepositoryName] = useState('PatchPilot');
@@ -155,6 +164,15 @@ export function LiveLaunchGatePanel({
   async function downloadLiveDemoEvidenceBundle() {
     const blob = await onDownloadLiveDemoEvidenceBundleReport();
     downloadMarkdown(blob, 'patchpilot-live-demo-evidence-bundle.md');
+  }
+
+  async function archiveLiveDemoEvidenceBundle() {
+    await onArchiveLiveDemoEvidenceBundle();
+  }
+
+  async function downloadLiveDemoEvidenceBundleArchive(archiveId: string) {
+    const blob = await onDownloadLiveDemoEvidenceBundleArchiveReport(archiveId);
+    downloadMarkdown(blob, `patchpilot-live-demo-evidence-bundle-archive-${archiveId}.md`);
   }
 
   return (
@@ -248,6 +266,16 @@ export function LiveLaunchGatePanel({
             >
               <FileCheck2 size={16} />
               Download evidence bundle
+            </button>
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={() => void archiveLiveDemoEvidenceBundle()}
+              disabled={!liveDemoEvidenceBundle}
+              aria-label="Archive live demo evidence bundle"
+            >
+              <Archive size={16} />
+              Archive evidence bundle
             </button>
           </div>
         ) : null}
@@ -354,6 +382,13 @@ export function LiveLaunchGatePanel({
         </div>
       ) : null}
 
+      {liveDemoEvidenceBundleArchiveError ? (
+        <div className="adapter-api-error">
+          <strong>Live demo evidence bundle archive failed</strong>
+          <span>{liveDemoEvidenceBundleArchiveError}</span>
+        </div>
+      ) : null}
+
       {result ? (
         <>
           <LiveLaunchGateResult result={result} />
@@ -368,11 +403,53 @@ export function LiveLaunchGatePanel({
             onDownloadArchive={(archiveId) => void downloadOutcomeCloseoutArchive(archiveId)}
           />
           {liveDemoEvidenceBundle ? <LiveDemoEvidenceBundleResult bundle={liveDemoEvidenceBundle} /> : null}
+          <LiveDemoEvidenceBundleArchiveList
+            archives={liveDemoEvidenceBundleArchives}
+            onDownloadArchive={(archiveId) => void downloadLiveDemoEvidenceBundleArchive(archiveId)}
+          />
         </>
       ) : (
         <div className="empty-state">No live launch gate run yet.</div>
       )}
     </section>
+  );
+}
+
+function LiveDemoEvidenceBundleArchiveList({
+  archives,
+  onDownloadArchive
+}: {
+  archives: DemoLiveDemoEvidenceBundleArchive[];
+  onDownloadArchive: (archiveId: string) => void;
+}) {
+  return (
+    <div className="demo-launch-preflight-actions">
+      <h3>Recent live demo evidence bundle archives</h3>
+      {archives.length === 0 ? (
+        <p>No live demo evidence bundle archives recorded.</p>
+      ) : (
+        <ul>
+          {archives.map((archive) => (
+            <li key={archive.id}>
+              <strong>{archive.id}</strong>
+              <span> {archive.status} </span>
+              <span>{archive.taskId ? `Task ${archive.taskId}` : 'No matching task'}</span>
+              {archive.pullRequestUrl ? <span> {archive.pullRequestUrl}</span> : null}
+              <span>Archived at {archive.archivedAt}</span>
+              <button
+                className="secondary-button compact-button"
+                type="button"
+                aria-label={`Download live demo evidence bundle archive ${archive.id}`}
+                onClick={() => onDownloadArchive(archive.id)}
+              >
+                <Download size={14} />
+                Download
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
 

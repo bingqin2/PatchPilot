@@ -6586,3 +6586,21 @@ Validation so far:
 - `npm --prefix frontend run build`: passed with the existing Vite large-chunk warning.
 - `git diff --check`: passed.
 - Strict diff secret scan for GitHub, OpenAI-style, Slack, AWS, private-key, and PatchPilot token assignment patterns: no matches.
+
+## 2026-07-02 - 329 Live demo evidence bundle archives
+
+- Started `329-live-demo-evidence-bundle-archives` to freeze the final live demo evidence bundle as a stable local handoff artifact after a real `/agent fix` run.
+- Added backend archive support for live demo evidence bundles, including a capped in-memory archive repository, archive service, archive VO, and admin-protected endpoints to create, list, and download archived Markdown reports.
+- Each archive freezes the bundle status, handoff readiness, repository, issue URL, trigger user/comment, launch package archive, outcome closeout archive, task status, webhook delivery, Pull Request URL, evidence notes, next actions, side-effect contract, bundle generation time, archive time, and report body.
+- Extended the live launch gate dashboard with `Archive evidence bundle`, recent evidence bundle archive history, archived Markdown downloads, archive error feedback, App-level loading, and typed frontend API helpers.
+- Added `docs/plans/329-live-demo-evidence-bundle-archives.md` with the scope, safety contract, API shape, and validation checklist.
+
+Validation so far:
+
+- `mvn -pl PatchPilot -Dtest=DemoLiveDemoEvidenceBundleArchiveServiceTests,DemoLiveDemoEvidenceBundleControllerTests test`: first failed because `DemoLiveDemoEvidenceBundleArchiveVo`, archive service, and repository did not exist; passed after backend implementation. Focused result: 6 tests.
+- `npm --prefix frontend test -- --run src/api.test.ts src/dashboard/components/LiveLaunchGatePanel.test.tsx`: first failed because the archive API helper, archive button/history, and archive error state were missing; passed after frontend implementation. Focused result: 2 test files and 256 tests.
+- `mvn -pl PatchPilot test`: passed, 1403 tests.
+- `npm --prefix frontend test -- --reporter=dot`: passed, 35 test files and 547 tests.
+- `npm --prefix frontend run build`: passed with the existing Vite large-chunk warning.
+- `git diff --check`: passed.
+- Strict diff secret scan for GitHub, OpenAI-style, Slack, AWS, private-key, and PatchPilot token assignment patterns: no matches.

@@ -1,6 +1,7 @@
 package io.patchpilot.backend.demo;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.patchpilot.backend.demo.domain.DemoLiveDemoEvidenceBundleArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoLiveTriggerLaunchPackageArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoLiveTriggerOutcomeCloseoutArchiveVo;
 import io.patchpilot.backend.security.AdminApiSecurityFilter;
@@ -13,8 +14,10 @@ import java.time.Instant;
 import java.util.List;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.springframework.http.HttpHeaders.CONTENT_DISPOSITION;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -52,6 +55,40 @@ class DemoLiveDemoEvidenceBundleControllerTests {
     }
 
     @Test
+    void should_create_list_and_download_live_demo_evidence_bundle_archives() throws Exception {
+        TestControllerFixture fixture = controllerFixture();
+        MockMvc mockMvc = fixture.mockMvc();
+
+        mockMvc.perform(post("/api/demo/live-demo-evidence-bundle/archives")
+                        .header("X-PatchPilot-Admin-Token", "test-admin-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value("live-demo-evidence-bundle-archive-1"))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.readyForHandoff").value(true))
+                .andExpect(jsonPath("$.data.outcomeCloseoutArchiveId").value("outcome-closeout-archive-1"))
+                .andExpect(jsonPath("$.data.pullRequestUrl").value("https://github.com/bingqin2/PatchPilot/pull/42"))
+                .andExpect(jsonPath("$.data.report").value(containsString("PatchPilot Live Demo Evidence Bundle Archive")));
+
+        mockMvc.perform(get("/api/demo/live-demo-evidence-bundle/archives")
+                        .header("X-PatchPilot-Admin-Token", "test-admin-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].id").value("live-demo-evidence-bundle-archive-1"))
+                .andExpect(jsonPath("$.data[0].archivedAt").value(notNullValue()));
+
+        DemoLiveDemoEvidenceBundleArchiveVo archive = fixture.archiveService().listRecentArchives().get(0);
+        mockMvc.perform(get("/api/demo/live-demo-evidence-bundle/archives/{archiveId}/report/download", archive.id())
+                        .header("X-PatchPilot-Admin-Token", "test-admin-token"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(
+                        CONTENT_DISPOSITION,
+                        containsString("patchpilot-live-demo-evidence-bundle-archive-live-demo-evidence-bundle-archive-1.md")
+                ))
+                .andExpect(content().string(containsString("# PatchPilot Live Demo Evidence Bundle Archive")))
+                .andExpect(content().string(containsString("https://github.com/bingqin2/PatchPilot/pull/42")));
+    }
+
+    @Test
     void should_require_admin_token_for_live_demo_evidence_bundle() throws Exception {
         MockMvc mockMvc = mockMvc();
 
@@ -62,6 +99,10 @@ class DemoLiveDemoEvidenceBundleControllerTests {
     }
 
     private static MockMvc mockMvc() {
+        return controllerFixture().mockMvc();
+    }
+
+    private static TestControllerFixture controllerFixture() {
         AdminApiSecurityProperties properties = new AdminApiSecurityProperties();
         properties.setAdminToken("test-admin-token");
         InMemoryDemoLiveTriggerLaunchPackageArchiveRepository launchRepository =
@@ -75,10 +116,17 @@ class DemoLiveDemoEvidenceBundleControllerTests {
                 closeoutRepository,
                 () -> Instant.parse("2026-07-02T02:00:00Z")
         );
-        return MockMvcBuilders
-                .standaloneSetup(new DemoLiveDemoEvidenceBundleController(service))
+        DemoLiveDemoEvidenceBundleArchiveService archiveService = new DemoLiveDemoEvidenceBundleArchiveService(
+                service,
+                new InMemoryDemoLiveDemoEvidenceBundleArchiveRepository(),
+                () -> "live-demo-evidence-bundle-archive-1",
+                () -> Instant.parse("2026-07-02T03:00:00Z")
+        );
+        MockMvc mockMvc = MockMvcBuilders
+                .standaloneSetup(new DemoLiveDemoEvidenceBundleController(service, archiveService))
                 .addFilters(new AdminApiSecurityFilter(properties, new ObjectMapper()))
                 .build();
+        return new TestControllerFixture(mockMvc, archiveService);
     }
 
     private static DemoLiveTriggerLaunchPackageArchiveVo readyLaunchArchive() {
@@ -135,5 +183,11 @@ class DemoLiveDemoEvidenceBundleControllerTests {
                 Instant.parse("2026-07-02T01:05:00Z"),
                 "# PatchPilot Live Trigger Outcome Closeout"
         );
+    }
+
+    private record TestControllerFixture(
+            MockMvc mockMvc,
+            DemoLiveDemoEvidenceBundleArchiveService archiveService
+    ) {
     }
 }
