@@ -15,6 +15,7 @@ import type {
   DemoLiveDemoArtifactChainReport,
   DemoLiveDemoReplayPackage,
   DemoLiveDemoReviewerDeliveryCenter,
+  DemoLiveDemoReviewerDeliveryCenterArchive,
   DemoLiveTriggerOutcomeCloseout,
   DemoLiveTriggerOutcomeCloseoutArchive
 } from '../../types';
@@ -586,6 +587,14 @@ const readyLiveDemoReviewerDeliveryCenter: DemoLiveDemoReviewerDeliveryCenter = 
   markdownReport: '# PatchPilot Live Demo Reviewer Delivery Center'
 };
 
+const readyLiveDemoReviewerDeliveryCenterArchive: DemoLiveDemoReviewerDeliveryCenterArchive = {
+  id: 'live-demo-reviewer-delivery-center-archive-1',
+  ...readyLiveDemoReviewerDeliveryCenter,
+  centerGeneratedAt: '2026-07-02T12:00:00Z',
+  archivedAt: '2026-07-02T13:00:00Z',
+  report: '# PatchPilot Live Demo Reviewer Delivery Center Archive'
+};
+
 const baseProps = {
   error: null,
   pending: false,
@@ -650,7 +659,11 @@ const baseProps = {
   liveDemoReviewerDeliveryCenter: null as DemoLiveDemoReviewerDeliveryCenter | null,
   liveDemoReviewerDeliveryCenterError: null,
   onRefreshLiveDemoReviewerDeliveryCenter: vi.fn(),
-  onDownloadLiveDemoReviewerDeliveryCenter: vi.fn()
+  onDownloadLiveDemoReviewerDeliveryCenter: vi.fn(),
+  liveDemoReviewerDeliveryCenterArchives: [] as DemoLiveDemoReviewerDeliveryCenterArchive[],
+  liveDemoReviewerDeliveryCenterArchiveError: null,
+  onArchiveLiveDemoReviewerDeliveryCenter: vi.fn(),
+  onDownloadLiveDemoReviewerDeliveryCenterArchiveReport: vi.fn()
 };
 
 test('submits exact live launch gate input', async () => {
@@ -1599,6 +1612,56 @@ test('refreshes and downloads live demo reviewer delivery centers', async () => 
   expect(revokeObjectURL).toHaveBeenCalledWith('blob:live-demo-reviewer-delivery-center');
 });
 
+test('archives and downloads live demo reviewer delivery center archives', async () => {
+  const user = userEvent.setup();
+  const onArchiveLiveDemoReviewerDeliveryCenter = vi.fn(
+    async () => readyLiveDemoReviewerDeliveryCenterArchive
+  );
+  const onDownloadLiveDemoReviewerDeliveryCenterArchiveReport = vi.fn(
+    async () => new Blob(['delivery center archive'], { type: 'text/markdown' })
+  );
+  const anchorClick = vi.fn();
+  const createObjectURL = vi.fn(() => 'blob:live-demo-reviewer-delivery-center-archive');
+  const revokeObjectURL = vi.fn();
+  vi.stubGlobal('URL', { createObjectURL, revokeObjectURL });
+  vi.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
+    const element = document.createElementNS('http://www.w3.org/1999/xhtml', tagName) as HTMLAnchorElement;
+    if (tagName === 'a') {
+      element.click = anchorClick;
+    }
+    return element;
+  });
+
+  render(
+    <LiveLaunchGatePanel
+      {...baseProps}
+      result={readyGate}
+      liveDemoReviewerDeliveryCenter={readyLiveDemoReviewerDeliveryCenter}
+      liveDemoReviewerDeliveryCenterArchives={[readyLiveDemoReviewerDeliveryCenterArchive]}
+      onArchiveLiveDemoReviewerDeliveryCenter={onArchiveLiveDemoReviewerDeliveryCenter}
+      onDownloadLiveDemoReviewerDeliveryCenterArchiveReport={
+        onDownloadLiveDemoReviewerDeliveryCenterArchiveReport
+      }
+    />
+  );
+
+  await user.click(screen.getByRole('button', { name: 'Archive live demo reviewer delivery center' }));
+  await user.click(screen.getByRole('button', {
+    name: 'Download live demo reviewer delivery center archive live-demo-reviewer-delivery-center-archive-1'
+  }));
+
+  expect(screen.getByText('Recent live demo reviewer delivery center archives')).toBeInTheDocument();
+  expect(screen.getByText('live-demo-reviewer-delivery-center-archive-1')).toBeInTheDocument();
+  expect(screen.getAllByText('READY').length).toBeGreaterThan(0);
+  expect(screen.getByText('Archived at 2026-07-02T13:00:00Z')).toBeInTheDocument();
+  expect(onArchiveLiveDemoReviewerDeliveryCenter).toHaveBeenCalledTimes(1);
+  expect(onDownloadLiveDemoReviewerDeliveryCenterArchiveReport)
+    .toHaveBeenCalledWith('live-demo-reviewer-delivery-center-archive-1');
+  expect(createObjectURL).toHaveBeenCalledWith(expect.any(Blob));
+  expect(anchorClick).toHaveBeenCalled();
+  expect(revokeObjectURL).toHaveBeenCalledWith('blob:live-demo-reviewer-delivery-center-archive');
+});
+
 test('shows live demo reviewer delivery center blockers and errors', () => {
   render(
     <LiveLaunchGatePanel
@@ -1612,11 +1675,14 @@ test('shows live demo reviewer delivery center blockers and errors', () => {
         blockers: ['Artifact chain is BLOCKED: missing completion certificate archive.']
       }}
       liveDemoReviewerDeliveryCenterError="Reviewer delivery center failed"
+      liveDemoReviewerDeliveryCenterArchiveError="Reviewer delivery center archive failed"
     />
   );
 
   expect(screen.getByText('Live demo reviewer delivery center failed')).toBeInTheDocument();
   expect(screen.getByText('Reviewer delivery center failed')).toBeInTheDocument();
+  expect(screen.getByText('Live demo reviewer delivery center archive failed')).toBeInTheDocument();
+  expect(screen.getByText('Reviewer delivery center archive failed')).toBeInTheDocument();
   expect(screen.getByText('Artifact chain is BLOCKED: missing completion certificate archive.'))
     .toBeInTheDocument();
 });

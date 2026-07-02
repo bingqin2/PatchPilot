@@ -127,6 +127,13 @@ class DemoLiveDemoHandoffDeliveryReceiptControllerTests {
                         replayPackageService::getPackage,
                         java.time.Clock.fixed(Instant.parse("2026-07-02T12:00:00Z"), java.time.ZoneOffset.UTC)
                 );
+        DemoLiveDemoReviewerDeliveryCenterArchiveService reviewerDeliveryCenterArchiveService =
+                new DemoLiveDemoReviewerDeliveryCenterArchiveService(
+                        () -> reviewerDeliveryCenterService.getCenter(),
+                        new InMemoryDemoLiveDemoReviewerDeliveryCenterArchiveRepository(),
+                        () -> "live-demo-reviewer-delivery-center-archive-1",
+                        () -> Instant.parse("2026-07-02T13:00:00Z")
+                );
         return MockMvcBuilders
                 .standaloneSetup(new DemoLiveDemoHandoffPackageController(
                         packageService,
@@ -137,7 +144,8 @@ class DemoLiveDemoHandoffDeliveryReceiptControllerTests {
                         completionCertificateArchiveService,
                         artifactChainReportService,
                         replayPackageService,
-                        reviewerDeliveryCenterService
+                        reviewerDeliveryCenterService,
+                        reviewerDeliveryCenterArchiveService
                 ))
                 .addFilters(new AdminApiSecurityFilter(properties, new ObjectMapper()))
                 .build();

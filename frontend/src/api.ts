@@ -68,6 +68,7 @@ import type {
   DemoLiveDemoArtifactChainReport,
   DemoLiveDemoReplayPackage,
   DemoLiveDemoReviewerDeliveryCenter,
+  DemoLiveDemoReviewerDeliveryCenterArchive,
   DemoLiveDemoCompletionCertificate,
   DemoLiveDemoCompletionCertificateArchive,
   DemoLiveDemoEvidenceBundle,
@@ -402,6 +403,28 @@ export async function getDemoLiveDemoReviewerDeliveryCenter(): Promise<DemoLiveD
 
 export async function downloadDemoLiveDemoReviewerDeliveryCenter(): Promise<Blob> {
   return getBlobApi('/api/demo/live-demo-handoff-package/reviewer-delivery-center/download');
+}
+
+export async function archiveDemoLiveDemoReviewerDeliveryCenter():
+  Promise<DemoLiveDemoReviewerDeliveryCenterArchive> {
+  return postApi<DemoLiveDemoReviewerDeliveryCenterArchive>(
+    '/api/demo/live-demo-handoff-package/reviewer-delivery-center/archives'
+  );
+}
+
+export async function listDemoLiveDemoReviewerDeliveryCenterArchives():
+  Promise<DemoLiveDemoReviewerDeliveryCenterArchive[]> {
+  return getApi<DemoLiveDemoReviewerDeliveryCenterArchive[]>(
+    '/api/demo/live-demo-handoff-package/reviewer-delivery-center/archives'
+  );
+}
+
+export async function downloadDemoLiveDemoReviewerDeliveryCenterArchiveReport(
+  archiveId: string
+): Promise<Blob> {
+  return getBlobApi(
+    `/api/demo/live-demo-handoff-package/reviewer-delivery-center/archives/${encodeURIComponent(archiveId)}/report/download`
+  );
 }
 
 export async function getDemoEndToEndAcceptanceMatrix(): Promise<DemoEndToEndAcceptanceMatrix> {

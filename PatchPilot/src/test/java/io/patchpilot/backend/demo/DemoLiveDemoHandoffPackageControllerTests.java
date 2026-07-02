@@ -13,6 +13,7 @@ import java.util.List;
 import static org.hamcrest.Matchers.containsString;
 import static org.springframework.http.HttpHeaders.CONTENT_DISPOSITION;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -142,6 +143,46 @@ class DemoLiveDemoHandoffPackageControllerTests {
     }
 
     @Test
+    void should_archive_list_and_download_live_demo_reviewer_delivery_center_archives() throws Exception {
+        MockMvc mockMvc = mockMvcWithArtifactChain();
+
+        mockMvc.perform(post("/api/demo/live-demo-handoff-package/reviewer-delivery-center/archives")
+                        .header("X-PatchPilot-Admin-Token", "test-admin-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value("live-demo-reviewer-delivery-center-archive-1"))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.deliverable").value(true))
+                .andExpect(jsonPath("$.data.readinessCards[0].name").value("Reviewer handoff package"))
+                .andExpect(jsonPath("$.data.evidenceLinks[1].url")
+                        .value("https://github.com/bingqin2/PatchPilot/pull/42"))
+                .andExpect(jsonPath("$.data.report")
+                        .value(containsString("PatchPilot Live Demo Reviewer Delivery Center Archive")));
+
+        mockMvc.perform(get("/api/demo/live-demo-handoff-package/reviewer-delivery-center/archives")
+                        .header("X-PatchPilot-Admin-Token", "test-admin-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].id").value("live-demo-reviewer-delivery-center-archive-1"))
+                .andExpect(jsonPath("$.data[0].pullRequestUrl")
+                        .value("https://github.com/bingqin2/PatchPilot/pull/42"));
+
+        mockMvc.perform(get(
+                        "/api/demo/live-demo-handoff-package/reviewer-delivery-center/archives/"
+                                + "live-demo-reviewer-delivery-center-archive-1/report/download"
+                )
+                        .header("X-PatchPilot-Admin-Token", "test-admin-token"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(
+                        CONTENT_DISPOSITION,
+                        containsString("patchpilot-live-demo-reviewer-delivery-center-archive-")
+                ))
+                .andExpect(content().string(containsString("# PatchPilot Live Demo Reviewer Delivery Center Archive")))
+                .andExpect(content().string(containsString("live-demo-completion-certificate-archive-1")))
+                .andExpect(content().string(containsString("https://github.com/bingqin2/PatchPilot/pull/42")));
+    }
+
+    @Test
     void should_require_admin_token_for_live_demo_handoff_package() throws Exception {
         MockMvc mockMvc = mockMvc();
 
@@ -208,6 +249,13 @@ class DemoLiveDemoHandoffPackageControllerTests {
                         replayPackageService::getPackage,
                         java.time.Clock.fixed(Instant.parse("2026-07-02T12:00:00Z"), java.time.ZoneOffset.UTC)
                 );
+        DemoLiveDemoReviewerDeliveryCenterArchiveService reviewerDeliveryCenterArchiveService =
+                new DemoLiveDemoReviewerDeliveryCenterArchiveService(
+                        () -> reviewerDeliveryCenterService.getCenter(),
+                        new InMemoryDemoLiveDemoReviewerDeliveryCenterArchiveRepository(),
+                        () -> "live-demo-reviewer-delivery-center-archive-1",
+                        () -> Instant.parse("2026-07-02T13:00:00Z")
+                );
         return MockMvcBuilders
                 .standaloneSetup(new DemoLiveDemoHandoffPackageController(
                         service,
@@ -218,7 +266,8 @@ class DemoLiveDemoHandoffPackageControllerTests {
                         completionCertificateArchiveService,
                         artifactChainReportService,
                         replayPackageService,
-                        reviewerDeliveryCenterService
+                        reviewerDeliveryCenterService,
+                        reviewerDeliveryCenterArchiveService
                 ))
                 .addFilters(new AdminApiSecurityFilter(properties, new ObjectMapper()))
                 .build();
@@ -301,6 +350,13 @@ class DemoLiveDemoHandoffPackageControllerTests {
                         replayPackageService::getPackage,
                         java.time.Clock.fixed(Instant.parse("2026-07-02T12:00:00Z"), java.time.ZoneOffset.UTC)
                 );
+        DemoLiveDemoReviewerDeliveryCenterArchiveService reviewerDeliveryCenterArchiveService =
+                new DemoLiveDemoReviewerDeliveryCenterArchiveService(
+                        reviewerDeliveryCenterService::getCenter,
+                        new InMemoryDemoLiveDemoReviewerDeliveryCenterArchiveRepository(),
+                        () -> "live-demo-reviewer-delivery-center-archive-1",
+                        () -> Instant.parse("2026-07-02T13:00:00Z")
+                );
         return MockMvcBuilders
                 .standaloneSetup(new DemoLiveDemoHandoffPackageController(
                         service,
@@ -311,7 +367,8 @@ class DemoLiveDemoHandoffPackageControllerTests {
                         completionCertificateArchiveService,
                         artifactChainReportService,
                         replayPackageService,
-                        reviewerDeliveryCenterService
+                        reviewerDeliveryCenterService,
+                        reviewerDeliveryCenterArchiveService
                 ))
                 .addFilters(new AdminApiSecurityFilter(properties, new ObjectMapper()))
                 .build();

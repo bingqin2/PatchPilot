@@ -9,6 +9,7 @@ import io.patchpilot.backend.demo.domain.DemoLiveDemoHandoffDeliveryFinalization
 import io.patchpilot.backend.demo.domain.DemoLiveDemoHandoffDeliveryReceiptVo;
 import io.patchpilot.backend.demo.domain.DemoLiveDemoHandoffPackageVo;
 import io.patchpilot.backend.demo.domain.DemoLiveDemoReplayPackageVo;
+import io.patchpilot.backend.demo.domain.DemoLiveDemoReviewerDeliveryCenterArchiveVo;
 import io.patchpilot.backend.demo.domain.DemoLiveDemoReviewerDeliveryCenterVo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ContentDisposition;
@@ -39,6 +40,7 @@ public class DemoLiveDemoHandoffPackageController {
     private final DemoLiveDemoArtifactChainReportService artifactChainReportService;
     private final DemoLiveDemoReplayPackageService replayPackageService;
     private final DemoLiveDemoReviewerDeliveryCenterService reviewerDeliveryCenterService;
+    private final DemoLiveDemoReviewerDeliveryCenterArchiveService reviewerDeliveryCenterArchiveService;
 
     @GetMapping
     public ApiResponse<DemoLiveDemoHandoffPackageVo> getPackage() {
@@ -283,5 +285,36 @@ public class DemoLiveDemoHandoffPackageController {
                                 .toString()
                 )
                 .body(body);
+    }
+
+    @PostMapping("/reviewer-delivery-center/archives")
+    public ApiResponse<DemoLiveDemoReviewerDeliveryCenterArchiveVo> archiveReviewerDeliveryCenter() {
+        return ApiResponse.ok(reviewerDeliveryCenterArchiveService.archiveCurrentCenter());
+    }
+
+    @GetMapping("/reviewer-delivery-center/archives")
+    public ApiResponse<List<DemoLiveDemoReviewerDeliveryCenterArchiveVo>> listReviewerDeliveryCenterArchives() {
+        return ApiResponse.ok(reviewerDeliveryCenterArchiveService.listRecentArchives());
+    }
+
+    @GetMapping("/reviewer-delivery-center/archives/{archiveId}/report/download")
+    public ResponseEntity<byte[]> downloadReviewerDeliveryCenterArchiveReport(@PathVariable String archiveId) {
+        return reviewerDeliveryCenterArchiveService.findArchive(archiveId)
+                .map(archive -> ResponseEntity.ok()
+                        .contentType(MediaType.parseMediaType("text/markdown;charset=UTF-8"))
+                        .header(
+                                HttpHeaders.CONTENT_DISPOSITION,
+                                ContentDisposition.attachment()
+                                        .filename(
+                                                "patchpilot-live-demo-reviewer-delivery-center-archive-"
+                                                        + archive.id()
+                                                        + ".md",
+                                                StandardCharsets.UTF_8
+                                        )
+                                        .build()
+                                        .toString()
+                        )
+                        .body(archive.report().getBytes(StandardCharsets.UTF_8)))
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 }
