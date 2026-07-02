@@ -5,6 +5,7 @@ import type {
   DemoLiveDemoArtifactChainReport,
   DemoLiveDemoReplayPackage,
   DemoLiveDemoReviewerDeliveryCenter,
+  DemoLiveDemoReviewerDeliveryCenterArchive,
   DemoLiveDemoCompletionCertificate,
   DemoLiveDemoCompletionCertificateArchive,
   DemoLiveDemoEvidenceBundle,
@@ -104,6 +105,11 @@ interface LiveLaunchGatePanelProps {
   onRefreshLiveDemoReviewerDeliveryCenter:
     () => Promise<DemoLiveDemoReviewerDeliveryCenter> | Promise<void> | void;
   onDownloadLiveDemoReviewerDeliveryCenter: () => Promise<Blob>;
+  liveDemoReviewerDeliveryCenterArchives: DemoLiveDemoReviewerDeliveryCenterArchive[];
+  liveDemoReviewerDeliveryCenterArchiveError: string | null;
+  onArchiveLiveDemoReviewerDeliveryCenter:
+    () => Promise<DemoLiveDemoReviewerDeliveryCenterArchive> | Promise<void> | void;
+  onDownloadLiveDemoReviewerDeliveryCenterArchiveReport: (archiveId: string) => Promise<Blob>;
 }
 
 export function LiveLaunchGatePanel({
@@ -171,7 +177,11 @@ export function LiveLaunchGatePanel({
   liveDemoReviewerDeliveryCenter,
   liveDemoReviewerDeliveryCenterError,
   onRefreshLiveDemoReviewerDeliveryCenter,
-  onDownloadLiveDemoReviewerDeliveryCenter
+  onDownloadLiveDemoReviewerDeliveryCenter,
+  liveDemoReviewerDeliveryCenterArchives,
+  liveDemoReviewerDeliveryCenterArchiveError,
+  onArchiveLiveDemoReviewerDeliveryCenter,
+  onDownloadLiveDemoReviewerDeliveryCenterArchiveReport
 }: LiveLaunchGatePanelProps) {
   const [repositoryOwner, setRepositoryOwner] = useState('bingqin2');
   const [repositoryName, setRepositoryName] = useState('PatchPilot');
@@ -362,6 +372,15 @@ export function LiveLaunchGatePanel({
   async function downloadLiveDemoReviewerDeliveryCenter() {
     const blob = await onDownloadLiveDemoReviewerDeliveryCenter();
     downloadMarkdown(blob, 'patchpilot-live-demo-reviewer-delivery-center.md');
+  }
+
+  async function archiveLiveDemoReviewerDeliveryCenter() {
+    await onArchiveLiveDemoReviewerDeliveryCenter();
+  }
+
+  async function downloadLiveDemoReviewerDeliveryCenterArchive(archiveId: string) {
+    const blob = await onDownloadLiveDemoReviewerDeliveryCenterArchiveReport(archiveId);
+    downloadMarkdown(blob, `patchpilot-live-demo-reviewer-delivery-center-archive-${archiveId}.md`);
   }
 
   return (
@@ -600,6 +619,16 @@ export function LiveLaunchGatePanel({
               <FileCheck2 size={16} />
               Download delivery center
             </button>
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={() => void archiveLiveDemoReviewerDeliveryCenter()}
+              disabled={!liveDemoReviewerDeliveryCenter?.deliverable}
+              aria-label="Archive live demo reviewer delivery center"
+            >
+              <Archive size={16} />
+              Archive delivery center
+            </button>
           </div>
         ) : null}
       </div>
@@ -775,11 +804,22 @@ export function LiveLaunchGatePanel({
         </div>
       ) : null}
 
+      {liveDemoReviewerDeliveryCenterArchiveError ? (
+        <div className="adapter-api-error">
+          <strong>Live demo reviewer delivery center archive failed</strong>
+          <span>{liveDemoReviewerDeliveryCenterArchiveError}</span>
+        </div>
+      ) : null}
+
       {result ? (
         <>
           {liveDemoReviewerDeliveryCenter ? (
             <LiveDemoReviewerDeliveryCenterResult center={liveDemoReviewerDeliveryCenter} />
           ) : null}
+          <LiveDemoReviewerDeliveryCenterArchiveList
+            archives={liveDemoReviewerDeliveryCenterArchives}
+            onDownloadArchive={(archiveId) => void downloadLiveDemoReviewerDeliveryCenterArchive(archiveId)}
+          />
           <LiveLaunchGateResult result={result} />
           {launchPackage ? <LiveTriggerLaunchPackageResult launchPackage={launchPackage} /> : null}
           <LiveTriggerLaunchPackageArchiveList
@@ -1516,6 +1556,43 @@ function LiveDemoCompletionCertificateArchiveList({
                 className="secondary-button compact-button"
                 type="button"
                 aria-label={`Download live demo completion certificate archive ${archive.id}`}
+                onClick={() => onDownloadArchive(archive.id)}
+              >
+                <Download size={14} />
+                Download
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function LiveDemoReviewerDeliveryCenterArchiveList({
+  archives,
+  onDownloadArchive
+}: {
+  archives: DemoLiveDemoReviewerDeliveryCenterArchive[];
+  onDownloadArchive: (archiveId: string) => void;
+}) {
+  return (
+    <div className="demo-launch-preflight-actions">
+      <h3>Recent live demo reviewer delivery center archives</h3>
+      {archives.length === 0 ? (
+        <p>No live demo reviewer delivery center archives recorded.</p>
+      ) : (
+        <ul>
+          {archives.map((archive) => (
+            <li key={archive.id}>
+              <strong>{archive.id}</strong>
+              <span> {archive.status} </span>
+              <span>{archive.pullRequestUrl ?? 'No Pull Request'}</span>
+              <span>Archived at {archive.archivedAt}</span>
+              <button
+                className="secondary-button compact-button"
+                type="button"
+                aria-label={`Download live demo reviewer delivery center archive ${archive.id}`}
                 onClick={() => onDownloadArchive(archive.id)}
               >
                 <Download size={14} />

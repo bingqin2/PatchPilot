@@ -35,6 +35,9 @@ import {
   downloadDemoLiveDemoReplayPackage,
   getDemoLiveDemoReviewerDeliveryCenter,
   downloadDemoLiveDemoReviewerDeliveryCenter,
+  archiveDemoLiveDemoReviewerDeliveryCenter,
+  listDemoLiveDemoReviewerDeliveryCenterArchives,
+  downloadDemoLiveDemoReviewerDeliveryCenterArchiveReport,
   downloadDemoLiveTriggerOutcomeCloseoutReport,
   archiveDemoLiveTriggerOutcomeCloseout,
   listDemoLiveTriggerOutcomeCloseoutArchives,
@@ -5710,7 +5713,7 @@ test('loads and downloads live demo replay packages through backend API', async 
   expect(markdown.type).toBe('text/markdown');
 });
 
-test('loads and downloads live demo reviewer delivery center through backend API', async () => {
+test('loads downloads archives lists and downloads live demo reviewer delivery center through backend API', async () => {
   const deliveryCenterPayload = {
     status: 'READY',
     deliverable: true,
@@ -5744,6 +5747,13 @@ test('loads and downloads live demo reviewer delivery center through backend API
     generatedAt: '2026-07-02T12:00:00Z',
     markdownReport: '# PatchPilot Live Demo Reviewer Delivery Center'
   };
+  const archivePayload = {
+    id: 'live-demo-reviewer-delivery-center-archive-1',
+    ...deliveryCenterPayload,
+    centerGeneratedAt: '2026-07-02T12:00:00Z',
+    archivedAt: '2026-07-02T13:00:00Z',
+    report: '# PatchPilot Live Demo Reviewer Delivery Center Archive'
+  };
   const fetchMock = vi.fn()
     .mockResolvedValueOnce({
       ok: true,
@@ -5754,11 +5764,31 @@ test('loads and downloads live demo reviewer delivery center through backend API
       ok: true,
       status: 200,
       blob: async () => new Blob(['delivery center'], { type: 'text/markdown' })
+    } as Response)
+    .mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ success: true, data: archivePayload, message: null })
+    } as Response)
+    .mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ success: true, data: [archivePayload], message: null })
+    } as Response)
+    .mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      blob: async () => new Blob(['delivery center archive'], { type: 'text/markdown' })
     } as Response);
   vi.stubGlobal('fetch', fetchMock);
 
   const deliveryCenter = await getDemoLiveDemoReviewerDeliveryCenter();
   const markdown = await downloadDemoLiveDemoReviewerDeliveryCenter();
+  const archive = await archiveDemoLiveDemoReviewerDeliveryCenter();
+  const archives = await listDemoLiveDemoReviewerDeliveryCenterArchives();
+  const archiveReport = await downloadDemoLiveDemoReviewerDeliveryCenterArchiveReport(
+    'live-demo-reviewer-delivery-center-archive-1'
+  );
 
   expect(fetchMock).toHaveBeenNthCalledWith(
     1,
@@ -5768,10 +5798,26 @@ test('loads and downloads live demo reviewer delivery center through backend API
     2,
     '/api/demo/live-demo-handoff-package/reviewer-delivery-center/download'
   );
+  expect(fetchMock).toHaveBeenNthCalledWith(
+    3,
+    '/api/demo/live-demo-handoff-package/reviewer-delivery-center/archives',
+    { method: 'POST' }
+  );
+  expect(fetchMock).toHaveBeenNthCalledWith(
+    4,
+    '/api/demo/live-demo-handoff-package/reviewer-delivery-center/archives'
+  );
+  expect(fetchMock).toHaveBeenNthCalledWith(
+    5,
+    '/api/demo/live-demo-handoff-package/reviewer-delivery-center/archives/live-demo-reviewer-delivery-center-archive-1/report/download'
+  );
   expect(deliveryCenter.deliverable).toBe(true);
   expect(deliveryCenter.readinessCards[0].name).toBe('Replay package');
   expect(deliveryCenter.evidenceLinks[0].url).toBe('https://github.com/bingqin2/PatchPilot/pull/42');
   expect(markdown.type).toBe('text/markdown');
+  expect(archive.id).toBe('live-demo-reviewer-delivery-center-archive-1');
+  expect(archives[0].pullRequestUrl).toBe('https://github.com/bingqin2/PatchPilot/pull/42');
+  expect(archiveReport.type).toBe('text/markdown');
 });
 
 test('runs demo launch preflight through backend API without creating a task', async () => {

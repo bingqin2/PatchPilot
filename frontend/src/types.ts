@@ -1236,6 +1236,13 @@ export interface DemoLiveDemoReviewerDeliveryCenter {
   markdownReport: string;
 }
 
+export interface DemoLiveDemoReviewerDeliveryCenterArchive extends DemoLiveDemoReviewerDeliveryCenter {
+  id: string;
+  centerGeneratedAt: string;
+  archivedAt: string;
+  report: string;
+}
+
 export interface DemoEndToEndAcceptanceMatrixItem {
   category: string;
   name: string;

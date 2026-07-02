@@ -157,8 +157,10 @@ import {
   getDemoLiveDemoEvidenceBundle,
   getDemoLiveDemoHandoffDeliveryFinalization,
   getDemoLiveDemoHandoffPackage,
+  archiveDemoLiveDemoReviewerDeliveryCenter,
   archiveDemoLiveDemoEvidenceBundle,
   archiveDemoLiveDemoHandoffDeliveryFinalization,
+  listDemoLiveDemoReviewerDeliveryCenterArchives,
   listDemoLiveDemoCompletionCertificateArchives,
   listDemoLiveDemoEvidenceBundleArchives,
   listDemoLiveDemoHandoffDeliveryFinalizationArchives,
@@ -201,6 +203,7 @@ import {
   downloadDemoLiveDemoArtifactChainReport,
   downloadDemoLiveDemoReplayPackage,
   downloadDemoLiveDemoReviewerDeliveryCenter,
+  downloadDemoLiveDemoReviewerDeliveryCenterArchiveReport,
   downloadDemoLiveDemoCompletionCertificateArchiveReport,
   downloadDemoLiveDemoCompletionCertificateReport,
   downloadDemoLiveDemoHandoffDeliveryFinalizationArchiveReport,
@@ -395,6 +398,7 @@ import type {
   DemoLiveDemoArtifactChainReport,
   DemoLiveDemoReplayPackage,
   DemoLiveDemoReviewerDeliveryCenter,
+  DemoLiveDemoReviewerDeliveryCenterArchive,
   DemoLiveDemoCompletionCertificate,
   DemoLiveDemoCompletionCertificateArchive,
   DemoLiveDemoEvidenceBundle,
@@ -892,6 +896,10 @@ export default function App() {
     useState<DemoLiveDemoReviewerDeliveryCenter | null>(null);
   const [demoLiveDemoReviewerDeliveryCenterError, setDemoLiveDemoReviewerDeliveryCenterError] =
     useState<string | null>(null);
+  const [demoLiveDemoReviewerDeliveryCenterArchives, setDemoLiveDemoReviewerDeliveryCenterArchives] =
+    useState<DemoLiveDemoReviewerDeliveryCenterArchive[]>([]);
+  const [demoLiveDemoReviewerDeliveryCenterArchiveError, setDemoLiveDemoReviewerDeliveryCenterArchiveError] =
+    useState<string | null>(null);
   const [supportedAdapters, setSupportedAdapters] = useState<SupportedLanguageAdapter[]>([]);
   const [adapterError, setAdapterError] = useState<string | null>(null);
   const [adapterFixtureVerifications, setAdapterFixtureVerifications] = useState<LanguageAdapterFixtureVerification[]>([]);
@@ -1275,6 +1283,7 @@ export default function App() {
         demoLiveDemoArtifactChainReportResult,
         demoLiveDemoReplayPackageResult,
         demoLiveDemoReviewerDeliveryCenterResult,
+        demoLiveDemoReviewerDeliveryCenterArchiveResult,
         demoAcceptanceSummaryResult,
         demoFinalAcceptanceSharePackageResult,
         demoFinalAcceptanceSharePackageArchiveResult,
@@ -1554,6 +1563,10 @@ export default function App() {
         getDemoLiveDemoReviewerDeliveryCenter().then(
           (deliveryCenter) => ({ deliveryCenter, error: null as string | null }),
           (caught) => ({ deliveryCenter: null, error: errorMessage(caught) })
+        ),
+        listDemoLiveDemoReviewerDeliveryCenterArchives().then(
+          (archives) => ({ archives, error: null as string | null }),
+          (caught) => ({ archives: null, error: errorMessage(caught) })
         ),
         getDemoAcceptanceSummary().then(
           (summary) => ({ summary, error: null as string | null }),
@@ -2052,6 +2065,10 @@ export default function App() {
         setDemoLiveDemoReviewerDeliveryCenter(demoLiveDemoReviewerDeliveryCenterResult.deliveryCenter);
       }
       setDemoLiveDemoReviewerDeliveryCenterError(demoLiveDemoReviewerDeliveryCenterResult.error);
+      if (demoLiveDemoReviewerDeliveryCenterArchiveResult.archives) {
+        setDemoLiveDemoReviewerDeliveryCenterArchives(demoLiveDemoReviewerDeliveryCenterArchiveResult.archives);
+      }
+      setDemoLiveDemoReviewerDeliveryCenterArchiveError(demoLiveDemoReviewerDeliveryCenterArchiveResult.error);
       if (demoAcceptanceSummaryResult.summary) {
         setDemoAcceptanceSummary(demoAcceptanceSummaryResult.summary);
       }
@@ -4027,6 +4044,29 @@ export default function App() {
     []
   );
 
+  const handleArchiveDemoLiveDemoReviewerDeliveryCenter = useCallback(async () => {
+    setDemoLiveDemoReviewerDeliveryCenterArchiveError(null);
+    setDemoLiveDemoReviewerDeliveryCenterError(null);
+    try {
+      const archive = await archiveDemoLiveDemoReviewerDeliveryCenter();
+      const [archives, deliveryCenter] = await Promise.all([
+        listDemoLiveDemoReviewerDeliveryCenterArchives(),
+        getDemoLiveDemoReviewerDeliveryCenter()
+      ]);
+      setDemoLiveDemoReviewerDeliveryCenterArchives(archives);
+      setDemoLiveDemoReviewerDeliveryCenter(deliveryCenter);
+      return archive;
+    } catch (caught) {
+      setDemoLiveDemoReviewerDeliveryCenterArchiveError(errorMessage(caught));
+      throw caught;
+    }
+  }, []);
+
+  const handleDownloadDemoLiveDemoReviewerDeliveryCenterArchiveReport = useCallback(
+    (archiveId: string) => downloadDemoLiveDemoReviewerDeliveryCenterArchiveReport(archiveId),
+    []
+  );
+
   const handleRefreshEndToEndAcceptanceMatrix = useCallback(async () => {
     setDemoEndToEndAcceptanceMatrixError(null);
     try {
@@ -4852,6 +4892,12 @@ export default function App() {
         liveDemoReviewerDeliveryCenterError={demoLiveDemoReviewerDeliveryCenterError}
         onRefreshLiveDemoReviewerDeliveryCenter={handleRefreshDemoLiveDemoReviewerDeliveryCenter}
         onDownloadLiveDemoReviewerDeliveryCenter={handleDownloadDemoLiveDemoReviewerDeliveryCenter}
+        liveDemoReviewerDeliveryCenterArchives={demoLiveDemoReviewerDeliveryCenterArchives}
+        liveDemoReviewerDeliveryCenterArchiveError={demoLiveDemoReviewerDeliveryCenterArchiveError}
+        onArchiveLiveDemoReviewerDeliveryCenter={handleArchiveDemoLiveDemoReviewerDeliveryCenter}
+        onDownloadLiveDemoReviewerDeliveryCenterArchiveReport={
+          handleDownloadDemoLiveDemoReviewerDeliveryCenterArchiveReport
+        }
       />
 
       <EndToEndAcceptanceMatrixPanel

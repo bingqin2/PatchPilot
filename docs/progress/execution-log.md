@@ -6770,3 +6770,25 @@ Validation so far:
 - `npm --prefix frontend run build`: passed with the existing Vite large-chunk warning.
 - `git diff --check`: passed.
 - Strict diff secret scan for GitHub, OpenAI-style, Slack, AWS, private-key, and PatchPilot token assignment patterns: no matches.
+
+## 2026-07-02 - 338 Live demo reviewer delivery center archives
+
+- Started `338-live-demo-reviewer-delivery-center-archives` to freeze the final reviewer delivery center as durable local handoff evidence.
+- Added backend archive support for the live demo reviewer delivery center, including an archive VO, capped in-memory archive repository, archive service, and admin-protected endpoints to create, list, and download archived Markdown reports.
+- The backend rejects archive creation unless the current reviewer delivery center is `READY` and deliverable.
+- Each archive freezes status, deliverable flag, repository and issue metadata, task status, Pull Request URL, readiness cards, blockers, evidence links, download actions, side-effect contract, center generation time, archive time, and report body.
+- Extended the live launch gate dashboard with `Archive delivery center`, recent reviewer delivery center archive history, per-archive Markdown downloads, archive error feedback, App-level loading, and typed frontend API helpers.
+- Added `docs/plans/338-live-demo-reviewer-delivery-center-archives.md` with the scope, local-only safety contract, API shape, and validation checklist.
+
+Validation so far:
+
+- `mvn -pl PatchPilot -Dtest=DemoLiveDemoReviewerDeliveryCenterArchiveServiceTests,DemoLiveDemoHandoffPackageControllerTests test -q`: first failed because `DemoLiveDemoReviewerDeliveryCenterArchiveVo`, archive service, and repository did not exist.
+- `npm --prefix frontend test -- --run src/api.test.ts src/dashboard/components/LiveLaunchGatePanel.test.tsx --reporter=dot`: first failed because the archive API helper, archive button/history, and archive error state were missing.
+- `mvn -pl PatchPilot -Dtest=DemoLiveDemoReviewerDeliveryCenterArchiveServiceTests,DemoLiveDemoHandoffPackageControllerTests,DemoLiveDemoHandoffDeliveryReceiptControllerTests,DemoLiveDemoHandoffDeliveryFinalizationControllerTests test -q`: passed after backend implementation.
+- `npm --prefix frontend test -- --run src/api.test.ts src/dashboard/components/LiveLaunchGatePanel.test.tsx --reporter=dot`: passed after frontend implementation. Focused result: 2 test files and 281 tests.
+- `npm --prefix frontend test -- --run src/App.test.tsx --reporter=dot`: passed after App-level archive loading and handlers were wired. Result: 1 test file and 88 tests.
+- `mvn -pl PatchPilot test`: passed, 1444 tests.
+- `npm --prefix frontend test -- --reporter=dot`: passed, 35 test files and 572 tests.
+- `npm --prefix frontend run build`: passed with the existing Vite large-chunk warning.
+- `git diff --check`: passed.
+- Strict diff and new-file secret scans for GitHub, OpenAI-style, Slack, AWS, private-key, and PatchPilot token assignment patterns: no matches.
