@@ -4,6 +4,7 @@ import type {
   DemoLiveLaunchGate,
   DemoLiveDemoArtifactChainReport,
   DemoLiveDemoReplayPackage,
+  DemoLiveDemoReviewerDeliveryCenter,
   DemoLiveDemoCompletionCertificate,
   DemoLiveDemoCompletionCertificateArchive,
   DemoLiveDemoEvidenceBundle,
@@ -98,6 +99,11 @@ interface LiveLaunchGatePanelProps {
   liveDemoReplayPackageError: string | null;
   onRefreshLiveDemoReplayPackage: () => Promise<DemoLiveDemoReplayPackage> | Promise<void> | void;
   onDownloadLiveDemoReplayPackage: () => Promise<Blob>;
+  liveDemoReviewerDeliveryCenter: DemoLiveDemoReviewerDeliveryCenter | null;
+  liveDemoReviewerDeliveryCenterError: string | null;
+  onRefreshLiveDemoReviewerDeliveryCenter:
+    () => Promise<DemoLiveDemoReviewerDeliveryCenter> | Promise<void> | void;
+  onDownloadLiveDemoReviewerDeliveryCenter: () => Promise<Blob>;
 }
 
 export function LiveLaunchGatePanel({
@@ -161,7 +167,11 @@ export function LiveLaunchGatePanel({
   liveDemoReplayPackage,
   liveDemoReplayPackageError,
   onRefreshLiveDemoReplayPackage,
-  onDownloadLiveDemoReplayPackage
+  onDownloadLiveDemoReplayPackage,
+  liveDemoReviewerDeliveryCenter,
+  liveDemoReviewerDeliveryCenterError,
+  onRefreshLiveDemoReviewerDeliveryCenter,
+  onDownloadLiveDemoReviewerDeliveryCenter
 }: LiveLaunchGatePanelProps) {
   const [repositoryOwner, setRepositoryOwner] = useState('bingqin2');
   const [repositoryName, setRepositoryName] = useState('PatchPilot');
@@ -343,6 +353,15 @@ export function LiveLaunchGatePanel({
   async function downloadLiveDemoReplayPackage() {
     const blob = await onDownloadLiveDemoReplayPackage();
     downloadMarkdown(blob, 'patchpilot-live-demo-replay-package.md');
+  }
+
+  async function refreshLiveDemoReviewerDeliveryCenter() {
+    await onRefreshLiveDemoReviewerDeliveryCenter();
+  }
+
+  async function downloadLiveDemoReviewerDeliveryCenter() {
+    const blob = await onDownloadLiveDemoReviewerDeliveryCenter();
+    downloadMarkdown(blob, 'patchpilot-live-demo-reviewer-delivery-center.md');
   }
 
   return (
@@ -562,6 +581,25 @@ export function LiveLaunchGatePanel({
               <FileCheck2 size={16} />
               Download replay package
             </button>
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={() => void refreshLiveDemoReviewerDeliveryCenter()}
+              aria-label="Refresh live demo reviewer delivery center"
+            >
+              <RefreshCw size={16} />
+              Refresh delivery center
+            </button>
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={() => void downloadLiveDemoReviewerDeliveryCenter()}
+              disabled={!liveDemoReviewerDeliveryCenter}
+              aria-label="Download live demo reviewer delivery center"
+            >
+              <FileCheck2 size={16} />
+              Download delivery center
+            </button>
           </div>
         ) : null}
       </div>
@@ -730,8 +768,18 @@ export function LiveLaunchGatePanel({
         </div>
       ) : null}
 
+      {liveDemoReviewerDeliveryCenterError ? (
+        <div className="adapter-api-error">
+          <strong>Live demo reviewer delivery center failed</strong>
+          <span>{liveDemoReviewerDeliveryCenterError}</span>
+        </div>
+      ) : null}
+
       {result ? (
         <>
+          {liveDemoReviewerDeliveryCenter ? (
+            <LiveDemoReviewerDeliveryCenterResult center={liveDemoReviewerDeliveryCenter} />
+          ) : null}
           <LiveLaunchGateResult result={result} />
           {launchPackage ? <LiveTriggerLaunchPackageResult launchPackage={launchPackage} /> : null}
           <LiveTriggerLaunchPackageArchiveList
@@ -792,6 +840,88 @@ export function LiveLaunchGatePanel({
         <div className="empty-state">No live launch gate run yet.</div>
       )}
     </section>
+  );
+}
+
+function LiveDemoReviewerDeliveryCenterResult({ center }: { center: DemoLiveDemoReviewerDeliveryCenter }) {
+  const tone = center.status === 'READY' ? 'ready' : center.status === 'BLOCKED' ? 'blocked' : 'attention';
+
+  return (
+    <div className={`demo-launch-preflight-result demo-launch-preflight-result-${tone}`}>
+      <div className="demo-launch-preflight-summary">
+        <span className={`demo-readiness-status demo-readiness-status-${tone}`}>
+          {center.status}
+        </span>
+        <strong>Live demo reviewer delivery center</strong>
+        <p>{center.summary}</p>
+      </div>
+      <div className="demo-launch-preflight-grid">
+        <div>
+          <span>Deliverable</span>
+          <strong>{center.deliverable ? 'Yes' : 'No'}</strong>
+          <small>{center.nextAction}</small>
+        </div>
+        <div>
+          <span>Repository</span>
+          <strong>{center.repository ?? 'missing'}</strong>
+          <small>{center.issueUrl ?? 'issue missing'}</small>
+        </div>
+        <div>
+          <span>Task</span>
+          <strong>{center.taskStatus ?? 'missing'}</strong>
+          <small>{center.taskId ?? 'task missing'}</small>
+        </div>
+        <div>
+          <span>Pull Request</span>
+          <strong>{center.pullRequestUrl ?? 'missing'}</strong>
+          <small>{center.generatedAt}</small>
+        </div>
+      </div>
+      <section className="demo-launch-preflight-section">
+        <h3>Readiness cards</h3>
+        <ul>
+          {center.readinessCards.map((card) => (
+            <li key={card.name}>
+              <strong>{card.name}</strong>
+              <span>{card.status}</span>
+              <p>{card.summary}</p>
+              <small>{card.nextAction}</small>
+            </li>
+          ))}
+        </ul>
+      </section>
+      {center.blockers.length > 0 ? (
+        <section className="demo-launch-preflight-section">
+          <h3>Blockers</h3>
+          <ul>
+            {center.blockers.map((blocker) => (
+              <li key={blocker}>{blocker}</li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+      <section className="demo-launch-preflight-section">
+        <h3>Evidence links</h3>
+        <ul>
+          {center.evidenceLinks.map((link) => (
+            <li key={`${link.label}-${link.url}`}>
+              <strong>{link.label}</strong>
+              <span>{link.url}</span>
+              <small>{link.description}</small>
+            </li>
+          ))}
+        </ul>
+      </section>
+      <section className="demo-launch-preflight-section">
+        <h3>Download actions</h3>
+        <ul>
+          {center.downloadActions.map((action) => (
+            <li key={action}>{action}</li>
+          ))}
+        </ul>
+      </section>
+      <p className="demo-launch-preflight-contract">{center.sideEffectContract}</p>
+    </div>
   );
 }
 

@@ -6494,6 +6494,28 @@ Validation so far:
 - `git diff --check`: passed.
 - Strict diff secret scan for GitHub, OpenAI-style, Slack, AWS, private-key, and PatchPilot token assignment patterns: no matches.
 
+## 2026-07-02 - 337 Live demo reviewer delivery center
+
+- Started `337-live-demo-reviewer-delivery-center` to give operators one reviewer-facing delivery center for the completed live demo.
+- Added backend reviewer delivery center support that reads the current live demo handoff package, artifact chain report, completion certificate, and replay package without writing archives or mutating GitHub.
+- The center reports `READY` only when all four reviewer deliverables are ready, complete, certified, or replay-ready as appropriate.
+- The center reports `BLOCKED` when required reviewer deliverables are blocked or missing, and returns blockers as concrete next actions.
+- Added admin-protected JSON and Markdown download endpoints under `/api/demo/live-demo-handoff-package/reviewer-delivery-center`.
+- Extended the live launch gate dashboard with delivery center refresh/download controls, top-level delivery center rendering, blocker display, error feedback, typed frontend API helpers, and App-level loading.
+- Added `docs/plans/337-live-demo-reviewer-delivery-center.md` with the goal, scope, status model, read-only safety contract, and validation checklist.
+
+Validation so far:
+
+- `mvn -pl PatchPilot -Dtest=DemoLiveDemoReviewerDeliveryCenterServiceTests,DemoLiveDemoHandoffPackageControllerTests test -q`: first failed because `DemoLiveDemoReviewerDeliveryCenterVo` did not exist; passed after backend implementation as part of the focused backend run.
+- `mvn -pl PatchPilot -Dtest=DemoLiveDemoReviewerDeliveryCenterServiceTests,DemoLiveDemoHandoffPackageControllerTests,DemoLiveDemoHandoffDeliveryReceiptControllerTests,DemoLiveDemoHandoffDeliveryFinalizationControllerTests test -q`: passed after backend controller fixtures were updated.
+- `npm --prefix frontend test -- --run src/api.test.ts src/dashboard/components/LiveLaunchGatePanel.test.tsx --reporter=dot`: first failed because `getDemoLiveDemoReviewerDeliveryCenter`, delivery center controls, and delivery center error rendering did not exist; passed after frontend implementation. Focused result: 2 test files and 280 tests.
+- `npm --prefix frontend test -- --run src/App.test.tsx --reporter=dot`: passed after App-level delivery center loading, refresh, download, and stale-state clearing were wired. Result: 1 test file and 88 tests.
+- `mvn -pl PatchPilot test`: passed, 1440 tests.
+- `npm --prefix frontend test -- --reporter=dot`: passed, 35 test files and 571 tests.
+- `npm --prefix frontend run build`: passed with the existing Vite large-chunk warning.
+- `git diff --check`: passed.
+- Strict diff secret scan for GitHub, OpenAI-style, Slack, AWS, private-key, and PatchPilot token assignment patterns: no matches.
+
 ## 2026-07-02 - 336 Live demo replay package
 
 - Started `336-live-demo-replay-package` to turn the final live demo artifact chain into a read-only reviewer walkthrough package.

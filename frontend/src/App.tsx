@@ -152,6 +152,7 @@ import {
   getDemoFinalAcceptanceSharePackage,
   getDemoLiveDemoArtifactChainReport,
   getDemoLiveDemoReplayPackage,
+  getDemoLiveDemoReviewerDeliveryCenter,
   getDemoLiveDemoCompletionCertificate,
   getDemoLiveDemoEvidenceBundle,
   getDemoLiveDemoHandoffDeliveryFinalization,
@@ -199,6 +200,7 @@ import {
   downloadDemoLiveDemoEvidenceBundleReport,
   downloadDemoLiveDemoArtifactChainReport,
   downloadDemoLiveDemoReplayPackage,
+  downloadDemoLiveDemoReviewerDeliveryCenter,
   downloadDemoLiveDemoCompletionCertificateArchiveReport,
   downloadDemoLiveDemoCompletionCertificateReport,
   downloadDemoLiveDemoHandoffDeliveryFinalizationArchiveReport,
@@ -392,6 +394,7 @@ import type {
   DemoLiveLaunchGate,
   DemoLiveDemoArtifactChainReport,
   DemoLiveDemoReplayPackage,
+  DemoLiveDemoReviewerDeliveryCenter,
   DemoLiveDemoCompletionCertificate,
   DemoLiveDemoCompletionCertificateArchive,
   DemoLiveDemoEvidenceBundle,
@@ -885,6 +888,10 @@ export default function App() {
     useState<DemoLiveDemoReplayPackage | null>(null);
   const [demoLiveDemoReplayPackageError, setDemoLiveDemoReplayPackageError] =
     useState<string | null>(null);
+  const [demoLiveDemoReviewerDeliveryCenter, setDemoLiveDemoReviewerDeliveryCenter] =
+    useState<DemoLiveDemoReviewerDeliveryCenter | null>(null);
+  const [demoLiveDemoReviewerDeliveryCenterError, setDemoLiveDemoReviewerDeliveryCenterError] =
+    useState<string | null>(null);
   const [supportedAdapters, setSupportedAdapters] = useState<SupportedLanguageAdapter[]>([]);
   const [adapterError, setAdapterError] = useState<string | null>(null);
   const [adapterFixtureVerifications, setAdapterFixtureVerifications] = useState<LanguageAdapterFixtureVerification[]>([]);
@@ -1267,6 +1274,7 @@ export default function App() {
         demoLiveDemoCompletionCertificateArchiveResult,
         demoLiveDemoArtifactChainReportResult,
         demoLiveDemoReplayPackageResult,
+        demoLiveDemoReviewerDeliveryCenterResult,
         demoAcceptanceSummaryResult,
         demoFinalAcceptanceSharePackageResult,
         demoFinalAcceptanceSharePackageArchiveResult,
@@ -1542,6 +1550,10 @@ export default function App() {
         getDemoLiveDemoReplayPackage().then(
           (replayPackage) => ({ replayPackage, error: null as string | null }),
           (caught) => ({ replayPackage: null, error: errorMessage(caught) })
+        ),
+        getDemoLiveDemoReviewerDeliveryCenter().then(
+          (deliveryCenter) => ({ deliveryCenter, error: null as string | null }),
+          (caught) => ({ deliveryCenter: null, error: errorMessage(caught) })
         ),
         getDemoAcceptanceSummary().then(
           (summary) => ({ summary, error: null as string | null }),
@@ -2036,6 +2048,10 @@ export default function App() {
         setDemoLiveDemoReplayPackage(demoLiveDemoReplayPackageResult.replayPackage);
       }
       setDemoLiveDemoReplayPackageError(demoLiveDemoReplayPackageResult.error);
+      if (demoLiveDemoReviewerDeliveryCenterResult.deliveryCenter) {
+        setDemoLiveDemoReviewerDeliveryCenter(demoLiveDemoReviewerDeliveryCenterResult.deliveryCenter);
+      }
+      setDemoLiveDemoReviewerDeliveryCenterError(demoLiveDemoReviewerDeliveryCenterResult.error);
       if (demoAcceptanceSummaryResult.summary) {
         setDemoAcceptanceSummary(demoAcceptanceSummaryResult.summary);
       }
@@ -3598,6 +3614,8 @@ export default function App() {
     setDemoLiveDemoArtifactChainReportError(null);
     setDemoLiveDemoReplayPackage(null);
     setDemoLiveDemoReplayPackageError(null);
+    setDemoLiveDemoReviewerDeliveryCenter(null);
+    setDemoLiveDemoReviewerDeliveryCenterError(null);
   }, []);
 
   const handleDemoLiveLaunchGate = useCallback(async (input: GitHubTriggerDryRunInput) => {
@@ -3937,6 +3955,9 @@ export default function App() {
       setDemoLiveDemoReplayPackageError(null);
       const replayPackage = await getDemoLiveDemoReplayPackage();
       setDemoLiveDemoReplayPackage(replayPackage);
+      setDemoLiveDemoReviewerDeliveryCenterError(null);
+      const deliveryCenter = await getDemoLiveDemoReviewerDeliveryCenter();
+      setDemoLiveDemoReviewerDeliveryCenter(deliveryCenter);
       return archive;
     } catch (caught) {
       setDemoLiveDemoCompletionCertificateArchiveError(errorMessage(caught));
@@ -3953,6 +3974,8 @@ export default function App() {
     setDemoLiveDemoArtifactChainReportError(null);
     setDemoLiveDemoReplayPackage(null);
     setDemoLiveDemoReplayPackageError(null);
+    setDemoLiveDemoReviewerDeliveryCenter(null);
+    setDemoLiveDemoReviewerDeliveryCenterError(null);
     try {
       const report = await getDemoLiveDemoArtifactChainReport();
       setDemoLiveDemoArtifactChainReport(report);
@@ -3970,6 +3993,8 @@ export default function App() {
 
   const handleRefreshDemoLiveDemoReplayPackage = useCallback(async () => {
     setDemoLiveDemoReplayPackageError(null);
+    setDemoLiveDemoReviewerDeliveryCenter(null);
+    setDemoLiveDemoReviewerDeliveryCenterError(null);
     try {
       const replayPackage = await getDemoLiveDemoReplayPackage();
       setDemoLiveDemoReplayPackage(replayPackage);
@@ -3982,6 +4007,23 @@ export default function App() {
 
   const handleDownloadDemoLiveDemoReplayPackage = useCallback(
     () => downloadDemoLiveDemoReplayPackage(),
+    []
+  );
+
+  const handleRefreshDemoLiveDemoReviewerDeliveryCenter = useCallback(async () => {
+    setDemoLiveDemoReviewerDeliveryCenterError(null);
+    try {
+      const deliveryCenter = await getDemoLiveDemoReviewerDeliveryCenter();
+      setDemoLiveDemoReviewerDeliveryCenter(deliveryCenter);
+      return deliveryCenter;
+    } catch (caught) {
+      setDemoLiveDemoReviewerDeliveryCenterError(errorMessage(caught));
+      throw caught;
+    }
+  }, []);
+
+  const handleDownloadDemoLiveDemoReviewerDeliveryCenter = useCallback(
+    () => downloadDemoLiveDemoReviewerDeliveryCenter(),
     []
   );
 
@@ -4806,6 +4848,10 @@ export default function App() {
         liveDemoReplayPackageError={demoLiveDemoReplayPackageError}
         onRefreshLiveDemoReplayPackage={handleRefreshDemoLiveDemoReplayPackage}
         onDownloadLiveDemoReplayPackage={handleDownloadDemoLiveDemoReplayPackage}
+        liveDemoReviewerDeliveryCenter={demoLiveDemoReviewerDeliveryCenter}
+        liveDemoReviewerDeliveryCenterError={demoLiveDemoReviewerDeliveryCenterError}
+        onRefreshLiveDemoReviewerDeliveryCenter={handleRefreshDemoLiveDemoReviewerDeliveryCenter}
+        onDownloadLiveDemoReviewerDeliveryCenter={handleDownloadDemoLiveDemoReviewerDeliveryCenter}
       />
 
       <EndToEndAcceptanceMatrixPanel

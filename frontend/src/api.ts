@@ -67,6 +67,7 @@ import type {
   DemoLiveLaunchGate,
   DemoLiveDemoArtifactChainReport,
   DemoLiveDemoReplayPackage,
+  DemoLiveDemoReviewerDeliveryCenter,
   DemoLiveDemoCompletionCertificate,
   DemoLiveDemoCompletionCertificateArchive,
   DemoLiveDemoEvidenceBundle,
@@ -391,6 +392,16 @@ export async function getDemoLiveDemoReplayPackage(): Promise<DemoLiveDemoReplay
 
 export async function downloadDemoLiveDemoReplayPackage(): Promise<Blob> {
   return getBlobApi('/api/demo/live-demo-handoff-package/replay-package/download');
+}
+
+export async function getDemoLiveDemoReviewerDeliveryCenter(): Promise<DemoLiveDemoReviewerDeliveryCenter> {
+  return getApi<DemoLiveDemoReviewerDeliveryCenter>(
+    '/api/demo/live-demo-handoff-package/reviewer-delivery-center'
+  );
+}
+
+export async function downloadDemoLiveDemoReviewerDeliveryCenter(): Promise<Blob> {
+  return getBlobApi('/api/demo/live-demo-handoff-package/reviewer-delivery-center/download');
 }
 
 export async function getDemoEndToEndAcceptanceMatrix(): Promise<DemoEndToEndAcceptanceMatrix> {

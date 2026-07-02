@@ -113,6 +113,35 @@ class DemoLiveDemoHandoffPackageControllerTests {
     }
 
     @Test
+    void should_return_and_download_live_demo_reviewer_delivery_center() throws Exception {
+        MockMvc mockMvc = mockMvcWithArtifactChain();
+
+        mockMvc.perform(get("/api/demo/live-demo-handoff-package/reviewer-delivery-center")
+                        .header("X-PatchPilot-Admin-Token", "test-admin-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.deliverable").value(true))
+                .andExpect(jsonPath("$.data.readinessCards[0].name").value("Reviewer handoff package"))
+                .andExpect(jsonPath("$.data.readinessCards[3].name").value("Replay package"))
+                .andExpect(jsonPath("$.data.evidenceLinks[1].url")
+                        .value("https://github.com/bingqin2/PatchPilot/pull/42"))
+                .andExpect(jsonPath("$.data.markdownReport")
+                        .value(containsString("PatchPilot Live Demo Reviewer Delivery Center")));
+
+        mockMvc.perform(get("/api/demo/live-demo-handoff-package/reviewer-delivery-center/download")
+                        .header("X-PatchPilot-Admin-Token", "test-admin-token"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(
+                        CONTENT_DISPOSITION,
+                        containsString("patchpilot-live-demo-reviewer-delivery-center.md")
+                ))
+                .andExpect(content().string(containsString("# PatchPilot Live Demo Reviewer Delivery Center")))
+                .andExpect(content().string(containsString("live-demo-completion-certificate-archive-1")))
+                .andExpect(content().string(containsString("https://github.com/bingqin2/PatchPilot/pull/42")));
+    }
+
+    @Test
     void should_require_admin_token_for_live_demo_handoff_package() throws Exception {
         MockMvc mockMvc = mockMvc();
 
@@ -171,6 +200,14 @@ class DemoLiveDemoHandoffPackageControllerTests {
                 );
         DemoLiveDemoReplayPackageService replayPackageService =
                 new DemoLiveDemoReplayPackageService(artifactChainReportService);
+        DemoLiveDemoReviewerDeliveryCenterService reviewerDeliveryCenterService =
+                new DemoLiveDemoReviewerDeliveryCenterService(
+                        service::createPackage,
+                        artifactChainReportService::getReport,
+                        completionCertificateService::getCertificate,
+                        replayPackageService::getPackage,
+                        java.time.Clock.fixed(Instant.parse("2026-07-02T12:00:00Z"), java.time.ZoneOffset.UTC)
+                );
         return MockMvcBuilders
                 .standaloneSetup(new DemoLiveDemoHandoffPackageController(
                         service,
@@ -180,7 +217,8 @@ class DemoLiveDemoHandoffPackageControllerTests {
                         completionCertificateService,
                         completionCertificateArchiveService,
                         artifactChainReportService,
-                        replayPackageService
+                        replayPackageService,
+                        reviewerDeliveryCenterService
                 ))
                 .addFilters(new AdminApiSecurityFilter(properties, new ObjectMapper()))
                 .build();
@@ -255,6 +293,14 @@ class DemoLiveDemoHandoffPackageControllerTests {
                         completionCertificateService,
                         completionRepository
                 );
+        DemoLiveDemoReviewerDeliveryCenterService reviewerDeliveryCenterService =
+                new DemoLiveDemoReviewerDeliveryCenterService(
+                        service::createPackage,
+                        artifactChainReportService::getReport,
+                        completionCertificateService::getCertificate,
+                        replayPackageService::getPackage,
+                        java.time.Clock.fixed(Instant.parse("2026-07-02T12:00:00Z"), java.time.ZoneOffset.UTC)
+                );
         return MockMvcBuilders
                 .standaloneSetup(new DemoLiveDemoHandoffPackageController(
                         service,
@@ -264,7 +310,8 @@ class DemoLiveDemoHandoffPackageControllerTests {
                         completionCertificateService,
                         completionCertificateArchiveService,
                         artifactChainReportService,
-                        replayPackageService
+                        replayPackageService,
+                        reviewerDeliveryCenterService
                 ))
                 .addFilters(new AdminApiSecurityFilter(properties, new ObjectMapper()))
                 .build();

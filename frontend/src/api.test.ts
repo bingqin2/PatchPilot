@@ -33,6 +33,8 @@ import {
   downloadDemoLiveDemoArtifactChainReport,
   getDemoLiveDemoReplayPackage,
   downloadDemoLiveDemoReplayPackage,
+  getDemoLiveDemoReviewerDeliveryCenter,
+  downloadDemoLiveDemoReviewerDeliveryCenter,
   downloadDemoLiveTriggerOutcomeCloseoutReport,
   archiveDemoLiveTriggerOutcomeCloseout,
   listDemoLiveTriggerOutcomeCloseoutArchives,
@@ -5705,6 +5707,70 @@ test('loads and downloads live demo replay packages through backend API', async 
   expect(replayPackage.replayReady).toBe(true);
   expect(replayPackage.completionCertificateArchiveId).toBe('live-demo-completion-certificate-archive-1');
   expect(replayPackage.evidenceLinks[0].label).toBe('Generated Pull Request');
+  expect(markdown.type).toBe('text/markdown');
+});
+
+test('loads and downloads live demo reviewer delivery center through backend API', async () => {
+  const deliveryCenterPayload = {
+    status: 'READY',
+    deliverable: true,
+    summary: 'PatchPilot live demo reviewer delivery center is ready.',
+    nextAction: 'Send the replay package and final evidence links to reviewers.',
+    repository: 'bingqin2/PatchPilot',
+    issueNumber: 1,
+    issueUrl: 'https://github.com/bingqin2/PatchPilot/issues/1',
+    taskId: 'task-1',
+    taskStatus: 'COMPLETED',
+    pullRequestUrl: 'https://github.com/bingqin2/PatchPilot/pull/42',
+    readinessCards: [
+      {
+        name: 'Replay package',
+        status: 'READY',
+        ready: true,
+        summary: 'PatchPilot live demo replay package is ready for reviewer walkthrough.',
+        nextAction: 'Share the replay package with reviewers.'
+      }
+    ],
+    blockers: [],
+    evidenceLinks: [
+      {
+        label: 'Generated Pull Request',
+        url: 'https://github.com/bingqin2/PatchPilot/pull/42',
+        description: 'Generated code review target.'
+      }
+    ],
+    downloadActions: ['Download live demo reviewer delivery center.'],
+    sideEffectContract: 'GET /api/demo/live-demo-handoff-package/reviewer-delivery-center is read-only.',
+    generatedAt: '2026-07-02T12:00:00Z',
+    markdownReport: '# PatchPilot Live Demo Reviewer Delivery Center'
+  };
+  const fetchMock = vi.fn()
+    .mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ success: true, data: deliveryCenterPayload, message: null })
+    } as Response)
+    .mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      blob: async () => new Blob(['delivery center'], { type: 'text/markdown' })
+    } as Response);
+  vi.stubGlobal('fetch', fetchMock);
+
+  const deliveryCenter = await getDemoLiveDemoReviewerDeliveryCenter();
+  const markdown = await downloadDemoLiveDemoReviewerDeliveryCenter();
+
+  expect(fetchMock).toHaveBeenNthCalledWith(
+    1,
+    '/api/demo/live-demo-handoff-package/reviewer-delivery-center'
+  );
+  expect(fetchMock).toHaveBeenNthCalledWith(
+    2,
+    '/api/demo/live-demo-handoff-package/reviewer-delivery-center/download'
+  );
+  expect(deliveryCenter.deliverable).toBe(true);
+  expect(deliveryCenter.readinessCards[0].name).toBe('Replay package');
+  expect(deliveryCenter.evidenceLinks[0].url).toBe('https://github.com/bingqin2/PatchPilot/pull/42');
   expect(markdown.type).toBe('text/markdown');
 });
 
